@@ -12,8 +12,9 @@ A complete solution for testing large AI prompts (game recap generation) with De
 - **`GameRecapPromptProvider.cs`** - Loads prompts from Azure Blob Storage with caching
 - **`GenerateGameRecapCommand.cs`** - Request/response models for the API
 
-### 2. API Integration  
-- **`AdminController.cs`** - Added `/admin/ai/game-recap` endpoint
+### 2. API Integration
+- **`GenerateGameRecapCommandHandler.cs`** - CQRS command handler implementing `IGenerateGameRecapCommandHandler`; contains the game recap generation logic
+- **`AdminController.cs`** - `/admin/ai/game-recap` endpoint delegates to `IGenerateGameRecapCommandHandler` (not inline logic)
 - **`ServiceRegistration.cs`** - Registered GameRecapPromptProvider
 
 ### 3. Documentation
@@ -94,23 +95,23 @@ Invoke-RestMethod `
 ## ??? Architecture
 
 ```
-???????????????????????
-?   AdminController   ?
-?  /admin/ai/game-    ?
-?       recap         ?
-???????????????????????
-           ?
-           ??? GameRecapPromptProvider
-           ?   ??? Azure Blob Storage
-           ?       ??? prompts/game-recap-v1.txt
-           ?
-           ??? DeepSeekClient
-           ?   ??? https://api.deepseek.com/chat/completions
-           ?
-           ??? Response
-               ??? Generated recap article
-               ??? Token usage metrics
-               ??? Performance metrics
+AdminController
+  /admin/ai/game-recap
+         |
+         v
+GenerateGameRecapCommandHandler (CQRS pattern)
+         |
+         +-- GameRecapPromptProvider
+         |     +-- Azure Blob Storage
+         |         +-- prompts/game-recap-v1.txt
+         |
+         +-- IProvideAiCommunication (DeepSeekClient or OllamaClient)
+         |     +-- https://api.deepseek.com/chat/completions
+         |
+         +-- Response
+               +-- Generated recap article
+               +-- Token usage metrics
+               +-- Performance metrics
 ```
 
 ---

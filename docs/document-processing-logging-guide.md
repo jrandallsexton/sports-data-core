@@ -11,61 +11,62 @@ Comprehensive logging has been added to the `DocumentCreatedHandler` and `Docume
 When a `DocumentCreated` event is received from Provider, you'll see these logs in sequence:
 
 ```
-?? HANDLER_ENTRY: DocumentCreated event received
-? HANDLER_ENQUEUE_IMMEDIATE: First attempt - enqueueing background job immediately
-? HANDLER_ENQUEUED: Background job enqueued successfully. HangfireJobId={JobId}
-?? HANDLER_EXIT: Handler completed successfully (immediate enqueue)
+HANDLER_ENTRY: DocumentCreated event received.
+HANDLER_ENQUEUE_IMMEDIATE: First attempt - enqueueing background job immediately.
+HANDLER_ENQUEUED: Background job enqueued successfully. {JobId}
+HANDLER_EXIT: Handler completed successfully (immediate enqueue).
 ```
 
 **For retry attempts (AttemptCount > 0):**
 ```
-?? HANDLER_ENTRY: DocumentCreated event received
-?? HANDLER_SCHEDULE_DELAYED: Scheduling retry with backoff
-? HANDLER_SCHEDULED: Background job scheduled successfully. HangfireJobId={JobId}
-?? HANDLER_EXIT: Handler completed successfully (scheduled retry)
+HANDLER_ENTRY: DocumentCreated event received.
+HANDLER_SCHEDULE_DELAYED: Scheduling retry with backoff.
+HANDLER_SCHEDULED: Background job scheduled successfully. HangfireJobId={HangfireJobId}
+HANDLER_EXIT: Handler completed successfully (scheduled retry).
 ```
+
+**Note:** The handler uses `IProvideBackgroundJobs` abstraction (not `IBackgroundJobClient` directly) for Hangfire job scheduling.
 
 ### Phase 2: Background Job Execution (DocumentCreatedProcessor)
 
-Once Hangfire picks up the job, you'll see:
+Once Hangfire picks up the job, you'll see (all log messages use `DOC_CREATED_` prefix):
 
 ```
-?? PROCESSOR_ENTRY: Hangfire job started
-?? PROCESSOR_FETCH_DOCUMENT: Fetching document from Provider
-? PROCESSOR_DOCUMENT_OBTAINED: Document fetched successfully
-?? PROCESSOR_GET_PROCESSOR: Looking up document processor from factory
-? PROCESSOR_FOUND: Document processor found. ProcessorType={ProcessorType}
-?? PROCESSOR_EXECUTE: Executing document-specific processor
-? PROCESSOR_EXECUTE_COMPLETED: Document-specific processor completed
-? PROCESSOR_COMPLETED: Document processing completed successfully
+DOC_CREATED_PROCESSOR_ENTRY: Hangfire job started.
+DOC_CREATED_PROCESSOR_DOCUMENT_INLINE: Document included in event payload.
+  (or)
+DOC_CREATED_PROCESSOR_FETCH_DOCUMENT: Document not in payload, fetching from Provider.
+DOC_CREATED_PROCESSOR_DOCUMENT_FETCHED: Document fetched from Provider successfully.
+DOC_CREATED_PROCESSOR_GET_PROCESSOR: Looking up document processor from factory.
+DOC_CREATED_PROCESSOR_FOUND: Document processor found.
+DOC_CREATED_PROCESSOR_EXECUTE: Executing document-specific processor.
+DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED: Document-specific processor completed.
+DOC_CREATED_PROCESSOR_COMPLETED: Document processing completed successfully.
 ```
+
+**Inline document path:** The processor checks the `DocumentJson` property on the event first. If the document JSON is included inline (within size limits), it uses that directly instead of fetching from Provider.
 
 ### Phase 3: Document-Specific Processor
 
 Each document type has its own processor (e.g., `EventDocumentProcessor`, `EventCompetitionStatusDocumentProcessor`). These will log their own start/complete messages.
 
-## Log Emoji Legend
+## Log Message Prefix Conventions
 
-| Emoji | Meaning | Used For |
-|-------|---------|----------|
-| ?? | Entry | Handler received event |
-| ? | Success | Operation completed successfully |
-| ? | Error | Operation failed |
-| ?? | Scheduling | Job being scheduled with delay |
-| ?? | Exit | Handler exiting |
-| ?? | Exception | Unhandled exception |
-| ?? | Start | Processor/job starting |
-| ?? | Fetch | Fetching data |
-| ?? | Lookup | Finding/searching |
-| ?? | Execute | Running operation |
+**Handler (`DocumentCreatedHandler`):** Uses plain-text prefixes without emojis:
+- `HANDLER_ENTRY`, `HANDLER_ENQUEUE_IMMEDIATE`, `HANDLER_ENQUEUED`, `HANDLER_SCHEDULE_DELAYED`, `HANDLER_SCHEDULE_IMMEDIATE`, `HANDLER_SCHEDULED`, `HANDLER_EXIT`, `HANDLER_MAX_RETRIES`, `HANDLER_EXCEPTION`
+
+**Processor (`DocumentCreatedProcessor`):** Uses emoji-prefixed `DOC_CREATED_` tokens (each token starts with an emoji followed by the identifier):
+- `🚀 DOC_CREATED_PROCESSOR_ENTRY`, `📦 DOC_CREATED_PROCESSOR_DOCUMENT_INLINE`, `📥 DOC_CREATED_PROCESSOR_FETCH_DOCUMENT`, `✅ DOC_CREATED_PROCESSOR_DOCUMENT_FETCHED`, `❌ DOC_CREATED_PROCESSOR_DOCUMENT_NULL`, `❌ DOC_CREATED_PROCESSOR_DOCUMENT_EMPTY`, `🔍 DOC_CREATED_PROCESSOR_GET_PROCESSOR`, `✅ DOC_CREATED_PROCESSOR_FOUND`, `⚙️ DOC_CREATED_PROCESSOR_EXECUTE`, `✅ DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED`, `✅ DOC_CREATED_PROCESSOR_COMPLETED`, `💥 DOC_CREATED_PROCESSOR_FAILED`
+
+When filtering in Seq, include the emoji prefix in your query (e.g., `@m like '%DOC_CREATED_PROCESSOR_ENTRY%'` matches the emoji-prefixed form).
 
 ## Troubleshooting Guide
 
 ### Issue 1: Event Received but No Background Job Enqueued
 
 **Symptoms:**
-- You see `?? HANDLER_ENTRY` but no `? HANDLER_ENQUEUED`
-- Or you see `?? HANDLER_EXCEPTION`
+- You see `HANDLER_ENTRY` but no `HANDLER_ENQUEUED`
+- Or you see `HANDLER_EXCEPTION`
 
 **Possible Causes:**
 1. Exception in `_backgroundJobProvider.Enqueue()` call
@@ -86,8 +87,8 @@ HANDLER_EXCEPTION
 ### Issue 2: Background Job Enqueued but Never Executes
 
 **Symptoms:**
-- You see `? HANDLER_ENQUEUED: HangfireJobId={JobId}`
-- But you never see `?? PROCESSOR_ENTRY`
+- You see `HANDLER_ENQUEUED` with a job ID
+- But you never see `DOC_CREATED_PROCESSOR_ENTRY`
 
 **Possible Causes:**
 1. Hangfire workers not running
@@ -111,9 +112,9 @@ HangfireJobId={JobId}
 ### Issue 3: Processor Starts but Fails to Fetch Document
 
 **Symptoms:**
-- You see `?? PROCESSOR_ENTRY`
-- You see `?? PROCESSOR_FETCH_DOCUMENT`
-- But you see `? PROCESSOR_DOCUMENT_NULL` or `? PROCESSOR_DOCUMENT_EMPTY`
+- You see `DOC_CREATED_PROCESSOR_ENTRY`
+- You see `DOC_CREATED_PROCESSOR_FETCH_DOCUMENT`
+- But you see `DOC_CREATED_PROCESSOR_DOCUMENT_NULL` or `DOC_CREATED_PROCESSOR_DOCUMENT_EMPTY`
 
 **Possible Causes:**
 1. Document not in Provider's blob storage
@@ -124,8 +125,8 @@ HangfireJobId={JobId}
 **What to check:**
 ```
 # Search for:
-PROCESSOR_DOCUMENT_NULL
-PROCESSOR_DOCUMENT_EMPTY
+DOC_CREATED_PROCESSOR_DOCUMENT_NULL
+DOC_CREATED_PROCESSOR_DOCUMENT_EMPTY
 ```
 
 **Actions:**
@@ -137,9 +138,9 @@ PROCESSOR_DOCUMENT_EMPTY
 ### Issue 4: Processor Can't Find Document Processor
 
 **Symptoms:**
-- You see `? PROCESSOR_DOCUMENT_OBTAINED`
-- You see `?? PROCESSOR_GET_PROCESSOR`
-- But you see an exception (no `? PROCESSOR_FOUND`)
+- You see document obtained successfully
+- You see `DOC_CREATED_PROCESSOR_GET_PROCESSOR`
+- But you see an exception (no `DOC_CREATED_PROCESSOR_FOUND`)
 
 **Possible Causes:**
 1. No processor registered for this DocumentType/Sport/Provider combination
@@ -149,7 +150,7 @@ PROCESSOR_DOCUMENT_EMPTY
 **What to check:**
 ```
 # Search for:
-PROCESSOR_GET_PROCESSOR
+DOC_CREATED_PROCESSOR_GET_PROCESSOR
 # followed by exception
 ```
 
@@ -161,9 +162,9 @@ PROCESSOR_GET_PROCESSOR
 ### Issue 5: Document Processor Executes but Fails
 
 **Symptoms:**
-- You see `?? PROCESSOR_EXECUTE`
-- But you never see `? PROCESSOR_EXECUTE_COMPLETED`
-- Or you see `?? PROCESSOR_FAILED`
+- You see `DOC_CREATED_PROCESSOR_EXECUTE`
+- But you never see `DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED`
+- Or you see `DOC_CREATED_PROCESSOR_FAILED`
 
 **Possible Causes:**
 1. Exception in document-specific processor
@@ -174,8 +175,8 @@ PROCESSOR_GET_PROCESSOR
 **What to check:**
 ```
 # Search for:
-PROCESSOR_FAILED
-PROCESSOR_EXECUTE
+DOC_CREATED_PROCESSOR_FAILED
+DOC_CREATED_PROCESSOR_EXECUTE
 # And check document-specific processor logs
 ```
 
@@ -208,16 +209,13 @@ HANDLER_ENTRY OR HANDLER_ENQUEUED OR HANDLER_EXIT OR HANDLER_EXCEPTION
 
 ```
 # Filter by:
-PROCESSOR_ENTRY OR PROCESSOR_COMPLETED OR PROCESSOR_FAILED
+DOC_CREATED_PROCESSOR_ENTRY OR DOC_CREATED_PROCESSOR_COMPLETED OR DOC_CREATED_PROCESSOR_FAILED
 ```
 
 ### View Only Errors
 
 ```
-# Filter by emoji:
-? OR ??
-
-# Or by log level:
+# Filter by log level:
 Level = "Error"
 ```
 
@@ -225,17 +223,17 @@ Level = "Error"
 
 For a successful document processing flow:
 
-1. **T+0ms**: `?? HANDLER_ENTRY` - Event received
-2. **T+5ms**: `? HANDLER_ENQUEUED` - Job enqueued to Hangfire
-3. **T+10ms**: `?? HANDLER_EXIT` - Handler completes
-4. **T+100ms**: `?? PROCESSOR_ENTRY` - Hangfire picks up job (varies based on queue)
-5. **T+150ms**: `?? PROCESSOR_FETCH_DOCUMENT` - Fetching from Provider
-6. **T+300ms**: `? PROCESSOR_DOCUMENT_OBTAINED` - Document fetched
-7. **T+305ms**: `?? PROCESSOR_GET_PROCESSOR` - Finding processor
-8. **T+310ms**: `? PROCESSOR_FOUND` - Processor found
-9. **T+315ms**: `?? PROCESSOR_EXECUTE` - Executing processor
-10. **T+500ms**: `? PROCESSOR_EXECUTE_COMPLETED` - Processor done
-11. **T+505ms**: `? PROCESSOR_COMPLETED` - Full completion
+1. **T+0ms**: `HANDLER_ENTRY` - Event received
+2. **T+5ms**: `HANDLER_ENQUEUED` - Job enqueued to Hangfire
+3. **T+10ms**: `HANDLER_EXIT` - Handler completes
+4. **T+100ms**: `DOC_CREATED_PROCESSOR_ENTRY` - Hangfire picks up job (varies based on queue)
+5. **T+150ms**: `DOC_CREATED_PROCESSOR_DOCUMENT_INLINE` or `DOC_CREATED_PROCESSOR_FETCH_DOCUMENT` - Getting document
+6. **T+300ms**: `DOC_CREATED_PROCESSOR_DOCUMENT_FETCHED` - Document obtained
+7. **T+305ms**: `DOC_CREATED_PROCESSOR_GET_PROCESSOR` - Finding processor
+8. **T+310ms**: `DOC_CREATED_PROCESSOR_FOUND` - Processor found
+9. **T+315ms**: `DOC_CREATED_PROCESSOR_EXECUTE` - Executing processor
+10. **T+500ms**: `DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED` - Processor done
+11. **T+505ms**: `DOC_CREATED_PROCESSOR_COMPLETED` - Full completion
 
 **Note:** Timings vary based on document complexity, network latency, and database operations.
 
@@ -269,60 +267,62 @@ HANDLER_ENTRY
 ### Successful Processing
 
 ```
-?? HANDLER_ENTRY
-? HANDLER_ENQUEUE_IMMEDIATE
-? HANDLER_ENQUEUED: HangfireJobId=123
-?? HANDLER_EXIT
+HANDLER_ENTRY: DocumentCreated event received.
+HANDLER_ENQUEUE_IMMEDIATE: First attempt - enqueueing background job immediately.
+HANDLER_ENQUEUED: Background job enqueued successfully. {JobId}
+HANDLER_EXIT: Handler completed successfully (immediate enqueue).
 ... (Hangfire picks up job) ...
-?? PROCESSOR_ENTRY
-?? PROCESSOR_FETCH_DOCUMENT
-? PROCESSOR_DOCUMENT_OBTAINED
-?? PROCESSOR_GET_PROCESSOR
-? PROCESSOR_FOUND
-?? PROCESSOR_EXECUTE
-? PROCESSOR_EXECUTE_COMPLETED
-? PROCESSOR_COMPLETED
+DOC_CREATED_PROCESSOR_ENTRY: Hangfire job started.
+DOC_CREATED_PROCESSOR_DOCUMENT_INLINE: Document included in event payload.
+DOC_CREATED_PROCESSOR_GET_PROCESSOR: Looking up document processor from factory.
+DOC_CREATED_PROCESSOR_FOUND: Document processor found.
+DOC_CREATED_PROCESSOR_EXECUTE: Executing document-specific processor.
+DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED: Document-specific processor completed.
+DOC_CREATED_PROCESSOR_COMPLETED: Document processing completed successfully.
 ```
 
 ### Retry Due to Missing Dependency
 
 ```
-?? HANDLER_ENTRY
-? HANDLER_ENQUEUE_IMMEDIATE
-? HANDLER_ENQUEUED: HangfireJobId=123
-?? HANDLER_EXIT
-?? PROCESSOR_ENTRY
-?? PROCESSOR_FETCH_DOCUMENT
-? PROCESSOR_DOCUMENT_OBTAINED
-?? PROCESSOR_GET_PROCESSOR
-? PROCESSOR_FOUND
-?? PROCESSOR_EXECUTE
-?? PROCESSOR_FAILED: ExternalDocumentNotSourcedException
-... (event republished with AttemptCount=1) ...
-?? HANDLER_ENTRY: AttemptCount=1
-?? HANDLER_SCHEDULE_IMMEDIATE: AttemptCount=1
-? HANDLER_SCHEDULED: HangfireJobId=456
-?? HANDLER_EXIT
+HANDLER_ENTRY: DocumentCreated event received.
+HANDLER_ENQUEUE_IMMEDIATE: First attempt - enqueueing background job immediately.
+HANDLER_ENQUEUED: Background job enqueued successfully. {JobId}
+HANDLER_EXIT: Handler completed successfully (immediate enqueue).
+DOC_CREATED_PROCESSOR_ENTRY: Hangfire job started.
+DOC_CREATED_PROCESSOR_DOCUMENT_INLINE: Document included in event payload.
+DOC_CREATED_PROCESSOR_GET_PROCESSOR: Looking up document processor from factory.
+DOC_CREATED_PROCESSOR_FOUND: Document processor found.
+DOC_CREATED_PROCESSOR_EXECUTE: Executing document-specific processor.
+  (base class ProcessAsync catches ExternalDocumentNotSourcedException)
+  "Dependency not ready (attempt 1). Will retry later."
+  (event republished with AttemptCount=1)
+HANDLER_ENTRY: DocumentCreated event received. (AttemptCount=1)
+HANDLER_SCHEDULE_IMMEDIATE: Scheduling retry immediately (no backoff).
+HANDLER_SCHEDULED: Background job scheduled successfully. HangfireJobId={HangfireJobId}
+HANDLER_EXIT: Handler completed successfully (scheduled retry).
 ```
 
 ### Maximum Retries Reached
 
+When max retries are reached, a `DocumentDeadLetter` event is published (the message is NOT silently dropped):
 ```
-?? HANDLER_ENTRY: AttemptCount=10
-? HANDLER_MAX_RETRIES: Maximum retry attempts (10) reached for document. Dropping message.
+HANDLER_ENTRY: DocumentCreated event received. (AttemptCount=10)
+HANDLER_MAX_RETRIES: Maximum retry attempts (10) reached for document. Publishing dead-letter event.
 ```
+
+**Retry mechanism:** The `DocumentProcessorBase` catches `ExternalDocumentNotSourcedException` thrown by processors and republishes the `DocumentCreated` event with an incremented `AttemptCount`. The handler then schedules the retry with exponential backoff via `IProvideBackgroundJobs`. This is NOT Hangfire's built-in retry mechanism.
 
 ### Handler Exception (MassTransit will retry)
 
 ```
-?? HANDLER_ENTRY
-? HANDLER_ENQUEUE_IMMEDIATE
-?? HANDLER_EXCEPTION: Unhandled exception in DocumentCreatedHandler
+HANDLER_ENTRY: DocumentCreated event received.
+HANDLER_ENQUEUE_IMMEDIATE: First attempt - enqueueing background job immediately.
+HANDLER_EXCEPTION: Unhandled exception in DocumentCreatedHandler.
 ... (MassTransit retries) ...
-?? HANDLER_ENTRY
-? HANDLER_ENQUEUE_IMMEDIATE
-? HANDLER_ENQUEUED
-?? HANDLER_EXIT
+HANDLER_ENTRY: DocumentCreated event received.
+HANDLER_ENQUEUE_IMMEDIATE: First attempt - enqueueing background job immediately.
+HANDLER_ENQUEUED: Background job enqueued successfully. {JobId}
+HANDLER_EXIT: Handler completed successfully (immediate enqueue).
 ```
 
 ## Additional Diagnostics
@@ -354,12 +354,12 @@ curl http://localhost:<provider-port>/api/documents/by-hash/{SourceUrlHash}
 
 With this enhanced logging, you can now:
 
-1. ? **Confirm event reception** - Look for `?? HANDLER_ENTRY`
-2. ? **Verify Hangfire enqueueing** - Look for `? HANDLER_ENQUEUED`
-3. ? **Check job execution** - Look for `?? PROCESSOR_ENTRY`
-4. ? **Track document fetching** - Look for `?? PROCESSOR_FETCH_DOCUMENT`
-5. ? **Monitor processor selection** - Look for `? PROCESSOR_FOUND`
-6. ? **Watch processing** - Look for `?? PROCESSOR_EXECUTE`
-7. ? **Identify failures** - Look for `?` or `??` emojis
+1. **Confirm event reception** - Look for `HANDLER_ENTRY`
+2. **Verify Hangfire enqueueing** - Look for `HANDLER_ENQUEUED`
+3. **Check job execution** - Look for `DOC_CREATED_PROCESSOR_ENTRY`
+4. **Track document fetching** - Look for `DOC_CREATED_PROCESSOR_FETCH_DOCUMENT` or `DOC_CREATED_PROCESSOR_DOCUMENT_INLINE`
+5. **Monitor processor selection** - Look for `DOC_CREATED_PROCESSOR_FOUND`
+6. **Watch processing** - Look for `DOC_CREATED_PROCESSOR_EXECUTE`
+7. **Identify failures** - Look for `DOC_CREATED_PROCESSOR_FAILED` or `HANDLER_EXCEPTION`, or filter by `Level = "Error"`
 
 The logs will tell you **exactly** where processing stops, making it much easier to diagnose the issue.

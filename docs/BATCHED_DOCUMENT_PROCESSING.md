@@ -53,8 +53,8 @@ public async Task Process(PublishDocumentEventsCommand command)
 
 For a collection with **1,800 documents**, assuming each document averages 50KB:
 
-- **Documents in memory**: 1,800 × 50KB = **~90MB**
-- **Events in memory**: 1,800 × event overhead = **~15MB**
+- **Documents in memory**: 1,800 ï¿½ 50KB = **~90MB**
+- **Events in memory**: 1,800 ï¿½ event overhead = **~15MB**
 - **Cosmos DB deserialization buffers**: **~50MB+**
 - **Total peak memory**: **~155MB+** for a single job
 
@@ -94,7 +94,8 @@ IAsyncEnumerable<List<T>> GetDocumentsInBatchesAsync<T>(string collectionName, i
 
 **Key Features**:
 - Returns `IAsyncEnumerable<List<T>>` - streaming batches, not all at once
-- Default batch size: **500 documents**
+- Default batch size: **500 documents** (interface default; `PublishDocumentEventsProcessor` overrides to 100)
+- A filter-based overload is also available: `GetDocumentsInBatchesAsync<T>(collectionName, filterExpression, batchSize)` for retrieving only matching documents
 - Allows GC to reclaim memory between batches
 
 #### 2. Cosmos DB Implementation
@@ -166,7 +167,7 @@ public async IAsyncEnumerable<List<T>> GetDocumentsInBatchesAsync<T>(string coll
 ```csharp
 public async Task Process(PublishDocumentEventsCommand command)
 {
-    const int batchSize = 500;
+    const int batchSize = 100;
     var totalPublished = 0;
     var batchNumber = 0;
 
@@ -309,7 +310,7 @@ Risk: None - memory stays bounded
 
 ### Batch Size Selection
 
-The default batch size is **500 documents**. Adjust based on:
+The interface default batch size is **500 documents**, but `PublishDocumentEventsProcessor` overrides this to **100** (`command.BatchSize ?? 100`). Adjust based on:
 
 | Factor | Smaller Batches (100-250) | Larger Batches (500-1000) |
 |--------|--------------------------|--------------------------|
@@ -319,13 +320,13 @@ The default batch size is **500 documents**. Adjust based on:
 | **Concurrent Jobs** | Many (>10) | Few (1-5) |
 | **Publisher Speed** | Slow (external API) | Fast (in-memory bus) |
 
-**Formula**: `batchSize = availableMemory / (avgDocSize × safetyFactor)`
+**Formula**: `batchSize = availableMemory / (avgDocSize ï¿½ safetyFactor)`
 
 Example:
 - Available: 100MB
 - Avg doc: 50KB
 - Safety factor: 4x (for overhead)
-- Batch size: 100MB / (50KB × 4) = **500 documents** ?
+- Batch size: 100MB / (50KB ï¿½ 4) = **500 documents** ?
 
 ## Backward Compatibility
 

@@ -106,29 +106,26 @@ TIER_SOURCING_COMPLETED: Tier=TeamSeason, TotalDocumentsEnqueued=130, ResourceIn
 
 ### Document-Level Events
 
-#### DOC_PROCESSING_STARTED
-Logged when a document processor begins processing a document.
+#### Processing started.
+Logged by `DocumentProcessorBase` when a document processor begins processing a document.
 
 **Fields:**
-- `DocumentType` - Type of document
-- `SourceUrlHash` - Document identifier
-- `AttemptCount` - Retry count
+- Inherits log scope from `ProcessDocumentCommand` (DocumentType, SourceUrlHash, CorrelationId, etc.)
 
 **Example:**
 ```
-DOC_PROCESSING_STARTED: DocumentType=TeamSeason, SourceUrlHash=abc123, AttemptCount=0
+Processing started.
 ```
 
-#### DOC_PROCESSING_COMPLETED
-Logged when a document processor finishes processing a document.
+#### Processing completed.
+Logged by `DocumentProcessorBase` when a document processor finishes processing a document.
 
 **Fields:**
-- `DocumentType` - Type of document
-- `DurationMs` - Duration in milliseconds
+- Inherits log scope from `ProcessDocumentCommand` (DocumentType, SourceUrlHash, CorrelationId, etc.)
 
 **Example:**
 ```
-DOC_PROCESSING_COMPLETED: DocumentType=TeamSeason, DurationMs=1234
+Processing completed.
 ```
 
 ## Seq Queries
@@ -146,7 +143,7 @@ select
   TotalDocumentsEnqueued
 from stream
 where CorrelationId = '00000000-0000-0000-0000-000000000000' -- Replace with your correlationId
-  and (@Message like 'TIER_%' or @Message like 'DOC_PROCESSING_%')
+  and (@Message like 'TIER_%' or @Message like 'Processing %')
 order by @Timestamp
 ```
 
@@ -193,7 +190,7 @@ select
   min(DurationMs) as MinDurationMs
 from stream
 where CorrelationId = '00000000-0000-0000-0000-000000000000' -- Replace with your correlationId
-  and @Message like 'DOC_PROCESSING_COMPLETED%'
+  and @Message like 'Processing completed%'
 group by DocumentType
 ```
 
@@ -208,7 +205,7 @@ select
   AttemptCount
 from stream
 where CorrelationId = '00000000-0000-0000-0000-000000000000' -- Replace with your correlationId
-  and @Message like 'DOC_PROCESSING_STARTED%'
+  and @Message like 'Processing started%'
   and AttemptCount > 0
 order by @Timestamp
 ```
@@ -235,18 +232,20 @@ order by @Timestamp
 ```
 
 ### Query 7: Processing Lag Detection
-Identify gaps between tier sourcing completion and actual document processing:
+Identify gaps between tier sourcing completion and actual document processing.
+
+> **Note:** `TIER_SOURCING_COMPLETED` rows carry `TierName` while `Processing completed` rows carry `DocumentType`. We normalize both to a common grouping key using `coalesce(TierName, DocumentType)` so the `GROUP BY` produces one row per tier.
 
 ```sql
-select 
-  TierName,
+select
+  coalesce(TierName, DocumentType) as Tier,
   first(@Timestamp) as SourcingCompleted,
   last(@Timestamp) as LastDocProcessed,
   DateDiff(minute, first(@Timestamp), last(@Timestamp)) as ProcessingLagMin
 from stream
 where CorrelationId = '00000000-0000-0000-0000-000000000000' -- Replace with your correlationId
-  and (@Message like 'TIER_SOURCING_COMPLETED%' or @Message like 'DOC_PROCESSING_COMPLETED%')
-group by TierName
+  and (@Message like 'TIER_SOURCING_COMPLETED%' or @Message like 'Processing completed%')
+group by coalesce(TierName, DocumentType)
 order by SourcingCompleted
 ```
 
@@ -287,7 +286,7 @@ Alert on documents taking longer than expected:
 **Name:** Slow Document Processing  
 **Query:**
 ```sql
-@Message like 'DOC_PROCESSING_COMPLETED%' 
+@Message like 'Processing completed%'
 and DurationMs > 30000
 ```
 
@@ -302,7 +301,7 @@ Alert when documents require multiple retries:
 **Name:** High Document Retry Rate  
 **Query:**
 ```sql
-@Message like 'DOC_PROCESSING_STARTED%' 
+@Message like 'Processing started%'
 and AttemptCount >= 3
 ```
 
@@ -355,9 +354,9 @@ If you see `TIER_CANCELLED` messages:
 3. **Reset and retry**:
 ```sql
 -- Reset all jobs for this correlation
-UPDATE "ResourceIndexJobs" 
-SET "LastCompletedUtc" = NULL, 
-    "LastPageIndex" = NULL, 
+UPDATE "ResourceIndex"
+SET "LastCompletedUtc" = NULL,
+    "LastPageIndex" = NULL,
     "IsEnabled" = true,
     "IsQueued" = false
 WHERE "CreatedBy" = '3fa85f64-5717-4562-b3fc-2c963f66afa6';

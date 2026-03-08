@@ -73,9 +73,10 @@ x.AddEntityFrameworkOutbox<TDbContext>(o =>
 ```
 
 ### Impact
-- ? Applied to **all 4 outbox registration methods**:
-  - `AddMessaging<T1, T2, T3>` (3 contexts)
-  - `AddMessaging<TDbContext>` (generic single context)
+- Applied to **all outbox registration methods**:
+  - `AddMessaging<T1, T2, T3>` (3 contexts) -- uses `MessageDeliveryLimit = 1000`
+  - `AddMessaging<TDbContext>` (generic single context) -- uses `MessageDeliveryLimit = int.MaxValue`
+  - **Note:** The `MessageDeliveryLimit` differs between overloads: the multi-context overload uses 1000, while the single-context overload uses `int.MaxValue`.
 - ? Affects Producer, API, and all services using outbox pattern
 - ? **No breaking changes** - isolation level was already `ReadCommitted` by default
 - ? **No data loss risk** - only changes how locks are acquired during delivery

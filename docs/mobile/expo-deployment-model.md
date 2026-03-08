@@ -96,26 +96,33 @@ The build profiles live in `eas.json` at the project root. A typical setup:
 ```json
 {
   "cli": {
-    "version": ">= 10.0.0"
+    "version": ">= 10.0.0",
+    "appVersionSource": "local"
   },
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "ios": { "simulator": false }
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.sportdeets.com"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      }
     },
     "production": {
-      "autoIncrement": true
-    }
-  },
-  "submit": {
-    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.sportdeets.com"
+      },
       "ios": {
-        "appleId": "your@apple.id",
-        "ascAppId": "1234567890"
+        "resourceClass": "m-medium"
       }
     }
   }

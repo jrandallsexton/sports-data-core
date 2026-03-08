@@ -40,9 +40,9 @@ effective_cache_size = 24GB       # 75% of RAM (hint for query planner)
 
 # Connection settings
 max_connections = 800             # Support scaled Producer + Provider pods
-                                  # Producer: 12 pods × 50 workers = 600 connections
-                                  # Provider: 12 pods × 50 workers = 600 connections
-                                  # Total potential: 1200 (cap at 800 per database)
+                                  # Producer: 12 pods × 20 workers = 240 connections
+                                  # Provider: 12 pods × 20 workers = 240 connections
+                                  # Total potential: 480 (cap at 800 per database)
                                   # Note: Each service has separate Hangfire DB
 
 # WAL (Write-Ahead Log) settings - Critical for write performance
@@ -74,7 +74,7 @@ sudo systemctl restart postgresql
 
 ## Connection Pooling: PgBouncer
 
-**Problem:** 600+ direct PostgreSQL connections per service (12 pods × 50 workers) is expensive.
+**Problem:** 240+ direct PostgreSQL connections per service (12 pods × 20 workers) is significant.
 
 **⚠️ WARNING:** PgBouncer transaction pooling may interfere with Hangfire's distributed locking and long-running transactions. Test thoroughly before production use.
 
@@ -112,9 +112,9 @@ data:
 **Npgsql Connection Pooling (Recommended for Hangfire):**
 ```csharp
 // In connection strings, limit pool size per pod
-"Host=<POSTGRES_IP>;Port=5432;Database=sdProducer.FootballNcaa.Hangfire;Username=postgres;Password=***;Maximum Pool Size=50;Minimum Pool Size=10"
+"Host=<POSTGRES_IP>;Port=5432;Database=sdProducer.FootballNcaa.Hangfire;Username=postgres;Password=***;Maximum Pool Size=20;Minimum Pool Size=10"
 
-// With 12 pods × 50 max pool size = 600 connections (within 800 limit)
+// With 12 pods × 20 max pool size = 240 connections (within 800 limit)
 // Pools automatically reuse connections, reducing actual active connections
 ```
 
@@ -124,7 +124,9 @@ data:
 # Use:        Host=pgbouncer.sportsdata.svc.cluster.local;Port=6432;Pooling=false  # Disable client pooling, PgBouncer handles it
 ```
 
-**Benefit (PgBouncer):** 600 application connections → 50-100 actual PostgreSQL connections.
+**Note:** PgBouncer has not been deployed. Currently using Npgsql connection pooling only.
+
+**Benefit (PgBouncer):** 240 application connections → 50-100 actual PostgreSQL connections.
 **Benefit (Npgsql Pooling):** Automatic connection reuse without additional infrastructure.
 
 ---
@@ -213,12 +215,12 @@ await dbContext.SaveChangesAsync();          // 1 round-trip
 
 **Expected bottleneck order:**
 1. **Lock contention** (high-write tables with concurrent access) - Most likely limiter
-2. **Connection management** (if not using PgBouncer) - 450 connections is a lot
+2. **Connection management** (if not using PgBouncer) - 240-480 connections depending on pod count
 3. **CPU** (transaction processing) - 6 cores @ 4.3-5.0 GHz should handle it well
 4. ~~Disk I/O~~ - NVMe easily handles this
 5. ~~RAM~~ - 32GB DDR5-5600 is more than sufficient
 
-**Likely outcome:** With proper tuning (increased max_connections, Npgsql pooling, batched writes, indexed tables), PostgreSQL should handle **12 Producer + 12 Provider pods** (1200 potential connections across 2 Hangfire databases) without issue. The Ryzen 5 7640HS is a modern, capable CPU for this workload.
+**Likely outcome:** With proper tuning (increased max_connections, Npgsql pooling, batched writes, indexed tables), PostgreSQL should handle **12 Producer + 12 Provider pods** (480 potential connections across 2 Hangfire databases) without issue. The Ryzen 5 7640HS is a modern, capable CPU for this workload.
 
 **KEDA Load Test Results (Jan 27, 2026):**
 - ✅ KEDA scaling: 2 → 12 pods worked perfectly based on Hangfire queue depth

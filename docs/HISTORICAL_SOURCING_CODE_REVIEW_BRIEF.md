@@ -77,6 +77,11 @@ src/SportsData.Provider/
 ?       ??? HistoricalSeasonSourcingRequest.cs     # Request DTO
 ?       ??? HistoricalSeasonSourcingResponse.cs    # Response DTO
 ?       ??? HistoricalSourcingConfig.cs            # Configuration model
+?       ??? Saga/
+?           ??? HistoricalSeasonSourcingSaga.cs              # MassTransit state machine
+?           ??? HistoricalSeasonSourcingState.cs             # Saga state entity
+?           ??? HistoricalSeasonSourcingStateConfiguration.cs # EF Core config
+?           ??? SeasonSourcingStarted.cs                     # Saga trigger event
 ```
 
 ### **Documentation**
@@ -92,6 +97,8 @@ src/SportsData.Provider/
 ??? Application/Jobs/
 ?   ??? ResourceIndexJob.cs                        # Executes sourcing jobs
 ?   ??? Definitions/DocumentJobDefinition.cs       # Job metadata
+??? Application/Consumers/
+?   ??? TriggerTierSourcingConsumer.cs             # Executes ResourceIndexJob when saga triggers next tier
 ??? Infrastructure/Data/Entities/
     ??? ResourceIndex.cs                           # Job configuration entity
 ```
@@ -359,7 +366,7 @@ Season (foundation)
   - Verify data completeness
   - Document actual timings vs estimates
 
-**Current Gap:** No unit tests found for historical sourcing components
+**Unit Tests:** `test/unit/SportsData.Provider.Tests.Unit/Application/Sourcing/Historical/HistoricalSeasonSourcingServiceTests.cs`
 
 ---
 

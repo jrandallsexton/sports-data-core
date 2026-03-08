@@ -1,3 +1,5 @@
+**Note:** This is a historical snapshot from December 2025. The processor has since been refactored -- `ProcessHeadshot` now uses deterministic identity generation via `_externalRefIdentityGenerator.Generate()` instead of `Guid.NewGuid()`, and the processor also handles statistics and notes via `ProcessStatistics` and `ProcessNotes` methods.
+
 # AthleteSeasonDocumentProcessor - Update Logic Implementation
 
 **Date**: December 5, 2025  

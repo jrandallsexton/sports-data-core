@@ -7,7 +7,7 @@ OpenTelemetry (OTel) instrumentation has been added to all SportsData services w
 ## Current Status
 
 ? **Configuration Models Created** - `OpenTelemetryConfig.cs`  
-? **Environment-Specific Settings** - `appsettings.Development.json`, `appsettings.Production.json`  
+? **Environment-Specific Settings** - Loaded from Azure App Configuration (not appsettings files)  
 ? **Updated `AddInstrumentation` Method** - Now reads from configuration  
 ? **All Services Updated** - Venue, Season, Notification, Provider, Player, Producer, Franchise, Contest  
 ?? **OTel is DISABLED by default** - `"Enabled": false` in all environments  
@@ -16,7 +16,7 @@ OpenTelemetry (OTel) instrumentation has been added to all SportsData services w
 
 ```json
 {
-  "OpenTelemetry": {
+  "CommonConfig:OpenTelemetry": {
     "ServiceName": "SportsData.Api",
     "ServiceVersion": "1.0.0",
     "Enabled": false,  // ? Master kill switch
@@ -43,7 +43,9 @@ OpenTelemetry (OTel) instrumentation has been added to all SportsData services w
 
 ## Environment-Specific Endpoints
 
-### Development (appsettings.Development.json)
+> **Note:** Environment-specific configuration is managed through Azure App Configuration, not local appsettings files. Values are selected by label (e.g., `Local`, `Dev`, `Prod`) via `AddCommonConfiguration()` in `AppConfiguration.cs`.
+
+### Development
 | Component | Endpoint | Notes |
 |-----------|----------|-------|
 | Tracing | `http://localhost:4317` | Local Tempo (if running) |
@@ -51,7 +53,7 @@ OpenTelemetry (OTel) instrumentation has been added to all SportsData services w
 | Logging | `http://localhost:3100` | Local Loki |
 | Sampling | `1.0` (100%) | Trace all requests in dev |
 
-### Production (appsettings.Production.json)
+### Production
 | Component | Endpoint | Notes |
 |-----------|----------|-------|
 | Tracing | `http://tempo.monitoring.svc.cluster.local:4317` | K8s Tempo service |
@@ -63,10 +65,10 @@ OpenTelemetry (OTel) instrumentation has been added to all SportsData services w
 
 ### Option 1: Enable for Development/Testing
 
-**In `appsettings.Development.json`:**
+**In Azure App Configuration (label: Local or Dev):**
 ```json
 {
-  "OpenTelemetry": {
+  "CommonConfig:OpenTelemetry": {
     "Enabled": true  // ? Change from false to true
   }
 }
@@ -92,39 +94,23 @@ OpenTelemetry (OTel) instrumentation has been added to all SportsData services w
 5. Monitor CPU/memory/network usage
 6. Gradually increase sampling if needed
 
-### Option 3: Enable via Kubernetes ConfigMap (Recommended)
+### Option 3: Enable via Azure App Configuration (Recommended)
 
-Instead of changing `appsettings.json`, override via ConfigMap:
+All OpenTelemetry settings are managed through Azure App Configuration and loaded via `AddCommonConfiguration()` in `AppConfiguration.cs`. Use the appropriate label (`Local`, `Dev`, `Prod`) for each environment.
 
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: sportsdata-api-config
-  namespace: default
-data:
-  appsettings.Production.json: |
-    {
-      "OpenTelemetry": {
-        "Enabled": true,
-        "Tracing": {
-          "SamplingRatio": 0.1
-        }
-      }
-    }
-```
+**Key/value entries to set in Azure App Configuration:**
 
-Then mount as volume in deployment:
-```yaml
-volumeMounts:
-  - name: config
-    mountPath: /app/appsettings.Production.json
-    subPath: appsettings.Production.json
-volumes:
-  - name: config
-    configMap:
-      name: sportsdata-api-config
-```
+| Key | Value | Notes |
+|-----|-------|-------|
+| `CommonConfig:OpenTelemetry:Enabled` | `true` | Master kill switch |
+| `CommonConfig:OpenTelemetry:Tracing:Enabled` | `true` | Enable distributed tracing |
+| `CommonConfig:OpenTelemetry:Tracing:SamplingRatio` | `0.1` | 10% for prod, `1.0` for dev |
+| `CommonConfig:OpenTelemetry:Tracing:OtlpEndpoint` | `http://tempo.monitoring.svc.cluster.local:4317` | Environment-specific |
+| `CommonConfig:OpenTelemetry:Metrics:Enabled` | `true` | Enable metrics export |
+| `CommonConfig:OpenTelemetry:Metrics:OtlpEndpoint` | `http://prometheus-server.monitoring.svc.cluster.local:4317` | Environment-specific |
+| `CommonConfig:OpenTelemetry:Logging:Enabled` | `false` | Enable when Loki is ready |
+
+Changes take effect on the next service restart (or on configuration refresh if dynamic reload is enabled). No code deployment or ConfigMap changes required.
 
 ## What Gets Instrumented
 
@@ -137,7 +123,7 @@ volumes:
 ? **Kestrel Metrics** - Connection count, TLS handshakes  
 
 ### Filtered Out
-? Health check requests (`/health`) - Not traced to reduce noise
+? Health check requests (`/api/health`) - Not traced to reduce noise
 
 ### Custom Instrumentation (Future)
 - Database queries (Dapper, EF Core)
@@ -252,7 +238,7 @@ kubectl rollout restart deployment sportsdata-api
 **Option 2: Disable in Code**
 ```json
 {
-  "OpenTelemetry": {
+  "CommonConfig:OpenTelemetry": {
     "Enabled": false
   }
 }

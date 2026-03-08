@@ -18,15 +18,13 @@
 
 **Before touching the cluster, validate locally:**
 
-Create `sports-data-provision/util/rabbitmq/` directory with:
-
-**docker-compose.yml:**
+**docker-compose.yml** (see `docker-compose.yml` in repo root):
 ```yaml
 version: '3.8'
 
 services:
   rabbitmq:
-    image: rabbitmq:3.13-management
+    image: rabbitmq:3-management-alpine
     container_name: rabbitmq-local
     ports:
       - "5672:5672"   # AMQP
@@ -42,77 +40,10 @@ volumes:
   rabbitmq-data:
 ```
 
-**24_StartRabbitMQ.ps1:**
-```powershell
-# Start RabbitMQ container for local development
-
-Write-Host "Starting RabbitMQ..." -ForegroundColor Cyan
-
-$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$rmqPath = Join-Path $scriptPath "rabbitmq"
-
-Push-Location $rmqPath
-
-try {
-    # Check if container is already running
-    $running = docker ps --filter "name=rabbitmq-local" --format "{{.Names}}"
-    
-    if ($running -eq "rabbitmq-local") {
-        Write-Host "RabbitMQ is already running" -ForegroundColor Yellow
-        Write-Host "`nManagement UI: http://localhost:15672" -ForegroundColor Green
-        Write-Host "Username: sportsdata / Password: local-dev-password" -ForegroundColor Cyan
-    } else {
-        # Start container
-        docker-compose up -d
-        
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "`nRabbitMQ started successfully!" -ForegroundColor Green
-            Write-Host "`nEndpoints:" -ForegroundColor Cyan
-            Write-Host "  AMQP:       amqp://localhost:5672" -ForegroundColor White
-            Write-Host "  Management: http://localhost:15672" -ForegroundColor White
-            Write-Host "`nConnection:" -ForegroundColor Green
-            Write-Host "  Host: localhost" -ForegroundColor White
-            Write-Host "  Username: sportsdata" -ForegroundColor White
-            Write-Host "  Password: local-dev-password" -ForegroundColor White
-        } else {
-            Write-Host "Failed to start RabbitMQ" -ForegroundColor Red
-            exit 1
-        }
-    }
-} finally {
-    Pop-Location
-}
-```
-
-**25_StopRabbitMQ.ps1:**
-```powershell
-# Stop RabbitMQ container
-
-Write-Host "Stopping RabbitMQ..." -ForegroundColor Cyan
-
-$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$rmqPath = Join-Path $scriptPath "rabbitmq"
-
-Push-Location $rmqPath
-
-try {
-    docker-compose down
-    
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "RabbitMQ stopped successfully!" -ForegroundColor Green
-    } else {
-        Write-Host "Failed to stop RabbitMQ" -ForegroundColor Red
-        exit 1
-    }
-} finally {
-    Pop-Location
-}
-```
-
 **Test MassTransit dual-transport code:**
 1. Run `.\24_StartRabbitMQ.ps1`
-2. Update local `appsettings.Development.json`: `"Messaging:UseRabbitMq": true`
-3. Set connection: `"Messaging:RabbitMq:Host": "localhost"`
+2. Update local `appsettings.Development.json`: `"CommonConfig:Messaging:UseRabbitMq": true`
+3. Set connection: `"CommonConfig:Messaging:RabbitMq:Host": "localhost"`
 4. Run Provider/Producer/API locally
 5. Queue test jobs in Hangfire
 6. Verify messages flow through RabbitMQ (check management UI at http://localhost:15672)
@@ -176,51 +107,56 @@ helm install rabbitmq bitnami/rabbitmq \
 Update application configs to support **both** ASB and RabbitMQ during migration:
 
 ```csharp
-// SportsData.Core/DependencyInjection/ServiceRegistration.cs
-public static IServiceCollection AddMassTransit(
-    this IServiceCollection services,
-    IConfiguration configuration)
+// SportsData.Core/DependencyInjection/MessagingRegistration.cs
+// Transport selection is in the private ConfigureTransport method.
+// Consumers are passed as an explicit List<Type>, not discovered via Assembly scanning.
+
+private static void ConfigureTransport(IBusRegistrationConfigurator x, IConfiguration config)
 {
-    var useRabbitMq = configuration.GetValue<bool>("Messaging:UseRabbitMq");
-    
-    services.AddMassTransit(x =>
+    var useRabbitMq = config.GetValue<bool>(CommonConfigKeys.MessagingUseRabbitMq);
+    // CommonConfigKeys.MessagingUseRabbitMq = "CommonConfig:Messaging:UseRabbitMq"
+
+    if (useRabbitMq)
     {
-        x.AddConsumers(Assembly.GetExecutingAssembly());
-        
-        if (useRabbitMq)
+        var rabbitHost = config[CommonConfigKeys.RabbitMqHost]; // read from config dynamically
+        var rabbitUsername = config[CommonConfigKeys.RabbitMqUsername];
+        var rabbitPassword = config[CommonConfigKeys.RabbitMqPassword];
+
+        x.UsingRabbitMq((context, cfg) =>
         {
-            x.UsingRabbitMq((context, cfg) =>
+            cfg.Host(rabbitHost, "/", h =>
             {
-                cfg.Host("rabbitmq.rabbitmq-system.svc.cluster.local", "/", h =>
-                {
-                    h.Username(configuration["Messaging:RabbitMq:Username"]);
-                    h.Password(configuration["Messaging:RabbitMq:Password"]);
-                });
-                
-                cfg.ConfigureEndpoints(context);
+                h.Username(rabbitUsername);
+                h.Password(rabbitPassword);
             });
-        }
-        else
+            cfg.ConfigureEndpoints(context);
+        });
+    }
+    else
+    {
+        var sbConnString = config[CommonConfigKeys.AzureServiceBus];
+        x.UsingAzureServiceBus((context, cfg) =>
         {
-            x.UsingAzureServiceBus((context, cfg) =>
-            {
-                cfg.Host(configuration["Messaging:AzureServiceBus:ConnectionString"]);
-                cfg.ConfigureEndpoints(context);
-            });
-        }
-    });
-    
-    return services;
+            cfg.Host(sbConnString);
+            cfg.ConfigureEndpoints(context);
+        });
+    }
 }
+
+// Callers pass explicit consumer lists:
+public static IServiceCollection AddMessaging<TDbContext>(
+    this IServiceCollection services,
+    IConfiguration config,
+    List<Type>? consumers) { ... }
 ```
 
 **Configuration in Azure App Config:**
 
 ```
-Messaging:UseRabbitMq = false  (initially, flip to true during cutover)
-Messaging:RabbitMq:Username = sportsdata
-Messaging:RabbitMq:Password = <SECURE_PASSWORD>
-Messaging:RabbitMq:Host = rabbitmq.rabbitmq-system.svc.cluster.local
+CommonConfig:Messaging:UseRabbitMq = false  (initially, flip to true during cutover)
+CommonConfig:Messaging:RabbitMq:Username = sportsdata
+CommonConfig:Messaging:RabbitMq:Password = <SECURE_PASSWORD>
+CommonConfig:Messaging:RabbitMq:Host = rabbitmq.rabbitmq-system.svc.cluster.local
 ```
 
 ### 1.3 Deploy Monitoring
@@ -276,7 +212,7 @@ Execute 2-3 weekly sourcing runs entirely on RabbitMQ:
 ### 2.3 Cutover & Decommission ASB
 
 Once confident:
-1. Set `Messaging:UseRabbitMq = true` for all services
+1. Set `CommonConfig:Messaging:UseRabbitMq = true` for all services
 2. Restart all pods
 3. Monitor for 1 week
 4. Cancel Azure Service Bus resources (save ~$10-50/month)

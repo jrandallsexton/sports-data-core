@@ -1,4 +1,4 @@
-# CompetitionMetricServiceTests - Performance Optimization
+# CalculateCompetitionMetricsCommandHandler Tests - Performance Optimization
 
 **Date**: December 5, 2025  
 **Issue**: Test suite taking over 75 seconds (too slow for development workflow)  
@@ -106,7 +106,7 @@ private async Task<Competition> SeedCompetitionWithRealGameDataAsync(Guid compet
 ### **4. IAsyncLifetime for Setup**
 
 ```csharp
-public class CompetitionMetricServiceTests : ProducerTestBase<CompetitionMetricsService>, IAsyncLifetime
+public class CalculateCompetitionMetricsCommandHandlerTests : ProducerTestBase<CalculateCompetitionMetricsCommandHandler>, IAsyncLifetime
 {
     public async Task InitializeAsync()
     {
@@ -124,7 +124,7 @@ public class CompetitionMetricServiceTests : ProducerTestBase<CompetitionMetrics
 
 ```csharp
 [Collection("Sequential")] // Force sequential to avoid DB contention
-public class CompetitionMetricServiceTests
+public class CalculateCompetitionMetricsCommandHandlerTests
 ```
 
 **Benefit**: Prevents in-memory database contention when tests run in parallel
@@ -228,10 +228,12 @@ Iteration time: ~40 seconds
 
 | File | Change | Lines Changed |
 |------|--------|---------------|
-| `CompetitionMetricServiceTests.cs` | Consolidated tests | ~200 lines removed |
-| `CompetitionMetricServiceTests.cs` | Added JSON caching | +2 lines |
-| `CompetitionMetricServiceTests.cs` | IAsyncLifetime setup | +15 lines |
-| `CompetitionMetricServiceTests.cs` | Sequential collection | +1 line |
+| `CalculateCompetitionMetricsCommandHandlerTests.cs` | Consolidated tests | ~200 lines removed |
+| `CalculateCompetitionMetricsCommandHandlerTests.cs` | Added JSON caching | +2 lines |
+| `CalculateCompetitionMetricsCommandHandlerTests.cs` | IAsyncLifetime setup | +15 lines |
+| `CalculateCompetitionMetricsCommandHandlerTests.cs` | Sequential collection | +1 line |
+
+> **Note:** The metrics in this document (execution times, line counts, test counts) are baseline measurements captured at the time of optimization (December 5, 2025). Actual values may differ as the codebase evolves.
 
 **Net Result**: Cleaner, faster, better organized test suite
 
@@ -240,7 +242,7 @@ Iteration time: ~40 seconds
 ## ? **Validation**
 
 ```bash
-dotnet test --filter "CompetitionMetricServiceTests"
+dotnet test --filter "CalculateCompetitionMetricsCommandHandlerTests"
 
 # Results:
 Passed!  - Failed:     0, Passed:     4, Skipped:     0

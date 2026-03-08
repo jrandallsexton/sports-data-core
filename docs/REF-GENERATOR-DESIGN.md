@@ -8,7 +8,7 @@
 
 > **Important distinction:** There are two ref generator roles in this system:
 > - **`ResourceRefGenerator`** (`IGenerateResourceRefs`) -- Generates internal/producer-facing resource URIs using Kubernetes service DNS or localhost base URLs. These refs appear on integration events for service-to-service communication (e.g., `http://producer-svc-football-ncaa/competitions/{id}`).
-> - **`ApiResourceRefGenerator`** (planned) -- Will generate API/HATEOAS/slug-based refs for external consumers. These refs use public-facing base URLs and human-readable slugs rather than internal GUIDs (e.g., `https://api.sportdeets.com/contests/ohio-state-vs-michigan-2025`).
+> - **`ApiResourceRefGenerator`** (`IGenerateApiResourceRefs`, registered in `SportsData.Api`) -- Generates API/HATEOAS/slug-based refs for external consumers. These refs use public-facing base URLs and human-readable slugs rather than internal GUIDs (e.g., `https://api.sportdeets.com/contests/ohio-state-vs-michigan-2025`).
 >
 > Do not conflate them: `ResourceRefGenerator` is not intended for API responses returned to end users.
 

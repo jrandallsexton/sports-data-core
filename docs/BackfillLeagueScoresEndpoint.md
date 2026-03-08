@@ -26,13 +26,38 @@ Requires admin API token (via `AdminApiToken` attribute)
    - Assign rankings
 
 ## Response
+
+The response is keyed by league and week, reflecting the per-league/week processing model of `ScoreLeagueWeekAsync()`:
+
 ```json
 {
   "seasonYear": 2025,
   "totalWeeks": 15,
-  "processedWeeks": 15,
-  "errors": 0,
-  "message": "Backfilled 15 weeks for season 2025"
+  "results": [
+    {
+      "leagueId": "abc123",
+      "week": 1,
+      "matchupsScored": 6,
+      "status": "success"
+    },
+    {
+      "leagueId": "abc123",
+      "week": 2,
+      "matchupsScored": 6,
+      "status": "success"
+    },
+    {
+      "leagueId": "def456",
+      "week": 1,
+      "matchupsScored": 4,
+      "status": "success"
+    }
+  ],
+  "summary": {
+    "totalLeagueWeeks": 45,
+    "successful": 45,
+    "errors": 0
+  }
 }
 ```
 

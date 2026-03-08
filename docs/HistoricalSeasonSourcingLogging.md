@@ -232,18 +232,20 @@ order by @Timestamp
 ```
 
 ### Query 7: Processing Lag Detection
-Identify gaps between tier sourcing completion and actual document processing:
+Identify gaps between tier sourcing completion and actual document processing.
+
+> **Note:** `TIER_SOURCING_COMPLETED` rows carry `TierName` while `Processing completed` rows carry `DocumentType`. We normalize both to a common grouping key using `coalesce(TierName, DocumentType)` so the `GROUP BY` produces one row per tier.
 
 ```sql
-select 
-  TierName,
+select
+  coalesce(TierName, DocumentType) as Tier,
   first(@Timestamp) as SourcingCompleted,
   last(@Timestamp) as LastDocProcessed,
   DateDiff(minute, first(@Timestamp), last(@Timestamp)) as ProcessingLagMin
 from stream
 where CorrelationId = '00000000-0000-0000-0000-000000000000' -- Replace with your correlationId
   and (@Message like 'TIER_SOURCING_COMPLETED%' or @Message like 'Processing completed%')
-group by TierName
+group by coalesce(TierName, DocumentType)
 order by SourcingCompleted
 ```
 

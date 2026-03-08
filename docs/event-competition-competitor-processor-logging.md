@@ -168,9 +168,11 @@ This shows the complete timeline for a single competitor.
 ### 5. Find Competitors That Published Child Document Events
 
 ```
-@m like '%CHILD_DOCUMENTS_COMPLETED%'
-| select CompetitorId
+@m like '%CHILD_REQUEST_PUBLISHED%'
+| select CompetitorId, ChildDocumentType, ParentId, @t
 ```
+
+This query matches the actual `CHILD_REQUEST_PUBLISHED` log token emitted by `PublishChildDocumentRequest` in `DocumentProcessorBase` when a `DocumentRequested` event is published. Use this instead of `CHILD_DOCUMENTS_COMPLETED`, which only confirms the child-processing loop finished but does not prove any events were published.
 
 ## Troubleshooting Guide
 
@@ -178,7 +180,7 @@ This shows the complete timeline for a single competitor.
 
 **Symptoms:**
 - See `PROCESS_CHILD_DOCUMENTS`
-- See `SKIP_CHILD_DOCUMENT` for all child types
+- See `SKIP_CHILD_DOCUMENT` for all child types (logged at Debug level)
 - Never see `CHILD_REQUEST_PUBLISHED`
 
 **Diagnosis:**

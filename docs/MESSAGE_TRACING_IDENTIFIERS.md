@@ -35,6 +35,7 @@ var correlationId = ActivityExtensions.GetCorrelationId();
 ---
 
 ### 2. CausationId (Guid or string)
+
 **Purpose**: Identifies the parent message that caused this message to be published
 
 **Source**: The MessageId of the message being processed
@@ -83,15 +84,13 @@ public Guid MessageId { get; init; } = Guid.NewGuid();
 
 ### Publishing a Root Message (No Parent)
 ```csharp
-var messageId = Guid.NewGuid();
 var correlationId = ActivityExtensions.GetCorrelationId();
 var causationId = ActivityExtensions.GetCausationId(); // from OpenTelemetry span
 
 var evt = new DocumentCreated(
     // ... other properties
     CorrelationId: correlationId,
-    CausationId: causationId,      // First message - use SpanId
-    MessageId: messageId
+    CausationId: causationId       // First message - use SpanId
 );
 
 await _eventBus.Publish(evt);
@@ -100,15 +99,13 @@ await _eventBus.Publish(evt);
 ### Publishing a Child Message (Has Parent)
 ```csharp
 // Inside a message handler - processing parentMessage
-var messageId = Guid.NewGuid();
 var correlationId = parentMessage.CorrelationId;  // Flow from parent
 var causationId = parentMessage.MessageId;        // Parent's MessageId
 
 var evt = new DocumentRequested(
     // ... other properties
     CorrelationId: correlationId,  // Same business operation
-    CausationId: causationId,      // Parent's MessageId
-    MessageId: messageId           // New unique ID
+    CausationId: causationId       // Parent's MessageId
 );
 
 await _eventBus.Publish(evt);

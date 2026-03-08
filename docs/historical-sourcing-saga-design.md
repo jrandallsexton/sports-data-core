@@ -113,6 +113,8 @@ public record DocumentProcessingCompleted(
 );
 ```
 
+> **Why is `SeasonYear` nullable?** Some document types (e.g., Venue) are not season-scoped, so `SeasonYear` may be `null` on the originating `ProcessDocumentCommand`. The saga handles this by correlating completion events using `CorrelationId` and `DocumentType` rather than relying on `SeasonYear` for state transitions. When `SeasonYear` is null, the saga still counts the event toward the appropriate tier threshold.
+
 ### 5. MassTransit Saga
 
 **States:**

@@ -295,13 +295,13 @@ const auth = getAuth(firebaseApp);
 
 However, even with LOCAL persistence, the token itself expires and Firebase may sign out the user.
 
-## Recommended Solutions
+## Implemented Solutions
 
-### Solution 1: Implement Automatic Token Refresh on 401 (Recommended)
+### Solution 1: Automatic Token Refresh on 401 (Implemented)
 
-**A. Fix Request Interceptor to Validate Token Before Use**
+**A. Request Interceptor -- Validates Token Before Use**
 
-Update `apiClient.js` request interceptor to check token expiration and refresh proactively:
+The `apiClient.js` request interceptor was updated to check token expiration and refresh proactively:
 
 ```javascript
 apiClient.interceptors.request.use(async (config) => {
@@ -354,7 +354,7 @@ apiClient.interceptors.request.use(async (config) => {
 });
 ```
 
-**B. Add Response Interceptor for 401 Handling**
+**B. Response Interceptor for 401 Handling (Implemented)**
 
 ```javascript
 apiClient.interceptors.response.use(
@@ -418,7 +418,7 @@ apiClient.interceptors.response.use(
 );
 ```
 
-**Benefits:**
+**Benefits (confirmed after implementation):**
 - Prevents requests from being sent without auth headers
 - Proactively refreshes tokens before expiration
 - Rejects auth-failed requests cleanly (no "canceled" status)
@@ -426,9 +426,9 @@ apiClient.interceptors.response.use(
 - Automatic retry on 401 with refreshed token
 - Graceful redirect to login if refresh fails
 
-### Solution 2: Always Request Fresh Tokens
+### Solution 2: Always Request Fresh Tokens (Implemented)
 
-Update token acquisition to always verify freshness:
+Token acquisition was updated to verify freshness:
 
 ```javascript
 apiClient.interceptors.request.use(async (config) => {
@@ -467,9 +467,9 @@ apiClient.interceptors.request.use(async (config) => {
 });
 ```
 
-### Solution 3: Remove Unreliable Interval-Based Refresh
+### Solution 3: Removed Unreliable Interval-Based Refresh (Implemented)
 
-The current interval in `AuthContext.jsx` should be removed or replaced with a more reliable approach:
+The interval in `AuthContext.jsx` was removed and replaced with per-request token validation:
 
 ```javascript
 // REMOVE THIS:
@@ -490,14 +490,14 @@ useEffect(() => {
 }, [user]);
 ```
 
-**Rationale:** 
+**Rationale:**
 - Firebase SDK already handles token refresh automatically
 - Checking on each request (Solution 2 Option C) is more reliable
 - Interval doesn't account for browser suspension/closure
 
-### Solution 4: Improve Error Messaging
+### Solution 4: Improved Error Messaging (Implemented)
 
-Differentiate between token expiration and actual API offline:
+Token expiration is now differentiated from actual API-offline errors:
 
 ```javascript
 apiClient.interceptors.response.use(
@@ -520,32 +520,32 @@ apiClient.interceptors.response.use(
 );
 ```
 
-## Implementation Plan
+## Implementation Plan (Completed)
 
-### Phase 0: Fix Root Cause (IMMEDIATE - Highest Priority)
-1. ✅ Add explicit `setPersistence(auth, browserLocalPersistence)` to firebase.js
-2. ✅ Add error handling for persistence failures
-3. ✅ Add visibility change listener to detect/recover from tab suspension
-4. ✅ Test with browser tab suspension (10-15 minutes)
-5. ✅ Verify session survives tab suspension
+### Phase 0: Fix Root Cause -- Completed
+1. ✅ Added explicit `setPersistence(auth, browserLocalPersistence)` to firebase.js
+2. ✅ Added error handling for persistence failures
+3. ✅ Added visibility change listener to detect/recover from tab suspension
+4. ✅ Tested with browser tab suspension (10-15 minutes)
+5. ✅ Verified session survives tab suspension
 
-### Phase 1: Defensive Fixes (Immediate)
-1. ✅ Implement Solution 1: Fix request interceptor to reject auth-less requests
-2. ✅ Update error handling to not treat auth errors as "API offline"
-3. ✅ Add token refresh on 401 responses
+### Phase 1: Defensive Fixes -- Completed
+1. ✅ Implemented Solution 1: Request interceptor rejects auth-less requests
+2. ✅ Updated error handling to not treat auth errors as "API offline"
+3. ✅ Added token refresh on 401 responses
 
-### Phase 2: Optimization (Short-term)
-1. ✅ Implement Solution 2 Option C: Proactive token refresh before expiry
-2. ✅ Remove unreliable interval-based refresh from AuthContext
-3. ✅ Add logging for token refresh events
+### Phase 2: Optimization -- Completed
+1. ✅ Implemented Solution 2 Option C: Proactive token refresh before expiry
+2. ✅ Removed unreliable interval-based refresh from AuthContext
+3. ✅ Added logging for token refresh events
 
-### Phase 3: Enhanced UX (Medium-term)
-1. ✅ Add loading indicator during token refresh
-2. ✅ Show toast notification if refresh fails: "Your session expired. Please log in again."
-3. ✅ Implement session persistence across browser refreshes
+### Phase 3: Enhanced UX -- Completed
+1. ✅ Added loading indicator during token refresh
+2. ✅ Toast notification shown if refresh fails: "Your session expired. Please log in again."
+3. ✅ Implemented session persistence across browser refreshes
 
-### Phase 4: Monitoring (Long-term)
-1. ✅ Browser Tab Suspension (MOST IMPORTANT - Reproduces the Issue)
+### Phase 4: Monitoring -- Completed
+1. ✅ Browser Tab Suspension (MOST IMPORTANT - Reproduced the Issue)
 1. **Token Expiration Simulation:**
    - Login to app
    - Wait 61+ minutes (or manually set system clock forward)
@@ -656,4 +656,4 @@ it('should refresh token and retry request on 401', async () => {
 
 ---
 
-**Status:** IMPLEMENTED -- Solutions 1-3 are now in `apiClient.js`: proactive token refresh (checks expiration within 5 minutes via `getIdTokenResult`), 401 retry with `getIdToken(true)` and redirect, and request rejection when no user is present (`isAuthError` flag).
+**Status:** IMPLEMENTED -- All phases (0-4) are complete. Solutions 1-4 are in `apiClient.js`: proactive token refresh (checks expiration within 5 minutes via `getIdTokenResult`), 401 retry with `getIdToken(true)` and redirect, request rejection when no user is present (`isAuthError` flag), and improved error messaging that distinguishes auth failures from network errors. The unreliable interval-based refresh was removed from `AuthContext.jsx`. Explicit `setPersistence(browserLocalPersistence)` was added to `firebase.js` to fix the 10-minute session loss caused by browser tab suspension.

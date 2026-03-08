@@ -177,10 +177,11 @@ kubectl create secret generic hangfire-connection \
    kubectl get pods -n sportsdata -w
    ```
 3. Validate:
-   - Producer scales to ~50 pods (500 jobs ÷ 10)
+   - Producer scales to ~15 pods max (capped by maxReplicaCount: 15)
    - Provider scales to 4 pods max (capped)
    - Jobs process successfully
    - `RequestDelayMs` paces ESPN requests
+   > **Note:** KEDA was proposed but has not been deployed. Use manual `kubectl scale` for now.
 4. Wait for queue to drain
 5. Watch KEDA scale down after cooldown
 

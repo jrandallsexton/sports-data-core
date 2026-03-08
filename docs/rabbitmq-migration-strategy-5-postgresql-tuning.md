@@ -112,7 +112,7 @@ data:
 **Npgsql Connection Pooling (Recommended for Hangfire):**
 ```csharp
 // In connection strings, limit pool size per pod
-"Host=<POSTGRES_IP>;Port=5432;Database=sdProducer.FootballNcaa.Hangfire;Username=postgres;Password=***;Maximum Pool Size=50;Minimum Pool Size=10"
+"Host=<POSTGRES_IP>;Port=5432;Database=sdProducer.FootballNcaa.Hangfire;Username=postgres;Password=***;Maximum Pool Size=20;Minimum Pool Size=10"
 
 // With 12 pods × 20 max pool size = 240 connections (within 800 limit)
 // Pools automatically reuse connections, reducing actual active connections
@@ -215,7 +215,7 @@ await dbContext.SaveChangesAsync();          // 1 round-trip
 
 **Expected bottleneck order:**
 1. **Lock contention** (high-write tables with concurrent access) - Most likely limiter
-2. **Connection management** (if not using PgBouncer) - 300 connections is a lot
+2. **Connection management** (if not using PgBouncer) - 240-480 connections depending on pod count
 3. **CPU** (transaction processing) - 6 cores @ 4.3-5.0 GHz should handle it well
 4. ~~Disk I/O~~ - NVMe easily handles this
 5. ~~RAM~~ - 32GB DDR5-5600 is more than sufficient

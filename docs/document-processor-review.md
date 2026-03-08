@@ -1,6 +1,7 @@
 # Document Processor Code Review
 
 **Date:** 2025-12-29
+**Last Updated:** 2026-03-08
 **Reviewer:** Claude (AI Assistant)
 **Scope:** All document processors excluding Golf (~50 files)
 
@@ -15,6 +16,8 @@ This review analyzed 50+ document processor files across the following categorie
 - **Infrastructure** (7 files - base classes, factories, registry)
 
 ### Issue Summary by Severity
+
+> **Note:** The counts below reflect the December 2025 baseline when the initial review was conducted.
 
 | Severity | Count | Description |
 |----------|-------|-------------|
@@ -97,7 +100,7 @@ EventDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000000F")
 
 **Impact:** Cannot distinguish between these processors in traces/logs.
 
-> **Status (March 2026):** This GUID collision still persists in the codebase and has not been fixed.
+> **Status Update (March 2026):** This GUID collision still persists in the codebase and has not been fixed. See the Status Updates section at the end of this document for a consolidated list of open items.
 
 ---
 
@@ -372,6 +375,16 @@ catch (ExternalDocumentNotSourcedException ex)
 3. Complete stub implementations or remove unused processors
 4. Standardize logging patterns across all processors
 5. Add `CancellationToken` support throughout
+
+---
+
+## Status Updates
+
+### March 2026
+
+- **CausationId GUID Collision (Critical #5):** Still unresolved. `ContestUpdateProcessor` and `EventDocumentProcessor` share the same GUID (`10000000-0000-0000-0000-00000000000F`).
+- **Dependency publishing:** The `EnableDependencyRequests` flag is now dead configuration. All processors use `PublishDependencyRequest()` unconditionally. See [DOCUMENT_PROCESSING_CONFIG.md](./DOCUMENT_PROCESSING_CONFIG.md) for details.
+- **Base class migration:** All 47 processors now inherit from `DocumentProcessorBase`. See [DOCUMENT_PROCESSOR_BASE_IMPLEMENTATION.md](./DOCUMENT_PROCESSOR_BASE_IMPLEMENTATION.md).
 
 ---
 

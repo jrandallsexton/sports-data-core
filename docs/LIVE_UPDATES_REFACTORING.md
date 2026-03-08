@@ -6,7 +6,7 @@ The `FootballCompetitionStreamer` infrastructure exists but is **untested and ha
 
 **Status:** **Phase 1 Complete** - Critical issues #1-4 resolved. Issues #5-7 remain as planned future work.
 
-**Target:** **Production Ready** - Safe, reliable, observable live game streaming for 2025 season
+**Milestone:** Phase 1 shipped targeting the 2025 season. Issues #5-7 are outstanding future work.
 
 ---
 

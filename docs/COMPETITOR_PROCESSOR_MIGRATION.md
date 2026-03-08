@@ -1,6 +1,6 @@
 # EventCompetitionCompetitorDocumentProcessor - Migration to DocumentProcessorBase
 
-## ? Migration Complete
+## Migration Complete - SUCCESS
 
 **Processor:** `EventCompetitionCompetitorDocumentProcessor<TDataContext>`  
 **Date:** December 28, 2025  
@@ -21,8 +21,8 @@
 
 **Lines of code:** ~250 lines  
 **Child document methods:** 1 unified method (`ProcessChildDocuments`) spawning 5 types (Score, LineScore, Roster, Statistics, Record)
-**Boilerplate per method:** ~2 lines
-**Total boilerplate:** ~4 lines
+**Boilerplate per method:** ~2 lines per child document method
+**Total boilerplate:** ~10 lines
 
 **Code reduction:** ~60 lines eliminated (19% reduction)
 
@@ -252,14 +252,14 @@ private async Task ProcessNewEntity(...)
 {
     // ... create entity ...
     
-    await ProcessChildDocuments(command, dto, canonicalEntity.Id);
+    await ProcessChildDocuments(command, dto, canonicalEntity.Id, true);
 }
 
 private async Task ProcessUpdate(...)
 {
     // ... update logic ...
-    
-    await ProcessChildDocuments(command, dto, entity.Id);
+
+    await ProcessChildDocuments(command, dto, entity.Id, false);
 }
 ```
 

@@ -52,17 +52,20 @@ _logger.LogInformation("ProcessorName started. {@Command}", command);
 
 ### After (handled by DocumentProcessorBase):
 ```csharp
-// In DocumentProcessorBase.ProcessAsync():
+// DocumentProcessorBase.ProcessAsync() wraps every processor call:
 using (_logger.BeginScope(command.ToLogScope()))
 {
     _logger.LogInformation("Processing started.");
-    // ...
+    await ProcessInternal(command);   // <-- concrete processor logic
+    _logger.LogInformation("Processing completed.");
 }
+// On failure:  _logger.LogError(ex, "Processing failed.");
+// On retry:    _logger.LogWarning(retryEx, "Dependency not ready (attempt {Attempt}). Will retry later.", ...);
 ```
 The `ToLogScope()` method on `ProcessDocumentCommand` returns 12 safe properties (no Document JSON):
 `AttemptCount`, `CorrelationId`, `DocumentType`, `MessageId`, `NotifyOnCompletion`, `ParentId`, `Ref` (extracted via `GetDocumentRef()`), `SeasonYear`, `SourceDataProvider`, `SourceUri`, `Sport`, `UrlHash`.
 
-Individual processors no longer need their own BeginScope or start/completion logging.
+Individual processors no longer need their own BeginScope or start/completion logging -- the base class emits "Processing started.", "Processing completed.", and "Processing failed." automatically.
 
 ---
 

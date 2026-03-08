@@ -49,6 +49,7 @@ Redis IS deployed for caching (`AddStackExchangeRedisCache` in `ServiceRegistrat
 - **Estimated cost for historical sourcing:** $677 (1 month minimum)
 
 ### RabbitMQ + Redis (Current)
+
 - **Infrastructure cost:** $0 (existing NUC hardware)
 - **Redis:** Deployed for caching (not rate limiting)
 - **Operational cost:** Time investment in setup/monitoring

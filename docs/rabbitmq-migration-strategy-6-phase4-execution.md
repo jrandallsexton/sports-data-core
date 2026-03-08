@@ -40,7 +40,7 @@
 **Critical metrics:**
 1. **Hangfire queue depth** (should drain steadily)
 2. **ESPN 403 responses** (indicates rate limiting; should be minimal with `RequestDelayMs = 1000ms`)
-3. **KEDA replica counts** (not yet deployed; currently manual scaling)
+3. **Pod replica counts** (manual scaling via `kubectl scale`; KEDA not deployed)
 4. **RabbitMQ queue depth** (should not back up)
 5. **PostgreSQL write throughput** (disk I/O on separate NUC)
 6. **Error rates** (data quality issues, ESPN failures)
@@ -57,7 +57,7 @@
 ## Graceful Handling of Issues
 
 **If ESPN rate limits occur (403 responses):**
-1. Jobs remain queued in Hangfire (manual scaling; KEDA not yet deployed)
+1. Jobs remain queued in Hangfire (manual scaling via `kubectl scale`)
 2. `RetryPolicy.cs` handles ESPN-specific 403 retries
 3. `RequestDelayMs = 1000ms` paces subsequent requests
 4. Jobs complete slower but eventually succeed
@@ -65,11 +65,11 @@
 **If RabbitMQ has issues:**
 1. MassTransit will retry message delivery
 2. Hangfire jobs will fail and retry
-3. KEDA continues to scale based on queue depth
+3. Monitor queue depth and manually scale pods as needed
 4. Can manually restart RabbitMQ pods if needed
 
 **If cluster resources maxed out:**
-1. Manual replica limits apply (KEDA not yet deployed)
+1. Manual replica limits apply (scale down with `kubectl scale`)
 2. Jobs queue in Hangfire until capacity available
 3. Can temporarily stop other workloads to free resources
 4. Can pause sourcing, scale manually, resume

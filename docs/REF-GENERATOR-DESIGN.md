@@ -2,15 +2,21 @@
 
 **Status:** Partially Implemented
 **Date:** January 8, 2026
-**Context:** Building a URI generator to support HATEOAS principles across integration events and API DTOs
+**Context:** Building URI generators to support resource references across integration events and API DTOs
 
 **Implementation Note:** `IGenerateResourceRefs` (16 methods) and `ResourceRefGenerator` exist and are in use. Currently only the Producer base URL is active -- Contest, Venue, and Franchise base URLs are commented out in `ResourceRefGenerator`, so all URIs resolve against the Producer base URL. Actual URL patterns use `/competitions/{id}` (no `/api/` prefix in the path segment; the `/api/` segment is expected to be part of the configured base URL from Azure AppConfig).
+
+> **Important distinction:** There are two ref generator roles in this system:
+> - **`ResourceRefGenerator`** (`IGenerateResourceRefs`) -- Generates internal/producer-facing resource URIs using Kubernetes service DNS or localhost base URLs. These refs appear on integration events for service-to-service communication (e.g., `http://producer-svc-football-ncaa/competitions/{id}`).
+> - **`ApiResourceRefGenerator`** (planned) -- Will generate API/HATEOAS/slug-based refs for external consumers. These refs use public-facing base URLs and human-readable slugs rather than internal GUIDs (e.g., `https://api.sportdeets.com/contests/ohio-state-vs-michigan-2025`).
+>
+> Do not conflate them: `ResourceRefGenerator` is not intended for API responses returned to end users.
 
 ## Overview
 
 This document outlines the design for a centralized resource reference (URI) generator that will:
-1. Generate absolute URIs for resources in integration events
-2. Support HATEOAS links on API-returned DTOs
+1. Generate absolute URIs for resources in integration events (via `ResourceRefGenerator`)
+2. Support HATEOAS links on API-returned DTOs (via a future `ApiResourceRefGenerator`)
 3. Work across all microservices (Producer, API, Venue, etc.)
 4. Leverage existing Azure AppConfig for service discovery
 

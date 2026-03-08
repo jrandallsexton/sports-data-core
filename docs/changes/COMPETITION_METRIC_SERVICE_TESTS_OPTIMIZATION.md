@@ -1,4 +1,4 @@
-# CalculateCompetitionMetricsCommandHandlerTests - Performance Optimization
+# CalculateCompetitionMetricsCommandHandler Tests - Performance Optimization
 
 **Date**: December 5, 2025  
 **Issue**: Test suite taking over 75 seconds (too slow for development workflow)  
@@ -232,6 +232,8 @@ Iteration time: ~40 seconds
 | `CalculateCompetitionMetricsCommandHandlerTests.cs` | Added JSON caching | +2 lines |
 | `CalculateCompetitionMetricsCommandHandlerTests.cs` | IAsyncLifetime setup | +15 lines |
 | `CalculateCompetitionMetricsCommandHandlerTests.cs` | Sequential collection | +1 line |
+
+> **Note:** The metrics in this document (execution times, line counts, test counts) are baseline measurements captured at the time of optimization (December 5, 2025). Actual values may differ as the codebase evolves.
 
 **Net Result**: Cleaner, faster, better organized test suite
 

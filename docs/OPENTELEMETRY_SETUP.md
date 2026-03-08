@@ -94,39 +94,23 @@ OpenTelemetry (OTel) instrumentation has been added to all SportsData services w
 5. Monitor CPU/memory/network usage
 6. Gradually increase sampling if needed
 
-### Option 3: Enable via Kubernetes ConfigMap (Recommended)
+### Option 3: Enable via Azure App Configuration (Recommended)
 
-Instead of changing `appsettings.json`, override via ConfigMap:
+All OpenTelemetry settings are managed through Azure App Configuration and loaded via `AddCommonConfiguration()` in `AppConfiguration.cs`. Use the appropriate label (`Local`, `Dev`, `Prod`) for each environment.
 
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: sportsdata-api-config
-  namespace: default
-data:
-  appsettings.Production.json: |
-    {
-      "CommonConfig:OpenTelemetry": {
-        "Enabled": true,
-        "Tracing": {
-          "SamplingRatio": 0.1
-        }
-      }
-    }
-```
+**Key/value entries to set in Azure App Configuration:**
 
-Then mount as volume in deployment:
-```yaml
-volumeMounts:
-  - name: config
-    mountPath: /app/appsettings.Production.json
-    subPath: appsettings.Production.json
-volumes:
-  - name: config
-    configMap:
-      name: sportsdata-api-config
-```
+| Key | Value | Notes |
+|-----|-------|-------|
+| `CommonConfig:OpenTelemetry:Enabled` | `true` | Master kill switch |
+| `CommonConfig:OpenTelemetry:Tracing:Enabled` | `true` | Enable distributed tracing |
+| `CommonConfig:OpenTelemetry:Tracing:SamplingRatio` | `0.1` | 10% for prod, `1.0` for dev |
+| `CommonConfig:OpenTelemetry:Tracing:OtlpEndpoint` | `http://tempo.monitoring.svc.cluster.local:4317` | Environment-specific |
+| `CommonConfig:OpenTelemetry:Metrics:Enabled` | `true` | Enable metrics export |
+| `CommonConfig:OpenTelemetry:Metrics:OtlpEndpoint` | `http://prometheus-server.monitoring.svc.cluster.local:4317` | Environment-specific |
+| `CommonConfig:OpenTelemetry:Logging:Enabled` | `false` | Enable when Loki is ready |
+
+Changes take effect on the next service restart (or on configuration refresh if dynamic reload is enabled). No code deployment or ConfigMap changes required.
 
 ## What Gets Instrumented
 

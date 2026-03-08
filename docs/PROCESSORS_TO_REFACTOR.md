@@ -237,21 +237,21 @@ All 15 identified processors have been successfully refactored to use `PublishCh
 1. TeamSeasonDocumentProcessor - 13 child document requests refactored
 
 #### Medium Priority ✅
-2. EventDocumentProcessor - 4 child document requests refactored
-3. FootballAthleteDocumentProcessor - 1 dependency request refactored
-4. CoachSeasonDocumentProcessor - 2 dependency requests refactored
-5. GroupSeasonDocumentProcessor - 3 child document requests refactored
-6. SeasonDocumentProcessor - 2 child document requests refactored
-7. AthleteSeasonDocumentProcessor - 3 dependency requests refactored
+1. EventDocumentProcessor - 4 child document requests refactored
+2. FootballAthleteDocumentProcessor - 1 dependency request refactored
+3. CoachSeasonDocumentProcessor - 2 dependency requests refactored
+4. GroupSeasonDocumentProcessor - 3 child document requests refactored
+5. SeasonDocumentProcessor - 2 child document requests refactored
+6. AthleteSeasonDocumentProcessor - 3 dependency requests refactored
 
 #### Lower Priority ✅
-8. EventCompetitionCompetitorLineScoreDocumentProcessor - 1 dependency request refactored
-9. EventCompetitionCompetitorScoreDocumentProcessor - 1 dependency request refactored
-10. SeasonTypeWeekDocumentProcessor - 1 dependency request refactored
-11. EventCompetitionPowerIndexDocumentProcessor - 1 dependency request refactored
-12. EventCompetitionSituationDocumentProcessor - 1 dependency request refactored
-13. EventCompetitionDriveDocumentProcessor - 1 child document request refactored
-14. SeasonTypeWeekRankingsDocumentProcessor - 3 dependency requests refactored
+1. EventCompetitionCompetitorLineScoreDocumentProcessor - 1 dependency request refactored
+2. EventCompetitionCompetitorScoreDocumentProcessor - 1 dependency request refactored
+3. SeasonTypeWeekDocumentProcessor - 1 dependency request refactored
+4. EventCompetitionPowerIndexDocumentProcessor - 1 dependency request refactored
+5. EventCompetitionSituationDocumentProcessor - 1 dependency request refactored
+6. EventCompetitionDriveDocumentProcessor - 1 child document request refactored
+7. SeasonTypeWeekRankingsDocumentProcessor - 3 dependency requests refactored
 
 ---
 

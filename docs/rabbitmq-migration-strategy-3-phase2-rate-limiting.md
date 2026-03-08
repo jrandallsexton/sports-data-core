@@ -4,7 +4,7 @@
 
 ---
 
-> **Update (2026):** ESPN DOES use IP-based rate limiting via 403 responses (not 429). The actual mitigation is `RequestDelayMs = 1000ms` in `EspnApiClientConfig` and ESPN-specific 403 retry handling in `RetryPolicy.cs` (`SportsData.Core/Http/Policies/RetryPolicy.cs`). The Polly Bulkhead/CircuitBreaker policies described below were never implemented.
+> **Update (2026):** ESPN DOES use IP-based rate limiting via 403 responses (not 429). The actual mitigation is `RequestDelayMs = 1000ms` in `EspnApiClientConfig` and ESPN-specific 403 retry handling in `RetryPolicy.cs` (`SportsData.Core/Http/Policies/RetryPolicy.cs`). The Polly Bulkhead/CircuitBreaker policies described in sections 3.1-3.5 below were **proposed but never implemented**.
 
 ---
 
@@ -59,15 +59,20 @@ Instead of complex distributed rate limiting, use **Polly policies** for good HT
 
 ---
 
-## Recommended Implementation: Polly Policies Only
+## Proposed Implementation: Polly Policies Only (Not Implemented)
+
+> **Note:** The Polly policies below were **proposed but never implemented**. The actual rate-limit mitigation uses `RequestDelayMs = 1000ms` and ESPN-specific 403 retry handling in `RetryPolicy.cs`.
 
 **No Redis, no distributed coordination needed.** Just good HTTP client practices.
 
-### 3.1 HttpClient Configuration with Polly
+### 3.1 HttpClient Configuration with Polly (Proposed)
 
 ```csharp
 // SportsData.Core/DependencyInjection/ServiceRegistration.cs
-services.AddHttpClient("ESPN")
+services.AddHttpClient("ESPN", client =>
+    {
+        client.BaseAddress = new Uri("https://site.api.espn.com/");
+    })
     .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
     {
         PooledConnectionLifetime = TimeSpan.FromMinutes(2),
@@ -135,7 +140,7 @@ services.AddHttpClient("ESPN")
     .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(30)));
 ```
 
-### 3.2 Monitoring for Rate Limits (Just in Case)
+### 3.2 Monitoring for Rate Limits (Just in Case) (Proposed)
 
 Add alerting if ESPN **ever** returns 429 (shouldn't happen based on testing):
 
@@ -167,7 +172,7 @@ Add alerting if ESPN **ever** returns 429 (shouldn't happen based on testing):
 });
 ```
 
-### 3.3 Configuration
+### 3.3 Configuration (Proposed)
 
 ```json
 // Azure App Config (optional overrides)
@@ -245,12 +250,12 @@ Results exported to CSV with full metrics for analysis.
 
 - ✅ ~~Redis deployed and accessible~~
 - ✅ ~~Rate limiter implementation complete~~
-- ✅ Polly policies configured for ESPN HttpClient
-- ✅ Bulkhead limits concurrent requests per pod
-- ✅ Circuit breaker protects from ESPN downtime
-- ✅ Retry policies handle transient failures
-- ✅ Timeout prevents hanging requests
-- ✅ Monitoring alerts if 429 ever occurs (shouldn't happen)
+- ⬜ Polly policies proposed for ESPN HttpClient (not implemented)
+- ⬜ Bulkhead limits concurrent requests per pod (not implemented)
+- ⬜ Circuit breaker protects from ESPN downtime (not implemented)
+- ⬜ Retry policies handle transient failures (not implemented)
+- ⬜ Timeout prevents hanging requests (not implemented)
+- ⬜ Monitoring alerts if 429 ever occurs (not implemented)
 - ✅ Provider pods can scale freely without rate limit coordination
 
 **Timeline:** ~~Week 3~~ → **Completed same day as Phase 1** (January 25, 2026)
@@ -265,13 +270,16 @@ Results exported to CSV with full metrics for analysis.
 
 ---
 
-## 3.4 Add Polly Resilience Policies
+## 3.4 Add Polly Resilience Policies (Proposed, Not Implemented)
 
 **Polly policies for ESPN HttpClient:**
 
 ```csharp
 // SportsData.Core/DependencyInjection/ServiceRegistration.cs
-services.AddHttpClient("ESPN")
+services.AddHttpClient("ESPN", client =>
+    {
+        client.BaseAddress = new Uri("https://site.api.espn.com/");
+    })
     // Bulkhead: Limit concurrent requests
     .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(
         maxParallelization: 20,  // Max 20 concurrent across cluster
@@ -302,7 +310,7 @@ services.AddHttpClient("ESPN")
 
 ---
 
-## 3.5 Testing Strategy
+## 3.5 Testing Strategy (Proposed, Not Implemented)
 
 **Test distributed rate limiter:**
 

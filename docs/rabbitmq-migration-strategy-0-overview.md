@@ -118,6 +118,7 @@ We need to migrate messaging infrastructure from Azure Service Bus to self-hoste
 - **Estimated cost for historical sourcing:** $677 (1 month minimum)
 
 ### RabbitMQ + Redis (Current)
+
 - **Infrastructure cost:** $0 (existing NUC hardware)
 - **Operational cost:** Time investment in setup/monitoring
 - **Ongoing cost:** $0/month

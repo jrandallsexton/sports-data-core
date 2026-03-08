@@ -1,6 +1,6 @@
 # Document Processing Configuration
 
-> **Note:** As of early 2026, the `EnableDependencyRequests` flag is no longer referenced by any processor. The `DocumentProcessorBase` now uses `PublishDependencyRequest()` which always publishes dependency requests (with deduplication tracking via `RequestedDependencies`). This flag is effectively dead configuration -- it exists in `DocumentProcessingConfig.cs` and is read from Azure App Configuration at startup, but no processor code checks it. It can be removed in a future cleanup.
+> **Note:** As of early 2026, dependency publishing is always performed. The `DocumentProcessorBase` uses `PublishDependencyRequest()` which unconditionally publishes dependency requests (with deduplication tracking via `RequestedDependencies`). The `EnableDependencyRequests` flag is dead configuration -- it exists in `DocumentProcessingConfig.cs` and is read from Azure App Configuration at startup, but no processor code checks it. **Operators no longer need to toggle or test this flag; it can be safely removed in a future cleanup.**
 
 ## Overview
 

@@ -20,12 +20,15 @@ The `AppConfiguration.UseCommon()` method was calling `configuration.ReadFrom.Co
 2. **Removed** `Serilog` sections from `appsettings.Development.json` files (note: 6 `appsettings.Local.json` files still have `Serilog` sections in Contest, Franchise, Notification, Player, Season, Venue)
 3. **All sinks now configured in one place**: `AppConfiguration.cs` (only Seq sink, conditionally enabled via `CommonConfig:SeqUri`)
 
+
 ### Files Modified (Logging Fix)
+
 - `src/SportsData.Core/DependencyInjection/AppConfiguration.cs`
 
 > **Note:** The `appsettings.Development.json` files were removed. Local development config uses `appsettings.Local.json` instead. However, 6 `appsettings.Local.json` files still contain `Serilog` sections (Contest, Franchise, Notification, Player, Season, Venue) — these are inactive since `ReadFrom.Configuration()` is commented out.
 
 ### Current Logging Configuration (Programmatic)
+
 All sinks are now configured in `AppConfiguration.UseCommon()`:
 
 ```csharp
@@ -183,21 +186,12 @@ If events aren't being published from Provider, the entire downstream pipeline f
    - Check for circular references or incompatible types
 
 4. **Enable MassTransit diagnostics:**
-   - Add to Producer's `appsettings.Local.json`:
-     ```json
-     {
-       "Logging": {
-         "LogLevel": {
-           "MassTransit": "Debug"
-         }
-       }
-     }
-     ```
+   - Set the `MassTransit` log level to `Debug` in Azure App Configuration under the `CommonConfig:Logging` key. All logging configuration is centralized there; do not edit local `appsettings` files for log-level overrides.
 
 ### If logs are still duplicated:
 
 1. Verify `ReadFrom.Configuration()` is commented out in `AppConfiguration.cs`
-2. Verify NO `Serilog` section exists in any `appsettings.Local.json` (or that `ReadFrom.Configuration()` remains commented out)
+2. Verify logging overrides are configured only in Azure App Configuration (`CommonConfig:Logging`), not in local `appsettings` files
 3. Restart the service (changes require restart)
 
 ## Benefits

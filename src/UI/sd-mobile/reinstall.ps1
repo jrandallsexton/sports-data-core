@@ -1,5 +1,5 @@
 $env:PATH = "C:\Users\Randall\AppData\Roaming\nvm\v20.19.4;" + $env:PATH
-Set-Location "c:\Projects\sports-data\src\UI\sportdeets-mobile"
+Set-Location $PSScriptRoot
 
 Write-Host "Node version: $(node --version)"
 Write-Host "Removing node_modules..."

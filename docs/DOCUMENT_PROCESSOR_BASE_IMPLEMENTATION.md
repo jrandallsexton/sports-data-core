@@ -13,7 +13,7 @@ This refactoring introduces `DocumentProcessorBase<TDataContext>` to eliminate ~
 - **Original Base Class Implementation:** December 28, 2025
 - **Initial Pilot Migration:** 9 processors (December 2025)
 - **Final Migration Wave:** 15 additional processors (January 20, 2026)
-- **Total Processors Using Base Class:** 27+ processors
+- **Total Processors Using Base Class:** ~47 processors
 - **Total Lines Eliminated:** ~600-800 lines of boilerplate code
 
 ## What Changed
@@ -38,11 +38,11 @@ private async Task ProcessScores(
         ParentId: competitionCompetitorId.ToString(),
         Uri: new Uri(competitorScoreIdentity.CleanUrl),
         Sport: Sport.FootballNcaa,
-        SeasonYear: command.Season,
+        SeasonYear: command.SeasonYear,
         DocumentType: DocumentType.EventCompetitionCompetitorScore,
         SourceDataProvider: SourceDataProvider.Espn,
         CorrelationId: command.CorrelationId,
-        CausationId: CausationId.Producer.EventCompetitionCompetitorDocumentProcessor
+        CausationId: command.MessageId
     ));
 }
 ```
@@ -61,35 +61,67 @@ private async Task ProcessScores(
         command,
         externalProviderDto.Score,
         competitionCompetitorId,
-        DocumentType.EventCompetitionCompetitorScore,
-        CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+        DocumentType.EventCompetitionCompetitorScore);
 }
 ```
 
-**1 line! 90% reduction in boilerplate**
+**1 line! 90% reduction in boilerplate** (CausationId is derived automatically from `command.MessageId`)
 
 ## Base Class API
 
-### Single Helper Method
+### Helper Methods
+
+#### PublishChildDocumentRequest
+
+Publishes a `DocumentRequested` event for a child document spawned after successful processing.
 
 ```csharp
 protected async Task PublishChildDocumentRequest<TParentId>(
     ProcessDocumentCommand command,    // Parent command (provides correlation)
-    EspnLinkDto? linkDto,             // ESPN link DTO with $ref
+    IHasRef? hasRef,                  // Any DTO implementing IHasRef (e.g., EspnLinkDto)
     TParentId parentId,               // Parent entity ID (any type)
-    DocumentType documentType,        // Child document type
-    Guid causationId)                 // Which processor is requesting
+    DocumentType documentType)        // Child document type
 ```
 
-**When to use:**
-- For all ESPN child document references (Score, Linescores, Statistics, Broadcasts, etc.)
-- This single method covers 100% of current use cases
+CausationId is automatically derived from `command.MessageId` (no separate parameter needed).
 
-**Why only one overload:**
-- ESPN's API always uses `EspnLinkDto` for child document references
-- No processors in the codebase use raw `Uri` or `string` URLs
-- Simpler API is easier to understand and maintain
-- If needed in the future, adding overloads is trivial and non-breaking
+#### PublishDependencyRequest
+
+Publishes a `DocumentRequested` event for a dependency document required BEFORE processing can complete. Tracks dependencies by `(DocumentType, UrlHash)` to prevent duplicate requests on retries.
+
+```csharp
+protected async Task PublishDependencyRequest<TParentId>(
+    ProcessDocumentCommand command,    // Parent command (provides correlation)
+    IHasRef? hasRef,                  // Any DTO implementing IHasRef
+    TParentId parentId,               // Parent entity ID (any type)
+    DocumentType documentType)        // Dependency document type
+```
+
+#### ShouldSpawn
+
+Checks whether a child document of the given type should be spawned, based on the optional inclusion filter in the command.
+
+```csharp
+protected bool ShouldSpawn(DocumentType documentType, ProcessDocumentCommand command)
+```
+
+#### TryGetOrDeriveParentId
+
+Attempts to parse `command.ParentId` as a GUID, or derives it from `command.SourceUri` using the provided URI mapper function.
+
+```csharp
+protected Guid? TryGetOrDeriveParentId(
+    ProcessDocumentCommand command,
+    Func<Uri, Uri>? uriMapper = null)
+```
+
+**When to use PublishChildDocumentRequest:**
+- For all child document references (Score, Linescores, Statistics, Broadcasts, etc.)
+- Publishes on every attempt since child spawning only happens when processing succeeds past dependencies
+
+**When to use PublishDependencyRequest:**
+- For dependency documents required before processing can complete (e.g., Franchise before TeamSeason)
+- Tracks already-requested dependencies to avoid duplicates on retries
 
 ## Migration Guide
 
@@ -129,18 +161,20 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext>
         ILogger<EventCompetitionCompetitorDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator)
     {
     }
 }
 ```
 
 **Changes:**
-- ? Inherit from `DocumentProcessorBase<TDataContext>` instead of `IProcessDocuments`
-- ? Remove field declarations (they're in the base class now)
-- ? Call `base()` constructor
-- ? Keep your specific logger type for better error messages
+- Inherit from `DocumentProcessorBase<TDataContext>` instead of `IProcessDocuments`
+- Remove field declarations (they're in the base class now)
+- Call `base()` constructor with 5 parameters (logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator)
+- Override `ProcessInternal` (abstract/protected) for your processing logic, NOT `ProcessAsync`
+- Keep your specific logger type for better error messages
 
 ### Step 2: Replace Child Document Publishing
 
@@ -161,11 +195,11 @@ private async Task ProcessScores(...)
         ParentId: competitionCompetitorId.ToString(),
         Uri: new Uri(competitorScoreIdentity.CleanUrl),
         Sport: Sport.FootballNcaa,
-        SeasonYear: command.Season,
+        SeasonYear: command.SeasonYear,
         DocumentType: DocumentType.EventCompetitionCompetitorScore,
         SourceDataProvider: SourceDataProvider.Espn,
         CorrelationId: command.CorrelationId,
-        CausationId: CausationId.Producer.EventCompetitionCompetitorDocumentProcessor
+        CausationId: command.MessageId
     ));
 
     _logger.LogInformation(
@@ -181,16 +215,16 @@ private async Task ProcessScores(...)
         command,
         externalProviderDto.Score,
         competitionCompetitorId,
-        DocumentType.EventCompetitionCompetitorScore,
-        CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+        DocumentType.EventCompetitionCompetitorScore);
 }
 ```
 
 **Changes:**
-- ? Replace entire method body with single helper call
-- ? Logging is handled by base class (with emojis!)
-- ? Null checking is handled by base class
-- ? Identity generation is handled by base class
+- Replace entire method body with single helper call (4 params: command, hasRef, parentId, documentType)
+- CausationId derived from `command.MessageId` automatically
+- Logging is handled by base class
+- Null checking is handled by base class
+- Identity generation is handled by base class
 
 ### Step 3: Verify and Test
 
@@ -275,8 +309,7 @@ private async Task ProcessScore(Guid competitorId, EspnEventCompetitionCompetito
         command,
         dto.Score,
         competitorId,
-        DocumentType.EventCompetitionCompetitorScore,
-        CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+        DocumentType.EventCompetitionCompetitorScore);
 }
 ```
 
@@ -285,10 +318,10 @@ private async Task ProcessScore(Guid competitorId, EspnEventCompetitionCompetito
 ```csharp
 private async Task ProcessChildDocuments(Guid competitorId, EspnEventCompetitionCompetitorDto dto, ProcessDocumentCommand command)
 {
-    await PublishChildDocumentRequest(command, dto.Score, competitorId, DocumentType.EventCompetitionCompetitorScore, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
-    await PublishChildDocumentRequest(command, dto.Linescores, competitorId, DocumentType.EventCompetitionCompetitorLineScore, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
-    await PublishChildDocumentRequest(command, dto.Statistics, competitorId, DocumentType.EventCompetitionCompetitorStatistics, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
-    await PublishChildDocumentRequest(command, dto.Leaders, competitorId, DocumentType.EventCompetitionCompetitorLeaders, CausationId.Producer.EventCompetitionCompetitorDocumentProcessor);
+    await PublishChildDocumentRequest(command, dto.Score, competitorId, DocumentType.EventCompetitionCompetitorScore);
+    await PublishChildDocumentRequest(command, dto.Linescores, competitorId, DocumentType.EventCompetitionCompetitorLineScore);
+    await PublishChildDocumentRequest(command, dto.Statistics, competitorId, DocumentType.EventCompetitionCompetitorStatistics);
+    await PublishChildDocumentRequest(command, dto.Leaders, competitorId, DocumentType.EventCompetitionCompetitorLeaders);
 }
 ```
 
@@ -303,8 +336,7 @@ private async Task ProcessCompetitors(Guid competitionId, IEnumerable<EspnLinkDt
             command,
             competitor,
             competitionId,
-            DocumentType.EventCompetitionCompetitor,
-            CausationId.Producer.EventCompetitionDocumentProcessor);
+            DocumentType.EventCompetitionCompetitor);
     }
 }
 ```
@@ -333,10 +365,9 @@ Existing unit tests should continue to work because:
    ```csharp
    protected async Task PublishChildDocumentRequests(
        ProcessDocumentCommand command,
-       IEnumerable<EspnLinkDto> linkDtos,
+       IEnumerable<IHasRef> hasRefs,
        Guid parentId,
-       DocumentType documentType,
-       Guid causationId)
+       DocumentType documentType)
    ```
 
 2. **Conditional Publishing**
@@ -344,7 +375,7 @@ Existing unit tests should continue to work because:
    protected async Task PublishChildDocumentRequestIf(
        bool condition,
        ProcessDocumentCommand command,
-       EspnLinkDto? linkDto,
+       IHasRef? hasRef,
        ...)
    ```
 
@@ -361,33 +392,33 @@ Existing unit tests should continue to work because:
 - [x] Verify compilation
 - [x] Document API
 
-### Phase 2: Pilot Migration (Next)
-- [ ] Migrate `EventCompetitionCompetitorDocumentProcessor`
-- [ ] Verify functionality
-- [ ] Run tests
-- [ ] Monitor logs
+### Phase 2: Pilot Migration (Complete)
+- [x] Migrate `EventCompetitionCompetitorDocumentProcessor`
+- [x] Verify functionality
+- [x] Run tests
+- [x] Monitor logs
 
-### Phase 3: Systematic Migration
-- [ ] Migrate remaining high-priority processors
-- [ ] Remove duplicate code
-- [ ] Update tests if needed
-- [ ] Document any issues
+### Phase 3: Systematic Migration (Complete)
+- [x] Migrate remaining high-priority processors
+- [x] Remove duplicate code
+- [x] Update tests if needed
+- [x] Document any issues
 
-### Phase 4: Cleanup
-- [ ] Remove old helper methods
-- [ ] Update documentation
-- [ ] Code review
-- [ ] Merge to main
+### Phase 4: Cleanup (Complete)
+- [x] Remove old helper methods
+- [x] Update documentation
+- [x] Code review
+- [x] Merge to main
 
 ## Success Criteria
 
 - [x] Base class created and compiles
-- [ ] All document processors inherit from base class
-- [ ] All child document requests use helper method
-- [ ] ~500-1000 lines of duplicate code removed
-- [ ] All tests pass
-- [ ] Build successful
-- [ ] No regression in functionality
+- [x] All document processors inherit from base class
+- [x] All child document requests use helper method
+- [x] ~500-1000 lines of duplicate code removed
+- [x] All tests pass
+- [x] Build successful
+- [x] No regression in functionality
 
 ## Related Files
 

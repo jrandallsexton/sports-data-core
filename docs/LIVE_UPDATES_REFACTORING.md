@@ -4,9 +4,9 @@
 
 The `FootballCompetitionStreamer` infrastructure exists but is **untested and has critical issues** that prevent production use. This document outlines the current state, critical problems, and a phased approach to making live game updates production-ready.
 
-**Status:** ?? **Not Production Ready** - Critical issues with memory leaks, infinite loops, and missing status tracking
+**Status:** **Phase 1 Complete** - Critical issues #1-4 resolved. Issues #5-7 remain as planned future work.
 
-**Target:** ? **Production Ready** - Safe, reliable, observable live game streaming for 2025 season
+**Target:** **Production Ready** - Safe, reliable, observable live game streaming for 2025 season
 
 ---
 
@@ -137,11 +137,11 @@ public record ContestStatusChanged(
 
 ---
 
-## Critical Issues ??
+## Critical Issues
 
-### Issue #1: Infinite Polling Workers (Memory Leak)
+### Issue #1: Infinite Polling Workers (Memory Leak) -- RESOLVED
 
-**Severity:** ?? **CRITICAL**
+**Severity:** **CRITICAL** | **Status:** RESOLVED -- Now uses `while (!cancellationToken.IsCancellationRequested)` with worker tracking in `_activeWorkers` list and `CancellationTokenSource` linked to parent token.
 
 **Problem:**
 ```csharp
@@ -224,9 +224,9 @@ finally
 
 ---
 
-### Issue #2: No Status Tracking
+### Issue #2: No Status Tracking -- RESOLVED
 
-**Severity:** ?? **HIGH**
+**Severity:** **HIGH** | **Status:** RESOLVED -- Status tracking implemented in `FootballCompetitionStreamer` via `UpdateStreamStatusAsync()`. Stream status transitions through AwaitingStart, Active, Completed/Failed with timestamps.
 
 **Problem:**
 ```csharp
@@ -277,9 +277,9 @@ await _dataContext.SaveChangesAsync();
 
 ---
 
-### Issue #3: Hardcoded Values
+### Issue #3: Hardcoded Values -- RESOLVED
 
-**Severity:** ?? **MEDIUM**
+**Severity:** **MEDIUM** | **Status:** RESOLVED -- `PublishDocumentRequestAsync` now uses `command.Sport`, `command.SeasonYear`, and `command.DataProvider` from the `StreamFootballCompetitionCommand` instead of hardcoded values.
 
 **Problem:**
 ```csharp
@@ -318,9 +318,9 @@ await _publishEndpoint.Publish(new DocumentRequested(
 
 ---
 
-### Issue #4: No Graceful Shutdown
+### Issue #4: No Graceful Shutdown -- RESOLVED
 
-**Severity:** ?? **HIGH**
+**Severity:** **HIGH** | **Status:** RESOLVED -- `ExecuteAsync` now wraps work in `try/finally` that calls `StopWorkersAsync()`. Workers are tracked, cancelled via linked `CancellationTokenSource`, and awaited with a 10-second timeout.
 
 **Problem:**
 ```csharp
@@ -395,9 +395,9 @@ private async Task PollWhileInProgressAsync(
 
 ---
 
-### Issue #5: No Error Recovery
+### Issue #5: No Error Recovery (Planned)
 
-**Severity:** ?? **MEDIUM**
+**Severity:** **MEDIUM**
 
 **Problem:**
 - If streamer crashes mid-game, stream is abandoned
@@ -453,9 +453,9 @@ public async Task RecoverAbandonedStreams()
 
 ---
 
-### Issue #6: OutboxPing Hack
+### Issue #6: OutboxPing Hack (Planned)
 
-**Severity:** ?? **MEDIUM**
+**Severity:** **MEDIUM**
 
 **Problem:**
 ```csharp

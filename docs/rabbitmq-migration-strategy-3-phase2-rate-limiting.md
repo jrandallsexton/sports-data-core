@@ -4,6 +4,10 @@
 
 ---
 
+> **Update (2026):** ESPN DOES use IP-based rate limiting via 403 responses (not 429). The actual mitigation is `RequestDelayMs = 1000ms` in `EspnApiClientConfig` and ESPN-specific 403 retry handling in `RetryPolicy.cs` (`SportsData.Core/Http/Policies/RetryPolicy.cs`). The Polly Bulkhead/CircuitBreaker policies described below were never implemented.
+
+---
+
 ## ⚠️ PHASE 2 NOT REQUIRED - EMPIRICAL TESTING RESULTS
 
 **Date:** January 25, 2026  
@@ -62,7 +66,7 @@ Instead of complex distributed rate limiting, use **Polly policies** for good HT
 ### 3.1 HttpClient Configuration with Polly
 
 ```csharp
-// SportsData.Provider/DependencyInjection/ServiceRegistration.cs
+// SportsData.Core/DependencyInjection/ServiceRegistration.cs
 services.AddHttpClient("ESPN")
     .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
     {
@@ -206,10 +210,10 @@ Simple per-pod Polly bulkhead (10 concurrent) is sufficient.
 
 ~~**Recommended:** 10-15 workers per Provider pod~~
 
-**UPDATE:** Worker count can remain at 50 per pod. With Polly bulkhead limiting to 10 concurrent ESPN calls per pod, Hangfire workers will naturally queue. No configuration change needed.
+**UPDATE:** Worker count defaults to 20 per pod. With `RequestDelayMs = 1000ms` throttling each request, workers are naturally paced. No configuration change needed.
 
 **Math:**
-- 5 Provider pods × 10 concurrent ESPN calls (bulkhead) = 50 concurrent max cluster-wide
+- 5 Provider pods × 20 workers = 100 workers, each paced at ~1 req/sec by `RequestDelayMs`
 - ESPN tested successfully at 139 req/sec
 - Current architecture is well within safe limits
 
@@ -266,7 +270,7 @@ Results exported to CSV with full metrics for analysis.
 **Polly policies for ESPN HttpClient:**
 
 ```csharp
-// SportsData.Provider/DependencyInjection/ServiceRegistration.cs
+// SportsData.Core/DependencyInjection/ServiceRegistration.cs
 services.AddHttpClient("ESPN")
     // Bulkhead: Limit concurrent requests
     .AddPolicyHandler(Policy.BulkheadAsync<HttpResponseMessage>(

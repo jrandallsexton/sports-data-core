@@ -35,7 +35,7 @@
 
 **Files Changed**:
 - `src/SportsData.Core/Extensions/StringExtensions.cs`
-- `src/SportsData.Provider/Application/Processors/ResourceIndexItemProcessor.cs`
+- `src/SportsData.Provider/Application/Services/DocumentInclusionService.cs`
 
 ---
 

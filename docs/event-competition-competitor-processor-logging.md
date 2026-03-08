@@ -2,7 +2,7 @@
 
 ## Overview
 
-Added comprehensive logging to `EventCompetitionCompetitorDocumentProcessor` to track the complete flow of processing competitor documents and their downstream documents (Scores and LineScores).
+Added comprehensive logging to `EventCompetitionCompetitorDocumentProcessor` to track the complete flow of processing competitor documents and their child documents (Score, LineScore, Roster, Statistics, Record).
 
 ## Purpose
 
@@ -10,14 +10,14 @@ The logging was added to diagnose why downstream `DocumentRequested` events for 
 
 ## Key Question Being Investigated
 
-**Are the `DocumentRequested` events being published but not reaching the downstream processors?**
+**Are the `DocumentRequested` events being published but not reaching the child processors?**
 
 Possible causes:
 1. Events not being published at all
 2. Events published but not persisted to outbox
 3. Events in outbox but not sent to Service Bus
 4. Events sent but not consumed by handlers
-5. Handlers consuming but downstream processors failing
+5. Handlers consuming but child processors failing
 
 ## Added Logging
 
@@ -36,60 +36,40 @@ Possible causes:
    CompetitorId={guid}, HomeAway=home/away
 ```
 
-### 2. Downstream Processing Flow
+### 2. Child Document Processing Flow
 
 **Initiation:**
 ```
-?? PROCESS_DOWNSTREAM: Processing downstream documents (Scores and LineScores). 
-   CompetitorId={guid}
+?? PROCESS_CHILD_DOCUMENTS: Processing child documents for competitor.
+   CompetitorId={guid}, IsNew={true/false}
 ```
 
 **Completion:**
 ```
-? DOWNSTREAM_COMPLETED: Downstream processing completed. CompetitorId={guid}
+? CHILD_DOCUMENTS_COMPLETED: Child document processing completed. CompetitorId={guid}
 ```
 
-### 3. Score Processing
+### 3. Child Document Publishing (Score, LineScore, Roster, Statistics, Record)
 
-**Checking for Scores:**
-```
-?? PROCESS_SCORES: Checking for competitor score. 
-   CompetitorId={guid}, HasScoreRef=true/false
-```
+All 5 child document types use the base class `PublishChildDocumentRequest` method, which provides standardized logging:
 
 **Skipping (No Ref):**
 ```
-?? SKIP_SCORES: No score reference found in DTO. CompetitorId={guid}
+SKIP_CHILD_DOCUMENT: No reference found.
 ```
+(Logged at Debug level with `ChildDocumentType` and `ParentId` in scope)
 
 **Publishing Request:**
 ```
-?? PUBLISH_SCORE_REQUEST: Publishing DocumentRequested for competitor score. 
-   CompetitorId={guid}, ScoreUrl={url}, UrlHash={hash}
-? SCORE_REQUEST_PUBLISHED: DocumentRequested published for competitor score. 
-   CompetitorId={guid}, DocumentType=EventCompetitionCompetitorScore
+? CHILD_REQUEST_PUBLISHED: DocumentRequested published. UrlHash={hash}
 ```
 
-### 4. LineScore Processing
-
-**Checking for LineScores:**
-```
-?? PROCESS_LINESCORES: Checking for competitor line scores. 
-   CompetitorId={guid}, HasLineScoresRef=true/false
-```
-
-**Skipping (No Ref):**
-```
-?? SKIP_LINESCORES: No line scores reference found in DTO. CompetitorId={guid}
-```
-
-**Publishing Request:**
-```
-?? PUBLISH_LINESCORES_REQUEST: Publishing DocumentRequested for competitor line scores. 
-   CompetitorId={guid}, LineScoresUrl={url}, UrlHash={hash}
-? LINESCORES_REQUEST_PUBLISHED: DocumentRequested published for competitor line scores. 
-   CompetitorId={guid}, DocumentType=EventCompetitionCompetitorLineScore
-```
+The processor spawns up to 5 child document types:
+1. `EventCompetitionCompetitorScore`
+2. `EventCompetitionCompetitorLineScore`
+3. `EventCompetitionCompetitorRoster`
+4. `EventCompetitionCompetitorStatistics`
+5. `EventCompetitionCompetitorRecord`
 
 ### 5. Database Save & Outbox Flush
 
@@ -110,64 +90,58 @@ Possible causes:
 ### For New Competitor
 
 ```
-[Time] EventCompetitionCompetitorDocumentProcessor started. Ref={url}
+[Time] Processing started.                                            (from base class)
 [Time] Processing new CompetitionCompetitor entity. Ref={url}
-[Time] ?? CREATE_COMPETITOR: Creating new CompetitionCompetitor. CompetitionId={guid}, FranchiseSeasonId={guid}, HomeAway=home
-[Time] ? COMPETITOR_CREATED: CompetitionCompetitor entity created. CompetitorId={guid}
-[Time] ?? PROCESS_DOWNSTREAM: Processing downstream documents (Scores and LineScores). CompetitorId={guid}
-[Time] ?? PROCESS_SCORES: Checking for competitor score. CompetitorId={guid}, HasScoreRef=true
-[Time] ?? PUBLISH_SCORE_REQUEST: Publishing DocumentRequested for competitor score. CompetitorId={guid}, ScoreUrl={url}, UrlHash={hash}
-[Time] ? SCORE_REQUEST_PUBLISHED: DocumentRequested published for competitor score. CompetitorId={guid}
-[Time] ?? PROCESS_LINESCORES: Checking for competitor line scores. CompetitorId={guid}, HasLineScoresRef=true
-[Time] ?? PUBLISH_LINESCORES_REQUEST: Publishing DocumentRequested for competitor line scores. CompetitorId={guid}, LineScoresUrl={url}, UrlHash={hash}
-[Time] ? LINESCORES_REQUEST_PUBLISHED: DocumentRequested published for competitor line scores. CompetitorId={guid}
-[Time] ? DOWNSTREAM_COMPLETED: Downstream processing completed. CompetitorId={guid}
-[Time] ?? SAVING_CHANGES: About to call SaveChangesAsync... HasPendingChanges=true
-[Time] ? SAVE_COMPLETED: SaveChangesAsync completed. All outbox messages should now be flushed...
-[Time] EventCompetitionCompetitorDocumentProcessor completed.
+[Time] CREATE_COMPETITOR: Creating new CompetitionCompetitor. CompetitionId={guid}, FranchiseSeasonId={guid}, HomeAway=home
+[Time] COMPETITOR_CREATED: CompetitionCompetitor entity created. CompetitorId={guid}
+[Time] PROCESS_CHILD_DOCUMENTS: Processing child documents for competitor. CompetitorId={guid}, IsNew=True
+[Time] CHILD_REQUEST_PUBLISHED: DocumentRequested published. UrlHash={hash}    (Score)
+[Time] CHILD_REQUEST_PUBLISHED: DocumentRequested published. UrlHash={hash}    (LineScore)
+[Time] CHILD_REQUEST_PUBLISHED: DocumentRequested published. UrlHash={hash}    (Roster)
+[Time] CHILD_REQUEST_PUBLISHED: DocumentRequested published. UrlHash={hash}    (Statistics)
+[Time] CHILD_REQUEST_PUBLISHED: DocumentRequested published. UrlHash={hash}    (Record)
+[Time] CHILD_DOCUMENTS_COMPLETED: Child document processing completed. CompetitorId={guid}
+[Time] SAVING_CHANGES: About to call SaveChangesAsync... HasPendingChanges=true
+[Time] SAVE_COMPLETED: SaveChangesAsync completed. All outbox messages should now be flushed...
+[Time] Processing completed.                                          (from base class)
 ```
 
 ### For Updated Competitor
 
 ```
-[Time] EventCompetitionCompetitorDocumentProcessor started. Ref={url}
+[Time] Processing started.                                            (from base class)
 [Time] Processing CompetitionCompetitor update. CompetitorId={guid}, Ref={url}
-[Time] ?? UPDATE_COMPETITOR: Updating existing CompetitionCompetitor. CompetitorId={guid}, HomeAway=home
-[Time] ?? PROCESS_DOWNSTREAM: Processing downstream documents (Scores and LineScores). CompetitorId={guid}
-[Time] ?? PROCESS_SCORES: Checking for competitor score. CompetitorId={guid}, HasScoreRef=true
-[Time] ?? PUBLISH_SCORE_REQUEST: Publishing DocumentRequested for competitor score...
-[Time] ? SCORE_REQUEST_PUBLISHED: DocumentRequested published for competitor score...
-[Time] ?? PROCESS_LINESCORES: Checking for competitor line scores. CompetitorId={guid}, HasLineScoresRef=true
-[Time] ?? PUBLISH_LINESCORES_REQUEST: Publishing DocumentRequested for competitor line scores...
-[Time] ? LINESCORES_REQUEST_PUBLISHED: DocumentRequested published for competitor line scores...
-[Time] ? DOWNSTREAM_COMPLETED: Downstream processing completed. CompetitorId={guid}
-[Time] ?? SAVING_CHANGES: About to call SaveChangesAsync... HasPendingChanges=true
-[Time] ? SAVE_COMPLETED: SaveChangesAsync completed...
-[Time] EventCompetitionCompetitorDocumentProcessor completed.
+[Time] UPDATE_COMPETITOR: Updating existing CompetitionCompetitor. CompetitorId={guid}, HomeAway=home
+[Time] PROCESS_CHILD_DOCUMENTS: Processing child documents for competitor. CompetitorId={guid}, IsNew=False
+[Time] CHILD_REQUEST_PUBLISHED: DocumentRequested published. UrlHash={hash}    (per child type, if ShouldSpawn passes)
+[Time] CHILD_DOCUMENTS_COMPLETED: Child document processing completed. CompetitorId={guid}
+[Time] SAVING_CHANGES: About to call SaveChangesAsync... HasPendingChanges=true
+[Time] SAVE_COMPLETED: SaveChangesAsync completed...
+[Time] Processing completed.                                          (from base class)
 ```
 
 ## Diagnostic Queries in Seq
 
-### 1. Check if Downstream Events Are Being Published
+### 1. Check if Child Document Events Are Being Published
 
 ```
-@m like '%SCORE_REQUEST_PUBLISHED%' OR @m like '%LINESCORES_REQUEST_PUBLISHED%'
-| select CompetitorId, DocumentType, @t
+@m like '%CHILD_REQUEST_PUBLISHED%'
+| select ChildDocumentType, ParentId, @t
 ```
 
 **What This Tells You:**
 - ? If you see these logs, events ARE being published
-- ? If you don't see these logs, check for SKIP or PROCESS logs
+- ? If you don't see these logs, check for SKIP_CHILD_DOCUMENT or PROCESS_CHILD_DOCUMENTS logs
 
 ### 2. Check if Refs Are Missing in DTO
 
 ```
-@m like '%SKIP_SCORES%' OR @m like '%SKIP_LINESCORES%'
-| select CompetitorId, @m
+@m like '%SKIP_CHILD_DOCUMENT%'
+| select ChildDocumentType, ParentId, @m
 ```
 
 **What This Tells You:**
-- If you see many SKIP logs, the ESPN DTOs don't have Score/LineScore refs
+- If you see many SKIP logs, the ESPN DTOs don't have refs for those child types
 - This is NORMAL for some competitors (e.g., pre-game)
 
 ### 3. Verify Outbox Flush
@@ -191,25 +165,24 @@ CompetitorId="{specific-guid}"
 
 This shows the complete timeline for a single competitor.
 
-### 5. Find Competitors That Published Downstream Events
+### 5. Find Competitors That Published Child Document Events
 
 ```
-@m like '%DOWNSTREAM_COMPLETED%'
-AND @m like '%SCORE_REQUEST_PUBLISHED%'
+@m like '%CHILD_DOCUMENTS_COMPLETED%'
 | select CompetitorId
 ```
 
 ## Troubleshooting Guide
 
-### Issue: No Downstream Events Published
+### Issue: No Child Document Events Published
 
 **Symptoms:**
-- See `?? PROCESS_DOWNSTREAM` 
-- See `?? SKIP_SCORES` and `?? SKIP_LINESCORES`
-- Never see `?? PUBLISH_*_REQUEST`
+- See `PROCESS_CHILD_DOCUMENTS`
+- See `SKIP_CHILD_DOCUMENT` for all child types
+- Never see `CHILD_REQUEST_PUBLISHED`
 
 **Diagnosis:**
-The ESPN DTO doesn't have Score or LineScore refs. This might be normal for:
+The ESPN DTO doesn't have refs for child document types. This might be normal for:
 - Pre-game competitors
 - Incomplete data from ESPN
 - Certain game statuses
@@ -218,15 +191,14 @@ The ESPN DTO doesn't have Score or LineScore refs. This might be normal for:
 Check the source ESPN JSON to confirm refs are present:
 ```csharp
 var dto = command.Document.FromJson<EspnEventCompetitionCompetitorDto>();
-// dto.Score?.Ref should not be null
-// dto.Linescores?.Ref should not be null
+// dto.Score?.Ref, dto.Linescores?.Ref, dto.Roster?.Ref, dto.Statistics?.Ref, dto.Record?.Ref
 ```
 
 ### Issue: Events Published But Never Processed
 
 **Symptoms:**
-- See `? SCORE_REQUEST_PUBLISHED`
-- See `? SAVE_COMPLETED`
+- See `CHILD_REQUEST_PUBLISHED`
+- See `SAVE_COMPLETED`
 - Never see logs from `EventCompetitionCompetitorScoreDocumentProcessor`
 
 **Diagnosis:**
@@ -290,6 +262,9 @@ await _dataContext.SaveChangesAsync();
 EventCompetitionCompetitorDocumentProcessor
   ? Publish DocumentRequested(Score)
   ? Publish DocumentRequested(LineScore)
+  ? Publish DocumentRequested(Roster)
+  ? Publish DocumentRequested(Statistics)
+  ? Publish DocumentRequested(Record)
   ? SaveChangesAsync (flushes outbox)
   
 Provider.DocumentRequestedHandler
@@ -322,12 +297,10 @@ For a typical game with 2 competitors:
 
 **Per Competitor:**
 - 1x `CREATE_COMPETITOR` or `UPDATE_COMPETITOR`
-- 1x `PROCESS_DOWNSTREAM`
-- 1x `PROCESS_SCORES` (may be SKIP if no ref)
-- 0-1x `SCORE_REQUEST_PUBLISHED`
-- 1x `PROCESS_LINESCORES` (may be SKIP if no ref)
-- 0-1x `LINESCORES_REQUEST_PUBLISHED`
-- 1x `DOWNSTREAM_COMPLETED`
+- 1x `PROCESS_CHILD_DOCUMENTS`
+- 0-5x `CHILD_REQUEST_PUBLISHED` (one per child type with a valid ref: Score, LineScore, Roster, Statistics, Record)
+- 0-5x `SKIP_CHILD_DOCUMENT` (for child types with no ref)
+- 1x `CHILD_DOCUMENTS_COMPLETED`
 
 **Per Processor Run:**
 - 1x `SAVING_CHANGES`

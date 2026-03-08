@@ -60,10 +60,10 @@ For one-time execution, erring on the side of longer delays is correct:
 
 ### Critical (Address Before 2024 Run)
 
-#### 1. Enhanced Observability
-**Current Gap**: Need comprehensive timing data for future optimization.
+#### 1. Enhanced Observability - IMPLEMENTED
+**Status**: DONE - TIER_STARTED and TIER_COMPLETED logging implemented.
 
-**Recommendation**: Add detailed logging in `ResourceIndexJob.cs`:
+**Recommendation** (originally): Add detailed logging in `ResourceIndexJob.cs`:
 ```csharp
 // At tier scheduling
 _logger.LogInformation(
@@ -199,16 +199,14 @@ Response:
 ### Nice-to-Have (Future Enhancements)
 
 #### 6. Ordinal Collision Prevention
-**Current Implementation**:
+**Current Implementation** (timestamp-based, collision-resistant):
 ```csharp
-Ordinal = existingCount + index
+var baseOrdinal = long.Parse(DateTime.UtcNow.ToString("yyyyMMddHHmmssfff"));
+var ordinal = baseOrdinal * 100L + i;
+// Example: 2026030814230012300 (base * 100 + tierIndex)
 ```
 
-**Future Enhancement**:
-```csharp
-Ordinal = (seasonYear * 1000) + (int)documentType
-// Example: 2024001 (Season), 2024002 (Venue), etc.
-```
+This approach generates unique ordinals based on the current timestamp, avoiding collisions even with concurrent requests.
 
 #### 7. Bulk Season Sourcing
 **Future API**:

@@ -9,10 +9,10 @@
 **If migration fails, can roll back at each phase:**
 
 ### During RabbitMQ Migration (Weeks 1-2)
-**Rollback:** Set `Messaging:UseRabbitMq = false`, restart pods, back on ASB
+**Rollback:** Set `CommonConfig:Messaging:UseRabbitMq = false`, restart pods, back on ASB
 
 ### During Rate Limiting Implementation (Week 3)
-**Rollback:** Remove rate limiter code, redeploy previous version
+**Rollback:** Revert `RequestDelayMs` changes, redeploy previous version. No distributed rate limiter exists to remove.
 
 ### During KEDA Deployment (Week 4)
 **Rollback:** Delete ScaledObjects, manually scale deployments
@@ -31,15 +31,15 @@
 - ✅ Azure Service Bus resources decommissioned
 
 ### Rate Limiting
-- ✅ ESPN 429 responses < 0.1% of requests
-- ✅ Distributed rate limiter working across all Provider pods
+- ✅ ESPN 403 responses < 0.1% of requests (mitigated by `RequestDelayMs = 1000ms`)
+- ~~Distributed rate limiter working across all Provider pods~~ (not implemented; not needed)
 - ✅ No manual intervention needed during high load
 
-### KEDA Scaling
-- ✅ Producer scales 1→15 pods based on queue depth
-- ✅ Provider scales 1→4 pods (capped)
-- ✅ Scaling up/down without job failures
-- ✅ Cooldown periods prevent flapping
+### KEDA Scaling *(not yet validated -- KEDA has not been deployed)*
+- ⬜ Producer scales 1→15 pods based on queue depth
+- ⬜ Provider scales 1→4 pods (capped)
+- ⬜ Scaling up/down without job failures
+- ⬜ Cooldown periods prevent flapping
 
 ### Historical Sourcing
 - ✅ All jobs complete successfully (>99% success rate)

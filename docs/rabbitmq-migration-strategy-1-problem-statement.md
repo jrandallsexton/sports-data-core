@@ -31,10 +31,10 @@
 
 ## PostgreSQL Bottleneck Concern
 
-**Problem:** Producer scales to 15 pods (450 concurrent workers), all writing to **one 32GB Ryzen PostgreSQL server**.
+**Problem:** Producer scales to 15 pods (300 concurrent workers), all writing to **one 32GB Ryzen PostgreSQL server**.
 
 **Risk:** Database becomes bottleneck before ESPN does:
-- 15 Producer pods × 30 workers = 450 concurrent DB operations
+- 15 Producer pods × 20 workers = 300 concurrent DB operations
 - Each job: Parse JSON → Validate → Transform → INSERT/UPDATE canonical data
 - Heavy transaction load during historical sourcing
 - Potential for connection pool exhaustion, lock contention, I/O saturation
@@ -66,8 +66,8 @@ See [PostgreSQL Performance Tuning](rabbitmq-migration-strategy-5-postgresql-tun
 **Problem:** ESPN API has **zero documentation** on rate limits.
 
 **Risk:** Scaling Provider from 1 pod to 10+ pods:
-- 1 pod × 50 workers = 50 concurrent ESPN calls (current)
-- 10 pods × 50 workers = 500 concurrent ESPN calls (scaled)
+- 1 pod × 20 workers = 20 concurrent ESPN calls (current)
+- 10 pods × 20 workers = 200 concurrent ESPN calls (scaled)
 - **Likely result:** Rate limited, blocked, or banned
 
 **Unknown variables:**
@@ -76,6 +76,8 @@ See [PostgreSQL Performance Tuning](rabbitmq-migration-strategy-5-postgresql-tun
 - IP-based vs API key-based limiting
 - Burst allowances
 - Penalty severity
+
+**Update (2026):** ESPN DOES have IP-based rate limiting via 403 responses (not 429), discovered after initial burst testing. The mitigation is `RequestDelayMs = 1000ms` in `EspnApiClientConfig`, which throttles each worker to ~1 request/second. ESPN-specific 403 retry handling is in `RetryPolicy.cs`.
 
 **Mitigation:** See [Phase 2: Rate Limiting](rabbitmq-migration-strategy-3-phase2-rate-limiting.md) for implementation strategy.
 

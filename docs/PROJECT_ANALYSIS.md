@@ -35,7 +35,7 @@ The platform serves three purposes:
 ESPN APIs
     |
     v
-Provider Service ──> Azure Blob Storage (Data Lake)
+Provider Service ──> MongoDB/Cosmos DB (Document Storage)
     |
     v  (MassTransit: DocumentCreated events)
 Producer Service ──> PostgreSQL (canonical domain model)
@@ -52,13 +52,13 @@ React SPA (sd-ui)           SignalR Hub (live scores)
 
 ### 2.2 Solution Structure
 
-The solution contains **11 source projects** and **22 test projects** (unit + integration for each service):
+The solution contains **12 source projects** (including `SportsData.JobsDashboard`) and test projects (test project structure needs verification):
 
 | Project | Role |
 |---------|------|
 | **SportsData.Core** | Shared library: HTTP clients, DTOs, messaging, configuration, observability, validation |
 | **SportsData.Producer** | Data transformation engine. 100+ document processors convert ESPN JSON into canonical entities. Owns the primary PostgreSQL schema (150+ DbSets). Hangfire for job scheduling |
-| **SportsData.Provider** | Data ingestion. Fetches raw JSON from ESPN, caches to Azure Blob Storage, emits DocumentCreated events |
+| **SportsData.Provider** | Data ingestion. Fetches raw JSON from ESPN, stores documents in MongoDB/Cosmos DB, emits DocumentCreated events. Azure Blob Storage is used for images, not document storage |
 | **SportsData.Api** | API gateway and consumer-facing backend. Firebase JWT auth, HATEOAS REST endpoints, SignalR hub for live updates, user/league/pick management |
 | **SportsData.Contest** | Game/contest domain service |
 | **SportsData.Franchise** | Team/franchise domain service |
@@ -66,11 +66,12 @@ The solution contains **11 source projects** and **22 test projects** (unit + in
 | **SportsData.Season** | Season/calendar domain service |
 | **SportsData.Venue** | Stadium/location domain service |
 | **SportsData.Notification** | Push notification domain service |
+| **SportsData.JobsDashboard** | Hangfire monitoring dashboard |
 | **SportsData.ProcessorGen** | Code generation utility for document processors |
 
 ### 2.3 Architectural Style
 
-**Modular monolith with extraction readiness.** Each domain has its own project, HTTP client interfaces, and can be extracted into an independent microservice. Currently, the domain services route back to the Producer's database through typed HTTP clients, making the Producer the authoritative data store.
+**Microservices architecture.** Each service has its own Dockerfile and can be independently deployed. Per-service solution files (e.g., `sports-data-producer.sln`, `sports-data-api.sln`) support independent builds. Currently, the domain services route back to the Producer's database through typed HTTP clients, making the Producer the authoritative data store.
 
 ### 2.4 Key Patterns
 
@@ -80,7 +81,7 @@ The solution contains **11 source projects** and **22 test projects** (unit + in
 | **Outbox** | MassTransit EF Core outbox for guaranteed event delivery |
 | **Document Processor** | Attribute-registered processors (`[DocumentProcessor(provider, sport, type)]`) handle ESPN JSON-to-entity transformation |
 | **Wholesale Replacement** | Idempotent "delete existing + insert new" for repeated documents |
-| **HATEOAS** | All paginated API responses include self/first/last/prev/next navigation links |
+| **HATEOAS** | Implemented for Venues endpoints; not yet applied to all paginated responses |
 | **Result Pattern** | `Success<T>` / `Failure<T>` wrappers with `ValidationFailure` arrays |
 | **Factory** | Client factories (`IFranchiseClientFactory`, etc.) resolve sport-specific implementations |
 | **Pipeline Behaviors** | MediatR behaviors for query caching (Redis) and cross-cutting concerns |
@@ -90,13 +91,13 @@ The solution contains **11 source projects** and **22 test projects** (unit + in
 | Component | Technology |
 |-----------|------------|
 | **Runtime** | .NET 10, ASP.NET Core 10 |
-| **Database** | PostgreSQL (Npgsql + EF Core 10) |
+| **Database** | PostgreSQL (Npgsql + EF Core 10) for relational data; MongoDB/Cosmos DB for Provider document storage |
 | **Cache** | Redis (distributed), disk cache (ESPN responses) |
 | **Messaging** | MassTransit 8.3 over RabbitMQ (local) / Azure Service Bus (production) |
 | **Job Scheduling** | Hangfire 1.8 with PostgreSQL storage |
 | **Observability** | OpenTelemetry 1.14 (traces + metrics), Prometheus, Serilog (Seq + OTLP sinks) |
 | **Auth** | Firebase Authentication (Google OAuth, email/password) |
-| **Blob Storage** | Azure Blob Storage for raw ESPN documents and images |
+| **Blob Storage** | Azure Blob Storage for images (document storage uses MongoDB/Cosmos DB) |
 | **Configuration** | Azure App Configuration + Key Vault |
 | **CI/CD** | GitHub Actions (test/deploy) + Azure Pipelines (build/containerize) |
 | **Hosting** | Self-hosted Kubernetes on bare metal (4 nodes, 24 cores, 126 GB RAM, 4 TB NVMe) |
@@ -110,8 +111,8 @@ The solution contains **11 source projects** and **22 test projects** (unit + in
 - The document processor framework is well-designed -- attribute-based registration, generic base classes, and the wholesale replacement strategy make adding new data sources or sport types mechanical work.
 - The outbox pattern and MassTransit integration provide genuine reliability guarantees for the event pipeline.
 - The external ID mapping system (`IHasExternalIds`) is a sound approach for multi-source data reconciliation.
-- Comprehensive test coverage with 240+ tests and both unit and integration test projects for every service.
-- The HATEOAS API design is thoughtful and would support third-party consumers without documentation dependency.
+- Test project structure exists, though coverage details need verification.
+- The HATEOAS API design (currently implemented for Venues) is thoughtful and would support third-party consumers without documentation dependency.
 
 **Areas to watch:**
 - The Producer service is the gravitational center of the system. At 150+ DbSets and 100+ document processors, it carries significant complexity. The migration history (40+ migrations in 6 months) reflects rapid schema evolution, which makes migration squashing (the current branch) a practical necessity.
@@ -306,6 +307,6 @@ Evaluated as what it actually is -- a hobby project and portfolio piece -- sport
 - **Domain modeling at scale**: 130+ entities with external ID reconciliation, sport-specific polymorphism, and a canonical data model that normalizes messy external API data.
 - **Production operations**: Self-hosted Kubernetes on bare metal, OpenTelemetry observability, health checks, CI/CD pipelines, and hybrid cloud infrastructure (on-prem compute + Azure managed services).
 - **Full-stack delivery**: .NET backend through React frontend, with real-time updates (SignalR), authentication (Firebase), and a polished user experience.
-- **Architectural judgment**: The modular monolith approach with extraction readiness is a pragmatic choice for a solo developer. The document processor framework is genuinely extensible without being over-abstracted.
+- **Architectural judgment**: The microservices approach with per-service Dockerfiles and independent deployment is a pragmatic choice for a solo developer. The document processor framework is genuinely extensible without being over-abstracted.
 
 A hiring manager reviewing this codebase would see someone who can design and operate complex systems end-to-end, not just write code for a single layer. The commercial headwinds described above are real but largely irrelevant to the project's actual purpose.

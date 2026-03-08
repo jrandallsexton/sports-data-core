@@ -160,6 +160,8 @@ public class ProcessDocumentCommand
 
 #### Standard Pattern: `ShouldSpawn` Helper Method
 
+`ShouldSpawn` is defined as a `protected` method in `DocumentProcessorBase`, not in individual processors. All processors that extend `DocumentProcessorBase` inherit this method.
+
 ```csharp
 /// <summary>
 /// Determines if a linked document of the specified type should be spawned,
@@ -168,7 +170,7 @@ public class ProcessDocumentCommand
 /// <param name="documentType">The type of linked document to check</param>
 /// <param name="command">The processing command containing the optional inclusion filter</param>
 /// <returns>True if the document should be spawned; false otherwise</returns>
-private bool ShouldSpawn(DocumentType documentType, ProcessDocumentCommand command)
+protected bool ShouldSpawn(DocumentType documentType, ProcessDocumentCommand command)
 {
     // If no inclusion filter is specified, spawn all documents (default behavior)
     if (command.IncludeLinkedDocumentTypes == null || command.IncludeLinkedDocumentTypes.Count == 0)

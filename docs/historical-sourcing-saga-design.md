@@ -89,10 +89,12 @@ public virtual async Task ProcessAsync(ProcessDocumentCommand command)
 ```
 
 **Benefits of this approach:**
-- ✅ Centralized - all processors get this behavior automatically
-- ✅ Happens after successful processing only
-- ✅ No changes needed in derived processors
-- ✅ Respects the command flag without interpretation
+- Centralized - all processors get this behavior automatically
+- Happens after successful processing only
+- No changes needed in derived processors
+- Respects the command flag without interpretation
+
+**Note:** `PublishCompletionNotification` also flushes the MassTransit outbox by calling `SaveChangesAsync()` after publishing, ensuring the event is dispatched immediately rather than waiting for the next DbContext flush.
 
 ### 4. New Event: DocumentProcessingCompleted
 
@@ -106,7 +108,8 @@ public record DocumentProcessingCompleted(
     string SourceUrlHash,
     DateTimeOffset CompletedUtc,
     Sport Sport,
-    int? SeasonYear
+    int? SeasonYear,
+    SourceDataProvider Provider
 );
 ```
 
@@ -126,11 +129,14 @@ public class HistoricalSeasonSourcingState : SagaStateMachineInstance
 {
     public Guid CorrelationId { get; set; }
     public string CurrentState { get; set; }
-    
+
     public Sport Sport { get; set; }
     public int SeasonYear { get; set; }
     public SourceDataProvider Provider { get; set; }
-    
+
+    // Optimistic concurrency token (PostgreSQL xmin system column)
+    public uint RowVersion { get; set; }
+
     // Tier completion tracking
     public int SeasonCompletionEventsReceived { get; set; }
     public int VenueCompletionEventsReceived { get; set; }
@@ -367,7 +373,6 @@ public class HistoricalSeasonSourcingState : SagaStateMachineInstance
       "CompletionThreshold": 1,
       "FlagPercentage": 0.05,
       "MinimumFlaggedDocuments": 1,
-      "TierTimeoutMinutes": null,
       "AlertAfterMinutes": 30
     }
   }
@@ -378,7 +383,6 @@ public class HistoricalSeasonSourcingState : SagaStateMachineInstance
 - `CompletionThreshold`: 1 = progress on ANY completion event
 - `FlagPercentage`: 0.05 = flag last 5% of documents
 - `MinimumFlaggedDocuments`: 1 = ensure at least 1 doc flagged (edge case protection)
-- `TierTimeoutMinutes`: null = no automatic timeout
 - `AlertAfterMinutes`: 30 = observability alert if saga stalled
 
 ## Benefits Summary

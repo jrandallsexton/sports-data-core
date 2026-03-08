@@ -97,6 +97,8 @@ EventDocumentProcessor = new Guid("10000000-0000-0000-0000-00000000000F")
 
 **Impact:** Cannot distinguish between these processors in traces/logs.
 
+> **Status (March 2026):** This GUID collision still persists in the codebase and has not been fixed.
+
 ---
 
 ### 6. Stub/Unimplemented Processors
@@ -128,10 +130,10 @@ Many processors detect existing entities but don't implement updates:
 
 | File | Method | Current Behavior |
 |------|--------|------------------|
-| `AthleteDocumentProcessor.cs` | `ProcessExisting` | Only handles headshot image |
+| `FootballAthleteDocumentProcessor.cs` | `ProcessExisting` | Only handles headshot image |
 | `AthletePositionDocumentProcessor.cs` | `ProcessUpdate` | Missing `ModifiedUtc`/`ModifiedBy` |
 | `CoachDocumentProcessor.cs` | `ProcessUpdate` | Only updates `Experience` field |
-| `CoachBySeasonDocumentProcessor.cs` | `ProcessUpdate` | Logs warning, does nothing |
+| `CoachSeasonDocumentProcessor.cs` | `ProcessUpdate` | Logs warning, does nothing |
 | `EventCompetitionCompetitorDocumentProcessor.cs` | `ProcessUpdate` | Only processes children, no field updates |
 | `EventCompetitionPlayDocumentProcessor.cs` | `ProcessUpdate` | Missing audit fields |
 | `EventCompetitionDriveDocumentProcessor.cs` | `ProcessUpdate` | Only processes plays, no field updates |
@@ -159,8 +161,8 @@ These processors don't catch `ExternalDocumentNotSourcedException` for retry:
 
 | File | Line | Issue |
 |------|------|-------|
-| `CoachBySeasonDocumentProcessor.cs` | 99 | `dto.Person.Ref` accessed without null check |
-| `CoachBySeasonDocumentProcessor.cs` | 141 | `dto.Team.Ref` accessed without null check |
+| `CoachSeasonDocumentProcessor.cs` | 99 | `dto.Person.Ref` accessed without null check |
+| `CoachSeasonDocumentProcessor.cs` | 141 | `dto.Team.Ref` accessed without null check |
 | `EventCompetitionCompetitorStatisticsDocumentProcessor.cs` | 74 | `dto.Team.Ref` without null check |
 | `EventCompetitionProbabilityDocumentProcessor.cs` | 141 | `DateTime.Parse(dto.LastModified)` without null/format check |
 | `TeamSeasonRecordAtsDocumentProcessor.cs` | 75 | `dto.Items` not null-checked before iteration |
@@ -183,7 +185,7 @@ These processors don't catch `ExternalDocumentNotSourcedException` for retry:
 These processors create/update entities without publishing domain events:
 
 - `AthleteSeasonStatisticsDocumentProcessor.cs`
-- `CoachBySeasonDocumentProcessor.cs`
+- `CoachSeasonDocumentProcessor.cs`
 - `TeamSeasonRankDocumentProcessor.cs`
 - `TeamSeasonRecordAtsDocumentProcessor.cs`
 - `TeamSeasonStatisticsDocumentProcessor.cs`
@@ -200,9 +202,9 @@ These processors create/update entities without publishing domain events:
 
 ---
 
-### Unused Code
+### ~~Unused Code~~ (Resolved)
 
-- `DocumentProcessorFactory.cs` line 6-9: `DocumentAction` enum defined but never used
+- ~~`DocumentProcessorFactory.cs` line 6-9: `DocumentAction` enum defined but never used~~ -- `DocumentAction` IS used by `IDocumentProcessorFactory.GetProcessor()` and by `DocumentCreatedProcessor` when looking up processors. It is also referenced in `DocumentProcessorMapping` config and in unit tests.
 
 ---
 
@@ -376,12 +378,12 @@ catch (ExternalDocumentNotSourcedException ex)
 ## Appendix: Files Reviewed
 
 ### Football Processors (28 files)
-- AthleteDocumentProcessor.cs
+- FootballAthleteDocumentProcessor.cs (formerly AthleteDocumentProcessor)
 - AthletePositionDocumentProcessor.cs
 - AthleteSeasonDocumentProcessor.cs
 - AthleteSeasonStatisticsDocumentProcessor.cs
 - AwardDocumentProcessor.cs
-- CoachBySeasonDocumentProcessor.cs
+- CoachSeasonDocumentProcessor.cs (formerly CoachBySeasonDocumentProcessor)
 - EventCompetitionAthleteStatisticsDocumentProcessor.cs
 - EventCompetitionBroadcastDocumentProcessor.cs
 - EventCompetitionCompetitorDocumentProcessor.cs

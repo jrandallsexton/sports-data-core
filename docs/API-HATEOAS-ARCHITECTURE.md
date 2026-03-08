@@ -22,7 +22,7 @@ This document captures the architectural decisions around exposing internal micr
 ### External API (SportsData.Api)
 - **Purpose:** Consumer-facing interface with discoverability
 - **DTOs:** Enriched with HATEOAS refs and navigation links
-- **Adds refs:** Uses `IGenerateResourceRefs` to inject links
+- **Adds refs:** Uses `IGenerateApiResourceRefs` to inject links
 - **Consumer-focused:** Optimized for external client navigation
 - **Example:** API's VenueController returns enriched response with refs
 
@@ -83,13 +83,12 @@ But for consumer-facing APIs with HATEOAS:
 
 **Canonical DTO (no refs):**
 ```csharp
-// VenueDto.cs (in Core)
-public class VenueDto
+// DtoBase.cs (in Core) - base type is an abstract record, not a class
+public abstract record DtoBase
 {
-    public Guid Id { get; set; }
-    public string Name { get; set; }
-    public string City { get; set; }
-    public string State { get; set; }
+    public Guid Id { get; init; }
+    public DateTime CreatedUtc { get; init; }
+    public DateTime? UpdatedUtc { get; init; }
     // No Ref property!
     // No Links property!
 }
@@ -131,39 +130,24 @@ public class VenueResponseDto
 
 **Controller with Enrichment:**
 ```csharp
-// API/VenueController.cs
+// API/Application/Venues/VenuesController.cs
 [ApiController]
-[Route("api/venues")]
-public class VenueController : ControllerBase
+[Route("api/{sport}/{league}/venues")]
+public class VenuesController : ApiControllerBase
 {
-    private readonly IVenueClient _venueClient;
-    private readonly IGenerateResourceRefs _refGenerator;
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<VenueResponseDto>> GetVenue(Guid id)
+    // Uses [FromServices] query handler pattern (not constructor injection)
+    [HttpGet(Name = "GetVenues")]
+    public async Task<ActionResult<GetVenuesResponseDto>> GetVenues(
+        [FromServices] IGetVenuesQueryHandler handler,
+        [FromRoute] string sport,
+        [FromRoute] string league,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken cancellationToken = default)
     {
-        // Get canonical data from internal service
-        var canonicalVenue = await _venueClient.GetVenue(id);
-        
-        // Enrich with HATEOAS
-        var response = new VenueResponseDto
-        {
-            Id = canonicalVenue.Id,
-            Name = canonicalVenue.Name,
-            City = canonicalVenue.City,
-            State = canonicalVenue.State,
-            
-            // Add refs using IGenerateResourceRefs
-            Ref = _refGenerator.ForVenue(canonicalVenue.Id),
-            Links = new Dictionary<string, Uri>
-            {
-                ["self"] = _refGenerator.ForVenue(canonicalVenue.Id),
-                ["events"] = new Uri($"{_baseUrl}/api/venues/{id}/events"),
-                ["teams"] = new Uri($"{_baseUrl}/api/venues/{id}/teams")
-            }
-        };
-        
-        return Ok(response);
+        var query = new GetVenuesQuery { Sport = sport, League = league, PageNumber = pageNumber, PageSize = pageSize };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+        return result.ToActionResult();
     }
 }
 ```
@@ -172,11 +156,11 @@ public class VenueController : ControllerBase
 
 ```csharp
 // ServiceRegistration.cs
-services.AddHttpClient<IVenueClient, VenueClient>(client =>
+services.AddHttpClient<IProvideVenues, VenueClient>(client =>
 {
     // Currently points to Producer
     client.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProducerProviderUri()]);
-    
+
     // Later: Update to VenueService
     // client.BaseAddress = new Uri(configuration[CommonConfigKeys.GetVenueProviderUri()]);
 });
@@ -234,7 +218,7 @@ await _publishEndpoint.Publish(new VenueCreated(
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │  VenueController                                     │   │
 │  │  - Gets canonical DTO from VenueClient               │   │
-│  │  - Enriches with refs via IGenerateResourceRefs      │   │
+│  │  - Enriches with refs via IGenerateApiResourceRefs    │   │
 │  │  - Returns VenueResponseDto with HATEOAS             │   │
 │  └──────────────────┬───────────────────────────────────┘   │
 │                     │                                        │
@@ -447,14 +431,14 @@ The Venues resource has been fully implemented following this architecture:
    - ✅ `src/SportsData.Producer/Application/Venues/VenuesController.cs` - Already clean, returns canonical DTOs
 
 3. **SportsData.Api (External API - With HATEOAS)**
-   - ✅ `src/SportsData.Api/Application/UI/Venues/VenueResponseDto.cs` - Created enriched DTO
-   - ✅ `src/SportsData.Api/Application/UI/Venues/GetVenuesResponseDto.cs` - Created enriched response
-   - ✅ `src/SportsData.Api/Application/UI/Venues/VenuesController.cs` - Updated with enrichment logic
+   - ✅ `src/SportsData.Api/Application/Venues/VenueResponseDto.cs` - Created enriched DTO
+   - ✅ `src/SportsData.Api/Application/Venues/GetVenuesResponseDto.cs` - Created enriched response
+   - ✅ `src/SportsData.Api/Application/Venues/VenuesController.cs` - Updated with enrichment logic
 
 4. **Infrastructure (Already in place)**
    - ✅ `src/SportsData.Core/Infrastructure/Refs/IGenerateResourceRefs.cs` - Interface exists
    - ✅ `src/SportsData.Core/Infrastructure/Refs/ResourceRefGenerator.cs` - Implementation exists
-   - ✅ `src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs` - Client exists
+   - ✅ `src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs` - Client exists (implements `IProvideVenues`)
    - ✅ `src/SportsData.Core/DependencyInjection/ServiceRegistration.cs` - DI registration exists
 
 **Key Changes:**
@@ -477,7 +461,7 @@ The Venues resource has been fully implemented following this architecture:
 **Example Request/Response:**
 
 ```http
-GET /api/sports/football/leagues/ncaa/venues/123e4567-e89b-12d3-a456-426614174000
+GET /api/football/ncaa/venues/123e4567-e89b-12d3-a456-426614174000
 ```
 
 ```json

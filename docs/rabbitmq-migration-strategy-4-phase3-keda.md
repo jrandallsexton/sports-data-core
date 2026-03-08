@@ -2,6 +2,8 @@
 
 [← Back to Overview](rabbitmq-migration-strategy-0-overview.md)
 
+> **Status: Not Yet Implemented.** The KEDA configuration described below is proposed but has not been deployed.
+
 ---
 
 ## Objectives
@@ -70,7 +72,7 @@ spec:
             AND queue = 'default'
         targetQueryValue: "10"  # Scale up if >10 jobs per pod
         activationTargetQueryValue: "1"  # Scale from 0 if any jobs
-        # Connection string from pod environment variable
+        # Connection string built dynamically from CommonConfig:SqlBaseConnectionString
         connectionFromEnv: HANGFIRE_CONNECTION_STRING
 ```
 
@@ -123,6 +125,7 @@ spec:
             AND queue = 'default'
         targetQueryValue: "50"  # Conservative threshold
         activationTargetQueryValue: "1"
+        # Connection string built dynamically from CommonConfig:SqlBaseConnectionString
         connectionFromEnv: HANGFIRE_CONNECTION_STRING
 ```
 
@@ -141,7 +144,7 @@ spec:
 
 ## 4.4 Configure Hangfire Connection String
 
-KEDA needs access to Hangfire PostgreSQL database:
+KEDA needs access to Hangfire PostgreSQL database. In the application code, this is built dynamically from `CommonConfig:SqlBaseConnectionString` (see `ServiceRegistration.cs`):
 
 ```yaml
 # deployment.yaml for Producer/Provider
@@ -177,7 +180,7 @@ kubectl create secret generic hangfire-connection \
    - Producer scales to ~50 pods (500 jobs ÷ 10)
    - Provider scales to 4 pods max (capped)
    - Jobs process successfully
-   - Rate limiter prevents ESPN throttling
+   - `RequestDelayMs` paces ESPN requests
 4. Wait for queue to drain
 5. Watch KEDA scale down after cooldown
 

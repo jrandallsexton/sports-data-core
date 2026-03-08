@@ -17,36 +17,23 @@ The `AppConfiguration.UseCommon()` method was calling `configuration.ReadFrom.Co
 
 ### Solution
 1. **Commented out** `configuration.ReadFrom.Configuration()` in `AppConfiguration.cs`
-2. **Removed** all `Serilog` sections from `appsettings.Development.json` files in all services
-3. **Added** Console sink programmatically for better development experience
-4. **All sinks now configured in one place**: `AppConfiguration.cs`
+2. **Removed** `Serilog` sections from `appsettings.Development.json` files (note: 6 `appsettings.Local.json` files still have `Serilog` sections in Contest, Franchise, Notification, Player, Season, Venue)
+3. **All sinks now configured in one place**: `AppConfiguration.cs` (only Seq sink, conditionally enabled via `CommonConfig:SeqUri`)
 
 ### Files Modified (Logging Fix)
 - `src/SportsData.Core/DependencyInjection/AppConfiguration.cs`
-- `src/SportsData.Api/appsettings.Development.json`
-- `src/SportsData.Contest/appsettings.Development.json`
-- `src/SportsData.Franchise/appsettings.Development.json`
-- `src/SportsData.Notification/appsettings.Development.json`
-- `src/SportsData.Player/appsettings.Development.json`
-- `src/SportsData.Season/appsettings.Development.json`
-- `src/SportsData.Venue/appsettings.Development.json`
+
+> **Note:** The `appsettings.Development.json` files were removed. Local development config uses `appsettings.Local.json` instead. However, 6 `appsettings.Local.json` files still contain `Serilog` sections (Contest, Franchise, Notification, Player, Season, Venue) — these are inactive since `ReadFrom.Configuration()` is commented out.
 
 ### Current Logging Configuration (Programmatic)
 All sinks are now configured in `AppConfiguration.UseCommon()`:
 
 ```csharp
-// File sink (always enabled)
-configuration.WriteTo.File(
-    path: logPath,
-    rollingInterval: RollingInterval.Day,
-    retainedFileCountLimit: 3,
-    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}"
-);
-
-// Console sink (always enabled)
-configuration.WriteTo.Console(
-    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}"
-);
+// Enrich with ApplicationName and Environment
+configuration
+    .Enrich.FromLogContext()
+    .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName)
+    .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName);
 
 // Seq sink (optional - enabled if CommonConfig:SeqUri is set)
 if (!string.IsNullOrWhiteSpace(seqUri))
@@ -55,6 +42,8 @@ if (!string.IsNullOrWhiteSpace(seqUri))
     configuration.WriteTo.Seq(seqUri, restrictedToMinimumLevel: seqLevel);
 }
 ```
+
+> **Note:** There is no File sink or Console sink in the current code. Only the Seq sink is configured (conditionally). Logging levels and overrides are read from `CommonConfig:Logging` in Azure App Configuration.
 
 ## Issue 2: Provider Event Testing
 
@@ -194,7 +183,7 @@ If events aren't being published from Provider, the entire downstream pipeline f
    - Check for circular references or incompatible types
 
 4. **Enable MassTransit diagnostics:**
-   - Add to Producer's `appsettings.Development.json`:
+   - Add to Producer's `appsettings.Local.json`:
      ```json
      {
        "Logging": {
@@ -208,7 +197,7 @@ If events aren't being published from Provider, the entire downstream pipeline f
 ### If logs are still duplicated:
 
 1. Verify `ReadFrom.Configuration()` is commented out in `AppConfiguration.cs`
-2. Verify NO `Serilog` section exists in any `appsettings.Development.json`
+2. Verify NO `Serilog` section exists in any `appsettings.Local.json` (or that `ReadFrom.Configuration()` remains commented out)
 3. Restart the service (changes require restart)
 
 ## Benefits

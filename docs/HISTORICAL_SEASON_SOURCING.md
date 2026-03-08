@@ -78,6 +78,7 @@ POST /api/sourcing/historical/seasons
 | `sourceDataProvider` | `SourceDataProvider` enum | Yes | Data provider (e.g., Espn) |
 | `seasonYear` | `int` | Yes | Year of the season to source (e.g., 2023) |
 | `tierDelays` | `Dictionary<string, int>` | No | Minutes to wait after starting before processing each tier. If omitted, uses configured defaults. |
+| `force` | `bool` | No | If true, re-schedules jobs even if the season has already been sourced. Defaults to false. |
 
 ### Tier Delay Keys
 
@@ -92,37 +93,59 @@ POST /api/sourcing/historical/seasons
 
 ```json
 {
-  "correlationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+  "correlationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "message": null
 }
 ```
 
+| Field | Type | Description |
+|-------|------|-------------|
+| `correlationId` | `Guid` | Correlation ID for tracking the sourcing job in logs and monitoring. |
+| `message` | `string?` | Optional message with additional context (e.g., force reschedule status, warnings). |
+
 The `correlationId` can be used to track the sourcing job in logs and monitoring dashboards.
+
+### Saga Endpoint
+
+```http
+POST /api/sourcing/historical/seasons/saga
+```
+
+Creates ResourceIndex records for saga-based orchestration (event-driven tier progression instead of time-based delays). The saga controls when each tier starts based on `DocumentProcessingCompleted` events from Producer. See [historical-sourcing-saga-design.md](./historical-sourcing-saga-design.md) for details.
 
 ## Implementation Details
 
 ### URI Generation
 
-Provider builds ESPN URIs internally based on DocumentType and seasonYear:
+URI construction is handled by the `HistoricalSourcingUriBuilder` class (injected via `IHistoricalSourcingUriBuilder`), which reads `EspnBaseUrl` from `HistoricalSourcingConfig`:
 
 ```csharp
-private Uri GetUriForDocumentType(DocumentType docType, int seasonYear, Sport sport, SourceDataProvider provider)
+public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
 {
-    // ESPN Football NCAA patterns
-    if (sport == Sport.FootballNcaa && provider == SourceDataProvider.Espn)
+    private readonly HistoricalSourcingConfig _config;
+
+    public Uri BuildUri(DocumentType documentType, int seasonYear, Sport sport, SourceDataProvider provider)
     {
-        var baseUrl = "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football";
-        
-        return docType switch
+        if (sport == Sport.FootballNcaa && provider == SourceDataProvider.Espn)
         {
-            DocumentType.Season => new Uri($"{baseUrl}/seasons/{seasonYear}"),
-            DocumentType.Venue => new Uri($"{baseUrl}/venues"),
-            DocumentType.TeamSeason => new Uri($"{baseUrl}/seasons/{seasonYear}/teams"),
-            DocumentType.AthleteSeason => new Uri($"{baseUrl}/seasons/{seasonYear}/athletes"),
-            _ => throw new ArgumentException($"Unsupported document type: {docType}")
-        };
+            return BuildEspnFootballNcaaUri(documentType, seasonYear);
+        }
+        throw new NotSupportedException(...);
     }
-    
-    throw new NotSupportedException($"Historical sourcing not yet supported for {sport}/{provider}");
+
+    private Uri BuildEspnFootballNcaaUri(DocumentType documentType, int seasonYear)
+    {
+        var baseUrl = _config.EspnBaseUrl.TrimEnd('/');
+        var path = documentType switch
+        {
+            DocumentType.Season => $"{baseUrl}/seasons/{seasonYear}",
+            DocumentType.Venue => $"{baseUrl}/venues",
+            DocumentType.TeamSeason => $"{baseUrl}/seasons/{seasonYear}/teams",
+            DocumentType.AthleteSeason => $"{baseUrl}/seasons/{seasonYear}/athletes",
+            _ => throw new ArgumentException(...)
+        };
+        return new Uri(path);
+    }
 }
 ```
 
@@ -134,7 +157,7 @@ For each tier, create a **non-recurring** ResourceIndex record:
 var resourceIndex = new ResourceIndex
 {
     Id = Guid.NewGuid(),
-    Ordinal = existingCount + index, // Unique ordinal
+    Ordinal = baseOrdinal * 100L + i, // Timestamp-based ordinal (YYYYMMDDHHmmssfff * 100 + tierIndex)
     Name = routingKeyGenerator.Generate(provider, uri),
     IsRecurring = false,
     IsQueued = false,
@@ -157,20 +180,16 @@ var resourceIndex = new ResourceIndex
 
 ### Job Scheduling
 
-Use Hangfire's `.Schedule()` to enqueue jobs with delays:
+Use Hangfire's `.Schedule()` to enqueue jobs with `TimeSpan` delays:
 
 ```csharp
-var startTime = DateTime.UtcNow;
-
-foreach (var tier in tiers)
+foreach (var (resourceIndex, delay) in resourceIndexes)
 {
-    var jobDefinition = new DocumentJobDefinition(tier.ResourceIndex);
-    var scheduledTime = startTime.AddMinutes(tier.DelayMinutes);
-    
+    var jobDefinition = new DocumentJobDefinition(resourceIndex);
+
     backgroundJobProvider.Schedule<ResourceIndexJob>(
         job => job.ExecuteAsync(jobDefinition),
-        scheduledTime
-    );
+        delay); // TimeSpan.FromMinutes(tier.DelayMinutes)
 }
 ```
 

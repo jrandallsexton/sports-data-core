@@ -19,8 +19,8 @@ Requires admin API token (via `AdminApiToken` attribute)
 
 ## How It Works
 1. Retrieves all completed season weeks for the specified year
-2. For each week, calls `ScoreAllLeaguesForWeekAsync()` to:
-   - Calculate scores for all leagues with matchups that week
+2. For each league/week combination, calls `ScoreLeagueWeekAsync()` to:
+   - Calculate scores for the league's matchups that week
    - Determine weekly winners (with tiebreaker resolution)
    - Mark drop weeks
    - Assign rankings
@@ -41,14 +41,14 @@ Requires admin API token (via `AdminApiToken` attribute)
 ### Using curl
 ```bash
 curl -X POST https://your-api.com/admin/backfill-league-scores/2025 \
-  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+  -H "X-Admin-Token: YOUR_ADMIN_TOKEN"
 ```
 
 ### Using Postman
 1. Method: POST
 2. URL: `https://your-api.com/admin/backfill-league-scores/2025`
 3. Headers:
-   - `Authorization: Bearer YOUR_ADMIN_TOKEN`
+   - `X-Admin-Token: YOUR_ADMIN_TOKEN`
 
 ## Process Flow
 ```
@@ -79,6 +79,6 @@ Check application logs for detailed progress.
 - **Performance**: May take several seconds for a full season
 
 ## Related Code
-- `LeagueWeekScoringService.ScoreAllLeaguesForWeekAsync()`
+- `LeagueWeekScoringService.ScoreLeagueWeekAsync()`
 - `LeagueWeekScoringJob` (runs weekly as safety net)
 - `ContestScoringProcessor` (triggers real-time scoring)

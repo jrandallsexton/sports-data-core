@@ -1,8 +1,10 @@
 # Resource Ref (URI) Generator Design for HATEOAS
 
-**Status:** Design Discussion - Not Yet Implemented  
-**Date:** January 8, 2026  
+**Status:** Partially Implemented
+**Date:** January 8, 2026
 **Context:** Building a URI generator to support HATEOAS principles across integration events and API DTOs
+
+**Implementation Note:** `IGenerateResourceRefs` (16 methods) and `ResourceRefGenerator` exist and are in use. Currently only the Producer base URL is active -- Contest, Venue, and Franchise base URLs are commented out in `ResourceRefGenerator`, so all URIs resolve against the Producer base URL. Actual URL patterns use `/competitions/{id}` (no `/api/` prefix in the path segment; the `/api/` segment is expected to be part of the configured base URL from Azure AppConfig).
 
 ## Overview
 
@@ -187,28 +189,30 @@ public class ResourceRefGenerator : IGenerateResourceRefs
     }
 
     // Producer resources
+    // Note: Actual implementation uses no /api/ prefix in path segments.
+    // The /api/ segment is part of the configured base URL from Azure AppConfig.
     public Uri ForCompetition(Guid competitionId) =>
-        new Uri($"{_producerBaseUrl}/api/competitions/{competitionId}");
+        new Uri($"{_producerBaseUrl}/competitions/{competitionId}");
 
     public Uri ForFranchiseSeason(Guid franchiseSeasonId) =>
-        new Uri($"{_producerBaseUrl}/api/franchiseseason/{franchiseSeasonId}");
+        new Uri($"{_producerBaseUrl}/franchiseseason/{franchiseSeasonId}");
 
     public Uri ForAthlete(Guid athleteId) =>
-        new Uri($"{_producerBaseUrl}/api/athlete/{athleteId}");
+        new Uri($"{_producerBaseUrl}/athlete/{athleteId}");
 
-    // API/Contest resources
+    // API/Contest resources (currently using _producerBaseUrl; cross-service URLs are commented out)
     public Uri ForContest(Guid contestId) =>
-        new Uri($"{_contestBaseUrl}/api/contest/{contestId}");
+        new Uri($"{_producerBaseUrl}/contest/{contestId}");
 
     public Uri ForPick(Guid pickId) =>
-        new Uri($"{_contestBaseUrl}/api/pick/{pickId}");
+        new Uri($"{_producerBaseUrl}/pick/{pickId}");
 
     public Uri ForRanking(int seasonYear) =>
-        new Uri($"{_contestBaseUrl}/api/rankings/{seasonYear}");
+        new Uri($"{_producerBaseUrl}/rankings/{seasonYear}");
 
-    // Venue resources
+    // Venue resources (currently using _producerBaseUrl; cross-service URLs are commented out)
     public Uri ForVenue(Guid venueId) =>
-        new Uri($"{_venueBaseUrl}/api/venue/{venueId}");
+        new Uri($"{_producerBaseUrl}/venues/{venueId}");
 }
 ```
 
@@ -466,9 +470,9 @@ public class ContestDto
 
 ## File Locations
 
-### New Files to Create
-- `src/SportsData.Core/Infrastructure/Refs/IGenerateResourceRefs.cs`
-- `src/SportsData.Core/Infrastructure/Refs/ResourceRefGenerator.cs`
+### Implemented Files
+- `src/SportsData.Core/Infrastructure/Refs/IGenerateResourceRefs.cs` (created)
+- `src/SportsData.Core/Infrastructure/Refs/ResourceRefGenerator.cs` (created)
 
 ### Files to Modify
 - `src/SportsData.Core/DependencyInjection/ServiceRegistration.cs` - Add DI registration

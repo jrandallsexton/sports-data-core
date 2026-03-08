@@ -18,7 +18,7 @@ This document tracks readiness for full historical season sourcing runs. Before 
 - ✅ **EventCompetitionAthleteStatisticsDocumentProcessor** implemented and tested
 - ✅ **TeamSeasonLeadersDocumentProcessor** implemented and tested (3 tests passing)
 - ✅ **TeamSeasonAwardDocumentProcessor** implemented and tested (3 tests passing)
-- ✅ **TeamSeasonCoachDocumentProcessor** implemented and tested (3 tests passing)
+- ✅ **CoachSeasonDocumentProcessor** implemented and tested (3 tests passing)
 - ✅ **EventCompetitionCompetitorRosterDocumentProcessor** - persists roster data (6 tests passing)
 - ❌ 2 document processors unimplemented (TeamSeasonInjuries, TeamSeasonProjection - LOW priority)
 
@@ -104,12 +104,12 @@ This approach leverages ESPN's 1:1 mapping between athlete season refs and canon
 
 ---
 
-### 4. TeamSeasonCoachDocumentProcessor
-**Status:** ✅ Complete  
-**Impact:** MEDIUM - Coaching staff data captured via wholesale replacement  
-**File:** `TeamSeasonCoachDocumentProcessor.cs`  
-**Test File:** `TeamSeasonCoachDocumentProcessorTests.cs`  
-**Estimated Effort:** 4-6 hours  
+### 4. CoachSeasonDocumentProcessor
+**Status:** ✅ Complete
+**Impact:** MEDIUM - Coaching staff data captured via wholesale replacement
+**File:** `CoachSeasonDocumentProcessor.cs`
+**Test File:** `CoachSeasonDocumentProcessorTests.cs`
+**Estimated Effort:** 4-6 hours
 **Actual Effort:** ~3 hours
 
 **Implementation Details:**
@@ -117,12 +117,12 @@ This approach leverages ESPN's 1:1 mapping between athlete season refs and canon
 - Wholesale replacement pattern: deletes existing CoachSeason entries, spawns child documents
 - No inline processing - spawns DocumentType.CoachSeason for each coach ref
 - CoachBySeasonDocumentProcessor handles individual coach season data
-- Uses `CausationId.Producer.TeamSeasonCoachDocumentProcessor`
+- Uses `CausationId.Producer.CoachSeasonDocumentProcessor`
 
 **Files Modified:**
-- ✅ `TeamSeasonCoachDocumentProcessor.cs` - wholesale replacement implementation
-- ✅ `TeamSeasonCoachDocumentProcessorTests.cs` - 3 passing tests
-- ✅ `CausationId.cs` - added TeamSeasonCoachDocumentProcessor GUID
+- ✅ `CoachSeasonDocumentProcessor.cs` - wholesale replacement implementation
+- ✅ `CoachSeasonDocumentProcessorTests.cs` - 3 passing tests
+- ✅ `CausationId.cs` - added CoachSeasonDocumentProcessor GUID
 
 **Unit Tests:**
 - ✅ `ProcessAsync_DeletesExistingCoachSeasons_WhenProcessingResourceIndex` - validates wholesale replacement
@@ -193,7 +193,7 @@ No action required - processor is working as designed.
 **Actual Effort:** ~4 hours
 
 **Implementation Details:**
-- ✅ Created `AthleteCompetition` entity with composite unique index (CompetitionId, AthleteSeasonId)
+- ✅ Created `AthleteCompetition` entity with three-column unique index (CompetitionId, CompetitionCompetitorId, AthleteSeasonId)
 - ✅ Wholesale replacement pattern implemented (delete existing + insert new per competition)
 - ✅ Position resolution via `_externalRefIdentityGenerator.Generate(entry.Position.Ref).CanonicalId`
 - ✅ Jersey number, DidNotPlay flag persisted
@@ -270,11 +270,12 @@ WHERE AthleteSeasonId = @athleteSeasonId AND DidNotPlay = false
 ---
 
 ### 11. StandingsDocumentProcessor
-**Status:** ❌ Unimplemented (skeleton only)  
-**Impact:** LOW - Conference standings not captured  
-**File:** `Football/StandingsDocumentProcessor.cs`
+**Status:** ❌ Unimplemented (no file exists)
+**Impact:** LOW - Conference standings not captured
+**File:** N/A - no implementation file exists in the codebase
 
 **Requirements:**
+- [ ] Create processor file
 - [ ] Deserialize DTO
 - [ ] Store standings data
 - [ ] Link to GroupSeason
@@ -292,11 +293,8 @@ WHERE AthleteSeasonId = @athleteSeasonId AND DidNotPlay = false
 
 | Test | Reason | Action Required |
 |------|--------|-----------------|
-| `TeamSeasonAwardDocumentProcessorTests.NotYetImplemented_Fails` | TBD | Implement processor |
 | `TeamSeasonProjectionDocumentProcessorTests.NotYetImplemented_Fails` | TBD | Implement processor |
 | `TeamSeasonInjuriesDocumentProcessorTests.NotYetImplemented_Fails` | TBD | Implement processor |
-| `TeamSeasonLeadersDocumentProcessorTests.NotYetImplemented_Fails` | TBD | Implement processor |
-| `TeamSeasonCoachDocumentProcessorTests.NotYetImplemented_Fails` | TBD | Implement processor |
 | `GroupSeasonDocumentProcessorTests.WhenGroupExistsAndSeasonIsNew_Sec2025_IsAppendedToExistingGroup` | Revisit | Review behavior |
 | `EventCompetitionProbabilityDocumentProcessorTests.WhenValuesHaveNotChanged_SecondCallIsSkipped` | TODO | Implement optimization |
 | `EventCompetitionPlayDocumentProcessorTests.WhenEntityExists_ShouldUpdateExistingPlay` | Updates not yet implemented | Implement updates |
@@ -318,7 +316,7 @@ WHERE AthleteSeasonId = @athleteSeasonId AND DidNotPlay = false
 ### Should Have (Before Production Historical Run)
 
 - [x] **TeamSeasonLeadersDocumentProcessor** implemented ✅ (February 1, 2026)
-- [x] **TeamSeasonCoachDocumentProcessor** implemented ✅ (January 2026)
+- [x] **CoachSeasonDocumentProcessor** implemented ✅ (January 2026)
 - [x] **TeamSeasonAwardDocumentProcessor** implemented ✅ (February 1, 2026)
 - [ ] **EventCompetitionCompetitor child documents** design reviewed (DEFERRED - can implement post-historical run if needed)
 
@@ -346,7 +344,7 @@ Before implementing processors, verify ESPN actually provides this data for hist
 
 - **EventCompetitionAthleteStatistics**: HIGH value - game stats are critical
 - **TeamSeasonLeaders**: MEDIUM value - enhances season summaries
-- **TeamSeasonCoach**: MEDIUM value - useful context
+- **CoachSeason**: MEDIUM value - useful context
 - **TeamSeasonAward**: MEDIUM value - prestige data
 - **TeamSeasonInjuries**: LOW value - often stale/unreliable
 - **Standings**: LOW value - can derive from game results
@@ -375,7 +373,7 @@ Before implementing processors, verify ESPN actually provides this data for hist
    - Category auto-creation with race condition handling
    - Comprehensive null guards for malformed ESPN data
    - All 3 unit tests passing
-2. ✅ **Complete: TeamSeasonCoachDocumentProcessor** (~3 hours, 3 passing tests)
+2. ✅ **Complete: CoachSeasonDocumentProcessor** (~3 hours, 3 passing tests)
 3. **Implement TeamSeasonAwardDocumentProcessor** ✅ COMPLETE (actual: ~5 hours)
    - Uses FranchiseSeasonAwardExtensions for pre-computed canonical IDs
    - Wholesale replacement pattern

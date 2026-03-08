@@ -132,3 +132,15 @@ router.push(`/team/${game.opponentSlug}`)
 What is the correct Expo Router v3 structure to achieve a **persistent tab bar on all screens** while maintaining **proper linear push/pop back navigation** across screens of mixed types (game detail, team card)?
 
 Please propose a concrete file structure and layout implementation. Consider whether a custom tab bar component rendered outside the navigator tree (e.g. as an overlay or via a shared layout root trick) might be the cleanest long-term solution, versus a navigator nesting approach.
+
+---
+
+## Resolution
+
+The issue was solved with a custom `BackButton` component in `app/(tabs)/(details)/_layout.tsx`. The approach:
+
+1. A `BackButton` component uses `useNavigationState` from `@react-navigation/native` to read `backTitle` from the currently focused route's `params`. This is necessary because `useLocalSearchParams` reads the layout's own params, not the child screen's.
+2. The Stack's `screenOptions` sets `headerBackVisible: false` to hide the default back button and `headerLeft: () => <BackButton />` to render the custom component.
+3. The `BackButton` calls `router.back()` on press and displays the `backTitle` param (falling back to "Back" if not provided).
+
+This gives full control over back-button rendering and label text while preserving the persistent tab bar (since detail screens remain nested inside the `(tabs)` group).

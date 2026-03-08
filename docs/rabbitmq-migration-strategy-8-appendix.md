@@ -14,17 +14,17 @@
   - **Recommendation:** Quorum queues (better HA guarantees)
 
 ### Redis Configuration
-- [ ] **Decision:** Redis standalone vs Redis Cluster vs Redis Sentinel?
-  - **Recommendation:** Standalone for now (simplest, rate limiting is not critical path)
+Redis IS deployed for caching (`AddStackExchangeRedisCache` in `ServiceRegistration.cs`). It is NOT used for rate limiting.
+- [x] **Decision:** Redis standalone vs Redis Cluster vs Redis Sentinel?
+  - **Result:** Standalone (used for caching only)
 - [ ] **Decision:** Redis persistence strategy (RDB snapshots vs AOF)?
-  - **Recommendation:** RDB snapshots (rate limiter state can be recreated)
+  - **Recommendation:** RDB snapshots (cache state can be recreated)
 
 ### ESPN Rate Limiting
-- [ ] **Question:** Can we instrument to measure actual ESPN rate limits?
-  - Log all ESPN requests with timestamps
-  - Analyze to find safe throughput ceiling
-- [ ] **Decision:** Conservative starting point for rate limiter?
-  - **Recommendation:** 100 requests/minute, tune up based on observation
+- [x] **Resolved:** ESPN uses IP-based rate limiting via 403 responses (not 429). Discovered after initial burst testing showed no 429s.
+  - Mitigation: `RequestDelayMs = 1000ms` in `EspnApiClientConfig` (~60 req/min per worker)
+  - ESPN-specific 403 retry handling in `RetryPolicy.cs`
+  - No distributed rate limiter needed
 
 ### Historical Sourcing Scope
 - [ ] **Question:** How many seasons of data does ESPN actually have?
@@ -48,8 +48,9 @@
 - **Premium tier:** $677/month (required for historical sourcing)
 - **Estimated cost for historical sourcing:** $677 (1 month minimum)
 
-### RabbitMQ + Redis (Proposed)
+### RabbitMQ + Redis (Current)
 - **Infrastructure cost:** $0 (existing NUC hardware)
+- **Redis:** Deployed for caching (not rate limiting)
 - **Operational cost:** Time investment in setup/monitoring
 - **Ongoing cost:** $0/month
 

@@ -656,4 +656,4 @@ it('should refresh token and retry request on 401', async () => {
 
 ---
 
-**Status:** Analysis Complete - Ready for Implementation
+**Status:** IMPLEMENTED -- Solutions 1-3 are now in `apiClient.js`: proactive token refresh (checks expiration within 5 minutes via `getIdTokenResult`), 401 retry with `getIdToken(true)` and redirect, and request rejection when no user is present (`isAuthError` flag).

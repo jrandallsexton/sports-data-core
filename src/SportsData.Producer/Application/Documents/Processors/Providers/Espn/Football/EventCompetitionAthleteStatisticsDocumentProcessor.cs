@@ -203,9 +203,9 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
                     _dataContext.Entry(existing).State = EntityState.Detached;
                 }
 
-                foreach (var category in entity.Categories)
+                foreach (var category in entity.Categories.ToList())
                 {
-                    foreach (var stat in category.Stats)
+                    foreach (var stat in category.Stats.ToList())
                         _dataContext.Entry(stat).State = EntityState.Detached;
                     _dataContext.Entry(category).State = EntityState.Detached;
                 }

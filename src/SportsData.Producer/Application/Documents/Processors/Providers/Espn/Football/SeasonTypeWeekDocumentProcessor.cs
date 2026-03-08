@@ -133,7 +133,7 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
             // state and the DbContext must be left clean either way.
             _dataContext.Entry(seasonWeek).State = EntityState.Detached;
 
-            foreach (var externalId in seasonWeek.ExternalIds)
+            foreach (var externalId in seasonWeek.ExternalIds.ToList())
                 _dataContext.Entry(externalId).State = EntityState.Detached;
 
             if (!alreadyExists)

@@ -74,20 +74,23 @@ Priority order:
 ## Useful Seq Filters
 
 ### By Application
-```
+
+```seq
 ApplicationName = 'SportsData.Producer'
 ApplicationName = 'SportsData.Provider'
 ```
 
 ### By Level
-```
+
+```seq
 @Level = 'Error'
 @Level = 'Warning'
 @Level in ['Error', 'Fatal']
 ```
 
 ### By DocumentType
-```
+
+```seq
 DocumentType = 'EventCompetitionAthleteStatistics'
 DocumentType = 'AthleteSeason'
 DocumentType = 'EventCompetitionCompetitorRecord'
@@ -95,7 +98,8 @@ DocumentType = 'AthleteSeasonNote'
 ```
 
 ### By Error Pattern
-```
+
+```seq
 @MessageTemplate like '%MAX_RETRIES%'
 @MessageTemplate like '%PROCESSOR_FAILED%'
 @Exception like '%DbUpdateConcurrencyException%'
@@ -103,17 +107,21 @@ DocumentType = 'AthleteSeasonNote'
 ```
 
 ### Combined Filters
-```
+
+```seq
 ApplicationName = 'SportsData.Producer' and DocumentType = 'AthleteSeason' and @Level = 'Error'
 ApplicationName = 'SportsData.Producer' and @Exception like '%ConcurrencyException%'
 ```
 
 ### By Time (relative)
+
 Seq MCP searches return most recent events by default. Use `count` parameter to control result volume. For time-bounded queries, combine with timestamp filters if supported.
 
 ### Correlation Tracing
+
 To follow a single document through the pipeline:
-```
+
+```seq
 CorrelationId = '{id}'
 DocumentId = '{hash}'
 SourceUrlHash = '{hash}'

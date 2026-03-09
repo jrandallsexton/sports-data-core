@@ -173,17 +173,8 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
         public async Task<SeasonWeek?> GetCurrentSeasonWeek()
         {
             var sql = _queryProvider.GetCurrentSeasonWeek();
-
-            try
-            {
-                var result = await _connection.QueryFirstOrDefaultAsync<SeasonWeek>(sql);
-                return result;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to resolve current season week.");
-                return null;
-            }
+            var result = await _connection.QueryFirstOrDefaultAsync<SeasonWeek>(sql);
+            return result;
         }
 
         public async Task<List<SeasonWeek>> GetCurrentAndLastWeekSeasonWeeks()

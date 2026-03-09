@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace SportsData.Core.Extensions
 {
     public static class StringExtensions
     {
+        private static readonly Regex ControlCharsRegex =
+            new(@"[\r\n\t\x00-\x1F\x7F]", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         public static string? ToCanonicalFormNullable(this string? input)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -71,7 +74,7 @@ namespace SportsData.Core.Extensions
             if (string.IsNullOrEmpty(input))
                 return string.Empty;
 
-            return System.Text.RegularExpressions.Regex.Replace(input, @"[\r\n\t\x00-\x1F\x7F]", "_");
+            return ControlCharsRegex.Replace(input, "_");
         }
     }
 }

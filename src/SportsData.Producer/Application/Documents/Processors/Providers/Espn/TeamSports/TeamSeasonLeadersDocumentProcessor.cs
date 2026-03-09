@@ -150,6 +150,7 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
             isNew);
 
         var leaders = new List<FranchiseSeasonLeader>();
+        var publishedStatisticsRefs = new HashSet<string>();
 
         if (dto.Categories != null)
         {
@@ -258,10 +259,13 @@ public class TeamSeasonLeadersDocumentProcessor<TDataContext> : DocumentProcesso
 
                     var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
 
-                    // For new leaders, always spawn child documents; for updates, respect ShouldSpawn filtering
-                    if (isNew || ShouldSpawn(DocumentType.AthleteSeasonStatistics, command))
+                    // For new leaders, always spawn child documents; for updates, respect ShouldSpawn filtering.
+                    // Dedup: an athlete appearing in multiple leader categories has the same Statistics.Ref,
+                    // so only publish the child request once per unique ref within this document.
+                    var statsRefKey = leaderDto.Statistics.Ref.ToString();
+                    if ((isNew || ShouldSpawn(DocumentType.AthleteSeasonStatistics, command))
+                        && publishedStatisticsRefs.Add(statsRefKey))
                     {
-                        // Spawn athlete season statistics document request (season-scoped, not competition-scoped)
                         await PublishChildDocumentRequest(
                             command,
                             leaderDto.Statistics,

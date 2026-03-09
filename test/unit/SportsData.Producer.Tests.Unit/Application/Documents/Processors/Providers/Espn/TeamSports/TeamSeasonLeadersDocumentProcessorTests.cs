@@ -495,11 +495,62 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
 
         // Assert - should only publish once for the unique athlete with the correct Uri (deduplication via HashSet)
         busMock.Verify(x => x.Publish(
-            It.Is<DocumentRequested>(e => 
-                e.DocumentType == DocumentType.AthleteSeason && 
+            It.Is<DocumentRequested>(e =>
+                e.DocumentType == DocumentType.AthleteSeason &&
                 e.Uri == athlete1001Uri),
             It.IsAny<CancellationToken>()), Times.Once());
     }
-}
 
+    [Fact]
+    public async Task ProcessAsync_DeduplicatesStatisticsRequests_WhenSameAthleteInMultipleCategories()
+    {
+        // Arrange - Use the real test JSON which has 148 total statistics refs but only 46 unique
+        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonLeaders.json");
+        var dto = documentJson.FromJson<EspnLeadersDto>();
+
+        var identityGenerator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
+
+        var franchiseSeasonId = Guid.NewGuid();
+
+        // Seed all athlete seasons so preflight passes and we reach the child document request path
+        await SeedTestDataAsync(dto!, identityGenerator, franchiseSeasonId);
+
+        var leadersIdentity = identityGenerator.Generate(dto.Ref);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .OmitAutoProperties()
+            .With(x => x.Document, documentJson)
+            .With(x => x.UrlHash, leadersIdentity.UrlHash)
+            .With(x => x.DocumentType, DocumentType.TeamSeasonLeaders)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.ParentId, franchiseSeasonId.ToString())
+            .With(x => x.CorrelationId, Guid.NewGuid())
+            .With(x => x.AttemptCount, 0)
+            .Create();
+
+        var busMock = Mocker.GetMock<IEventBus>();
+        var config = new DocumentProcessingConfig { EnableDependencyRequests = true };
+        Mocker.Use(config);
+
+        var sut = Mocker.CreateInstance<TeamSeasonLeadersDocumentProcessor<FootballDataContext>>();
+
+        // Count unique statistics refs in the DTO for our assertion
+        var uniqueStatsRefs = dto.Categories
+            .SelectMany(c => c.Leaders)
+            .Where(l => l.Statistics?.Ref != null)
+            .Select(l => l.Statistics.Ref.ToString())
+            .Distinct()
+            .Count();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert - AthleteSeasonStatistics requests should equal unique count (46), not total count (148)
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.AthleteSeasonStatistics),
+            It.IsAny<CancellationToken>()), Times.Exactly(uniqueStatsRefs));
+    }
+}
 

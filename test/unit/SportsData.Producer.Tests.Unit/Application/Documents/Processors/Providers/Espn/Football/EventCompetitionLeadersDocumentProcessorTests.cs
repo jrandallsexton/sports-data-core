@@ -2,15 +2,22 @@
 
 using FluentAssertions;
 
+using MassTransit;
+
 using Microsoft.EntityFrameworkCore;
+
+using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Config;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -507,5 +514,58 @@ public class EventCompetitionLeadersDocumentProcessorTests :
 
         leaderCategories = await FootballDataContext.CompetitionLeaders.ToListAsync();
         leaderCategories.Should().HaveCount(leadersDto.Categories.Count);
+    }
+
+    [Fact]
+    public async Task ProcessAsync_DeduplicatesStatisticsRequests_WhenSameAthleteInMultipleCategories()
+    {
+        // Arrange - Use the real test JSON which has 153 total statistics refs but only 53 unique
+        var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
+        var dto = documentJson.FromJson<EspnLeadersDto>();
+
+        var identityGenerator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
+
+        var competitionRef = EspnUriMapper.CompetitionLeadersRefToCompetitionRef(dto!.Ref);
+        var competitionIdentity = identityGenerator.Generate(competitionRef);
+
+        // Seed all athlete seasons and franchise seasons so we reach the child document request path
+        await SeedTestDataAsync(dto, identityGenerator, competitionIdentity.CanonicalId);
+
+        var leadersIdentity = identityGenerator.Generate(dto.Ref);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .OmitAutoProperties()
+            .With(x => x.Document, documentJson)
+            .With(x => x.UrlHash, leadersIdentity.UrlHash)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionLeaders)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.ParentId, competitionIdentity.CanonicalId.ToString())
+            .With(x => x.CorrelationId, Guid.NewGuid())
+            .With(x => x.AttemptCount, 0)
+            .Create();
+
+        var busMock = Mocker.GetMock<IEventBus>();
+        var config = new DocumentProcessingConfig { EnableDependencyRequests = true };
+        Mocker.Use(config);
+
+        var sut = Mocker.CreateInstance<EventCompetitionLeadersDocumentProcessor<FootballDataContext>>();
+
+        // Count unique statistics refs in the DTO for our assertion
+        var uniqueStatsRefs = dto.Categories
+            .SelectMany(c => c.Leaders)
+            .Where(l => l.Statistics?.Ref != null)
+            .Select(l => l.Statistics.Ref.ToString())
+            .Distinct()
+            .Count();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert - EventCompetitionAthleteStatistics requests should equal unique count (53), not total count (153)
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.EventCompetitionAthleteStatistics),
+            It.IsAny<CancellationToken>()), Times.Exactly(uniqueStatsRefs));
     }
 }

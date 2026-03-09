@@ -30,6 +30,13 @@ namespace SportsData.Api.Application.Jobs
         {
             // Get all matchups for the current week
             var matchups = await _canonicalDataProvider.GetMatchupsForCurrentWeek();
+
+            if (matchups is null || !matchups.Any())
+            {
+                _logger.LogWarning("No matchups found for the current week; skipping preview generation");
+                return;
+            }
+
             var contestIds = matchups.Select(x => x.ContestId).ToHashSet();
 
             // Fetch existing previews (including their validation status)

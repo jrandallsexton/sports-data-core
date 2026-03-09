@@ -35,8 +35,8 @@ namespace SportsData.Api.Application.Jobs
 
             if (currentWeek is null)
             {
-                _logger.LogError("Current week could not be found");
-                throw new Exception("Current week could not be found");
+                _logger.LogWarning("Current week could not be found; skipping matchup scheduling");
+                return;
             }
 
             // find all PickemGroup entities who do not yet have a PickemGroupWeek for this week

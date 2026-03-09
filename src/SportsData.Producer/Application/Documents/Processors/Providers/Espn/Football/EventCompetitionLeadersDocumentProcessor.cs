@@ -84,6 +84,7 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
         var athleteSeasonCache = new Dictionary<string, Guid>();
 
         var leaders = new List<CompetitionLeader>();
+        var publishedStatisticsRefs = new HashSet<string>();
 
         foreach (var category in dto.Categories)
         {
@@ -136,12 +137,17 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
 
                 var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
 
-                // Use base class helper for consistency
-                await PublishChildDocumentRequest(
-                    command,
-                    leaderDto.Statistics,
-                    athleteSeasonIdentity.CanonicalId,
-                    DocumentType.EventCompetitionAthleteStatistics);
+                // Dedup: an athlete appearing in multiple leader categories has the same Statistics.Ref,
+                // so only publish the child request once per unique ref within this document.
+                var statsRefKey = leaderDto.Statistics.Ref.ToString();
+                if (publishedStatisticsRefs.Add(statsRefKey))
+                {
+                    await PublishChildDocumentRequest(
+                        command,
+                        leaderDto.Statistics,
+                        athleteSeasonIdentity.CanonicalId,
+                        DocumentType.EventCompetitionAthleteStatistics);
+                }
 
                 var stat = CompetitionLeaderStatExtensions.AsEntity(
                     leaderDto,

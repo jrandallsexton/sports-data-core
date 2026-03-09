@@ -6,6 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
@@ -69,30 +70,107 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
             var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
             // ESPN replaces statistics wholesale, so remove existing if present.
-            // Load and remove to support both InMemory (tests) and real databases
-            var existing = await _dataContext.AthleteSeasonStatistics
-                .Include(x => x.Categories)
-                    .ThenInclude(c => c.Stats)
-                .AsSplitQuery()
-                .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
+            // Uses a retry loop because the xmin-based optimistic concurrency check on the DELETE
+            // can fail if another pod modifies the row between our load and our save.
+            const int maxConcurrencyRetries = 3;
+            AthleteSeasonStatistic? entity = null;
 
-            if (existing is not null)
+            for (var attempt = 0; attempt < maxConcurrencyRetries; attempt++)
             {
-                _logger.LogInformation("Removing existing AthleteSeasonStatistic {Id} for replacement", identity.CanonicalId);
-                _dataContext.AthleteSeasonStatistics.Remove(existing);
+                // Always reload from DB on every attempt so xmin is fresh
+                var existing = await _dataContext.AthleteSeasonStatistics
+                    .Include(x => x.Categories)
+                        .ThenInclude(c => c.Stats)
+                    .AsSplitQuery()
+                    .FirstOrDefaultAsync(r => r.Id == identity.CanonicalId);
+
+                if (existing is not null)
+                {
+                    _logger.LogInformation(
+                        "Removing existing AthleteSeasonStatistic {Id} for replacement (attempt {Attempt})",
+                        identity.CanonicalId, attempt + 1);
+                    _dataContext.AthleteSeasonStatistics.Remove(existing);
+                }
+
+                entity = dto.AsEntity(
+                    _externalRefIdentityGenerator,
+                    athleteSeasonIdValue,
+                    command.CorrelationId);
+
+                await _dataContext.AthleteSeasonStatistics.AddAsync(entity);
+
+                try
+                {
+                    await _dataContext.SaveChangesAsync();
+                    break; // success — exit the retry loop
+                }
+                catch (DbUpdateConcurrencyException) when (existing != null && attempt < maxConcurrencyRetries - 1)
+                {
+                    // DELETE hit stale xmin — another pod modified the row between our load and save.
+                    // Detach everything and loop to reload with a fresh xmin.
+                    _logger.LogWarning(
+                        "Concurrency conflict on wholesale replacement (attempt {Attempt}/{Max}). " +
+                        "Reloading with fresh xmin. Id={Id}, CorrelationId={CorrelationId}",
+                        attempt + 1, maxConcurrencyRetries, existing.Id, command.CorrelationId);
+
+                    var trackedCategories = _dataContext.ChangeTracker
+                        .Entries<AthleteSeasonStatisticCategory>()
+                        .Where(e => e.Entity.AthleteSeasonStatisticId == existing.Id)
+                        .ToList();
+
+                    foreach (var category in trackedCategories)
+                    {
+                        foreach (var stat in category.Entity.Stats.ToList())
+                        {
+                            var statEntry = _dataContext.Entry(stat);
+                            if (statEntry.State != EntityState.Detached)
+                                statEntry.State = EntityState.Detached;
+                        }
+                        category.State = EntityState.Detached;
+                    }
+
+                    _dataContext.Entry(existing).State = EntityState.Detached;
+                    _dataContext.Entry(entity).State = EntityState.Detached;
+                    // continue loop — next iteration reloads with a fresh xmin
+                }
+                catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+                {
+                    // Another pod won the race and already inserted this entity.
+                    _logger.LogWarning(
+                        "Duplicate key on wholesale replacement — another process already created it. " +
+                        "Id={Id}, CorrelationId={CorrelationId}",
+                        entity.Id, command.CorrelationId);
+
+                    if (existing is not null)
+                    {
+                        var trackedCategories = _dataContext.ChangeTracker
+                            .Entries<AthleteSeasonStatisticCategory>()
+                            .Where(e => e.Entity.AthleteSeasonStatisticId == existing.Id)
+                            .ToList();
+                        foreach (var category in trackedCategories)
+                        {
+                            foreach (var stat in category.Entity.Stats.ToList())
+                                _dataContext.Entry(stat).State = EntityState.Detached;
+                            category.State = EntityState.Detached;
+                        }
+                        _dataContext.Entry(existing).State = EntityState.Detached;
+                    }
+
+                    foreach (var category in entity.Categories.ToList())
+                    {
+                        foreach (var stat in category.Stats.ToList())
+                            _dataContext.Entry(stat).State = EntityState.Detached;
+                        _dataContext.Entry(category).State = EntityState.Detached;
+                    }
+                    _dataContext.Entry(entity).State = EntityState.Detached;
+
+                    return;
+                }
             }
-
-            var entity = dto.AsEntity(
-                _externalRefIdentityGenerator,
-                athleteSeasonIdValue,
-                command.CorrelationId);
-
-            await _dataContext.AthleteSeasonStatistics.AddAsync(entity);
-            await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(
                 "Successfully processed AthleteSeasonStatistics {Id} for AthleteSeason {AthleteSeasonId} with {CategoryCount} categories and {StatCount} total stats",
-                entity.Id,
+                entity!.Id,
                 athleteSeasonIdValue,
                 entity.Categories.Count,
                 entity.Categories.Sum(c => c.Stats.Count));

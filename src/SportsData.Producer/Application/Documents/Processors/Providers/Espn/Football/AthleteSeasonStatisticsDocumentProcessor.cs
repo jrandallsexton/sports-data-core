@@ -6,6 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
@@ -68,8 +69,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
-            // ESPN replaces statistics wholesale, so remove existing if present.
-            // Load and remove to support both InMemory (tests) and real databases
+            // ESPN replaces statistics wholesale — delete existing then insert fresh.
             var existing = await _dataContext.AthleteSeasonStatistics
                 .Include(x => x.Categories)
                     .ThenInclude(c => c.Stats)
@@ -78,8 +78,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
             if (existing is not null)
             {
-                _logger.LogInformation("Removing existing AthleteSeasonStatistic {Id} for replacement", identity.CanonicalId);
+                _logger.LogInformation(
+                    "Removing existing AthleteSeasonStatistic {Id} for replacement",
+                    identity.CanonicalId);
                 _dataContext.AthleteSeasonStatistics.Remove(existing);
+                await _dataContext.SaveChangesAsync();
             }
 
             var entity = dto.AsEntity(
@@ -88,7 +91,29 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
                 command.CorrelationId);
 
             await _dataContext.AthleteSeasonStatistics.AddAsync(entity);
-            await _dataContext.SaveChangesAsync();
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                // Another pod won the race and already inserted this entity — treat as idempotent success.
+                _logger.LogWarning(
+                    "Duplicate key on AthleteSeasonStatistic insert — another process already created it. " +
+                    "Id={Id}, CorrelationId={CorrelationId}",
+                    entity.Id, command.CorrelationId);
+
+                _dataContext.Entry(entity).State = EntityState.Detached;
+                foreach (var category in entity.Categories.ToList())
+                {
+                    foreach (var stat in category.Stats.ToList())
+                        _dataContext.Entry(stat).State = EntityState.Detached;
+                    _dataContext.Entry(category).State = EntityState.Detached;
+                }
+
+                return;
+            }
 
             _logger.LogInformation(
                 "Successfully processed AthleteSeasonStatistics {Id} for AthleteSeason {AthleteSeasonId} with {CategoryCount} categories and {StatCount} total stats",
@@ -99,4 +124,3 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
         }
     }
 }
-

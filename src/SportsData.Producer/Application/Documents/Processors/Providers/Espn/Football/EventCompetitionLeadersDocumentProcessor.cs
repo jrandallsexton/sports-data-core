@@ -69,21 +69,24 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
         // delete existing leaders & stats
         var existingStatsCount = competition.Leaders.Sum(l => l.Stats.Count);
         var existingLeadersCount = competition.Leaders.Count;
+        var isNew = existingLeadersCount == 0;
 
         _dataContext.CompetitionLeaderStats.RemoveRange(
             competition.Leaders.SelectMany(l => l.Stats));
         _dataContext.CompetitionLeaders.RemoveRange(competition.Leaders);
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Removed existing leaders. CompetitionId={CompId}, Leaders={LeaderCount}, Stats={StatCount}", 
+        _logger.LogInformation("Removed existing leaders. CompetitionId={CompId}, Leaders={LeaderCount}, Stats={StatCount}, IsNew={IsNew}",
             competitionId,
             existingLeadersCount,
-            existingStatsCount);
+            existingStatsCount,
+            isNew);
 
         var franchiseSeasonCache = new Dictionary<string, Guid>();
         var athleteSeasonCache = new Dictionary<string, Guid>();
 
         var leaders = new List<CompetitionLeader>();
+        var publishedStatisticsRefs = new HashSet<string>();
 
         foreach (var category in dto.Categories)
         {
@@ -136,12 +139,19 @@ public class EventCompetitionLeadersDocumentProcessor<TDataContext> : DocumentPr
 
                 var athleteSeasonIdentity = _externalRefIdentityGenerator.Generate(leaderDto.Athlete.Ref);
 
-                // Use base class helper for consistency
-                await PublishChildDocumentRequest(
-                    command,
-                    leaderDto.Statistics,
-                    athleteSeasonIdentity.CanonicalId,
-                    DocumentType.EventCompetitionAthleteStatistics);
+                // For new leaders, always spawn child documents; for updates, respect ShouldSpawn filtering.
+                // Dedup: an athlete appearing in multiple leader categories has the same Statistics.Ref,
+                // so only publish the child request once per unique ref within this document.
+                var statsRefKey = leaderDto.Statistics.Ref.ToString();
+                if ((isNew || ShouldSpawn(DocumentType.EventCompetitionAthleteStatistics, command))
+                    && publishedStatisticsRefs.Add(statsRefKey))
+                {
+                    await PublishChildDocumentRequest(
+                        command,
+                        leaderDto.Statistics,
+                        athleteSeasonIdentity.CanonicalId,
+                        DocumentType.EventCompetitionAthleteStatistics);
+                }
 
                 var stat = CompetitionLeaderStatExtensions.AsEntity(
                     leaderDto,

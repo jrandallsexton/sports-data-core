@@ -16,15 +16,15 @@
     "eject": "react-scripts eject"
   },
   "overrides": {
-    "nth-check": ">=2.0.1",
-    "postcss": ">=8.4.31",
-    "svgo": ">=2.8.1",
-    "serialize-javascript": ">=6.0.2",
-    "rollup": ">=2.80.0",
-    "minimatch": ">=3.1.5",
-    "@tootallnate/once": ">=3.0.1",
-    "underscore": ">=1.13.7",
-    "webpack-dev-server": ">=5.2.1"
+    "nth-check": "~2.0.1",
+    "postcss": "~8.4.31",
+    "svgo": "~2.8.1",
+    "serialize-javascript": "~7.0.3",
+    "rollup": "~2.80.0",
+    "minimatch": "~3.1.5",
+    "@tootallnate/once": "~3.0.1",
+    "underscore": "~1.13.7",
+    "webpack-dev-server": "~5.2.1"
   },
   "eslintConfig": {
     "extends": [

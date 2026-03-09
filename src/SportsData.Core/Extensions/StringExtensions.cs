@@ -7,7 +7,7 @@ namespace SportsData.Core.Extensions
     public static class StringExtensions
     {
         private static readonly Regex ControlCharsRegex =
-            new(@"[\r\n\t\x00-\x1F\x7F]", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+            new(@"[\r\n\t\x00-\x1F\x7F\u0085\u2028\u2029]", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         public static string? ToCanonicalFormNullable(this string? input)
         {
             if (string.IsNullOrWhiteSpace(input))

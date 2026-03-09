@@ -61,5 +61,17 @@ namespace SportsData.Core.Extensions
                 ? dt.ToUniversalTime()
                 : null;
         }
+
+        /// <summary>
+        /// Strips control characters (newlines, tabs, etc.) from a string to prevent log forging.
+        /// Use on user-provided values before passing them to structured logging methods.
+        /// </summary>
+        public static string Sanitize(this string? input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return string.Empty;
+
+            return System.Text.RegularExpressions.Regex.Replace(input, @"[\r\n\t\x00-\x1F\x7F]", "_");
+        }
     }
 }

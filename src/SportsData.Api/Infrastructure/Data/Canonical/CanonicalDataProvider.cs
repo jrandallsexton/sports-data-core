@@ -1,6 +1,7 @@
 ﻿using Dapper;
 
 using SportsData.Api.Application.UI.Leagues.Dtos;
+using SportsData.Core.Extensions;
 using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
@@ -91,7 +92,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to resolve Franchise IDs for slugs: {@Slugs}", slugs);
+                _logger.LogError(ex, "Failed to resolve Franchise IDs for slugs: {@Slugs}", slugs.Select(s => s.Sanitize()).ToList());
                 return new Dictionary<string, Guid>();
             }
         }
@@ -117,7 +118,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to resolve Franchise IDs for slugs: {@Slugs}", slugs);
+                _logger.LogError(ex, "Failed to resolve Franchise IDs for slugs: {@Slugs}", slugs.Select(s => s.Sanitize()).ToList());
                 return new Dictionary<Guid, string>();
             }
         }

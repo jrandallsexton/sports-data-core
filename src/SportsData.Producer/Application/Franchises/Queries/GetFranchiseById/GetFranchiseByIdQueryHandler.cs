@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using FluentValidation.Results;
 
@@ -29,7 +30,7 @@ public class GetFranchiseByIdQueryHandler : IGetFranchiseByIdQueryHandler
         GetFranchiseByIdQuery query,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("GetFranchise query: idOrSlug={IdOrSlug}", query.Id);
+        _logger.LogInformation("GetFranchise query: idOrSlug={IdOrSlug}", query.Id.Sanitize());
 
         // Try to parse as GUID first, otherwise treat as slug
         var isGuid = Guid.TryParse(query.Id, out var franchiseId);
@@ -55,7 +56,7 @@ public class GetFranchiseByIdQueryHandler : IGetFranchiseByIdQueryHandler
 
         if (franchise == null)
         {
-            _logger.LogWarning("Franchise not found: {IdOrSlug}", query.Id);
+            _logger.LogWarning("Franchise not found: {IdOrSlug}", query.Id.Sanitize());
             return new Failure<FranchiseDto>(
                 default!,
                 ResultStatus.NotFound,

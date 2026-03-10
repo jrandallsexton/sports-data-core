@@ -204,21 +204,21 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             {
                 if (File.Exists(path))
                 {
-                    _logger.LogDebug("Cache HIT for image {Uri}", uri);
+                    _logger.LogDebug("Cache HIT for image {Uri}", uri.ToString().Sanitize());
                     return File.OpenRead(path);
                 }
 
-                _logger.LogDebug("Cache MISS for image {Uri}", uri);
+                _logger.LogDebug("Cache MISS for image {Uri}", uri.ToString().Sanitize());
             }
 
-            _logger.LogInformation("Fetching image from {Uri}", uri);
+            _logger.LogInformation("Fetching image from {Uri}", uri.ToString().Sanitize());
             await Task.Delay(_config.RequestDelayMs, ct);
 
             using var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("Failed to fetch image from {Uri}, status {StatusCode}", uri, (int)response.StatusCode);
+                _logger.LogWarning("Failed to fetch image from {Uri}, status {StatusCode}", uri.ToString().Sanitize(), (int)response.StatusCode);
                 return null;
             }
 
@@ -226,7 +226,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 
             if (bypassCache)
             {
-                _logger.LogDebug("Bypassing cache, returning raw stream for {Uri}", uri);
+                _logger.LogDebug("Bypassing cache, returning raw stream for {Uri}", uri.ToString().Sanitize());
                 return await CopyToMemoryStreamAsync(networkStream, ct);
             }
 

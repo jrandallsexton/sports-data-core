@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace SportsData.Core.Extensions
 {
     public static class StringExtensions
     {
+        private static readonly Regex ControlCharsRegex =
+            new(@"[\r\n\t\x00-\x1F\x7F\u0085\u2028\u2029]", RegexOptions.Compiled | RegexOptions.CultureInvariant);
         public static string? ToCanonicalFormNullable(this string? input)
         {
             if (string.IsNullOrWhiteSpace(input))
@@ -60,6 +63,18 @@ namespace SportsData.Core.Extensions
             return DateTime.TryParse(dateStr, out var dt)
                 ? dt.ToUniversalTime()
                 : null;
+        }
+
+        /// <summary>
+        /// Strips control characters (newlines, tabs, etc.) from a string to prevent log forging.
+        /// Use on user-provided values before passing them to structured logging methods.
+        /// </summary>
+        public static string Sanitize(this string? input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return string.Empty;
+
+            return ControlCharsRegex.Replace(input, "_");
         }
     }
 }

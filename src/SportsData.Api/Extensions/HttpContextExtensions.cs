@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Api.Extensions;
 
@@ -14,9 +15,9 @@ public static class HttpContextExtensions
         var logger = context.RequestServices.GetRequiredService<ILogger<HttpContext>>();
         logger.LogError(
             "User not found in HttpContext.Items. Path: {Path}, IsAuthenticated: {IsAuthenticated}, UserId: {UserId}",
-            context.Request.Path,
+            context.Request.Path.ToString().Sanitize(),
             context.User?.Identity?.IsAuthenticated ?? false,
-            context.User?.FindFirst("user_id")?.Value ?? "null"
+            (context.User?.FindFirst("user_id")?.Value ?? "null").Sanitize()
         );
 
         throw new UnauthorizedAccessException("Authenticated user not found in context.");

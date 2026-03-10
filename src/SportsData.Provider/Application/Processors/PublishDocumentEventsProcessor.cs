@@ -1,6 +1,7 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Routing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Extensions;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider.Commands;
 using SportsData.Provider.Application.Services;
@@ -64,7 +65,7 @@ namespace SportsData.Provider.Application.Processors
                 {
                     _logger.LogInformation(
                         "Inclusion filter provided: {DocumentTypes}. Child documents will be filtered.",
-                        string.Join(", ", command.IncludeLinkedDocumentTypes));
+                        string.Join(", ", command.IncludeLinkedDocumentTypes).Sanitize());
                 }
 
                 var typeAndName = _decoder.GetTypeAndCollectionName(

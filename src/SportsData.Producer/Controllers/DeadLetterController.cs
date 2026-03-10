@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 
@@ -47,7 +48,7 @@ public class DeadLetterController : ControllerBase
 
         _logger.LogInformation(
             "DLQ reprocess job enqueued. JobId={JobId}, Count={Count}, QueueName={QueueName}",
-            jobId, count, queueName ?? "(default)");
+            jobId, count, (queueName ?? "(default)").Sanitize());
 
         return Accepted(new { JobId = jobId, Count = count, QueueName = queueName ?? "(resolved from config at execution time)" });
     }

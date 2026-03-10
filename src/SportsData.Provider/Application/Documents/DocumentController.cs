@@ -63,7 +63,7 @@ namespace SportsData.Provider.Application.Documents
         [HttpGet("urlHash/{documentType}/{hash}")]
         public async Task<IActionResult> GetDocumentByUrlHash(DocumentType documentType, string hash)
         {
-            using (_logger.BeginScope(new Dictionary<string, object> { ["SourceUrlHash"] = hash }))
+            using (_logger.BeginScope(new Dictionary<string, object> { ["SourceUrlHash"] = hash.Sanitize() }))
             {
                 var collectionName = documentType.ToString();
 
@@ -74,11 +74,11 @@ namespace SportsData.Provider.Application.Documents
 
                 if (dbItem == null)
                 {
-                    _logger.LogError("No document found for DocumentType={DocumentType}, Hash={Hash}", documentType, hash);
+                    _logger.LogError("No document found for DocumentType={DocumentType}, Hash={Hash}", documentType, hash.Sanitize());
                     return NotFound("Document not found");
                 }
 
-                _logger.LogDebug("Document found for DocumentType={DocumentType}, Hash={Hash}", documentType, hash);
+                _logger.LogDebug("Document found for DocumentType={DocumentType}, Hash={Hash}", documentType, hash.Sanitize());
                 return Ok(dbItem.Data);
             }
         }
@@ -159,7 +159,7 @@ namespace SportsData.Provider.Application.Documents
         public async Task<ActionResult<GetExternalDocumentResponse>> GetExternalDocument(
             [FromBody] GetExternalDocumentQuery query)
         {
-            _logger.LogInformation("Began with {@Query}", query);
+            _logger.LogInformation("GetExternalDocument started. DocumentType={DocumentType}, Sport={Sport}", query.DocumentType, query.Sport);
 
             var collectionName = _decoder.GetCollectionName(
                 query.SourceDataProvider,
@@ -231,7 +231,7 @@ namespace SportsData.Provider.Application.Documents
         public async Task<ActionResult<GetExternalImageResponse>> GetExternalImage(
             [FromBody] GetExternalImageQuery query, CancellationToken ct)
         {
-            _logger.LogInformation("Began with {@Query}", query);
+            _logger.LogInformation("GetExternalImage started. DocumentType={DocumentType}, Sport={Sport}", query.DocumentType, query.Sport);
 
             var collectionName = _decoder.GetCollectionName(
                 query.SourceDataProvider,
@@ -274,7 +274,7 @@ namespace SportsData.Provider.Application.Documents
 
             if (stream is null)
             {
-                _logger.LogWarning("Image fetch failed {Host} {Hash}", host, hash);
+                _logger.LogWarning("Image fetch failed {Host} {Hash}", host.Sanitize(), hash.Sanitize());
                 return StatusCode(502, "Failed to fetch image.");
             }
 

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -43,7 +44,7 @@ public class GetVenueByIdQueryHandler : IGetVenueByIdentifierQueryHandler
     {
         _logger.LogInformation(
             "GetVenueByIdentifier started. Identifier={Identifier}",
-            query.Identifier);
+            query.Identifier.Sanitize());
 
         Venue? venue;
 
@@ -74,14 +75,14 @@ public class GetVenueByIdQueryHandler : IGetVenueByIdentifierQueryHandler
 
             if (venue == null)
             {
-                _logger.LogWarning("Venue not found by slug. Slug={Slug}", query.Identifier);
+                _logger.LogWarning("Venue not found by slug. Slug={Slug}", query.Identifier.Sanitize());
                 return new Failure<VenueDto>(
                     default!,
                     ResultStatus.NotFound,
                     [new ValidationFailure(nameof(query.Identifier), $"Venue not found with slug: {query.Identifier}")]);
             }
 
-            _logger.LogInformation("Venue found by slug. Slug={Slug}, Name={Name}", query.Identifier, venue.Name);
+            _logger.LogInformation("Venue found by slug. Slug={Slug}, Name={Name}", query.Identifier.Sanitize(), venue.Name);
         }
 
         var dto = _mapper.Map<VenueDto>(venue);

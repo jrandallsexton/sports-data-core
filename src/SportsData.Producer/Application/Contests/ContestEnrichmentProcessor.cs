@@ -75,9 +75,7 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                // TODO: Do we _actually_ need to fetch the status? If the StartTime is in the past, and we are running this job, isn't it safe to assume the game is over?
-                // Actually we have it on the competition.Status
-
+                // verify completion
                 var compStatus = competition.Status;
 
                 if (compStatus?.StatusTypeName != "STATUS_FINAL")

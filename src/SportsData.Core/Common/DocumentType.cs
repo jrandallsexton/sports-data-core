@@ -47,6 +47,7 @@
         // 44 = Reserved (formerly TeamSeasonCoach - removed as redundant with CoachSeason)
         TeamSeasonInjuries = 45,
         TeamSeasonLeaders = 46,
+        TeamSeasonNote = 67,
         TeamSeasonProjection = 47,
         TeamSeasonRank = 48,
         TeamSeasonRecord = 49,

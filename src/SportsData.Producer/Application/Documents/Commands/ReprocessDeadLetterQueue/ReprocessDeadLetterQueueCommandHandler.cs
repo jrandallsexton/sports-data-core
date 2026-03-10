@@ -9,6 +9,7 @@ using FluentValidation.Results;
 using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.Eventing;
+using SportsData.Core.Extensions;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Processing;
 
@@ -80,12 +81,12 @@ public class ReprocessDeadLetterQueueCommandHandler : IReprocessDeadLetterQueueC
 
         using (_logger.BeginScope(new Dictionary<string, object>
         {
-            ["QueueName"] = queueName,
+            ["QueueName"] = queueName.Sanitize(),
             ["RequestedCount"] = command.Count
         }))
         {
             _logger.LogInformation(
-                "DLQ_REPROCESS: Beginning. QueueName={QueueName}, Count={Count}", queueName, command.Count);
+                "DLQ_REPROCESS: Beginning. QueueName={QueueName}, Count={Count}", queueName.Sanitize(), command.Count);
 
             var managementApiBaseUrl = _configuration[CommonConfigKeys.RabbitMqManagementApiBaseUrl];
             var username = _configuration[CommonConfigKeys.RabbitMqUsername];

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Routing;
+using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Jobs.Definitions;
@@ -60,7 +61,7 @@ namespace SportsData.Provider.Application.ResourceIndex
                 _logger.LogInformation(
                     "Processing ResourceIndex {Id} with inclusion filter: {DocumentTypes}",
                     indexId,
-                    string.Join(", ", request.IncludeLinkedDocumentTypes));
+                    string.Join(", ", request.IncludeLinkedDocumentTypes).Sanitize());
             }
 
             var result = _backgroundJobProvider.Enqueue<ResourceIndexJob>(x => x.ExecuteAsync(jobDef));

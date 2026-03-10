@@ -1,6 +1,7 @@
 using SportsData.Api.Infrastructure.Refs;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Infrastructure.Clients.Venue.Queries;
 
@@ -35,8 +36,8 @@ public class GetVenuesQueryHandler : IGetVenuesQueryHandler
     {
         _logger.LogInformation(
             "GetVenues started. Sport={Sport}, League={League}, PageNumber={PageNumber}, PageSize={PageSize}",
-            query.Sport,
-            query.League,
+            query.Sport.Sanitize(),
+            query.League.Sanitize(),
             query.PageNumber,
             query.PageSize);
 
@@ -50,7 +51,7 @@ public class GetVenuesQueryHandler : IGetVenuesQueryHandler
         {
             _logger.LogWarning(ex,
                 "Unsupported sport/league combination. Sport={Sport}, League={League}",
-                query.Sport, query.League);
+                query.Sport.Sanitize(), query.League.Sanitize());
             return new Failure<GetVenuesResponseDto>(
                 new GetVenuesResponseDto(),
                 ResultStatus.BadRequest,
@@ -66,8 +67,8 @@ public class GetVenuesQueryHandler : IGetVenuesQueryHandler
         {
             _logger.LogWarning(
                 "GetVenues failed. Sport={Sport}, League={League}, Status={Status}",
-                query.Sport,
-                query.League,
+                query.Sport.Sanitize(),
+                query.League.Sanitize(),
                 failure.Status);
             
             return new Failure<GetVenuesResponseDto>(
@@ -122,8 +123,8 @@ public class GetVenuesQueryHandler : IGetVenuesQueryHandler
 
         _logger.LogInformation(
             "GetVenues completed. Sport={Sport}, League={League}, TotalCount={TotalCount}, ItemsReturned={ItemsReturned}",
-            query.Sport,
-            query.League,
+            query.Sport.Sanitize(),
+            query.League.Sanitize(),
             canonicalResponse.TotalCount,
             enrichedResponse.Items.Count);
 

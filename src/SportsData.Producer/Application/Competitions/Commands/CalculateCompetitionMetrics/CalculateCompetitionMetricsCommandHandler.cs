@@ -110,8 +110,8 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             OppThirdFourthRate = CalculateThirdFourthConversionRate(homeFranchiseSeasonId, plays),
             OppRzTdRate = CalculateRedZoneTdRate(homeFranchiseSeasonId, plays),
             OppScoreTdRate = CalculateRedZoneScoringRate(homeFranchiseSeasonId, plays),
-            // Special teams / Discipline (TODO)
-            NetPunt = 0m,
+            // Special teams / Discipline
+            NetPunt = 0m, // TODO
             FgPctShrunk = CalculateFgPctShrunk(awayFranchiseSeasonId, plays),
             FieldPosDiff = CalculateFieldPositionDiff(awayFranchiseSeasonId, drives),
             TurnoverMarginPerDrive = CalculateTurnoverMarginPerDrive(awayFranchiseSeasonId, plays, drives),
@@ -142,8 +142,8 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             OppThirdFourthRate = CalculateThirdFourthConversionRate(awayFranchiseSeasonId, plays),
             OppRzTdRate = CalculateRedZoneTdRate(awayFranchiseSeasonId, plays),
             OppScoreTdRate = CalculateRedZoneScoringRate(awayFranchiseSeasonId, plays),
-            // Special teams / Discipline (TODO)
-            NetPunt = 0m,
+            // Special teams / Discipline
+            NetPunt = 0m, // TODO
             FgPctShrunk = CalculateFgPctShrunk(homeFranchiseSeasonId, plays),
             FieldPosDiff = CalculateFieldPositionDiff(homeFranchiseSeasonId, drives),
             TurnoverMarginPerDrive = CalculateTurnoverMarginPerDrive(homeFranchiseSeasonId, plays, drives),

@@ -235,7 +235,14 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
                 DocumentType.TeamSeasonInjuries);
         }
 
-        // TODO: MED: Request sourcing of team season notes (data not available when following link)
+        if (isNew || ShouldSpawn(DocumentType.TeamSeasonNote, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.Notes,
+                canonicalEntity.Id,
+                DocumentType.TeamSeasonNote);
+        }
 
         // Process record ATS (Against The Spread)
         if (isNew || ShouldSpawn(DocumentType.TeamSeasonRecordAts, command))

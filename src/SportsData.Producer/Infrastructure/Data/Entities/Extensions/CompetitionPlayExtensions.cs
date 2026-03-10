@@ -50,7 +50,7 @@ public static class CompetitionPlayExtensions
             StartYardLine = dto.Start?.YardLine,
             StartYardsToEndzone = dto.Start?.YardsToEndzone,
             StatYardage = dto.StatYardage,
-            Text = dto.Text ?? "UNK", // TODO: This popped up as null in some data; need to investigate
+            Text = dto.Text ?? "UNK", // This popped up as null in some data; default to "UNK"
             Type = dto.Type?.Id is null ? PlayType.Unknown: Enum.Parse<PlayType>(dto.Type.Id),
             TypeId = dto.Type?.Id is null ? "9999" : dto.Type.Id,
             ExternalIds = new List<CompetitionPlayExternalId>

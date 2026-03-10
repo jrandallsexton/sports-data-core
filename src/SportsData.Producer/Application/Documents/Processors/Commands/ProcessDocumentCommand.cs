@@ -103,7 +103,6 @@ public class ProcessDocumentCommand(
         return new Dictionary<string, object>
         {
             ["AttemptCount"] = AttemptCount,
-            // TODO: ["CausationId"] = CausationId, 
             ["CorrelationId"] = CorrelationId,
             ["DocumentType"] = DocumentType,
             ["MessageId"] = MessageId,

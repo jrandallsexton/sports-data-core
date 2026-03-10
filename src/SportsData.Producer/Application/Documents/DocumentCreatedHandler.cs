@@ -15,8 +15,6 @@ namespace SportsData.Producer.Application.Documents
         private readonly IEventBus _eventBus;
         private readonly IMessageDeliveryScope _deliveryScope;
 
-        // TODO: Look into middleware for filtering these based on Sport (mode) for the producer instance
-
         public DocumentCreatedHandler(
             ILogger<DocumentCreatedHandler> logger,
             IProvideBackgroundJobs backgroundJobProvider,

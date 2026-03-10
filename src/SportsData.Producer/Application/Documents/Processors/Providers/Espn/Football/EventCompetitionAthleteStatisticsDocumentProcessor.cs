@@ -111,12 +111,8 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
         // --- Generate Identity ---
         var identity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
-        // --- Wholesale Replacement (Remove + Create in single transaction) ---
-        // Uses a retry loop because the xmin-based optimistic concurrency check on the DELETE
-        // can fail if another pod modifies the row between our load and our save. A single
-        // nested catch is not sufficient — the retry itself can also encounter contention.
-        // TODO: Consider externalizing maxConcurrencyRetries to Azure AppConfig so it can be
-        // tuned without redeployment (key: SportsData.Producer:Processing:MaxConcurrencyRetries).
+        // Retry loop: xmin optimistic concurrency on DELETE can fail if another pod
+        // modifies the row between our load and save.
         const int maxConcurrencyRetries = 3;
         AthleteCompetitionStatistic? entity = null;
 

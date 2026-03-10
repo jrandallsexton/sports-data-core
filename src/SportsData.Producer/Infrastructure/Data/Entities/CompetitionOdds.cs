@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
@@ -40,6 +41,12 @@ public class CompetitionOdds : CanonicalEntityBase<Guid>, IHasExternalIds
     public bool? MoneylineWinner { get; set; }
     public bool? SpreadWinner { get; set; }
 
+    // Enrichment results (computed post-game from final scores against this provider's lines)
+    public Guid? WinnerFranchiseSeasonId { get; set; }
+    public Guid? AtsWinnerFranchiseSeasonId { get; set; }
+    public OverUnderResult OverUnderResult { get; set; } = OverUnderResult.None;
+    public DateTime? EnrichedUtc { get; set; }
+
     public ICollection<CompetitionOddsLink> Links { get; set; } = [];
     public Uri? PropBetsRef { get; set; }
     public string? ContentHash { get; set; }
@@ -74,6 +81,9 @@ public class CompetitionOdds : CanonicalEntityBase<Guid>, IHasExternalIds
             builder.Property(x => x.Details).HasMaxLength(256);
             builder.Property(x => x.ContentHash).HasMaxLength(128);
             builder.Property(x => x.PropBetsRef).HasMaxLength(256);
+
+            builder.HasIndex(x => x.WinnerFranchiseSeasonId);
+            builder.HasIndex(x => x.AtsWinnerFranchiseSeasonId);
 
             foreach (var p in typeof(CompetitionOdds).GetProperties()
                          .Where(p => p.PropertyType == typeof(decimal?)))

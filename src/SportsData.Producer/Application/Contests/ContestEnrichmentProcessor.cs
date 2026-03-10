@@ -262,6 +262,11 @@ namespace SportsData.Producer.Application.Contests
         {
             foreach (var odds in allOdds)
             {
+                // Reset prior results so reruns don't retain stale values
+                odds.WinnerFranchiseSeasonId = null;
+                odds.AtsWinnerFranchiseSeasonId = null;
+                odds.OverUnderResult = OverUnderResult.None;
+
                 // Straight-up winner
                 if (awayScore != homeScore)
                 {

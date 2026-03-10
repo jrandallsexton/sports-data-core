@@ -52,7 +52,7 @@ namespace SportsData.Producer.Application.Contests
                     .Include(c => c.ExternalIds)
                     .Include(c => c.Competitors)
                     .ThenInclude(comp => comp.ExternalIds)
-                    .Include(c => c.Odds.Where(o => o.ProviderId == SportsBook.EspnBet.ToProviderId() || o.ProviderId == SportsBook.DraftKings100.ToProviderId()))
+                    .Include(c => c.Odds)
                     .ThenInclude(o => o.Teams)
                     .Include(c => c.Contest)
                     .Include(c => c.Status)
@@ -219,30 +219,25 @@ namespace SportsData.Producer.Application.Contests
                 contest.FinalizedUtc = _dateTimeProvider.UtcNow();
                 contest.EndDateUtc = plays?.Items?.Last().Wallclock;
 
-                // were there odds on this game?
-                var odds = competition.Odds?.Where(x => x.ProviderId == SportsBook.EspnBet.ToProviderId()).FirstOrDefault() ??
-                           competition.Odds?.Where(x => x.ProviderId == SportsBook.DraftKings100.ToProviderId()).FirstOrDefault();
-
-                // TODO: Later we might want to score each odd individually - or even see if they were updated
-                // they are indeed updated post-game.  Will verify.
-                if (odds != null)
+                // Enrich results for every odds provider
+                if (competition.Odds?.Any() == true)
                 {
-                    if (odds.OverUnder.HasValue)
-                    {
-                        contest.OverUnder = GetOverUnderResult(
-                            contest.AwayScore!.Value,
-                            contest.HomeScore!.Value,
-                            odds.OverUnder.Value);
-                    }
+                    EnrichOddsResults(
+                        competition.Odds,
+                        awayFranchiseSeasonId,
+                        homeFranchiseSeasonId,
+                        contest.AwayScore!.Value,
+                        contest.HomeScore!.Value);
 
-                    if (odds.Spread.HasValue)
+                    // Maintain Contest-level denormalized fields from the primary provider
+                    var primaryOdds = competition.Odds
+                        .FirstOrDefault(o => o.EnrichedUtc.HasValue && o.ProviderId == SportsBook.EspnBet.ToProviderId())
+                        ?? competition.Odds.FirstOrDefault(o => o.EnrichedUtc.HasValue);
+
+                    if (primaryOdds != null)
                     {
-                        contest.SpreadWinnerFranchiseId = GetSpreadWinnerFranchiseSeasonId(
-                            awayFranchiseSeasonId,
-                            homeFranchiseSeasonId,
-                            contest.AwayScore!.Value,
-                            contest.HomeScore!.Value,
-                            odds.Spread!.Value);
+                        contest.OverUnder = primaryOdds.OverUnderResult;
+                        contest.SpreadWinnerFranchiseId = primaryOdds.AtsWinnerFranchiseSeasonId;
                     }
                 }
 
@@ -258,7 +253,58 @@ namespace SportsData.Producer.Application.Contests
             }
         }
 
-        public OverUnderResult GetOverUnderResult(int awayScore, int homeScore, decimal overUnder)
+        internal void EnrichOddsResults(
+            ICollection<CompetitionOdds> allOdds,
+            Guid awayFranchiseSeasonId,
+            Guid homeFranchiseSeasonId,
+            int awayScore,
+            int homeScore)
+        {
+            foreach (var odds in allOdds)
+            {
+                // Reset prior results so reruns don't retain stale values
+                odds.WinnerFranchiseSeasonId = null;
+                odds.AtsWinnerFranchiseSeasonId = null;
+                odds.OverUnderResult = OverUnderResult.None;
+
+                // Straight-up winner
+                if (awayScore != homeScore)
+                {
+                    odds.WinnerFranchiseSeasonId = homeScore > awayScore
+                        ? homeFranchiseSeasonId
+                        : awayFranchiseSeasonId;
+                }
+
+                // Over/Under result
+                if (odds.OverUnder.HasValue)
+                {
+                    odds.OverUnderResult = GetOverUnderResult(awayScore, homeScore, odds.OverUnder.Value);
+                }
+
+                // ATS winner
+                if (odds.Spread.HasValue)
+                {
+                    odds.AtsWinnerFranchiseSeasonId = GetSpreadWinnerFranchiseSeasonId(
+                        awayFranchiseSeasonId,
+                        homeFranchiseSeasonId,
+                        awayScore,
+                        homeScore,
+                        odds.Spread.Value);
+                }
+
+                odds.EnrichedUtc = _dateTimeProvider.UtcNow();
+
+                _logger.LogInformation(
+                    "Enriched CompetitionOdds {OddsId} for provider {ProviderName}. " +
+                    "Winner={WinnerId}, ATS={AtsId}, O/U={OverUnder}",
+                    odds.Id, odds.ProviderName,
+                    odds.WinnerFranchiseSeasonId,
+                    odds.AtsWinnerFranchiseSeasonId,
+                    odds.OverUnderResult);
+            }
+        }
+
+        internal OverUnderResult GetOverUnderResult(int awayScore, int homeScore, decimal overUnder)
         {
             var total = awayScore + homeScore;
 
@@ -271,7 +317,7 @@ namespace SportsData.Producer.Application.Contests
             return OverUnderResult.Push;
         }
 
-        public Guid? GetSpreadWinnerFranchiseSeasonId(
+        internal Guid? GetSpreadWinnerFranchiseSeasonId(
             Guid awayFranchiseSeasonId,
             Guid homeFranchiseSeasonId,
             int awayScore,

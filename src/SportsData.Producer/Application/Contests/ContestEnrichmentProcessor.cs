@@ -253,7 +253,7 @@ namespace SportsData.Producer.Application.Contests
             }
         }
 
-        public void EnrichOddsResults(
+        internal void EnrichOddsResults(
             ICollection<CompetitionOdds> allOdds,
             Guid awayFranchiseSeasonId,
             Guid homeFranchiseSeasonId,
@@ -299,7 +299,7 @@ namespace SportsData.Producer.Application.Contests
             }
         }
 
-        public OverUnderResult GetOverUnderResult(int awayScore, int homeScore, decimal overUnder)
+        internal OverUnderResult GetOverUnderResult(int awayScore, int homeScore, decimal overUnder)
         {
             var total = awayScore + homeScore;
 
@@ -312,7 +312,7 @@ namespace SportsData.Producer.Application.Contests
             return OverUnderResult.Push;
         }
 
-        public Guid? GetSpreadWinnerFranchiseSeasonId(
+        internal Guid? GetSpreadWinnerFranchiseSeasonId(
             Guid awayFranchiseSeasonId,
             Guid homeFranchiseSeasonId,
             int awayScore,

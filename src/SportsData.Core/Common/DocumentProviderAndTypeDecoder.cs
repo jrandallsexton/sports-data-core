@@ -106,6 +106,7 @@ namespace SportsData.Core.Common
                 case DocumentType.AthleteImage:
                 case DocumentType.GolfCalendar:
                 case DocumentType.Standings:
+                case DocumentType.TeamSeasonNote:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(docType), docType, null);
             }
@@ -150,6 +151,7 @@ namespace SportsData.Core.Common
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:
+                case DocumentType.TeamSeasonNote:
                 case DocumentType.Weeks:
                 case DocumentType.Position:
                 default:

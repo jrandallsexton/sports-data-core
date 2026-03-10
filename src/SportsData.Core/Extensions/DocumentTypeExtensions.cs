@@ -54,6 +54,7 @@ public static class DocumentTypeExtensions
             DocumentType.TeamSeasonAward => "team-season-award",
             DocumentType.TeamSeasonInjuries => "team-season-injuries",
             DocumentType.TeamSeasonLeaders => "team-season-leaders",
+            DocumentType.TeamSeasonNote => "team-season-note",
             DocumentType.TeamSeasonProjection => "team-season-projection",
             DocumentType.TeamSeasonRank => "team-season-rank",
             DocumentType.TeamSeasonRecord => "team-season-record",

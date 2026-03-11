@@ -219,6 +219,10 @@ public class FinalizeContestsBySeasonYearHandlerTests :
             await FootballDataContext.Contests.AddAsync(contest);
         }
 
+        // Create off-target contests (different season/sport) that should NOT be enqueued
+        await FootballDataContext.Contests.AddAsync(CreateContest(sport, 2025, finalized: false));
+        await FootballDataContext.Contests.AddAsync(CreateContest(sport, 2025, finalized: true));
+
         await FootballDataContext.SaveChangesAsync();
 
         var command = new FinalizeContestsBySeasonYearCommand

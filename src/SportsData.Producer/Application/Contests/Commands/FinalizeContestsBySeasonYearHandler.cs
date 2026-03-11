@@ -67,17 +67,24 @@ namespace SportsData.Producer.Application.Contests.Commands
             {
                 _logger.LogInformation("Finalizing contests");
 
-                var contestIds = await _dataContext.Contests
+                var query = _dataContext.Contests
                     .AsNoTracking()
                     .Where(c => c.Sport == command.Sport &&
-                                c.SeasonYear == command.SeasonYear &&
-                                c.FinalizedUtc == null)
+                                c.SeasonYear == command.SeasonYear);
+
+                if (!command.ReprocessEnriched)
+                {
+                    query = query.Where(c => c.FinalizedUtc == null);
+                }
+
+                var contestIds = await query
                     .Select(c => c.Id)
                     .ToListAsync(cancellationToken);
 
                 _logger.LogInformation(
-                    "Found {ContestCount} unfinalized contests to process",
-                    contestIds.Count);
+                    "Found {ContestCount} contests to process (ReprocessEnriched={ReprocessEnriched})",
+                    contestIds.Count,
+                    command.ReprocessEnriched);
 
                 foreach (var contestId in contestIds)
                 {

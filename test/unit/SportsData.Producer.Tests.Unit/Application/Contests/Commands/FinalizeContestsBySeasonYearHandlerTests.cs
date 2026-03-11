@@ -193,6 +193,52 @@ public class FinalizeContestsBySeasonYearHandlerTests :
     }
 
     [Fact]
+    public async Task WhenReprocessEnrichedIsTrue_ShouldEnqueueAllContestsIncludingFinalized()
+    {
+        // Arrange
+        var backgroundJobProvider = Mocker.GetMock<IProvideBackgroundJobs>();
+        var sut = Mocker.CreateInstance<FinalizeContestsBySeasonYearHandler>();
+
+        var sport = Sport.FootballNcaa;
+        var seasonYear = 2024;
+
+        // Create unfinalized contests
+        for (int i = 0; i < 3; i++)
+        {
+            var contest = CreateContest(sport, seasonYear, finalized: false);
+            await FootballDataContext.Contests.AddAsync(contest);
+        }
+
+        // Create already finalized contests
+        for (int i = 0; i < 4; i++)
+        {
+            var contest = CreateContest(sport, seasonYear, finalized: true);
+            await FootballDataContext.Contests.AddAsync(contest);
+        }
+
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new FinalizeContestsBySeasonYearCommand
+        {
+            Sport = sport,
+            SeasonYear = seasonYear,
+            ReprocessEnriched = true
+        };
+
+        // Act
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<Success<Guid>>();
+        result.IsSuccess.Should().BeTrue();
+
+        // Should enqueue jobs for ALL contests (3 unfinalized + 4 finalized)
+        backgroundJobProvider.Verify(
+            x => x.Enqueue(It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+            Times.Exactly(7));
+    }
+
+    [Fact]
     public async Task WhenValidationFails_ShouldReturnFailure()
     {
         // Arrange

@@ -93,7 +93,9 @@ namespace SportsData.Producer.Application.Contests
         public IActionResult FinalizeContestsBySeasonYear(
             [FromBody] FinalizeContestsBySeasonYearCommand command)
         {
-            var correlationId = ActivityExtensions.GetCorrelationId();
+            var correlationId = command.CorrelationId == Guid.Empty
+                ? ActivityExtensions.GetCorrelationId()
+                : command.CorrelationId;
 
             _logger.LogInformation(
                 "FinalizeContestsBySeasonYear requested. Sport={Sport}, SeasonYear={SeasonYear}, ReprocessEnriched={ReprocessEnriched}, CorrelationId={CorrelationId}",

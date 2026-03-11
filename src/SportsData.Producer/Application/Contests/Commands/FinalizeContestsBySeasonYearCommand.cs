@@ -10,5 +10,5 @@ public record FinalizeContestsBySeasonYearCommand
 
     public bool ReprocessEnriched { get; init; }
 
-    public Guid CorrelationId { get; init; } = Guid.NewGuid();
+    public Guid CorrelationId { get; init; } = Guid.Empty;
 }

@@ -57,7 +57,8 @@ public class FinalizeContestsBySeasonYearHandlerTests :
         var command = new FinalizeContestsBySeasonYearCommand
         {
             Sport = sport,
-            SeasonYear = seasonYear
+            SeasonYear = seasonYear,
+            CorrelationId = Guid.NewGuid()
         };
 
         // Act
@@ -96,7 +97,8 @@ public class FinalizeContestsBySeasonYearHandlerTests :
         var command = new FinalizeContestsBySeasonYearCommand
         {
             Sport = sport,
-            SeasonYear = seasonYear
+            SeasonYear = seasonYear,
+            CorrelationId = Guid.NewGuid()
         };
 
         // Act
@@ -140,7 +142,8 @@ public class FinalizeContestsBySeasonYearHandlerTests :
         var command = new FinalizeContestsBySeasonYearCommand
         {
             Sport = targetSport,
-            SeasonYear = targetSeasonYear
+            SeasonYear = targetSeasonYear,
+            CorrelationId = Guid.NewGuid()
         };
 
         // Act
@@ -222,7 +225,8 @@ public class FinalizeContestsBySeasonYearHandlerTests :
         {
             Sport = sport,
             SeasonYear = seasonYear,
-            ReprocessEnriched = true
+            ReprocessEnriched = true,
+            CorrelationId = Guid.NewGuid()
         };
 
         // Act

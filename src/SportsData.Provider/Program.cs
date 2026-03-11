@@ -55,7 +55,7 @@ namespace SportsData.Provider
                 builder.Configuration.GetSection($"{builder.Environment.ApplicationName}:ProviderDocDatabaseConfig"));
 
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName, mode);
-            services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck));
+            services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck), tags: ["ready"]);
             
             var docDbProviderValue = config["SportsData.Provider:ProviderDocDatabaseConfig:Provider"];
             var useMongo = docDbProviderValue == "Mongo";

@@ -189,6 +189,7 @@ namespace SportsData.Core.DependencyInjection
             services.AddHangfireServer(serverOptions =>
             {
                 serverOptions.WorkerCount = minWorkers;
+                serverOptions.ShutdownTimeout = TimeSpan.FromSeconds(90);
             });
             
             return services;
@@ -201,9 +202,9 @@ namespace SportsData.Core.DependencyInjection
             where TDbContext : DbContext where TPublisher : class
         {
             services.AddHealthChecks()
-                .AddCheck<HealthCheck>($"{apiName}-{mode}")
-                .AddCheck<LoggingHealthCheck>("logging")
-                .AddCheck<DatabaseHealthCheck<TDbContext>>($"{apiName}-db");
+                .AddCheck<HealthCheck>($"{apiName}-{mode}", tags: ["live", "ready"])
+                .AddCheck<LoggingHealthCheck>("logging", tags: ["ready"])
+                .AddCheck<DatabaseHealthCheck<TDbContext>>($"{apiName}-db", tags: ["ready"]);
 
             services.AddHostedService<HeartbeatPublisher<TPublisher>>();
 
@@ -216,15 +217,15 @@ namespace SportsData.Core.DependencyInjection
             where TPublisher : class
         {
             services.AddHealthChecks()
-                .AddCheck<HealthCheck>(apiName)
+                .AddCheck<HealthCheck>(apiName, tags: ["live", "ready"])
                 //.AddCheck<CachingHealthCheck>("caching")
-                .AddCheck<LoggingHealthCheck>("logging")
+                .AddCheck<LoggingHealthCheck>("logging", tags: ["ready"])
                 //.AddCheck<ClientHealthCheck<IProvideContests>>(HttpClients.ContestClient)
                 //.AddCheck<ClientHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)
                 //.AddCheck<ClientHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)
                 //.AddCheck<ClientHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
                 //.AddCheck<ClientHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
-                .AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient);
+                .AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient, tags: ["ready"]);
             //.AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
             //.AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
 

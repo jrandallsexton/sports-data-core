@@ -71,6 +71,12 @@ namespace SportsData.Core.DependencyInjection
 
         public static WebApplication UseCommonFeatures(this WebApplication app, string buildConfiguration = "Debug")
         {
+            app.UseHealthChecks("/api/health/live", new HealthCheckOptions()
+            {
+                Predicate = check => check.Tags.Contains("live"),
+                ResponseWriter = HealthCheckWriter.WriteResponse
+            });
+
             app.UseHealthChecks("/api/health", new HealthCheckOptions()
             {
                 ResponseWriter = HealthCheckWriter.WriteResponse

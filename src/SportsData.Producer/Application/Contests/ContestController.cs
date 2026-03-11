@@ -89,29 +89,26 @@ namespace SportsData.Producer.Application.Contests
         }
 
         [HttpPost]
-        [Route("finalize/{sport}/{seasonYear}")]
+        [Route("finalize")]
         public IActionResult FinalizeContestsBySeasonYear(
-            [FromRoute] Sport sport,
-            [FromRoute] int seasonYear)
+            [FromBody] FinalizeContestsBySeasonYearCommand command)
         {
-            var correlationId = ActivityExtensions.GetCorrelationId();
+            var correlationId = command.CorrelationId == Guid.Empty
+                ? ActivityExtensions.GetCorrelationId()
+                : command.CorrelationId;
 
             _logger.LogInformation(
-                "FinalizeContestsBySeasonYear requested. Sport={Sport}, SeasonYear={SeasonYear}, CorrelationId={CorrelationId}",
-                sport,
-                seasonYear,
+                "FinalizeContestsBySeasonYear requested. Sport={Sport}, SeasonYear={SeasonYear}, ReprocessEnriched={ReprocessEnriched}, CorrelationId={CorrelationId}",
+                command.Sport,
+                command.SeasonYear,
+                command.ReprocessEnriched,
                 correlationId);
 
-            var cmd = new FinalizeContestsBySeasonYearCommand
-            {
-                Sport = sport,
-                SeasonYear = seasonYear,
-                CorrelationId = correlationId
-            };
+            var cmd = command with { CorrelationId = correlationId };
 
             _backgroundJobProvider.Enqueue<IFinalizeContestsBySeasonYearHandler>(h => h.ExecuteAsync(cmd, CancellationToken.None));
 
-            return Accepted(new { CorrelationId = correlationId, Sport = sport, SeasonYear = seasonYear });
+            return Accepted(new { CorrelationId = correlationId, Sport = command.Sport, SeasonYear = command.SeasonYear });
         }
 
         [HttpPost]

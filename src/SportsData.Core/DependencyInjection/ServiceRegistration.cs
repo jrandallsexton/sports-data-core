@@ -276,7 +276,7 @@ namespace SportsData.Core.DependencyInjection
                         options.Filter = httpContext =>
                         {
                             // Don't trace health checks
-                            return !httpContext.Request.Path.StartsWithSegments("/health");
+                            return !httpContext.Request.Path.StartsWithSegments("/api/health");
                         };
                     });
 

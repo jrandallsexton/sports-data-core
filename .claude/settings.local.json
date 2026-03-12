@@ -18,7 +18,24 @@
       "Bash(tail:*)",
       "Bash(head:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(dotnet tool:*)",
+      "Bash(dotnet:*)",
+      "Bash(claude mcp:*)",
+      "mcp__seq__SignalList",
+      "mcp__seq__SeqSearch",
+      "Bash(PYTHONIOENCODING=utf-8 python:*)",
+      "Bash(ls:*)",
+      "Bash(cmd:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" pr:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" api:*)",
+      "Bash(npm install:*)",
+      "Bash(npx jest:*)",
+      "Bash(npx jest-expo:*)",
+      "Bash(gh pr:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm view:*)"
     ]
   }
 }

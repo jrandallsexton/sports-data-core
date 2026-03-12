@@ -42,9 +42,11 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
         public async Task TripAsync(string reason)
         {
             string? alreadyOpen = null;
+            var readSucceeded = false;
             try
             {
                 alreadyOpen = await _cache.GetStringAsync(CircuitKey);
+                readSucceeded = true;
             }
             catch (Exception ex)
             {
@@ -65,7 +67,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 _logger.LogError(ex, "Failed to persist ESPN circuit breaker trip for key {CircuitKey}", CircuitKey);
             }
 
-            if (alreadyOpen is null)
+            if (readSucceeded && alreadyOpen is null)
             {
                 _logger.LogCritical(
                     "ESPN circuit breaker TRIPPED. Reason: {Reason}. All ESPN API calls paused until {OpenUntil:u} ({CooldownSeconds}s cooldown)",

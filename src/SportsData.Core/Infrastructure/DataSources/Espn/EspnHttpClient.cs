@@ -22,14 +22,17 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
         private readonly HttpClient _httpClient;
         private readonly EspnApiClientConfig _config;
         private readonly ILogger<EspnHttpClient> _logger;
+        private readonly IEspnCircuitBreaker _circuitBreaker;
 
         public EspnHttpClient(HttpClient httpClient,
                               IOptions<EspnApiClientConfig> config,
-                              ILogger<EspnHttpClient> logger)
+                              ILogger<EspnHttpClient> logger,
+                              IEspnCircuitBreaker circuitBreaker)
         {
             _httpClient = httpClient;
             _config = config.Value;
             _logger = logger;
+            _circuitBreaker = circuitBreaker;
         }
 
         public async Task<Result<string>> GetRawJsonAsync(
@@ -72,11 +75,21 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 
         private async Task<Result<string>> FetchLiveAsync(Uri uri, bool bypassCache, bool stripQuerystring)
         {
+            // Check circuit breaker before making any ESPN call
+            if (await _circuitBreaker.IsOpenAsync())
+            {
+                _logger.LogDebug("ESPN circuit breaker is open, skipping request for {Uri}", uri);
+                return new Failure<string>(
+                    default!,
+                    ResultStatus.RateLimited,
+                    [new ValidationFailure(nameof(uri), "ESPN circuit breaker is open — rate limited")]);
+            }
+
             // Request-only HTTPS upgrade
             var requestUri = EspnRequestUri.ForFetch(uri);
 
             _logger.LogDebug("Fetching LIVE from ESPN: {RequestUri} (identity: {IdentityUri})", requestUri, uri);
-            
+
             // prevent banging on ESPN API too fast
             await Task.Delay(_config.RequestDelayMs);
 
@@ -97,11 +110,16 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                         _ => ResultStatus.Error
                     };
                     
+                    if (status == ResultStatus.Forbid)
+                    {
+                        await _circuitBreaker.TripAsync($"ESPN returned 403 for {uri}");
+                    }
+
                     _logger.LogError(
                         "ESPN API returned {StatusCode} for {Uri}",
                         response.StatusCode,
                         uri);
-                    
+
                     return new Failure<string>(
                         default!,
                         status,
@@ -209,6 +227,13 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 }
 
                 _logger.LogDebug("Cache MISS for image {Uri}", uri.ToString().Sanitize());
+            }
+
+            // Check circuit breaker before making any ESPN call
+            if (await _circuitBreaker.IsOpenAsync())
+            {
+                _logger.LogDebug("ESPN circuit breaker is open, skipping image request for {Uri}", uri.ToString().Sanitize());
+                return null;
             }
 
             _logger.LogInformation("Fetching image from {Uri}", uri.ToString().Sanitize());

@@ -375,6 +375,7 @@ namespace SportsData.Core.DependencyInjection
                 .AddPolicyHandler(RetryPolicy.GetRetryPolicy());
 
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
+            services.AddSingleton<IEspnCircuitBreaker, NoOpEspnCircuitBreaker>();
             /* End ESPN */
 
             /* YouTube */

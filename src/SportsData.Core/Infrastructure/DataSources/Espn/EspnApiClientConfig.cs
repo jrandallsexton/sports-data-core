@@ -29,5 +29,12 @@
         /// Previously increased from 250ms to 1000ms to avoid triggering ESPN rate limits.
         /// </summary>
         public int RequestDelayMs { get; set; } = 1000;
+
+        /// <summary>
+        /// Cooldown period (in seconds) after a 403 from ESPN before retrying.
+        /// When the circuit breaker trips, ALL workers across ALL pods stop calling ESPN
+        /// for this duration. Default 300s (5 minutes).
+        /// </summary>
+        public int CircuitBreakerCooldownSeconds { get; set; } = 300;
     }
 }

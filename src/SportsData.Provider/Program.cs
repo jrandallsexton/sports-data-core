@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Consumers;
 using SportsData.Provider.Application.Documents;
@@ -37,6 +38,8 @@ namespace SportsData.Provider
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
             services.AddClients(config);
+            services.AddCaching(config);
+            services.AddSingleton<IEspnCircuitBreaker, RedisEspnCircuitBreaker>();
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 

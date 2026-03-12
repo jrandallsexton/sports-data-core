@@ -27,21 +27,43 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 
         public async Task<bool> IsOpenAsync()
         {
-            var value = await _cache.GetStringAsync(CircuitKey);
-            return value is not null;
+            try
+            {
+                var value = await _cache.GetStringAsync(CircuitKey);
+                return value is not null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to check ESPN circuit breaker state for key {CircuitKey}", CircuitKey);
+                return false; // Fail open — allow ESPN calls if Redis is unavailable
+            }
         }
 
         public async Task TripAsync(string reason)
         {
-            // Only log if the circuit isn't already open (avoid spamming on every 403)
-            var alreadyOpen = await _cache.GetStringAsync(CircuitKey);
+            string? alreadyOpen = null;
+            try
+            {
+                alreadyOpen = await _cache.GetStringAsync(CircuitKey);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to read ESPN circuit breaker state for key {CircuitKey}", CircuitKey);
+            }
 
             var openUntil = DateTime.UtcNow.AddSeconds(_cooldownSeconds);
 
-            await _cache.SetStringAsync(CircuitKey, openUntil.ToString("O"), new DistributedCacheEntryOptions
+            try
             {
-                AbsoluteExpiration = openUntil
-            });
+                await _cache.SetStringAsync(CircuitKey, openUntil.ToString("O"), new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpiration = openUntil
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to persist ESPN circuit breaker trip for key {CircuitKey}", CircuitKey);
+            }
 
             if (alreadyOpen is null)
             {
@@ -55,11 +77,19 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 
         public async Task<DateTime?> GetOpenUntilAsync()
         {
-            var value = await _cache.GetStringAsync(CircuitKey);
-            if (value is null)
-                return null;
+            try
+            {
+                var value = await _cache.GetStringAsync(CircuitKey);
+                if (value is null)
+                    return null;
 
-            return DateTime.TryParse(value, out var dt) ? dt : null;
+                return DateTime.TryParse(value, out var dt) ? dt : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to read ESPN circuit breaker state for key {CircuitKey}", CircuitKey);
+                return null;
+            }
         }
     }
 }

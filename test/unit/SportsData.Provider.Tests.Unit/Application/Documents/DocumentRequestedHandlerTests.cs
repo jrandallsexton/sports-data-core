@@ -210,7 +210,8 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
 
         var httpClient = new HttpClient();
         var options = Options.Create(apiConfig);
-        var httpWrapper = new EspnHttpClient(httpClient, options, NullLogger<EspnHttpClient>.Instance);
+        var circuitBreaker = new Mock<IEspnCircuitBreaker>();
+        var httpWrapper = new EspnHttpClient(httpClient, options, NullLogger<EspnHttpClient>.Instance, circuitBreaker.Object);
         var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
         // Inject the real client
         Mocker.Use<IProvideEspnApiData>(realEspnApiClient);
@@ -252,7 +253,8 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
 
         var httpClient = new HttpClient();
         var options = Options.Create(apiConfig);
-        var httpWrapper = new EspnHttpClient(httpClient, options, NullLogger<EspnHttpClient>.Instance);
+        var circuitBreaker = new Mock<IEspnCircuitBreaker>();
+        var httpWrapper = new EspnHttpClient(httpClient, options, NullLogger<EspnHttpClient>.Instance, circuitBreaker.Object);
         var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
         // Inject the real client
         Mocker.Use<IProvideEspnApiData>(realEspnApiClient);

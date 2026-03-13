@@ -199,23 +199,25 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 evt.CorrelationId);
 
             // On first page, detect hybrid and probe first $ref to see if individual items resolve
+            List<string>? rawItemJsonList = null;
             if (useInlineJson is null)
             {
-                useInlineJson = await DetectBrokenHybridAsync(dto, json, evt.CorrelationId);
+                (useInlineJson, rawItemJsonList) = await DetectBrokenHybridAsync(dto, json, evt.CorrelationId);
             }
 
             // Extract raw item JSON strings from the page response if we need inline data
-            List<string>? rawItemJsonList = null;
-            if (useInlineJson == true)
+            if (useInlineJson == true && rawItemJsonList is null)
             {
                 rawItemJsonList = ExtractRawItemJsonArray(json);
-                if (rawItemJsonList is null || rawItemJsonList.Count != dto.Items.Count)
-                {
-                    _logger.LogWarning(
-                        "Failed to extract inline JSON items (count mismatch). Falling back to $ref fetching. Uri={Uri}, CorrelationId={CorrelationId}",
-                        uri, evt.CorrelationId);
-                    useInlineJson = false;
-                }
+            }
+
+            if (useInlineJson == true && (rawItemJsonList is null || rawItemJsonList.Count != dto.Items.Count))
+            {
+                _logger.LogWarning(
+                    "Failed to extract inline JSON items (count mismatch). Falling back to $ref fetching. Uri={Uri}, CorrelationId={CorrelationId}",
+                    uri, evt.CorrelationId);
+                useInlineJson = false;
+                rawItemJsonList = null;
             }
 
             for (var i = 0; i < dto.Items.Count; i++)
@@ -319,25 +321,26 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     /// Detects whether a resource index is a "broken hybrid" — items have $ref URIs that return 404
     /// but contain full inline data. Probes the first item's $ref to determine this.
     /// </summary>
-    private async Task<bool> DetectBrokenHybridAsync(EspnResourceIndexDto dto, string json, Guid correlationId)
+    private async Task<(bool isBrokenHybrid, List<string>? rawItems)> DetectBrokenHybridAsync(
+        EspnResourceIndexDto dto, string json, Guid correlationId)
     {
         var firstItem = dto.Items[0];
 
         // If the first item has no $ref, this is already handled by the existing null-ref path
         if (firstItem.Ref is null)
-            return false;
+            return (false, null);
 
         // Check if the response contains inline data beyond just $ref and id
         // by examining the raw JSON for the first item
         var rawItems = ExtractRawItemJsonArray(json);
         if (rawItems is null || rawItems.Count == 0)
-            return false;
+            return (false, null);
 
         // Count properties in first item — if it only has $ref (and maybe id), it's not a hybrid
         using var itemDoc = JsonDocument.Parse(rawItems[0]);
         var propertyCount = itemDoc.RootElement.EnumerateObject().Count();
         if (propertyCount <= 2)
-            return false; // Just $ref and possibly id — standard resource index
+            return (false, null); // Just $ref and possibly id — standard resource index
 
         // This looks like a hybrid (has inline data). Probe the first $ref to see if it resolves.
         _logger.LogInformation(
@@ -353,7 +356,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             _logger.LogInformation(
                 "Hybrid probe succeeded — individual $refs resolve. Will fetch each item individually. CorrelationId={CorrelationId}",
                 correlationId);
-            return false;
+            return (false, null);
         }
 
         if (probeResult.Status == ResultStatus.NotFound)
@@ -362,7 +365,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 "Hybrid probe returned 404 — individual $refs are broken. Will use inline JSON for all items. Ref={Ref}, CorrelationId={CorrelationId}",
                 firstItem.Ref,
                 correlationId);
-            return true;
+            return (true, rawItems);
         }
 
         // Non-404 failure (rate limited, server error, etc.) — don't assume broken, try normal path
@@ -371,7 +374,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             probeResult.Status,
             firstItem.Ref,
             correlationId);
-        return false;
+        return (false, null);
     }
 
     /// <summary>

@@ -239,7 +239,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
                     // Construct filtered URI preserving existing query params: {baseUri}?id={itemId}&...
                     var itemQuery = System.Web.HttpUtility.ParseQueryString(uri.Query);
-                    itemQuery["id"] = System.Web.HttpUtility.UrlEncode(item.Id);
+                    itemQuery["id"] = item.Id;
 
                     var itemBaseUri = uri.GetLeftPart(UriPartial.Path);
                     var itemQueryString = itemQuery.ToString(); // re-encoded querystring

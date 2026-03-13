@@ -60,34 +60,34 @@ end
 ";
 
         private readonly IConnectionMultiplexer _redis;
+        private readonly IOptionsMonitor<EspnApiClientConfig> _configMonitor;
         private readonly ILogger<RedisEspnRateLimiter> _logger;
-        private readonly int _maxTokens;
-        private readonly double _tokensPerSecond;
-        private readonly int _maxWaitMs;
-        private readonly int _bucketTtlSeconds;
 
         public RedisEspnRateLimiter(
             IConnectionMultiplexer redis,
-            IOptions<EspnApiClientConfig> config,
+            IOptionsMonitor<EspnApiClientConfig> config,
             ILogger<RedisEspnRateLimiter> logger)
         {
             _redis = redis;
+            _configMonitor = config;
             _logger = logger;
-            _maxTokens = config.Value.RateLimitMaxTokens;
-            _tokensPerSecond = config.Value.RateLimitTokensPerSecond;
-            _maxWaitMs = config.Value.RateLimitMaxWaitMs;
-            _bucketTtlSeconds = (int)Math.Ceiling(_maxTokens / _tokensPerSecond) + 60;
         }
 
         public async Task<bool> AcquireAsync(CancellationToken ct = default)
         {
+            var cfg = _configMonitor.CurrentValue;
+            var maxTokens = cfg.RateLimitMaxTokens;
+            var tokensPerSecond = cfg.RateLimitTokensPerSecond;
+            var maxWaitMs = cfg.RateLimitMaxWaitMs;
+            var bucketTtlSeconds = (int)Math.Ceiling(maxTokens / tokensPerSecond) + 60;
+
             var sw = Stopwatch.StartNew();
 
             try
             {
                 var db = _redis.GetDatabase();
 
-                while (sw.ElapsedMilliseconds < _maxWaitMs)
+                while (sw.ElapsedMilliseconds < maxWaitMs)
                 {
                     ct.ThrowIfCancellationRequested();
 
@@ -96,7 +96,7 @@ end
                     var result = (int)await db.ScriptEvaluateAsync(
                         TokenBucketLua,
                         new RedisKey[] { BucketKey },
-                        new RedisValue[] { _maxTokens, _tokensPerSecond, nowMs, _bucketTtlSeconds });
+                        new RedisValue[] { maxTokens, tokensPerSecond, nowMs, bucketTtlSeconds });
 
                     if (result == 1)
                     {
@@ -116,7 +116,7 @@ end
                 // Max wait exceeded — fail open
                 _logger.LogWarning(
                     "ESPN rate limiter: max wait {MaxWaitMs}ms exceeded, failing open",
-                    _maxWaitMs);
+                    maxWaitMs);
                 return true;
             }
             catch (OperationCanceledException)

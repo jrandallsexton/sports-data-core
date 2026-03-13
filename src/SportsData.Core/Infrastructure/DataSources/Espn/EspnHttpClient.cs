@@ -20,19 +20,19 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
     public class EspnHttpClient
     {
         private readonly HttpClient _httpClient;
-        private readonly EspnApiClientConfig _config;
+        private readonly IOptionsMonitor<EspnApiClientConfig> _configMonitor;
         private readonly ILogger<EspnHttpClient> _logger;
         private readonly IEspnCircuitBreaker _circuitBreaker;
         private readonly IEspnRateLimiter _rateLimiter;
 
         public EspnHttpClient(HttpClient httpClient,
-                              IOptions<EspnApiClientConfig> config,
+                              IOptionsMonitor<EspnApiClientConfig> config,
                               ILogger<EspnHttpClient> logger,
                               IEspnCircuitBreaker circuitBreaker,
                               IEspnRateLimiter rateLimiter)
         {
             _httpClient = httpClient;
-            _config = config.Value;
+            _configMonitor = config;
             _logger = logger;
             _circuitBreaker = circuitBreaker;
             _rateLimiter = rateLimiter;
@@ -44,7 +44,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             bool stripQuerystring = true)
         {
             // Check cache first
-            if (_config is { ReadFromCache: true, ForceLiveFetch: false } && !bypassCache)
+            if (_configMonitor.CurrentValue is { ReadFromCache: true, ForceLiveFetch: false } && !bypassCache)
             {
                 var cached = await TryLoadFromDiskAsync(uri, stripQuerystring);
                 if (!string.IsNullOrEmpty(cached))
@@ -164,7 +164,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 }
 
                 // Optionally persist
-                if (_config.PersistLocally && !bypassCache)
+                if (_configMonitor.CurrentValue.PersistLocally && !bypassCache)
                 {
                     // Persist under the ORIGINAL identity URI key
                     await SaveToDiskAsync(uri, json, stripQuerystring);
@@ -221,7 +221,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
         {
             var path = GetCacheFilePath(uri, stripQuerystring, extension);
 
-            if (!bypassCache && _config.ReadFromCache && !_config.ForceLiveFetch)
+            if (!bypassCache && _configMonitor.CurrentValue.ReadFromCache && !_configMonitor.CurrentValue.ForceLiveFetch)
             {
                 if (File.Exists(path))
                 {
@@ -335,7 +335,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
         private string GetCacheFilePath(Uri uri, bool stripQuerystring = true, string extension = "json")
         {
             var filename = ConvertUriToFilename(uri, stripQuerystring) + $".{extension}";
-            return Path.Combine(_config.LocalCacheDirectory, filename);
+            return Path.Combine(_configMonitor.CurrentValue.LocalCacheDirectory, filename);
         }
 
         private static string ConvertUriToFilename(Uri uri, bool stripQuerystring = true)

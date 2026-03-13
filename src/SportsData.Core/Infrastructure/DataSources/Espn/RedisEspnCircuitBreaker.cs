@@ -12,17 +12,17 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
         private const string CircuitKey = "espn:circuit:open";
 
         private readonly IDistributedCache _cache;
+        private readonly IOptionsMonitor<EspnApiClientConfig> _configMonitor;
         private readonly ILogger<RedisEspnCircuitBreaker> _logger;
-        private readonly int _cooldownSeconds;
 
         public RedisEspnCircuitBreaker(
             IDistributedCache cache,
-            IOptions<EspnApiClientConfig> config,
+            IOptionsMonitor<EspnApiClientConfig> config,
             ILogger<RedisEspnCircuitBreaker> logger)
         {
             _cache = cache;
+            _configMonitor = config;
             _logger = logger;
-            _cooldownSeconds = config.Value.CircuitBreakerCooldownSeconds;
         }
 
         public async Task<bool> IsOpenAsync()
@@ -53,7 +53,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 _logger.LogError(ex, "Failed to read ESPN circuit breaker state for key {CircuitKey}", CircuitKey);
             }
 
-            var openUntil = DateTime.UtcNow.AddSeconds(_cooldownSeconds);
+            var openUntil = DateTime.UtcNow.AddSeconds(_configMonitor.CurrentValue.CircuitBreakerCooldownSeconds);
 
             try
             {
@@ -73,7 +73,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                     "ESPN circuit breaker TRIPPED. Reason: {Reason}. All ESPN API calls paused until {OpenUntil:u} ({CooldownSeconds}s cooldown)",
                     reason,
                     openUntil,
-                    _cooldownSeconds);
+                    _configMonitor.CurrentValue.CircuitBreakerCooldownSeconds);
             }
         }
 

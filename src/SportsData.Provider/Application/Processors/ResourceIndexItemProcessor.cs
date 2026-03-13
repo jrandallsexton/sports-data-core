@@ -210,19 +210,33 @@ namespace SportsData.Provider.Application.Processors
             }
 
             // Either document doesn't exist OR we're bypassing cache - fetch from ESPN
-            var result = await _espnApi.GetResource(command.Uri.ToCleanUri(), bypassCache: command.BypassCache);
+            string itemJson;
 
-            if (!result.IsSuccess)
+            if (command.InlineJson is not null)
             {
-                _logger.LogError(
-                    "ESPN request failed: Status={Status}, Uri={Uri}, DocumentType={DocumentType}",
-                    result.Status,
-                    command.Uri,
-                    command.DocumentType);
-                return; // Clean exit - ESPN client already logged details
+                // Hybrid resource index: ESPN's individual $ref returns 404, but the
+                // parent index response included the full item data inline.
+                _logger.LogDebug(
+                    "Using inline JSON from hybrid resource index. UrlHash={UrlHash}, DocumentType={DocumentType}",
+                    urlHash, command.DocumentType);
+                itemJson = command.InlineJson;
             }
+            else
+            {
+                var result = await _espnApi.GetResource(command.Uri.ToCleanUri(), bypassCache: command.BypassCache);
 
-            var itemJson = result.Value; // Guaranteed non-empty and valid JSON
+                if (!result.IsSuccess)
+                {
+                    _logger.LogError(
+                        "ESPN request failed: Status={Status}, Uri={Uri}, DocumentType={DocumentType}",
+                        result.Status,
+                        command.Uri,
+                        command.DocumentType);
+                    return; // Clean exit - ESPN client already logged details
+                }
+
+                itemJson = result.Value; // Guaranteed non-empty and valid JSON
+            }
 
             if (dbItem is null)
             {
@@ -423,5 +437,6 @@ namespace SportsData.Provider.Application.Processors
         int? SeasonYear = null,
         bool BypassCache = false,
         IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes = null,
-        bool NotifyOnCompletion = false);
+        bool NotifyOnCompletion = false,
+        string? InlineJson = null);
 }

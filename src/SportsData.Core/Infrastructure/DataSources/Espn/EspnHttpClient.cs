@@ -43,21 +43,23 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             bool bypassCache,
             bool stripQuerystring = true)
         {
+            var config = _configMonitor.CurrentValue;
+
             // Check cache first
-            if (_configMonitor.CurrentValue is { ReadFromCache: true, ForceLiveFetch: false } && !bypassCache)
+            if (config is { ReadFromCache: true, ForceLiveFetch: false } && !bypassCache)
             {
-                var cached = await TryLoadFromDiskAsync(uri, stripQuerystring);
+                var cached = await TryLoadFromDiskAsync(config, uri, stripQuerystring);
                 if (!string.IsNullOrEmpty(cached))
                 {
                     _logger.LogDebug("Cache HIT for {Uri}", uri);
-                    
+
                     // Treat literal "null" string as invalid cache
                     if (cached.Trim() == "null")
                     {
                         _logger.LogWarning("Cached data is literal 'null' for {Uri}, will fetch live", uri);
-                        return await FetchLiveAsync(uri, bypassCache, stripQuerystring);
+                        return await FetchLiveAsync(config, uri, bypassCache, stripQuerystring);
                     }
-                    
+
                     try
                     {
                         JsonDocument.Parse(cached).Dispose();
@@ -66,17 +68,17 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                     catch (JsonException ex)
                     {
                         _logger.LogWarning(ex, "Cached JSON is invalid for {Uri}, will fetch live", uri);
-                        return await FetchLiveAsync(uri, bypassCache, stripQuerystring);
+                        return await FetchLiveAsync(config, uri, bypassCache, stripQuerystring);
                     }
                 }
 
                 _logger.LogDebug("Cache MISS for {Uri}", uri);
             }
 
-            return await FetchLiveAsync(uri, bypassCache, stripQuerystring);
+            return await FetchLiveAsync(config, uri, bypassCache, stripQuerystring);
         }
 
-        private async Task<Result<string>> FetchLiveAsync(Uri uri, bool bypassCache, bool stripQuerystring)
+        private async Task<Result<string>> FetchLiveAsync(EspnApiClientConfig config, Uri uri, bool bypassCache, bool stripQuerystring)
         {
             // Check circuit breaker before making any ESPN call
             if (await _circuitBreaker.IsOpenAsync())
@@ -164,10 +166,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 }
 
                 // Optionally persist
-                if (_configMonitor.CurrentValue.PersistLocally && !bypassCache)
+                if (config.PersistLocally && !bypassCache)
                 {
                     // Persist under the ORIGINAL identity URI key
-                    await SaveToDiskAsync(uri, json, stripQuerystring);
+                    await SaveToDiskAsync(config, uri, json, stripQuerystring);
                 }
 
                 return new Success<string>(json);
@@ -219,9 +221,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             string extension = "png",
             CancellationToken ct = default)
         {
-            var path = GetCacheFilePath(uri, stripQuerystring, extension);
+            var config = _configMonitor.CurrentValue;
+            var path = GetCacheFilePath(config, uri, stripQuerystring, extension);
 
-            if (!bypassCache && _configMonitor.CurrentValue.ReadFromCache && !_configMonitor.CurrentValue.ForceLiveFetch)
+            if (!bypassCache && config.ReadFromCache && !config.ForceLiveFetch)
             {
                 if (File.Exists(path))
                 {
@@ -279,9 +282,9 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             return ms;
         }
 
-        private async Task<string?> TryLoadFromDiskAsync(Uri uri, bool stripQuerystring = true)
+        private async Task<string?> TryLoadFromDiskAsync(EspnApiClientConfig config, Uri uri, bool stripQuerystring = true)
         {
-            var path = GetCacheFilePath(uri, stripQuerystring);
+            var path = GetCacheFilePath(config, uri, stripQuerystring);
             
             if (File.Exists(path))
             {
@@ -291,9 +294,9 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             return null;
         }
 
-        private async Task SaveToDiskAsync(Uri uri, string json, bool stripQuerystring = true)
+        private async Task SaveToDiskAsync(EspnApiClientConfig config, Uri uri, string json, bool stripQuerystring = true)
         {
-            var path = GetCacheFilePath(uri, stripQuerystring);
+            var path = GetCacheFilePath(config, uri, stripQuerystring);
 
             var dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -332,10 +335,10 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             throw new IOException($"Failed to write file after {maxRetries} attempts: {path}");
         }
 
-        private string GetCacheFilePath(Uri uri, bool stripQuerystring = true, string extension = "json")
+        private static string GetCacheFilePath(EspnApiClientConfig config, Uri uri, bool stripQuerystring = true, string extension = "json")
         {
             var filename = ConvertUriToFilename(uri, stripQuerystring) + $".{extension}";
-            return Path.Combine(_configMonitor.CurrentValue.LocalCacheDirectory, filename);
+            return Path.Combine(config.LocalCacheDirectory, filename);
         }
 
         private static string ConvertUriToFilename(Uri uri, bool stripQuerystring = true)

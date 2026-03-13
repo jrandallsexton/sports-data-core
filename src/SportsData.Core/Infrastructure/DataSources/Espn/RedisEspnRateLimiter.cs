@@ -76,8 +76,8 @@ end
         public async Task<bool> AcquireAsync(CancellationToken ct = default)
         {
             var cfg = _configMonitor.CurrentValue;
-            var maxTokens = cfg.RateLimitMaxTokens;
-            var tokensPerSecond = cfg.RateLimitTokensPerSecond;
+            var maxTokens = Math.Max(1, cfg.RateLimitMaxTokens);
+            var tokensPerSecond = cfg.RateLimitTokensPerSecond > 0 ? cfg.RateLimitTokensPerSecond : 1.0;
             var maxWaitMs = cfg.RateLimitMaxWaitMs;
             var bucketTtlSeconds = (int)Math.Ceiling(maxTokens / tokensPerSecond) + 60;
 

@@ -31,6 +31,8 @@ using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Middleware.Health;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
+using StackExchange.Redis;
+
 using System;
 using System.Linq;
 using System.Net;
@@ -44,15 +46,27 @@ namespace SportsData.Core.DependencyInjection
     {
         public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration config)
         {
+            var redisConnectionString = config[CommonConfigKeys.CacheServiceUri];
+
+            if (string.IsNullOrWhiteSpace(redisConnectionString))
+            {
+                services.AddDistributedMemoryCache();
+                return services;
+            }
+
             services.AddStackExchangeRedisCache(options =>
             {
-                options.Configuration = config[CommonConfigKeys.CacheServiceUri];
+                options.Configuration = redisConnectionString;
 
                 // TODO: Determine how to pass in an instance name from each consumer
                 // i.e. sdApi, sdContest, sdVenue, etc.
                 // (or have it generated here based on EnvironmentName and ApplicationName
                 options.InstanceName = "sdapi_"; // (only one app using; good practice)
             });
+
+            // Register IConnectionMultiplexer for direct Redis access (Lua scripts, etc.)
+            services.AddSingleton<IConnectionMultiplexer>(
+                _ => ConnectionMultiplexer.Connect(redisConnectionString));
 
             return services;
         }
@@ -376,6 +390,7 @@ namespace SportsData.Core.DependencyInjection
 
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddSingleton<IEspnCircuitBreaker, NoOpEspnCircuitBreaker>();
+            services.AddSingleton<IEspnRateLimiter, NoOpEspnRateLimiter>();
             /* End ESPN */
 
             /* YouTube */

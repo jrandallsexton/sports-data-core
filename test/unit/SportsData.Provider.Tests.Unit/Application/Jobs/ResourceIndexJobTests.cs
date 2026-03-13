@@ -100,7 +100,8 @@ public class ResourceIndexJobTests : ProviderTestBase<ResourceIndexJob>
         var httpClient = new HttpClient();
         var options = Options.Create(apiConfig);
         var circuitBreaker = new Mock<IEspnCircuitBreaker>();
-        var httpWrapper = new EspnHttpClient(httpClient, options, NullLogger<EspnHttpClient>.Instance, circuitBreaker.Object);
+        var rateLimiter = new NoOpEspnRateLimiter();
+        var httpWrapper = new EspnHttpClient(httpClient, options, NullLogger<EspnHttpClient>.Instance, circuitBreaker.Object, rateLimiter);
         var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
 
         // Inject the real client

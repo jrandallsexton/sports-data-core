@@ -48,6 +48,12 @@ namespace SportsData.Core.DependencyInjection
         {
             var redisConnectionString = config[CommonConfigKeys.CacheServiceUri];
 
+            if (string.IsNullOrWhiteSpace(redisConnectionString))
+            {
+                services.AddDistributedMemoryCache();
+                return services;
+            }
+
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = redisConnectionString;
@@ -59,11 +65,8 @@ namespace SportsData.Core.DependencyInjection
             });
 
             // Register IConnectionMultiplexer for direct Redis access (Lua scripts, etc.)
-            if (!string.IsNullOrEmpty(redisConnectionString))
-            {
-                services.AddSingleton<IConnectionMultiplexer>(
-                    _ => ConnectionMultiplexer.Connect(redisConnectionString));
-            }
+            services.AddSingleton<IConnectionMultiplexer>(
+                _ => ConnectionMultiplexer.Connect(redisConnectionString));
 
             return services;
         }

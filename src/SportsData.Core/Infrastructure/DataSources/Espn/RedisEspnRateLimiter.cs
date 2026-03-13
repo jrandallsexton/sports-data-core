@@ -64,6 +64,7 @@ end
         private readonly int _maxTokens;
         private readonly double _tokensPerSecond;
         private readonly int _maxWaitMs;
+        private readonly int _bucketTtlSeconds;
 
         public RedisEspnRateLimiter(
             IConnectionMultiplexer redis,
@@ -75,6 +76,7 @@ end
             _maxTokens = config.Value.RateLimitMaxTokens;
             _tokensPerSecond = config.Value.RateLimitTokensPerSecond;
             _maxWaitMs = config.Value.RateLimitMaxWaitMs;
+            _bucketTtlSeconds = (int)Math.Ceiling(_maxTokens / _tokensPerSecond) + 60;
         }
 
         public async Task<bool> AcquireAsync(CancellationToken ct = default)
@@ -94,7 +96,7 @@ end
                     var result = (int)await db.ScriptEvaluateAsync(
                         TokenBucketLua,
                         new RedisKey[] { BucketKey },
-                        new RedisValue[] { _maxTokens, _tokensPerSecond, nowMs, 300 });
+                        new RedisValue[] { _maxTokens, _tokensPerSecond, nowMs, _bucketTtlSeconds });
 
                     if (result == 1)
                     {

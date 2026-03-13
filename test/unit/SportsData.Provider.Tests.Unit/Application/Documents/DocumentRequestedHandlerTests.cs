@@ -17,6 +17,8 @@ using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
+using FluentValidation.Results;
+
 using System.Linq.Expressions;
 
 using Xunit;
@@ -330,5 +332,68 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         capturedCommand.Should().NotBeNull();
         capturedCommand!.Uri.ToString().Should().Contain("?id=171189");
         capturedCommand.Uri.ToString().Should().StartWith(baseUri);
+    }
+
+    [Fact]
+    public async Task WhenHybridRefReturns404_UsesInlineJson()
+    {
+        // arrange
+        var json = await LoadJsonTestData("EspnBrokenHybridPlays.json");
+
+        var indexUri = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401029961/competitions/401029961/plays");
+        var firstRefUri = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401029961/competitions/401029961/plays/4010299611");
+
+        var espnApi = Mocker.GetMock<IProvideEspnApiData>();
+
+        // Index fetch returns the hybrid JSON
+        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), true, false))
+            .ReturnsAsync(new Success<string>(json));
+
+        // Probe fetch returns 404 (matched by bypassCache=true, stripQuerystring=true which is the default)
+        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), true, true))
+            .ReturnsAsync(new Failure<string>(default!, ResultStatus.NotFound,
+                [new ValidationFailure("uri", "Not Found")]));
+
+        var capturedCommands = new List<ProcessResourceIndexItemCommand>();
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        background.Setup(x => x.Enqueue<IProcessResourceIndexItems>(It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
+            .Callback<Expression<Func<IProcessResourceIndexItems, Task>>>(expr =>
+            {
+                var func = expr.Compile();
+                var mockProcessor = new Mock<IProcessResourceIndexItems>();
+                mockProcessor.Setup(p => p.Process(It.IsAny<ProcessResourceIndexItemCommand>()))
+                    .Callback<ProcessResourceIndexItemCommand>(cmd => capturedCommands.Add(cmd))
+                    .Returns(Task.CompletedTask);
+                func(mockProcessor.Object).GetAwaiter().GetResult();
+            });
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = Fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, indexUri)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionPlay)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .OmitAutoProperties()
+            .Create();
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert - all 3 items enqueued
+        capturedCommands.Should().HaveCount(3);
+
+        // assert - all commands have InlineJson populated
+        capturedCommands.Should().AllSatisfy(cmd =>
+        {
+            cmd.InlineJson.Should().NotBeNullOrWhiteSpace();
+            cmd.InlineJson.Should().Contain("\"id\"");
+        });
+
+        // assert - first command's inline JSON contains the correct play data
+        capturedCommands[0].InlineJson.Should().Contain("Fumble Return Touchdown");
+        capturedCommands[1].InlineJson.Should().Contain("Kickoff");
+        capturedCommands[2].InlineJson.Should().Contain("Rush");
     }
 }

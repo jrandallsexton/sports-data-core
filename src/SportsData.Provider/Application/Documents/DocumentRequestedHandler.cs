@@ -1,5 +1,6 @@
 ﻿using MassTransit;
 
+using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
@@ -7,6 +8,8 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
+
+using System.Text.Json;
 
 namespace SportsData.Provider.Application.Documents;
 
@@ -140,6 +143,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         var seenPages = new HashSet<string>();
         var enqueuedAnyRefs = false;
         var totalItemsEnqueued = 0;
+        bool? useInlineJson = null; // null = not yet probed, true = $refs are broken, false = $refs work
 
         while (uri is not null && seenPages.Add(uri.ToString()))
         {
@@ -149,7 +153,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 evt.CorrelationId);
 
             var result = await _espnApi.GetResource(uri, bypassCache: true, stripQuerystring: false);
-            
+
             if (!result.IsSuccess)
             {
                 _logger.LogError(
@@ -157,7 +161,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     result.Status,
                     uri,
                     evt.CorrelationId);
-                
+
                 return; // Early exit on failure
             }
 
@@ -194,10 +198,33 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 dto.PageCount,
                 evt.CorrelationId);
 
-            foreach (var item in dto.Items)
+            // On first page, detect hybrid and probe first $ref to see if individual items resolve
+            List<string>? rawItemJsonList = null;
+            if (useInlineJson is null)
             {
+                (useInlineJson, rawItemJsonList) = await DetectBrokenHybridAsync(dto, json, evt.CorrelationId);
+            }
+
+            // Extract raw item JSON strings from the page response if we need inline data
+            if (useInlineJson == true && rawItemJsonList is null)
+            {
+                rawItemJsonList = ExtractRawItemJsonArray(json);
+            }
+
+            if (useInlineJson == true && (rawItemJsonList is null || rawItemJsonList.Count != dto.Items.Count))
+            {
+                _logger.LogWarning(
+                    "Failed to extract inline JSON items (count mismatch). Falling back to $ref fetching. Uri={Uri}, CorrelationId={CorrelationId}",
+                    uri, evt.CorrelationId);
+                useInlineJson = false;
+                rawItemJsonList = null;
+            }
+
+            for (var i = 0; i < dto.Items.Count; i++)
+            {
+                var item = dto.Items[i];
                 Uri refUri;
-                
+
                 if (item.Ref is null)
                 {
                     // Handle items without $ref by checking for Id and constructing filtered URI
@@ -209,15 +236,15 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                             evt.CorrelationId);
                         continue;
                     }
-                    
+
                     // Construct filtered URI preserving existing query params: {baseUri}?id={itemId}&...
                     var itemQuery = System.Web.HttpUtility.ParseQueryString(uri.Query);
-                    itemQuery["id"] = System.Web.HttpUtility.UrlEncode(item.Id);
-                    
+                    itemQuery["id"] = item.Id;
+
                     var itemBaseUri = uri.GetLeftPart(UriPartial.Path);
                     var itemQueryString = itemQuery.ToString(); // re-encoded querystring
                     refUri = new Uri($"{itemBaseUri}?{itemQueryString}");
-                    
+
                     _logger.LogDebug(
                         "Item has no ref but has id. Constructed filtered URI. Id={ItemId}, Uri={Uri}, CorrelationId={CorrelationId}",
                         item.Id,
@@ -244,7 +271,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     ParentId: evt.ParentId,
                     SeasonYear: evt.SeasonYear,
                     BypassCache: true,
-                    IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes);
+                    IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes,
+                    InlineJson: useInlineJson == true ? rawItemJsonList![i] : null);
 
                 _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                 enqueuedAnyRefs = true;
@@ -286,6 +314,93 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 "No resource index items enqueued. DocumentType={DocumentType}, CorrelationId={CorrelationId}",
                 evt.DocumentType,
                 evt.CorrelationId);
+        }
+    }
+
+    /// <summary>
+    /// Detects whether a resource index is a "broken hybrid" — items have $ref URIs that return 404
+    /// but contain full inline data. Probes the first item's $ref to determine this.
+    /// </summary>
+    private async Task<(bool isBrokenHybrid, List<string>? rawItems)> DetectBrokenHybridAsync(
+        EspnResourceIndexDto dto, string json, Guid correlationId)
+    {
+        var firstItem = dto.Items[0];
+
+        // If the first item has no $ref, this is already handled by the existing null-ref path
+        if (firstItem.Ref is null)
+            return (false, null);
+
+        // Check if the response contains inline data beyond just $ref and id
+        // by examining the raw JSON for the first item
+        var rawItems = ExtractRawItemJsonArray(json);
+        if (rawItems is null || rawItems.Count == 0)
+            return (false, null);
+
+        // Count properties in first item — if it only has $ref (and maybe id), it's not a hybrid
+        using var itemDoc = JsonDocument.Parse(rawItems[0]);
+        var propertyCount = itemDoc.RootElement.EnumerateObject().Count();
+        if (propertyCount <= 2)
+            return (false, null); // Just $ref and possibly id — standard resource index
+
+        // This looks like a hybrid (has inline data). Probe the first $ref to see if it resolves.
+        _logger.LogInformation(
+            "Hybrid resource index detected (items have inline data). Probing first $ref to check if individual items resolve. Ref={Ref}, CorrelationId={CorrelationId}",
+            firstItem.Ref,
+            correlationId);
+
+        var probeUri = firstItem.Ref.ToCleanUri();
+        var probeResult = await _espnApi.GetResource(probeUri, bypassCache: true);
+
+        if (probeResult is null || probeResult.IsSuccess)
+        {
+            _logger.LogInformation(
+                "Hybrid probe succeeded — individual $refs resolve. Will fetch each item individually. CorrelationId={CorrelationId}",
+                correlationId);
+            return (false, null);
+        }
+
+        if (probeResult.Status == ResultStatus.NotFound)
+        {
+            _logger.LogWarning(
+                "Hybrid probe returned 404 — individual $refs are broken. Will use inline JSON for all items. Ref={Ref}, CorrelationId={CorrelationId}",
+                firstItem.Ref,
+                correlationId);
+            return (true, rawItems);
+        }
+
+        // Non-404 failure (rate limited, server error, etc.) — don't assume broken, try normal path
+        _logger.LogWarning(
+            "Hybrid probe returned {Status} — inconclusive, falling back to $ref fetching. Ref={Ref}, CorrelationId={CorrelationId}",
+            probeResult.Status,
+            firstItem.Ref,
+            correlationId);
+        return (false, null);
+    }
+
+    /// <summary>
+    /// Extracts each item from the raw JSON "items" array as individual JSON strings.
+    /// </summary>
+    private static List<string>? ExtractRawItemJsonArray(string json)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("items", out var itemsElement) ||
+                itemsElement.ValueKind != JsonValueKind.Array)
+            {
+                return null;
+            }
+
+            var result = new List<string>();
+            foreach (var item in itemsElement.EnumerateArray())
+            {
+                result.Add(item.GetRawText());
+            }
+            return result;
+        }
+        catch
+        {
+            return null;
         }
     }
 }

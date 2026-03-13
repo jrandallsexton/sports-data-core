@@ -40,6 +40,7 @@ namespace SportsData.Provider
             services.AddClients(config);
             services.AddCaching(config);
             services.AddSingleton<IEspnCircuitBreaker, RedisEspnCircuitBreaker>();
+            services.AddSingleton<IEspnRateLimiter, RedisEspnRateLimiter>();
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 

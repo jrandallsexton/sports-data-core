@@ -23,16 +23,19 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
         private readonly EspnApiClientConfig _config;
         private readonly ILogger<EspnHttpClient> _logger;
         private readonly IEspnCircuitBreaker _circuitBreaker;
+        private readonly IEspnRateLimiter _rateLimiter;
 
         public EspnHttpClient(HttpClient httpClient,
                               IOptions<EspnApiClientConfig> config,
                               ILogger<EspnHttpClient> logger,
-                              IEspnCircuitBreaker circuitBreaker)
+                              IEspnCircuitBreaker circuitBreaker,
+                              IEspnRateLimiter rateLimiter)
         {
             _httpClient = httpClient;
             _config = config.Value;
             _logger = logger;
             _circuitBreaker = circuitBreaker;
+            _rateLimiter = rateLimiter;
         }
 
         public async Task<Result<string>> GetRawJsonAsync(
@@ -90,8 +93,8 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 
             _logger.LogDebug("Fetching LIVE from ESPN: {RequestUri} (identity: {IdentityUri})", requestUri, uri);
 
-            // prevent banging on ESPN API too fast
-            await Task.Delay(_config.RequestDelayMs);
+            // Centralized rate limiting — blocks until a token is available
+            await _rateLimiter.AcquireAsync();
 
             try
             {
@@ -237,7 +240,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             }
 
             _logger.LogInformation("Fetching image from {Uri}", uri.ToString().Sanitize());
-            await Task.Delay(_config.RequestDelayMs, ct);
+            await _rateLimiter.AcquireAsync(ct);
 
             using var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
 

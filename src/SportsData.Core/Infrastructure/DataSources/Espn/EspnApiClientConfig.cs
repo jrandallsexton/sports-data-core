@@ -36,5 +36,20 @@
         /// for this duration. Default 300s (5 minutes).
         /// </summary>
         public int CircuitBreakerCooldownSeconds { get; set; } = 300;
+
+        /// <summary>
+        /// Token bucket burst capacity. Small value prevents stampedes after idle periods.
+        /// </summary>
+        public int RateLimitMaxTokens { get; set; } = 2;
+
+        /// <summary>
+        /// Token refill rate. 1.0 = 1 request/second, matching the current 1000ms delay.
+        /// </summary>
+        public double RateLimitTokensPerSecond { get; set; } = 1.0;
+
+        /// <summary>
+        /// Maximum time (ms) a worker will block waiting for a token before failing open.
+        /// </summary>
+        public int RateLimitMaxWaitMs { get; set; } = 30000;
     }
 }

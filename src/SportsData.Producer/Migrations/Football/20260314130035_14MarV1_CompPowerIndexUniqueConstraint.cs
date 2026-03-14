@@ -12,13 +12,18 @@ namespace SportsData.Producer.Migrations.Football
         {
             // Delete duplicate CompetitionPowerIndex rows before applying unique constraint.
             // Keeps the row with the latest CreatedUtc for each logical key.
+            // Uses NULLS LAST so null timestamps are treated as oldest, and "Id" as tiebreaker.
             migrationBuilder.Sql("""
-                DELETE FROM "CompetitionPowerIndex"
-                WHERE "Id" NOT IN (
-                    SELECT DISTINCT ON ("CompetitionId", "FranchiseSeasonId", "PowerIndexId") "Id"
+                WITH ranked AS (
+                    SELECT "Id",
+                           ROW_NUMBER() OVER (
+                               PARTITION BY "CompetitionId", "FranchiseSeasonId", "PowerIndexId"
+                               ORDER BY "CreatedUtc" DESC NULLS LAST, "Id" DESC
+                           ) AS rn
                     FROM "CompetitionPowerIndex"
-                    ORDER BY "CompetitionId", "FranchiseSeasonId", "PowerIndexId", "CreatedUtc" DESC
-                );
+                )
+                DELETE FROM "CompetitionPowerIndex"
+                WHERE "Id" IN (SELECT "Id" FROM ranked WHERE rn > 1);
                 """);
 
             migrationBuilder.DropIndex(

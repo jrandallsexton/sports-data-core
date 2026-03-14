@@ -61,6 +61,8 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
                 _logger.LogError("SeasonPollId could not be derived/inferred. {@Command}", command);
                 return;
             }
+
+            seasonPollId = seasonPoll.Id;
         }
 
         // Determine the SeasonWeek for this poll

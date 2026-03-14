@@ -75,7 +75,7 @@
 
 - **File:** `Providers/Espn/Common/VenueDocumentProcessor.cs`, lines 93-103
 - **Impact:** `VenueCreated` event published at line 101, then `SaveChangesAsync` at line 103.
-- **Resolution:** Not a bug. With MassTransit's EF transactional outbox, `Publish()` writes to the outbox table within the DbContext transaction. `SaveChangesAsync()` atomically commits both the entity and the outbox message. Publish-before-save is the correct pattern — it ensures atomicity. The update path (save-then-publish) is actually the inconsistent one.
+- **Resolution:** Not a bug. With MassTransit's EF transactional outbox, `Publish()` writes to the outbox table within the DbContext transaction. `SaveChangesAsync()` atomically commits both the entity and the outbox message. Publish-before-save is the correct pattern — it ensures atomicity. The update path had the opposite (incorrect) order and was fixed in PR #165 as part of Bug #8.
 
 ### 12. ~~TeamSeasonRecordDocumentProcessor — Guid.Empty instead of CorrelationId~~ FIXED
 
@@ -99,7 +99,7 @@
 
 - **Files:** `Providers/Espn/TeamSports/CoachRecordDocumentProcessor.cs` line 78, `CoachSeasonRecordDocumentProcessor.cs` line 77
 - **Impact:** `.First()` on `ExternalIds` collection with no guard for empty collection. Throws `InvalidOperationException` if `ExternalIds` is empty.
-- **Fixed in:** PR #165. Changed to `FirstOrDefault()` with null-conditional, skipping duplicate check when no ExternalIds exist.
+- **Fixed in:** PR #165. Changed to `FirstOrDefault()` with null guard. If `SourceUrlHash` is null/empty, processing aborts with an error log to prevent inserting records without identity hashes.
 
 ### 16. ~~SeasonPollDocumentProcessor — No null check on dto.Ref~~ FIXED
 

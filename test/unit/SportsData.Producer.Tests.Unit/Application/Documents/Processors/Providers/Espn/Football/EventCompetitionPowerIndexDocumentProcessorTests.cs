@@ -4,11 +4,14 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Moq;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
-using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
@@ -210,6 +213,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.Sport, Sport.FootballNcaa)
                 .With(x => x.CorrelationId, Guid.NewGuid())
                 .With(x => x.ParentId, nonExistentCompetitionId.ToString())
+                .With(x => x.AttemptCount, 0)
                 .Create();
 
             var sut = Mocker.CreateInstance<EventCompetitionPowerIndexDocumentProcessor<FootballDataContext>>();
@@ -223,6 +227,13 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .ToListAsync();
 
             result.Should().BeEmpty();
+
+            // Assert — retry was published with incremented AttemptCount and RetryReason header
+            Mock.Get(Mocker.Get<IEventBus>())
+                .Verify(x => x.Publish(
+                    It.Is<DocumentCreated>(dc => dc.AttemptCount == 1),
+                    It.Is<IDictionary<string, object>>(h => h.ContainsKey("RetryReason")),
+                    It.IsAny<CancellationToken>()), Times.Once);
         }
     }
 }

@@ -51,7 +51,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 var cached = await TryLoadFromDiskAsync(config, uri, stripQuerystring);
                 if (!string.IsNullOrEmpty(cached))
                 {
-                    _logger.LogDebug("Cache HIT for {Uri}", uri);
+                    _logger.LogInformation("ESPN {CacheResult} for {Uri}", "HIT", uri);
 
                     // Treat literal "null" string as invalid cache
                     if (cached.Trim() == "null")
@@ -72,7 +72,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                     }
                 }
 
-                _logger.LogDebug("Cache MISS for {Uri}", uri);
+                _logger.LogInformation("ESPN {CacheResult} for {Uri}", "MISS", uri);
             }
 
             return await FetchLiveAsync(config, uri, bypassCache, stripQuerystring);
@@ -93,7 +93,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             // Request-only HTTPS upgrade
             var requestUri = EspnRequestUri.ForFetch(uri);
 
-            _logger.LogDebug("Fetching LIVE from ESPN: {RequestUri} (identity: {IdentityUri})", requestUri, uri);
+            _logger.LogInformation("ESPN {CacheResult} for {IdentityUri}. Fetching live: {RequestUri}", "LIVE", uri, requestUri);
 
             // Centralized rate limiting — blocks until a token is available
             await _rateLimiter.AcquireAsync();
@@ -228,11 +228,11 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             {
                 if (File.Exists(path))
                 {
-                    _logger.LogDebug("Cache HIT for image {Uri}", uri.ToString().Sanitize());
+                    _logger.LogInformation("ESPN {CacheResult} for image {Uri}", "HIT", uri.ToString().Sanitize());
                     return File.OpenRead(path);
                 }
 
-                _logger.LogDebug("Cache MISS for image {Uri}", uri.ToString().Sanitize());
+                _logger.LogInformation("ESPN {CacheResult} for image {Uri}", "MISS", uri.ToString().Sanitize());
             }
 
             // Check circuit breaker before making any ESPN call

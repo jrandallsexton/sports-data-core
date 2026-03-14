@@ -129,9 +129,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
         }
 
         await _dataContext.CompetitionOdds.AddAsync(incoming);
-        await _dataContext.SaveChangesAsync(); // Atomic: both delete + insert in single transaction
-        
-        // Publish after success
+
         if (existing is null)
         {
             await _publishEndpoint.Publish(new ContestOddsCreated(
@@ -153,6 +151,8 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
                 command.CorrelationId,
                 CausationId.Producer.EventDocumentProcessor));
         }
+
+        await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Persisted CompetitionOdds. CompetitionId={CompId}, Provider={Prov}, OddsId={OddsId}",
             competition.Id, dto.Provider.Id, incoming.Id);

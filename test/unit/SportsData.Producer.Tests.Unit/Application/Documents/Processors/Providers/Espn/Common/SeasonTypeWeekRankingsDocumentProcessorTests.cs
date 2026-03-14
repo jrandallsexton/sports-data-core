@@ -264,73 +264,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 urlHash: weekHash
             );
 
-            // OPTIMIZATION: Batch create franchises and franchise seasons
-            var allTeams = dto.Ranks.Concat<dynamic>(dto.Others).ToList();
-            
-            foreach (var entry in allTeams)
-            {
-                var teamIdentity = generator.Generate(entry.Team.Ref);
-
-                // OPTIMIZATION: Direct instantiation - was taking ~4 seconds per entity!
-                var franchise = new Franchise
-                {
-                    Id = teamIdentity.CanonicalId,
-                    ColorCodeHex = "#FFFFFF",
-                    DisplayName = "SomeTeam",
-                    DisplayNameShort = "ST",
-                    Location = "Fooville",
-                    Name = "SomeTeam",
-                    Slug = "some-team",
-                    CreatedUtc = DateTime.UtcNow,
-                    CreatedBy = Guid.NewGuid(),
-                    ExternalIds = new List<FranchiseExternalId>
-                    {
-                        new()
-                        {
-                            Id = Guid.NewGuid(),
-                            FranchiseId = teamIdentity.CanonicalId,
-                            Provider = SourceDataProvider.Espn,
-                            SourceUrl = teamIdentity.CleanUrl,
-                            SourceUrlHash = teamIdentity.UrlHash,
-                            Value = teamIdentity.UrlHash
-                        }
-                    }
-                };
-
-                await FootballDataContext.Franchises.AddAsync(franchise);
-
-                var franchiseSeason = new FranchiseSeason
-                {
-                    Id = teamIdentity.CanonicalId,
-                    ColorCodeHex = "#FFFFFF",
-                    DisplayName = "SomeTeam",
-                    DisplayNameShort = "ST",
-                    Location = "Fooville",
-                    Name = "SomeTeam",
-                    Slug = "some-team",
-                    FranchiseId = franchise.Id,
-                    SeasonYear = 2025,
-                    Abbreviation = "ST",
-                    CreatedUtc = DateTime.UtcNow,
-                    CreatedBy = Guid.NewGuid(),
-                    ExternalIds = new List<FranchiseSeasonExternalId>
-                    {
-                        new()
-                        {
-                            Id = Guid.NewGuid(),
-                            FranchiseSeasonId = teamIdentity.CanonicalId,
-                            Provider = SourceDataProvider.Espn,
-                            SourceUrl = teamIdentity.CleanUrl,
-                            SourceUrlHash = teamIdentity.UrlHash,
-                            Value = teamIdentity.UrlHash
-                        }
-                    }
-                };
-
-                await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
-            }
-            
-            await FootballDataContext.SaveChangesAsync();
+            await SeedFranchisesAndSeasonsFromDto(dto, generator);
 
             var sut = Mocker.CreateInstance<SeasonTypeWeekRankingsDocumentProcessor<FootballDataContext>>();
 
@@ -421,68 +355,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await FootballDataContext.SeasonPhases.AddAsync(seasonPhase);
             await FootballDataContext.SeasonWeeks.AddAsync(seasonWeek);
 
-            // Seed franchises + franchise seasons
-            var allTeams = dto.Ranks.Concat<dynamic>(dto.Others).ToList();
-            foreach (var entry in allTeams)
-            {
-                var teamIdentity = generator.Generate(entry.Team.Ref);
-                var franchise = new Franchise
-                {
-                    Id = teamIdentity.CanonicalId,
-                    ColorCodeHex = "#FFFFFF",
-                    DisplayName = "Team",
-                    DisplayNameShort = "TM",
-                    Location = "City",
-                    Name = "Team",
-                    Slug = "team",
-                    CreatedUtc = DateTime.UtcNow,
-                    CreatedBy = Guid.NewGuid(),
-                    ExternalIds = new List<FranchiseExternalId>
-                    {
-                        new()
-                        {
-                            Id = Guid.NewGuid(),
-                            FranchiseId = teamIdentity.CanonicalId,
-                            Provider = SourceDataProvider.Espn,
-                            SourceUrl = teamIdentity.CleanUrl,
-                            SourceUrlHash = teamIdentity.UrlHash,
-                            Value = teamIdentity.UrlHash
-                        }
-                    }
-                };
-                await FootballDataContext.Franchises.AddAsync(franchise);
-
-                var franchiseSeason = new FranchiseSeason
-                {
-                    Id = teamIdentity.CanonicalId,
-                    ColorCodeHex = "#FFFFFF",
-                    DisplayName = "Team",
-                    DisplayNameShort = "TM",
-                    Location = "City",
-                    Name = "Team",
-                    Slug = "team",
-                    FranchiseId = franchise.Id,
-                    SeasonYear = 2025,
-                    Abbreviation = "TM",
-                    CreatedUtc = DateTime.UtcNow,
-                    CreatedBy = Guid.NewGuid(),
-                    ExternalIds = new List<FranchiseSeasonExternalId>
-                    {
-                        new()
-                        {
-                            Id = Guid.NewGuid(),
-                            FranchiseSeasonId = teamIdentity.CanonicalId,
-                            Provider = SourceDataProvider.Espn,
-                            SourceUrl = teamIdentity.CleanUrl,
-                            SourceUrlHash = teamIdentity.UrlHash,
-                            Value = teamIdentity.UrlHash
-                        }
-                    }
-                };
-                await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
-            }
-
-            await FootballDataContext.SaveChangesAsync();
+            await SeedFranchisesAndSeasonsFromDto(dto, generator);
 
             // Pass a non-GUID parentId to trigger fallback derivation
             var command = new ProcessDocumentCommand(
@@ -544,6 +417,75 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // Assert — no entity should be created
             var ranking = await FootballDataContext.SeasonPollWeeks.FirstOrDefaultAsync();
             ranking.Should().BeNull("processor should return early when SeasonPoll cannot be derived");
+        }
+
+        private async Task SeedFranchisesAndSeasonsFromDto(
+            EspnFootballSeasonTypeWeekRankingsDto dto,
+            ExternalRefIdentityGenerator generator)
+        {
+            var allTeams = dto.Ranks.Concat<dynamic>(dto.Others).ToList();
+
+            foreach (var entry in allTeams)
+            {
+                var teamIdentity = generator.Generate(entry.Team.Ref);
+
+                var franchise = new Franchise
+                {
+                    Id = teamIdentity.CanonicalId,
+                    ColorCodeHex = "#FFFFFF",
+                    DisplayName = "Team",
+                    DisplayNameShort = "TM",
+                    Location = "City",
+                    Name = "Team",
+                    Slug = "team",
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid(),
+                    ExternalIds = new List<FranchiseExternalId>
+                    {
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            FranchiseId = teamIdentity.CanonicalId,
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = teamIdentity.CleanUrl,
+                            SourceUrlHash = teamIdentity.UrlHash,
+                            Value = teamIdentity.UrlHash
+                        }
+                    }
+                };
+                await FootballDataContext.Franchises.AddAsync(franchise);
+
+                var franchiseSeason = new FranchiseSeason
+                {
+                    Id = teamIdentity.CanonicalId,
+                    ColorCodeHex = "#FFFFFF",
+                    DisplayName = "Team",
+                    DisplayNameShort = "TM",
+                    Location = "City",
+                    Name = "Team",
+                    Slug = "team",
+                    FranchiseId = franchise.Id,
+                    SeasonYear = 2025,
+                    Abbreviation = "TM",
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid(),
+                    ExternalIds = new List<FranchiseSeasonExternalId>
+                    {
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            FranchiseSeasonId = teamIdentity.CanonicalId,
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = teamIdentity.CleanUrl,
+                            SourceUrlHash = teamIdentity.UrlHash,
+                            Value = teamIdentity.UrlHash
+                        }
+                    }
+                };
+                await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+            }
+
+            await FootballDataContext.SaveChangesAsync();
         }
     }
 }

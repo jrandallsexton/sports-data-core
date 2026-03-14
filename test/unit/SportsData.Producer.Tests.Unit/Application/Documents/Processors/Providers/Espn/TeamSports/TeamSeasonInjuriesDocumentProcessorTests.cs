@@ -1,8 +1,11 @@
 using AutoFixture;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -270,5 +273,43 @@ public class TeamSeasonInjuriesDocumentProcessorTests : ProducerTestBase<TeamSea
         // Assert
         var injury = await FootballDataContext.AthleteSeasonInjuries.FirstAsync();
         injury.ModifiedUtc.Should().Be(modifiedUtc); // Should NOT be updated
+    }
+
+    [Fact]
+    public async Task ProcessAsync_TriggersRetry_WhenAthleteSeasonNotFound()
+    {
+        // Arrange
+        var identityGenerator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
+
+        // Do NOT seed an AthleteSeason — the processor should throw ExternalDocumentNotSourcedException
+        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonInjury.json");
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .OmitAutoProperties()
+            .With(x => x.Document, documentJson)
+            .With(x => x.DocumentType, DocumentType.TeamSeasonInjuries)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2022)
+            .With(x => x.CorrelationId, Guid.NewGuid())
+            .With(x => x.AttemptCount, 0)
+            .Create();
+
+        var sut = Mocker.CreateInstance<TeamSeasonInjuriesDocumentProcessor<FootballDataContext>>();
+
+        // Act — base class catches ExternalDocumentNotSourcedException and schedules retry
+        await sut.ProcessAsync(command);
+
+        // Assert — no injuries created
+        var injuries = await FootballDataContext.AthleteSeasonInjuries.ToListAsync();
+        injuries.Should().BeEmpty();
+
+        // Assert — retry was published with incremented AttemptCount and RetryReason header
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(
+                It.Is<DocumentCreated>(dc => dc.AttemptCount == 1),
+                It.Is<IDictionary<string, object>>(h => h.ContainsKey("RetryReason")),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 }

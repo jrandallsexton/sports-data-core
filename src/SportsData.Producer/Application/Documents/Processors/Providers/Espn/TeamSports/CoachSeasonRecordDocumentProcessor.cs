@@ -73,8 +73,11 @@ public class CoachSeasonRecordDocumentProcessor<TDataContext> : DocumentProcesso
         var newRecord = CoachSeasonRecordExtensions.AsEntity(dto, coachSeason.Id, _externalRefIdentityGenerator, command.CorrelationId);
 
         // Replace any existing CoachSeasonRecord with same identity (same SourceUrlHash)
-        var existing = coachSeason.Records.FirstOrDefault(r =>
-            r.ExternalIds.Any(e => e.SourceUrlHash == newRecord.ExternalIds.First().SourceUrlHash));
+        var newRecordHash = newRecord.ExternalIds.FirstOrDefault()?.SourceUrlHash;
+        var existing = newRecordHash is not null
+            ? coachSeason.Records.FirstOrDefault(r =>
+                r.ExternalIds.Any(e => e.SourceUrlHash == newRecordHash))
+            : null;
 
         if (existing is not null)
         {

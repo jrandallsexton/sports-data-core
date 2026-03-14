@@ -36,6 +36,12 @@ public class SeasonPollDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             return;
         }
 
+        if (dto.Ref is null)
+        {
+            _logger.LogError("SeasonPoll DTO Ref is null. {@Command}", command);
+            return;
+        }
+
         var dtoIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
 
         // does this poll already exist?

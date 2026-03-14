@@ -83,7 +83,7 @@ public class CoachSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
             _logger.LogWarning("Coach not found. Requesting Person document sourcing. PersonRef={PersonRef}",
                 dto.Person.Ref);
 
-            await PublishChildDocumentRequest<string?>(
+            await PublishDependencyRequest<string?>(
                 command,
                 dto.Person,
                 parentId: null,
@@ -106,7 +106,7 @@ public class CoachSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
 
         if (!franchiseSeasonExists)
         {
-            await PublishChildDocumentRequest<string?>(
+            await PublishDependencyRequest<string?>(
                 command,
                 dto.Team,
                 parentId: null,

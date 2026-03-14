@@ -98,9 +98,9 @@ public class VenueDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             command.CorrelationId,
             command.MessageId);
 
-        await _publishEndpoint.Publish(evt, CancellationToken.None);
-
         await _dataContext.SaveChangesAsync();
+
+        await _publishEndpoint.Publish(evt, CancellationToken.None);
 
         _logger.LogInformation("New {@type} event {@evt}", DocumentType.Venue, evt);
     }

@@ -53,10 +53,11 @@
 - **File:** `Providers/Espn/Football/AthleteSeasonStatisticsDocumentProcessor.cs`, lines 79-86
 - **Impact:** Intermediate `SaveChangesAsync` after delete. If the subsequent insert fails, statistics are permanently lost. Should delete and insert within a single `SaveChangesAsync` call.
 
-### 8. EventCompetitionOddsDocumentProcessor — Events published outside outbox
+### 8. ~~EventCompetitionOddsDocumentProcessor — Events published outside outbox~~ FALSE POSITIVE
 
 - **File:** `Providers/Espn/Football/EventCompetitionOddsDocumentProcessor.cs`, lines 134-155
 - **Impact:** Events published AFTER `SaveChangesAsync`, outside the outbox transaction. If the process crashes after save but before publish, the event is lost. Other processors correctly publish before save.
+- **Resolution:** Not a bug. Current code saves first, then publishes — this is the correct order (save before publish ensures the entity exists before consumers see the event).
 
 ### 9. ~~EventCompetitionDriveDocumentProcessor — Copy-paste CausationId~~ FIXED
 
@@ -70,10 +71,11 @@
 - **Impact:** `DateTime.Parse(dto.LastModified)` with no null check or `TryParse`. Throws `FormatException` if ESPN omits or malforms the field.
 - **Fixed in:** PR #164. Changed to `DateTime.TryParse` with `DateTime.UtcNow` fallback.
 
-### 11. VenueDocumentProcessor — Event published before save on create path
+### 11. ~~VenueDocumentProcessor — Event published before save on create path~~ FIXED
 
 - **File:** `Providers/Espn/Common/VenueDocumentProcessor.cs`, lines 93-103
 - **Impact:** `VenueCreated` event published at line 101, then `SaveChangesAsync` at line 103. If save fails, downstream consumers process an entity that doesn't exist. The update path (line 188-198) correctly saves first.
+- **Fixed in:** PR #165. Swapped order to save before publish, matching the update path.
 
 ### 12. ~~TeamSeasonRecordDocumentProcessor — Guid.Empty instead of CorrelationId~~ FIXED
 
@@ -87,20 +89,23 @@
 - **Impact:** Missing AthleteSeason causes silent return instead of throwing `ExternalDocumentNotSourcedException`. Injury data permanently lost — no retry.
 - **Fixed in:** PR #164. Changed to throw `ExternalDocumentNotSourcedException`. Test added.
 
-### 14. CoachSeasonDocumentProcessor — Wrong publish method for dependencies
+### 14. ~~CoachSeasonDocumentProcessor — Wrong publish method for dependencies~~ FIXED
 
 - **File:** `Providers/Espn/TeamSports/CoachSeasonDocumentProcessor.cs`, lines 86, 109
 - **Impact:** Uses `PublishChildDocumentRequest` for dependencies (Coach, FranchiseSeason) instead of `PublishDependencyRequest`. The base class tracks dependency requests to prevent duplicates on retries. Using the child method means every retry re-publishes the same dependency request.
+- **Fixed in:** PR #165. Changed both calls to `PublishDependencyRequest`.
 
-### 15. CoachRecordDocumentProcessor / CoachSeasonRecordDocumentProcessor — Unguarded .First()
+### 15. ~~CoachRecordDocumentProcessor / CoachSeasonRecordDocumentProcessor — Unguarded .First()~~ FIXED
 
 - **Files:** `Providers/Espn/TeamSports/CoachRecordDocumentProcessor.cs` line 78, `CoachSeasonRecordDocumentProcessor.cs` line 77
 - **Impact:** `.First()` on `ExternalIds` collection with no guard for empty collection. Throws `InvalidOperationException` if `ExternalIds` is empty.
+- **Fixed in:** PR #165. Changed to `FirstOrDefault()` with null-conditional, skipping duplicate check when no ExternalIds exist.
 
-### 16. SeasonPollDocumentProcessor — No null check on dto.Ref
+### 16. ~~SeasonPollDocumentProcessor — No null check on dto.Ref~~ FIXED
 
 - **File:** `Providers/Espn/Football/SeasonPollDocumentProcessor.cs`, line 39
 - **Impact:** `_externalRefIdentityGenerator.Generate(dto.Ref)` will throw `ArgumentNullException` if `dto.Ref` is null. Other processors guard against this.
+- **Fixed in:** PR #165. Added null check with early return and error log.
 
 ---
 
@@ -143,6 +148,12 @@ Processors where the update path does not update entity properties. If ESPN data
 - SeasonDocumentProcessor (lines 153-157) — explicit no-op
 - EventCompetitionPlayDocumentProcessor (lines 184-203) — only updates FK refs, not play data
 - TeamSeasonDocumentProcessor (lines 330-336) — only processes children, not scalar properties
+
+### Direct `DateTime.UtcNow` usage
+
+Processors and entities use `DateTime.UtcNow` directly instead of an injected time abstraction. This couples code to the system clock, making unit tests non-deterministic and preventing controlled time in tests.
+
+**Status:** Deferred. Low value for current workload — timestamps are audit fields and tests verify behavior, not exact times. Revisit when in-game live processing resumes, where clock control may matter for time-dependent ordering/sequencing logic.
 
 ### SaveChangesAsync inside loops
 

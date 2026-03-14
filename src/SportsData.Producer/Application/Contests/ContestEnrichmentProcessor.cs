@@ -129,8 +129,19 @@ namespace SportsData.Producer.Application.Contests
                     _logger.LogWarning("No plays found for {ContestName}", contest.Name);
 
                     // this is very likely a D2 game.  try to get it from Competition.Competitor[x].Score.Ref
-                    var awayRef = awayCompetitor.ExternalIds.First().SourceUrl;
-                    var homeRef = homeCompetitor.ExternalIds.First().SourceUrl;
+                    var awayExternalId = awayCompetitor.ExternalIds.FirstOrDefault();
+                    var homeExternalId = homeCompetitor.ExternalIds.FirstOrDefault();
+
+                    if (awayExternalId is null || homeExternalId is null)
+                    {
+                        _logger.LogError(
+                            "Competitor ExternalIds missing for D2 fallback. ContestId={ContestId}, AwayHasExtId={AwayHasExtId}, HomeHasExtId={HomeHasExtId}",
+                            command.ContestId, awayExternalId is not null, homeExternalId is not null);
+                        return;
+                    }
+
+                    var awayRef = awayExternalId.SourceUrl;
+                    var homeRef = homeExternalId.SourceUrl;
 
                     // source both
                     var awayCompResult = await _espnProvider.GetResource(new Uri(awayRef), true, true);

@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -106,6 +108,19 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
             newEntity.TiePercentage,
             newEntity.SecondsLeft);
 
+        var espnLastModifiedUtc = DateTime.UtcNow;
+        if (DateTime.TryParse(dto.LastModified, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var lastModified))
+        {
+            espnLastModifiedUtc = lastModified;
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Failed to parse LastModified '{LastModified}' for probability. CompetitionId={CompId}, Ref={Ref}. Falling back to UtcNow.",
+                dto.LastModified, competitionId, dto.Ref);
+        }
+
         await _publishEndpoint.Publish(new CompetitionWinProbabilityChanged(
             newEntity.CompetitionId,
             newEntity.PlayId,
@@ -113,7 +128,7 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
             newEntity.AwayWinPercentage,
             newEntity.TiePercentage,
             newEntity.SecondsLeft,
-            DateTime.Parse(dto.LastModified).ToUniversalTime(),
+            espnLastModifiedUtc,
             command.SourceDataProvider.ToString().ToLowerInvariant(),
             dto.Ref?.ToString() ?? string.Empty,
             dto.SequenceNumber,

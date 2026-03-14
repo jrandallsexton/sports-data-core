@@ -9,6 +9,7 @@ using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
@@ -63,8 +64,8 @@ public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : DocumentProcess
 
         if (athleteSeason is null)
         {
-            _logger.LogWarning("AthleteSeason not found for athlete ref {AthleteRef}", dto.Athlete.Ref);
-            return;
+            throw new ExternalDocumentNotSourcedException(
+                $"AthleteSeason not found for athlete ref {dto.Athlete.Ref}");
         }
 
         // Check if injury already exists

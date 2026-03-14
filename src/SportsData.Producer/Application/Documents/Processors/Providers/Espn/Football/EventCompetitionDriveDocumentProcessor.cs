@@ -204,7 +204,7 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : DocumentProc
                         DocumentType: DocumentType.EventCompetitionPlay,
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.GroupSeasonDocumentProcessor,
+                        CausationId: CausationId.Producer.EventCompetitionDriveDocumentProcessor,
                         PropertyBag: new Dictionary<string, string>()
                         {
                             { "CompetitionDriveId", drive.Id.ToString()}

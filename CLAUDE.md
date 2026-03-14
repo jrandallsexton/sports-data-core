@@ -21,7 +21,7 @@ GitHub: github.com/jrandallsexton/sports-data-core
 - **At-least-once delivery**: RabbitMQ/MassTransit; all consumers must be idempotent
 - **SHA-256 document identity**: Full hash of normalized URL (scheme+host+path, lowercased, no query string), scoped per sport DB collection. See `HashProvider.GenerateHashFromUri`.
 - **DLQ is intentional**: Documents land in dead-letter when dependencies aren't sourced yet due to Provider backlog. Manual replay via endpoint. NEVER purge.
-- **Hangfire workers**: Default 20 per pod (NOT 50). Configurable via `{AppName}:BackgroundProcessor:MinWorkers`.
+- **Hangfire workers**: Currently 30 per pod. Configurable via `{AppName}:BackgroundProcessor:MinWorkers`.
 - **ESPN rate limiting**: Uses 403 (not 429) for IP-based rate limiting. Mitigated via `RequestDelayMs=1000ms` in `EspnApiClientConfig` and retry policy in `RetryPolicy.cs`.
 - **Only ESPN is active**: CBS, Yahoo, SportsDataIO provider stubs exist but only ESPN is implemented.
 

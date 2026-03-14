@@ -353,5 +353,197 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             first.Current.Should().Be(1);
             first.Stats.Should().Contain(s => s.Name == "wins" && s.Value == 0m);
         }
+
+        [Fact]
+        public async Task WhenParentIdIsNotGuid_DerivesSeasonPollIdFromRef()
+        {
+            var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
+            var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
+
+            var correlationId = Guid.NewGuid();
+            var seasonId = Guid.NewGuid();
+            var seasonPhaseId = Guid.NewGuid();
+
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+            // Create the SeasonPoll with an ID matching what the fallback derivation produces
+            var seasonPollRef = EspnUriMapper.SeasonPollWeekRefToSeasonPollRef(dto!.Ref);
+            var seasonPollIdentity = generator.Generate(seasonPollRef);
+
+            var seasonPoll = new SeasonPoll
+            {
+                Id = seasonPollIdentity.CanonicalId,
+                Name = "AFCA Coaches Poll",
+                ShortName = "Coaches",
+                SeasonYear = 2025,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+            await FootballDataContext.SeasonPolls.AddAsync(seasonPoll);
+
+            // Seed Season + SeasonPhase + SeasonWeek
+            var season = new Season
+            {
+                Id = seasonId,
+                Name = "2025 NCAA Football Season",
+                Year = 2025,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            var seasonPhase = new SeasonPhase
+            {
+                Id = seasonPhaseId,
+                SeasonId = seasonId,
+                Name = "2025 Regular Season",
+                Slug = "Regular Season",
+                Abbreviation = "REG",
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            var seasonWeekIdentity = generator.Generate(dto.Season.Type.Week.Ref);
+            var weekRefUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1/rankings/2?lang=en&region=us";
+            var weekHash = generator.Generate(weekRefUrl).UrlHash;
+
+            var seasonWeek = new SeasonWeek
+            {
+                Id = seasonWeekIdentity.CanonicalId,
+                Number = 2,
+                SeasonId = seasonId,
+                SeasonPhaseId = seasonPhaseId,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            await FootballDataContext.Seasons.AddAsync(season);
+            await FootballDataContext.SeasonPhases.AddAsync(seasonPhase);
+            await FootballDataContext.SeasonWeeks.AddAsync(seasonWeek);
+
+            // Seed franchises + franchise seasons
+            var allTeams = dto.Ranks.Concat<dynamic>(dto.Others).ToList();
+            foreach (var entry in allTeams)
+            {
+                var teamIdentity = generator.Generate(entry.Team.Ref);
+                var franchise = new Franchise
+                {
+                    Id = teamIdentity.CanonicalId,
+                    ColorCodeHex = "#FFFFFF",
+                    DisplayName = "Team",
+                    DisplayNameShort = "TM",
+                    Location = "City",
+                    Name = "Team",
+                    Slug = "team",
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid(),
+                    ExternalIds = new List<FranchiseExternalId>
+                    {
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            FranchiseId = teamIdentity.CanonicalId,
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = teamIdentity.CleanUrl,
+                            SourceUrlHash = teamIdentity.UrlHash,
+                            Value = teamIdentity.UrlHash
+                        }
+                    }
+                };
+                await FootballDataContext.Franchises.AddAsync(franchise);
+
+                var franchiseSeason = new FranchiseSeason
+                {
+                    Id = teamIdentity.CanonicalId,
+                    ColorCodeHex = "#FFFFFF",
+                    DisplayName = "Team",
+                    DisplayNameShort = "TM",
+                    Location = "City",
+                    Name = "Team",
+                    Slug = "team",
+                    FranchiseId = franchise.Id,
+                    SeasonYear = 2025,
+                    Abbreviation = "TM",
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid(),
+                    ExternalIds = new List<FranchiseSeasonExternalId>
+                    {
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            FranchiseSeasonId = teamIdentity.CanonicalId,
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = teamIdentity.CleanUrl,
+                            SourceUrlHash = teamIdentity.UrlHash,
+                            Value = teamIdentity.UrlHash
+                        }
+                    }
+                };
+                await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+            }
+
+            await FootballDataContext.SaveChangesAsync();
+
+            // Pass a non-GUID parentId to trigger fallback derivation
+            var command = new ProcessDocumentCommand(
+                SourceDataProvider.Espn,
+                Sport.FootballNcaa,
+                2025,
+                DocumentType.SeasonTypeWeekRankings,
+                json,
+                messageId: Guid.NewGuid(),
+                correlationId: correlationId,
+                parentId: "not-a-guid",
+                sourceUri: new Uri(weekRefUrl),
+                urlHash: weekHash
+            );
+
+            var sut = Mocker.CreateInstance<SeasonTypeWeekRankingsDocumentProcessor<FootballDataContext>>();
+
+            // Act
+            await sut.ProcessAsync(command);
+
+            // Assert — entity should exist with the correct SeasonPollId (not Guid.Empty)
+            var ranking = await FootballDataContext.SeasonPollWeeks
+                .Include(r => r.Entries)
+                .FirstOrDefaultAsync();
+
+            ranking.Should().NotBeNull();
+            ranking!.SeasonPollId.Should().Be(seasonPollIdentity.CanonicalId, "fallback should assign the derived SeasonPollId");
+            ranking.SeasonPollId.Should().NotBe(Guid.Empty, "seasonPollId must not remain Guid.Empty after fallback");
+            ranking.Entries.Should().HaveCount(51);
+        }
+
+        [Fact]
+        public async Task WhenParentIdIsNotGuid_AndSeasonPollNotFound_ReturnsEarly()
+        {
+            var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
+
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+            // Do NOT seed a SeasonPoll — fallback derivation should fail
+            var command = new ProcessDocumentCommand(
+                SourceDataProvider.Espn,
+                Sport.FootballNcaa,
+                2025,
+                DocumentType.SeasonTypeWeekRankings,
+                json,
+                messageId: Guid.NewGuid(),
+                correlationId: Guid.NewGuid(),
+                parentId: "not-a-guid",
+                sourceUri: new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1/rankings/2"),
+                urlHash: "abc123"
+            );
+
+            var sut = Mocker.CreateInstance<SeasonTypeWeekRankingsDocumentProcessor<FootballDataContext>>();
+
+            // Act
+            await sut.ProcessAsync(command);
+
+            // Assert — no entity should be created
+            var ranking = await FootballDataContext.SeasonPollWeeks.FirstOrDefaultAsync();
+            ranking.Should().BeNull("processor should return early when SeasonPoll cannot be derived");
+        }
     }
 }

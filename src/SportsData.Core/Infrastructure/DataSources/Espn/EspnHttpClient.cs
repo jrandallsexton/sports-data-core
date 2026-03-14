@@ -8,6 +8,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 
 using System;
+using System.Diagnostics.Metrics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -19,6 +20,11 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 {
     public class EspnHttpClient
     {
+        private static readonly Meter _meter = new("SportsData.Core.Espn");
+        private static readonly Counter<long> _cacheHitCounter = _meter.CreateCounter<long>("espn.cache.hit", description: "ESPN document cache hits (served from MongoDB/disk)");
+        private static readonly Counter<long> _cacheMissCounter = _meter.CreateCounter<long>("espn.cache.miss", description: "ESPN document cache misses (requires live fetch)");
+        private static readonly Counter<long> _liveFetchCounter = _meter.CreateCounter<long>("espn.live.fetch", description: "ESPN live API calls made");
+
         private readonly HttpClient _httpClient;
         private readonly IOptionsMonitor<EspnApiClientConfig> _configMonitor;
         private readonly ILogger<EspnHttpClient> _logger;
@@ -51,6 +57,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 var cached = await TryLoadFromDiskAsync(config, uri, stripQuerystring);
                 if (!string.IsNullOrEmpty(cached))
                 {
+                    _cacheHitCounter.Add(1);
                     _logger.LogInformation("ESPN {CacheResult} for {Uri}", "HIT", uri);
 
                     // Treat literal "null" string as invalid cache
@@ -72,6 +79,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                     }
                 }
 
+                _cacheMissCounter.Add(1);
                 _logger.LogInformation("ESPN {CacheResult} for {Uri}", "MISS", uri);
             }
 
@@ -93,6 +101,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             // Request-only HTTPS upgrade
             var requestUri = EspnRequestUri.ForFetch(uri);
 
+            _liveFetchCounter.Add(1);
             _logger.LogInformation("ESPN {CacheResult} for {IdentityUri}. Fetching live: {RequestUri}", "LIVE", uri, requestUri);
 
             // Centralized rate limiting — blocks until a token is available
@@ -228,10 +237,12 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             {
                 if (File.Exists(path))
                 {
+                    _cacheHitCounter.Add(1);
                     _logger.LogInformation("ESPN {CacheResult} for image {Uri}", "HIT", uri.ToString().Sanitize());
                     return File.OpenRead(path);
                 }
 
+                _cacheMissCounter.Add(1);
                 _logger.LogInformation("ESPN {CacheResult} for image {Uri}", "MISS", uri.ToString().Sanitize());
             }
 

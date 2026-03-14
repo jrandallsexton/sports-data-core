@@ -238,12 +238,12 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 if (File.Exists(path))
                 {
                     _cacheHitCounter.Add(1);
-                    _logger.LogInformation("ESPN {CacheResult} for image {Uri}", "HIT", uri.ToString().Sanitize());
+                    _logger.LogInformation("ESPN {CacheResult} for image {Uri}", "HIT", uri);
                     return File.OpenRead(path);
                 }
 
                 _cacheMissCounter.Add(1);
-                _logger.LogInformation("ESPN {CacheResult} for image {Uri}", "MISS", uri.ToString().Sanitize());
+                _logger.LogInformation("ESPN {CacheResult} for image {Uri}", "MISS", uri);
             }
 
             // Check circuit breaker before making any ESPN call

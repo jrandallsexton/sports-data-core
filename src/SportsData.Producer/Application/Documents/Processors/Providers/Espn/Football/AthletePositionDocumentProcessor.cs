@@ -7,6 +7,7 @@ using SportsData.Core.Eventing.Events.Athletes;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -117,7 +118,7 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
                     dto.Name,
                     dto.Parent?.Ref);
 
-                throw new InvalidOperationException($"Parent position not yet available for '{dto.Name}'. Will retry.");
+                throw new ExternalDocumentNotSourcedException($"Parent position not yet available for '{dto.Name}'. Will retry.");
             }
         }
 

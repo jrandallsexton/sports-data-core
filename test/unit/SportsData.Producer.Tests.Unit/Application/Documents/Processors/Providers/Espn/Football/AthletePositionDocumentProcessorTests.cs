@@ -301,13 +301,10 @@ public class AthletePositionDocumentProcessorTests : ProducerTestBase<FootballDa
             .OmitAutoProperties()
             .Create();
 
-        // Act
-        Func<Task> act = async () => await sut.ProcessAsync(command);
+        // Act — base class catches ExternalDocumentNotSourcedException and schedules retry
+        await sut.ProcessAsync(command);
 
-        // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*Parent position not yet available*");
-
+        // Assert — entity should not be persisted when parent is unresolved
         var created = await FootballDataContext.AthletePositions
             .FirstOrDefaultAsync(x => x.Name == "Wide Receiver");
 

@@ -8,6 +8,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -64,7 +65,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
         if (competition is null)
         {
             _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionIdValue);
-            throw new InvalidOperationException($"Competition with ID {competitionIdValue} does not exist.");
+            throw new ExternalDocumentNotSourcedException($"Competition with ID {competitionIdValue} does not exist. Will retry.");
         }
 
         // Resolve FranchiseSeasonId from Team ref
@@ -96,7 +97,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
 
             await _dataContext.SaveChangesAsync();
 
-            throw new InvalidOperationException("FranchiseSeason not found.");
+            throw new ExternalDocumentNotSourcedException("FranchiseSeason not found. Sourcing requested. Will retry.");
         }
 
         var newIndexCount = 0;
@@ -111,7 +112,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
 
             if (powerIndex is null)
             {
-                _logger.LogInformation("Discovered new PowerIndex. Name={Name}, DisplayName={DisplayName}", 
+                _logger.LogInformation("Discovered new PowerIndex. Name={Name}, DisplayName={DisplayName}",
                     stat.Name,
                     stat.DisplayName);
 
@@ -129,15 +130,26 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
                 discoveredIndexNames.Add(stat.Name);
             }
 
-            var index = stat.AsEntity(
-                _externalRefIdentityGenerator,
-                dto.Ref,
-                powerIndex.Id,
-                competitionIdValue,
-                franchiseSeasonId.Value,
-                command.CorrelationId);
+            var existingIndex = competition.PowerIndexes
+                .FirstOrDefault(x => x.FranchiseSeasonId == franchiseSeasonId.Value && x.PowerIndexId == powerIndex.Id);
 
-            await _dataContext.CompetitionPowerIndexes.AddAsync(index);
+            if (existingIndex is not null)
+            {
+                existingIndex.Value = stat.Value;
+                existingIndex.DisplayValue = stat.DisplayValue;
+            }
+            else
+            {
+                var index = stat.AsEntity(
+                    _externalRefIdentityGenerator,
+                    dto.Ref,
+                    powerIndex.Id,
+                    competitionIdValue,
+                    franchiseSeasonId.Value,
+                    command.CorrelationId);
+
+                await _dataContext.CompetitionPowerIndexes.AddAsync(index);
+            }
         }
 
         await _dataContext.SaveChangesAsync();

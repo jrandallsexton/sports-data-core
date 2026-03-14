@@ -66,6 +66,17 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
+                var awayCompetitor = competition.Competitors.FirstOrDefault(c => c.HomeAway == "away");
+                var homeCompetitor = competition.Competitors.FirstOrDefault(c => c.HomeAway == "home");
+
+                if (awayCompetitor is null || homeCompetitor is null)
+                {
+                    _logger.LogError(
+                        "Competition is missing away or home competitor. ContestId={ContestId}, Away={HasAway}, Home={HasHome}",
+                        command.ContestId, awayCompetitor is not null, homeCompetitor is not null);
+                    return;
+                }
+
                 var competitionExternalId = competition.ExternalIds
                     .FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
 
@@ -118,11 +129,19 @@ namespace SportsData.Producer.Application.Contests
                     _logger.LogWarning("No plays found for {ContestName}", contest.Name);
 
                     // this is very likely a D2 game.  try to get it from Competition.Competitor[x].Score.Ref
-                    var awayRef = competition.Competitors
-                        .First(cmp => cmp.HomeAway == "away").ExternalIds.First().SourceUrl;
+                    var awayExternalId = awayCompetitor.ExternalIds.FirstOrDefault();
+                    var homeExternalId = homeCompetitor.ExternalIds.FirstOrDefault();
 
-                    var homeRef = competition.Competitors
-                        .First(cmp => cmp.HomeAway == "home").ExternalIds.First().SourceUrl;
+                    if (awayExternalId is null || homeExternalId is null)
+                    {
+                        _logger.LogError(
+                            "Competitor ExternalIds missing for D2 fallback. ContestId={ContestId}, AwayHasExtId={AwayHasExtId}, HomeHasExtId={HomeHasExtId}",
+                            command.ContestId, awayExternalId is not null, homeExternalId is not null);
+                        return;
+                    }
+
+                    var awayRef = awayExternalId.SourceUrl;
+                    var homeRef = homeExternalId.SourceUrl;
 
                     // source both
                     var awayCompResult = await _espnProvider.GetResource(new Uri(awayRef), true, true);
@@ -201,10 +220,8 @@ namespace SportsData.Producer.Application.Contests
                     contest.HomeScore = finalScoringPlay.HomeScore;
                 }
 
-                var awayFranchiseSeasonId = competition.Competitors
-                    .First(cmp => cmp.HomeAway == "away").FranchiseSeasonId;
-                var homeFranchiseSeasonId = competition.Competitors
-                    .First(cmp => cmp.HomeAway == "home").FranchiseSeasonId;
+                var awayFranchiseSeasonId = awayCompetitor.FranchiseSeasonId;
+                var homeFranchiseSeasonId = homeCompetitor.FranchiseSeasonId;
 
                 if (contest.AwayScore != contest.HomeScore)
                 {

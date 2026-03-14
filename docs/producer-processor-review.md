@@ -53,11 +53,11 @@
 - **File:** `Providers/Espn/Football/AthleteSeasonStatisticsDocumentProcessor.cs`, lines 79-86
 - **Impact:** Intermediate `SaveChangesAsync` after delete. If the subsequent insert fails, statistics are permanently lost. Should delete and insert within a single `SaveChangesAsync` call.
 
-### 8. ~~EventCompetitionOddsDocumentProcessor — Events published outside outbox~~ FALSE POSITIVE
+### 8. ~~EventCompetitionOddsDocumentProcessor — Events published outside outbox~~ FIXED
 
 - **File:** `Providers/Espn/Football/EventCompetitionOddsDocumentProcessor.cs`, lines 134-155
-- **Impact:** Events published AFTER `SaveChangesAsync`, outside the outbox transaction. If the process crashes after save but before publish, the event is lost. Other processors correctly publish before save.
-- **Resolution:** Not a bug. Current code saves first, then publishes — this is the correct order (save before publish ensures the entity exists before consumers see the event).
+- **Impact:** Events published AFTER `SaveChangesAsync`. With MassTransit's EF transactional outbox, `_publishEndpoint.Publish()` writes the message to the outbox table within the current DbContext transaction. `SaveChangesAsync()` then atomically commits both the entity changes and the outbox messages. Publishing after `SaveChangesAsync` means the event is written in a separate transaction — if the process crashes after save but before publish, the event is lost. Same issue found in `AthletePositionDocumentProcessor` (create and update paths) and `VenueDocumentProcessor` (update path).
+- **Fixed in:** PR #165. Moved `Publish` calls before `SaveChangesAsync` in all affected processors.
 
 ### 9. ~~EventCompetitionDriveDocumentProcessor — Copy-paste CausationId~~ FIXED
 
@@ -71,11 +71,11 @@
 - **Impact:** `DateTime.Parse(dto.LastModified)` with no null check or `TryParse`. Throws `FormatException` if ESPN omits or malforms the field.
 - **Fixed in:** PR #164. Changed to `DateTime.TryParse` with `DateTime.UtcNow` fallback.
 
-### 11. ~~VenueDocumentProcessor — Event published before save on create path~~ FIXED
+### 11. ~~VenueDocumentProcessor — Event published before save on create path~~ FALSE POSITIVE
 
 - **File:** `Providers/Espn/Common/VenueDocumentProcessor.cs`, lines 93-103
-- **Impact:** `VenueCreated` event published at line 101, then `SaveChangesAsync` at line 103. If save fails, downstream consumers process an entity that doesn't exist. The update path (line 188-198) correctly saves first.
-- **Fixed in:** PR #165. Swapped order to save before publish, matching the update path.
+- **Impact:** `VenueCreated` event published at line 101, then `SaveChangesAsync` at line 103.
+- **Resolution:** Not a bug. With MassTransit's EF transactional outbox, `Publish()` writes to the outbox table within the DbContext transaction. `SaveChangesAsync()` atomically commits both the entity and the outbox message. Publish-before-save is the correct pattern — it ensures atomicity. The update path (save-then-publish) is actually the inconsistent one.
 
 ### 12. ~~TeamSeasonRecordDocumentProcessor — Guid.Empty instead of CorrelationId~~ FIXED
 

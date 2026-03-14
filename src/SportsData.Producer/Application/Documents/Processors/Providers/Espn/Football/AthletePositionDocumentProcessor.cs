@@ -128,8 +128,6 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
 
         _dataContext.AthletePositions.Add(entity);
 
-        await _dataContext.SaveChangesAsync();
-
         var evt = new AthletePositionCreated(
             entity.AsCanonical(),
             null,
@@ -138,6 +136,8 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
             command.MessageId);
 
         await _publishEndpoint.Publish(evt);
+
+        await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Created new AthletePosition {@evt}", evt);
     }
@@ -200,8 +200,6 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
 
         if (updated)
         {
-            await _dataContext.SaveChangesAsync();
-
             var evt = new AthletePositionUpdated(
                 entity.AsCanonical(),
                 null,
@@ -210,6 +208,8 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
                 command.MessageId);
 
             await _publishEndpoint.Publish(evt);
+
+            await _dataContext.SaveChangesAsync();
             _logger.LogInformation("Updated AthletePosition {@evt}", evt);
         }
         else

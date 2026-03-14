@@ -75,10 +75,14 @@ public class CoachRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<
 
         // Replace any existing CoachRecord with same identity (same SourceUrlHash)
         var newRecordHash = newRecord.ExternalIds.FirstOrDefault()?.SourceUrlHash;
-        var existing = newRecordHash is not null
-            ? coach.Records.FirstOrDefault(r =>
-                r.ExternalIds.Any(e => e.SourceUrlHash == newRecordHash))
-            : null;
+        if (string.IsNullOrEmpty(newRecordHash))
+        {
+            _logger.LogError("CoachRecord entity has no SourceUrlHash after mapping. CoachId={CoachId}, Ref={Ref}", coach.Id, dto.Ref);
+            return;
+        }
+
+        var existing = coach.Records.FirstOrDefault(r =>
+            r.ExternalIds.Any(e => e.SourceUrlHash == newRecordHash));
 
         if (existing is not null)
         {

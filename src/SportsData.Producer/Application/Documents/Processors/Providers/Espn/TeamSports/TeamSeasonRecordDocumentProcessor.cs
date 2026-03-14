@@ -78,7 +78,7 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
             franchiseSeasonIdValue,
             franchiseSeason.FranchiseId,
             franchiseSeason.SeasonYear,
-            Guid.Empty);
+            command.CorrelationId);
 
         await _dataContext.FranchiseSeasonRecords.AddAsync(entity);
 

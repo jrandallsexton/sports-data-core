@@ -241,6 +241,43 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         }
 
         /// <summary>
+        /// Validates that the CorrelationId from the command is persisted on the record entity.
+        /// Bug #12: previously passed Guid.Empty instead of command.CorrelationId.
+        /// </summary>
+        [Fact]
+        public async Task ProcessAsync_PersistsCorrelationId_OnCreatedRecord()
+        {
+            // Arrange
+            var franchiseSeason = Fixture.Build<FranchiseSeason>()
+                .WithAutoProperties()
+                .With(x => x.SeasonYear, 2025)
+                .With(x => x.Records, new List<FranchiseSeasonRecord>())
+                .Create();
+
+            await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+            await TeamSportDataContext.SaveChangesAsync();
+
+            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRecord.json");
+            var correlationId = Guid.NewGuid();
+
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.Document, json)
+                .With(x => x.ParentId, franchiseSeason.Id.ToString())
+                .With(x => x.CorrelationId, correlationId)
+                .OmitAutoProperties()
+                .Create();
+
+            var sut = Mocker.CreateInstance<TeamSeasonRecordDocumentProcessor<TeamSportDataContext>>();
+
+            // Act
+            await sut.ProcessAsync(command);
+
+            // Assert
+            var record = await TeamSportDataContext.FranchiseSeasonRecords.FirstAsync();
+            record.CreatedBy.Should().Be(correlationId);
+        }
+
+        /// <summary>
         /// Validates that when the document contains invalid/malformed JSON,
         /// the processor throws an exception as JSON deserialization fails.
         /// </summary>

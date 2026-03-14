@@ -113,7 +113,7 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
             newEntity.AwayWinPercentage,
             newEntity.TiePercentage,
             newEntity.SecondsLeft,
-            DateTime.Parse(dto.LastModified).ToUniversalTime(),
+            DateTime.TryParse(dto.LastModified, out var lastModified) ? lastModified.ToUniversalTime() : DateTime.UtcNow,
             command.SourceDataProvider.ToString().ToLowerInvariant(),
             dto.Ref?.ToString() ?? string.Empty,
             dto.SequenceNumber,

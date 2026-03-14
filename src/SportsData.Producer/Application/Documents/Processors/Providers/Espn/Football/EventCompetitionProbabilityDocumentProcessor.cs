@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -113,7 +115,7 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
             newEntity.AwayWinPercentage,
             newEntity.TiePercentage,
             newEntity.SecondsLeft,
-            DateTime.TryParse(dto.LastModified, out var lastModified) ? lastModified.ToUniversalTime() : DateTime.UtcNow,
+            DateTime.TryParse(dto.LastModified, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var lastModified) ? lastModified : DateTime.UtcNow,
             command.SourceDataProvider.ToString().ToLowerInvariant(),
             dto.Ref?.ToString() ?? string.Empty,
             dto.SequenceNumber,

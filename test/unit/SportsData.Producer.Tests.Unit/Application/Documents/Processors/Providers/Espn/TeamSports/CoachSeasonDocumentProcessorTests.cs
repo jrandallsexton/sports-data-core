@@ -277,6 +277,61 @@ public class CoachSeasonDocumentProcessorTests : ProducerTestBase<CoachSeasonDoc
     }
 
     [Fact]
+    public async Task ProcessAsync_DoesNotRepublishDependencyRequest_OnRetry()
+    {
+        // Arrange
+        var identityGenerator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
+
+        // Don't seed Coach — it's missing
+        await SeedFranchiseSeasonAsync();
+
+        var documentJson = await LoadJsonTestData(TestDataFile);
+
+        // Simulate a retry where the Coach dependency was already requested
+        var personRef = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/4079704?lang=en&region=us");
+        var personIdentity = identityGenerator.Generate(personRef);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .OmitAutoProperties()
+            .With(x => x.Document, documentJson)
+            .With(x => x.DocumentType, DocumentType.CoachSeason)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.AttemptCount, 2)
+            .With(x => x.CorrelationId, Guid.NewGuid())
+            .Create();
+
+        // Mark Coach dependency as already requested from a previous attempt
+        command.RequestedDependencies.Add(
+            new RequestedDependency(DocumentType.Coach, personIdentity.UrlHash));
+
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<CoachSeasonDocumentProcessor<FootballDataContext>>();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert — Coach dependency should NOT be re-requested (deduplication)
+        bus.Verify(
+            x => x.Publish(
+                It.Is<DocumentRequested>(e =>
+                    e.DocumentType == DocumentType.Coach),
+                It.IsAny<CancellationToken>()),
+            Times.Never,
+            "should not re-request Coach dependency on retry");
+
+        // Should still publish retry event
+        bus.Verify(
+            x => x.Publish(
+                It.Is<DocumentCreated>(e => e.AttemptCount == 3),
+                It.Is<IDictionary<string, object>>(h => h != null && h.ContainsKey("RetryReason")),
+                It.IsAny<CancellationToken>()),
+            Times.Once,
+            "should still publish retry event");
+    }
+
+    [Fact]
     public async Task ProcessAsync_DoesNotPublishRecordRequests_WhenRecordsCollectionEmpty()
     {
         // Arrange

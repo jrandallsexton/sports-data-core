@@ -185,8 +185,6 @@ public class VenueDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             venue.ModifiedUtc = DateTime.UtcNow;
             venue.ModifiedBy = command.CorrelationId;
 
-            await _dataContext.SaveChangesAsync();
-
             var evt = new VenueUpdated(
                 venue.AsCanonical(),
                 null,
@@ -196,6 +194,8 @@ public class VenueDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 command.MessageId);
 
             await _publishEndpoint.Publish(evt, CancellationToken.None);
+
+            await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(
                 "Venue updated. VenueId={VenueId}, ScalarChanges={ScalarChanges}, NewImages={NewImages}",

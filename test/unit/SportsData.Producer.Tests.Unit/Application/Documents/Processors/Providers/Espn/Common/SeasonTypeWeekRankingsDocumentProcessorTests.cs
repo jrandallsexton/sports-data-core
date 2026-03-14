@@ -391,9 +391,54 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenParentIdIsNotGuid_AndSeasonPollNotFound_ReturnsEarly()
         {
             var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
+            var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+            // Seed all prerequisites EXCEPT SeasonPoll so the only failure path is the missing poll
+            var seasonId = Guid.NewGuid();
+            var seasonPhaseId = Guid.NewGuid();
+
+            var season = new Season
+            {
+                Id = seasonId,
+                Name = "2025 NCAA Football Season",
+                Year = 2025,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            var seasonPhase = new SeasonPhase
+            {
+                Id = seasonPhaseId,
+                SeasonId = seasonId,
+                Name = "2025 Regular Season",
+                Slug = "Regular Season",
+                Abbreviation = "REG",
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            var seasonWeekIdentity = generator.Generate(dto!.Season.Type.Week.Ref);
+            var weekRefUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1/rankings/2?lang=en&region=us";
+            var weekHash = generator.Generate(weekRefUrl).UrlHash;
+
+            var seasonWeek = new SeasonWeek
+            {
+                Id = seasonWeekIdentity.CanonicalId,
+                Number = 2,
+                SeasonId = seasonId,
+                SeasonPhaseId = seasonPhaseId,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            await FootballDataContext.Seasons.AddAsync(season);
+            await FootballDataContext.SeasonPhases.AddAsync(seasonPhase);
+            await FootballDataContext.SeasonWeeks.AddAsync(seasonWeek);
+
+            await SeedFranchisesAndSeasonsFromDto(dto, generator);
 
             // Do NOT seed a SeasonPoll — fallback derivation should fail
             var command = new ProcessDocumentCommand(
@@ -405,8 +450,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 messageId: Guid.NewGuid(),
                 correlationId: Guid.NewGuid(),
                 parentId: "not-a-guid",
-                sourceUri: new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1/rankings/2"),
-                urlHash: "abc123"
+                sourceUri: new Uri(weekRefUrl),
+                urlHash: weekHash
             );
 
             var sut = Mocker.CreateInstance<SeasonTypeWeekRankingsDocumentProcessor<FootballDataContext>>();
@@ -414,7 +459,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // Act
             await sut.ProcessAsync(command);
 
-            // Assert — no entity should be created
+            // Assert — no entity should be created (specifically because SeasonPoll is missing)
             var ranking = await FootballDataContext.SeasonPollWeeks.FirstOrDefaultAsync();
             ranking.Should().BeNull("processor should return early when SeasonPoll cannot be derived");
         }

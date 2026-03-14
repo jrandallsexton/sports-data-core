@@ -177,8 +177,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var sut = Mocker.CreateInstance<EventCompetitionPowerIndexDocumentProcessor<FootballDataContext>>();
 
-            // Act — process twice
+            // Act — process twice with change tracker cleared between calls to emulate separate requests
             await sut.ProcessAsync(command);
+            FootballDataContext.ChangeTracker.Clear();
             await sut.ProcessAsync(command);
 
             // Assert — should have exactly the same count as processing once (4 stats in test data)

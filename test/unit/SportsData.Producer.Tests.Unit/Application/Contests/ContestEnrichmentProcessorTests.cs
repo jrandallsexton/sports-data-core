@@ -8,6 +8,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -165,6 +166,84 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
 
         await _sut.Process(command);
 
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenCompetitorsHaveEmptyExternalIds_ReturnsEarlyOnD2Fallback()
+    {
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        var contest = new Contest
+        {
+            Id = contestId,
+            Name = "D2 Test Game",
+            ShortName = "D2T",
+            StartDateUtc = DateTime.UtcNow,
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2024
+        };
+        var competition = new Competition
+        {
+            Id = competitionId,
+            ContestId = contestId,
+            Contest = contest,
+            Status = new CompetitionStatus
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competitionId,
+                StatusTypeName = "STATUS_FINAL"
+            },
+            ExternalIds = new List<CompetitionExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionId = competitionId,
+                    Provider = SourceDataProvider.Espn,
+                    Value = "12345",
+                    SourceUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/12345/competitions/12345",
+                    SourceUrlHash = "abc123"
+                }
+            },
+            Competitors = new List<CompetitionCompetitor>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionId = competitionId,
+                    FranchiseSeasonId = AwayFranchiseSeasonId,
+                    HomeAway = "away",
+                    Order = 0,
+                    ExternalIds = new List<CompetitionCompetitorExternalId>() // empty
+                },
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionId = competitionId,
+                    FranchiseSeasonId = HomeFranchiseSeasonId,
+                    HomeAway = "home",
+                    Order = 1,
+                    ExternalIds = new List<CompetitionCompetitorExternalId>() // empty
+                }
+            }
+        };
+
+        FootballDataContext.Contests.Add(contest);
+        FootballDataContext.Competitions.Add(competition);
+        await FootballDataContext.SaveChangesAsync();
+
+        // Mock plays to return empty (triggers D2 fallback path)
+        Mock.Get(Mocker.Get<IProvideEspnApiData>())
+            .Setup(x => x.GetCompetitionPlaysAsync(It.IsAny<Uri>()))
+            .ReturnsAsync(new EspnEventCompetitionPlaysDto { Count = 0, Items = new() });
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+
+        await _sut.Process(command);
+
+        // Should return early due to missing ExternalIds — no enrichment event published
         Mock.Get(Mocker.Get<IEventBus>())
             .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
     }

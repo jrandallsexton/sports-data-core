@@ -85,6 +85,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     public async Task Process_WhenOnlyHomeCompetitor_ReturnsEarly()
     {
         var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
         var contest = new Contest
         {
             Id = contestId,
@@ -96,7 +97,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
         };
         var competition = new Competition
         {
-            Id = Guid.NewGuid(),
+            Id = competitionId,
             ContestId = contestId,
             Contest = contest,
             Competitors = new List<CompetitionCompetitor>
@@ -104,7 +105,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
                 new()
                 {
                     Id = Guid.NewGuid(),
-                    CompetitionId = Guid.NewGuid(),
+                    CompetitionId = competitionId,
                     FranchiseSeasonId = HomeFranchiseSeasonId,
                     HomeAway = "home",
                     Order = 0
@@ -128,6 +129,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     public async Task Process_WhenOnlyAwayCompetitor_ReturnsEarly()
     {
         var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
         var contest = new Contest
         {
             Id = contestId,
@@ -139,7 +141,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
         };
         var competition = new Competition
         {
-            Id = Guid.NewGuid(),
+            Id = competitionId,
             ContestId = contestId,
             Contest = contest,
             Competitors = new List<CompetitionCompetitor>
@@ -147,7 +149,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
                 new()
                 {
                     Id = Guid.NewGuid(),
-                    CompetitionId = Guid.NewGuid(),
+                    CompetitionId = competitionId,
                     FranchiseSeasonId = AwayFranchiseSeasonId,
                     HomeAway = "away",
                     Order = 0

@@ -10,6 +10,17 @@ namespace SportsData.Producer.Migrations.Football
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Delete duplicate CompetitionPowerIndex rows before applying unique constraint.
+            // Keeps the row with the latest CreatedUtc for each logical key.
+            migrationBuilder.Sql("""
+                DELETE FROM "CompetitionPowerIndex"
+                WHERE "Id" NOT IN (
+                    SELECT DISTINCT ON ("CompetitionId", "FranchiseSeasonId", "PowerIndexId") "Id"
+                    FROM "CompetitionPowerIndex"
+                    ORDER BY "CompetitionId", "FranchiseSeasonId", "PowerIndexId", "CreatedUtc" DESC
+                );
+                """);
+
             migrationBuilder.DropIndex(
                 name: "IX_CompetitionPowerIndex_CompetitionId",
                 table: "CompetitionPowerIndex");

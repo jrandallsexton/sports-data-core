@@ -1,10 +1,16 @@
 using FluentAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using Moq;
 
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Enums;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 using Xunit;
 
@@ -26,6 +32,142 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
 
         _sut = Mocker.CreateInstance<ContestEnrichmentProcessor>();
     }
+
+    #region Process — competitor guard
+
+    [Fact]
+    public async Task Process_WhenCompetitionNotFound_ReturnsEarly()
+    {
+        // No competition seeded in the in-memory DB
+        var command = new EnrichContestCommand(Guid.NewGuid(), Guid.NewGuid());
+
+        await _sut.Process(command);
+
+        // Should not attempt to publish anything
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenNoCompetitors_ReturnsEarly()
+    {
+        var contestId = Guid.NewGuid();
+        var contest = new Contest
+        {
+            Id = contestId,
+            Name = "Test Game",
+            ShortName = "TST",
+            StartDateUtc = DateTime.UtcNow,
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2024
+        };
+        var competition = new Competition
+        {
+            Id = Guid.NewGuid(),
+            ContestId = contestId,
+            Contest = contest,
+            Competitors = new List<CompetitionCompetitor>() // empty
+        };
+
+        FootballDataContext.Contests.Add(contest);
+        FootballDataContext.Competitions.Add(competition);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+
+        await _sut.Process(command);
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenOnlyHomeCompetitor_ReturnsEarly()
+    {
+        var contestId = Guid.NewGuid();
+        var contest = new Contest
+        {
+            Id = contestId,
+            Name = "Test Game",
+            ShortName = "TST",
+            StartDateUtc = DateTime.UtcNow,
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2024
+        };
+        var competition = new Competition
+        {
+            Id = Guid.NewGuid(),
+            ContestId = contestId,
+            Contest = contest,
+            Competitors = new List<CompetitionCompetitor>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionId = Guid.NewGuid(),
+                    FranchiseSeasonId = HomeFranchiseSeasonId,
+                    HomeAway = "home",
+                    Order = 0
+                }
+            }
+        };
+
+        FootballDataContext.Contests.Add(contest);
+        FootballDataContext.Competitions.Add(competition);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+
+        await _sut.Process(command);
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenOnlyAwayCompetitor_ReturnsEarly()
+    {
+        var contestId = Guid.NewGuid();
+        var contest = new Contest
+        {
+            Id = contestId,
+            Name = "Test Game",
+            ShortName = "TST",
+            StartDateUtc = DateTime.UtcNow,
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2024
+        };
+        var competition = new Competition
+        {
+            Id = Guid.NewGuid(),
+            ContestId = contestId,
+            Contest = contest,
+            Competitors = new List<CompetitionCompetitor>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionId = Guid.NewGuid(),
+                    FranchiseSeasonId = AwayFranchiseSeasonId,
+                    HomeAway = "away",
+                    Order = 0
+                }
+            }
+        };
+
+        FootballDataContext.Contests.Add(contest);
+        FootballDataContext.Competitions.Add(competition);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+
+        await _sut.Process(command);
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    #endregion
 
     #region GetOverUnderResult
 

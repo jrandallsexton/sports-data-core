@@ -7,6 +7,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
@@ -72,7 +73,7 @@ public class SeasonTypeDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         if (existingSeasonType == null)
         {
             _logger.LogError("Parent Season could not be found");
-            throw new Exception("Parent Season could not be found");
+            throw new ExternalDocumentNotSourcedException("Parent Season could not be found. Will retry.");
         }
 
         var seasonPhase = dto.AsEntity(seasonId, _externalRefIdentityGenerator, command.CorrelationId);

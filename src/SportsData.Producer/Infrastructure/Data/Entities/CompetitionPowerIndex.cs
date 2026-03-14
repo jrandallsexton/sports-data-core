@@ -58,6 +58,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .WithMany()
                     .HasForeignKey(x => x.FranchiseSeasonId)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                builder.HasIndex(x => new { x.CompetitionId, x.FranchiseSeasonId, x.PowerIndexId })
+                    .IsUnique();
             }
         }
     }

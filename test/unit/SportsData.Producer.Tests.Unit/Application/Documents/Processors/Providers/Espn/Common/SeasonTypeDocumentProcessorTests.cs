@@ -86,4 +86,33 @@ public class SeasonTypeDocumentProcessorTests
         //        e.Sport == Sport.FootballNcaa
         //    ));
     }
+
+    [Fact]
+    public async Task WhenParentSeasonNotFound_DoesNotCreatePhase()
+    {
+        // Arrange — do NOT seed a Season so the parent lookup fails
+        var json = await LoadJsonTestData("EspnFootballNcaaSeasonType_PreSeason.json");
+        var nonExistentSeasonId = Guid.NewGuid();
+        const string srcUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1?lang=en&region=us";
+
+        var command = new ProcessDocumentCommand(
+            SourceDataProvider.Espn,
+            Sport.FootballNcaa,
+            2025,
+            DocumentType.SeasonType,
+            json,
+            messageId: Guid.NewGuid(),
+            correlationId: Guid.NewGuid(),
+            parentId: nonExistentSeasonId.ToString(),
+            new Uri(srcUrl),
+            srcUrl.UrlHash()
+        );
+
+        // Act — base class catches ExternalDocumentNotSourcedException and schedules retry
+        await _processor.ProcessAsync(command);
+
+        // Assert — no SeasonPhase created
+        var phases = await FootballDataContext.SeasonPhases.ToListAsync();
+        phases.Should().BeEmpty("processor should not create a phase when the parent Season is missing");
+    }
 }

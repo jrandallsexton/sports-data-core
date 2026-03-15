@@ -20,10 +20,9 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 {
     public class EspnHttpClient
     {
-        private static readonly Meter _meter = new("SportsData.Core.Espn");
-        private static readonly Counter<long> _cacheHitCounter = _meter.CreateCounter<long>("espn.cache.hit", description: "ESPN document cache hits (served from MongoDB/disk)");
-        private static readonly Counter<long> _cacheMissCounter = _meter.CreateCounter<long>("espn.cache.miss", description: "ESPN document cache misses (requires live fetch)");
-        private static readonly Counter<long> _liveFetchCounter = _meter.CreateCounter<long>("espn.live.fetch", description: "ESPN live API calls made");
+        private readonly Counter<long> _cacheHitCounter;
+        private readonly Counter<long> _cacheMissCounter;
+        private readonly Counter<long> _liveFetchCounter;
 
         private readonly HttpClient _httpClient;
         private readonly IOptionsMonitor<EspnApiClientConfig> _configMonitor;
@@ -35,13 +34,19 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                               IOptionsMonitor<EspnApiClientConfig> config,
                               ILogger<EspnHttpClient> logger,
                               IEspnCircuitBreaker circuitBreaker,
-                              IEspnRateLimiter rateLimiter)
+                              IEspnRateLimiter rateLimiter,
+                              IMeterFactory meterFactory)
         {
             _httpClient = httpClient;
             _configMonitor = config;
             _logger = logger;
             _circuitBreaker = circuitBreaker;
             _rateLimiter = rateLimiter;
+
+            var meter = meterFactory.Create("SportsData.Core.Espn");
+            _cacheHitCounter = meter.CreateCounter<long>("espn.cache.hit", description: "ESPN document cache hits (served from MongoDB/disk)");
+            _cacheMissCounter = meter.CreateCounter<long>("espn.cache.miss", description: "ESPN document cache misses (requires live fetch)");
+            _liveFetchCounter = meter.CreateCounter<long>("espn.live.fetch", description: "ESPN live API calls made");
         }
 
         public async Task<Result<string>> GetRawJsonAsync(

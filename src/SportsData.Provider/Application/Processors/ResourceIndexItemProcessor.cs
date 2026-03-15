@@ -10,6 +10,8 @@ using SportsData.Provider.Application.Services;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
 
+using System.Diagnostics.Metrics;
+
 namespace SportsData.Provider.Application.Processors
 {
     public interface IProcessResourceIndexItems
@@ -29,6 +31,9 @@ namespace SportsData.Provider.Application.Processors
         private readonly IGenerateExternalRefIdentities _identityGenerator;
         private readonly IDocumentInclusionService _documentInclusionService;
 
+        private readonly Counter<long> _mongoCacheHitCounter;
+        private readonly Counter<long> _espnLiveFetchCounter;
+
         public ResourceIndexItemProcessor(
             ILogger<ResourceIndexItemProcessor> logger,
             AppDataContext dataContext,
@@ -38,7 +43,8 @@ namespace SportsData.Provider.Application.Processors
             IJsonHashCalculator jsonHashCalculator,
             IConfiguration commonConfig,
             IGenerateExternalRefIdentities identityGenerator,
-            IDocumentInclusionService documentInclusionService)
+            IDocumentInclusionService documentInclusionService,
+            IMeterFactory meterFactory)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -49,6 +55,10 @@ namespace SportsData.Provider.Application.Processors
             _commonConfig = commonConfig;
             _identityGenerator = identityGenerator;
             _documentInclusionService = documentInclusionService;
+
+            var meter = meterFactory.Create("SportsData.Provider.Espn");
+            _mongoCacheHitCounter = meter.CreateCounter<long>("espn.cache.hit", description: "Documents served from MongoDB cache (no ESPN API call)");
+            _espnLiveFetchCounter = meter.CreateCounter<long>("espn.live.fetch", description: "Documents fetched live from ESPN API");
         }
 
         public async Task Process(ProcessResourceIndexItemCommand command)
@@ -187,11 +197,11 @@ namespace SportsData.Provider.Application.Processors
                         // Verify it's parseable JSON
                         System.Text.Json.JsonDocument.Parse(dbItem.Data).Dispose();
                         
+                        _mongoCacheHitCounter.Add(1);
                         _logger.LogInformation(
-                            "Document found in MongoDB cache, using cached version. UrlHash={UrlHash}, DocumentType={DocumentType}",
-                            urlHash,
-                            command.DocumentType);
-                        
+                            "ESPN {CacheResult} for {DocumentType}. UrlHash={UrlHash}",
+                            "HIT", command.DocumentType, urlHash);
+
                         // Publish DocumentCreated with cached data (NO ESPN call!)
                         await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data, command.NotifyOnCompletion);
                         return;
@@ -223,6 +233,11 @@ namespace SportsData.Provider.Application.Processors
             }
             else
             {
+                _espnLiveFetchCounter.Add(1);
+                _logger.LogInformation(
+                    "ESPN {CacheResult} for {DocumentType}. UrlHash={UrlHash}, Uri={Uri}",
+                    "LIVE", command.DocumentType, urlHash, command.Uri);
+
                 var result = await _espnApi.GetResource(command.Uri.ToCleanUri(), bypassCache: command.BypassCache);
 
                 if (!result.IsSuccess)

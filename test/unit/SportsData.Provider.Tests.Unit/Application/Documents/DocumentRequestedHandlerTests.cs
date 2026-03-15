@@ -9,8 +9,6 @@ using Microsoft.Extensions.Options;
 
 using Moq;
 
-using System.Diagnostics.Metrics;
-
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.DataSources.Espn;
@@ -216,9 +214,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var optionsMonitor = Mock.Of<IOptionsMonitor<EspnApiClientConfig>>(o => o.CurrentValue == apiConfig);
         var circuitBreaker = new Mock<IEspnCircuitBreaker>();
         var rateLimiter = new NoOpEspnRateLimiter();
-        var meterFactory = new Mock<IMeterFactory>();
-        meterFactory.Setup(f => f.Create(It.IsAny<MeterOptions>())).Returns(new Meter("test"));
-        var httpWrapper = new EspnHttpClient(httpClient, optionsMonitor, NullLogger<EspnHttpClient>.Instance, circuitBreaker.Object, rateLimiter, meterFactory.Object);
+        var httpWrapper = new EspnHttpClient(httpClient, optionsMonitor, NullLogger<EspnHttpClient>.Instance, circuitBreaker.Object, rateLimiter);
         var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
         // Inject the real client
         Mocker.Use<IProvideEspnApiData>(realEspnApiClient);
@@ -262,9 +258,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var optionsMonitor = Mock.Of<IOptionsMonitor<EspnApiClientConfig>>(o => o.CurrentValue == apiConfig);
         var circuitBreaker = new Mock<IEspnCircuitBreaker>();
         var rateLimiter = new NoOpEspnRateLimiter();
-        var meterFactory = new Mock<IMeterFactory>();
-        meterFactory.Setup(f => f.Create(It.IsAny<MeterOptions>())).Returns(new Meter("test"));
-        var httpWrapper = new EspnHttpClient(httpClient, optionsMonitor, NullLogger<EspnHttpClient>.Instance, circuitBreaker.Object, rateLimiter, meterFactory.Object);
+        var httpWrapper = new EspnHttpClient(httpClient, optionsMonitor, NullLogger<EspnHttpClient>.Instance, circuitBreaker.Object, rateLimiter);
         var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
         // Inject the real client
         Mocker.Use<IProvideEspnApiData>(realEspnApiClient);

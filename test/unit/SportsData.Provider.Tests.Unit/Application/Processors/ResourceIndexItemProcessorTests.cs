@@ -1,3 +1,4 @@
+using System.Diagnostics.Metrics;
 using System.Linq.Expressions;
 
 using Microsoft.Extensions.Configuration;
@@ -54,6 +55,10 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
     {
         // Use real identity generator so URI → CanonicalId/UrlHash resolution works
         Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+
+        Mocker.GetMock<IMeterFactory>()
+            .Setup(f => f.Create(It.IsAny<MeterOptions>()))
+            .Returns(new Meter("test"));
 
         Mocker.GetMock<IDocumentInclusionService>()
             .Setup(x => x.GetIncludableJson(It.IsAny<string>()))

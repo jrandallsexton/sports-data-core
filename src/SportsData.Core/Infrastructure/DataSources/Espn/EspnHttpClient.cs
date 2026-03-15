@@ -8,7 +8,6 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 
 using System;
-using System.Diagnostics.Metrics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
@@ -20,10 +19,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 {
     public class EspnHttpClient
     {
-        private readonly Counter<long> _cacheHitCounter;
-        private readonly Counter<long> _cacheMissCounter;
-        private readonly Counter<long> _liveFetchCounter;
-
         private readonly HttpClient _httpClient;
         private readonly IOptionsMonitor<EspnApiClientConfig> _configMonitor;
         private readonly ILogger<EspnHttpClient> _logger;
@@ -34,19 +29,13 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                               IOptionsMonitor<EspnApiClientConfig> config,
                               ILogger<EspnHttpClient> logger,
                               IEspnCircuitBreaker circuitBreaker,
-                              IEspnRateLimiter rateLimiter,
-                              IMeterFactory meterFactory)
+                              IEspnRateLimiter rateLimiter)
         {
             _httpClient = httpClient;
             _configMonitor = config;
             _logger = logger;
             _circuitBreaker = circuitBreaker;
             _rateLimiter = rateLimiter;
-
-            var meter = meterFactory.Create("SportsData.Core.Espn");
-            _cacheHitCounter = meter.CreateCounter<long>("espn.cache.hit", description: "ESPN document cache hits (served from MongoDB/disk)");
-            _cacheMissCounter = meter.CreateCounter<long>("espn.cache.miss", description: "ESPN document cache misses (requires live fetch)");
-            _liveFetchCounter = meter.CreateCounter<long>("espn.live.fetch", description: "ESPN live API calls made");
         }
 
         public async Task<Result<string>> GetRawJsonAsync(
@@ -62,8 +51,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 var cached = await TryLoadFromDiskAsync(config, uri, stripQuerystring);
                 if (!string.IsNullOrEmpty(cached))
                 {
-                    _cacheHitCounter.Add(1);
-                    _logger.LogInformation("ESPN {CacheResult} for {Uri}", "HIT", uri);
+                    _logger.LogDebug("ESPN disk cache HIT for {Uri}", uri);
 
                     // Treat literal "null" string as invalid cache
                     if (cached.Trim() == "null")
@@ -84,8 +72,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                     }
                 }
 
-                _cacheMissCounter.Add(1);
-                _logger.LogInformation("ESPN {CacheResult} for {Uri}", "MISS", uri);
+                _logger.LogDebug("ESPN disk cache MISS for {Uri}", uri);
             }
 
             return await FetchLiveAsync(config, uri, bypassCache, stripQuerystring);
@@ -106,8 +93,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             // Request-only HTTPS upgrade
             var requestUri = EspnRequestUri.ForFetch(uri);
 
-            _liveFetchCounter.Add(1);
-            _logger.LogInformation("ESPN {CacheResult} for {IdentityUri}. Fetching live: {RequestUri}", "LIVE", uri, requestUri);
+            _logger.LogInformation("ESPN live fetch for {IdentityUri}. Request: {RequestUri}", uri, requestUri);
 
             // Centralized rate limiting — blocks until a token is available
             await _rateLimiter.AcquireAsync();
@@ -242,13 +228,11 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             {
                 if (File.Exists(path))
                 {
-                    _cacheHitCounter.Add(1);
-                    _logger.LogInformation("ESPN {CacheResult} for image {Uri}", "HIT", uri);
+                    _logger.LogDebug("ESPN disk cache HIT for image {Uri}", uri);
                     return File.OpenRead(path);
                 }
 
-                _cacheMissCounter.Add(1);
-                _logger.LogInformation("ESPN {CacheResult} for image {Uri}", "MISS", uri);
+                _logger.LogDebug("ESPN disk cache MISS for image {Uri}", uri);
             }
 
             // Check circuit breaker before making any ESPN call

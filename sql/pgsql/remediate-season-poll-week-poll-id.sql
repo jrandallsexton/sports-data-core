@@ -58,6 +58,8 @@ WHERE fsr."SeasonWeekId" IS NULL
   AND fsre."SourceUrl" LIKE '%/weeks/%';
 
 -- Step 2: Execute the update (uncomment after verifying Step 1)
+-- BEGIN;
+--
 -- UPDATE public."FranchiseSeasonRanking" fsr
 -- SET "SeasonWeekId" = sw."Id"
 -- FROM public."FranchiseSeasonRankingExternalId" fsre
@@ -67,7 +69,11 @@ WHERE fsr."SeasonWeekId" IS NULL
 -- WHERE fsre."RankingId" = fsr."Id"
 --   AND fsr."SeasonWeekId" IS NULL
 --   AND fsre."SourceUrl" LIKE '%/weeks/%';
-
--- Step 3: Verify no remaining orphans
--- SELECT COUNT(*) FROM public."FranchiseSeasonRanking"
+--
+-- -- Verify: should match Step 1b count
+-- SELECT COUNT(*) AS "RemainingOrphans"
+-- FROM public."FranchiseSeasonRanking"
 -- WHERE "SeasonWeekId" IS NULL;
+--
+-- -- If counts look correct: COMMIT;
+-- -- Otherwise: ROLLBACK;

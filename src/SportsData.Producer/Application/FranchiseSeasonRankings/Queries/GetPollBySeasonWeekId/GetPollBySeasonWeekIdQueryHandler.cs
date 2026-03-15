@@ -35,13 +35,14 @@ public class GetPollBySeasonWeekIdQueryHandler : IGetPollBySeasonWeekIdQueryHand
         try
         {
             var pollEntries = await _dataContext.FranchiseSeasonRankings
+                .AsNoTracking()
                 .Where(x => x.SeasonWeekId == query.SeasonWeekId && x.Type == query.PollSlug)
                 .OrderBy(x => x.Rank.Current)
                 .Select(x => new FranchiseSeasonPollDto.FranchiseSeasonPollEntryDto
                 {
-                    FranchiseLogoUrl = x.FranchiseSeason.Logos.FirstOrDefault() != null
-                        ? x.FranchiseSeason.Logos.FirstOrDefault()!.Uri.OriginalString
-                        : string.Empty,
+                    FranchiseLogoUrl = x.FranchiseSeason.Logos
+                        .Select(l => l.Uri.OriginalString)
+                        .FirstOrDefault() ?? string.Empty,
                     FranchiseName = x.Franchise.DisplayNameShort,
                     FranchiseSlug = x.Franchise.Slug,
                     Rank = x.Rank.Current,
@@ -64,11 +65,13 @@ public class GetPollBySeasonWeekIdQueryHandler : IGetPollBySeasonWeekIdQueryHand
             }
 
             var firstEntry = await _dataContext.FranchiseSeasonRankings
+                .AsNoTracking()
                 .Where(x => x.SeasonWeekId == query.SeasonWeekId && x.Type == query.PollSlug)
                 .Select(x => new { x.ShortHeadline, x.Date, x.SeasonYear })
                 .FirstAsync(cancellationToken);
 
             var seasonWeekNumber = await _dataContext.SeasonWeeks
+                .AsNoTracking()
                 .Where(x => x.Id == query.SeasonWeekId)
                 .Select(x => x.Number)
                 .FirstOrDefaultAsync(cancellationToken);
@@ -97,7 +100,7 @@ public class GetPollBySeasonWeekIdQueryHandler : IGetPollBySeasonWeekIdQueryHand
             return new Failure<FranchiseSeasonPollDto>(
                 default!,
                 ResultStatus.Error,
-                [new ValidationFailure("Error", ex.Message)]);
+                [new ValidationFailure("Error", "An unexpected error occurred while retrieving rankings")]);
         }
     }
 }

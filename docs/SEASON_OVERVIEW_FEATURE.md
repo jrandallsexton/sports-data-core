@@ -14,7 +14,7 @@ The feature follows the established API-as-proxy pattern: the UI calls the API, 
 
 ### Data Flow
 
-```
+```text
 UI (/football/2025)
   |
   +--> GET ui/season/2025/overview          (API -> Producer, season metadata)
@@ -87,7 +87,7 @@ Returns `SeasonOverviewDto`:
 
 The Season client requires a config key for the Producer URL:
 
-```
+```text
 CommonConfig:SeasonClientConfig:{Sport}:ApiUrl
 ```
 

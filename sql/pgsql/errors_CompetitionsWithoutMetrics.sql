@@ -1,5 +1,5 @@
 WITH RECURSIVE gs_tree AS (
-  -- Anchor at FBS root group for 2025
+  -- Anchor at FBS root group for 2024
   SELECT gs."Id", gs."ParentId", gs."Slug", gs."SeasonYear"
   FROM public."GroupSeason" gs
   WHERE gs."Slug" = 'fbs-i-a'
@@ -13,7 +13,7 @@ WITH RECURSIVE gs_tree AS (
   JOIN gs_tree parent ON child."ParentId" = parent."Id"
 ),
 fbs_fs AS (
-  -- FBS FranchiseSeason IDs for 2025
+  -- FBS FranchiseSeason IDs for 2024
   SELECT fs."Id" AS "FranchiseSeasonId"
   FROM public."FranchiseSeason" fs
   JOIN gs_tree g ON fs."GroupSeasonId" = g."Id"

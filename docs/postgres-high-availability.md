@@ -34,10 +34,10 @@ CloudNativePG. The cluster is already Kubernetes-native, and managing PostgreSQL
 
 1. Deploy CloudNativePG operator into the cluster
 2. Create a PostgreSQL cluster resource (primary + 1 replica)
-3. Import data from current bare metal instance (pg_dump/restore)
+3. Import data from current bare-metal instance (pg_dump/restore)
 4. Update connection strings (point to the new K8s Service)
 5. Validate all services connect and function correctly
-6. Decommission bare metal PostgreSQL on sdprod-data-0
+6. Decommission bare-metal PostgreSQL on sdprod-data-0
 
 ## Timeline
 

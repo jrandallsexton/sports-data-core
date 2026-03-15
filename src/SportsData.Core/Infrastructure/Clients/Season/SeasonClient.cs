@@ -21,14 +21,11 @@ public interface IProvideSeasons : IProvideHealthChecks
 
 public class SeasonClient : ClientBase, IProvideSeasons
 {
-    private readonly ILogger<SeasonClient> _logger;
-
     public SeasonClient(
         ILogger<SeasonClient> logger,
         HttpClient httpClient) :
         base(httpClient)
     {
-        _logger = logger;
     }
 
     public async Task<Result<SeasonOverviewDto>> GetSeasonOverview(int seasonYear, CancellationToken ct = default)
@@ -55,6 +52,22 @@ public class SeasonClient : ClientBase, IProvideSeasons
         string pollSlug,
         CancellationToken ct = default)
     {
+        if (seasonWeekId == Guid.Empty)
+        {
+            return new Failure<FranchiseSeasonPollDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("seasonWeekId", "Season week ID must not be empty")]);
+        }
+
+        if (string.IsNullOrWhiteSpace(pollSlug))
+        {
+            return new Failure<FranchiseSeasonPollDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("pollSlug", "Poll slug must not be empty")]);
+        }
+
         return await GetAsync<FranchiseSeasonPollDto, FranchiseSeasonPollDto>(
             $"franchise-season-rankings/by-week/{seasonWeekId}/poll/{pollSlug}",
             poll => poll,

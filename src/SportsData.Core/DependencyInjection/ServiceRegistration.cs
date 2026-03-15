@@ -449,6 +449,13 @@ namespace SportsData.Core.DependencyInjection
                 services.AddHttpClient(franchiseClientName, client => client.BaseAddress = new Uri(franchiseApiUrl));
             }
 
+            var seasonApiUrl = configuration[CommonConfigKeys.GetSeasonProviderUri()];
+            if (!string.IsNullOrEmpty(seasonApiUrl))
+            {
+                var seasonClientName = $"{HttpClients.SeasonClient}";
+                services.AddHttpClient(seasonClientName, client => client.BaseAddress = new Uri(seasonApiUrl));
+            }
+
             return services;
         }
 

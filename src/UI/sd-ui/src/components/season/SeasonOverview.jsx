@@ -19,6 +19,11 @@ export default function SeasonOverview() {
   const [rankingsLoading, setRankingsLoading] = useState(false);
   const [rankingsError, setRankingsError] = useState(null);
 
+  // Sync selectedYear when route param changes (e.g., browser back/forward)
+  useEffect(() => {
+    setSelectedYear(seasonYear);
+  }, [seasonYear]);
+
   // Fetch season overview when seasonYear changes
   useEffect(() => {
     setOverviewLoading(true);

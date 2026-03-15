@@ -57,11 +57,13 @@ using SportsData.Api.Application.UI.Messageboard.Commands.ToggleReaction;
 using SportsData.Api.Application.UI.Messageboard.Queries.GetReplies;
 using SportsData.Api.Application.UI.Messageboard.Queries.GetThreads;
 using SportsData.Api.Application.UI.Messageboard.Queries.GetThreadsByUserGroups;
+using SportsData.Api.Application.UI.Season.Queries.GetSeasonOverview;
 using SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
 using SportsData.Api.Application.UI.Picks.Queries.GetPickAccuracyByWeek;
 using SportsData.Api.Application.UI.Picks.Queries.GetPickRecordWidget;
 using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
 using SportsData.Api.Application.UI.Rankings.Queries.GetPollRankingsByWeek;
+using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollSeasonWeekId;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsBySeasonYear;
 using SportsData.Api.Application.UI.TeamCard;
@@ -155,6 +157,9 @@ namespace SportsData.Api.DependencyInjection
             // Contest Queries
             services.AddScoped<IGetContestOverviewQueryHandler, GetContestOverviewQueryHandler>();
 
+            // Season Queries
+            services.AddScoped<IGetSeasonOverviewQueryHandler, GetSeasonOverviewQueryHandler>();
+
             // Leaderboard Queries
             services.AddScoped<IGetLeaderboardQueryHandler, GetLeaderboardQueryHandler>();
             services.AddScoped<IGetLeaderboardWidgetQueryHandler, GetLeaderboardWidgetQueryHandler>();
@@ -230,6 +235,7 @@ namespace SportsData.Api.DependencyInjection
             // Rankings Queries
             services.AddScoped<IGetRankingsBySeasonYearQueryHandler, GetRankingsBySeasonYearQueryHandler>();
             services.AddScoped<IGetRankingsByPollWeekQueryHandler, GetRankingsByPollWeekQueryHandler>();
+            services.AddScoped<IGetRankingsByPollSeasonWeekIdQueryHandler, GetRankingsByPollSeasonWeekIdQueryHandler>();
             services.AddScoped<IGetPollRankingsByWeekQueryHandler, GetPollRankingsByWeekQueryHandler>();
 
             services.AddScoped<IPreviewService, PreviewService>();

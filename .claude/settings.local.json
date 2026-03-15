@@ -35,7 +35,8 @@
       "Bash(npm audit:*)",
       "Bash(npm ls:*)",
       "Bash(npm view:*)",
-      "Bash(kubectl logs:*)"
+      "Bash(kubectl logs:*)",
+      "WebFetch(domain:datalust.co)"
     ]
   }
 }

@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
+using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetPollBySeasonWeekId;
 
 namespace SportsData.Producer.Application.FranchiseSeasonRankings
 {
@@ -17,6 +18,22 @@ namespace SportsData.Producer.Application.FranchiseSeasonRankings
             CancellationToken cancellationToken = default)
         {
             var query = new GetCurrentPollsQuery { SeasonYear = seasonYear };
+            var result = await handler.ExecuteAsync(query, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet("by-week/{seasonWeekId}/poll/{pollSlug}")]
+        public async Task<ActionResult<FranchiseSeasonPollDto>> GetPollBySeasonWeekId(
+            [FromRoute] Guid seasonWeekId,
+            [FromRoute] string pollSlug,
+            [FromServices] IGetPollBySeasonWeekIdQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var query = new GetPollBySeasonWeekIdQuery
+            {
+                SeasonWeekId = seasonWeekId,
+                PollSlug = pollSlug
+            };
             var result = await handler.ExecuteAsync(query, cancellationToken);
             return result.ToActionResult();
         }

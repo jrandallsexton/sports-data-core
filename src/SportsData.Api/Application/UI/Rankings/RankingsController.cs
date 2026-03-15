@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.OutputCaching;
 
 using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.Rankings.Queries.GetPollRankingsByWeek;
+using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollSeasonWeekId;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsBySeasonYear;
 using SportsData.Core.Common;
@@ -98,6 +99,24 @@ public class RankingsController : ApiControllerBase
             {
                 SeasonYear = seasonYear,
                 Week = week,
+                Poll = poll
+            },
+            cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    [HttpGet("by-week/{seasonWeekId}/poll/{poll}")]
+    public async Task<ActionResult<RankingsByPollIdByWeekDto>> GetRankingsBySeasonWeekId(
+        [FromRoute] Guid seasonWeekId,
+        [FromRoute] string poll,
+        [FromServices] IGetRankingsByPollSeasonWeekIdQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(
+            new GetRankingsByPollSeasonWeekIdQuery
+            {
+                SeasonWeekId = seasonWeekId,
                 Poll = poll
             },
             cancellationToken);

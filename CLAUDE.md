@@ -25,6 +25,24 @@ GitHub: github.com/jrandallsexton/sports-data-core
 - **ESPN rate limiting**: Uses 403 (not 429) for IP-based rate limiting. Mitigated via `RequestDelayMs=1000ms` in `EspnApiClientConfig` and retry policy in `RetryPolicy.cs`.
 - **Only ESPN is active**: CBS, Yahoo, SportsDataIO provider stubs exist but only ESPN is implemented.
 
+## Completion Checklist
+Before reporting any task as complete:
+1. **Build**: Run `dotnet build` on affected projects — verify zero errors
+2. **Test**: Run `dotnet test` on affected test projects — verify all tests pass
+3. **Fix immediately**: If build or test failures occur, fix them before proceeding
+
+## Code Quality
+- **Never use `git add -A` or `git add .`**: Always `git status` first, then stage specific files by path. Unstaged files may contain secrets, debug artifacts, or unrelated work.
+- **Result<T> pattern**: All query/command handlers return `Result<T>`. Use `new Success<T>(value)` or `new Failure<T>(default!, status, errors)`.
+- **`.AsNoTracking()`**: Required for all EF read queries. Project to DTOs in the query, don't return entities.
+- **`[FromServices]`**: All handler injection in controllers uses `[FromServices]`.
+- **Route conventions**: API uses slug-based routes (`/api/{sport}/{league}/{resource}/{slug}`), Producer uses GUID-based routes (`/api/{resource}/{id}`).
+
+## Service Communication
+- **API never hits Producer's database directly**. API calls Producer over HTTP via typed clients (SeasonClient, FranchiseClient, etc.).
+- **Client Factory pattern**: One factory per aggregate root (VenueClientFactory, FranchiseClientFactory, SeasonClientFactory). Factories resolve clients by sport mode and cache them.
+- **No appsettings.json for config**: Everything in Azure AppConfig with label-based multi-tenancy (`{Environment}.{Mode}.{Application}`).
+
 ## Workflow Conventions
 - Branch protection on `main` — all changes require PRs
 - CodeRabbit reviews PRs automatically

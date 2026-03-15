@@ -24,6 +24,7 @@ using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Provider;
+using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Infrastructure.Clients.Venue;
 using SportsData.Core.Infrastructure.Clients.YouTube;
 using SportsData.Core.Infrastructure.DataSources.Espn;
@@ -424,6 +425,7 @@ namespace SportsData.Core.DependencyInjection
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();
             services.AddSingleton<IFranchiseClientFactory, FranchiseClientFactory>();
             services.AddSingleton<IContestClientFactory, ContestClientFactory>();
+            services.AddSingleton<ISeasonClientFactory, SeasonClientFactory>();
 
             // Register mode-agnostic clients (same URL for all sports)
             var contestApiUrl = configuration[CommonConfigKeys.GetContestProviderUri()];
@@ -445,6 +447,13 @@ namespace SportsData.Core.DependencyInjection
             {
                 var franchiseClientName = $"{HttpClients.FranchiseClient}";
                 services.AddHttpClient(franchiseClientName, client => client.BaseAddress = new Uri(franchiseApiUrl));
+            }
+
+            var seasonApiUrl = configuration[CommonConfigKeys.GetSeasonProviderUri()];
+            if (!string.IsNullOrEmpty(seasonApiUrl))
+            {
+                var seasonClientName = $"{HttpClients.SeasonClient}";
+                services.AddHttpClient(seasonClientName, client => client.BaseAddress = new Uri(seasonApiUrl));
             }
 
             return services;

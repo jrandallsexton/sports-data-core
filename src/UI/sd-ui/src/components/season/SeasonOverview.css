@@ -1,0 +1,207 @@
+/* SeasonOverview page layout and styles */
+
+.season-overview-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.season-overview-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffc107;
+  margin-bottom: 18px;
+  letter-spacing: 1px;
+}
+
+/* Selectors row */
+.season-overview-selectors {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.season-overview-selector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.season-overview-selector-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #b0b3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.season-overview-select {
+  background: #23272f;
+  color: #f8f9fa;
+  border: 1px solid #343a40;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  min-width: 140px;
+  appearance: auto;
+}
+
+.season-overview-select:hover {
+  border-color: #61dafb;
+}
+
+.season-overview-select:focus {
+  outline: none;
+  border-color: #61dafb;
+  box-shadow: 0 0 4px rgba(97, 218, 251, 0.3);
+}
+
+/* Rankings table */
+.season-overview-table-wrapper {
+  overflow-x: auto;
+}
+
+.season-overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #23272f;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #343a40;
+}
+
+.season-overview-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #ffc107;
+  background: #343a40;
+  border-bottom: 1px solid #343a40;
+  white-space: nowrap;
+}
+
+.season-overview-table th.col-rank,
+.season-overview-table td.col-rank {
+  text-align: center;
+  width: 50px;
+}
+
+.season-overview-table th.col-points,
+.season-overview-table td.col-points,
+.season-overview-table th.col-first,
+.season-overview-table td.col-first {
+  text-align: right;
+}
+
+.season-overview-table td {
+  padding: 8px 14px;
+  font-size: 1rem;
+  color: #f8f9fa;
+  border-bottom: 1px solid #2a2e36;
+}
+
+.season-overview-table tbody tr:hover {
+  background: #2a2e36;
+}
+
+.season-overview-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Team cell with logo */
+.season-overview-team-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.season-overview-team-logo-wrap {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border-radius: 50%;
+  padding: 2px;
+  border: 1px solid #ccc;
+  flex-shrink: 0;
+}
+
+.season-overview-team-logo {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.season-overview-team-name {
+  font-weight: 600;
+  color: #61dafb;
+  white-space: nowrap;
+}
+
+/* Rank column */
+.season-overview-rank {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #f8f9fa;
+}
+
+/* Record column */
+.season-overview-record {
+  color: #b0b3b8;
+}
+
+/* Trend column */
+.season-overview-trend-up {
+  color: #43a047;
+  font-weight: 600;
+}
+
+.season-overview-trend-down {
+  color: #e57373;
+  font-weight: 600;
+}
+
+.season-overview-trend-none {
+  color: #b0b3b8;
+}
+
+/* Loading and error states */
+.season-overview-loading,
+.season-overview-error,
+.season-overview-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #b0b3b8;
+  font-size: 1.1rem;
+}
+
+.season-overview-error {
+  color: #e57373;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .season-overview-selectors {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .season-overview-select {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .season-overview-table th,
+  .season-overview-table td {
+    padding: 6px 8px;
+    font-size: 0.9rem;
+  }
+}

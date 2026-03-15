@@ -25,6 +25,7 @@ using SportsData.Producer.Application.Franchises.Queries.GetFranchiseById;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseSeasons;
 using SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
+using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetPollBySeasonWeekId;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
 using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
@@ -34,6 +35,7 @@ using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeaso
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsBySeasonYear;
 using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Application.Images;
+using SportsData.Producer.Application.Seasons.Queries.GetSeasonOverview;
 using SportsData.Producer.Application.SeasonWeek.Commands.EnqueueSeasonWeekContestsUpdate;
 using SportsData.Producer.Application.Services;
 using SportsData.Producer.Application.Venues;
@@ -213,8 +215,12 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IFootballCompetitionBroadcastingJob, FootballCompetitionStreamer>();
 
+            // Season Queries
+            services.AddScoped<IGetSeasonOverviewQueryHandler, GetSeasonOverviewQueryHandler>();
+
             // FranchiseSeasonRanking Queries
             services.AddScoped<IGetCurrentPollsQueryHandler, GetCurrentPollsQueryHandler>();
+            services.AddScoped<IGetPollBySeasonWeekIdQueryHandler, GetPollBySeasonWeekIdQueryHandler>();
 
             // Venue Commands
             services.AddScoped<IGeocodeVenueCommandHandler, GeocodeVenueCommandHandler>();

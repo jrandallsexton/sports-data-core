@@ -18,16 +18,9 @@ left join lateral (
   select fsl."Uri"
   from public."FranchiseSeasonLogo" fsl
   where fsl."FranchiseSeasonId" = fs."Id"
-  order by fsl."Uri" -- or some other prioritization
+  order by fsl."Uri"
   limit 1
 ) as fsl on true
 inner join public."SeasonWeek" sw on sw."Id" = fsr."SeasonWeekId"
-inner join public."Season" s on s."Id" = sw."SeasonId"
-WHERE fsr."Type" = 'ap' and sw."Number" = 2 and s."Year" = 2025
+WHERE fsr."Type" = 'ap' and sw."Id" = '5edb7b2b-d153-abc9-a965-c4c56a9bac04' -- Week1
 order by fsrd."Current" asc
-
---select * from public."FranchiseSeasonRanking" where "Type" = 'ap' order by "Date"
---update public."FranchiseSeasonRanking" set "SeasonWeekId" = '532897ff-daf6-f901-8c59-ddd5269d8d80' where "ShortHeadline" = '2025 AP Poll: Week 4'
---select * from public."FranchiseSeasonRankingDetail"
---select * from public."SeasonWeek" order by "StartDate" -- e74fa119-0208-337e-0f96-0c64224d7d20
--- '532897ff-daf6-f901-8c59-ddd5269d8d80' -- Week 4

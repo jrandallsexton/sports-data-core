@@ -26,6 +26,7 @@ export default function SeasonOverview() {
 
   // Fetch season overview when seasonYear changes
   useEffect(() => {
+    let stale = false;
     setOverviewLoading(true);
     setOverviewError(null);
     setOverviewData(null);
@@ -33,6 +34,7 @@ export default function SeasonOverview() {
 
     apiWrapper.Season.getSeasonOverview(seasonYear)
       .then((result) => {
+        if (stale) return;
         const dto = result?.data || result;
         setOverviewData(dto);
 
@@ -51,28 +53,36 @@ export default function SeasonOverview() {
         setOverviewLoading(false);
       })
       .catch((err) => {
+        if (stale) return;
         setOverviewError(err);
         setOverviewLoading(false);
       });
+
+    return () => { stale = true; };
   }, [seasonYear]);
 
   // Fetch rankings when week or poll changes
   useEffect(() => {
     if (selectedWeek == null || selectedPoll == null) return;
 
+    let stale = false;
     setRankingsLoading(true);
     setRankingsError(null);
 
     apiWrapper.Rankings.getRankingsByWeekId(selectedWeek, selectedPoll)
       .then((result) => {
+        if (stale) return;
         const dto = result?.data || result;
         setRankings(dto);
         setRankingsLoading(false);
       })
       .catch((err) => {
+        if (stale) return;
         setRankingsError(err);
         setRankingsLoading(false);
       });
+
+    return () => { stale = true; };
   }, [selectedWeek, selectedPoll]);
 
   // Handle year change - navigate to new route

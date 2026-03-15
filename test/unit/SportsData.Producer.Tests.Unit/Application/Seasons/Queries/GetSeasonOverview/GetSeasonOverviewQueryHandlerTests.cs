@@ -29,13 +29,25 @@ public class GetSeasonOverviewQueryHandlerTests : ProducerTestBase<GetSeasonOver
             CreatedBy = Guid.NewGuid()
         };
 
-        var seasonPhaseId = Guid.NewGuid();
+        var seasonPhase = new SeasonPhase
+        {
+            Id = Guid.NewGuid(),
+            SeasonId = seasonId,
+            Name = "Regular Season",
+            Abbreviation = "REG",
+            Slug = "regular-season",
+            Year = seasonYear,
+            StartDate = new DateTime(2024, 8, 24, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2025, 1, 20, 0, 0, 0, DateTimeKind.Utc),
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
 
         var week1 = new SeasonWeek
         {
             Id = Guid.NewGuid(),
             SeasonId = seasonId,
-            SeasonPhaseId = seasonPhaseId,
+            SeasonPhaseId = seasonPhase.Id,
             Number = 1,
             StartDate = new DateTime(2024, 8, 24, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2024, 8, 31, 0, 0, 0, DateTimeKind.Utc),
@@ -47,7 +59,7 @@ public class GetSeasonOverviewQueryHandlerTests : ProducerTestBase<GetSeasonOver
         {
             Id = Guid.NewGuid(),
             SeasonId = seasonId,
-            SeasonPhaseId = seasonPhaseId,
+            SeasonPhaseId = seasonPhase.Id,
             Number = 2,
             StartDate = new DateTime(2024, 9, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(2024, 9, 7, 0, 0, 0, DateTimeKind.Utc),
@@ -67,6 +79,7 @@ public class GetSeasonOverviewQueryHandlerTests : ProducerTestBase<GetSeasonOver
         };
 
         await TeamSportDataContext.Seasons.AddAsync(season);
+        await TeamSportDataContext.SeasonPhases.AddAsync(seasonPhase);
         await TeamSportDataContext.SeasonWeeks.AddRangeAsync(week1, week2);
         await TeamSportDataContext.SeasonPolls.AddAsync(poll);
         await TeamSportDataContext.SaveChangesAsync();

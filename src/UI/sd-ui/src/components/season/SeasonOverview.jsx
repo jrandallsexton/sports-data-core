@@ -126,7 +126,7 @@ export default function SeasonOverview() {
 
   const weeks = overviewData?.weeks || [];
   const polls = overviewData?.polls || [];
-  const rankingItems = rankings?.entries || rankings?.rankings || rankings?.items || [];
+  const rankingItems = rankings?.entries || [];
 
   return (
     <div className="season-overview-container">
@@ -230,7 +230,7 @@ export default function SeasonOverview() {
             </thead>
             <tbody>
               {rankingItems.map((item) => (
-                <tr key={item.rank}>
+                <tr key={item.franchiseSeasonId}>
                   <td className="col-rank">
                     <span className="season-overview-rank">
                       {item.rank}

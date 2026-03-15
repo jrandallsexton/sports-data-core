@@ -5,6 +5,8 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
+using System.Diagnostics.Metrics;
+
 using Moq;
 
 using SportsData.Core.Common;
@@ -101,7 +103,9 @@ public class ResourceIndexJobTests : ProviderTestBase<ResourceIndexJob>
         var optionsMonitor = Mock.Of<IOptionsMonitor<EspnApiClientConfig>>(o => o.CurrentValue == apiConfig);
         var circuitBreaker = new Mock<IEspnCircuitBreaker>();
         var rateLimiter = new NoOpEspnRateLimiter();
-        var httpWrapper = new EspnHttpClient(httpClient, optionsMonitor, NullLogger<EspnHttpClient>.Instance, circuitBreaker.Object, rateLimiter);
+        var meterFactory = new Mock<IMeterFactory>();
+        meterFactory.Setup(f => f.Create(It.IsAny<MeterOptions>())).Returns(new Meter("test"));
+        var httpWrapper = new EspnHttpClient(httpClient, optionsMonitor, NullLogger<EspnHttpClient>.Instance, circuitBreaker.Object, rateLimiter, meterFactory.Object);
         var realEspnApiClient = new EspnApiClient(httpWrapper, NullLogger<EspnApiClient>.Instance);
 
         // Inject the real client

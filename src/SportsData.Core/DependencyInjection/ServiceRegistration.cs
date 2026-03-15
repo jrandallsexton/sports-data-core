@@ -321,11 +321,12 @@ namespace SportsData.Core.DependencyInjection
                     builder.AddAspNetCoreInstrumentation();
                     builder.AddHttpClientInstrumentation();
 
-                    // Framework meters
+                    // Framework and application meters
                     builder.AddMeter(
                         "Microsoft.AspNetCore.Hosting",
                         "Microsoft.AspNetCore.Server.Kestrel",
                         "System.Net.Http",
+                        "SportsData.Core.Espn",
                         "SportsData.*");
 
                     // Prometheus scraping endpoint

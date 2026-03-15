@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Processing;
@@ -39,8 +40,13 @@ namespace SportsData.Provider
             services.AddSwaggerGen();
             services.AddClients(config);
             services.AddCaching(config);
-            services.AddSingleton<IEspnCircuitBreaker, RedisEspnCircuitBreaker>();
-            services.AddSingleton<IEspnRateLimiter, RedisEspnRateLimiter>();
+            // Use Redis-backed circuit breaker and rate limiter when Redis is configured;
+            // otherwise fall back to NoOp defaults registered in AddClients()
+            if (!string.IsNullOrWhiteSpace(config[CommonConfigKeys.CacheServiceUri]))
+            {
+                services.AddSingleton<IEspnCircuitBreaker, RedisEspnCircuitBreaker>();
+                services.AddSingleton<IEspnRateLimiter, RedisEspnRateLimiter>();
+            }
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 

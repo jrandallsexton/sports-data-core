@@ -3,7 +3,7 @@ WITH RECURSIVE gs_tree AS (
   SELECT gs."Id", gs."ParentId", gs."Slug", gs."SeasonYear"
   FROM public."GroupSeason" gs
   WHERE gs."Slug" = 'fbs-i-a'
-    AND gs."SeasonYear" = 2025
+    AND gs."SeasonYear" = 2024
 
   UNION ALL
 
@@ -17,7 +17,7 @@ fbs_fs AS (
   SELECT fs."Id" AS "FranchiseSeasonId"
   FROM public."FranchiseSeason" fs
   JOIN gs_tree g ON fs."GroupSeasonId" = g."Id"
-  WHERE fs."SeasonYear" = 2025
+  WHERE fs."SeasonYear" = 2024
 ),
 fbs_competitions AS (
   -- Competitions with at least one FBS team

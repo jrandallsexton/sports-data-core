@@ -32,6 +32,7 @@ import LeagueDiscoverPage from "components/leagues/LeagueDiscoverPage";
 import ContestOverview from "./components/contests/ContestOverview";
 import AdminPage from "./components/admin/AdminPage";
 import AdminRoute from "./routes/AdminRoute";
+import SeasonOverview from "./components/season/SeasonOverview";
 
 function MainApp() {
   const navigate = useNavigate();
@@ -147,6 +148,10 @@ function MainApp() {
             <Route path="/league/:id" element={<LeagueDetail />} />
             <Route path="/league" element={<Leagues />} />
             <Route path="/join/:leagueId" element={<AutoJoinRedirect />} />
+            <Route
+              path="/football/:seasonYear"
+              element={<SeasonOverview />}
+            />
             <Route
               path="/sport/football/ncaa/contest/:contestId"
               element={<ContestOverview />}

@@ -13,6 +13,8 @@ GROUP BY DATE(createdat)
 ORDER BY date DESC 
 LIMIT 10;
 
+SELECT queue, COUNT(*) FROM hangfire.jobqueue GROUP BY queue;
+
   select count(*) from hangfire."job" where "statename" = 'Enqueued';
   select count(*) from hangfire."state"
   SELECT * FROM hangfire."lock";
@@ -28,7 +30,16 @@ ORDER BY count DESC;
 
   DELETE FROM hangfire."lock" WHERE "resource" = 'hangfire:lock:recurring-job:SourcingJobOrchestrator';
 
+-- 2026-03-16: Provider hangfire.job table has ~4.2M rows.
+-- The metrics exporter CronJob hangs on COUNT(*) GROUP BY statename due to full sequential scan.
+-- This index allows the GROUP BY to use an index scan instead.
+-- Use CONCURRENTLY to avoid locking the table during creation.
+-- Run against: sdProvider.FootballNcaa.Hangfire
+CREATE INDEX CONCURRENTLY idx_job_statename ON hangfire.job (statename);
 
-
-
+-- Purge old succeeded/deleted jobs if table continues to grow.
+-- Hangfire expires succeeded jobs after 24h by default, but the expiration
+-- process may fall behind under heavy load. Safe to remove manually:
+-- DELETE FROM hangfire.job WHERE statename = 'Succeeded' AND createdat < NOW() - INTERVAL '48 hours';
+-- DELETE FROM hangfire.job WHERE statename = 'Deleted' AND createdat < NOW() - INTERVAL '48 hours';
 

@@ -6,24 +6,20 @@ import "./TeamSchedule.css";
 function TeamSchedule({ schedule, seasonYear }) {
   // Helper function to format game result
   const formatGameResult = (game) => {
-    // If game is not finalized, show TBD
-    if (!game.finalizedUtc) {
-      return "TBD";
+    if (game.status === "Final") {
+      const score = `${game.awayScore}-${game.homeScore}`;
+      const resultText = game.wasWinner ? "W" : "L";
+      return `${resultText} | ${score}`;
     }
-    
-    // Format the score and determine win/loss
-    const score = `${game.awayScore}-${game.homeScore}`;
-    const resultText = game.wasWinner ? "W" : "L";
-    
-    return `${resultText} | ${score}`;
+    return game.status || "TBD";
   };
 
   // Helper function to get CSS class for result
   const getResultClass = (game) => {
-    if (!game.finalizedUtc) {
-      return "result-tbd";
+    if (game.status === "Final") {
+      return game.wasWinner ? "result-win" : "result-loss";
     }
-    return game.wasWinner ? "result-win" : "result-loss";
+    return "result-tbd";
   };
 
   return (

@@ -19,7 +19,7 @@
         WHEN fAway."Slug" = @Slug THEN 'Away'
         ELSE 'Home'
     END AS "LocationType",
-    cs."StatusTypeName" as "Status",
+    cs."StatusDescription" as "Status",
 	c."FinalizedUtc" as "FinalizedUtc",
 	c."AwayScore" as "AwayScore",
 	c."HomeScore" as "HomeScore",

@@ -18,7 +18,7 @@ public record TeamCardScheduleItemDto
 
     public string LocationType { get; init; } = default!;
 
-    public string? Status { get; set; }
+    public string? Status { get; init; }
 
     public DateTime? FinalizedUtc { get; init; }
 

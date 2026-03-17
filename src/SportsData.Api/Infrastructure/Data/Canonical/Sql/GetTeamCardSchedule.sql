@@ -19,6 +19,7 @@
         WHEN fAway."Slug" = @Slug THEN 'Away'
         ELSE 'Home'
     END AS "LocationType",
+    cs."StatusTypeName" as "Status",
 	c."FinalizedUtc" as "FinalizedUtc",
 	c."AwayScore" as "AwayScore",
 	c."HomeScore" as "HomeScore",
@@ -29,6 +30,8 @@
     END AS "WasWinner"
 
 from public."Contest" C
+inner join public."Competition" COMP on COMP."ContestId" = C."Id"
+inner join public."CompetitionStatus" CS on CS."CompetitionId" = COMP."Id"
 inner join public."SeasonWeek" SW on SW."Id" = C."SeasonWeekId"
 inner join public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 inner join public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"	

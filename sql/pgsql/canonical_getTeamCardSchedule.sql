@@ -19,6 +19,7 @@ select
         WHEN fAway."Slug" = 'lsu-tigers' THEN 'Away'
         ELSE 'Home'
     END AS "LocationType",
+    cs."StatusDescription" as "Status",
 	c."FinalizedUtc" as "FinalizedUtc",
 	c."AwayScore" as "AwayScore",
 	c."HomeScore" as "HomeScore",
@@ -29,11 +30,13 @@ select
     END AS "WasWinner"
 
 from public."Contest" C
+inner join public."Competition" COMP on COMP."ContestId" = C."Id"
+inner join public."CompetitionStatus" CS on CS."CompetitionId" = COMP."Id"
 inner join public."SeasonWeek" SW on SW."Id" = C."SeasonWeekId"
 inner join public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 inner join public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"	
 inner join public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
 inner join public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
 left join public."Venue" v on v."Id" = c."VenueId"
-where (fAway."Slug" = 'lsu-tigers' OR fHome."Slug" = 'lsu-tigers') and C."SeasonYear" = 2024
+where (fAway."Slug" = 'lsu-tigers' OR fHome."Slug" = 'lsu-tigers') and C."SeasonYear" = 2015
 ORDER BY C."StartDateUtc"

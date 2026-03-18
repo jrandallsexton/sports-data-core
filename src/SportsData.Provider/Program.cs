@@ -50,11 +50,25 @@ namespace SportsData.Provider
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 
-            services.AddMessaging(config, [
-                typeof(DocumentRequestedHandler),
+            var workerConfig = config.GetSection($"{builder.Environment.ApplicationName}:WorkerConfig")
+                .Get<ProviderWorkerConfig>();
+
+            var consumers = new List<Type>
+            {
                 typeof(LoadTestProviderEventConsumer),
                 typeof(TriggerTierSourcingConsumer)
-            ], busConfig =>
+            };
+
+            if (workerConfig?.PauseMessageConsumption == true)
+            {
+                Console.WriteLine("Message consumption is PAUSED. DocumentRequestedHandler will not be registered.");
+            }
+            else
+            {
+                consumers.Add(typeof(DocumentRequestedHandler));
+            }
+
+            services.AddMessaging(config, consumers, busConfig =>
             {
                 busConfig.AddSagaSupport();
             });

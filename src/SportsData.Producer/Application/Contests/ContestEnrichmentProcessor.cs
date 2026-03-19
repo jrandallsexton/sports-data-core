@@ -3,9 +3,6 @@
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
-using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.DataSources.Espn;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -21,20 +18,17 @@ namespace SportsData.Producer.Application.Contests
     {
         private readonly ILogger<ContestEnrichmentProcessor> _logger;
         private readonly FootballDataContext _dataContext;
-        private readonly IProvideEspnApiData _espnProvider;
         private readonly IEventBus _bus;
         private readonly IDateTimeProvider _dateTimeProvider;
 
         public ContestEnrichmentProcessor(
             ILogger<ContestEnrichmentProcessor> logger,
             FootballDataContext dataContext,
-            IProvideEspnApiData espnProvider,
             IEventBus bus,
             IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _espnProvider = espnProvider;
             _bus = bus;
             _dateTimeProvider = dateTimeProvider;
         }
@@ -49,9 +43,7 @@ namespace SportsData.Producer.Application.Contests
                 _logger.LogInformation("Contest enrichment job started for {@command}", command);
 
                 var competition = await _dataContext.Competitions
-                    .Include(c => c.ExternalIds)
                     .Include(c => c.Competitors)
-                    .ThenInclude(comp => comp.ExternalIds)
                     .Include(c => c.Odds)
                     .ThenInclude(o => o.Teams)
                     .Include(c => c.Contest)
@@ -77,147 +69,57 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                var competitionExternalId = competition.ExternalIds
-                    .FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
-
-                if (competitionExternalId == null)
+                // If canonical status is not final, data isn't ready — return cleanly
+                if (competition.Status?.StatusTypeName != "STATUS_FINAL")
                 {
-                    _logger.LogError("CompetitionExternalId not found. {@Command}", command);
+                    _logger.LogInformation(
+                        "Contest status is not yet final for {ContestName}. Current: {Status}. Skipping enrichment.",
+                        competition.Contest.Name, competition.Status?.StatusTypeName ?? "unknown");
                     return;
-                }
-
-                // verify completion
-                var compStatus = competition.Status;
-
-                if (compStatus?.StatusTypeName != "STATUS_FINAL")
-                {
-                    // get from ESPN?
-                    // Get the current status to ensure the game is actually over
-                    var statusUri = EspnUriMapper
-                        .CompetitionRefToCompetitionStatusRef(new Uri(competitionExternalId.SourceUrl));
-
-                    var status = await _espnProvider.GetCompetitionStatusAsync(statusUri);
-                    if (status == null)
-                    {
-                        _logger.LogError("Initial status fetch failed. {@Command}", command);
-                        return;
-                    }
-
-                    if (status.Type.Name != "STATUS_FINAL")
-                    {
-                        _logger.LogWarning("Contest status is not yet final for {ContestName}. Found: {status}", competition.Contest.Name, status.Type.Name);
-                        return;
-                    }
                 }
 
                 var contest = competition.Contest;
 
-                // in order to calculate the final score and winners, we need to get all plays
-                // take the last scoring play and that is what we have
-                var playsUri = EspnUriMapper
-                    .CompetitionRefToCompetitionPlaysRef(new Uri(competitionExternalId.SourceUrl), 999);
+                // Query canonical plays to determine final score
+                var lastScoringPlay = await _dataContext.CompetitionPlays
+                    .AsNoTracking()
+                    .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
+                    .OrderByDescending(p => p.PeriodNumber)
+                    .ThenBy(p => p.ClockValue)
+                    .FirstOrDefaultAsync();
 
-                var plays = await _espnProvider.GetCompetitionPlaysAsync(playsUri);
-                if (plays == null)
+                if (lastScoringPlay != null)
                 {
-                    _logger.LogError("Fetching plays failed. {@Command}", command);
-                    return;
-                }
-
-                if (plays.Count == 0)
-                {
-                    _logger.LogWarning("No plays found for {ContestName}", contest.Name);
-
-                    // this is very likely a D2 game.  try to get it from Competition.Competitor[x].Score.Ref
-                    var awayExternalId = awayCompetitor.ExternalIds.FirstOrDefault();
-                    var homeExternalId = homeCompetitor.ExternalIds.FirstOrDefault();
-
-                    if (awayExternalId is null || homeExternalId is null)
-                    {
-                        _logger.LogError(
-                            "Competitor ExternalIds missing for D2 fallback. ContestId={ContestId}, AwayHasExtId={AwayHasExtId}, HomeHasExtId={HomeHasExtId}",
-                            command.ContestId, awayExternalId is not null, homeExternalId is not null);
-                        return;
-                    }
-
-                    var awayRef = awayExternalId.SourceUrl;
-                    var homeRef = homeExternalId.SourceUrl;
-
-                    // source both
-                    var awayCompResult = await _espnProvider.GetResource(new Uri(awayRef), true, true);
-                    var homeCompResult = await _espnProvider.GetResource(new Uri(homeRef), true, true);
-                    
-                    if (!awayCompResult.IsSuccess || !homeCompResult.IsSuccess)
-                    {
-                        _logger.LogError("Failed to fetch competitor data from ESPN");
-                        return;
-                    }
-
-                    var awayCompDto = awayCompResult.Value.FromJson<EspnEventCompetitionCompetitorDto>();
-                    var homeCompDto = homeCompResult.Value.FromJson<EspnEventCompetitionCompetitorDto>();
-
-                    if (awayCompDto is null)
-                    {
-                        _logger.LogError("Away competitor could not be deserialized");
-                        return;
-                    }
-
-                    if (homeCompDto is null)
-                    {
-                        _logger.LogError("Home competitor could not be deserialized");
-                        return;
-                    }
-
-                    // get the score for both
-                    var awayScoreResult = await _espnProvider.GetResource(awayCompDto.Score.Ref);
-                    var homeScoreResult = await _espnProvider.GetResource(homeCompDto.Score.Ref);
-                    
-                    if (!awayScoreResult.IsSuccess || !homeScoreResult.IsSuccess)
-                    {
-                        _logger.LogError("Failed to fetch score data from ESPN");
-                        return;
-                    }
-
-                    var awayScoreDto = awayScoreResult.Value.FromJson<EspnEventCompetitionCompetitorScoreDto>();
-                    var homeScoreDto = homeScoreResult.Value.FromJson<EspnEventCompetitionCompetitorScoreDto>();
-
-                    // update, persist, and exit
-                    if (awayScoreDto is not null)
-                        contest.AwayScore = (int)awayScoreDto!.Value;
-
-                    if (homeScoreDto is not null)
-                        contest.HomeScore = (int)homeScoreDto!.Value;
-
-                    contest.FinalizedUtc = _dateTimeProvider.UtcNow();
-
-                    await _bus.Publish(
-                        new ContestEnrichmentCompleted(
-                            command.ContestId,
-                            null,
-                            contest.Sport,
-                            contest.SeasonYear,
-                            command.CorrelationId,
-                            Guid.NewGuid()));
-                    await _dataContext.SaveChangesAsync();
-
-                    return;
-                }
-
-                var finalScoringPlay = plays?.Items?
-                    .Where(x => x.ScoringPlay)
-                    .TakeLast(1)
-                    .FirstOrDefault();
-
-                if (finalScoringPlay == null)
-                {
-                    _logger.LogWarning("No scoring plays found.  Assume zero?");
-                    contest.AwayScore = 0;
-                    contest.HomeScore = 0;
+                    contest.AwayScore = lastScoringPlay.AwayScore;
+                    contest.HomeScore = lastScoringPlay.HomeScore;
                 }
                 else
                 {
-                    contest.AwayScore = finalScoringPlay.AwayScore;
-                    contest.HomeScore = finalScoringPlay.HomeScore;
+                    // No scoring plays — check competitor scores (D2 fallback)
+                    var awayScores = await _dataContext.CompetitionCompetitorScores
+                        .AsNoTracking()
+                        .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
+                        .ToListAsync();
+
+                    var homeScores = await _dataContext.CompetitionCompetitorScores
+                        .AsNoTracking()
+                        .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
+                        .ToListAsync();
+
+                    if (awayScores.Count == 0 && homeScores.Count == 0)
+                    {
+                        _logger.LogInformation(
+                            "No plays or competitor scores available for {ContestName}. Data not ready for enrichment.",
+                            contest.Name);
+                        return;
+                    }
+
+                    // Use the final score value from CompetitionCompetitorScore
+                    var awayFinalScore = awayScores.FirstOrDefault();
+                    var homeFinalScore = homeScores.FirstOrDefault();
+
+                    contest.AwayScore = awayFinalScore != null ? (int)awayFinalScore.Value : 0;
+                    contest.HomeScore = homeFinalScore != null ? (int)homeFinalScore.Value : 0;
                 }
 
                 var awayFranchiseSeasonId = awayCompetitor.FranchiseSeasonId;
@@ -234,7 +136,6 @@ namespace SportsData.Producer.Application.Contests
                 }
 
                 contest.FinalizedUtc = _dateTimeProvider.UtcNow();
-                contest.EndDateUtc = plays?.Items?.Last().Wallclock;
 
                 // Enrich results for every odds provider
                 if (competition.Odds?.Any() == true)
@@ -262,7 +163,7 @@ namespace SportsData.Producer.Application.Contests
                     new ContestEnrichmentCompleted(
                         command.ContestId,
                         null,
-                        Sport.FootballNcaa,
+                        contest.Sport,
                         contest.SeasonYear,
                         command.CorrelationId,
                         Guid.NewGuid()));

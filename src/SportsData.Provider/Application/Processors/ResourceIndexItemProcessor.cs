@@ -201,8 +201,11 @@ namespace SportsData.Provider.Application.Processors
 
                         // For historical data, check if this exact content was already published.
                         // If so, skip — Producer already processed it and re-publishing only creates churn.
+                        // Never suppress when downstream work is explicitly requested.
                         if (!IsCurrentSeason(command.SeasonYear) &&
-                            dbItem.LastPublishedContentHash is not null)
+                            dbItem.LastPublishedContentHash is not null &&
+                            !command.NotifyOnCompletion &&
+                            (command.IncludeLinkedDocumentTypes is null || command.IncludeLinkedDocumentTypes.Count == 0))
                         {
                             var contentHash = _jsonHashCalculator.NormalizeAndHash(dbItem.Data);
                             if (contentHash == dbItem.LastPublishedContentHash)

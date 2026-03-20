@@ -27,7 +27,9 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
 
     private static ProcessResourceIndexItemCommand BuildCommand(
         bool bypassCache,
-        int? seasonYear = 2017) =>
+        int? seasonYear = 2017,
+        bool notifyOnCompletion = false,
+        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null) =>
         new(CorrelationId: Guid.NewGuid(),
             CausationId: Guid.NewGuid(),
             MessageId: Guid.NewGuid(),
@@ -39,7 +41,9 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
             DocumentType: DocumentType.Season,
             ParentId: null,
             SeasonYear: seasonYear,
-            BypassCache: bypassCache);
+            BypassCache: bypassCache,
+            IncludeLinkedDocumentTypes: includeLinkedDocumentTypes,
+            NotifyOnCompletion: notifyOnCompletion);
 
     private static DocumentBase ExistingDocument(string? lastPublishedContentHash = null) => new()
     {
@@ -250,6 +254,61 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
                     It.IsAny<string>(), It.IsAny<string>(),
                     nameof(DocumentBase.LastPublishedContentHash), It.IsAny<object?>()),
                 Times.Never);
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_Historical_AndHashMatches_ButNotifyOnCompletion_ShouldStillPublish()
+    {
+        SetupCommonMocks(currentSeason: 2025);
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-existing");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(bypassCache: false, seasonYear: 2017, notifyOnCompletion: true));
+
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Once,
+                "NotifyOnCompletion=true must bypass suppression");
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_Historical_AndHashMatches_ButIncludeLinkedTypes_ShouldStillPublish()
+    {
+        SetupCommonMocks(currentSeason: 2025);
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-existing");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(
+            bypassCache: false,
+            seasonYear: 2017,
+            includeLinkedDocumentTypes: new[] { DocumentType.Athlete }));
+
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Once,
+                "IncludeLinkedDocumentTypes must bypass suppression");
     }
 
     [Fact]

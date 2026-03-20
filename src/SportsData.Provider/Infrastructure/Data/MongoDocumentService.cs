@@ -42,6 +42,8 @@ namespace SportsData.Provider.Infrastructure.Data
 
         Task ReplaceOneAsync<T>(string collectionName, string id, T document) where T : IHasSourceUrl;
 
+        Task UpdateFieldAsync<T>(string collectionName, string id, string fieldName, object? value);
+
         bool CanConnect();
     }
 
@@ -212,6 +214,14 @@ namespace SportsData.Provider.Infrastructure.Data
             {
                 _logger.LogInformation("Mongo inserted new document with _id (SourceUrlHash): {SourceUrlHash}", id);
             }
+        }
+
+        public async Task UpdateFieldAsync<T>(string collectionName, string id, string fieldName, object? value)
+        {
+            var collection = _database.GetCollection<T>(collectionName);
+            var filter = Builders<T>.Filter.Eq("_id", id);
+            var update = Builders<T>.Update.Set(fieldName, value);
+            await collection.UpdateOneAsync(filter, update);
         }
 
         public bool CanConnect()

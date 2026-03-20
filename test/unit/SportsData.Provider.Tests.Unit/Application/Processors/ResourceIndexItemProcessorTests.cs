@@ -25,21 +25,23 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
     private static readonly Uri   TestUri       = new("http://sports.core.api.espn.com/v2/sports/football/seasons/2017");
     private static readonly string UrlHash       = HashProvider.GenerateHashFromUri(TestUri);
 
-    private static ProcessResourceIndexItemCommand BuildCommand(bool bypassCache) =>
+    private static ProcessResourceIndexItemCommand BuildCommand(
+        bool bypassCache,
+        int? seasonYear = 2017) =>
         new(CorrelationId: Guid.NewGuid(),
             CausationId: Guid.NewGuid(),
             MessageId: Guid.NewGuid(),
-            ResourceIndexId: Guid.Empty, // skip ResourceIndexItem DB tracking
+            ResourceIndexId: Guid.Empty,
             Id: UrlHash,
             Uri: TestUri,
             Sport: Sport.FootballNcaa,
             SourceDataProvider: SourceDataProvider.Espn,
             DocumentType: DocumentType.Season,
             ParentId: null,
-            SeasonYear: 2017,
+            SeasonYear: seasonYear,
             BypassCache: bypassCache);
 
-    private static DocumentBase ExistingDocument() => new()
+    private static DocumentBase ExistingDocument(string? lastPublishedContentHash = null) => new()
     {
         Id            = UrlHash,
         Data          = ExistingJson,
@@ -48,12 +50,12 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
         SourceDataProvider = SourceDataProvider.Espn,
         SourceUrlHash = UrlHash,
         Uri           = TestUri,
-        RoutingKey    = UrlHash[..3].ToUpperInvariant()
+        RoutingKey    = UrlHash[..3].ToUpperInvariant(),
+        LastPublishedContentHash = lastPublishedContentHash
     };
 
-    private void SetupCommonMocks()
+    private void SetupCommonMocks(int currentSeason = 2025)
     {
-        // Use real identity generator so URI → CanonicalId/UrlHash resolution works
         Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
 
         Mocker.GetMock<IMeterFactory>()
@@ -67,18 +69,17 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
         Mocker.GetMock<IConfiguration>()
             .Setup(x => x["CommonConfig:ProviderClientConfig:ApiUrl"])
             .Returns("http://localhost:5000/");
+
+        Mocker.GetMock<IConfiguration>()
+            .Setup(x => x["CommonConfig:CurrentSeason"])
+            .Returns(currentSeason.ToString());
     }
 
-    /// <summary>
-    /// Core regression: BypassCache=true used to force a Mongo replace unconditionally
-    /// (via `|| command.BypassCache` in the write-back condition) even when ESPN returned
-    /// the exact same content that was already stored. The replace must be skipped when
-    /// content is unchanged; downstream processing must still continue via DocumentCreated.
-    /// </summary>
+    #region BypassCache=true (ESPN fetch path)
+
     [Fact]
     public async Task WhenBypassCacheTrue_AndEspnReturnsUnchangedContent_ShouldNotReplaceInMongo_AndStillPublishDocumentCreated()
     {
-        // Arrange
         SetupCommonMocks();
 
         Mocker.GetMock<IDocumentStore>()
@@ -91,42 +92,44 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
             .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
             .ReturnsAsync(new Success<string>(ExistingJson));
 
-        // Both old and new content hash to the same value — content has not changed
         Mocker.GetMock<IJsonHashCalculator>()
             .Setup(x => x.NormalizeAndHash(It.IsAny<string>()))
             .Returns("hash-unchanged");
 
         var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
 
-        // Act
         await sut.Process(BuildCommand(bypassCache: true));
 
-        // Assert — ESPN must have been called (BypassCache=true skips the Mongo read-cache path)
         Mocker.GetMock<IProvideEspnApiData>()
             .Verify(
                 x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Once,
                 "BypassCache=true should fetch from ESPN before deciding whether to replace");
 
-        // Assert — Mongo replace must NOT have been called
         Mocker.GetMock<IDocumentStore>()
             .Verify(
                 x => x.ReplaceOneAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DocumentBase>()),
                 Times.Never,
                 "unchanged content must not trigger a Mongo replace");
 
-        // Assert — DocumentCreated must still be published so downstream processing continues
         Mocker.GetMock<IEventBus>()
             .Verify(
                 x => x.Publish(It.IsAny<DocumentCreated>(), default),
                 Times.Once,
                 "DocumentCreated must be published even when Mongo replace is skipped");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Verify(
+                x => x.UpdateFieldAsync<DocumentBase>(
+                    It.IsAny<string>(), It.IsAny<string>(),
+                    nameof(DocumentBase.LastPublishedContentHash), It.IsAny<object?>()),
+                Times.Once,
+                "LastPublishedContentHash must be updated after publish");
     }
 
     [Fact]
     public async Task WhenBypassCacheTrue_AndEspnReturnsChangedContent_ShouldReplaceInMongo_AndPublishDocumentCreated()
     {
-        // Arrange
         SetupCommonMocks();
 
         Mocker.GetMock<IDocumentStore>()
@@ -139,7 +142,6 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
             .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
             .ReturnsAsync(new Success<string>(UpdatedJson));
 
-        // Distinct hashes — content has genuinely changed
         Mocker.GetMock<IJsonHashCalculator>()
             .Setup(x => x.NormalizeAndHash(UpdatedJson))
             .Returns("hash-new");
@@ -154,17 +156,13 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
 
         var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
 
-        // Act
         await sut.Process(BuildCommand(bypassCache: true));
 
-        // Assert — ESPN must have been called (BypassCache=true skips the Mongo read-cache path)
         Mocker.GetMock<IProvideEspnApiData>()
             .Verify(
                 x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()),
-                Times.Once,
-                "BypassCache=true should fetch from ESPN for changed-content evaluation");
+                Times.Once);
 
-        // Assert — Mongo replace must have been called once
         Mocker.GetMock<IDocumentStore>()
             .Verify(
                 x => x.ReplaceOneAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DocumentBase>()),
@@ -177,10 +175,207 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
                 Times.Once);
     }
 
+    #endregion
+
+    #region BypassCache=false, cache hit — publish suppression
+
+    [Fact]
+    public async Task WhenCacheHit_AndNoLastPublishedHash_ShouldPublishAndSetHash()
+    {
+        // First time a historical document is served from cache — LastPublishedContentHash is null
+        SetupCommonMocks();
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: null));
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(bypassCache: false));
+
+        // Should publish — no previous hash means never published
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Once);
+
+        // Should update the hash after publishing
+        Mocker.GetMock<IDocumentStore>()
+            .Verify(
+                x => x.UpdateFieldAsync<DocumentBase>(
+                    It.IsAny<string>(), UrlHash,
+                    nameof(DocumentBase.LastPublishedContentHash), It.IsAny<object?>()),
+                Times.Once);
+
+        // Should not call ESPN
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Verify(
+                x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                Times.Never);
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_Historical_AndHashMatches_ShouldSuppressPublish()
+    {
+        // Historical document with matching hash — suppress
+        SetupCommonMocks(currentSeason: 2025);
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-existing");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(bypassCache: false, seasonYear: 2017));
+
+        // Should NOT publish — content unchanged since last publish
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Never,
+                "historical document with matching hash must be suppressed");
+
+        // Should NOT update the hash (nothing was published)
+        Mocker.GetMock<IDocumentStore>()
+            .Verify(
+                x => x.UpdateFieldAsync<DocumentBase>(
+                    It.IsAny<string>(), It.IsAny<string>(),
+                    nameof(DocumentBase.LastPublishedContentHash), It.IsAny<object?>()),
+                Times.Never);
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_Historical_AndHashDiffers_ShouldPublish()
+    {
+        // Historical document where content changed (hash mismatch) — must publish
+        SetupCommonMocks(currentSeason: 2025);
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-current");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-stale"));
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(bypassCache: false, seasonYear: 2017));
+
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Once,
+                "historical document with changed content must be published");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Verify(
+                x => x.UpdateFieldAsync<DocumentBase>(
+                    It.IsAny<string>(), UrlHash,
+                    nameof(DocumentBase.LastPublishedContentHash), It.IsAny<object?>()),
+                Times.Once);
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_CurrentSeason_AndHashMatches_ShouldStillPublish()
+    {
+        // Current-season document — always publish even if hash matches
+        SetupCommonMocks(currentSeason: 2025);
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-existing");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        // SeasonYear 2025 == CurrentSeason → current season
+        await sut.Process(BuildCommand(bypassCache: false, seasonYear: 2025));
+
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Once,
+                "current-season documents must always be published regardless of hash");
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_NullSeasonYear_AndHashMatches_ShouldStillPublish()
+    {
+        // Non-seasonal resource (Venue, Franchise) — always publish
+        SetupCommonMocks(currentSeason: 2025);
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-existing");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(bypassCache: false, seasonYear: null));
+
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Once,
+                "non-seasonal resources must always be published regardless of hash");
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_CurrentSeasonZero_AndHashMatches_ShouldStillPublish()
+    {
+        // CurrentSeason=0 means feature disabled — always publish
+        SetupCommonMocks(currentSeason: 0);
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-existing");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(bypassCache: false, seasonYear: 2017));
+
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Once,
+                "CurrentSeason=0 disables suppression — must always publish");
+    }
+
+    #endregion
+
+    #region BypassCache=false, cache hit — original behavior preserved
+
     [Fact]
     public async Task WhenBypassCacheFalse_AndDocumentExistsInMongo_ShouldNotCallEspn_AndPublishDocumentCreated()
     {
-        // Arrange — BypassCache=false: the cache-hit path should serve the document and return early
+        // Original test — cache hit with no suppression (no LastPublishedContentHash)
         SetupCommonMocks();
 
         Mocker.GetMock<IDocumentStore>()
@@ -191,27 +386,25 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
 
         var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
 
-        // Act
         await sut.Process(BuildCommand(bypassCache: false));
 
-        // Assert — ESPN must not have been called
         Mocker.GetMock<IProvideEspnApiData>()
             .Verify(
                 x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never,
                 "cached document must be served without an ESPN call when BypassCache=false");
 
-        // Assert — cache-hit must not rewrite Mongo
         Mocker.GetMock<IDocumentStore>()
             .Verify(
                 x => x.ReplaceOneAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<DocumentBase>()),
                 Times.Never,
                 "cache-hit path should not replace an unchanged existing document");
 
-        // Assert — DocumentCreated published from cache
         Mocker.GetMock<IEventBus>()
             .Verify(
                 x => x.Publish(It.IsAny<DocumentCreated>(), default),
                 Times.Once);
     }
+
+    #endregion
 }

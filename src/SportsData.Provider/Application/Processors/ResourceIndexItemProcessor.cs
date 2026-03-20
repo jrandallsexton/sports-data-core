@@ -196,14 +196,33 @@ namespace SportsData.Provider.Application.Processors
                     {
                         // Verify it's parseable JSON
                         System.Text.Json.JsonDocument.Parse(dbItem.Data).Dispose();
-                        
+
                         _mongoCacheHitCounter.Add(1);
+
+                        // For historical data, check if this exact content was already published.
+                        // If so, skip — Producer already processed it and re-publishing only creates churn.
+                        if (!IsCurrentSeason(command.SeasonYear) &&
+                            dbItem.LastPublishedContentHash is not null)
+                        {
+                            var contentHash = _jsonHashCalculator.NormalizeAndHash(dbItem.Data);
+                            if (contentHash == dbItem.LastPublishedContentHash)
+                            {
+                                _logger.LogInformation(
+                                    "ESPN {CacheResult} for {DocumentType}. Content unchanged since last publish, skipping. UrlHash={UrlHash}",
+                                    "HIT-SUPPRESSED", command.DocumentType, urlHash);
+                                return;
+                            }
+                        }
+
                         _logger.LogInformation(
                             "ESPN {CacheResult} for {DocumentType}. UrlHash={UrlHash}",
                             "HIT", command.DocumentType, urlHash);
 
                         // Publish DocumentCreated with cached data (NO ESPN call!)
                         await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data, command.NotifyOnCompletion);
+
+                        // Record the content hash so subsequent requests for this document are suppressed
+                        await UpdateLastPublishedHashAsync(command.DocumentType.ToString(), urlHash, dbItem.Data);
                         return;
                     }
                     catch (System.Text.Json.JsonException ex)
@@ -215,7 +234,7 @@ namespace SportsData.Provider.Application.Processors
                             command.DocumentType);
                     }
                 }
-                
+
                 // Fall through to ESPN fetch if validation failed
             }
 
@@ -281,6 +300,7 @@ namespace SportsData.Provider.Application.Processors
                         urlHash, command.DocumentType, command.BypassCache);
 
                     await PublishDocumentCreatedAsync(command, urlHash, correlationId, itemJson, command.NotifyOnCompletion);
+                    await UpdateLastPublishedHashAsync(collectionName, urlHash, itemJson);
                 }
             }
         }
@@ -335,9 +355,10 @@ namespace SportsData.Provider.Application.Processors
                 command.NotifyOnCompletion);
 
             await _publisher.Publish(evt);
+            await UpdateLastPublishedHashAsync(collectionName, urlHash, json);
 
-            _logger.LogInformation("DocumentCreated event published. UrlHash={UrlHash}, DocumentType={DocumentType}", 
-                urlHash, 
+            _logger.LogInformation("DocumentCreated event published. UrlHash={UrlHash}, DocumentType={DocumentType}",
+                urlHash,
                 command.DocumentType);
         }
 
@@ -390,9 +411,10 @@ namespace SportsData.Provider.Application.Processors
                 command.NotifyOnCompletion);
 
             await _publisher.Publish(evt);
+            await UpdateLastPublishedHashAsync(collectionName, urlHash, json);
 
-            _logger.LogInformation("DocumentCreated event published (update). UrlHash={UrlHash}, DocumentType={DocumentType}", 
-                urlHash, 
+            _logger.LogInformation("DocumentCreated event published (update). UrlHash={UrlHash}, DocumentType={DocumentType}",
+                urlHash,
                 command.DocumentType);
         }
 
@@ -431,9 +453,43 @@ namespace SportsData.Provider.Application.Processors
 
             await _publisher.Publish(evt);
 
-            _logger.LogInformation("DocumentCreated event published (from cache). UrlHash={UrlHash}, DocumentType={DocumentType}", 
-                urlHash, 
+            _logger.LogInformation("DocumentCreated event published (from cache). UrlHash={UrlHash}, DocumentType={DocumentType}",
+                urlHash,
                 command.DocumentType);
+        }
+
+        /// <summary>
+        /// Determines whether the given season year represents active/current data that should
+        /// always be published (even if content hasn't changed), matching the ShouldBypassCache
+        /// logic in ResourceIndexJob.
+        /// </summary>
+        private bool IsCurrentSeason(int? seasonYear)
+        {
+            var currentSeasonStr = _commonConfig["CommonConfig:CurrentSeason"];
+            if (string.IsNullOrWhiteSpace(currentSeasonStr) || !int.TryParse(currentSeasonStr, out var currentSeason))
+                return true; // feature disabled or misconfigured — treat as current (always publish)
+            if (currentSeason == 0)
+                return true; // feature disabled
+            if (!seasonYear.HasValue)
+                return true; // non-seasonal resource — always publish
+            return seasonYear.Value >= currentSeason;
+        }
+
+        private async Task UpdateLastPublishedHashAsync(string collectionName, string urlHash, string json)
+        {
+            try
+            {
+                var contentHash = _jsonHashCalculator.NormalizeAndHash(json);
+                await _documentStore.UpdateFieldAsync<DocumentBase>(
+                    collectionName, urlHash, nameof(DocumentBase.LastPublishedContentHash), contentHash);
+            }
+            catch (Exception ex)
+            {
+                // Non-critical — worst case, the next request re-publishes
+                _logger.LogWarning(ex,
+                    "Failed to update LastPublishedContentHash. UrlHash={UrlHash}, DocumentType={DocumentType}",
+                    urlHash, collectionName);
+            }
         }
 
     }

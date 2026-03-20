@@ -80,12 +80,13 @@ namespace SportsData.Producer.Application.Contests
 
                 var contest = competition.Contest;
 
-                // Query canonical plays to determine final score
+                // Query canonical plays to determine final score (project to DTO)
                 var lastScoringPlay = await _dataContext.CompetitionPlays
                     .AsNoTracking()
                     .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
                     .OrderByDescending(p => p.PeriodNumber)
                     .ThenBy(p => p.ClockValue)
+                    .Select(p => new { p.AwayScore, p.HomeScore })
                     .FirstOrDefaultAsync();
 
                 if (lastScoringPlay != null)
@@ -95,12 +96,13 @@ namespace SportsData.Producer.Application.Contests
                 }
                 else
                 {
-                    // No scoring plays — check competitor scores (D2 fallback)
+                    // No scoring plays — check competitor scores (D2 fallback, project to score value only)
                     var awayFinalScore = await _dataContext.CompetitionCompetitorScores
                         .AsNoTracking()
                         .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
                         .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
                         .ThenByDescending(s => s.CreatedUtc)
+                        .Select(s => (double?)s.Value)
                         .FirstOrDefaultAsync();
 
                     var homeFinalScore = await _dataContext.CompetitionCompetitorScores
@@ -108,6 +110,7 @@ namespace SportsData.Producer.Application.Contests
                         .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
                         .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
                         .ThenByDescending(s => s.CreatedUtc)
+                        .Select(s => (double?)s.Value)
                         .FirstOrDefaultAsync();
 
                     if (awayFinalScore is null || homeFinalScore is null)

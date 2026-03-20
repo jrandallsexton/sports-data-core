@@ -31,5 +31,12 @@ namespace SportsData.Provider.Infrastructure.Data
 
         [JsonPropertyName("routingKey")]
         public required string RoutingKey { get; set; }
+
+        /// <summary>
+        /// SHA-256 hash of the document content at the time DocumentCreated was last published.
+        /// Used to suppress redundant publishing when cached content hasn't changed.
+        /// Null means the document has never been published (or was stored before this field existed).
+        /// </summary>
+        public string? LastPublishedContentHash { get; set; }
     }
 }

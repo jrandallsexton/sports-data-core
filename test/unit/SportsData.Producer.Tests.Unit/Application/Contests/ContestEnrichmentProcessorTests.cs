@@ -7,8 +7,6 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
-using SportsData.Core.Infrastructure.DataSources.Espn;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -34,17 +32,15 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
         _sut = Mocker.CreateInstance<ContestEnrichmentProcessor>();
     }
 
-    #region Process — competitor guard
+    #region Process — guard clauses
 
     [Fact]
     public async Task Process_WhenCompetitionNotFound_ReturnsEarly()
     {
-        // No competition seeded in the in-memory DB
         var command = new EnrichContestCommand(Guid.NewGuid(), Guid.NewGuid());
 
         await _sut.Process(command);
 
-        // Should not attempt to publish anything
         Mock.Get(Mocker.Get<IEventBus>())
             .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -53,21 +49,13 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     public async Task Process_WhenNoCompetitors_ReturnsEarly()
     {
         var contestId = Guid.NewGuid();
-        var contest = new Contest
-        {
-            Id = contestId,
-            Name = "Test Game",
-            ShortName = "TST",
-            StartDateUtc = DateTime.UtcNow,
-            Sport = Sport.FootballNcaa,
-            SeasonYear = 2024
-        };
+        var contest = CreateContest(contestId);
         var competition = new Competition
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
             Contest = contest,
-            Competitors = new List<CompetitionCompetitor>() // empty
+            Competitors = new List<CompetitionCompetitor>()
         };
 
         FootballDataContext.Contests.Add(contest);
@@ -87,15 +75,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     {
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
-        var contest = new Contest
-        {
-            Id = contestId,
-            Name = "Test Game",
-            ShortName = "TST",
-            StartDateUtc = DateTime.UtcNow,
-            Sport = Sport.FootballNcaa,
-            SeasonYear = 2024
-        };
+        var contest = CreateContest(contestId);
         var competition = new Competition
         {
             Id = competitionId,
@@ -103,14 +83,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
             Contest = contest,
             Competitors = new List<CompetitionCompetitor>
             {
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    CompetitionId = competitionId,
-                    FranchiseSeasonId = HomeFranchiseSeasonId,
-                    HomeAway = "home",
-                    Order = 0
-                }
+                CreateCompetitor(competitionId, HomeFranchiseSeasonId, "home")
             }
         };
 
@@ -131,15 +104,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     {
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
-        var contest = new Contest
-        {
-            Id = contestId,
-            Name = "Test Game",
-            ShortName = "TST",
-            StartDateUtc = DateTime.UtcNow,
-            Sport = Sport.FootballNcaa,
-            SeasonYear = 2024
-        };
+        var contest = CreateContest(contestId);
         var competition = new Competition
         {
             Id = competitionId,
@@ -147,14 +112,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
             Contest = contest,
             Competitors = new List<CompetitionCompetitor>
             {
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    CompetitionId = competitionId,
-                    FranchiseSeasonId = AwayFranchiseSeasonId,
-                    HomeAway = "away",
-                    Order = 0
-                }
+                CreateCompetitor(competitionId, AwayFranchiseSeasonId, "away")
             }
         };
 
@@ -171,62 +129,34 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     }
 
     [Fact]
-    public async Task Process_WhenCompetitorsHaveEmptyExternalIds_ReturnsEarlyOnD2Fallback()
+    public async Task Process_WhenStatusNotFinal_ReturnsEarly()
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_SCHEDULED");
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+
+        await _sut.Process(command);
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenStatusNull_ReturnsEarly()
     {
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
-        var contest = new Contest
-        {
-            Id = contestId,
-            Name = "D2 Test Game",
-            ShortName = "D2T",
-            StartDateUtc = DateTime.UtcNow,
-            Sport = Sport.FootballNcaa,
-            SeasonYear = 2024
-        };
+        var contest = CreateContest(contestId);
         var competition = new Competition
         {
             Id = competitionId,
             ContestId = contestId,
             Contest = contest,
-            Status = new CompetitionStatus
-            {
-                Id = Guid.NewGuid(),
-                CompetitionId = competitionId,
-                StatusTypeName = "STATUS_FINAL"
-            },
-            ExternalIds = new List<CompetitionExternalId>
-            {
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    CompetitionId = competitionId,
-                    Provider = SourceDataProvider.Espn,
-                    Value = "12345",
-                    SourceUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/12345/competitions/12345",
-                    SourceUrlHash = "abc123"
-                }
-            },
+            Status = null,
             Competitors = new List<CompetitionCompetitor>
             {
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    CompetitionId = competitionId,
-                    FranchiseSeasonId = AwayFranchiseSeasonId,
-                    HomeAway = "away",
-                    Order = 0,
-                    ExternalIds = new List<CompetitionCompetitorExternalId>() // empty
-                },
-                new()
-                {
-                    Id = Guid.NewGuid(),
-                    CompetitionId = competitionId,
-                    FranchiseSeasonId = HomeFranchiseSeasonId,
-                    HomeAway = "home",
-                    Order = 1,
-                    ExternalIds = new List<CompetitionCompetitorExternalId>() // empty
-                }
+                CreateCompetitor(competitionId, AwayFranchiseSeasonId, "away"),
+                CreateCompetitor(competitionId, HomeFranchiseSeasonId, "home")
             }
         };
 
@@ -234,16 +164,160 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
         FootballDataContext.Competitions.Add(competition);
         await FootballDataContext.SaveChangesAsync();
 
-        // Mock plays to return empty (triggers D2 fallback path)
-        Mock.Get(Mocker.Get<IProvideEspnApiData>())
-            .Setup(x => x.GetCompetitionPlaysAsync(It.IsAny<Uri>()))
-            .ReturnsAsync(new EspnEventCompetitionPlaysDto { Count = 0, Items = new() });
-
         var command = new EnrichContestCommand(contestId, Guid.NewGuid());
 
         await _sut.Process(command);
 
-        // Should return early due to missing ExternalIds — no enrichment event published
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    #endregion
+
+    #region Process — scoring from plays
+
+    [Fact]
+    public async Task Process_WhenFinalWithScoringPlays_SetsScoresFromLastScoringPlay()
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        // Seed scoring plays
+        FootballDataContext.CompetitionPlays.AddRange(
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 7, homeScore: 0, period: 1, clock: 600),
+            CreatePlay(competitionId, scoringPlay: false, awayScore: 7, homeScore: 0, period: 2, clock: 800),
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 14, homeScore: 7, period: 3, clock: 500),
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 14, homeScore: 14, period: 4, clock: 300)
+        );
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.AwayScore.Should().Be(14);
+        contest.HomeScore.Should().Be(14);
+        contest.FinalizedUtc.Should().NotBeNull();
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Process_WhenFinalWithScoringPlays_SetsWinner()
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        FootballDataContext.CompetitionPlays.Add(
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 21, homeScore: 28, period: 4, clock: 100));
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.WinnerFranchiseId.Should().Be(HomeFranchiseSeasonId);
+    }
+
+    #endregion
+
+    #region Process — D2 fallback (competitor scores)
+
+    [Fact]
+    public async Task Process_WhenNoPlaysButHasCompetitorScores_UsesScoreFallback()
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        // Get the competitors to seed scores against
+        var competition = await FootballDataContext.Competitions
+            .Include(c => c.Competitors)
+            .FirstAsync(c => c.Id == competitionId);
+
+        var away = competition.Competitors.First(c => c.HomeAway == "away");
+        var home = competition.Competitors.First(c => c.HomeAway == "home");
+
+        FootballDataContext.CompetitionCompetitorScores.AddRange(
+            new CompetitionCompetitorScore
+            {
+                Id = Guid.NewGuid(),
+                CompetitionCompetitorId = away.Id,
+                Value = 17,
+                DisplayValue = "17",
+                Winner = false,
+                SourceId = "1",
+                SourceDescription = "Final"
+            },
+            new CompetitionCompetitorScore
+            {
+                Id = Guid.NewGuid(),
+                CompetitionCompetitorId = home.Id,
+                Value = 24,
+                DisplayValue = "24",
+                Winner = true,
+                SourceId = "1",
+                SourceDescription = "Final"
+            }
+        );
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.AwayScore.Should().Be(17);
+        contest.HomeScore.Should().Be(24);
+        contest.WinnerFranchiseId.Should().Be(HomeFranchiseSeasonId);
+        contest.FinalizedUtc.Should().NotBeNull();
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Process_WhenNoPlaysAndOnlyOneTeamHasScore_ReturnsEarly()
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        var competition = await FootballDataContext.Competitions
+            .Include(c => c.Competitors)
+            .FirstAsync(c => c.Id == competitionId);
+
+        var away = competition.Competitors.First(c => c.HomeAway == "away");
+
+        // Only seed away score — home has none
+        FootballDataContext.CompetitionCompetitorScores.Add(
+            new CompetitionCompetitorScore
+            {
+                Id = Guid.NewGuid(),
+                CompetitionCompetitorId = away.Id,
+                Value = 17,
+                DisplayValue = "17",
+                Winner = false,
+                SourceId = "1",
+                SourceDescription = "Final"
+            });
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.FinalizedUtc.Should().BeNull();
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenNoPlaysAndNoCompetitorScores_ReturnsEarly()
+    {
+        var (contestId, _) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.FinalizedUtc.Should().BeNull();
+
         Mock.Get(Mocker.Get<IEventBus>())
             .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -283,7 +357,6 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     [Fact]
     public void GetSpreadWinner_WhenHomeCoversSpread_ReturnsHomeFranchise()
     {
-        // Home favored by 7 (spread = -7), home wins 28-14 (covers)
         var result = _sut.GetSpreadWinnerFranchiseSeasonId(
             AwayFranchiseSeasonId, HomeFranchiseSeasonId,
             awayScore: 14, homeScore: 28, spread: -7m);
@@ -294,7 +367,6 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     [Fact]
     public void GetSpreadWinner_WhenAwayCoversSpread_ReturnsAwayFranchise()
     {
-        // Home favored by 7 (spread = -7), home wins 21-17 (doesn't cover)
         var result = _sut.GetSpreadWinnerFranchiseSeasonId(
             AwayFranchiseSeasonId, HomeFranchiseSeasonId,
             awayScore: 17, homeScore: 21, spread: -7m);
@@ -305,7 +377,6 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     [Fact]
     public void GetSpreadWinner_WhenExactSpread_ReturnsPush()
     {
-        // Home favored by 7 (spread = -7), home wins 24-17 (push)
         var result = _sut.GetSpreadWinnerFranchiseSeasonId(
             AwayFranchiseSeasonId, HomeFranchiseSeasonId,
             awayScore: 17, homeScore: 24, spread: -7m);
@@ -316,7 +387,6 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     [Fact]
     public void GetSpreadWinner_WhenAwayFavored_CalculatesCorrectly()
     {
-        // Away favored (spread = +3.5 for home), away wins 31-21
         var result = _sut.GetSpreadWinnerFranchiseSeasonId(
             AwayFranchiseSeasonId, HomeFranchiseSeasonId,
             awayScore: 31, homeScore: 21, spread: 3.5m);
@@ -338,7 +408,6 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
             CreateOdds("provider-3", "FanDuel", spread: -7.5m, overUnder: 46.0m)
         };
 
-        // Home wins 28-14
         _sut.EnrichOddsResults(odds, AwayFranchiseSeasonId, HomeFranchiseSeasonId, awayScore: 14, homeScore: 28);
 
         foreach (var o in odds)
@@ -357,9 +426,6 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
             CreateOdds("provider-2", "DraftKings", spread: -14.5m, overUnder: 45.5m)
         };
 
-        // Home wins 28-14 (margin = 14)
-        // ESPN Bet spread -7: home covers (28 + (-7) = 21 > 14) → home wins ATS
-        // DraftKings spread -14.5: home doesn't cover (28 + (-14.5) = 13.5 < 14) → away wins ATS
         _sut.EnrichOddsResults(odds, AwayFranchiseSeasonId, HomeFranchiseSeasonId, awayScore: 14, homeScore: 28);
 
         odds[0].AtsWinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
@@ -375,9 +441,6 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
             CreateOdds("provider-2", "DraftKings", spread: -7m, overUnder: 45.0m)
         };
 
-        // Total = 28 + 14 = 42
-        // ESPN Bet O/U 40.0: Over
-        // DraftKings O/U 45.0: Under
         _sut.EnrichOddsResults(odds, AwayFranchiseSeasonId, HomeFranchiseSeasonId, awayScore: 14, homeScore: 28);
 
         odds[0].OverUnderResult.Should().Be(OverUnderResult.Over);
@@ -395,7 +458,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
         _sut.EnrichOddsResults(odds, AwayFranchiseSeasonId, HomeFranchiseSeasonId, awayScore: 21, homeScore: 21);
 
         odds[0].WinnerFranchiseSeasonId.Should().BeNull();
-        odds[0].OverUnderResult.Should().Be(OverUnderResult.Push); // 42 == 42.0 → Push
+        odds[0].OverUnderResult.Should().Be(OverUnderResult.Push);
     }
 
     [Fact]
@@ -418,23 +481,88 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
 
     #region Helpers
 
+    private static Contest CreateContest(Guid contestId) => new()
+    {
+        Id = contestId,
+        Name = "Test Game",
+        ShortName = "TST",
+        StartDateUtc = DateTime.UtcNow,
+        Sport = Sport.FootballNcaa,
+        SeasonYear = 2024
+    };
+
+    private static CompetitionCompetitor CreateCompetitor(
+        Guid competitionId, Guid franchiseSeasonId, string homeAway) => new()
+    {
+        Id = Guid.NewGuid(),
+        CompetitionId = competitionId,
+        FranchiseSeasonId = franchiseSeasonId,
+        HomeAway = homeAway,
+        Order = homeAway == "home" ? 1 : 0
+    };
+
+    private async Task<(Guid ContestId, Guid CompetitionId)> SeedCompetitionWithStatus(string statusTypeName)
+    {
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        var contest = CreateContest(contestId);
+        var competition = new Competition
+        {
+            Id = competitionId,
+            ContestId = contestId,
+            Contest = contest,
+            Status = new CompetitionStatus
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competitionId,
+                StatusTypeName = statusTypeName
+            },
+            Competitors = new List<CompetitionCompetitor>
+            {
+                CreateCompetitor(competitionId, AwayFranchiseSeasonId, "away"),
+                CreateCompetitor(competitionId, HomeFranchiseSeasonId, "home")
+            }
+        };
+
+        FootballDataContext.Contests.Add(contest);
+        FootballDataContext.Competitions.Add(competition);
+        await FootballDataContext.SaveChangesAsync();
+
+        return (contestId, competitionId);
+    }
+
+    private static CompetitionPlay CreatePlay(
+        Guid competitionId, bool scoringPlay, int awayScore, int homeScore, int period, double clock) => new()
+    {
+        Id = Guid.NewGuid(),
+        CompetitionId = competitionId,
+        ScoringPlay = scoringPlay,
+        AwayScore = awayScore,
+        HomeScore = homeScore,
+        PeriodNumber = period,
+        ClockValue = clock,
+        EspnId = Guid.NewGuid().ToString()[..8],
+        SequenceNumber = "1",
+        Text = "Test play",
+        TypeId = "1",
+        Type = PlayType.Unknown,
+        Modified = DateTime.UtcNow
+    };
+
     private static CompetitionOdds CreateOdds(
         string providerId,
         string providerName,
         decimal? spread,
-        decimal? overUnder)
+        decimal? overUnder) => new()
     {
-        return new CompetitionOdds
-        {
-            Id = Guid.NewGuid(),
-            CompetitionId = Guid.NewGuid(),
-            ProviderRef = new Uri("https://example.com/odds"),
-            ProviderId = providerId,
-            ProviderName = providerName,
-            Spread = spread,
-            OverUnder = overUnder
-        };
-    }
+        Id = Guid.NewGuid(),
+        CompetitionId = Guid.NewGuid(),
+        ProviderRef = new Uri("https://example.com/odds"),
+        ProviderId = providerId,
+        ProviderName = providerName,
+        Spread = spread,
+        OverUnder = overUnder
+    };
 
     #endregion
 }

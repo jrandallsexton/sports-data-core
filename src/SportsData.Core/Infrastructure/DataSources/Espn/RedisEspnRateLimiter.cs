@@ -102,7 +102,7 @@ end
                     {
                         if (sw.ElapsedMilliseconds > PollIntervalMs)
                         {
-                            _logger.LogWarning(
+                            _logger.LogDebug(
                                 "ESPN rate limiter: acquired token after waiting {WaitMs}ms",
                                 sw.ElapsedMilliseconds);
                         }

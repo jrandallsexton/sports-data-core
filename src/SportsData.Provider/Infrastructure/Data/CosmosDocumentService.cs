@@ -222,6 +222,15 @@ namespace SportsData.Provider.Infrastructure.Data
         }
 
 
+        public async Task UpdateFieldAsync<T>(string collectionName, string id, string fieldName, object? value)
+        {
+            ValidateContainer(collectionName);
+            var container = _client.GetContainer(_databaseName, collectionName);
+            var routingKey = id.Substring(0, 3).ToUpperInvariant();
+            var patchOperations = new[] { PatchOperation.Set($"/{fieldName}", value) };
+            await container.PatchItemAsync<T>(id, new PartitionKey(routingKey), patchOperations);
+        }
+
         public bool CanConnect()
         {
             // Optionally do a test container ping here

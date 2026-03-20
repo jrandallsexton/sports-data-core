@@ -273,6 +273,41 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     }
 
     [Fact]
+    public async Task Process_WhenNoPlaysAndOnlyOneTeamHasScore_ReturnsEarly()
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        var competition = await FootballDataContext.Competitions
+            .Include(c => c.Competitors)
+            .FirstAsync(c => c.Id == competitionId);
+
+        var away = competition.Competitors.First(c => c.HomeAway == "away");
+
+        // Only seed away score — home has none
+        FootballDataContext.CompetitionCompetitorScores.Add(
+            new CompetitionCompetitorScore
+            {
+                Id = Guid.NewGuid(),
+                CompetitionCompetitorId = away.Id,
+                Value = 17,
+                DisplayValue = "17",
+                Winner = false,
+                SourceId = "1",
+                SourceDescription = "Final"
+            });
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.FinalizedUtc.Should().BeNull();
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Process_WhenNoPlaysAndNoCompetitorScores_ReturnsEarly()
     {
         var (contestId, _) = await SeedCompetitionWithStatus("STATUS_FINAL");

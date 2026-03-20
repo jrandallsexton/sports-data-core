@@ -96,17 +96,21 @@ namespace SportsData.Producer.Application.Contests
                 else
                 {
                     // No scoring plays — check competitor scores (D2 fallback)
-                    var awayScores = await _dataContext.CompetitionCompetitorScores
+                    var awayFinalScore = await _dataContext.CompetitionCompetitorScores
                         .AsNoTracking()
                         .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
-                        .ToListAsync();
+                        .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
+                        .ThenByDescending(s => s.CreatedUtc)
+                        .FirstOrDefaultAsync();
 
-                    var homeScores = await _dataContext.CompetitionCompetitorScores
+                    var homeFinalScore = await _dataContext.CompetitionCompetitorScores
                         .AsNoTracking()
                         .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
-                        .ToListAsync();
+                        .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
+                        .ThenByDescending(s => s.CreatedUtc)
+                        .FirstOrDefaultAsync();
 
-                    if (awayScores.Count == 0 && homeScores.Count == 0)
+                    if (awayFinalScore is null || homeFinalScore is null)
                     {
                         _logger.LogInformation(
                             "No plays or competitor scores available for {ContestName}. Data not ready for enrichment.",
@@ -114,12 +118,8 @@ namespace SportsData.Producer.Application.Contests
                         return;
                     }
 
-                    // Use the final score value from CompetitionCompetitorScore
-                    var awayFinalScore = awayScores.FirstOrDefault();
-                    var homeFinalScore = homeScores.FirstOrDefault();
-
-                    contest.AwayScore = awayFinalScore != null ? (int)awayFinalScore.Value : 0;
-                    contest.HomeScore = homeFinalScore != null ? (int)homeFinalScore.Value : 0;
+                    contest.AwayScore = (int)awayFinalScore.Value;
+                    contest.HomeScore = (int)homeFinalScore.Value;
                 }
 
                 var awayFranchiseSeasonId = awayCompetitor.FranchiseSeasonId;

@@ -43,7 +43,7 @@ public class Program
         services.AddInstrumentation(builder.Environment.ApplicationName, config);
 
         services.AddClients(config);
-        
+
         switch (mode)
         {
             case Sport.GolfPga:

@@ -148,13 +148,14 @@ jobs:
         if: ${{ inputs.deploy_provider && steps.provider_tag.outputs.tag != '' }}
         working-directory: sports-data-config
         run: |
-          # Update or add image to provider-patch.yaml
-          if grep -q "image:" app/overlays/04_prod/provider-patch.yaml; then
-            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdataprovider:${{ steps.provider_tag.outputs.tag }}|g" app/overlays/04_prod/provider-patch.yaml
-          else
-            sed -i '/- name: provider-football-ncaa/a\        image: sportdeets.azurecr.io/sportsdataprovider:${{ steps.provider_tag.outputs.tag }}' app/overlays/04_prod/provider-patch.yaml
-          fi
-          echo "Updated Provider to tag: ${{ steps.provider_tag.outputs.tag }}"
+          # Update all provider role patch files (worker, ingest, api)
+          for patch in provider-patch.yaml provider-ingest-patch.yaml provider-api-patch.yaml; do
+            FILE="app/overlays/04_prod/$patch"
+            if [ -f "$FILE" ]; then
+              sed -i "s|image: .*sportsdataprovider.*|image: sportdeets.azurecr.io/sportsdataprovider:${{ steps.provider_tag.outputs.tag }}|g" "$FILE"
+              echo "Updated $patch to tag: ${{ steps.provider_tag.outputs.tag }}"
+            fi
+          done
 
       - name: Update UI image tag
         if: ${{ inputs.deploy_ui && steps.ui_tag.outputs.tag != '' }}

@@ -211,8 +211,8 @@ namespace SportsData.Provider.Application.Processors
                             if (contentHash == dbItem.LastPublishedContentHash)
                             {
                                 _logger.LogInformation(
-                                    "ESPN {CacheResult} for {DocumentType}. Content unchanged since last publish, skipping. UrlHash={UrlHash}",
-                                    "HIT-SUPPRESSED", command.DocumentType, urlHash);
+                                    "ESPN {CacheResult} for {DocumentType}. Content unchanged since last publish, skipping. Url={Url}",
+                                    "HIT-SUPPRESSED", command.DocumentType, dbItem.Uri.OriginalString);
                                 return;
                             }
                         }

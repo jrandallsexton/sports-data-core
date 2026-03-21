@@ -59,13 +59,25 @@ jobs:
         if: ${{ inputs.provider_tag != '' }}
         working-directory: sports-data-config
         run: |
-          # Update or add image to provider-patch.yaml
-          if grep -q "image:" app/overlays/04_prod/provider-patch.yaml; then
-            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdataprovider:${{ inputs.provider_tag }}|g" app/overlays/04_prod/provider-patch.yaml
-          else
-            sed -i '/- name: provider-football-ncaa/a\        image: sportdeets.azurecr.io/sportsdataprovider:${{ inputs.provider_tag }}' app/overlays/04_prod/provider-patch.yaml
+          TAG='${{ inputs.provider_tag }}'
+          if [[ ! "$TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "::error::provider_tag contains invalid characters: $TAG"
+            exit 1
           fi
-          echo "Updated Provider to tag: ${{ inputs.provider_tag }}"
+          # Update all provider role patch files (worker, ingest, api)
+          for patch in provider-patch.yaml provider-ingest-patch.yaml provider-api-patch.yaml; do
+            FILE="app/overlays/04_prod/$patch"
+            if [ ! -f "$FILE" ]; then
+              echo "::error::Missing provider patch file: $FILE"
+              exit 1
+            fi
+            sed -i "s|image: .*sportsdataprovider.*|image: sportdeets.azurecr.io/sportsdataprovider:${TAG}|g" "$FILE"
+            if ! grep -q "sportsdataprovider:${TAG}" "$FILE"; then
+              echo "::error::Failed to update image tag in $FILE"
+              exit 1
+            fi
+            echo "Updated $patch to tag: ${TAG}"
+          done
 
       - name: Update Jobs Dashboard image tag
         if: ${{ inputs.jobs_dashboard_tag != '' }}

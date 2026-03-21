@@ -19,20 +19,27 @@ namespace SportsData.Core.Processing
 
     public class BackgroundJobProvider : IProvideBackgroundJobs
     {
+        private readonly IBackgroundJobClient _client;
+
+        public BackgroundJobProvider(IBackgroundJobClient client)
+        {
+            _client = client;
+        }
+
         public string Enqueue<T>(Expression<Func<T, Task>> methodCall) //where T : IAmABackgroundJob<T>
         {
-            return BackgroundJob.Enqueue(methodCall);
+            return _client.Enqueue(methodCall);
         }
 
         public string Enqueue<T>(Expression<Func<T, Task>> methodCall, PerformContext context) //where T : IAmABackgroundJob<T>
         {
             context.AddTags("Testing");
-            return BackgroundJob.Enqueue(methodCall);
+            return _client.Enqueue(methodCall);
         }
 
         public string Schedule<T>(Expression<Func<T, Task>> methodCall, TimeSpan delay)
         {
-            return BackgroundJob.Schedule(methodCall, delay);
+            return _client.Schedule(methodCall, delay);
         }
     }
 }

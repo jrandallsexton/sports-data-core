@@ -19,11 +19,8 @@ namespace SportsData.Provider
     {
         public static async Task Main(string[] args)
         {
-            var mode = (args.Length > 0 && args[0] == "-mode") ?
-                Enum.Parse<Sport>(args[1]) :
-                Sport.All;
-
-            var role = ParseRole(args);
+            var mode = ParseFlag<Sport>(args, "-mode", Sport.All);
+            var role = ParseFlag<ProviderRole>(args, "-role", ProviderRole.All);
 
             Console.WriteLine($"Mode: {mode}");
             Console.WriteLine($"Role: {role}");
@@ -143,17 +140,23 @@ namespace SportsData.Provider
             await app.RunAsync();
         }
 
-        private static ProviderRole ParseRole(string[] args)
+        private static T ParseFlag<T>(string[] args, string flag, T defaultValue) where T : struct, Enum
         {
             for (int i = 0; i < args.Length - 1; i++)
             {
-                if (args[i] == "-role")
+                if (args[i] == flag)
                 {
-                    return Enum.Parse<ProviderRole>(args[i + 1], ignoreCase: true);
+                    if (!Enum.TryParse<T>(args[i + 1], ignoreCase: true, out var value))
+                    {
+                        var valid = string.Join(", ", Enum.GetNames<T>());
+                        throw new ArgumentException(
+                            $"Invalid value '{args[i + 1]}' for {flag}. Valid values: {valid}");
+                    }
+                    return value;
                 }
             }
 
-            return ProviderRole.All;
+            return defaultValue;
         }
 
         private static async Task LoadSeedData(AppDataContext dbContext, Sport mode)

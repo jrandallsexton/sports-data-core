@@ -23,7 +23,10 @@ namespace SportsData.Provider
                 Enum.Parse<Sport>(args[1]) :
                 Sport.All;
 
+            var role = ParseRole(args);
+
             Console.WriteLine($"Mode: {mode}");
+            Console.WriteLine($"Role: {role}");
 
             var builder = WebApplication.CreateBuilder(args);
 
@@ -35,43 +38,66 @@ namespace SportsData.Provider
 
             var services = builder.Services;
             services.AddCoreServices(config, mode);
-            services.AddControllers();
             services.AddEndpointsApiExplorer();
-            services.AddSwaggerGen();
+
+            // API controllers — only for Api role
+            if (role.HasFlag(ProviderRole.Api))
+            {
+                services.AddControllers();
+                services.AddSwaggerGen();
+            }
+
             services.AddClients(config);
             services.AddCaching(config);
-            // Use Redis-backed circuit breaker and rate limiter when Redis is configured;
-            // otherwise fall back to NoOp defaults registered in AddClients()
-            if (!string.IsNullOrWhiteSpace(config[CommonConfigKeys.CacheServiceUri]))
+
+            // ESPN circuit breaker and rate limiter — only needed by Worker role (ESPN calls)
+            if (role.HasFlag(ProviderRole.Worker))
             {
-                services.AddSingleton<IEspnCircuitBreaker, RedisEspnCircuitBreaker>();
-                services.AddSingleton<IEspnRateLimiter, RedisEspnRateLimiter>();
+                if (!string.IsNullOrWhiteSpace(config[CommonConfigKeys.CacheServiceUri]))
+                {
+                    services.AddSingleton<IEspnCircuitBreaker, RedisEspnCircuitBreaker>();
+                    services.AddSingleton<IEspnRateLimiter, RedisEspnRateLimiter>();
+                }
             }
+
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
-            services.AddHangfire(config, builder.Environment.ApplicationName, mode);
 
-            var workerConfig = config.GetSection($"{builder.Environment.ApplicationName}:WorkerConfig")
-                .Get<ProviderWorkerConfig>();
+            // Hangfire — Worker gets client + server; Ingest and Api get client only
+            // Api needs client so controllers can enqueue jobs; Ingest needs it to enqueue from MassTransit consumers
+            var needsHangfireServer = role.HasFlag(ProviderRole.Worker);
+            services.AddHangfire(config, builder.Environment.ApplicationName, mode, includeServer: needsHangfireServer);
 
-            var consumers = new List<Type>
+            // MassTransit consumers — only for Ingest role
+            if (role.HasFlag(ProviderRole.Ingest))
             {
-                typeof(LoadTestProviderEventConsumer),
-                typeof(TriggerTierSourcingConsumer)
-            };
+                var workerConfig = config.GetSection($"{builder.Environment.ApplicationName}:WorkerConfig")
+                    .Get<ProviderWorkerConfig>();
 
-            if (workerConfig?.PauseMessageConsumption == true)
-            {
-                Console.WriteLine("Message consumption is PAUSED. DocumentRequestedHandler will not be registered.");
+                var consumers = new List<Type>
+                {
+                    typeof(LoadTestProviderEventConsumer),
+                    typeof(TriggerTierSourcingConsumer)
+                };
+
+                if (workerConfig?.PauseMessageConsumption == true)
+                {
+                    Console.WriteLine("Message consumption is PAUSED. DocumentRequestedHandler will not be registered.");
+                }
+                else
+                {
+                    consumers.Add(typeof(DocumentRequestedHandler));
+                }
+
+                services.AddMessaging(config, consumers, busConfig =>
+                {
+                    busConfig.AddSagaSupport();
+                });
             }
             else
             {
-                consumers.Add(typeof(DocumentRequestedHandler));
+                // Non-ingest roles still need MassTransit bus for publishing events
+                services.AddMessaging(config, consumers: null);
             }
-
-            services.AddMessaging(config, consumers, busConfig =>
-            {
-                busConfig.AddSagaSupport();
-            });
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
 
@@ -80,7 +106,7 @@ namespace SportsData.Provider
 
             services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName, mode);
             services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck));
-            
+
             var docDbProviderValue = config["SportsData.Provider:ProviderDocDatabaseConfig:Provider"];
             var useMongo = docDbProviderValue == "Mongo";
             services.AddLocalServices(builder.Configuration, mode, useMongo);
@@ -89,14 +115,18 @@ namespace SportsData.Provider
 
             // Don't redirect to HTTPS when behind a proxy (Front Door, Traefik)
             // app.UseHttpsRedirection();
-                
+
             // Apply migrations and seed data once using the real provider
             await app.Services.ApplyMigrations<AppDataContext>(ctx => LoadSeedData(ctx, mode));
 
             app.UseAuthorization();
             app.UseCommonFeatures();
-            app.MapControllers();
-            
+
+            if (role.HasFlag(ProviderRole.Api))
+            {
+                app.MapControllers();
+            }
+
             // Map Prometheus metrics endpoint only if OpenTelemetry metrics are enabled
             var otelConfig = config.GetSection("CommonConfig:OpenTelemetry").Get<SportsData.Core.Config.OpenTelemetryConfig>();
             if (otelConfig?.Enabled == true && otelConfig.Metrics?.Enabled == true)
@@ -104,11 +134,27 @@ namespace SportsData.Provider
                 app.MapPrometheusScrapingEndpoint();
             }
 
-            app.Services.ConfigureHangfireJobs(mode);
+            // Recurring Hangfire jobs — only for Worker role
+            if (role.HasFlag(ProviderRole.Worker))
+            {
+                app.Services.ConfigureHangfireJobs(mode);
+            }
 
             await app.RunAsync();
         }
 
+        private static ProviderRole ParseRole(string[] args)
+        {
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (args[i] == "-role")
+                {
+                    return Enum.Parse<ProviderRole>(args[i + 1], ignoreCase: true);
+                }
+            }
+
+            return ProviderRole.All;
+        }
 
         private static async Task LoadSeedData(AppDataContext dbContext, Sport mode)
         {

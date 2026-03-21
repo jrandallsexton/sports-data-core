@@ -177,7 +177,8 @@ namespace SportsData.Core.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration,
             string applicationName,
-            Sport mode)
+            Sport mode,
+            bool includeServer = true)
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
@@ -201,12 +202,15 @@ namespace SportsData.Core.DependencyInjection
                 x.UseTagsWithPostgreSql();
             });
 
-            services.AddHangfireServer(serverOptions =>
+            if (includeServer)
             {
-                serverOptions.WorkerCount = minWorkers;
-                serverOptions.ShutdownTimeout = TimeSpan.FromSeconds(90);
-            });
-            
+                services.AddHangfireServer(serverOptions =>
+                {
+                    serverOptions.WorkerCount = minWorkers;
+                    serverOptions.ShutdownTimeout = TimeSpan.FromSeconds(90);
+                });
+            }
+
             return services;
         }
 

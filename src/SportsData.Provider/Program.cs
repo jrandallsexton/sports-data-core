@@ -116,11 +116,11 @@ namespace SportsData.Provider
             // Apply migrations and seed data once using the real provider
             await app.Services.ApplyMigrations<AppDataContext>(ctx => LoadSeedData(ctx, mode));
 
-            app.UseAuthorization();
             app.UseCommonFeatures();
 
             if (role.HasFlag(ProviderRole.Api))
             {
+                app.UseAuthorization();
                 app.MapControllers();
             }
 

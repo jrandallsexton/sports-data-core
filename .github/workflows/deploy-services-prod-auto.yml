@@ -149,12 +149,19 @@ jobs:
         working-directory: sports-data-config
         run: |
           # Update all provider role patch files (worker, ingest, api)
+          TAG="${{ steps.provider_tag.outputs.tag }}"
           for patch in provider-patch.yaml provider-ingest-patch.yaml provider-api-patch.yaml; do
             FILE="app/overlays/04_prod/$patch"
-            if [ -f "$FILE" ]; then
-              sed -i "s|image: .*sportsdataprovider.*|image: sportdeets.azurecr.io/sportsdataprovider:${{ steps.provider_tag.outputs.tag }}|g" "$FILE"
-              echo "Updated $patch to tag: ${{ steps.provider_tag.outputs.tag }}"
+            if [ ! -f "$FILE" ]; then
+              echo "::error::Missing provider patch file: $FILE"
+              exit 1
             fi
+            sed -i "s|image: .*sportsdataprovider.*|image: sportdeets.azurecr.io/sportsdataprovider:${TAG}|g" "$FILE"
+            if ! grep -q "sportsdataprovider:${TAG}" "$FILE"; then
+              echo "::error::Failed to update image tag in $FILE"
+              exit 1
+            fi
+            echo "Updated $patch to tag: ${TAG}"
           done
 
       - name: Update UI image tag

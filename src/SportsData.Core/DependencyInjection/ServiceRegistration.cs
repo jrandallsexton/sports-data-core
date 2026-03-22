@@ -441,7 +441,7 @@ namespace SportsData.Core.DependencyInjection
                 .AddHttpClient<IProvideProviders, ProviderClient>(HttpClients.ProviderClient, c =>
                 {
                     c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProviderProviderUri()]!);
-                    c.Timeout = TimeSpan.FromSeconds(15);
+                    c.Timeout = TimeSpan.FromSeconds(60);
                     c.DefaultRequestVersion = HttpVersion.Version20;
                     c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
                 })

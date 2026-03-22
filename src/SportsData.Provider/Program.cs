@@ -62,13 +62,15 @@ namespace SportsData.Provider
                 }
             }
 
-            // Api and Ingest roles barely touch PostgreSQL — use smaller connection pools
-            // to stay well under PostgreSQL's 500 max_connections limit
+            // Per-role connection pool sizing to stay well under PostgreSQL's 500 max_connections.
+            // With up to 8 Worker pods × 2 pools (main + Hangfire) each, pools add up fast.
+            // Worker pool of 10 limits max concurrent DB ops to 80 across all Worker pods.
             int? maxPoolSize = role switch
             {
                 _ when role.HasFlag(ProviderRole.Api) && !role.HasFlag(ProviderRole.Worker) => 5,
                 _ when role.HasFlag(ProviderRole.Ingest) && !role.HasFlag(ProviderRole.Worker) => 5,
-                _ => null // Worker and All use the default from the connection string
+                _ when role.HasFlag(ProviderRole.Worker) => 10,
+                _ => null
             };
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize);
 

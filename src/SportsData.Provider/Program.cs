@@ -41,8 +41,12 @@ namespace SportsData.Provider
             if (role.HasFlag(ProviderRole.Api))
             {
                 services.AddControllers();
-                services.AddSwaggerGen();
             }
+
+            // Swagger services registered for all roles — UseCommonFeatures adds
+            // Swagger middleware unconditionally so the DI container must have
+            // ISwaggerProvider even on Worker/Ingest pods (it's a no-op without controllers)
+            services.AddSwaggerGen();
 
             services.AddClients(config);
             services.AddCaching(config);

@@ -44,14 +44,18 @@ public class Program
 
         services.AddClients(config);
 
+        // 5 Producer pods × 2 pools (app + Hangfire) against max_connections=500.
+        // Keep pool small to leave headroom for Provider pods and other services.
+        const int producerPoolSize = 10;
+
         switch (mode)
         {
             case Sport.GolfPga:
-                services.AddDataPersistence<GolfDataContext>(config, builder.Environment.ApplicationName, mode);
+                services.AddDataPersistence<GolfDataContext>(config, builder.Environment.ApplicationName, mode, producerPoolSize);
                 break;
             case Sport.FootballNcaa:
             case Sport.FootballNfl:
-                services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName, mode);
+                services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName, mode, producerPoolSize);
                 
                 // Abstract type registrations needed for services that inject them directly
                 // Note: These are NOT used by document processors (factories inject FootballDataContext)
@@ -66,7 +70,7 @@ public class Program
                 throw new ArgumentOutOfRangeException();
         }
 
-        services.AddHangfire(config, builder.Environment.ApplicationName, mode);
+        services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: producerPoolSize);
 
         // Add messaging via MassTransit with Outbox pattern
         // Sport-specific registration ensures the correct DbContext type is used for outbox

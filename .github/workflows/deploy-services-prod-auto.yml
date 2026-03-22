@@ -136,20 +136,38 @@ jobs:
         if: ${{ inputs.deploy_producer && steps.producer_tag.outputs.tag != '' }}
         working-directory: sports-data-config
         run: |
-          # Update or add image to producer-patch.yaml
-          if grep -q "image:" app/overlays/04_prod/producer-patch.yaml; then
-            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdataproducer:${{ steps.producer_tag.outputs.tag }}|g" app/overlays/04_prod/producer-patch.yaml
-          else
-            sed -i '/- name: producer/a\        image: sportdeets.azurecr.io/sportsdataproducer:${{ steps.producer_tag.outputs.tag }}' app/overlays/04_prod/producer-patch.yaml
+          set -euo pipefail
+          TAG='${{ steps.producer_tag.outputs.tag }}'
+          if [[ ! "$TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "::error::producer_tag contains invalid characters: $TAG"
+            exit 1
           fi
-          echo "Updated Producer to tag: ${{ steps.producer_tag.outputs.tag }}"
+          # Update all producer role patch files (worker, ingest, api)
+          for patch in producer-patch.yaml producer-ingest-patch.yaml producer-api-patch.yaml; do
+            FILE="app/overlays/04_prod/$patch"
+            if [ ! -f "$FILE" ]; then
+              echo "::error::Missing producer patch file: $FILE"
+              exit 1
+            fi
+            sed -i "s|image: .*sportsdataproducer.*|image: sportdeets.azurecr.io/sportsdataproducer:${TAG}|g" "$FILE"
+            if ! grep -q "sportsdataproducer:${TAG}" "$FILE"; then
+              echo "::error::Failed to update image tag in $FILE"
+              exit 1
+            fi
+            echo "Updated $patch to tag: ${TAG}"
+          done
 
       - name: Update Provider image tag
         if: ${{ inputs.deploy_provider && steps.provider_tag.outputs.tag != '' }}
         working-directory: sports-data-config
         run: |
+          set -euo pipefail
+          TAG='${{ steps.provider_tag.outputs.tag }}'
+          if [[ ! "$TAG" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "::error::provider_tag contains invalid characters: $TAG"
+            exit 1
+          fi
           # Update all provider role patch files (worker, ingest, api)
-          TAG="${{ steps.provider_tag.outputs.tag }}"
           for patch in provider-patch.yaml provider-ingest-patch.yaml provider-api-patch.yaml; do
             FILE="app/overlays/04_prod/$patch"
             if [ ! -f "$FILE" ]; then

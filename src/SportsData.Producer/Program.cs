@@ -55,13 +55,15 @@ public class Program
 
         services.AddClients(config);
 
-        // Api and Ingest roles barely touch PostgreSQL — use smaller connection pools
-        // to stay well under PostgreSQL's 500 max_connections limit
+        // Per-role connection pool sizing to stay well under PostgreSQL's 500 max_connections.
+        // With up to 8 Worker pods × 2 pools (main + Hangfire) each, pools add up fast.
+        // Worker pool of 10 limits max concurrent DB ops to 80 across all Worker pods.
         int? maxPoolSize = role switch
         {
             _ when role.HasFlag(ProducerRole.Api) && !role.HasFlag(ProducerRole.Worker) => 5,
             _ when role.HasFlag(ProducerRole.Ingest) && !role.HasFlag(ProducerRole.Worker) => 5,
-            _ => null // Worker and All use the default from the connection string
+            _ when role.HasFlag(ProducerRole.Worker) => 10,
+            _ => null
         };
 
         switch (mode)

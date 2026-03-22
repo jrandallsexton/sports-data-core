@@ -47,8 +47,9 @@ namespace SportsData.Provider
             services.AddClients(config);
             services.AddCaching(config);
 
-            // ESPN circuit breaker and rate limiter — only needed by Worker role (ESPN calls)
-            if (role.HasFlag(ProviderRole.Worker))
+            // ESPN circuit breaker and rate limiter — needed by Worker (Hangfire jobs) and Ingest
+            // (resource index pagination in DocumentRequestedHandler)
+            if (role.HasFlag(ProviderRole.Worker) || role.HasFlag(ProviderRole.Ingest))
             {
                 if (!string.IsNullOrWhiteSpace(config[CommonConfigKeys.CacheServiceUri]))
                 {

@@ -58,12 +58,21 @@ namespace SportsData.Provider
                 }
             }
 
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
+            // Api and Ingest roles barely touch PostgreSQL — use smaller connection pools
+            // to stay well under PostgreSQL's 500 max_connections limit
+            int? maxPoolSize = role switch
+            {
+                _ when role == ProviderRole.Api => 5,
+                _ when role == ProviderRole.Ingest => 5,
+                _ => null // Worker and All use the default from the connection string
+            };
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize);
 
             // Hangfire — Worker gets client + server; Ingest and Api get client only
             // Api needs client so controllers can enqueue jobs; Ingest needs it to enqueue from MassTransit consumers
             var needsHangfireServer = role.HasFlag(ProviderRole.Worker);
-            services.AddHangfire(config, builder.Environment.ApplicationName, mode, includeServer: needsHangfireServer);
+            services.AddHangfire(config, builder.Environment.ApplicationName, mode,
+                includeServer: needsHangfireServer, maxPoolSize: maxPoolSize);
 
             // MassTransit consumers — only for Ingest role
             if (role.HasFlag(ProviderRole.Ingest))

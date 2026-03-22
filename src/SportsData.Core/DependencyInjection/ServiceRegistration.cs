@@ -76,11 +76,22 @@ namespace SportsData.Core.DependencyInjection
             this IServiceCollection services,
             IConfiguration configuration,
             string applicationName,
-            Sport mode) where T : DbContext
+            Sport mode,
+            int? maxPoolSize = null) where T : DbContext
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
             var connString = $"{cc};Database=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode};Include Error Detail=true;";
+
+            if (maxPoolSize.HasValue)
+            {
+                connString = System.Text.RegularExpressions.Regex.Replace(
+                    connString,
+                    @"Maximum Pool Size=\d+;?",
+                    string.Empty,
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                connString = $"{connString.TrimEnd(';')};Maximum Pool Size={maxPoolSize.Value};";
+            }
 
 #if DEBUG
             Console.WriteLine($"using: {connString}");
@@ -178,11 +189,22 @@ namespace SportsData.Core.DependencyInjection
             IConfiguration configuration,
             string applicationName,
             Sport mode,
-            bool includeServer = true)
+            bool includeServer = true,
+            int? maxPoolSize = null)
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
             var connString = $"{cc};Database=sd{applicationName.Replace("SportsData.", string.Empty)}.{mode}.Hangfire";
+
+            if (maxPoolSize.HasValue)
+            {
+                connString = System.Text.RegularExpressions.Regex.Replace(
+                    connString,
+                    @"Maximum Pool Size=\d+;?",
+                    string.Empty,
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                connString = $"{connString.TrimEnd(';')};Maximum Pool Size={maxPoolSize.Value};";
+            }
 
             var minWorkersConfigValue = configuration[$"{applicationName}:BackgroundProcessor:MinWorkers"];
             var minWorkers = int.TryParse(minWorkersConfigValue, out var parsedMinWorkers)

@@ -172,9 +172,11 @@ namespace SportsData.Api
             services.AddScoped<IProvideAiCommunication>(sp => sp.GetRequiredService<DeepSeekClient>());
             /* End AI */
 
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
+            // API is a single pod — keep pool small to leave headroom for Producer/Provider
+            const int apiPoolSize = 10;
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, apiPoolSize);
 
-            services.AddHangfire(config, builder.Environment.ApplicationName, mode);
+            services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: apiPoolSize);
 
             services.AddMessaging<AppDataContext>(config,
             [

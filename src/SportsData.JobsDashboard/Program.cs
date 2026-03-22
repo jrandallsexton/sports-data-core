@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 using Hangfire;
 using Hangfire.PostgreSql;
 
@@ -30,10 +32,15 @@ public class Program
             ?? throw new InvalidOperationException(
                 "CommonConfig:SqlBaseConnectionString is required. Ensure Azure AppConfig is configured.");
 
+        // Strip any existing pool size from the base string, then set a small pool —
+        // the dashboard is read-only and needs very few connections
+        var cleanBase = Regex.Replace(sqlBase, @"Maximum Pool Size=\d+;?", string.Empty,
+            RegexOptions.IgnoreCase).TrimEnd(';');
+
         // TODO: make these configurable via AppConfig when multi-sport support is needed
-        var providerStorage = new PostgreSqlStorage($"{sqlBase};Database=sdProvider.FootballNcaa.Hangfire");
-        var producerStorage = new PostgreSqlStorage($"{sqlBase};Database=sdProducer.FootballNcaa.Hangfire");
-        var apiStorage     = new PostgreSqlStorage($"{sqlBase};Database=sdApi.All.Hangfire");
+        var providerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProvider.FootballNcaa.Hangfire;Maximum Pool Size=2");
+        var producerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProducer.FootballNcaa.Hangfire;Maximum Pool Size=2");
+        var apiStorage     = new PostgreSqlStorage($"{cleanBase};Database=sdApi.All.Hangfire;Maximum Pool Size=2");
 
         var dashboardOptions = new DashboardOptions
         {

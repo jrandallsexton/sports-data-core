@@ -21,8 +21,8 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        var mode = ParseFlag<Sport>(args, "-mode", Sport.All);
-        var role = ParseFlag<ProducerRole>(args, "-role", ProducerRole.All);
+        var mode = CommandLineHelpers.ParseFlag<Sport>(args, "-mode", Sport.All);
+        var role = CommandLineHelpers.ParseFlag<ProducerRole>(args, "-role", ProducerRole.All);
 
         Console.WriteLine($"Mode: {mode}");
         Console.WriteLine($"Role: {role}");
@@ -95,26 +95,23 @@ public class Program
         // MassTransit consumers — only for Ingest role
         if (role.HasFlag(ProducerRole.Ingest))
         {
+            var consumers = new List<Type>
+            {
+                typeof(DocumentCreatedHandler),
+                // typeof(DocumentDeadLetterConsumer), // DISABLED: Allow messages to accumulate for later replay
+                typeof(LoadTestProducerEventConsumer),
+                typeof(ProcessImageRequestedHandler),
+                typeof(ProcessImageResponseHandler)
+            };
+
             switch (mode)
             {
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
-                    services.AddMessaging<FootballDataContext>(config, [
-                        typeof(DocumentCreatedHandler),
-                        // typeof(DocumentDeadLetterConsumer), // DISABLED: Allow messages to accumulate for later replay
-                        typeof(LoadTestProducerEventConsumer),
-                        typeof(ProcessImageRequestedHandler),
-                        typeof(ProcessImageResponseHandler)
-                    ]);
+                    services.AddMessaging<FootballDataContext>(config, consumers);
                     break;
                 case Sport.GolfPga:
-                    services.AddMessaging<GolfDataContext>(config, [
-                        typeof(DocumentCreatedHandler),
-                        // typeof(DocumentDeadLetterConsumer), // DISABLED: Allow messages to accumulate for later replay
-                        typeof(LoadTestProducerEventConsumer),
-                        typeof(ProcessImageRequestedHandler),
-                        typeof(ProcessImageResponseHandler)
-                    ]);
+                    services.AddMessaging<GolfDataContext>(config, consumers);
                     break;
                 case Sport.All:
                 case Sport.BaseballMlb:
@@ -218,22 +215,4 @@ public class Program
         await app.RunAsync();
     }
 
-    private static T ParseFlag<T>(string[] args, string flag, T defaultValue) where T : struct, Enum
-    {
-        for (int i = 0; i < args.Length - 1; i++)
-        {
-            if (args[i] == flag)
-            {
-                if (!Enum.TryParse<T>(args[i + 1], ignoreCase: true, out var value))
-                {
-                    var valid = string.Join(", ", Enum.GetNames<T>());
-                    throw new ArgumentException(
-                        $"Invalid value '{args[i + 1]}' for {flag}. Valid values: {valid}");
-                }
-                return value;
-            }
-        }
-
-        return defaultValue;
-    }
 }

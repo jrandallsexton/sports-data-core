@@ -38,9 +38,11 @@ public class Program
             RegexOptions.IgnoreCase).TrimEnd(';');
 
         // TODO: make these configurable via AppConfig when multi-sport support is needed
-        var providerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProvider.FootballNcaa.Hangfire;Maximum Pool Size=2");
-        var producerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProducer.FootballNcaa.Hangfire;Maximum Pool Size=2");
-        var apiStorage     = new PostgreSqlStorage($"{cleanBase};Database=sdApi.All.Hangfire;Maximum Pool Size=2");
+        // Timeout=15 (connection open, seconds); Command Timeout=30 (query, seconds)
+        const string poolOpts = "Maximum Pool Size=2;Timeout=15;Command Timeout=30";
+        var providerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProvider.FootballNcaa.Hangfire;{poolOpts}");
+        var producerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProducer.FootballNcaa.Hangfire;{poolOpts}");
+        var apiStorage      = new PostgreSqlStorage($"{cleanBase};Database=sdApi.All.Hangfire;{poolOpts}");
 
         var dashboardOptions = new DashboardOptions
         {

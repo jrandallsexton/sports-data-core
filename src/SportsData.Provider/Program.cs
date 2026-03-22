@@ -64,12 +64,13 @@ namespace SportsData.Provider
 
             // Per-role connection pool sizing to stay well under PostgreSQL's 500 max_connections.
             // With up to 8 Worker pods × 2 pools (main + Hangfire) each, pools add up fast.
-            // Worker pool of 10 limits max concurrent DB ops to 80 across all Worker pods.
+            // Worker pool of 15 supports 25 Hangfire workers + internal Hangfire processes
+            // without exhaustion: 8 pods × 2 × 15 = 240 worker conns + ~80 other ≈ 320 total.
             int? maxPoolSize = role switch
             {
                 _ when role.HasFlag(ProviderRole.Api) && !role.HasFlag(ProviderRole.Worker) => 5,
                 _ when role.HasFlag(ProviderRole.Ingest) && !role.HasFlag(ProviderRole.Worker) => 5,
-                _ when role.HasFlag(ProviderRole.Worker) => 10,
+                _ when role.HasFlag(ProviderRole.Worker) => 15,
                 _ => null
             };
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize);

@@ -66,8 +66,8 @@ namespace SportsData.Provider
             // to stay well under PostgreSQL's 500 max_connections limit
             int? maxPoolSize = role switch
             {
-                _ when role == ProviderRole.Api => 5,
-                _ when role == ProviderRole.Ingest => 5,
+                _ when role.HasFlag(ProviderRole.Api) && !role.HasFlag(ProviderRole.Worker) => 5,
+                _ when role.HasFlag(ProviderRole.Ingest) && !role.HasFlag(ProviderRole.Worker) => 5,
                 _ => null // Worker and All use the default from the connection string
             };
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize);

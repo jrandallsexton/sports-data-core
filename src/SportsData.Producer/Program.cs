@@ -59,8 +59,8 @@ public class Program
         // to stay well under PostgreSQL's 500 max_connections limit
         int? maxPoolSize = role switch
         {
-            _ when role == ProducerRole.Api => 5,
-            _ when role == ProducerRole.Ingest => 5,
+            _ when role.HasFlag(ProducerRole.Api) && !role.HasFlag(ProducerRole.Worker) => 5,
+            _ when role.HasFlag(ProducerRole.Ingest) && !role.HasFlag(ProducerRole.Worker) => 5,
             _ => null // Worker and All use the default from the connection string
         };
 

@@ -55,15 +55,14 @@ public class Program
 
         services.AddClients(config);
 
-        // Per-role connection pool sizing to stay well under PostgreSQL's 500 max_connections.
-        // With up to 8 Worker pods × 2 pools (main + Hangfire) each, pools add up fast.
-        // Worker pool of 15 supports 25 Hangfire workers + internal Hangfire processes
-        // without exhaustion: 8 pods × 2 × 15 = 240 worker conns + ~80 other ≈ 320 total.
+        // Per-role connection pool sizing to stay under PostgreSQL's 500 max_connections.
+        // Worker: 25 Hangfire workers + ~5 internal processes need headroom above 15.
+        // Estimate: 8 pods × 2 pools × 20 = 320 worker conns + ~80 other ≈ 400 total.
         int? maxPoolSize = role switch
         {
             _ when role.HasFlag(ProducerRole.Api) && !role.HasFlag(ProducerRole.Worker) => 5,
             _ when role.HasFlag(ProducerRole.Ingest) && !role.HasFlag(ProducerRole.Worker) => 5,
-            _ when role.HasFlag(ProducerRole.Worker) => 15,
+            _ when role.HasFlag(ProducerRole.Worker) => 20,
             _ => null
         };
 

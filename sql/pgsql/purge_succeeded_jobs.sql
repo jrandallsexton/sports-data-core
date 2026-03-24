@@ -19,12 +19,16 @@ FROM hangfire.job
 GROUP BY statename
 ORDER BY cnt DESC;
 
--- Succeeded jobs: how many are older than 7 days vs. recent?
+-- Succeeded jobs: how many succeeded more than 7 days ago vs. recently?
+-- Uses hangfire.state.createdat (when the job entered 'Succeeded' state),
+-- NOT hangfire.job.createdat (when the job was first enqueued).
 SELECT
-    COUNT(*) FILTER (WHERE createdat < NOW() - INTERVAL '1 days') AS to_purge,
-    COUNT(*) FILTER (WHERE createdat >= NOW() - INTERVAL '1 days') AS to_keep
-FROM hangfire.job
-WHERE statename = 'Succeeded';
+    COUNT(*) FILTER (WHERE s.createdat < NOW() - INTERVAL '7 days') AS to_purge,
+    COUNT(*) FILTER (WHERE s.createdat >= NOW() - INTERVAL '7 days') AS to_keep
+FROM hangfire.job j
+INNER JOIN hangfire.state s ON s.jobid = j.id
+WHERE j.statename = 'Succeeded'
+  AND s.name = 'Succeeded';
 
 -- Table sizes before purge
 SELECT
@@ -48,9 +52,11 @@ DECLARE
 BEGIN
     WHILE _deleted > 0 LOOP
         WITH to_delete AS (
-            SELECT id FROM hangfire.job
-            WHERE statename = 'Succeeded'
-              AND createdat < NOW() - INTERVAL '7 days'
+            SELECT j.id FROM hangfire.job j
+            INNER JOIN hangfire.state s ON s.jobid = j.id
+            WHERE j.statename = 'Succeeded'
+              AND s.name = 'Succeeded'
+              AND s.createdat < NOW() - INTERVAL '7 days'
             LIMIT 50000
         ),
         removed AS (
@@ -117,36 +123,4 @@ FROM pg_stat_user_tables
 WHERE schemaname = 'hangfire'
 ORDER BY pg_total_relation_size(relid) DESC;
 
--- =============================================================================
--- STEP 5: Non-Hangfire database bloat analysis
--- =============================================================================
--- Run against: sdProducer.FootballNcaa, sdProvider.FootballNcaa, sdApi.All
--- Shows largest tables with bytes-per-row to identify bloat.
--- If bytes_per_row is >10KB for tables without large text/JSON columns, bloat is likely.
--- VACUUM FULL on those tables will reclaim space (same exclusive lock caveat applies).
-
-SELECT
-    schemaname || '.' || relname AS table_name,
-    pg_size_pretty(pg_total_relation_size(relid)) AS total_size,
-    n_live_tup AS live_rows,
-    n_dead_tup AS dead_rows,
-    CASE WHEN n_live_tup > 0
-         THEN pg_total_relation_size(relid) / n_live_tup
-         ELSE 0
-    END AS bytes_per_row
-FROM pg_stat_user_tables
-ORDER BY pg_total_relation_size(relid) DESC
-LIMIT 20;
-
--- Results from sdProducer.FootballNcaa (2026-03-24):
--- Data tables are legitimate (~200-500 bytes/row). No significant bloat.
--- OutboxMessage (2091 MB, 0 live rows) and OutboxState (962 MB, 0 live rows) are pure bloat.
-
--- =============================================================================
--- STEP 6: Reclaim MassTransit outbox bloat
--- =============================================================================
--- Run against: sdProducer.FootballNcaa (and any other database using MassTransit outbox)
--- OutboxMessage and OutboxState accumulate dead space as messages are processed and deleted.
-
-VACUUM FULL public."OutboxMessage";
-VACUUM FULL public."OutboxState";
+-- See also: bloat_analysis.sql for non-Hangfire table bloat analysis and outbox cleanup.

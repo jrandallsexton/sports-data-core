@@ -25,12 +25,12 @@ Add a `LastPublishedUtc` timestamp to each document. Change the suppression chec
 ### Suppression logic change
 
 **Before (current):**
-```
+```text
 historical + hash matches + no downstream work requested → SUPPRESS (permanent)
 ```
 
 **After (proposed):**
-```
+```text
 historical + hash matches + published within cooldown + no downstream work requested → SUPPRESS
 historical + hash matches + cooldown expired + no downstream work requested → ALLOW re-publish
 ```

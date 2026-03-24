@@ -52,14 +52,17 @@ These uses of SeasonYear are **canonical, structural, or impractical to remove**
 | `FranchiseSeasonRecord` | `SeasonYear` | `FranchiseSeasonId` -> `FranchiseSeason` -> `GroupSeason` -> `Season` | 3 JOINs; marked "denormalized for convenience" |
 | `FranchiseSeasonProjection` | `SeasonYear` | `FranchiseSeasonId` -> `FranchiseSeason` -> `GroupSeason` -> `Season` | 3 JOINs; marked "denormalized for convenience" |
 
-### 3.2 API Entities — Tier 1 (have SeasonWeekId FK, straightforward)
+### 3.2 API Entities — Tier 1 (have SeasonWeekId FK, EF-managed)
 
 | Entity | Property | Derivation Path |
 |--------|----------|-----------------|
-| `Contest` | `SeasonYear` | Synced from Producer; derive via SeasonWeek at sync time |
 | `Article` | `SeasonYear` | Has `SeasonWeekId`; derive via JOIN |
 | `PickemGroupWeek` | `SeasonYear` | Has `SeasonWeekId`; has index on `(SeasonYear, SeasonWeek)` to update |
 | `PickemGroupMatchup` | `SeasonYear` | Has `SeasonWeekId` + FK to `PickemGroupWeek` |
+
+### 3.2a API Contest (data-flow only, NOT EF-managed)
+
+API `Contest` has `SeasonYear` (int) and `SeasonWeek` (int) but **no `SeasonWeekId` FK** and **no active EF configuration** (the `IEntityTypeConfiguration` is commented out, no `DbSet<Contest>` in `AppDataContext`). API receives contest data from Producer via HTTP clients (`IContestClientFactory`) and real-time MassTransit events forwarded to SignalR. There is no API database column to drop — changes are data-flow only (stop passing SeasonYear from Producer, or derive it from the response).
 
 ### 3.3 API Entities — Tier 2 (no SeasonWeekId FK, harder)
 
@@ -73,7 +76,7 @@ These uses of SeasonYear are **canonical, structural, or impractical to remove**
 
 ## 4. Derivation Chain Reference
 
-```
+```text
 Season.Year  (sole source of truth)
   |
   +-- SeasonWeek.SeasonId -> Season.Year
@@ -164,7 +167,7 @@ Remove `SeasonYear` property and its EF configuration from:
 
 #### Step 1e: EF Migration
 
-```
+```bash
 dotnet ef migrations add RemoveSeasonYearDenorm_GroupSeason_FranchiseSeason_Contest_Rankings_Records_Projections
 ```
 

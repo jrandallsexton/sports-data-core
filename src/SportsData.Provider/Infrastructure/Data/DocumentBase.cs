@@ -38,5 +38,14 @@ namespace SportsData.Provider.Infrastructure.Data
         /// Null means the document has never been published (or was stored before this field existed).
         /// </summary>
         public string? LastPublishedContentHash { get; set; }
+
+        /// <summary>
+        /// UTC timestamp of when DocumentCreated was last published for this document.
+        /// Used with LastPublishedContentHash to implement time-based cooldown: historical
+        /// documents with unchanged content are suppressed only within the cooldown window,
+        /// allowing re-sourcing runs to re-publish after the cooldown expires.
+        /// Null means never published (same semantics as LastPublishedContentHash).
+        /// </summary>
+        public DateTime? LastPublishedUtc { get; set; }
     }
 }

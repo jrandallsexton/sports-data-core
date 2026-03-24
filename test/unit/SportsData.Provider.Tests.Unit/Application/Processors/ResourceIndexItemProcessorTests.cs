@@ -16,6 +16,9 @@ using SportsData.Provider.Infrastructure.Data;
 
 using Xunit;
 
+// Fixed "now" for deterministic tests
+// Cooldown default is 1440 minutes (24 hours)
+
 namespace SportsData.Provider.Tests.Unit.Application.Processors;
 
 public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexItemProcessor>
@@ -24,6 +27,7 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
     private static readonly string UpdatedJson  = """{"id":"1","name":"updated"}""";
     private static readonly Uri   TestUri       = new("http://sports.core.api.espn.com/v2/sports/football/seasons/2017");
     private static readonly string UrlHash       = HashProvider.GenerateHashFromUri(TestUri);
+    private static readonly DateTime FixedNow    = new(2026, 3, 24, 12, 0, 0, DateTimeKind.Utc);
 
     private static ProcessResourceIndexItemCommand BuildCommand(
         bool bypassCache,
@@ -45,7 +49,9 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
             IncludeLinkedDocumentTypes: includeLinkedDocumentTypes,
             NotifyOnCompletion: notifyOnCompletion);
 
-    private static DocumentBase ExistingDocument(string? lastPublishedContentHash = null) => new()
+    private static DocumentBase ExistingDocument(
+        string? lastPublishedContentHash = null,
+        DateTime? lastPublishedUtc = null) => new()
     {
         Id            = UrlHash,
         Data          = ExistingJson,
@@ -55,7 +61,8 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
         SourceUrlHash = UrlHash,
         Uri           = TestUri,
         RoutingKey    = UrlHash[..3].ToUpperInvariant(),
-        LastPublishedContentHash = lastPublishedContentHash
+        LastPublishedContentHash = lastPublishedContentHash,
+        LastPublishedUtc = lastPublishedUtc
     };
 
     private void SetupCommonMocks(int currentSeason = 2025)
@@ -77,6 +84,14 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
         Mocker.GetMock<IConfiguration>()
             .Setup(x => x["CommonConfig:CurrentSeason"])
             .Returns(currentSeason.ToString());
+
+        Mocker.GetMock<IConfiguration>()
+            .Setup(x => x["SportsData.Provider:DocumentPublishCooldownMinutes"])
+            .Returns("1440"); // 24 hours default
+
+        Mocker.GetMock<IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(FixedNow);
     }
 
     #region BypassCache=true (ESPN fetch path)
@@ -221,9 +236,9 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
     }
 
     [Fact]
-    public async Task WhenCacheHit_Historical_AndHashMatches_ShouldSuppressPublish()
+    public async Task WhenCacheHit_Historical_AndHashMatches_WithinCooldown_ShouldSuppressPublish()
     {
-        // Historical document with matching hash — suppress
+        // Historical document with matching hash, published recently — suppress
         SetupCommonMocks(currentSeason: 2025);
 
         Mocker.GetMock<IJsonHashCalculator>()
@@ -234,18 +249,20 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
             .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
                 It.IsAny<string>(),
                 It.IsAny<Expression<Func<DocumentBase, bool>>>()))
-            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+            .ReturnsAsync(ExistingDocument(
+                lastPublishedContentHash: "hash-existing",
+                lastPublishedUtc: FixedNow.AddMinutes(-30))); // 30 min ago, well within 24h cooldown
 
         var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
 
         await sut.Process(BuildCommand(bypassCache: false, seasonYear: 2017));
 
-        // Should NOT publish — content unchanged since last publish
+        // Should NOT publish — content unchanged and within cooldown
         Mocker.GetMock<IEventBus>()
             .Verify(
                 x => x.Publish(It.IsAny<DocumentCreated>(), default),
                 Times.Never,
-                "historical document with matching hash must be suppressed");
+                "historical document with matching hash within cooldown must be suppressed");
 
         // Should NOT update the hash (nothing was published)
         Mocker.GetMock<IDocumentStore>()
@@ -269,7 +286,9 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
             .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
                 It.IsAny<string>(),
                 It.IsAny<Expression<Func<DocumentBase, bool>>>()))
-            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+            .ReturnsAsync(ExistingDocument(
+                lastPublishedContentHash: "hash-existing",
+                lastPublishedUtc: FixedNow.AddMinutes(-5)));
 
         var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
 
@@ -295,7 +314,9 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
             .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
                 It.IsAny<string>(),
                 It.IsAny<Expression<Func<DocumentBase, bool>>>()))
-            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+            .ReturnsAsync(ExistingDocument(
+                lastPublishedContentHash: "hash-existing",
+                lastPublishedUtc: FixedNow.AddMinutes(-5)));
 
         var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
 
@@ -359,7 +380,9 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
             .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
                 It.IsAny<string>(),
                 It.IsAny<Expression<Func<DocumentBase, bool>>>()))
-            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+            .ReturnsAsync(ExistingDocument(
+                lastPublishedContentHash: "hash-existing",
+                lastPublishedUtc: FixedNow.AddMinutes(-5)));
 
         var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
 
@@ -387,7 +410,9 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
             .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
                 It.IsAny<string>(),
                 It.IsAny<Expression<Func<DocumentBase, bool>>>()))
-            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+            .ReturnsAsync(ExistingDocument(
+                lastPublishedContentHash: "hash-existing",
+                lastPublishedUtc: FixedNow.AddMinutes(-5)));
 
         var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
 
@@ -414,7 +439,9 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
             .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
                 It.IsAny<string>(),
                 It.IsAny<Expression<Func<DocumentBase, bool>>>()))
-            .ReturnsAsync(ExistingDocument(lastPublishedContentHash: "hash-existing"));
+            .ReturnsAsync(ExistingDocument(
+                lastPublishedContentHash: "hash-existing",
+                lastPublishedUtc: FixedNow.AddMinutes(-5)));
 
         var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
 
@@ -425,6 +452,137 @@ public class ResourceIndexItemProcessorTests : ProviderTestBase<ResourceIndexIte
                 x => x.Publish(It.IsAny<DocumentCreated>(), default),
                 Times.Once,
                 "CurrentSeason=0 disables suppression — must always publish");
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_Historical_AndHashMatches_CooldownExpired_ShouldPublish()
+    {
+        // Historical document with matching hash but cooldown expired — allow re-publish
+        SetupCommonMocks(currentSeason: 2025);
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-existing");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(
+                lastPublishedContentHash: "hash-existing",
+                lastPublishedUtc: FixedNow.AddHours(-25))); // 25h ago, beyond 24h cooldown
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(bypassCache: false, seasonYear: 2017));
+
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Once,
+                "historical document with expired cooldown must be re-published");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Verify(
+                x => x.UpdateFieldAsync<DocumentBase>(
+                    It.IsAny<string>(), UrlHash,
+                    nameof(DocumentBase.LastPublishedContentHash), It.IsAny<object?>()),
+                Times.Once);
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_Historical_AndHashMatches_NullLastPublishedUtc_ShouldPublish()
+    {
+        // Historical document with hash set but no timestamp (pre-existing doc) — treat as never published
+        SetupCommonMocks(currentSeason: 2025);
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-existing");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(
+                lastPublishedContentHash: "hash-existing",
+                lastPublishedUtc: null)); // hash exists but no timestamp
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(bypassCache: false, seasonYear: 2017));
+
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Once,
+                "null LastPublishedUtc must allow publish even when hash matches");
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_Historical_AndHashMatches_CooldownZero_ShouldPublish()
+    {
+        // Cooldown disabled via config (0 minutes) — always allow re-publish
+        SetupCommonMocks(currentSeason: 2025);
+
+        Mocker.GetMock<IConfiguration>()
+            .Setup(x => x["SportsData.Provider:DocumentPublishCooldownMinutes"])
+            .Returns("0");
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-existing");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(
+                lastPublishedContentHash: "hash-existing",
+                lastPublishedUtc: FixedNow.AddMinutes(-1))); // just published, but cooldown is disabled
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(bypassCache: false, seasonYear: 2017));
+
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Once,
+                "cooldown=0 disables cooldown — must always allow re-publish");
+    }
+
+    [Fact]
+    public async Task WhenCacheHit_Historical_AndHashMatches_CooldownMissing_ShouldSuppress()
+    {
+        // Cooldown config missing — safe default is to suppress (matches pre-cooldown behavior)
+        SetupCommonMocks(currentSeason: 2025);
+
+        Mocker.GetMock<IConfiguration>()
+            .Setup(x => x["SportsData.Provider:DocumentPublishCooldownMinutes"])
+            .Returns((string?)null);
+
+        Mocker.GetMock<IJsonHashCalculator>()
+            .Setup(x => x.NormalizeAndHash(ExistingJson))
+            .Returns("hash-existing");
+
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetFirstOrDefaultAsync<DocumentBase>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<DocumentBase, bool>>>()))
+            .ReturnsAsync(ExistingDocument(
+                lastPublishedContentHash: "hash-existing",
+                lastPublishedUtc: FixedNow.AddMinutes(-5)));
+
+        var sut = Mocker.CreateInstance<ResourceIndexItemProcessor>();
+
+        await sut.Process(BuildCommand(bypassCache: false, seasonYear: 2017));
+
+        Mocker.GetMock<IEventBus>()
+            .Verify(
+                x => x.Publish(It.IsAny<DocumentCreated>(), default),
+                Times.Never,
+                "missing cooldown config must default to suppression for safety");
     }
 
     #endregion

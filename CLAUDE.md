@@ -34,6 +34,7 @@ Before reporting any task as complete:
 ## Code Quality
 - **Never use `git add -A` or `git add .`**: Always `git status` first, then stage specific files by path. Unstaged files may contain secrets, debug artifacts, or unrelated work.
 - **Result<T> pattern**: All query/command handlers return `Result<T>`. Use `new Success<T>(value)` or `new Failure<T>(default!, status, errors)`.
+- **`IDateTimeProvider`**: Never use `DateTime.UtcNow` directly in production code or tests. Inject `IDateTimeProvider` (registered in `ServiceRegistration.cs`) and call `.UtcNow()`. This enables deterministic unit tests via mock. See `SportsData.Core.Common.DateTimeProvider`.
 - **`.AsNoTracking()`**: Required for all EF read queries. Project to DTOs in the query, don't return entities.
 - **`[FromServices]`**: All handler injection in controllers uses `[FromServices]`.
 - **Route conventions**: API uses slug-based routes (`/api/{sport}/{league}/{resource}/{slug}`), Producer uses GUID-based routes (`/api/{resource}/{id}`).

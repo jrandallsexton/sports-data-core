@@ -45,6 +45,22 @@ namespace SportsData.Core.DependencyInjection
 {
     public static class ServiceRegistration
     {
+        /// <summary>
+        /// Resolves connection pool size from Azure App Config, falling back to a hardcoded default.
+        /// Config key: {applicationName}:ConnectionPool:{roleName}
+        /// </summary>
+        public static int ResolvePoolSize(
+            IConfiguration configuration,
+            string applicationName,
+            string roleName,
+            int defaultPoolSize)
+        {
+            var configValue = configuration[$"{applicationName}:ConnectionPool:{roleName}"];
+            return int.TryParse(configValue, out var parsed) && parsed > 0
+                ? parsed
+                : defaultPoolSize;
+        }
+
         public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration config)
         {
             var redisConnectionString = config[CommonConfigKeys.CacheServiceUri];

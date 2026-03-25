@@ -55,16 +55,18 @@ public class Program
 
         services.AddClients(config);
 
-        // Per-role connection pool sizing to stay under PostgreSQL's 500 max_connections.
-        // Worker: 25 Hangfire workers + ~5 internal processes need headroom above 15.
-        // Estimate: 8 pods × 2 pools × 20 = 320 worker conns + ~80 other ≈ 400 total.
-        int? maxPoolSize = role switch
+        // Per-role connection pool sizing — configurable via Azure App Config.
+        // Keys: {appName}:ConnectionPool:Worker, :Api, :Ingest
+        // Defaults: Worker=22, Api=5, Ingest=5
+        var (roleName, defaultPoolSize) = role switch
         {
-            _ when role.HasFlag(ProducerRole.Api) && !role.HasFlag(ProducerRole.Worker) => 5,
-            _ when role.HasFlag(ProducerRole.Ingest) && !role.HasFlag(ProducerRole.Worker) => 5,
-            _ when role.HasFlag(ProducerRole.Worker) => 20,
-            _ => null
+            _ when role.HasFlag(ProducerRole.Api) && !role.HasFlag(ProducerRole.Worker) => ("Api", 5),
+            _ when role.HasFlag(ProducerRole.Ingest) && !role.HasFlag(ProducerRole.Worker) => ("Ingest", 5),
+            _ when role.HasFlag(ProducerRole.Worker) => ("Worker", 22),
+            _ => ("Default", 22)
         };
+        int? maxPoolSize = Core.DependencyInjection.ServiceRegistration.ResolvePoolSize(config, builder.Environment.ApplicationName, roleName, defaultPoolSize);
+        Console.WriteLine($"Role: {roleName}, ConnectionPool MaxSize: {maxPoolSize}");
 
         switch (mode)
         {

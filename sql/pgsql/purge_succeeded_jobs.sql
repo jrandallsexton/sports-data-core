@@ -26,7 +26,7 @@ SELECT
     COUNT(*) FILTER (WHERE s.createdat < NOW() - INTERVAL '7 days') AS to_purge,
     COUNT(*) FILTER (WHERE s.createdat >= NOW() - INTERVAL '7 days') AS to_keep
 FROM hangfire.job j
-INNER JOIN hangfire.state s ON s.jobid = j.id
+INNER JOIN hangfire.state s ON s.id = j.stateid
 WHERE j.statename = 'Succeeded'
   AND s.name = 'Succeeded';
 
@@ -45,7 +45,14 @@ ORDER BY pg_total_relation_size(relid) DESC;
 -- Adjust the interval or batch size as needed.
 -- =============================================================================
 
-DO $$
+-- Uses a PROCEDURE so COMMIT inside the loop creates true per-batch transactions,
+-- releasing locks between iterations and letting other transactions proceed.
+-- Requires PostgreSQL 11+.
+CREATE OR REPLACE PROCEDURE hangfire.purge_succeeded_jobs(
+    _retention INTERVAL DEFAULT INTERVAL '7 days',
+    _batch_size INT DEFAULT 50000
+)
+LANGUAGE plpgsql AS $$
 DECLARE
     _deleted INT := 1;
     _total   BIGINT := 0;
@@ -53,11 +60,11 @@ BEGIN
     WHILE _deleted > 0 LOOP
         WITH to_delete AS (
             SELECT j.id FROM hangfire.job j
-            INNER JOIN hangfire.state s ON s.jobid = j.id
+            INNER JOIN hangfire.state s ON s.id = j.stateid
             WHERE j.statename = 'Succeeded'
               AND s.name = 'Succeeded'
-              AND s.createdat < NOW() - INTERVAL '7 days'
-            LIMIT 50000
+              AND s.createdat < NOW() - _retention
+            LIMIT _batch_size
         ),
         removed AS (
             DELETE FROM hangfire.job
@@ -69,12 +76,16 @@ BEGIN
         _total := _total + _deleted;
         RAISE NOTICE 'Deleted % rows (% total)', _deleted, _total;
 
+        COMMIT;
+
         -- Brief pause to let other transactions breathe
         PERFORM pg_sleep(0.5);
     END LOOP;
 
     RAISE NOTICE 'Done. Total succeeded jobs purged: %', _total;
 END $$;
+
+CALL hangfire.purge_succeeded_jobs();
 
 -- =============================================================================
 -- STEP 3: Post-purge — verify results and refresh planner stats
@@ -113,6 +124,14 @@ VACUUM FULL hangfire.jobparameter;
 VACUUM FULL hangfire.counter;
 VACUUM FULL hangfire.lock;
 VACUUM FULL hangfire.jobqueue;
+
+-- Refresh planner statistics after rewrite
+ANALYZE hangfire.job;
+ANALYZE hangfire.state;
+ANALYZE hangfire.jobparameter;
+ANALYZE hangfire.counter;
+ANALYZE hangfire.lock;
+ANALYZE hangfire.jobqueue;
 
 -- Verify space reclaimed
 SELECT

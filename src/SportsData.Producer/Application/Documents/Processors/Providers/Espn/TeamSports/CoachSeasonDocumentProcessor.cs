@@ -96,7 +96,7 @@ public class CoachSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
         // Preflight dependency check: FranchiseSeason must exist
         if (dto.Team?.Ref is null)
         {
-            _logger.LogError("Team ref is null in CoachSeason DTO.");
+            _logger.LogWarning("Team ref is null in CoachSeason DTO.");
             return;
         }
 

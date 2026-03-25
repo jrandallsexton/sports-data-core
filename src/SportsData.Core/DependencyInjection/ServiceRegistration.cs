@@ -45,9 +45,14 @@ namespace SportsData.Core.DependencyInjection
 {
     public static class ServiceRegistration
     {
+        // Hard ceiling to prevent a misconfigured value from saturating PostgreSQL's max_connections (500).
+        // Each worker pod opens 2 pools (data context + Hangfire), so per-pool max must stay well below 500/pods.
+        private const int MaxAllowedPoolSize = 50;
+
         /// <summary>
         /// Resolves connection pool size from Azure App Config, falling back to a hardcoded default.
         /// Config key: {applicationName}:ConnectionPool:{roleName}
+        /// Values are clamped to <see cref="MaxAllowedPoolSize"/> to prevent accidental saturation.
         /// </summary>
         public static int ResolvePoolSize(
             IConfiguration configuration,
@@ -57,7 +62,7 @@ namespace SportsData.Core.DependencyInjection
         {
             var configValue = configuration[$"{applicationName}:ConnectionPool:{roleName}"];
             return int.TryParse(configValue, out var parsed) && parsed > 0
-                ? parsed
+                ? Math.Min(parsed, MaxAllowedPoolSize)
                 : defaultPoolSize;
         }
 

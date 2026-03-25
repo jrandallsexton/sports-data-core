@@ -30,6 +30,7 @@ namespace SportsData.Provider.Application.Processors
         private readonly IConfiguration _commonConfig;
         private readonly IGenerateExternalRefIdentities _identityGenerator;
         private readonly IDocumentInclusionService _documentInclusionService;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         private readonly Counter<long> _mongoCacheHitCounter;
         private readonly Counter<long> _espnLiveFetchCounter;
@@ -44,6 +45,7 @@ namespace SportsData.Provider.Application.Processors
             IConfiguration commonConfig,
             IGenerateExternalRefIdentities identityGenerator,
             IDocumentInclusionService documentInclusionService,
+            IDateTimeProvider dateTimeProvider,
             IMeterFactory meterFactory)
         {
             _logger = logger;
@@ -55,6 +57,7 @@ namespace SportsData.Provider.Application.Processors
             _commonConfig = commonConfig;
             _identityGenerator = identityGenerator;
             _documentInclusionService = documentInclusionService;
+            _dateTimeProvider = dateTimeProvider;
 
             var meter = meterFactory.Create("SportsData.Provider.Espn");
             _mongoCacheHitCounter = meter.CreateCounter<long>("espn.cache.hit", description: "Documents served from MongoDB cache (no ESPN API call)");
@@ -199,8 +202,10 @@ namespace SportsData.Provider.Application.Processors
 
                         _mongoCacheHitCounter.Add(1);
 
-                        // For historical data, check if this exact content was already published.
-                        // If so, skip — Producer already processed it and re-publishing only creates churn.
+                        // For historical data, check if this exact content was already published
+                        // within the cooldown window. If so, skip — Producer already processed it
+                        // and re-publishing only creates churn. After the cooldown expires,
+                        // allow re-publishing to support historical re-sourcing runs.
                         // Never suppress when downstream work is explicitly requested.
                         if (!IsCurrentSeason(command.SeasonYear) &&
                             dbItem.LastPublishedContentHash is not null &&
@@ -208,10 +213,11 @@ namespace SportsData.Provider.Application.Processors
                             (command.IncludeLinkedDocumentTypes is null || command.IncludeLinkedDocumentTypes.Count == 0))
                         {
                             var contentHash = _jsonHashCalculator.NormalizeAndHash(dbItem.Data);
-                            if (contentHash == dbItem.LastPublishedContentHash)
+                            if (contentHash == dbItem.LastPublishedContentHash &&
+                                IsWithinPublishCooldown(dbItem.LastPublishedUtc))
                             {
                                 _logger.LogInformation(
-                                    "ESPN {CacheResult} for {DocumentType}. Content unchanged since last publish, skipping. Url={Url}",
+                                    "ESPN {CacheResult} for {DocumentType}. Content unchanged and within cooldown, skipping. Url={Url}",
                                     "HIT-SUPPRESSED", command.DocumentType, dbItem.Uri.OriginalString);
                                 return;
                             }
@@ -225,7 +231,7 @@ namespace SportsData.Provider.Application.Processors
                         await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data, command.NotifyOnCompletion);
 
                         // Record the content hash so subsequent requests for this document are suppressed
-                        await UpdateLastPublishedHashAsync(command.DocumentType.ToString(), urlHash, dbItem.Data);
+                        await UpdateLastPublishedStateAsync(command.DocumentType.ToString(), urlHash, dbItem.Data);
                         return;
                     }
                     catch (System.Text.Json.JsonException ex)
@@ -303,7 +309,7 @@ namespace SportsData.Provider.Application.Processors
                         urlHash, command.DocumentType, command.BypassCache);
 
                     await PublishDocumentCreatedAsync(command, urlHash, correlationId, itemJson, command.NotifyOnCompletion);
-                    await UpdateLastPublishedHashAsync(collectionName, urlHash, itemJson);
+                    await UpdateLastPublishedStateAsync(collectionName, urlHash, itemJson);
                 }
             }
         }
@@ -358,7 +364,7 @@ namespace SportsData.Provider.Application.Processors
                 command.NotifyOnCompletion);
 
             await _publisher.Publish(evt);
-            await UpdateLastPublishedHashAsync(collectionName, urlHash, json);
+            await UpdateLastPublishedStateAsync(collectionName, urlHash, json);
 
             _logger.LogInformation("DocumentCreated event published. UrlHash={UrlHash}, DocumentType={DocumentType}",
                 urlHash,
@@ -414,7 +420,7 @@ namespace SportsData.Provider.Application.Processors
                 command.NotifyOnCompletion);
 
             await _publisher.Publish(evt);
-            await UpdateLastPublishedHashAsync(collectionName, urlHash, json);
+            await UpdateLastPublishedStateAsync(collectionName, urlHash, json);
 
             _logger.LogInformation("DocumentCreated event published (update). UrlHash={UrlHash}, DocumentType={DocumentType}",
                 urlHash,
@@ -478,19 +484,41 @@ namespace SportsData.Provider.Application.Processors
             return seasonYear.Value >= currentSeason;
         }
 
-        private async Task UpdateLastPublishedHashAsync(string collectionName, string urlHash, string json)
+        /// <summary>
+        /// Determines whether a historical document's last publish is recent enough to suppress
+        /// re-publishing. Returns false (allow publish) when LastPublishedUtc is null, the cooldown
+        /// config is missing/disabled, or the cooldown has expired.
+        /// </summary>
+        private bool IsWithinPublishCooldown(DateTime? lastPublishedUtc)
+        {
+            if (!lastPublishedUtc.HasValue)
+                return false; // never published — allow
+
+            var cooldownStr = _commonConfig["SportsData.Provider:DocumentPublishCooldownMinutes"];
+            if (string.IsNullOrWhiteSpace(cooldownStr) || !int.TryParse(cooldownStr, out var cooldownMinutes))
+                return true; // misconfigured — default to suppressing (safe, matches pre-cooldown behavior)
+
+            if (cooldownMinutes <= 0)
+                return false; // cooldown disabled — always allow re-publish
+
+            return (_dateTimeProvider.UtcNow() - lastPublishedUtc.Value).TotalMinutes < cooldownMinutes;
+        }
+
+        private async Task UpdateLastPublishedStateAsync(string collectionName, string urlHash, string json)
         {
             try
             {
                 var contentHash = _jsonHashCalculator.NormalizeAndHash(json);
                 await _documentStore.UpdateFieldAsync<DocumentBase>(
                     collectionName, urlHash, nameof(DocumentBase.LastPublishedContentHash), contentHash);
+                await _documentStore.UpdateFieldAsync<DocumentBase>(
+                    collectionName, urlHash, nameof(DocumentBase.LastPublishedUtc), _dateTimeProvider.UtcNow());
             }
             catch (Exception ex)
             {
                 // Non-critical — worst case, the next request re-publishes
                 _logger.LogWarning(ex,
-                    "Failed to update LastPublishedContentHash. UrlHash={UrlHash}, DocumentType={DocumentType}",
+                    "Failed to update last-published state. UrlHash={UrlHash}, DocumentType={DocumentType}",
                     urlHash, collectionName);
             }
         }

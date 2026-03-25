@@ -102,6 +102,7 @@ select * from public."FranchiseSeasonRankingDetail" where "FranchiseSeasonRankin
 
 select * from public."AthleteSeason" where "Id" = 'e6fcd345-7aa6-bc54-4cfd-db0d66935e24'
 
+select * from public."SeasonPoll"
 
 select * from public."Season" order by "Year" desc
 select * from public."SeasonPhase" order by "Year" desc, "Slug"
@@ -144,7 +145,7 @@ where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
     select * from public."Contest" where "Id" = '4368b706-e7fe-7dc1-786a-c54f8eda67cd'
 
 select * from public."CompetitionStream"
-select * from public."Contest" where "Id" = '7f39067b-40bb-aa0b-225d-7670409d1003'
+select * from public."Contest" where "Id" = '06747d6c-31c6-8651-bd96-97b0f00a2f78'
 select * from public."Contest" Where "HomeTeamFranchiseSeasonId" = '8f90c51b-d906-2c02-e8e8-2ac0ac6340ae' or "AwayTeamFranchiseSeasonId" = '8f90c51b-d906-2c02-e8e8-2ac0ac6340ae' order by "StartDateUtc"
 --update public."Contest" set "AwayScore" = 7, "HomeScore" = 7 where "Id" = '11c76d72-9c12-4d8d-bef7-f62b240a4af6'
 select count(*) from public."Contest" where "SeasonYear" = 2024

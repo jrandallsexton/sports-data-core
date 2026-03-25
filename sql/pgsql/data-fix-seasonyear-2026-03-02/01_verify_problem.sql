@@ -11,6 +11,15 @@
 -- ----------------------------------------------------------------------------
 -- Expected: 24 rows showing SeasonYear = 2023 but actual year varies (1949-2026)
 
+select * from public."Contest" where "Id" = '06747d6c-31c6-8651-bd96-97b0f00a2f78'; -- Incorrectly shows 2023 for SeasonYear column
+select * from public."SeasonWeek" where "Id" = '14950462-f17c-4f36-b1dd-bcb865ffe945'; -- Week 1 for the Contest record above; correctly shows 2017 in StartDate and EndDate
+select * from public."Season" where "Id" = '43d29d2b-6f33-7314-799a-dfe396a0ddc7'; -- Season record for the above; correctly shows 2017 in Year column
+
+select * from public."FranchiseSeason" where "Id" = 'fd955d84-be8a-e93c-ae10-990d8a49f440'; -- BYU; AwayFranchiseSeasonId for the Contest record above; shows wrong SeasonYear = 2023
+select * from public."GroupSeason" where "Id" = '9530f610-6537-e801-167e-7bfb9d9177f2'; -- BYU groupSeason; shows 2017 for SeasonYear column
+select * from public."FranchiseSeason" where "Id" = '4ebb00a0-4b04-76fa-8bfd-0785e1133b01'; -- LSU; HomeFranchiseSeasonId for the Contest record above; shows wrong SeasonYear = 2023
+select * from public."GroupSeason" where "Id" = '3ec83be8-9217-a7ae-b0e7-64f64537849a'; -- LSU groupSeason; shows 2017 for SeasonYear column
+
 SELECT 
     gs."Id",
     gs."SeasonYear" as wrong_season_year,

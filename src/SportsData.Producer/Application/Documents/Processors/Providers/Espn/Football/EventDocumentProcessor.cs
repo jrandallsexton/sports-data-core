@@ -81,7 +81,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         _logger.LogInformation("Creating new Contest. SeasonYear={SeasonYear}", seasonYear);
 
         var seasonPhaseId = await GetSeasonPhaseId(command, externalDto);
-        var seasonWeekId = await GetSeasonWeekId(command, externalDto, seasonPhaseId);
+        var seasonWeekId = await GetSeasonWeekId(command, externalDto);
 
         var contest = externalDto.AsEntity(
             _externalRefIdentityGenerator,
@@ -129,8 +129,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
     private async Task<Guid> GetSeasonWeekId(
         ProcessDocumentCommand command,
-        EspnEventDto externalDto,
-        Guid seasonPhaseId)
+        EspnEventDto externalDto)
     {
         if (externalDto.Week is not null)
         {
@@ -154,15 +153,15 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         }
 
         // ESPN data is missing Week $ref (common in pre-2003 historical data).
-        // Infer from the event date and existing SeasonWeek records.
+        // Infer from the event date alone. SeasonWeek date ranges do not overlap,
+        // so no phase filter is needed — and omitting it avoids false negatives when
+        // ESPN tags events with the wrong season type (e.g., bowl games as regular season).
         if (DateTime.TryParse(externalDto.Date, CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var eventDateUtc))
         {
-
             var inferredWeek = await _dataContext.SeasonWeeks
                 .AsNoTracking()
-                .Where(sw => sw.SeasonPhaseId == seasonPhaseId &&
-                             sw.StartDate <= eventDateUtc &&
+                .Where(sw => sw.StartDate <= eventDateUtc &&
                              sw.EndDate >= eventDateUtc)
                 .OrderBy(sw => sw.Number)
                 .FirstOrDefaultAsync();
@@ -176,8 +175,8 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             }
 
             _logger.LogWarning(
-                "Could not infer SeasonWeek from event date. No week covers EventDate={EventDate}, SeasonPhaseId={SeasonPhaseId}",
-                eventDateUtc, seasonPhaseId);
+                "Could not infer SeasonWeek from event date. No week covers EventDate={EventDate}",
+                eventDateUtc);
         }
 
         throw new InvalidOperationException(

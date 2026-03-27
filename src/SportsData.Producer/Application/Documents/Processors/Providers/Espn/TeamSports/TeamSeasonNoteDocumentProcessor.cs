@@ -14,6 +14,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
 /// once real data is available.
 /// </summary>
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamSeasonNote)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.TeamSeasonNote)]
 public class TeamSeasonNoteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {

@@ -16,6 +16,7 @@ using SportsData.Core.Infrastructure.Refs;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonType)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.SeasonType)]
 public class SeasonTypeDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : BaseDataContext
 {

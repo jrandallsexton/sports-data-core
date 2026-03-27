@@ -8,11 +8,14 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
 {
     public class EspnUriMapperTests
     {
-        // 1) Happy path: HTTP with query string stripped
+        // 1) Happy path: HTTP with query string stripped (includes negative ESPN team IDs)
         [Theory]
         [InlineData(
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2019/teams/2673?lang=en&region=us",
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/2673")]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2021/teams/-2?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/-2")]
         public void TeamSeasonToFranchiseRef_Should_Map_To_Franchise_Without_Query_Http(
             string teamSeasonRef,
             string expectedFranchiseRef)

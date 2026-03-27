@@ -104,6 +104,72 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
         await FootballDataContext.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Sets up season data for events missing the Week $ref (ESPN historical data gap).
+    /// Creates a SeasonWeek with date range covering the event date so the processor can infer it.
+    /// </summary>
+    private async Task<Guid> SetupSeasonDataWithDateBasedWeekAsync(
+        ExternalRefIdentityGenerator generator,
+        EspnEventDto dto,
+        DateTime eventDate)
+    {
+        var seasonId = Guid.NewGuid();
+        var seasonTypeIdentity = generator.Generate(dto.SeasonType.Ref);
+
+        var season = new Season
+        {
+            Id = seasonId,
+            Name = "2024",
+            Year = 2024,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.Seasons.AddAsync(season);
+        await FootballDataContext.SaveChangesAsync();
+
+        var seasonPhase = new SeasonPhase
+        {
+            Id = seasonTypeIdentity.CanonicalId,
+            Name = "Regular Season",
+            Abbreviation = "reg",
+            Slug = "reg-season",
+            SeasonId = seasonId,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<SeasonPhaseExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    SeasonPhaseId = seasonTypeIdentity.CanonicalId,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = seasonTypeIdentity.CleanUrl,
+                    SourceUrlHash = seasonTypeIdentity.UrlHash,
+                    Value = seasonTypeIdentity.UrlHash
+                }
+            }
+        };
+        await FootballDataContext.SeasonPhases.AddAsync(seasonPhase);
+        await FootballDataContext.SaveChangesAsync();
+
+        var seasonWeekId = Guid.NewGuid();
+        var seasonWeek = new SeasonWeek
+        {
+            Id = seasonWeekId,
+            SeasonId = seasonId,
+            SeasonPhaseId = seasonPhase.Id,
+            Number = 1,
+            StartDate = eventDate.AddDays(-3).ToUniversalTime(),
+            EndDate = eventDate.AddDays(3).ToUniversalTime(),
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.SeasonWeeks.AddAsync(seasonWeek);
+        await FootballDataContext.SaveChangesAsync();
+
+        return seasonWeekId;
+    }
+
     private async Task SetupFranchiseSeasonsAsync(ExternalRefIdentityGenerator generator, EspnEventDto dto)
     {
         foreach (var competitor in dto.Competitions.First().Competitors)
@@ -338,5 +404,80 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 
         // assert
         bus.Verify(x => x.Publish(It.IsAny<ContestCreated>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task WhenWeekRefMissing_ShouldInferSeasonWeekFromEventDate()
+    {
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        Mocker.GetMock<IProvideProviders>()
+            .Setup(s => s.GetExternalDocument(It.IsAny<GetExternalDocumentQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => Fixture.Build<GetExternalDocumentResponse>()
+                .OmitAutoProperties()
+                .Create());
+
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaaEvent_MissingWeek.json");
+
+        // Setup venue
+        var venueUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/6501";
+        var venueHash = venueUrl.UrlHash();
+        var venueId = Guid.NewGuid();
+
+        await FootballDataContext.Venues.AddAsync(new Venue
+        {
+            Id = venueId,
+            Name = "Allegiant Stadium",
+            Slug = "allegiant-stadium",
+            City = "Las Vegas",
+            State = "NV",
+            PostalCode = "89118",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds =
+            [
+                new VenueExternalId
+                {
+                    Id = Guid.NewGuid(),
+                    VenueId = venueId,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrlHash = venueHash,
+                    Value = venueHash,
+                    SourceUrl = venueUrl
+                }
+            ]
+        });
+        await FootballDataContext.SaveChangesAsync();
+
+        var dto = json.FromJson<EspnEventDto>();
+
+        // Event date is 2024-09-01T23:30Z — setup a SeasonWeek with a date range that covers it
+        var eventDate = new DateTime(2024, 9, 1, 23, 30, 0, DateTimeKind.Utc);
+        var expectedSeasonWeekId = await SetupSeasonDataWithDateBasedWeekAsync(generator, dto!, eventDate);
+        await SetupFranchiseSeasonsAsync(generator, dto!);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Event)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert
+        var created = await FootballDataContext.Contests.FirstOrDefaultAsync();
+        created.Should().NotBeNull();
+        created!.SeasonWeekId.Should().Be(expectedSeasonWeekId, "SeasonWeek should be inferred from event date when ESPN Week $ref is missing");
+
+        bus.Verify(x => x.Publish(It.IsAny<ContestCreated>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -5,6 +5,14 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn;
 
 public static class EspnUriMapper
 {
+    /// <summary>
+    /// Validates that a string is a valid ESPN entity ID.
+    /// ESPN uses negative IDs for some athletes and teams (e.g., -2, -5869)
+    /// that are valid refs which will resolve once Provider sources them.
+    /// </summary>
+    private static bool IsValidEspnId(string? value)
+        => !string.IsNullOrWhiteSpace(value) && int.TryParse(value, out _);
+
     public static Uri AthleteSeasonToAthleteRef(Uri athleteSeasonRef)
     {
         if (athleteSeasonRef == null)
@@ -449,8 +457,7 @@ public static class EspnUriMapper
         var q = teamIdPart.IndexOf('?');
         var teamId = q >= 0 ? teamIdPart[..q] : teamIdPart;
 
-        // NEW: guard invalid/missing ID
-        if (string.IsNullOrWhiteSpace(teamId) || !teamId.All(char.IsDigit))
+        if (!IsValidEspnId(teamId))
             throw new InvalidOperationException($"Missing or invalid team id in ref: {teamSeasonRef}");
 
         // Build base up to *before* "seasons"
@@ -483,7 +490,7 @@ public static class EspnUriMapper
 
         var teamIdPart = parts[teamsIndex + 1];
 
-        if (string.IsNullOrWhiteSpace(teamIdPart) || !teamIdPart.All(char.IsDigit))
+        if (!IsValidEspnId(teamIdPart))
             throw new InvalidOperationException($"Missing or invalid team id in ref: {childUri}");
 
         // Build path up to teams/{teamId}

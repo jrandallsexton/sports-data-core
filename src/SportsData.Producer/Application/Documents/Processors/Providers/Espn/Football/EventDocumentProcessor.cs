@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -79,7 +81,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         _logger.LogInformation("Creating new Contest. SeasonYear={SeasonYear}", seasonYear);
 
         var seasonPhaseId = await GetSeasonPhaseId(command, externalDto);
-        var seasonWeekId = await GetSeasonWeekId(command, externalDto);
+        var seasonWeekId = await GetSeasonWeekId(command, externalDto, seasonPhaseId);
 
         var contest = externalDto.AsEntity(
             _externalRefIdentityGenerator,
@@ -125,15 +127,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         _logger.LogInformation("Contest created successfully. ContestId={ContestId}", contest.Id);
     }
 
-    private async Task<Guid> GetSeasonWeekId(ProcessDocumentCommand command, EspnEventDto externalDto)
+    private async Task<Guid> GetSeasonWeekId(
+        ProcessDocumentCommand command,
+        EspnEventDto externalDto,
+        Guid seasonPhaseId)
     {
-        var seasonWeekId = Guid.Empty;
-
-        if (externalDto.Week is null)
-        {
-            _logger.LogError("Event DTO missing Week information. Requires enrichment to determine. {@ExternalDto}", externalDto);
-        }
-        else
+        if (externalDto.Week is not null)
         {
             var seasonWeekIdentity = _externalRefIdentityGenerator.Generate(externalDto.Week.Ref);
 
@@ -141,24 +140,48 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 .AsNoTracking()
                 .FirstOrDefaultAsync(sw => sw.Id == seasonWeekIdentity.CanonicalId);
 
-            if (seasonWeek is null)
-            {
-                await PublishDependencyRequest<string?>(
-                    command,
-                    externalDto.Week,
-                    parentId: null,
-                    DocumentType.SeasonTypeWeek);
+            if (seasonWeek is not null)
+                return seasonWeek.Id;
 
-                throw new ExternalDocumentNotSourcedException(
-                    $"SeasonWeek not found for {externalDto.Week.Ref} (Id: {seasonWeekIdentity.CanonicalId})");
-            }
-            else
-            {
-                seasonWeekId = seasonWeek.Id;
-            }
+            await PublishDependencyRequest<string?>(
+                command,
+                externalDto.Week,
+                parentId: null,
+                DocumentType.SeasonTypeWeek);
+
+            throw new ExternalDocumentNotSourcedException(
+                $"SeasonWeek not found for {externalDto.Week.Ref} (Id: {seasonWeekIdentity.CanonicalId})");
         }
 
-        return seasonWeekId;
+        // ESPN data is missing Week $ref (common in pre-2003 historical data).
+        // Infer from the event date and existing SeasonWeek records.
+        if (DateTime.TryParse(externalDto.Date, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var eventDateUtc))
+        {
+
+            var inferredWeek = await _dataContext.SeasonWeeks
+                .AsNoTracking()
+                .Where(sw => sw.SeasonPhaseId == seasonPhaseId &&
+                             sw.StartDate <= eventDateUtc &&
+                             sw.EndDate >= eventDateUtc)
+                .OrderBy(sw => sw.Number)
+                .FirstOrDefaultAsync();
+
+            if (inferredWeek is not null)
+            {
+                _logger.LogWarning(
+                    "Inferred SeasonWeek from event date. EventDate={EventDate}, WeekNumber={WeekNumber}, SeasonWeekId={SeasonWeekId}",
+                    eventDateUtc, inferredWeek.Number, inferredWeek.Id);
+                return inferredWeek.Id;
+            }
+
+            _logger.LogWarning(
+                "Could not infer SeasonWeek from event date. No week covers EventDate={EventDate}, SeasonPhaseId={SeasonPhaseId}",
+                eventDateUtc, seasonPhaseId);
+        }
+
+        throw new InvalidOperationException(
+            $"Cannot determine SeasonWeek for event {externalDto.Ref}. ESPN data is missing Week $ref and date-based inference failed.");
     }
 
     private async Task<Guid> GetSeasonPhaseId(ProcessDocumentCommand command, EspnEventDto externalDto)

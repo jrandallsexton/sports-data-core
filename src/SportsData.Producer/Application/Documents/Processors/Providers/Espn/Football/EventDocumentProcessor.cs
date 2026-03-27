@@ -162,6 +162,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 .Where(sw => sw.SeasonPhaseId == seasonPhaseId &&
                              sw.StartDate <= eventDateUtc &&
                              sw.EndDate >= eventDateUtc)
+                .OrderBy(sw => sw.Number)
                 .FirstOrDefaultAsync();
 
             if (inferredWeek is not null)

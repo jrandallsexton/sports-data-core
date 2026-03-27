@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -153,9 +155,9 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         // ESPN data is missing Week $ref (common in pre-2003 historical data).
         // Infer from the event date and existing SeasonWeek records.
-        if (DateTime.TryParse(externalDto.Date, out var eventDate))
+        if (DateTime.TryParse(externalDto.Date, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var eventDateUtc))
         {
-            var eventDateUtc = eventDate.ToUniversalTime();
 
             var inferredWeek = await _dataContext.SeasonWeeks
                 .AsNoTracking()

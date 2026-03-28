@@ -14,6 +14,7 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteSeasonNote)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.AthleteSeasonNote)]
 public class AthleteSeasonNoteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {

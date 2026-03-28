@@ -19,6 +19,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Test;
 /// Inheritance chain: FootballDataContext ? TeamSportDataContext ? BaseDataContext
 /// </summary>
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.OutboxTestTeamSport)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.OutboxTestTeamSport)]
 public class OutboxTestTeamSportDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {

@@ -18,6 +18,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
 /// Example: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/coaches/2331669
 /// </summary>
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.CoachSeason)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.CoachSeason)]
 public class CoachSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {

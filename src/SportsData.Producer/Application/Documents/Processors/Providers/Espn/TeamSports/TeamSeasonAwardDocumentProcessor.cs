@@ -21,6 +21,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
 /// Creates or updates Award (normalized definition), FranchiseSeasonAward (season instance), and FranchiseSeasonAwardWinner entities.
 /// </summary>
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamSeasonAward)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.TeamSeasonAward)]
 public class TeamSeasonAwardDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {

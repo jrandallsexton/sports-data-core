@@ -15,6 +15,7 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionSituation)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.EventCompetitionSituation)]
 public class EventCompetitionSituationDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
@@ -72,8 +73,6 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
                     dto.LastPlay,
                     competitionIdValue,
                     DocumentType.EventCompetitionPlay);
-
-                await _dataContext.SaveChangesAsync();
 
                 throw new ExternalDocumentNotSourcedException($"Last Play {dto.LastPlay.Ref} not found. Requesting. Will retry.");
             }

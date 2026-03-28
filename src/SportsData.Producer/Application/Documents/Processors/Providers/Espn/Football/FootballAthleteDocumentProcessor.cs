@@ -18,6 +18,7 @@ using SportsData.Producer.Infrastructure.Data.Football.Entities;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Athlete)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.Athlete)]
 public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {

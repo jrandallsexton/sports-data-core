@@ -16,6 +16,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Test;
 /// 3. Factory creates processor with correct DbContext type (FootballDataContext, etc.)
 /// </summary>
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.OutboxTest)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.OutboxTest)]
 public class OutboxTestDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : BaseDataContext
 {

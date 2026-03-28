@@ -74,8 +74,6 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
                     competitionIdValue,
                     DocumentType.EventCompetitionPlay);
 
-                await _dataContext.SaveChangesAsync();
-
                 throw new ExternalDocumentNotSourcedException($"Last Play {dto.LastPlay.Ref} not found. Requesting. Will retry.");
             }
 

@@ -53,7 +53,7 @@ All 50 processors are currently attributed for `Sport.FootballNcaa` only. Each s
 
 New labels needed:
 
-```
+```text
 Development.FootballNfl.SportsData.Provider
 Development.FootballNfl.SportsData.Producer
 Development.FootballNfl.SportsData.Api
@@ -67,7 +67,7 @@ Production.FootballNfl.SportsData.Api
 SQL connection string (inherited from `CommonConfig:SqlBaseConnectionString` — databases are auto-named).
 
 HTTP client URLs (7 entries):
-```
+```text
 CommonConfig:VenueClientConfig:FootballNfl:ApiUrl
 CommonConfig:FranchiseClientConfig:FootballNfl:ApiUrl
 CommonConfig:ContestClientConfig:FootballNfl:ApiUrl
@@ -78,14 +78,14 @@ CommonConfig:NotificationClientConfig:FootballNfl:ApiUrl
 ```
 
 Provider document store:
-```
+```text
 SportsData.Provider:ProviderDocDatabaseConfig:DatabaseName
 SportsData.Provider:ProviderDocDatabaseConfig:ConnectionString
 SportsData.Provider:ProviderDocDatabaseConfig:Provider (Mongo or Cosmos)
 ```
 
 Worker config (can start with defaults):
-```
+```text
 {AppName}:ConnectionPool:Worker (default 22)
 {AppName}:ConnectionPool:Api (default 5)
 {AppName}:ConnectionPool:Ingest (default 5)
@@ -93,7 +93,7 @@ Worker config (can start with defaults):
 ```
 
 ESPN client config:
-```
+```text
 SportsData.Provider:EspnApiClientConfig:RequestDelayMs (1000)
 ```
 
@@ -105,13 +105,13 @@ Deploy a separate RabbitMQ instance for NFL rather than sharing the NCAA broker.
 
 **Implementation:** No code changes needed. The RabbitMQ connection string is already resolved from Azure App Config per label. NFL pods get a different `CommonConfig:Messaging:RabbitMq:Host` pointing to the NFL broker.
 
-```
+```text
 rabbitmq-football-nfl    (new StatefulSet)
 rabbitmq-football-ncaa   (existing, rename for clarity)
 ```
 
 Config entries under `{Environment}.FootballNfl.*` labels:
-```
+```text
 CommonConfig:Messaging:RabbitMq:Host = rabbitmq-football-nfl
 CommonConfig:Messaging:RabbitMq:Username = ...
 CommonConfig:Messaging:RabbitMq:Password = ...
@@ -136,7 +136,7 @@ Create MongoDB database/collection for NFL document store:
 
 Six new deployments (3 Provider roles + 3 Producer roles), all with `-mode FootballNfl`:
 
-```
+```text
 provider-football-nfl-api
 provider-football-nfl-worker
 provider-football-nfl-ingest

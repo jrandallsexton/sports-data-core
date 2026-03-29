@@ -55,6 +55,14 @@ namespace SportsData.Core.DependencyInjection
                     .Enrich.WithProperty("ApplicationName", context.HostingEnvironment.ApplicationName)
                     .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName);
 
+                // Sport and Role enrichment (set via WithLoggingContext before UseCommon)
+                var sport = context.Configuration["Logging:Sport"];
+                var role = context.Configuration["Logging:Role"];
+                if (!string.IsNullOrEmpty(sport))
+                    configuration.Enrich.WithProperty("Sport", sport);
+                if (!string.IsNullOrEmpty(role))
+                    configuration.Enrich.WithProperty("Role", role);
+
                 // Seq sink (optional)
                 if (!string.IsNullOrWhiteSpace(seqUri))
                 {
@@ -66,6 +74,17 @@ namespace SportsData.Core.DependencyInjection
                 //Serilog.Debugging.SelfLog.Enable(msg => Debug.WriteLine(msg));
             });
 
+            return builder;
+        }
+
+        /// <summary>
+        /// Registers Sport and Role for log enrichment. Call BEFORE UseCommon() so the
+        /// Serilog configuration picks up these properties during initialization.
+        /// </summary>
+        public static WebApplicationBuilder WithLoggingContext(this WebApplicationBuilder builder, Sport sport, string role)
+        {
+            builder.Configuration["Logging:Sport"] = sport.ToString();
+            builder.Configuration["Logging:Role"] = role;
             return builder;
         }
 

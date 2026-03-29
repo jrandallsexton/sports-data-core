@@ -21,11 +21,11 @@ END $$;
 
 BEGIN;
 
-INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+INSERT INTO public."__EFMigrationsHistory" ("MigrationId", "ProductVersion")
 VALUES ('20260328204929_InitialCreate', '10.0.2')
 ON CONFLICT DO NOTHING;
 
-DELETE FROM "__EFMigrationsHistory"
+DELETE FROM public."__EFMigrationsHistory"
 WHERE "MigrationId" IN (
     '20260202101027_02FebV1_Baseline',
     '20260203234117_03FebV1_AthSeasonInj',

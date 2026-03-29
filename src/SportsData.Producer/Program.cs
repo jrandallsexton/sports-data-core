@@ -145,6 +145,10 @@ public class Program
             }
         }
 
+        // Ensure required queues (e.g., document-dead-letter) exist in RabbitMQ at startup,
+        // even when the consumer is disabled for accumulation/replay.
+        services.AddHostedService<SportsData.Core.Infrastructure.Messaging.EnsureQueuesHostedService>();
+
         switch (mode)
         {
             case Sport.GolfPga:

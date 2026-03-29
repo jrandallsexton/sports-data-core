@@ -8,6 +8,19 @@
 -- (since the tables already exist) and removes the old squashed migration IDs
 -- that no longer have corresponding migration files.
 
+-- Precondition: verify this is an existing Producer database, not a fresh one
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '__EFMigrationsHistory') THEN
+        RAISE EXCEPTION 'Missing __EFMigrationsHistory — this does not appear to be an existing Producer database';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'AthleteSeason') THEN
+        RAISE EXCEPTION 'Missing AthleteSeason table — this does not appear to be an existing Producer database';
+    END IF;
+END $$;
+
+BEGIN;
+
 INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
 VALUES ('20260328204929_InitialCreate', '10.0.2')
 ON CONFLICT DO NOTHING;
@@ -22,3 +35,5 @@ WHERE "MigrationId" IN (
     '20260310131638_10MarV1_CompetitionOddsEnrichment',
     '20260314130035_14MarV1_CompPowerIndexUniqueConstraint'
 );
+
+COMMIT;

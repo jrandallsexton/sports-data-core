@@ -37,12 +37,8 @@ public class Program
         var cleanBase = Regex.Replace(sqlBase, @"Maximum Pool Size=\d+;?", string.Empty,
             RegexOptions.IgnoreCase).TrimEnd(';');
 
-        // TODO: make these configurable via AppConfig when multi-sport support is needed
-        // Pool=5 per storage (3 storages = 15 total) — dashboard makes concurrent stat queries
+        // Pool=5 per storage — dashboard is read-only and makes concurrent stat queries
         const string poolOpts = "Maximum Pool Size=5;Timeout=15;Command Timeout=30";
-        var providerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProvider.FootballNcaa.Hangfire;{poolOpts}");
-        var producerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProducer.FootballNcaa.Hangfire;{poolOpts}");
-        var apiStorage      = new PostgreSqlStorage($"{cleanBase};Database=sdApi.All.Hangfire;{poolOpts}");
 
         var dashboardOptions = new DashboardOptions
         {
@@ -50,12 +46,44 @@ public class Program
             DashboardTitle = "sportDeets — Job Dashboards"
         };
 
-        app.UseHangfireDashboard("/provider", dashboardOptions, providerStorage);
-        app.UseHangfireDashboard("/producer", dashboardOptions, producerStorage);
-        app.UseHangfireDashboard("/api",      dashboardOptions, apiStorage);
+        // NCAA Football
+        var ncaaProviderStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProvider.FootballNcaa.Hangfire;{poolOpts}");
+        var ncaaProducerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProducer.FootballNcaa.Hangfire;{poolOpts}");
+        app.UseHangfireDashboard("/footballncaa/provider", dashboardOptions, ncaaProviderStorage);
+        app.UseHangfireDashboard("/footballncaa/producer", dashboardOptions, ncaaProducerStorage);
 
-        // Root redirect to provider as a sensible default landing page
-        app.MapGet("/", () => Results.Redirect("/provider"));
+        // NFL Football
+        var nflProviderStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProvider.FootballNfl.Hangfire;{poolOpts}");
+        var nflProducerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProducer.FootballNfl.Hangfire;{poolOpts}");
+        app.UseHangfireDashboard("/footballnfl/provider", dashboardOptions, nflProviderStorage);
+        app.UseHangfireDashboard("/footballnfl/producer", dashboardOptions, nflProducerStorage);
+
+        // API (shared across all sports)
+        var apiStorage = new PostgreSqlStorage($"{cleanBase};Database=sdApi.All.Hangfire;{poolOpts}");
+        app.UseHangfireDashboard("/api", dashboardOptions, apiStorage);
+
+        // Root landing page with links to all dashboards
+        app.MapGet("/", () => Results.Content(
+            """
+            <html><head><title>sportDeets Job Dashboards</title></head>
+            <body style="font-family:sans-serif;padding:2rem">
+            <h2>sportDeets Job Dashboards</h2>
+            <h3>NCAA Football</h3>
+            <ul>
+              <li><a href="/footballncaa/provider">Provider</a></li>
+              <li><a href="/footballncaa/producer">Producer</a></li>
+            </ul>
+            <h3>NFL Football</h3>
+            <ul>
+              <li><a href="/footballnfl/provider">Provider</a></li>
+              <li><a href="/footballnfl/producer">Producer</a></li>
+            </ul>
+            <h3>Shared</h3>
+            <ul>
+              <li><a href="/api">API</a></li>
+            </ul>
+            </body></html>
+            """, "text/html"));
 
         app.UseCommonFeatures();
 

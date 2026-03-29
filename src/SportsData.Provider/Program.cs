@@ -31,6 +31,7 @@ namespace SportsData.Provider
             var config = builder.Configuration;
             config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName, mode);
 
+            builder.WithLoggingContext(mode, role.ToString());
             builder.UseCommon();
 
             var services = builder.Services;

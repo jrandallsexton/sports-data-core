@@ -142,8 +142,8 @@ jobs:
             echo "::error::producer_tag contains invalid characters: $TAG"
             exit 1
           fi
-          # Update all producer role patch files (worker, ingest, api)
-          for patch in producer-patch.yaml producer-ingest-patch.yaml producer-api-patch.yaml; do
+          # Update all producer role patch files (worker, ingest, api) for NCAA and NFL
+          for patch in producer-patch.yaml producer-ingest-patch.yaml producer-api-patch.yaml producer-nfl-patch.yaml producer-nfl-ingest-patch.yaml producer-nfl-api-patch.yaml; do
             FILE="app/overlays/04_prod/$patch"
             if [ ! -f "$FILE" ]; then
               echo "::error::Missing producer patch file: $FILE"
@@ -167,8 +167,8 @@ jobs:
             echo "::error::provider_tag contains invalid characters: $TAG"
             exit 1
           fi
-          # Update all provider role patch files (worker, ingest, api)
-          for patch in provider-patch.yaml provider-ingest-patch.yaml provider-api-patch.yaml; do
+          # Update all provider role patch files (worker, ingest, api) for NCAA and NFL
+          for patch in provider-patch.yaml provider-ingest-patch.yaml provider-api-patch.yaml provider-nfl-patch.yaml provider-nfl-ingest-patch.yaml provider-nfl-api-patch.yaml; do
             FILE="app/overlays/04_prod/$patch"
             if [ ! -f "$FILE" ]; then
               echo "::error::Missing provider patch file: $FILE"

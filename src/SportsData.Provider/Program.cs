@@ -132,8 +132,10 @@ namespace SportsData.Provider
             // Don't redirect to HTTPS when behind a proxy (Front Door, Traefik)
             // app.UseHttpsRedirection();
 
-            // Apply migrations and seed data once using the real provider
-            await app.Services.ApplyMigrations<AppDataContext>(ctx => LoadSeedData(ctx, mode));
+            // Apply migrations (seed data disabled — sourcing triggered via POST)
+            // TODO: Remove LoadSeedData entirely (Azure DevOps #26)
+            // await app.Services.ApplyMigrations<AppDataContext>(ctx => LoadSeedData(ctx, mode));
+            await app.Services.ApplyMigrations<AppDataContext>(seedFunction: null);
 
             app.UseCommonFeatures();
 

@@ -39,7 +39,7 @@ namespace SportsData.Provider.DependencyInjection
 
             // Historical sourcing services
             services.AddOptions<HistoricalSourcingConfig>()
-                .Bind(configuration.GetSection(HistoricalSourcingConfig.SectionName))
+                .Bind(configuration.GetSection($"SportsData.Provider:{HistoricalSourcingConfig.SectionName}"))
                 .Validate(config =>
                 {
                     // Validate SagaConfig properties

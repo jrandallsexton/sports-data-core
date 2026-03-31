@@ -28,18 +28,14 @@ public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
                 $"Historical sourcing not yet supported for provider {provider}");
         }
 
-        var sportKey = sport.ToString();
-        if (!_config.EspnBaseUrls.TryGetValue(sportKey, out var baseUrl) || string.IsNullOrWhiteSpace(baseUrl))
+        if (string.IsNullOrWhiteSpace(_config.EspnBaseUrl))
         {
-            throw new NotSupportedException(
-                $"No ESPN base URL configured for {sport}. Add HistoricalSourcing:EspnBaseUrls:{sportKey} to App Config.");
+            throw new InvalidOperationException(
+                $"EspnBaseUrl is not configured. Add SportsData.Provider:HistoricalSourcing:EspnBaseUrl to App Config for label Prod.{sport}.");
         }
 
-        return BuildEspnUri(documentType, seasonYear, baseUrl.TrimEnd('/'));
-    }
+        var baseUrl = _config.EspnBaseUrl.TrimEnd('/');
 
-    private static Uri BuildEspnUri(DocumentType documentType, int seasonYear, string baseUrl)
-    {
         var path = documentType switch
         {
             DocumentType.Season => $"{baseUrl}/seasons/{seasonYear}",

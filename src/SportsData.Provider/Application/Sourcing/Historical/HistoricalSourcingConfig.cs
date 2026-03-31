@@ -8,11 +8,10 @@ public class HistoricalSourcingConfig
     public const string SectionName = "HistoricalSourcing";
 
     /// <summary>
-    /// Per-sport ESPN API base URLs keyed by Sport enum name.
-    /// Each URL is the full league-level path (e.g., .../football/leagues/nfl).
-    /// Adding a new sport is a config change, not a code change.
+    /// ESPN API base URL for this sport's league. Resolved per sport via App Config labels.
+    /// (e.g. https://sports.core.api.espn.com/v2/sports/football/leagues/nfl)
     /// </summary>
-    public Dictionary<string, string> EspnBaseUrls { get; set; } = new();
+    public string EspnBaseUrl { get; set; } = string.Empty;
 
     /// <summary>
     /// Default tier delays in minutes for each sport/provider combination.
@@ -76,4 +75,3 @@ public class SagaConfig
     /// </summary>
     public int AlertAfterMinutes { get; set; } = 30;
 }
-

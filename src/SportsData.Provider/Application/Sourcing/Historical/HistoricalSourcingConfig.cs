@@ -8,9 +8,11 @@ public class HistoricalSourcingConfig
     public const string SectionName = "HistoricalSourcing";
 
     /// <summary>
-    /// Base URL for ESPN API (e.g. https://sports.core.api.espn.com/v2/sports/football/leagues/college-football)
+    /// Per-sport ESPN API base URLs keyed by Sport enum name.
+    /// Each URL is the full league-level path (e.g., .../football/leagues/nfl).
+    /// Adding a new sport is a config change, not a code change.
     /// </summary>
-    public string EspnBaseUrl { get; set; } = "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football";
+    public Dictionary<string, string> EspnBaseUrls { get; set; } = new();
 
     /// <summary>
     /// Default tier delays in minutes for each sport/provider combination.

@@ -22,19 +22,24 @@ public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
 
     public Uri BuildUri(DocumentType documentType, int seasonYear, Sport sport, SourceDataProvider provider)
     {
-        if (sport == Sport.FootballNcaa && provider == SourceDataProvider.Espn)
+        if (provider != SourceDataProvider.Espn)
         {
-            return BuildEspnFootballNcaaUri(documentType, seasonYear);
+            throw new NotSupportedException(
+                $"Historical sourcing not yet supported for provider {provider}");
         }
 
-        throw new NotSupportedException(
-            $"Historical sourcing not yet supported for {sport}/{provider}");
+        var sportKey = sport.ToString();
+        if (!_config.EspnBaseUrls.TryGetValue(sportKey, out var baseUrl) || string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new NotSupportedException(
+                $"No ESPN base URL configured for {sport}. Add HistoricalSourcing:EspnBaseUrls:{sportKey} to App Config.");
+        }
+
+        return BuildEspnUri(documentType, seasonYear, baseUrl.TrimEnd('/'));
     }
 
-    private Uri BuildEspnFootballNcaaUri(DocumentType documentType, int seasonYear)
+    private static Uri BuildEspnUri(DocumentType documentType, int seasonYear, string baseUrl)
     {
-        var baseUrl = _config.EspnBaseUrl.TrimEnd('/');
-
         var path = documentType switch
         {
             DocumentType.Season => $"{baseUrl}/seasons/{seasonYear}",

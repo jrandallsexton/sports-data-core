@@ -15,12 +15,6 @@ public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
 {
     private readonly HistoricalSourcingConfig _config;
 
-    private static readonly Dictionary<Sport, string> EspnLeagueMap = new()
-    {
-        { Sport.FootballNcaa, "college-football" },
-        { Sport.FootballNfl, "nfl" }
-    };
-
     public HistoricalSourcingUriBuilder(IOptions<HistoricalSourcingConfig> config)
     {
         _config = config.Value;
@@ -28,20 +22,24 @@ public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
 
     public Uri BuildUri(DocumentType documentType, int seasonYear, Sport sport, SourceDataProvider provider)
     {
-        if (provider != SourceDataProvider.Espn || !EspnLeagueMap.ContainsKey(sport))
+        if (provider != SourceDataProvider.Espn)
         {
             throw new NotSupportedException(
-                $"Historical sourcing not yet supported for {sport}/{provider}");
+                $"Historical sourcing not yet supported for provider {provider}");
         }
 
-        return BuildEspnUri(documentType, seasonYear, sport);
+        var sportKey = sport.ToString();
+        if (!_config.EspnBaseUrls.TryGetValue(sportKey, out var baseUrl) || string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new NotSupportedException(
+                $"No ESPN base URL configured for {sport}. Add HistoricalSourcing:EspnBaseUrls:{sportKey} to App Config.");
+        }
+
+        return BuildEspnUri(documentType, seasonYear, baseUrl.TrimEnd('/'));
     }
 
-    private Uri BuildEspnUri(DocumentType documentType, int seasonYear, Sport sport)
+    private static Uri BuildEspnUri(DocumentType documentType, int seasonYear, string baseUrl)
     {
-        var league = EspnLeagueMap[sport];
-        var baseUrl = $"{_config.EspnBaseUrl.TrimEnd('/')}/{league}";
-
         var path = documentType switch
         {
             DocumentType.Season => $"{baseUrl}/seasons/{seasonYear}",

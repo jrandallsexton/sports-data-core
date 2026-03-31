@@ -17,13 +17,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public required string Name { get; set; }
 
-        public required string Abbreviation { get; set; }
+        public string? Abbreviation { get; set; }
 
-        public required string DisplayName { get; set; }
+        public string? DisplayName { get; set; }
 
-        public required string ShortDisplayName { get; set; }
+        public string? ShortDisplayName { get; set; }
 
-        public required string Description { get; set; }
+        public string? Description { get; set; }
 
         public required string Type { get; set; }
 
@@ -47,19 +47,15 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasMaxLength(100);
 
                 builder.Property(t => t.Abbreviation)
-                    .IsRequired()
                     .HasMaxLength(50);
 
                 builder.Property(t => t.DisplayName)
-                    .IsRequired()
                     .HasMaxLength(150);
 
                 builder.Property(t => t.ShortDisplayName)
-                    .IsRequired()
                     .HasMaxLength(100);
 
                 builder.Property(t => t.Description)
-                    .IsRequired()
                     .HasMaxLength(300);
 
                 builder.Property(t => t.Type)

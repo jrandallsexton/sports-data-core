@@ -91,9 +91,11 @@ public static class CompetitionOddsExtensions
             }
         }
 
-        // Teams
-        e.Teams.Add(BuildTeam(src.HomeTeamOdds, "Home", homeFranchiseSeasonId));
-        e.Teams.Add(BuildTeam(src.AwayTeamOdds, "Away", awayFranchiseSeasonId));
+        // Teams (may be null in some NFL odds data)
+        if (src.HomeTeamOdds is not null)
+            e.Teams.Add(BuildTeam(src.HomeTeamOdds, "Home", homeFranchiseSeasonId));
+        if (src.AwayTeamOdds is not null)
+            e.Teams.Add(BuildTeam(src.AwayTeamOdds, "Away", awayFranchiseSeasonId));
 
         return e;
     }

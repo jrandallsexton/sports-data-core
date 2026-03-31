@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Options;
 using SportsData.Core.Common;
 
 namespace SportsData.Provider.Application.Sourcing.Historical;
@@ -13,27 +12,27 @@ public interface IHistoricalSourcingUriBuilder
 
 public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
 {
-    private readonly HistoricalSourcingConfig _config;
-
-    public HistoricalSourcingUriBuilder(IOptions<HistoricalSourcingConfig> config)
+    private static readonly Dictionary<Sport, string> EspnLeagueMap = new()
     {
-        _config = config.Value;
-    }
+        { Sport.FootballNcaa, "college-football" },
+        { Sport.FootballNfl, "nfl" }
+    };
 
     public Uri BuildUri(DocumentType documentType, int seasonYear, Sport sport, SourceDataProvider provider)
     {
-        if (sport == Sport.FootballNcaa && provider == SourceDataProvider.Espn)
+        if (provider != SourceDataProvider.Espn || !EspnLeagueMap.ContainsKey(sport))
         {
-            return BuildEspnFootballNcaaUri(documentType, seasonYear);
+            throw new NotSupportedException(
+                $"Historical sourcing not yet supported for {sport}/{provider}");
         }
 
-        throw new NotSupportedException(
-            $"Historical sourcing not yet supported for {sport}/{provider}");
+        return BuildEspnUri(documentType, seasonYear, sport);
     }
 
-    private Uri BuildEspnFootballNcaaUri(DocumentType documentType, int seasonYear)
+    private static Uri BuildEspnUri(DocumentType documentType, int seasonYear, Sport sport)
     {
-        var baseUrl = _config.EspnBaseUrl.TrimEnd('/');
+        var league = EspnLeagueMap[sport];
+        var baseUrl = $"https://sports.core.api.espn.com/v2/sports/football/leagues/{league}";
 
         var path = documentType switch
         {

@@ -25,7 +25,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public required string Abbreviation { get; set; }
 
-        public required string ShortName { get; set; }
+        public string? ShortName { get; set; }
 
         public string? MidsizeName { get; set; }
 
@@ -62,7 +62,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasMaxLength(50);
 
                 builder.Property(t => t.ShortName)
-                    .IsRequired()
                     .HasMaxLength(100);
 
                 builder.Property(t => t.MidsizeName)

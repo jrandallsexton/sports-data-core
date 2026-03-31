@@ -8,9 +8,10 @@ public class HistoricalSourcingConfig
     public const string SectionName = "HistoricalSourcing";
 
     /// <summary>
-    /// Base URL for ESPN API (e.g. https://sports.core.api.espn.com/v2/sports/football/leagues/college-football)
+    /// Base URL for ESPN API up to the sport level. League is appended by the URI builder.
+    /// (e.g. https://sports.core.api.espn.com/v2/sports/football/leagues)
     /// </summary>
-    public string EspnBaseUrl { get; set; } = "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football";
+    public string EspnBaseUrl { get; set; } = "https://sports.core.api.espn.com/v2/sports/football/leagues";
 
     /// <summary>
     /// Default tier delays in minutes for each sport/provider combination.

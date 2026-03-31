@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using SportsData.Core.Common;
 
 namespace SportsData.Provider.Application.Sourcing.Historical;
@@ -12,11 +13,18 @@ public interface IHistoricalSourcingUriBuilder
 
 public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
 {
+    private readonly HistoricalSourcingConfig _config;
+
     private static readonly Dictionary<Sport, string> EspnLeagueMap = new()
     {
         { Sport.FootballNcaa, "college-football" },
         { Sport.FootballNfl, "nfl" }
     };
+
+    public HistoricalSourcingUriBuilder(IOptions<HistoricalSourcingConfig> config)
+    {
+        _config = config.Value;
+    }
 
     public Uri BuildUri(DocumentType documentType, int seasonYear, Sport sport, SourceDataProvider provider)
     {
@@ -29,10 +37,10 @@ public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
         return BuildEspnUri(documentType, seasonYear, sport);
     }
 
-    private static Uri BuildEspnUri(DocumentType documentType, int seasonYear, Sport sport)
+    private Uri BuildEspnUri(DocumentType documentType, int seasonYear, Sport sport)
     {
         var league = EspnLeagueMap[sport];
-        var baseUrl = $"https://sports.core.api.espn.com/v2/sports/football/leagues/{league}";
+        var baseUrl = $"{_config.EspnBaseUrl.TrimEnd('/')}/{league}";
 
         var path = documentType switch
         {

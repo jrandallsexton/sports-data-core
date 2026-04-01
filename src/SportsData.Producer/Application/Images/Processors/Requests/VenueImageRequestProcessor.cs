@@ -12,7 +12,9 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 namespace SportsData.Producer.Application.Images.Processors.Requests
 {
     [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Venue)]
+    [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.Venue)]
     [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.VenueImage)]
+    [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.VenueImage)]
     public class VenueImageRequestProcessor<TDataContext> : IProcessLogoAndImageRequests
         where TDataContext : BaseDataContext
     {

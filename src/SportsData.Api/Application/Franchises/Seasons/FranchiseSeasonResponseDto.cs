@@ -12,7 +12,7 @@ public class FranchiseSeasonResponseDto
 
     public string Location { get; set; } = null!;
 
-    public string Name { get; set; } = null!;
+    public string? Name { get; set; }
 
     public string Abbreviation { get; set; } = null!;
 

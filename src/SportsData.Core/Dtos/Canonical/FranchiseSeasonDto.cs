@@ -12,7 +12,7 @@ public record FranchiseSeasonDto : DtoBase
 
     public string Location { get; init; } = null!;
 
-    public string Name { get; init; } = null!;
+    public string? Name { get; init; }
 
     public string Abbreviation { get; init; } = null!;
 

@@ -10,6 +10,7 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 namespace SportsData.Producer.Application.Images.Processors.Responses
 {
     [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.GroupSeasonLogo)]
+    [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.GroupSeasonLogo)]
     public class GroupSeasonLogoResponseProcessor<TDataContext> : IProcessLogoAndImageResponses
         where TDataContext : TeamSportDataContext
     {

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Routing;
 using SportsData.Core.Processing;
@@ -21,7 +22,7 @@ public interface IHistoricalSeasonSourcingService
     Task<HistoricalSeasonSourcingResponse> SourceSeasonAsync(
         HistoricalSeasonSourcingRequest request,
         CancellationToken cancellationToken = default);
-    
+
     Task<Guid> CreateSagaResourceIndexesAsync(
         HistoricalSeasonSourcingRequest request,
         CancellationToken cancellationToken = default);
@@ -35,6 +36,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
     private readonly IGenerateRoutingKeys _routingKeyGenerator;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
     private readonly HistoricalSourcingConfig _config;
+    private readonly Sport _sport;
 
     public HistoricalSeasonSourcingService(
         ILogger<HistoricalSeasonSourcingService> logger,
@@ -42,7 +44,8 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         IHistoricalSourcingUriBuilder uriBuilder,
         IGenerateRoutingKeys routingKeyGenerator,
         IProvideBackgroundJobs backgroundJobProvider,
-        IOptions<HistoricalSourcingConfig> config)
+        IOptions<HistoricalSourcingConfig> config,
+        IAppMode appMode)
     {
         _logger = logger;
         _dataContext = dataContext;
@@ -50,25 +53,27 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         _routingKeyGenerator = routingKeyGenerator;
         _backgroundJobProvider = backgroundJobProvider;
         _config = config.Value;
+        _sport = appMode.CurrentSport;
     }
 
     public async Task<HistoricalSeasonSourcingResponse> SourceSeasonAsync(
         HistoricalSeasonSourcingRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Sport derived from pod's -mode flag via IAppMode
         var correlationId = Guid.NewGuid();
 
         using (_logger.BeginScope(new Dictionary<string, object>
         {
             ["CorrelationId"] = correlationId,
-            ["Sport"] = request.Sport,
+            ["Sport"] = _sport,
             ["Provider"] = request.SourceDataProvider,
             ["SeasonYear"] = request.SeasonYear
         }))
         {
             _logger.LogInformation(
                 "Starting historical season sourcing. Sport={Sport}, Provider={Provider}, Year={Year}",
-                request.Sport, request.SourceDataProvider, request.SeasonYear);
+                _sport, request.SourceDataProvider, request.SeasonYear);
 
             var tierDelays = GetTierDelays(request);
             ValidateTierDelays(tierDelays);
@@ -95,7 +100,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             .AsNoTracking()
             .FirstOrDefaultAsync(x =>
                 x.Provider == request.SourceDataProvider &&
-                x.SportId == request.Sport &&
+                x.SportId == _sport &&
                 x.DocumentType == DocumentType.Season &&
                 x.SeasonYear == request.SeasonYear,
                 cancellationToken);
@@ -149,7 +154,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         Guid correlationId,
         CancellationToken cancellationToken)
     {
-        var lockId = GetAdvisoryLockId(request.SourceDataProvider, request.Sport, request.SeasonYear);
+        var lockId = GetAdvisoryLockId(request.SourceDataProvider, _sport, request.SeasonYear);
         var lockAcquired = false;
 
         try
@@ -163,7 +168,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
 
             _logger.LogInformation(
                 "Force reschedule lock acquired. Sport={Sport}, Provider={Provider}, Year={Year}, LockId={LockId}",
-                request.Sport, request.SourceDataProvider, request.SeasonYear, lockId);
+                _sport, request.SourceDataProvider, request.SeasonYear, lockId);
 
             var existingJobs = await FetchExistingTierJobsAsync(request, cancellationToken);
             var (scheduledCount, failedCount) = RescheduleTierJobs(existingJobs, tierDelays);
@@ -214,7 +219,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         _logger.LogWarning(
             "Concurrent Force request detected. Another force reschedule is in progress. " +
             "Sport={Sport}, Provider={Provider}, Year={Year}, LockId={LockId}",
-            request.Sport, request.SourceDataProvider, request.SeasonYear, lockId);
+            _sport, request.SourceDataProvider, request.SeasonYear, lockId);
 
         return new HistoricalSeasonSourcingResponse
         {
@@ -234,7 +239,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             .AsNoTracking()
             .Where(x =>
                 x.Provider == request.SourceDataProvider &&
-                x.SportId == request.Sport &&
+                x.SportId == _sport &&
                 x.SeasonYear == request.SeasonYear &&
                 (x.DocumentType == DocumentType.Season ||
                  x.DocumentType == DocumentType.Venue ||
@@ -417,7 +422,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             Provider = request.SourceDataProvider,
             DocumentType = documentType,
             Shape = shape,
-            SportId = request.Sport,
+            SportId = _sport,
             Uri = uri,
             SourceUrlHash = HashProvider.GenerateHashFromUri(uri),
             SeasonYear = request.SeasonYear,
@@ -446,7 +451,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         for (var i = 0; i < tiers.Length; i++)
         {
             var tier = tiers[i];
-            var uri = _uriBuilder.BuildUri(tier.DocumentType, request.SeasonYear, request.Sport, request.SourceDataProvider);
+            var uri = _uriBuilder.BuildUri(tier.DocumentType, request.SeasonYear, _sport, request.SourceDataProvider);
             var ordinal = baseOrdinal * 100L + i;
 
             var resourceIndex = BuildResourceIndexEntity(
@@ -527,7 +532,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         }
 
         // Fall back to config defaults
-        var sportKey = request.Sport.ToString();
+        var sportKey = _sport.ToString();
         var providerKey = request.SourceDataProvider.ToString();
 
         if (_config.DefaultTierDelays.TryGetValue(sportKey, out var sportDelays) &&
@@ -539,7 +544,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         // Ultimate fallback (should not happen if config is correct)
         _logger.LogWarning(
             "No tier delays configured for {Sport}/{Provider}, using hardcoded defaults",
-            request.Sport, request.SourceDataProvider);
+            _sport, request.SourceDataProvider);
 
         return new TierDelays
         {
@@ -601,10 +606,11 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         HistoricalSeasonSourcingRequest request,
         CancellationToken cancellationToken = default)
     {
+        // Sport derived from pod's -mode flag via IAppMode
         // Check for existing saga ResourceIndex entities (idempotency check)
         var existingResourceIndex = await _dataContext.ResourceIndexJobs
             .Where(x => x.Provider == request.SourceDataProvider
-                        && x.SportId == request.Sport
+                        && x.SportId == _sport
                         && x.SeasonYear == request.SeasonYear
                         && x.IsSeasonSpecific
                         && !x.IsRecurring
@@ -620,7 +626,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             _logger.LogInformation(
                 "ResourceIndex entities already exist for saga orchestration (idempotent operation). " +
                 "Returning existing CorrelationId={CorrelationId}, Sport={Sport}, Provider={Provider}, Year={Year}",
-                existingCorrelationId, request.Sport, request.SourceDataProvider, request.SeasonYear);
+                existingCorrelationId, _sport, request.SourceDataProvider, request.SeasonYear);
             
             return existingCorrelationId;
         }
@@ -630,14 +636,14 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         using (_logger.BeginScope(new Dictionary<string, object>
         {
             ["CorrelationId"] = correlationId,
-            ["Sport"] = request.Sport,
+            ["Sport"] = _sport,
             ["Provider"] = request.SourceDataProvider,
             ["SeasonYear"] = request.SeasonYear
         }))
         {
             _logger.LogInformation(
                 "Creating NEW ResourceIndex entities for saga orchestration. Sport={Sport}, Provider={Provider}, Year={Year}",
-                request.Sport, request.SourceDataProvider, request.SeasonYear);
+                _sport, request.SourceDataProvider, request.SeasonYear);
 
             // Define all 4 tiers (delays don't matter for saga - saga controls timing)
             // ResourceShape must match DefineTiers to ensure consistent execution paths
@@ -654,7 +660,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             for (var i = 0; i < tiers.Length; i++)
             {
                 var (docType, shape) = tiers[i];
-                var uri = _uriBuilder.BuildUri(docType, request.SeasonYear, request.Sport, request.SourceDataProvider);
+                var uri = _uriBuilder.BuildUri(docType, request.SeasonYear, _sport, request.SourceDataProvider);
                 var ordinal = baseOrdinal * 100L + i;
 
                 var resourceIndex = BuildResourceIndexEntity(

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MassTransit;
 
 using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Provider.Application.Sourcing.Historical;
 using SportsData.Provider.Application.Sourcing.Historical.Saga;
 
@@ -14,25 +15,24 @@ public class HistoricalSourcingController : ApiControllerBase
     private readonly ILogger<HistoricalSourcingController> _logger;
     private readonly IHistoricalSeasonSourcingService _sourcingService;
     private readonly IBus _bus;
+    private readonly IAppMode _appMode;
 
     public HistoricalSourcingController(
         ILogger<HistoricalSourcingController> logger,
         IHistoricalSeasonSourcingService sourcingService,
-        IBus bus)
+        IBus bus,
+        IAppMode appMode)
     {
         _logger = logger;
         _sourcingService = sourcingService;
         _bus = bus;
+        _appMode = appMode;
     }
 
     /// <summary>
     /// Initiates historical season sourcing for a completed season.
+    /// Sport is derived from the pod's -mode flag.
     /// </summary>
-    /// <param name="request">Sourcing parameters including sport, provider, year, and optional tier delays</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Correlation ID for tracking the sourcing job</returns>
-    /// <response code="202">Sourcing job initiated successfully</response>
-    /// <response code="400">Invalid request parameters</response>
     [HttpPost("seasons")]
     [ProducesResponseType(typeof(HistoricalSeasonSourcingResponse), StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -40,9 +40,11 @@ public class HistoricalSourcingController : ApiControllerBase
         [FromBody] HistoricalSeasonSourcingRequest request,
         CancellationToken cancellationToken)
     {
+        var sport = _appMode.CurrentSport;
+
         _logger.LogInformation(
             "Received historical season sourcing request. Sport={Sport}, Provider={Provider}, Year={Year}",
-            request.Sport, request.SourceDataProvider, request.SeasonYear);
+            sport, request.SourceDataProvider, request.SeasonYear);
 
         try
         {
@@ -64,14 +66,8 @@ public class HistoricalSourcingController : ApiControllerBase
 
     /// <summary>
     /// Starts the saga-orchestrated historical season sourcing workflow.
-    /// Creates ResourceIndex jobs for all tiers but only triggers Tier 1 (Season).
-    /// The saga will automatically trigger subsequent tiers based on completion events.
+    /// Sport is derived from the pod's -mode flag.
     /// </summary>
-    /// <param name="request">Sourcing parameters including sport, provider, and year</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Correlation ID for tracking the saga</returns>
-    /// <response code="202">Saga initiated successfully</response>
-    /// <response code="400">Invalid request parameters</response>
     [HttpPost("seasons/saga")]
     [ProducesResponseType(typeof(SeasonSourcingSagaResponse), StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -79,33 +75,31 @@ public class HistoricalSourcingController : ApiControllerBase
         [FromBody] HistoricalSeasonSourcingRequest request,
         CancellationToken cancellationToken)
     {
+        var sport = _appMode.CurrentSport;
+
         _logger.LogInformation(
-            "🚀 SAGA_START_REQUESTED: Sport={Sport}, Provider={Provider}, Year={Year}",
-            request.Sport, request.SourceDataProvider, request.SeasonYear);
+            "SAGA_START_REQUESTED: Sport={Sport}, Provider={Provider}, Year={Year}",
+            sport, request.SourceDataProvider, request.SeasonYear);
 
         try
         {
-            // Create ResourceIndex entities for all 4 tiers (NO Hangfire scheduling)
-            // This operation is idempotent - returns existing correlationId if entities already exist
             var correlationId = await _sourcingService.CreateSagaResourceIndexesAsync(request, cancellationToken);
 
-            // Publish SeasonSourcingStarted event to kick off the saga
-            // If this fails, retrying the endpoint will return the same correlationId and re-publish
             var sagaEvent = new SeasonSourcingStarted(
                 correlationId,
-                request.Sport,
+                sport,
                 request.SeasonYear,
                 request.SourceDataProvider);
 
             await _bus.Publish(sagaEvent, cancellationToken);
 
             _logger.LogInformation(
-                "✅ SAGA_STARTED: SeasonSourcingStarted event published. CorrelationId={CorrelationId}",
+                "SAGA_STARTED: SeasonSourcingStarted event published. CorrelationId={CorrelationId}",
                 correlationId);
 
             return Accepted(new SeasonSourcingSagaResponse(
                 correlationId,
-                request.Sport,
+                sport,
                 request.SeasonYear,
                 request.SourceDataProvider,
                 $"Saga initiated. Track progress via CorrelationId: {correlationId}"));

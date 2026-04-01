@@ -5,14 +5,10 @@ namespace SportsData.Provider.Application.Sourcing.Historical;
 
 /// <summary>
 /// Request to source a complete historical season from ESPN.
+/// Sport is derived from the pod's -mode flag (IAppMode), not from the request payload.
 /// </summary>
 public record HistoricalSeasonSourcingRequest : IValidatableObject
 {
-    /// <summary>
-    /// Sport to source (e.g., FootballNcaa)
-    /// </summary>
-    public required Sport Sport { get; init; }
-
     /// <summary>
     /// Data provider (e.g., Espn)
     /// </summary>

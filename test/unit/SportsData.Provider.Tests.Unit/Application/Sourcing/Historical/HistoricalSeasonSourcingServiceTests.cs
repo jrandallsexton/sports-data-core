@@ -8,6 +8,7 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Routing;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs;
 using SportsData.Provider.Application.Sourcing.Historical;
@@ -72,13 +73,17 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
         _backgroundJobProviderMock.Setup(x => x.Schedule<ResourceIndexJob>(It.IsAny<Expression<Func<ResourceIndexJob, Task>>>(), It.IsAny<TimeSpan>()))
             .Returns(Guid.NewGuid().ToString());
 
+        var appModeMock = new Mock<IAppMode>();
+        appModeMock.Setup(x => x.CurrentSport).Returns(Sport.FootballNcaa);
+
         _service = new HistoricalSeasonSourcingService(
             _loggerMock.Object,
             _context,
             _uriBuilderMock.Object,
             _routingKeyGeneratorMock.Object,
             _backgroundJobProviderMock.Object,
-            Options.Create(_config));
+            Options.Create(_config),
+            appModeMock.Object);
     }
 
     [Fact]
@@ -87,7 +92,6 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
         // Arrange
         var request = new HistoricalSeasonSourcingRequest
         {
-            Sport = Sport.FootballNcaa,
             SourceDataProvider = SourceDataProvider.Espn,
             SeasonYear = 2024
         };
@@ -123,7 +127,6 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
         // Arrange
         var request = new HistoricalSeasonSourcingRequest
         {
-            Sport = Sport.FootballNcaa,
             SourceDataProvider = SourceDataProvider.Espn,
             SeasonYear = 2024
         };
@@ -167,7 +170,6 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
 
         var request = new HistoricalSeasonSourcingRequest
         {
-            Sport = Sport.FootballNcaa,
             SourceDataProvider = SourceDataProvider.Espn,
             SeasonYear = 2024
         };
@@ -207,7 +209,6 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
 
         var request = new HistoricalSeasonSourcingRequest
         {
-            Sport = Sport.FootballNcaa,
             SourceDataProvider = SourceDataProvider.Espn,
             SeasonYear = 2024,
             TierDelays = customDelays
@@ -229,7 +230,6 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
         // Arrange
         var request = new HistoricalSeasonSourcingRequest
         {
-            Sport = Sport.FootballNcaa,
             SourceDataProvider = SourceDataProvider.Espn,
             SeasonYear = 2024,
             TierDelays = new Dictionary<string, int>
@@ -253,7 +253,6 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
         // Arrange
         var request = new HistoricalSeasonSourcingRequest
         {
-            Sport = Sport.FootballNcaa,
             SourceDataProvider = SourceDataProvider.Espn,
             SeasonYear = 2024
             // TierDelays not provided

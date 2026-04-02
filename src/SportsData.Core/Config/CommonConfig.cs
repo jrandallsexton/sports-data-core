@@ -34,7 +34,7 @@ namespace SportsData.Core.Config
 
         public required Dictionary<Sport, ProviderConfig> VenueClientConfigs { get; set; }
 
-        public required string FirebaseConfigJson { get; set; }
+        public required FirebaseConfiguration Firebase { get; set; }
 
         /// <summary>
         /// The current (active) season year. Documents with SeasonYear below this value are

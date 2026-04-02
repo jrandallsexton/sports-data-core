@@ -1,11 +1,11 @@
 info:
   name: document-requested-franchiseSeason-awards
   type: http
-  seq: 8
+  seq: 9
 
 http:
   method: POST
-  url: "{{baseUrlProvider}}/api/document/documentRequest"
+  url: "{{baseUrlProvider}}/api/documents/documentRequest"
   body:
     type: json
     data: "{\r

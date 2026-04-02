@@ -1,11 +1,11 @@
 info:
   name: document-requested-franchiseSeason-leaders
   type: http
-  seq: 6
+  seq: 7
 
 http:
   method: POST
-  url: "{{baseUrlProvider}}/api/document/documentRequest"
+  url: "{{baseUrlProvider}}/api/documents/documentRequest"
   body:
     type: json
     data: "{\r

@@ -11,6 +11,6 @@ variables:
   - name: sportName
     value: FootballNcaa
   - name: adminToken
-    value: "{{adminToken}}"
+    value: ""
   - name: googleApiKey
-    value: "{{googleApiKey}}"
+    value: ""

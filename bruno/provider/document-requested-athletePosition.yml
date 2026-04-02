@@ -1,0 +1,29 @@
+info:
+  name: document-requested-athletePosition
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrlProvider}}/api/documents/documentRequest"
+  body:
+    type: json
+    data: |-
+      {
+        "ref": "string",
+        "sport": 2,
+        "correlationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "causationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "createdUtc": "2026-01-29T11:18:01.693Z",
+        "id": "eda0c287-0d48-4715-4405-51414c3a416b",
+        "parentId": "7f39067b-40bb-aa0b-225d-7670409d1003",
+        "uri": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/",
+        "documentType": 2,
+        "sourceDataProvider": 0
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

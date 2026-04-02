@@ -1,11 +1,11 @@
 info:
   name: document-requested-franchiseSeason-coaches_1
   type: http
-  seq: 10
+  seq: 11
 
 http:
   method: POST
-  url: "{{baseUrlProvider}}/api/document/documentRequest"
+  url: "{{baseUrlProvider}}/api/documents/documentRequest"
   body:
     type: json
     data: "{\r

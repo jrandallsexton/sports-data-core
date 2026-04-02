@@ -1,11 +1,11 @@
 info:
   name: document-requested-franchiseSeason-injuries
   type: http
-  seq: 9
+  seq: 10
 
 http:
   method: POST
-  url: "{{baseUrlProvider}}/api/document/documentRequest"
+  url: "{{baseUrlProvider}}/api/documents/documentRequest"
   body:
     type: json
     data: "{\r

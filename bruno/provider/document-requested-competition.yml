@@ -1,7 +1,7 @@
 info:
   name: document-requested-competition
   type: http
-  seq: 5
+  seq: 6
 
 http:
   method: POST

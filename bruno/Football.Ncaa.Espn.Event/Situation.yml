@@ -1,0 +1,1095 @@
+info:
+  name: Situation
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+  params:
+    - name: lang
+      value: en
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: FirstAndGoal
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:13:19 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "282"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846101879801?lang=en"
+              },
+              "down": 1,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+              },
+              "yardLine": 9,
+              "distance": 10,
+              "downDistanceText": "1st & 10 at KSU 9",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "KSU 9",
+              "isRedZone": true,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:17:58 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "283"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=4, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846101904801?lang=en"
+              },
+              "down": 1,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+              },
+              "yardLine": 7,
+              "distance": 10,
+              "downDistanceText": "1st & 10 at KSU 7",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "KSU 7",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:20:47 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "283"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=4, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846101907701?lang=en"
+              },
+              "down": 3,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+              },
+              "yardLine": 10,
+              "distance": 7,
+              "downDistanceText": "3rd & 7 at KSU 10",
+              "shortDownDistanceText": "3rd & 7",
+              "possessionText": "KSU 10",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:27:12 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846101929401?lang=en"
+              },
+              "down": 1,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+              },
+              "yardLine": 15,
+              "distance": 10,
+              "downDistanceText": "1st & 10 at KSU 15",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "KSU 15",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: TD
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:49:25 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "215"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=9, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846102854401?lang=en"
+              },
+              "down": -1,
+              "yardLine": 100,
+              "distance": -1,
+              "isRedZone": true,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: XP
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:50:12 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "215"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=7, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/-87451299?lang=en"
+              },
+              "down": -1,
+              "yardLine": 97,
+              "distance": -1,
+              "isRedZone": true,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: PostTO
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:57:41 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "283"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=7, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846102884101?lang=en"
+              },
+              "down": 1,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+              },
+              "yardLine": 93,
+              "distance": 10,
+              "downDistanceText": "1st & 10 at ISU 7",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "ISU 7",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:02:31 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846102885201?lang=en"
+              },
+              "down": 4,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+              },
+              "yardLine": 89,
+              "distance": 6,
+              "downDistanceText": "4th & 6 at ISU 11",
+              "shortDownDistanceText": "4th & 6",
+              "possessionText": "ISU 11",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:03:19 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "284"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=1, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846102894001?lang=en"
+              },
+              "down": 1,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+              },
+              "yardLine": 42,
+              "distance": 10,
+              "downDistanceText": "1st & 10 at KSU 42",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "KSU 42",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:17:47 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "282"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=3, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846102928801?lang=en"
+              },
+              "down": 4,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+              },
+              "yardLine": 56,
+              "distance": 1,
+              "downDistanceText": "4th & 1 at ISU 44",
+              "shortDownDistanceText": "4th & 1",
+              "possessionText": "ISU 44",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:36:25 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "285"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=3, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846102999001?lang=en"
+              },
+              "down": 4,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+              },
+              "yardLine": 58,
+              "distance": 22,
+              "downDistanceText": "4th & 22 at ISU 42",
+              "shortDownDistanceText": "4th & 22",
+              "possessionText": "ISU 42",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:37:10 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "283"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846102999701?lang=en"
+              },
+              "down": 1,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+              },
+              "yardLine": 96,
+              "distance": 10,
+              "downDistanceText": "1st & 10 at ISU 4",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "ISU 4",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: HT
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:54:49 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "216"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=2, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846102999902?lang=en"
+              },
+              "down": 2,
+              "yardLine": 96,
+              "distance": 10,
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: 3rd
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:59:11 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "261"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846103849901?lang=en"
+              },
+              "down": 1,
+              "yardLine": 19,
+              "distance": 10,
+              "downDistanceText": "1st & 10 at KSU 19",
+              "shortDownDistanceText": "1st & 10",
+              "possessionText": "KSU 19",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 18:00:29 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846103855001?lang=en"
+              },
+              "down": 3,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+              },
+              "yardLine": 26,
+              "distance": 3,
+              "downDistanceText": "3rd & 3 at KSU 26",
+              "shortDownDistanceText": "3rd & 3",
+              "possessionText": "KSU 26",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: Correction
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 18:01:01 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "282"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=8, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846103855001?lang=en"
+              },
+              "down": 3,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+              },
+              "yardLine": 27,
+              "distance": 2,
+              "downDistanceText": "3rd & 2 at KSU 27",
+              "shortDownDistanceText": "3rd & 2",
+              "possessionText": "KSU 27",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 18:17:58 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "283"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=4, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846103929302?lang=en"
+              },
+              "down": 2,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+              },
+              "yardLine": 65,
+              "distance": 8,
+              "downDistanceText": "2nd & 8 at ISU 35",
+              "shortDownDistanceText": "2nd & 8",
+              "possessionText": "ISU 35",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: PostPAT
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 18:29:58 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "213"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=7, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/-87452067?lang=en"
+              },
+              "down": -1,
+              "yardLine": 3,
+              "distance": -1,
+              "isRedZone": true,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: New Request
+    request:
+      url: https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 18:53:21 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846104899501?lang=en"
+              },
+              "down": -1,
+              "yardLine": 16,
+              "distance": -1,
+              "isRedZone": true,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: Situation
+    request:
+      url: https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 19:01:11 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846104909401?lang=en"
+              },
+              "down": 4,
+              "team": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+              },
+              "yardLine": 30,
+              "distance": 1,
+              "downDistanceText": "4th & 1 at KSU 30",
+              "shortDownDistanceText": "4th & 1",
+              "possessionText": "KSU 30",
+              "isRedZone": false,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }
+  - name: Situation
+    request:
+      url: https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 19:46:40 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en",
+              "lastPlay": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays/401756846104996302?lang=en"
+              },
+              "down": 4,
+              "yardLine": 3,
+              "distance": 0,
+              "isRedZone": true,
+              "homeTimeouts": 3,
+              "awayTimeouts": 3
+          }

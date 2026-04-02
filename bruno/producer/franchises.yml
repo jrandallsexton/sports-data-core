@@ -1,0 +1,24 @@
+info:
+  name: franchises
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrlProducer}}/api/franchises"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: "{\r
+
+      \  \"url\": \"http://foo.com\"\r
+
+      }"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

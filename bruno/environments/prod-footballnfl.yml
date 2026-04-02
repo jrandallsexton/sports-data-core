@@ -1,0 +1,16 @@
+name: prod-footballnfl
+variables:
+  - name: baseUrlApi
+    value: https://api.sportdeets.com
+  - name: baseUrlProvider
+    value: https://provider.football-nfl.sportdeets.com
+  - name: baseUrlProducer
+    value: https://producer.football-nfl.sportdeets.com
+  - name: sport
+    value: 3
+  - name: sportName
+    value: FootballNfl
+  - name: adminToken
+    value: "{{adminToken}}"
+  - name: googleApiKey
+    value: "{{googleApiKey}}"

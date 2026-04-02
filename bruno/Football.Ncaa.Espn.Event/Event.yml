@@ -1,0 +1,1042 @@
+info:
+  name: Event
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:05:36 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846?lang=en",
+              "id": "401756846",
+              "uid": "s:20~l:23~e:401756846",
+              "date": "2025-08-23T16:00Z",
+              "name": "Iowa State Cyclones at Kansas State Wildcats",
+              "shortName": "ISU VS KSU",
+              "season": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025?lang=en"
+              },
+              "seasonType": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2?lang=en"
+              },
+              "week": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/weeks/1?lang=en"
+              },
+              "timeValid": true,
+              "competitions": [
+                  {
+                      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846?lang=en",
+                      "id": "401756846",
+                      "guid": "ae4a24ad-bdff-3b93-bffe-807d8d42286e",
+                      "uid": "s:20~l:23~e:401756846~c:401756846",
+                      "date": "2025-08-23T16:00Z",
+                      "attendance": 0,
+                      "type": {
+                          "id": "1",
+                          "text": "Standard",
+                          "abbreviation": "STD",
+                          "slug": "standard",
+                          "type": "standard"
+                      },
+                      "timeValid": true,
+                      "dateValid": false,
+                      "neutralSite": true,
+                      "divisionCompetition": true,
+                      "conferenceCompetition": true,
+                      "previewAvailable": true,
+                      "recapAvailable": false,
+                      "boxscoreAvailable": false,
+                      "lineupAvailable": false,
+                      "gamecastAvailable": false,
+                      "playByPlayAvailable": false,
+                      "conversationAvailable": true,
+                      "commentaryAvailable": false,
+                      "pickcenterAvailable": true,
+                      "summaryAvailable": true,
+                      "liveAvailable": false,
+                      "ticketsAvailable": false,
+                      "shotChartAvailable": false,
+                      "timeoutsAvailable": false,
+                      "possessionArrowAvailable": false,
+                      "onWatchESPN": true,
+                      "recent": true,
+                      "bracketAvailable": false,
+                      "wallclockAvailable": false,
+                      "highlightsAvailable": true,
+                      "gameSource": {
+                          "id": "1",
+                          "description": "basic/manual",
+                          "state": "basic"
+                      },
+                      "boxscoreSource": {
+                          "id": "0",
+                          "description": "none",
+                          "state": "none"
+                      },
+                      "playByPlaySource": {
+                          "id": "0",
+                          "description": "none",
+                          "state": "none"
+                      },
+                      "linescoreSource": {
+                          "id": "1",
+                          "description": "basic/manual",
+                          "state": "basic"
+                      },
+                      "statsSource": {
+                          "id": "0",
+                          "description": "none",
+                          "state": "none"
+                      },
+                      "venue": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3504?lang=en",
+                          "id": "3504",
+                          "guid": "ae71a8eb-6253-353f-a599-6953c8117d9f",
+                          "fullName": "Aviva Stadium",
+                          "address": {
+                              "city": "Dublin",
+                              "country": "Ireland"
+                          },
+                          "grass": true,
+                          "indoor": false,
+                          "images": [
+                              {
+                                  "href": "https://a.espncdn.com/i/venues/college-football/day/3504.jpg",
+                                  "width": 2000,
+                                  "height": 1125,
+                                  "alt": "",
+                                  "rel": [
+                                      "full",
+                                      "day"
+                                  ]
+                              }
+                          ]
+                      },
+                      "competitors": [
+                          {
+                              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306?lang=en",
+                              "id": "2306",
+                              "uid": "s:20~l:23~t:2306",
+                              "type": "team",
+                              "order": 0,
+                              "homeAway": "home",
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "score": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/score?lang=en"
+                              },
+                              "roster": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster?lang=en"
+                              },
+                              "record": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/teams/2306/record?lang=en"
+                              },
+                              "curatedRank": {
+                                  "current": 17
+                              }
+                          },
+                          {
+                              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/66?lang=en",
+                              "id": "66",
+                              "uid": "s:20~l:23~t:66",
+                              "type": "team",
+                              "order": 1,
+                              "homeAway": "away",
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+                              },
+                              "score": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/66/score?lang=en"
+                              },
+                              "roster": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/66/roster?lang=en"
+                              },
+                              "record": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/teams/66/record?lang=en"
+                              },
+                              "curatedRank": {
+                                  "current": 22
+                              }
+                          }
+                      ],
+                      "notes": [
+                          {
+                              "type": "event",
+                              "headline": "Aer Lingus College Football Classic"
+                          }
+                      ],
+                      "situation": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en"
+                      },
+                      "status": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en"
+                      },
+                      "odds": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/odds?lang=en"
+                      },
+                      "broadcasts": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/broadcasts?lang=en"
+                      },
+                      "groups": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/groups/4?lang=en"
+                      },
+                      "links": [
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "summary",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/college-football/game/_/gameId/401756846/iowa-state-kansas-st",
+                              "text": "Gamecast",
+                              "shortText": "Summary",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "summary",
+                                  "sportscenter",
+                                  "app",
+                                  "event"
+                              ],
+                              "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401756846",
+                              "text": "Gamecast",
+                              "shortText": "Summary",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "now",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/college-football/game/_/gameId/401756846",
+                              "text": "Now",
+                              "shortText": "Now",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "preview",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/college-football/preview/_/gameId/401756846",
+                              "text": "Preview",
+                              "shortText": "Preview",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "watchespn",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/watchespn/index?gameId=401756846&sourceLang=en",
+                              "text": "WatchESPN",
+                              "shortText": "WatchESPN",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "watchespn",
+                                  "app",
+                                  "event"
+                              ],
+                              "href": "watchespn://showEvent?gameId=401756846&sourceLang=en",
+                              "text": "WatchESPN",
+                              "shortText": "WatchESPN",
+                              "isExternal": false,
+                              "isPremium": false
+                          }
+                      ],
+                      "predictor": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/predictor?lang=en"
+                      },
+                      "powerIndexes": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/powerindex?lang=en"
+                      },
+                      "format": {
+                          "regulation": {
+                              "periods": 4,
+                              "displayName": "Quarter",
+                              "slug": "quarter",
+                              "clock": 900
+                          },
+                          "overtime": {
+                              "periods": 0,
+                              "displayName": "untimed",
+                              "slug": "untimed"
+                          }
+                      },
+                      "drives": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/drives?lang=en"
+                      },
+                      "hasDefensiveStats": false
+                  }
+              ],
+              "links": [
+                  {
+                      "language": "en",
+                      "rel": [
+                          "summary",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/college-football/game/_/gameId/401756846/iowa-state-kansas-st",
+                      "text": "Gamecast",
+                      "shortText": "Summary",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "summary",
+                          "sportscenter",
+                          "app",
+                          "event"
+                      ],
+                      "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401756846",
+                      "text": "Gamecast",
+                      "shortText": "Summary",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "now",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/college-football/game/_/gameId/401756846",
+                      "text": "Now",
+                      "shortText": "Now",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "preview",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/college-football/preview/_/gameId/401756846",
+                      "text": "Preview",
+                      "shortText": "Preview",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "watchespn",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/watchespn/index?gameId=401756846&sourceLang=en",
+                      "text": "WatchESPN",
+                      "shortText": "WatchESPN",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "watchespn",
+                          "app",
+                          "event"
+                      ],
+                      "href": "watchespn://showEvent?gameId=401756846&sourceLang=en",
+                      "text": "WatchESPN",
+                      "shortText": "WatchESPN",
+                      "isExternal": false,
+                      "isPremium": false
+                  }
+              ],
+              "venues": [
+                  {
+                      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3504?lang=en"
+                  }
+              ],
+              "league": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football?lang=en"
+              }
+          }
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:45:33 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846?lang=en",
+              "id": "401756846",
+              "uid": "s:20~l:23~e:401756846",
+              "date": "2025-08-23T16:00Z",
+              "name": "Iowa State Cyclones at Kansas State Wildcats",
+              "shortName": "ISU VS KSU",
+              "season": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025?lang=en"
+              },
+              "seasonType": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2?lang=en"
+              },
+              "week": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/weeks/1?lang=en"
+              },
+              "timeValid": true,
+              "competitions": [
+                  {
+                      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846?lang=en",
+                      "id": "401756846",
+                      "guid": "ae4a24ad-bdff-3b93-bffe-807d8d42286e",
+                      "uid": "s:20~l:23~e:401756846~c:401756846",
+                      "date": "2025-08-23T16:00Z",
+                      "attendance": 0,
+                      "type": {
+                          "id": "1",
+                          "text": "Standard",
+                          "abbreviation": "STD",
+                          "slug": "standard",
+                          "type": "standard"
+                      },
+                      "timeValid": true,
+                      "dateValid": false,
+                      "neutralSite": true,
+                      "divisionCompetition": true,
+                      "conferenceCompetition": true,
+                      "previewAvailable": false,
+                      "recapAvailable": false,
+                      "boxscoreAvailable": true,
+                      "lineupAvailable": false,
+                      "gamecastAvailable": true,
+                      "playByPlayAvailable": true,
+                      "conversationAvailable": true,
+                      "commentaryAvailable": false,
+                      "pickcenterAvailable": true,
+                      "summaryAvailable": false,
+                      "liveAvailable": true,
+                      "ticketsAvailable": false,
+                      "shotChartAvailable": false,
+                      "timeoutsAvailable": false,
+                      "possessionArrowAvailable": false,
+                      "onWatchESPN": true,
+                      "recent": true,
+                      "bracketAvailable": false,
+                      "wallclockAvailable": true,
+                      "highlightsAvailable": true,
+                      "gameSource": {
+                          "id": "2",
+                          "description": "feed",
+                          "state": "full"
+                      },
+                      "boxscoreSource": {
+                          "id": "2",
+                          "description": "feed",
+                          "state": "full"
+                      },
+                      "playByPlaySource": {
+                          "id": "2",
+                          "description": "feed",
+                          "state": "full"
+                      },
+                      "linescoreSource": {
+                          "id": "2",
+                          "description": "feed",
+                          "state": "full"
+                      },
+                      "statsSource": {
+                          "id": "2",
+                          "description": "feed",
+                          "state": "full"
+                      },
+                      "venue": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3504?lang=en",
+                          "id": "3504",
+                          "guid": "ae71a8eb-6253-353f-a599-6953c8117d9f",
+                          "fullName": "Aviva Stadium",
+                          "address": {
+                              "city": "Dublin",
+                              "country": "Ireland"
+                          },
+                          "grass": true,
+                          "indoor": false,
+                          "images": [
+                              {
+                                  "href": "https://a.espncdn.com/i/venues/college-football/day/3504.jpg",
+                                  "width": 2000,
+                                  "height": 1125,
+                                  "alt": "",
+                                  "rel": [
+                                      "full",
+                                      "day"
+                                  ]
+                              }
+                          ]
+                      },
+                      "competitors": [
+                          {
+                              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306?lang=en",
+                              "id": "2306",
+                              "uid": "s:20~l:23~t:2306",
+                              "type": "team",
+                              "order": 0,
+                              "homeAway": "home",
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "score": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/score?lang=en"
+                              },
+                              "linescores": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/linescores?lang=en"
+                              },
+                              "roster": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/statistics?lang=en"
+                              },
+                              "leaders": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/leaders?lang=en"
+                              },
+                              "record": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/teams/2306/record?lang=en"
+                              },
+                              "curatedRank": {
+                                  "current": 17
+                              }
+                          },
+                          {
+                              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/66?lang=en",
+                              "id": "66",
+                              "uid": "s:20~l:23~t:66",
+                              "type": "team",
+                              "order": 1,
+                              "homeAway": "away",
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+                              },
+                              "score": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/66/score?lang=en"
+                              },
+                              "linescores": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/66/linescores?lang=en"
+                              },
+                              "roster": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/66/roster?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/66/statistics?lang=en"
+                              },
+                              "leaders": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/66/leaders?lang=en"
+                              },
+                              "record": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/teams/66/record?lang=en"
+                              },
+                              "curatedRank": {
+                                  "current": 22
+                              }
+                          }
+                      ],
+                      "notes": [
+                          {
+                              "type": "event",
+                              "headline": "Aer Lingus College Football Classic"
+                          }
+                      ],
+                      "situation": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/situation?lang=en"
+                      },
+                      "status": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en"
+                      },
+                      "odds": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/odds?lang=en"
+                      },
+                      "broadcasts": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/broadcasts?lang=en"
+                      },
+                      "details": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/plays?lang=en"
+                      },
+                      "leaders": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/leaders?lang=en"
+                      },
+                      "groups": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/groups/4?lang=en"
+                      },
+                      "links": [
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "live",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/college-football/game?gameId=401756846",
+                              "text": "Gamecast",
+                              "shortText": "Gamecast",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "live",
+                                  "sportscenter",
+                                  "app",
+                                  "event"
+                              ],
+                              "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401756846",
+                              "text": "Gamecast",
+                              "shortText": "Gamecast",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "now",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/college-football/game/_/gameId/401756846",
+                              "text": "Now",
+                              "shortText": "Now",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "teamstats",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/college-football/matchup?gameId=401756846",
+                              "text": "Team Stats",
+                              "shortText": "Team Stats",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "boxscore",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/college-football/boxscore/_/gameId/401756846",
+                              "text": "Box Score",
+                              "shortText": "Box Score",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "boxscore",
+                                  "sportscenter",
+                                  "app",
+                                  "event"
+                              ],
+                              "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401756846",
+                              "text": "Box Score",
+                              "shortText": "Box Score",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "gamecast",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/college-football/game/_/gameId/401756846",
+                              "text": "Gamecast",
+                              "shortText": "Gamecast",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "gamecast",
+                                  "mobile",
+                                  "event"
+                              ],
+                              "href": "http://m.espn.com/college-football/gamecast?gameId=401756846&action=summary",
+                              "text": "Gamecast",
+                              "shortText": "Gamecast",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "gamecast",
+                                  "sportscenter",
+                                  "app",
+                                  "event"
+                              ],
+                              "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401756846",
+                              "text": "Gamecast",
+                              "shortText": "Gamecast",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "pbp",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/college-football/playbyplay/_/gameId/401756846",
+                              "text": "Play-by-Play",
+                              "shortText": "Play-by-Play",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "videos",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/college-football/video?gameId=401756846",
+                              "text": "Videos",
+                              "shortText": "Videos",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "watchespn",
+                                  "desktop",
+                                  "event"
+                              ],
+                              "href": "https://www.espn.com/watchespn/index?gameId=401756846&sourceLang=en",
+                              "text": "WatchESPN",
+                              "shortText": "WatchESPN",
+                              "isExternal": false,
+                              "isPremium": false
+                          },
+                          {
+                              "language": "en",
+                              "rel": [
+                                  "watchespn",
+                                  "app",
+                                  "event"
+                              ],
+                              "href": "watchespn://showEvent?gameId=401756846&sourceLang=en",
+                              "text": "WatchESPN",
+                              "shortText": "WatchESPN",
+                              "isExternal": false,
+                              "isPremium": false
+                          }
+                      ],
+                      "predictor": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/predictor?lang=en"
+                      },
+                      "probabilities": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/probabilities?lang=en"
+                      },
+                      "powerIndexes": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/powerindex?lang=en"
+                      },
+                      "format": {
+                          "regulation": {
+                              "periods": 4,
+                              "displayName": "Quarter",
+                              "slug": "quarter",
+                              "clock": 900
+                          },
+                          "overtime": {
+                              "periods": 0,
+                              "displayName": "untimed",
+                              "slug": "untimed"
+                          }
+                      },
+                      "drives": {
+                          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/drives?lang=en"
+                      },
+                      "hasDefensiveStats": true
+                  }
+              ],
+              "links": [
+                  {
+                      "language": "en",
+                      "rel": [
+                          "live",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/college-football/game?gameId=401756846",
+                      "text": "Gamecast",
+                      "shortText": "Gamecast",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "live",
+                          "sportscenter",
+                          "app",
+                          "event"
+                      ],
+                      "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401756846",
+                      "text": "Gamecast",
+                      "shortText": "Gamecast",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "now",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/college-football/game/_/gameId/401756846",
+                      "text": "Now",
+                      "shortText": "Now",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "teamstats",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/college-football/matchup?gameId=401756846",
+                      "text": "Team Stats",
+                      "shortText": "Team Stats",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "boxscore",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/college-football/boxscore/_/gameId/401756846",
+                      "text": "Box Score",
+                      "shortText": "Box Score",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "boxscore",
+                          "sportscenter",
+                          "app",
+                          "event"
+                      ],
+                      "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401756846",
+                      "text": "Box Score",
+                      "shortText": "Box Score",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "gamecast",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/college-football/game/_/gameId/401756846",
+                      "text": "Gamecast",
+                      "shortText": "Gamecast",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "gamecast",
+                          "mobile",
+                          "event"
+                      ],
+                      "href": "http://m.espn.com/college-football/gamecast?gameId=401756846&action=summary",
+                      "text": "Gamecast",
+                      "shortText": "Gamecast",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "gamecast",
+                          "sportscenter",
+                          "app",
+                          "event"
+                      ],
+                      "href": "sportscenter://x-callback-url/showGame?sportName=football&leagueAbbrev=college-football&gameId=401756846",
+                      "text": "Gamecast",
+                      "shortText": "Gamecast",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "pbp",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/college-football/playbyplay/_/gameId/401756846",
+                      "text": "Play-by-Play",
+                      "shortText": "Play-by-Play",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "videos",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/college-football/video?gameId=401756846",
+                      "text": "Videos",
+                      "shortText": "Videos",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "watchespn",
+                          "desktop",
+                          "event"
+                      ],
+                      "href": "https://www.espn.com/watchespn/index?gameId=401756846&sourceLang=en",
+                      "text": "WatchESPN",
+                      "shortText": "WatchESPN",
+                      "isExternal": false,
+                      "isPremium": false
+                  },
+                  {
+                      "language": "en",
+                      "rel": [
+                          "watchespn",
+                          "app",
+                          "event"
+                      ],
+                      "href": "watchespn://showEvent?gameId=401756846&sourceLang=en",
+                      "text": "WatchESPN",
+                      "shortText": "WatchESPN",
+                      "isExternal": false,
+                      "isPremium": false
+                  }
+              ],
+              "venues": [
+                  {
+                      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/3504?lang=en"
+                  }
+              ],
+              "league": {
+                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football?lang=en"
+              }
+          }

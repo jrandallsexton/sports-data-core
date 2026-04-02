@@ -1,0 +1,28 @@
+info:
+  name: venues
+  type: http
+  seq: 9
+
+http:
+  method: GET
+  url: "{{baseUrlProducer}}/api/venues?pageNumber=11"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  params:
+    - name: pageNumber
+      value: "11"
+      type: query
+  body:
+    type: json
+    data: "{\r
+
+      \  \"url\": \"http://foo.com\"\r
+
+      }"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

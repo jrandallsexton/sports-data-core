@@ -1,0 +1,43 @@
+info:
+  name: document-requested-franchiseSeason-coaches
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrlProvider}}/api/document/documentRequest"
+  body:
+    type: json
+    data: "{\r
+
+      \  \"ref\": \"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99\",\r
+
+      \  \"sport\": 2,\r
+
+      \  \"seasonYear\": 2025,\r
+
+      \  \"correlationId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa8\",\r
+
+      \  \"causationId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa8\",\r
+
+      \  \"createdUtc\": \"2026-01-31T11:18:01.693Z\",\r
+
+      \  \"id\": \"564402c1-f0bf-4454-3c35-02951ba53000\",\r
+
+      \  \"parentId\": null,\r
+
+      \  \"uri\": \"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99\",\r
+
+      \  \"documentType\": 42,\r
+
+      \  \"sourceDataProvider\": 0,\r
+
+      \  \"IncludeLinkedDocumentTypes\": [44]\r
+
+      }"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

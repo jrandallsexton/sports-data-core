@@ -1,0 +1,27 @@
+info:
+  name: keda-loadTest
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/admin/ai-test"
+  headers:
+    - name: X-Admin-Token
+      value: "{{adminToken}}"
+  body:
+    type: json
+    data: "{\r
+
+      \  \"name\": \"Hello\",\r
+
+      \  \"text\": \"Testing external connectivity to DeepSeek via API.\"\r
+
+      }"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

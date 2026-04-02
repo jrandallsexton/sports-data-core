@@ -1,0 +1,41 @@
+info:
+  name: document-requested-competition
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrlProvider}}/api/document/documentRequest"
+  body:
+    type: json
+    data: "{\r
+
+      \  \"ref\": \"string\",\r
+
+      \  \"sport\": 2,\r
+
+      \  \"seasonYear\": 2025,\r
+
+      \  \"correlationId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r
+
+      \  \"causationId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\r
+
+      \  \"createdUtc\": \"2026-01-29T11:18:01.693Z\",\r
+
+      \  \"id\": \"eda0c287-0d48-4715-4405-51414c3a416b\",\r
+
+      \  \"parentId\": \"7f39067b-40bb-aa0b-225d-7670409d1003\",\r
+
+      \  \"uri\": \"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752687/competitions/401752687\",\r
+
+      \  \"documentType\": 9,\r
+
+      \  \"sourceDataProvider\": 0\r
+
+      }"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

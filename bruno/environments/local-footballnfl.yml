@@ -1,0 +1,16 @@
+name: local-footballnfl
+variables:
+  - name: baseUrlApi
+    value: https://localhost:7250
+  - name: baseUrlProvider
+    value: https://localhost:7140
+  - name: baseUrlProducer
+    value: https://localhost:7040
+  - name: sport
+    value: 3
+  - name: sportName
+    value: FootballNfl
+  - name: adminToken
+    value: "{{adminToken}}"
+  - name: googleApiKey
+    value: "{{googleApiKey}}"

@@ -1,0 +1,25 @@
+info:
+  name: health
+  type: http
+  seq: 11
+
+http:
+  method: GET
+  url: "{{baseUrlProvider}}/api/health"
+  body:
+    type: json
+    data: "{\r
+
+      \  \"sport\": 2,\r
+
+      \  \"sourceDataProvider\": 0,\r
+
+      \  \"seasonYear\": 2024\r
+
+      }"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,4 @@
+name: sdProd-ext
+variables:
+  - name: baseUrlProducer
+    value: https://producer.football-ncaa.sportdeets.com

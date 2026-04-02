@@ -1,0 +1,21 @@
+info:
+  name: preview-reset
+  type: http
+  seq: 11
+
+http:
+  method: POST
+  url: http://localhost:5262/admin/matchup/preview/685e92ab-9cc5-c2c5-9ebf-66e116cd8843/reset
+  headers:
+    - name: X-Admin-Token
+      value: "{{adminToken}}"
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

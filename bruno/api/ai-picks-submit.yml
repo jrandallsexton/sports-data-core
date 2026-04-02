@@ -1,0 +1,975 @@
+info:
+  name: ai-picks-submit
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/admin/ai-predictions/b210d677-19c3-4f26-ac4b-b2cc7ad58c44"
+  headers:
+    - name: X-Admin-Token
+      value: "{{adminToken}}"
+  body:
+    type: json
+    data: "[\r
+
+      \  {\r
+
+      \    \"ContestId\": \"1a659ba8-d677-4a50-ab5d-55de7822baa8\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"ec20e8b4-3b86-93ea-292a-09574e6fdad9\",\r
+
+      \    \"WinProbability\": 0.5476,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"04ee9b17-dcf8-1b65-99e0-4c86d99e5e1b\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"3bf2a829-4efa-3697-9d81-b36f89a366b0\",\r
+
+      \    \"WinProbability\": 0.2358,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"860ab8de-e4bd-b936-b124-1e7d1e520af1\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"df05dea8-6ff8-2206-95d0-78d40fbe1d6f\",\r
+
+      \    \"WinProbability\": 0.4049,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"d0c5276e-c804-b661-7d4d-c063112fd2b7\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"aedc840e-7d8f-35a4-87f4-25245e14f2de\",\r
+
+      \    \"WinProbability\": 0.1636,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"e6d84189-e4fc-197a-76fc-5e5ee81a2ef6\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"48afc555-612e-dd1c-b77f-bd3c4d944ec7\",\r
+
+      \    \"WinProbability\": 0.6113,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"daaa9b0d-6790-1813-5677-859053d71374\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"c65c406d-12df-598f-ad27-9b0e99f02d57\",\r
+
+      \    \"WinProbability\": 0.3914,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"aa9f4562-c182-e0b6-9be2-5db3331339ae\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"a0762dc7-513b-850e-5d24-a5e1c64b53e4\",\r
+
+      \    \"WinProbability\": 0.5453,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"4ed56cb3-c5e5-1d3b-e733-0b89e8768561\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"8d8b234c-3947-e36e-917a-80eec7c1905a\",\r
+
+      \    \"WinProbability\": 0.1691,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"77d2c230-dc8e-2e2c-5d61-94fd07f0cf0a\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"1285b62a-d3a2-fd72-b3de-ce540948cb59\",\r
+
+      \    \"WinProbability\": 0.495,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"f18d1480-10bf-c6b2-efcb-7838c2d504b3\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"ad3c4a7c-ec1e-07ce-a9c0-961c4bb0beaf\",\r
+
+      \    \"WinProbability\": 0.6027,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"b6f889f4-b13b-8d71-132e-44c5f112c662\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"4cea5e03-d266-c2a4-71b2-8a55cb07bbba\",\r
+
+      \    \"WinProbability\": 0.6731,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"b6c6eca8-c5e0-ad1b-d85d-c076896bf19f\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"894d300b-384b-4c70-4944-4fbdf7acd3d5\",\r
+
+      \    \"WinProbability\": 0.464,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"d2f4d373-c151-42af-86b1-cdecf8864a3d\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"6cb2f813-0f98-c5af-e647-4ddcf2b58398\",\r
+
+      \    \"WinProbability\": 0.2236,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"3cb20079-0de6-c9a0-6789-00d61172723e\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"5723d94c-866b-1dae-66c8-97f3866ce200\",\r
+
+      \    \"WinProbability\": 0.5693,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"c39dac9d-734e-7e64-7543-2d9a53166e9f\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"cdf0c392-1706-280e-c50a-6cd493074b66\",\r
+
+      \    \"WinProbability\": 0.6178,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"bd9eb328-e009-68d6-37d4-16ea5334aa84\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"28096cc9-bfae-23b7-555a-73b649025ab3\",\r
+
+      \    \"WinProbability\": 0.4954,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"cdb0191c-ca18-94df-a763-71e7e0064c38\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"f82fcb03-ec3e-eee5-7d2d-133cf6b3357e\",\r
+
+      \    \"WinProbability\": 0.354,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"f2ae8fe8-9a7f-bf25-5e36-410d2db34033\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"f612a671-718a-55cd-60f0-8fde6743e286\",\r
+
+      \    \"WinProbability\": 0.689,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"2508b4ac-a021-c3fe-f157-ca0694943621\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"a813c939-4dc3-8bf3-2293-969edc67885a\",\r
+
+      \    \"WinProbability\": 0.3104,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"864b08a0-5f29-d47e-dba2-3de18c9d48dc\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"ba9a3616-7895-144c-5a50-a47681afd1a8\",\r
+
+      \    \"WinProbability\": 0.424,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"8aa8ca66-f33e-401d-ebe5-aad9eb9a17eb\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"9130be89-0706-9aa1-927c-06fb75a303cd\",\r
+
+      \    \"WinProbability\": 0.3837,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"7d18c1e6-c729-69ad-84bd-40d926e0b3ae\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"c7184316-a9fa-eaa2-ffe4-7e1ef1ab365f\",\r
+
+      \    \"WinProbability\": 0.7374,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"dbf65807-81fc-b263-27b4-9cf3bf0b9d80\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"7f5ac305-d958-2553-b3d6-b42d6f67715c\",\r
+
+      \    \"WinProbability\": 0.6589,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"17a7b4f0-15dd-ab73-cd1b-5a474a1038b6\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"c0697d38-1f79-e955-af73-d9c59db53bb8\",\r
+
+      \    \"WinProbability\": 0.903,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"81dd88fa-c95b-18c5-e310-143197aeff1c\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"f68697ed-6f86-7f03-4773-fef3d22781f5\",\r
+
+      \    \"WinProbability\": 0.302,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"f73265c8-2db1-8bf0-f393-40198f18f2af\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"f19bfab5-1ca3-6b8e-be05-212a96f35b13\",\r
+
+      \    \"WinProbability\": 0.3429,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"3880e788-d859-74f8-b759-00b55ba4e53c\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"f3c03a13-7806-c144-9e0e-0d4910ac770d\",\r
+
+      \    \"WinProbability\": 0.6403,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"bb1cfee2-7d0b-3ee1-61e1-d26c75243e39\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"27dfe058-50c2-ef48-569a-a70acd95a7aa\",\r
+
+      \    \"WinProbability\": 0.4636,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"9f1302f2-c4c8-ece0-c5a5-781a3b64c751\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"2bb15a4f-652a-1a5f-3060-dcc3355bac93\",\r
+
+      \    \"WinProbability\": 0.4868,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"3285f5a2-9eb7-4369-8c30-6ae8ab378c41\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"366444ef-e37c-b0b1-816e-572e8cac7965\",\r
+
+      \    \"WinProbability\": 0.895,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"5895bacc-e67e-1a10-ef6f-59f49aeb29a5\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"efc9681c-d39f-85a7-3dfa-862e4cd0d8cb\",\r
+
+      \    \"WinProbability\": 0.9011,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"11c76d72-9c12-4d8d-bef7-f62b240a4af6\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"3283a7e2-96bd-94eb-e839-ba835fb22efc\",\r
+
+      \    \"WinProbability\": 0.2993,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"0ed7c9b1-d143-85eb-2be5-987077000905\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"e9c3b7ad-2c50-5ffb-f1c1-bbea09da198a\",\r
+
+      \    \"WinProbability\": 0.5135,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"ffb2a1a0-fab9-0de6-3116-750a2f08f197\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"0f4b5a11-d15c-946b-62df-7439ffb49b89\",\r
+
+      \    \"WinProbability\": 0.1552,\r
+
+      \    \"PredictionType\": 1,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"1a659ba8-d677-4a50-ab5d-55de7822baa8\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"ec20e8b4-3b86-93ea-292a-09574e6fdad9\",\r
+
+      \    \"WinProbability\": 0.4368,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"04ee9b17-dcf8-1b65-99e0-4c86d99e5e1b\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"3bf2a829-4efa-3697-9d81-b36f89a366b0\",\r
+
+      \    \"WinProbability\": 0.159,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"860ab8de-e4bd-b936-b124-1e7d1e520af1\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"df05dea8-6ff8-2206-95d0-78d40fbe1d6f\",\r
+
+      \    \"WinProbability\": 0.3594,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"d0c5276e-c804-b661-7d4d-c063112fd2b7\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"aedc840e-7d8f-35a4-87f4-25245e14f2de\",\r
+
+      \    \"WinProbability\": 0.1041,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"e6d84189-e4fc-197a-76fc-5e5ee81a2ef6\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"48afc555-612e-dd1c-b77f-bd3c4d944ec7\",\r
+
+      \    \"WinProbability\": 0.1333,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"daaa9b0d-6790-1813-5677-859053d71374\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"c65c406d-12df-598f-ad27-9b0e99f02d57\",\r
+
+      \    \"WinProbability\": 0.0282,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"aa9f4562-c182-e0b6-9be2-5db3331339ae\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"a0762dc7-513b-850e-5d24-a5e1c64b53e4\",\r
+
+      \    \"WinProbability\": 0.4977,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"4ed56cb3-c5e5-1d3b-e733-0b89e8768561\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"8d8b234c-3947-e36e-917a-80eec7c1905a\",\r
+
+      \    \"WinProbability\": 0.0701,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"77d2c230-dc8e-2e2c-5d61-94fd07f0cf0a\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"1285b62a-d3a2-fd72-b3de-ce540948cb59\",\r
+
+      \    \"WinProbability\": 0.5895,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"f18d1480-10bf-c6b2-efcb-7838c2d504b3\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"ad3c4a7c-ec1e-07ce-a9c0-961c4bb0beaf\",\r
+
+      \    \"WinProbability\": 0.7817,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"b6f889f4-b13b-8d71-132e-44c5f112c662\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"4cea5e03-d266-c2a4-71b2-8a55cb07bbba\",\r
+
+      \    \"WinProbability\": 0.629,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"b6c6eca8-c5e0-ad1b-d85d-c076896bf19f\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"894d300b-384b-4c70-4944-4fbdf7acd3d5\",\r
+
+      \    \"WinProbability\": 0.1771,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"d2f4d373-c151-42af-86b1-cdecf8864a3d\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"6cb2f813-0f98-c5af-e647-4ddcf2b58398\",\r
+
+      \    \"WinProbability\": 0.1688,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"3cb20079-0de6-c9a0-6789-00d61172723e\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"5723d94c-866b-1dae-66c8-97f3866ce200\",\r
+
+      \    \"WinProbability\": 0.3658,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"c39dac9d-734e-7e64-7543-2d9a53166e9f\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"cdf0c392-1706-280e-c50a-6cd493074b66\",\r
+
+      \    \"WinProbability\": 0.8546,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"bd9eb328-e009-68d6-37d4-16ea5334aa84\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"28096cc9-bfae-23b7-555a-73b649025ab3\",\r
+
+      \    \"WinProbability\": 0.4012,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"cdb0191c-ca18-94df-a763-71e7e0064c38\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"f82fcb03-ec3e-eee5-7d2d-133cf6b3357e\",\r
+
+      \    \"WinProbability\": 0.1208,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"f2ae8fe8-9a7f-bf25-5e36-410d2db34033\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"f612a671-718a-55cd-60f0-8fde6743e286\",\r
+
+      \    \"WinProbability\": 0.5536,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"2508b4ac-a021-c3fe-f157-ca0694943621\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"a813c939-4dc3-8bf3-2293-969edc67885a\",\r
+
+      \    \"WinProbability\": 0.1968,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"864b08a0-5f29-d47e-dba2-3de18c9d48dc\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"ba9a3616-7895-144c-5a50-a47681afd1a8\",\r
+
+      \    \"WinProbability\": 0.5188,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"8aa8ca66-f33e-401d-ebe5-aad9eb9a17eb\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"9130be89-0706-9aa1-927c-06fb75a303cd\",\r
+
+      \    \"WinProbability\": 0.2695,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"7d18c1e6-c729-69ad-84bd-40d926e0b3ae\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"c7184316-a9fa-eaa2-ffe4-7e1ef1ab365f\",\r
+
+      \    \"WinProbability\": 0.6541,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"dbf65807-81fc-b263-27b4-9cf3bf0b9d80\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"7f5ac305-d958-2553-b3d6-b42d6f67715c\",\r
+
+      \    \"WinProbability\": 0.843,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"17a7b4f0-15dd-ab73-cd1b-5a474a1038b6\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"c0697d38-1f79-e955-af73-d9c59db53bb8\",\r
+
+      \    \"WinProbability\": 0.7062,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"81dd88fa-c95b-18c5-e310-143197aeff1c\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"f68697ed-6f86-7f03-4773-fef3d22781f5\",\r
+
+      \    \"WinProbability\": 0.3746,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"f73265c8-2db1-8bf0-f393-40198f18f2af\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"f19bfab5-1ca3-6b8e-be05-212a96f35b13\",\r
+
+      \    \"WinProbability\": 0.5133,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"3880e788-d859-74f8-b759-00b55ba4e53c\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"f3c03a13-7806-c144-9e0e-0d4910ac770d\",\r
+
+      \    \"WinProbability\": 0.4686,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"bb1cfee2-7d0b-3ee1-61e1-d26c75243e39\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"27dfe058-50c2-ef48-569a-a70acd95a7aa\",\r
+
+      \    \"WinProbability\": 0.4165,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"9f1302f2-c4c8-ece0-c5a5-781a3b64c751\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"2bb15a4f-652a-1a5f-3060-dcc3355bac93\",\r
+
+      \    \"WinProbability\": 0.2642,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"3285f5a2-9eb7-4369-8c30-6ae8ab378c41\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"366444ef-e37c-b0b1-816e-572e8cac7965\",\r
+
+      \    \"WinProbability\": 0.476,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"5895bacc-e67e-1a10-ef6f-59f49aeb29a5\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"efc9681c-d39f-85a7-3dfa-862e4cd0d8cb\",\r
+
+      \    \"WinProbability\": 0.6451,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"11c76d72-9c12-4d8d-bef7-f62b240a4af6\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"3283a7e2-96bd-94eb-e839-ba835fb22efc\",\r
+
+      \    \"WinProbability\": 0.5124,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"0ed7c9b1-d143-85eb-2be5-987077000905\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"e9c3b7ad-2c50-5ffb-f1c1-bbea09da198a\",\r
+
+      \    \"WinProbability\": 0.6074,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  },\r
+
+      \  {\r
+
+      \    \"ContestId\": \"ffb2a1a0-fab9-0de6-3116-750a2f08f197\",\r
+
+      \    \"WinnerFranchiseSeasonId\": \"0f4b5a11-d15c-946b-62df-7439ffb49b89\",\r
+
+      \    \"WinProbability\": 0.0913,\r
+
+      \    \"PredictionType\": 2,\r
+
+      \    \"ModelVersion\": \"MetricBot-v1.0.0\"\r
+
+      \  }\r
+
+      ]"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

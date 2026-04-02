@@ -1,0 +1,25 @@
+info:
+  name: gen-url-ident
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{baseUrl}}/Admin/generate-url-identity"
+  headers:
+    - name: X-Admin-Token
+      value: "{{adminToken}}"
+  body:
+    type: json
+    data: "{\r
+
+      \  \"url\": \"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401769076\"\r
+
+      }"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

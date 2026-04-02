@@ -1,0 +1,564 @@
+info:
+  name: Predictor
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/predictor?lang=en
+  params:
+    - name: lang
+      value: en
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: New Request
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/predictor?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:11:38 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "761"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=863, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/predictor?lang=en",
+              "name": "Iowa State Cyclones at Kansas State Wildcats",
+              "shortName": "ISU VS KSU",
+              "lastModified": "2025-08-21T22:14Z",
+              "homeTeam": {
+                  "team": {
+                      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                  },
+                  "statistics": [
+                      {
+                          "name": "gameProjection",
+                          "displayName": "WIN PROB",
+                          "shortDisplayName": "GP",
+                          "description": "Team's predicted win percentage in this game at time of given BPI run",
+                          "abbreviation": "GP",
+                          "value": 62.300999999999995,
+                          "displayValue": "62.3"
+                      },
+                      {
+                          "name": "matchupQuality",
+                          "displayName": "Matchup Quality",
+                          "shortDisplayName": "MQ",
+                          "description": "A measure of projected competitiveness and excitement in the game, using a 0 to 100 scale, with 100 as the most exciting",
+                          "abbreviation": "MQ",
+                          "value": 72.633,
+                          "displayValue": "72.6"
+                      },
+                      {
+                          "name": "oppSeasonStrengthFbsRank",
+                          "displayName": "Opponent Seasson Strength FBS Rank",
+                          "shortDisplayName": "OSS FBS RK",
+                          "description": "",
+                          "abbreviation": "OSS FBS RK",
+                          "value": 33,
+                          "displayValue": "33"
+                      },
+                      {
+                          "name": "oppSeasonStrengthRating",
+                          "displayName": "Opponent Seasson Strength Rating",
+                          "shortDisplayName": "OSS RT",
+                          "description": "",
+                          "abbreviation": "OSS RT",
+                          "value": 7.473,
+                          "displayValue": "7.5"
+                      },
+                      {
+                          "name": "teamChanceLoss",
+                          "displayName": "Team Chance Loss",
+                          "shortDisplayName": "TCL",
+                          "description": "",
+                          "abbreviation": "TCL",
+                          "value": 37.699,
+                          "displayValue": "37.7"
+                      },
+                      {
+                          "name": "teamPctHfa",
+                          "displayName": "Team Percentage HFA",
+                          "shortDisplayName": "TPHFA",
+                          "description": "",
+                          "abbreviation": "TPHFA",
+                          "value": 0,
+                          "displayValue": "0"
+                      },
+                      {
+                          "name": "teamPredPtDiff",
+                          "displayName": "Team Pred. Point Difference",
+                          "shortDisplayName": "TPPD",
+                          "description": "",
+                          "abbreviation": "TPPD",
+                          "value": 3.097,
+                          "displayValue": "3.1"
+                      }
+                  ]
+              },
+              "awayTeam": {
+                  "team": {
+                      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+                  },
+                  "statistics": [
+                      {
+                          "name": "gameProjection",
+                          "displayName": "WIN PROB",
+                          "shortDisplayName": "GP",
+                          "description": "Team's predicted win percentage in this game at time of given BPI run",
+                          "abbreviation": "GP",
+                          "value": 37.699,
+                          "displayValue": "37.7"
+                      },
+                      {
+                          "name": "matchupQuality",
+                          "displayName": "Matchup Quality",
+                          "shortDisplayName": "MQ",
+                          "description": "A measure of projected competitiveness and excitement in the game, using a 0 to 100 scale, with 100 as the most exciting",
+                          "abbreviation": "MQ",
+                          "value": 72.633,
+                          "displayValue": "72.6"
+                      },
+                      {
+                          "name": "oppSeasonStrengthFbsRank",
+                          "displayName": "Opponent Seasson Strength FBS Rank",
+                          "shortDisplayName": "OSS FBS RK",
+                          "description": "",
+                          "abbreviation": "OSS FBS RK",
+                          "value": 18,
+                          "displayValue": "18"
+                      },
+                      {
+                          "name": "oppSeasonStrengthRating",
+                          "displayName": "Opponent Seasson Strength Rating",
+                          "shortDisplayName": "OSS RT",
+                          "description": "",
+                          "abbreviation": "OSS RT",
+                          "value": 11.808,
+                          "displayValue": "11.8"
+                      },
+                      {
+                          "name": "teamChanceLoss",
+                          "displayName": "Team Chance Loss",
+                          "shortDisplayName": "TCL",
+                          "description": "",
+                          "abbreviation": "TCL",
+                          "value": 62.300999999999995,
+                          "displayValue": "62.3"
+                      },
+                      {
+                          "name": "teamPctHfa",
+                          "displayName": "Team Percentage HFA",
+                          "shortDisplayName": "TPHFA",
+                          "description": "",
+                          "abbreviation": "TPHFA",
+                          "value": 0,
+                          "displayValue": "0"
+                      },
+                      {
+                          "name": "teamPredPtDiff",
+                          "displayName": "Team Pred. Point Difference",
+                          "shortDisplayName": "TPPD",
+                          "description": "",
+                          "abbreviation": "TPPD",
+                          "value": -3.097,
+                          "displayValue": "-3.1"
+                      }
+                  ]
+              }
+          }
+  - name: PostTDXP
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/predictor?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:53:31 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "761"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=408, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/predictor?lang=en",
+              "name": "Iowa State Cyclones at Kansas State Wildcats",
+              "shortName": "ISU VS KSU",
+              "lastModified": "2025-08-21T22:14Z",
+              "homeTeam": {
+                  "team": {
+                      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                  },
+                  "statistics": [
+                      {
+                          "name": "gameProjection",
+                          "displayName": "WIN PROB",
+                          "shortDisplayName": "GP",
+                          "description": "Team's predicted win percentage in this game at time of given BPI run",
+                          "abbreviation": "GP",
+                          "value": 62.300999999999995,
+                          "displayValue": "62.3"
+                      },
+                      {
+                          "name": "matchupQuality",
+                          "displayName": "Matchup Quality",
+                          "shortDisplayName": "MQ",
+                          "description": "A measure of projected competitiveness and excitement in the game, using a 0 to 100 scale, with 100 as the most exciting",
+                          "abbreviation": "MQ",
+                          "value": 72.633,
+                          "displayValue": "72.6"
+                      },
+                      {
+                          "name": "oppSeasonStrengthFbsRank",
+                          "displayName": "Opponent Seasson Strength FBS Rank",
+                          "shortDisplayName": "OSS FBS RK",
+                          "description": "",
+                          "abbreviation": "OSS FBS RK",
+                          "value": 33,
+                          "displayValue": "33"
+                      },
+                      {
+                          "name": "oppSeasonStrengthRating",
+                          "displayName": "Opponent Seasson Strength Rating",
+                          "shortDisplayName": "OSS RT",
+                          "description": "",
+                          "abbreviation": "OSS RT",
+                          "value": 7.473,
+                          "displayValue": "7.5"
+                      },
+                      {
+                          "name": "teamChanceLoss",
+                          "displayName": "Team Chance Loss",
+                          "shortDisplayName": "TCL",
+                          "description": "",
+                          "abbreviation": "TCL",
+                          "value": 37.699,
+                          "displayValue": "37.7"
+                      },
+                      {
+                          "name": "teamPctHfa",
+                          "displayName": "Team Percentage HFA",
+                          "shortDisplayName": "TPHFA",
+                          "description": "",
+                          "abbreviation": "TPHFA",
+                          "value": 0,
+                          "displayValue": "0"
+                      },
+                      {
+                          "name": "teamPredPtDiff",
+                          "displayName": "Team Pred. Point Difference",
+                          "shortDisplayName": "TPPD",
+                          "description": "",
+                          "abbreviation": "TPPD",
+                          "value": 3.097,
+                          "displayValue": "3.1"
+                      }
+                  ]
+              },
+              "awayTeam": {
+                  "team": {
+                      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+                  },
+                  "statistics": [
+                      {
+                          "name": "gameProjection",
+                          "displayName": "WIN PROB",
+                          "shortDisplayName": "GP",
+                          "description": "Team's predicted win percentage in this game at time of given BPI run",
+                          "abbreviation": "GP",
+                          "value": 37.699,
+                          "displayValue": "37.7"
+                      },
+                      {
+                          "name": "matchupQuality",
+                          "displayName": "Matchup Quality",
+                          "shortDisplayName": "MQ",
+                          "description": "A measure of projected competitiveness and excitement in the game, using a 0 to 100 scale, with 100 as the most exciting",
+                          "abbreviation": "MQ",
+                          "value": 72.633,
+                          "displayValue": "72.6"
+                      },
+                      {
+                          "name": "oppSeasonStrengthFbsRank",
+                          "displayName": "Opponent Seasson Strength FBS Rank",
+                          "shortDisplayName": "OSS FBS RK",
+                          "description": "",
+                          "abbreviation": "OSS FBS RK",
+                          "value": 18,
+                          "displayValue": "18"
+                      },
+                      {
+                          "name": "oppSeasonStrengthRating",
+                          "displayName": "Opponent Seasson Strength Rating",
+                          "shortDisplayName": "OSS RT",
+                          "description": "",
+                          "abbreviation": "OSS RT",
+                          "value": 11.808,
+                          "displayValue": "11.8"
+                      },
+                      {
+                          "name": "teamChanceLoss",
+                          "displayName": "Team Chance Loss",
+                          "shortDisplayName": "TCL",
+                          "description": "",
+                          "abbreviation": "TCL",
+                          "value": 62.300999999999995,
+                          "displayValue": "62.3"
+                      },
+                      {
+                          "name": "teamPctHfa",
+                          "displayName": "Team Percentage HFA",
+                          "shortDisplayName": "TPHFA",
+                          "description": "",
+                          "abbreviation": "TPHFA",
+                          "value": 0,
+                          "displayValue": "0"
+                      },
+                      {
+                          "name": "teamPredPtDiff",
+                          "displayName": "Team Pred. Point Difference",
+                          "shortDisplayName": "TPPD",
+                          "description": "",
+                          "abbreviation": "TPPD",
+                          "value": -3.097,
+                          "displayValue": "-3.1"
+                      }
+                  ]
+              }
+          }
+  - name: Half
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/predictor?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:54:04 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=900, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/predictor?lang=en",
+              "name": "Iowa State Cyclones at Kansas State Wildcats",
+              "shortName": "ISU VS KSU",
+              "lastModified": "2025-08-21T22:14Z",
+              "homeTeam": {
+                  "team": {
+                      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                  },
+                  "statistics": [
+                      {
+                          "name": "gameProjection",
+                          "displayName": "WIN PROB",
+                          "shortDisplayName": "GP",
+                          "description": "Team's predicted win percentage in this game at time of given BPI run",
+                          "abbreviation": "GP",
+                          "value": 62.300999999999995,
+                          "displayValue": "62.3"
+                      },
+                      {
+                          "name": "matchupQuality",
+                          "displayName": "Matchup Quality",
+                          "shortDisplayName": "MQ",
+                          "description": "A measure of projected competitiveness and excitement in the game, using a 0 to 100 scale, with 100 as the most exciting",
+                          "abbreviation": "MQ",
+                          "value": 72.633,
+                          "displayValue": "72.6"
+                      },
+                      {
+                          "name": "oppSeasonStrengthFbsRank",
+                          "displayName": "Opponent Seasson Strength FBS Rank",
+                          "shortDisplayName": "OSS FBS RK",
+                          "description": "",
+                          "abbreviation": "OSS FBS RK",
+                          "value": 33,
+                          "displayValue": "33"
+                      },
+                      {
+                          "name": "oppSeasonStrengthRating",
+                          "displayName": "Opponent Seasson Strength Rating",
+                          "shortDisplayName": "OSS RT",
+                          "description": "",
+                          "abbreviation": "OSS RT",
+                          "value": 7.473,
+                          "displayValue": "7.5"
+                      },
+                      {
+                          "name": "teamChanceLoss",
+                          "displayName": "Team Chance Loss",
+                          "shortDisplayName": "TCL",
+                          "description": "",
+                          "abbreviation": "TCL",
+                          "value": 37.699,
+                          "displayValue": "37.7"
+                      },
+                      {
+                          "name": "teamPctHfa",
+                          "displayName": "Team Percentage HFA",
+                          "shortDisplayName": "TPHFA",
+                          "description": "",
+                          "abbreviation": "TPHFA",
+                          "value": 0,
+                          "displayValue": "0"
+                      },
+                      {
+                          "name": "teamPredPtDiff",
+                          "displayName": "Team Pred. Point Difference",
+                          "shortDisplayName": "TPPD",
+                          "description": "",
+                          "abbreviation": "TPPD",
+                          "value": 3.097,
+                          "displayValue": "3.1"
+                      }
+                  ]
+              },
+              "awayTeam": {
+                  "team": {
+                      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/66?lang=en"
+                  },
+                  "statistics": [
+                      {
+                          "name": "gameProjection",
+                          "displayName": "WIN PROB",
+                          "shortDisplayName": "GP",
+                          "description": "Team's predicted win percentage in this game at time of given BPI run",
+                          "abbreviation": "GP",
+                          "value": 37.699,
+                          "displayValue": "37.7"
+                      },
+                      {
+                          "name": "matchupQuality",
+                          "displayName": "Matchup Quality",
+                          "shortDisplayName": "MQ",
+                          "description": "A measure of projected competitiveness and excitement in the game, using a 0 to 100 scale, with 100 as the most exciting",
+                          "abbreviation": "MQ",
+                          "value": 72.633,
+                          "displayValue": "72.6"
+                      },
+                      {
+                          "name": "oppSeasonStrengthFbsRank",
+                          "displayName": "Opponent Seasson Strength FBS Rank",
+                          "shortDisplayName": "OSS FBS RK",
+                          "description": "",
+                          "abbreviation": "OSS FBS RK",
+                          "value": 18,
+                          "displayValue": "18"
+                      },
+                      {
+                          "name": "oppSeasonStrengthRating",
+                          "displayName": "Opponent Seasson Strength Rating",
+                          "shortDisplayName": "OSS RT",
+                          "description": "",
+                          "abbreviation": "OSS RT",
+                          "value": 11.808,
+                          "displayValue": "11.8"
+                      },
+                      {
+                          "name": "teamChanceLoss",
+                          "displayName": "Team Chance Loss",
+                          "shortDisplayName": "TCL",
+                          "description": "",
+                          "abbreviation": "TCL",
+                          "value": 62.300999999999995,
+                          "displayValue": "62.3"
+                      },
+                      {
+                          "name": "teamPctHfa",
+                          "displayName": "Team Percentage HFA",
+                          "shortDisplayName": "TPHFA",
+                          "description": "",
+                          "abbreviation": "TPHFA",
+                          "value": 0,
+                          "displayValue": "0"
+                      },
+                      {
+                          "name": "teamPredPtDiff",
+                          "displayName": "Team Pred. Point Difference",
+                          "shortDisplayName": "TPPD",
+                          "description": "",
+                          "abbreviation": "TPPD",
+                          "value": -3.097,
+                          "displayValue": "-3.1"
+                      }
+                  ]
+              }
+          }

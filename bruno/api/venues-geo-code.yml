@@ -1,0 +1,15 @@
+info:
+  name: venues/geo-code
+  type: http
+  seq: 16
+
+http:
+  method: POST
+  url: http://localhost:5231/api/venues
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

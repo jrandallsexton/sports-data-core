@@ -1,0 +1,18 @@
+info:
+  name: rankings-get
+  type: http
+  seq: 12
+
+http:
+  method: POST
+  url: https://api-dev.sportdeets.com/admin/ai-refresh
+  headers:
+    - name: X-Admin-Token
+      value: "{{adminToken}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

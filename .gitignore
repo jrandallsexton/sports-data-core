@@ -426,3 +426,6 @@ Desktop.ini
 .DS_Store
 /src/SportsData.Core/secrets.json
 /src/SportsData.Contest/secrets.json
+
+# Bruno secret environment files
+bruno/**/.env

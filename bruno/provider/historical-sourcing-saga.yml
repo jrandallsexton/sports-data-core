@@ -1,0 +1,22 @@
+info:
+  name: historical-sourcing-saga
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrlProvider}}/api/sourcing/historical/seasons/saga"
+  body:
+    type: json
+    data: |-
+      {
+        "sport": {{sport}},
+        "sourceDataProvider": 0,
+        "seasonYear": 2025
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

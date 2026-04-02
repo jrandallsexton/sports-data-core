@@ -1,0 +1,35 @@
+info:
+  name: Search
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: https://youtube.googleapis.com/youtube/v3/search?key={{googleApiKey}}&q=LSU+Tigers+at+Clemson+Tigers+2025+Highlights&part=snippet&type=video&channelId=UCzRWWsFjqHk1an4OnVPsl9g
+  params:
+    - name: key
+      value: {{googleApiKey}}
+      type: query
+    - name: q
+      value: LSU+Tigers+at+Clemson+Tigers+2025+Highlights
+      type: query
+    - name: part
+      value: snippet
+      type: query
+    - name: type
+      value: video
+      type: query
+    - name: channelId
+      value: UCzRWWsFjqHk1an4OnVPsl9g
+      type: query
+    - name: order
+      value: date
+      type: query
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

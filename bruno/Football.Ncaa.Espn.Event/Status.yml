@@ -1,0 +1,921 @@
+info:
+  name: Status
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en?limit=9
+  params:
+    - name: lang
+      value: en?limit=9
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 00_InProgressPriorToKickoff
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:07:08 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "264"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=8, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 900,
+              "displayClock": "15:00",
+              "period": 1,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "15:00 - 1st Quarter",
+                  "shortDetail": "15:00 - 1st"
+              }
+          }
+  - name: 01_InProgressPostKickoff
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:10:13 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "263"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=2, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 864,
+              "displayClock": "14:24",
+              "period": 1,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "14:24 - 1st Quarter",
+                  "shortDetail": "14:24 - 1st"
+              }
+          }
+  - name: 02_InProgress_Q1_0829
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:22:53 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "263"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=9, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 509,
+              "displayClock": "8:29",
+              "period": 1,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "8:29 - 1st Quarter",
+                  "shortDetail": "8:29 - 1st"
+              }
+          }
+  - name: 03_InProgress_Q1_0039
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:44:22 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "261"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=6, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 39,
+              "displayClock": "0:39",
+              "period": 1,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "0:39 - 1st Quarter",
+                  "shortDetail": "0:39 - 1st"
+              }
+          }
+  - name: 04_InProgress_Q1_0000
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:44:36 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "261"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=4, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 0,
+              "displayClock": "0:00",
+              "period": 1,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "End of 1st Quarter",
+                  "shortDetail": "End of 1st"
+              }
+          }
+  - name: 05_InProgress_Q2_1456
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:49:49 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "264"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=7, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 895,
+              "displayClock": "14:55",
+              "period": 2,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "14:55 - 2nd Quarter",
+                  "shortDetail": "14:55 - 2nd"
+              }
+          }
+  - name: 06_InProgress_Q2_1059
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:03:30 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "264"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=9, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 659,
+              "displayClock": "10:59",
+              "period": 2,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "10:59 - 2nd Quarter",
+                  "shortDetail": "10:59 - 2nd"
+              }
+          }
+  - name: 07_InProgress_Q2_0629
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:17:59 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "263"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=5, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 389,
+              "displayClock": "6:29",
+              "period": 2,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "6:29 - 2nd Quarter",
+                  "shortDetail": "6:29 - 2nd"
+              }
+          }
+  - name: 08_InProgress_Q2_0009
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:36:15 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "261"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=4, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 9,
+              "displayClock": "0:09",
+              "period": 2,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "0:09 - 2nd Quarter",
+                  "shortDetail": "0:09 - 2nd"
+              }
+          }
+  - name: 09_InProgress_Q2_0002
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:36:59 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 2,
+              "displayClock": "0:02",
+              "period": 2,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "0:02 - 2nd Quarter",
+                  "shortDetail": "0:02 - 2nd"
+              }
+          }
+  - name: 10_InProgress_Q2_0000
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:37:46 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 0,
+              "displayClock": "0:00",
+              "period": 2,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "End of 2nd Quarter",
+                  "shortDetail": "End of 2nd"
+              }
+          }
+  - name: 11_InProgress_Halftime
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:51:27 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Content-Length
+          value: "242"
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=4, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 0,
+              "displayClock": "0:00",
+              "period": 2,
+              "type": {
+                  "id": "23",
+                  "name": "STATUS_HALFTIME",
+                  "state": "in",
+                  "completed": false,
+                  "description": "Halftime",
+                  "detail": "Halftime",
+                  "shortDetail": "Halftime"
+              }
+          }
+  - name: 12_InProgress_Q3_1500
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:58:52 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 900,
+              "displayClock": "15:00",
+              "period": 3,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "15:00 - 3rd Quarter",
+                  "shortDetail": "15:00 - 3rd"
+              }
+          }
+  - name: 13_InProgress_Q3_1455
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 17:59:45 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 895,
+              "displayClock": "14:55",
+              "period": 3,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "14:55 - 3rd Quarter",
+                  "shortDetail": "14:55 - 3rd"
+              }
+          }
+  - name: 14_InProgress_Q3_0706
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 18:17:30 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en",
+              "clock": 426,
+              "displayClock": "7:06",
+              "period": 3,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "7:06 - 3rd Quarter",
+                  "shortDetail": "7:06 - 3rd"
+              }
+          }
+  - name: 15_InProgress_Q3_0000
+    request:
+      url: https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en?limit=9
+      method: GET
+      params:
+        - name: lang
+          value: en?limit=9
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 18:33:33 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en&region=us",
+              "clock": 0,
+              "displayClock": "0:00",
+              "period": 3,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "End of 3rd Quarter",
+                  "shortDetail": "End of 3rd"
+              }
+          }
+  - name: 16_InProgress_Q4_1101
+    request:
+      url: https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en?limit=9
+      method: GET
+      params:
+        - name: lang
+          value: en?limit=9
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 18:48:09 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en&region=us",
+              "clock": 661,
+              "displayClock": "11:01",
+              "period": 4,
+              "type": {
+                  "id": "2",
+                  "name": "STATUS_IN_PROGRESS",
+                  "state": "in",
+                  "completed": false,
+                  "description": "In Progress",
+                  "detail": "11:01 - 4th Quarter",
+                  "shortDetail": "11:01 - 4th"
+              }
+          }
+  - name: 17_Final
+    request:
+      url: https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en?limit=9
+      method: GET
+      params:
+        - name: lang
+          value: en?limit=9
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 19:46:27 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/status?lang=en&region=us",
+              "clock": 0,
+              "displayClock": "0:00",
+              "period": 4,
+              "type": {
+                  "id": "3",
+                  "name": "STATUS_FINAL",
+                  "state": "post",
+                  "completed": true,
+                  "description": "Final",
+                  "detail": "Final",
+                  "shortDetail": "Final"
+              }
+          }

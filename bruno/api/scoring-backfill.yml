@@ -1,0 +1,27 @@
+info:
+  name: scoring-backfill
+  type: http
+  seq: 14
+
+http:
+  method: POST
+  url: "{{baseUrl}}/admin/backfill-league-scores/2025"
+  headers:
+    - name: X-Admin-Token
+      value: "{{adminToken}}"
+  body:
+    type: json
+    data: "{\r
+
+      \  \"name\": \"Hello\",\r
+
+      \  \"text\": \"Testing external connectivity from the internet, to the k8s cluster, over to Ollama.\"\r
+
+      }"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

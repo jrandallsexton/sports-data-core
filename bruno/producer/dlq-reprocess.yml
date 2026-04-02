@@ -1,0 +1,21 @@
+info:
+  name: dlq-reprocess
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrlProducer}}/api/dead-letter/reprocess?count=4999"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  params:
+    - name: count
+      value: "4999"
+      type: query
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

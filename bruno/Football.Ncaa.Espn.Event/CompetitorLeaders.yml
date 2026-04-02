@@ -1,0 +1,682 @@
+info:
+  name: CompetitorLeaders
+  type: http
+  seq: 10
+
+http:
+  method: GET
+  url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/leaders?lang=en
+  params:
+    - name: lang
+      value: en
+      type: query
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: CompetitorLeaders
+    request:
+      url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/leaders?lang=en
+      method: GET
+      params:
+        - name: lang
+          value: en
+          type: query
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Date
+          value: Sat, 23 Aug 2025 16:48:30 GMT
+        - name: Content-Type
+          value: application/json;charset=utf-8
+        - name: Transfer-Encoding
+          value: chunked
+        - name: Connection
+          value: keep-alive
+        - name: access-control-allow-origin
+          value: "*"
+        - name: content-encoding
+          value: gzip
+        - name: via
+          value: 1.1 varnish (Varnish/6.0)
+        - name: Cache-Control
+          value: max-age=10, stale-while-revalidate=7200
+        - name: vary
+          value: Accept-Encoding
+        - name: accept-ranges
+          value: bytes
+      body:
+        type: json
+        data: |-
+          {
+              "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/leaders?lang=en",
+              "id": "0",
+              "name": "Season",
+              "abbreviation": "Season",
+              "type": "season",
+              "categories": [
+                  {
+                      "name": "passingLeader",
+                      "displayName": "Passing Leader",
+                      "shortDisplayName": "PASS",
+                      "abbreviation": "PYDS",
+                      "leaders": [
+                          {
+                              "displayValue": "1/4, -3 YDS",
+                              "value": -3,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870857?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4870857/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "rushingLeader",
+                      "displayName": "Rushing Leader",
+                      "shortDisplayName": "RUSH",
+                      "abbreviation": "RYDS",
+                      "leaders": [
+                          {
+                              "displayValue": "1 CAR, 33 YDS",
+                              "value": 33,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5121334?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5121334/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "6 CAR, 19 YDS",
+                              "value": 19,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5078916?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5078916/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "1 CAR, 10 YDS",
+                              "value": 10,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079651?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5079651/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "1 CAR, 6 YDS",
+                              "value": 6,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870857?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4870857/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "receivingLeader",
+                      "displayName": "Receiving Leader",
+                      "shortDisplayName": "REC",
+                      "abbreviation": "RECYDS",
+                      "leaders": [
+                          {
+                              "displayValue": "1 REC, -3 YDS",
+                              "value": -3,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4597240?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4597240/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "passingYards",
+                      "displayName": "Passing Yards",
+                      "shortDisplayName": "PYDS",
+                      "abbreviation": "YDS",
+                      "leaders": [
+                          {
+                              "displayValue": "-3",
+                              "value": -3,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870857?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4870857/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "rushingYards",
+                      "displayName": "Rushing Yards",
+                      "shortDisplayName": "RYDS",
+                      "abbreviation": "YDS",
+                      "leaders": [
+                          {
+                              "displayValue": "33",
+                              "value": 33,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5121334?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5121334/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "19",
+                              "value": 19,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5078916?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5078916/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "10",
+                              "value": 10,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079651?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5079651/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "6",
+                              "value": 6,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870857?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4870857/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "receivingYards",
+                      "displayName": "Receiving Yards",
+                      "shortDisplayName": "RECYDS",
+                      "abbreviation": "YDS",
+                      "leaders": [
+                          {
+                              "displayValue": "-3",
+                              "value": -3,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4597240?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4597240/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "totalTackles",
+                      "displayName": "Tackles",
+                      "shortDisplayName": "TACK",
+                      "abbreviation": "TOT",
+                      "leaders": [
+                          {
+                              "displayValue": "1",
+                              "value": 1,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4857878?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4857878/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "1",
+                              "value": 1,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4923029?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4923029/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "sacks",
+                      "displayName": "Sacks",
+                      "shortDisplayName": "SACK",
+                      "abbreviation": "SACK",
+                      "leaders": [
+                          {
+                              "displayValue": "1",
+                              "value": 1,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4857878?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4857878/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "1",
+                              "value": 1,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4923029?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4923029/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "interceptions",
+                      "displayName": "Interceptions",
+                      "shortDisplayName": "INT",
+                      "abbreviation": "INT",
+                      "leaders": []
+                  },
+                  {
+                      "name": "puntReturns",
+                      "displayName": "Punt Returns",
+                      "shortDisplayName": "PR",
+                      "abbreviation": "PR",
+                      "leaders": [
+                          {
+                              "displayValue": "1",
+                              "value": 1,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4918414?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4918414/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "kickReturns",
+                      "displayName": "Kick Returns",
+                      "shortDisplayName": "KR",
+                      "abbreviation": "KR",
+                      "leaders": []
+                  },
+                  {
+                      "name": "punts",
+                      "displayName": "Punts",
+                      "shortDisplayName": "P",
+                      "abbreviation": "P",
+                      "leaders": [
+                          {
+                              "displayValue": "2",
+                              "value": 2,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5092224?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5092224/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "totalKickingPoints",
+                      "displayName": "Kicking Points",
+                      "shortDisplayName": "TP",
+                      "abbreviation": "TP",
+                      "leaders": []
+                  },
+                  {
+                      "name": "fumbles",
+                      "displayName": "Fumbles",
+                      "shortDisplayName": "F",
+                      "abbreviation": "F",
+                      "leaders": [
+                          {
+                              "displayValue": "1",
+                              "value": 1,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4918414?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4918414/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "fumblesLost",
+                      "displayName": "Fumbles Lost",
+                      "shortDisplayName": "FL",
+                      "abbreviation": "FL",
+                      "leaders": [
+                          {
+                              "displayValue": "1",
+                              "value": 1,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4918414?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4918414/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "fumblesRecovered",
+                      "displayName": "Fumbles Recovered",
+                      "shortDisplayName": "CMP",
+                      "abbreviation": "CMP",
+                      "leaders": [
+                          {
+                              "displayValue": "1",
+                              "value": 1,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5084891?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5084891/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "espnRating",
+                      "displayName": "ESPN Rating Leader",
+                      "shortDisplayName": "ESPNRating",
+                      "abbreviation": "ESPNRating",
+                      "leaders": [
+                          {
+                              "displayValue": "",
+                              "value": 3.299999952316284,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5121334?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5121334/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "6 CAR, 19 YDS",
+                              "value": 1.899999976158142,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5078916?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5078916/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "1 CAR, 10 YDS",
+                              "value": 1,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/5079651?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/5079651/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "1-4",
+                              "value": 0.48000001907348633,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870857?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4870857/statistics/0?lang=en"
+                              }
+                          },
+                          {
+                              "displayValue": "",
+                              "value": -0.30000001192092896,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4597240?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4597240/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "passingTouchdowns",
+                      "displayName": "Passing Touchdowns",
+                      "shortDisplayName": "TD",
+                      "abbreviation": "TD",
+                      "leaders": []
+                  },
+                  {
+                      "name": "quarterbackRating",
+                      "displayName": "Quarterback Rating",
+                      "shortDisplayName": "RAT",
+                      "abbreviation": "RAT",
+                      "leaders": [
+                          {
+                              "displayValue": "39.6",
+                              "value": 39.583335876464844,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870857?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4870857/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "rushingTouchdowns",
+                      "displayName": "Rushing Touchdowns",
+                      "shortDisplayName": "TD",
+                      "abbreviation": "TD",
+                      "leaders": []
+                  },
+                  {
+                      "name": "receptions",
+                      "displayName": "Receptions",
+                      "shortDisplayName": "REC",
+                      "abbreviation": "REC",
+                      "leaders": [
+                          {
+                              "displayValue": "1",
+                              "value": 1,
+                              "rel": [
+                                  "athlete"
+                              ],
+                              "athlete": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4597240?lang=en"
+                              },
+                              "team": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/2306?lang=en"
+                              },
+                              "statistics": {
+                                  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401756846/competitions/401756846/competitors/2306/roster/4597240/statistics/0?lang=en"
+                              }
+                          }
+                      ]
+                  },
+                  {
+                      "name": "receivingTouchdowns",
+                      "displayName": "Receiving Touchdowns",
+                      "shortDisplayName": "TD",
+                      "abbreviation": "TD",
+                      "leaders": []
+                  }
+              ]
+          }

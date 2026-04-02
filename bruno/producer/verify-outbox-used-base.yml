@@ -1,0 +1,24 @@
+info:
+  name: verify-outbox-used-base
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: "{{baseUrlProducer}}/api/test/outbox/base/publish-no-entity-changes"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: "{\r
+
+      \  \"url\": \"http://foo.com\"\r
+
+      }"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

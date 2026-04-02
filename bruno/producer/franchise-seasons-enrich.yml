@@ -1,0 +1,20 @@
+info:
+  name: franchise-seasons-enrich
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrlProducer}}/api/franchise-seasons/seasonYear/2011/enrich"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

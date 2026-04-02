@@ -1,0 +1,35 @@
+info:
+  name: add matchup to league
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/ui/leagues/aa7a482f-2204-429a-bb7c-75bc2dfef92b/matchups"
+  headers:
+    - name: X-Admin-Token
+      value: "{{adminToken}}"
+      disabled: true
+    - name: Authorization
+      value: "Bearer {{firebaseToken}}"
+      disabled: true
+  body:
+    type: json
+    data: "{\r
+
+      \  \"leagueId\": \"aa7a482f-2204-429a-bb7c-75bc2dfef92b\",\r
+
+      \  \"contestId\": \"564402c1-f0bf-4454-3c35-02951ba53000\",\r
+
+      \  \"correlationId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r
+
+      }"
+  auth:
+    type: bearer
+    token: "{{firebaseToken}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

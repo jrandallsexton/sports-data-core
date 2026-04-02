@@ -1,0 +1,16 @@
+name: prod-footballncaa
+variables:
+  - name: baseUrlApi
+    value: https://api.sportdeets.com
+  - name: baseUrlProvider
+    value: https://provider.football-ncaa.sportdeets.com
+  - name: baseUrlProducer
+    value: https://producer.football-ncaa.sportdeets.com
+  - name: sport
+    value: 2
+  - name: sportName
+    value: FootballNcaa
+  - name: adminToken
+    value: "{{adminToken}}"
+  - name: googleApiKey
+    value: "{{googleApiKey}}"

@@ -164,9 +164,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.Description).IsRequired().HasMaxLength(250);
                 builder.Property(x => x.SequenceNumber).IsRequired().HasMaxLength(20);
                 builder.Property(x => x.Ordinal).IsRequired();
-                builder.Property(x => x.Result).HasMaxLength(50);
-                builder.Property(x => x.ShortDisplayResult).HasMaxLength(50);
-                builder.Property(x => x.DisplayResult).HasMaxLength(50);
+                builder.Property(x => x.Result).HasMaxLength(150);
+                builder.Property(x => x.ShortDisplayResult).HasMaxLength(150);
+                builder.Property(x => x.DisplayResult).HasMaxLength(150);
                 builder.Property(x => x.SourceId).HasMaxLength(20);
                 builder.Property(x => x.SourceDescription).HasMaxLength(100);
                 builder.Property(x => x.StartText).HasMaxLength(100);

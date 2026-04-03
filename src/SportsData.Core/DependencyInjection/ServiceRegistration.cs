@@ -281,13 +281,13 @@ namespace SportsData.Core.DependencyInjection
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>(apiName, tags: ["live", "ready"])
                 //.AddCheck<CachingHealthCheck>("caching")
-                .AddCheck<LoggingHealthCheck>("logging", tags: ["ready"])
+                .AddCheck<LoggingHealthCheck>("logging", tags: ["ready"]);
                 //.AddCheck<ClientHealthCheck<IProvideContests>>(HttpClients.ContestClient)
                 //.AddCheck<ClientHealthCheck<IProvideFranchises>>(HttpClients.FranchiseClient)
                 //.AddCheck<ClientHealthCheck<IProvideNotifications>>(HttpClients.NotificationClient)
                 //.AddCheck<ClientHealthCheck<IProvidePlayers>>(HttpClients.PlayerClient)
                 //.AddCheck<ClientHealthCheck<IProvideProducers>>(HttpClients.ProducerClient)
-                .AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient, tags: ["ready"]);
+                //.AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient, tags: ["ready"]);
             //.AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
             //.AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
 
@@ -458,15 +458,19 @@ namespace SportsData.Core.DependencyInjection
             /* End YouTube */
 
             // Register single-mode services
-            services
-                .AddHttpClient<IProvideProviders, ProviderClient>(HttpClients.ProviderClient, c =>
-                {
-                    c.BaseAddress = new Uri(configuration[CommonConfigKeys.GetProviderProviderUri()]!);
-                    c.Timeout = TimeSpan.FromSeconds(60);
-                    c.DefaultRequestVersion = HttpVersion.Version20;
-                    c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
-                })
-                .AddPolicyHandlerFromRegistry("HttpRetry");
+            var providerApiUrl = configuration[CommonConfigKeys.GetProviderProviderUri()];
+            if (!string.IsNullOrEmpty(providerApiUrl))
+            {
+                services
+                    .AddHttpClient<IProvideProviders, ProviderClient>(HttpClients.ProviderClient, c =>
+                    {
+                        c.BaseAddress = new Uri(providerApiUrl);
+                        c.Timeout = TimeSpan.FromSeconds(60);
+                        c.DefaultRequestVersion = HttpVersion.Version20;
+                        c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+                    })
+                    .AddPolicyHandlerFromRegistry("HttpRetry");
+            }
 
             // Client factories handle resolution by sport/league mode
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();

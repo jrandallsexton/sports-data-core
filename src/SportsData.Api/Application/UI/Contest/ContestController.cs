@@ -5,6 +5,7 @@ using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
 using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 
@@ -18,11 +19,13 @@ public class ContestController : ApiControllerBase
     [HttpGet("{id}/overview")]
     public async Task<ActionResult<ContestOverviewDto>> GetContestById(
         [FromRoute] Guid id,
-        [FromServices] IGetContestOverviewQueryHandler handler,
-        CancellationToken cancellationToken)
+        [FromQuery] string sport = "football",
+        [FromQuery] string league = "ncaa",
+        [FromServices] IGetContestOverviewQueryHandler handler = default!,
+        CancellationToken cancellationToken = default)
     {
-        // TODO: Support multiple sports
-        var query = new GetContestOverviewQuery { ContestId = id, Sport = Sport.FootballNcaa};
+        var mode = ModeMapper.ResolveMode(sport, league);
+        var query = new GetContestOverviewQuery { ContestId = id, Sport = mode };
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
@@ -31,11 +34,13 @@ public class ContestController : ApiControllerBase
     [HttpPost("{id}/refresh")]
     public async Task<ActionResult<Guid>> RefreshContestById(
         [FromRoute] Guid id,
-        [FromServices] IRefreshContestCommandHandler handler,
-        CancellationToken cancellationToken)
+        [FromQuery] string sport = "football",
+        [FromQuery] string league = "ncaa",
+        [FromServices] IRefreshContestCommandHandler handler = default!,
+        CancellationToken cancellationToken = default)
     {
-        // TODO: Support multiple sports
-        var command = new RefreshContestCommand { ContestId = id, Sport = Sport.FootballNcaa };
+        var mode = ModeMapper.ResolveMode(sport, league);
+        var command = new RefreshContestCommand { ContestId = id, Sport = mode };
         var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();
@@ -44,11 +49,13 @@ public class ContestController : ApiControllerBase
     [HttpPost("{id}/media/refresh")]
     public async Task<ActionResult<Guid>> RefreshContestMediaById(
         [FromRoute] Guid id,
-        [FromServices] IRefreshContestMediaCommandHandler handler,
-        CancellationToken cancellationToken)
+        [FromQuery] string sport = "football",
+        [FromQuery] string league = "ncaa",
+        [FromServices] IRefreshContestMediaCommandHandler handler = default!,
+        CancellationToken cancellationToken = default)
     {
-        // TODO: Support multiple sports
-        var command = new RefreshContestMediaCommand { ContestId = id, Sport = Sport.FootballNcaa };
+        var mode = ModeMapper.ResolveMode(sport, league);
+        var command = new RefreshContestMediaCommand { ContestId = id, Sport = mode };
         var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();

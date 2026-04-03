@@ -19,122 +19,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Services
             _sut = new DocumentInclusionService(_loggerMock.Object);
         }
 
-        #region DecodeJson Tests
-
-        [Fact]
-        public void DecodeJson_WithHtmlEncodedJson_DecodesCorrectly()
-        {
-            // Arrange
-            var encodedJson = "{&quot;name&quot;:&quot;LSU Tigers&quot;,&quot;id&quot;:&quot;333&quot;}";
-
-            // Act
-            var result = _sut.DecodeJson(encodedJson);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Equal("{\"name\":\"LSU Tigers\",\"id\":\"333\"}", result);
-            Assert.DoesNotContain("&quot;", result);
-        }
-
-        [Fact]
-        public void DecodeJson_WithMultipleHtmlEntities_DecodesAll()
-        {
-            // Arrange
-            var encodedJson = "{&quot;tag&quot;:&quot;&lt;div&gt;A&amp;B&lt;/div&gt;&quot;,&quot;url&quot;:&quot;api&#x2F;data&quot;}";
-
-            // Act
-            var result = _sut.DecodeJson(encodedJson);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Contains("\"<div>A&B</div>\"", result);
-            Assert.Contains("\"api/data\"", result);
-            Assert.DoesNotContain("&quot;", result);
-            Assert.DoesNotContain("&lt;", result);
-            Assert.DoesNotContain("&gt;", result);
-            Assert.DoesNotContain("&amp;", result);
-            Assert.DoesNotContain("&#x2F;", result);
-        }
-
-        [Fact]
-        public void DecodeJson_WithAlreadyValidJson_ReturnsUnchanged()
-        {
-            // Arrange
-            var validJson = "{\"name\":\"LSU Tigers\",\"id\":\"333\"}";
-
-            // Act
-            var result = _sut.DecodeJson(validJson);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Equal(validJson, result);
-        }
-
-        [Fact]
-        public void DecodeJson_WithNullInput_ReturnsNull()
-        {
-            // Act
-            var result = _sut.DecodeJson(null);
-
-            // Assert
-            Assert.Null(result);
-        }
-
-        [Fact]
-        public void DecodeJson_WithEmptyString_ReturnsNull()
-        {
-            // Act
-            var result = _sut.DecodeJson(string.Empty);
-
-            // Assert
-            Assert.Null(result);
-        }
-
-        [Fact]
-        public void DecodeJson_WithWhitespaceString_ReturnsWhitespace()
-        {
-            // Arrange
-            var whitespace = "   ";
-
-            // Act
-            var result = _sut.DecodeJson(whitespace);
-
-            // Assert - Whitespace is valid input, returns as-is
-            Assert.Equal(whitespace, result);
-        }
-
-        [Fact]
-        public void DecodeJson_WithComplexNestedJson_DecodesCorrectly()
-        {
-            // Arrange
-            var encodedJson = "{&quot;data&quot;:{&quot;nested&quot;:{&quot;value&quot;:&quot;test&quot;}}}";
-
-            // Act
-            var result = _sut.DecodeJson(encodedJson);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Equal("{\"data\":{\"nested\":{\"value\":\"test\"}}}", result);
-        }
-
-        #endregion
-
         #region GetIncludableJson Tests
-
-        [Fact]
-        public void GetIncludableJson_WithSmallEncodedDocument_ReturnsDecodedJson()
-        {
-            // Arrange
-            var encodedJson = "{&quot;id&quot;:123,&quot;name&quot;:&quot;Test&quot;}";
-
-            // Act
-            var result = _sut.GetIncludableJson(encodedJson);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Equal("{\"id\":123,\"name\":\"Test\"}", result);
-            Assert.DoesNotContain("&quot;", result);
-        }
 
         [Fact]
         public void GetIncludableJson_WithSmallValidDocument_ReturnsJson()
@@ -158,23 +43,6 @@ namespace SportsData.Provider.Tests.Unit.Application.Services
 
             // Act
             var result = _sut.GetIncludableJson(largeJson);
-
-            // Assert
-            Assert.Null(result);
-        }
-
-        [Fact]
-        public void GetIncludableJson_WithLargeEncodedDocument_ReturnsNull()
-        {
-            // Arrange - Create large encoded document that's STILL large after decoding
-            // Each repetition: {&quot;data&quot;:&quot;xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx&quot;} 
-            // becomes: {"data":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"} after decoding
-            var largeContent = new string('x', 100); // 100 chars of data per object
-            var encodedObject = $"{{&quot;data&quot;:&quot;{largeContent}&quot;}}";
-            var largeEncodedJson = string.Concat(Enumerable.Repeat(encodedObject, 3000)); // ~300KB after decoding
-
-            // Act
-            var result = _sut.GetIncludableJson(largeEncodedJson);
 
             // Assert
             Assert.Null(result);
@@ -245,6 +113,22 @@ namespace SportsData.Provider.Tests.Unit.Application.Services
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
+        }
+
+        [Fact]
+        public void GetIncludableJson_PreservesHtmlEntitiesInJson()
+        {
+            // Arrange - JSON with HTML entities in string values (from ESPN play descriptions)
+            // These must NOT be decoded, as that would break the JSON structure
+            var jsonWithEntities = "{\"text\":\"Pass complete on a &quot;Skinny Post&quot;\",\"id\":123}";
+
+            // Act
+            var result = _sut.GetIncludableJson(jsonWithEntities);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(jsonWithEntities, result);
+            Assert.Contains("&quot;", result);
         }
 
         #endregion
@@ -379,39 +263,9 @@ namespace SportsData.Provider.Tests.Unit.Application.Services
         #region Integration Scenarios
 
         [Fact]
-        public void Scenario_EncodedSmallDocument_DecodesAndIncludes()
+        public void Scenario_SmallDocument_Includes()
         {
-            // Arrange - Real-world scenario: Small encoded JSON from Cosmos
-            var cosmosJson = "{&quot;$ref&quot;:&quot;http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/333&quot;,&quot;id&quot;:&quot;333&quot;,&quot;uid&quot;:&quot;s:80~l:23~t:333&quot;,&quot;slug&quot;:&quot;lsu-tigers&quot;,&quot;location&quot;:&quot;LSU&quot;,&quot;name&quot;:&quot;Tigers&quot;,&quot;nickname&quot;:&quot;Tigers&quot;,&quot;abbreviation&quot;:&quot;LSU&quot;}";
-
-            // Act
-            var result = _sut.GetIncludableJson(cosmosJson);
-
-            // Assert
-            Assert.NotNull(result);
-            Assert.Contains("\"$ref\":", result);
-            Assert.Contains("\"LSU\"", result);
-            Assert.Contains("\"Tigers\"", result);
-            Assert.DoesNotContain("&quot;", result);
-        }
-
-        [Fact]
-        public void Scenario_EncodedLargeDocument_DecodesButExcludesForSize()
-        {
-            // Arrange - Large encoded document that decodes but still exceeds limit
-            var largeEncodedContent = string.Concat(Enumerable.Repeat("{&quot;data&quot;:&quot;x&quot;}", 20_000));
-
-            // Act
-            var result = _sut.GetIncludableJson(largeEncodedContent);
-
-            // Assert
-            Assert.Null(result); // Too large even after decoding
-        }
-
-        [Fact]
-        public void Scenario_AlreadyDecodedSmallDocument_ReturnsAsIs()
-        {
-            // Arrange - Document already in valid JSON format
+            // Arrange
             var validJson = "{\"id\":\"333\",\"name\":\"LSU Tigers\"}";
 
             // Act
@@ -420,6 +274,34 @@ namespace SportsData.Provider.Tests.Unit.Application.Services
             // Assert
             Assert.NotNull(result);
             Assert.Equal(validJson, result);
+        }
+
+        [Fact]
+        public void Scenario_LargeDocument_Excludes()
+        {
+            // Arrange - Create large document that exceeds limit
+            var largeJson = new string('x', 300_000);
+
+            // Act
+            var result = _sut.GetIncludableJson(largeJson);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void Scenario_EspnPlayWithHtmlEntities_PreservesIntact()
+        {
+            // Arrange - Real ESPN play description with HTML-encoded quotes
+            var espnPlayJson = "{\"$ref\":\"http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/301031006/competitions/301031006/plays/3010310062184\",\"text\":\"D.Garrard pass short middle to M.Sims-Walker to JAX 48 for 29 yards (G.Sensabaugh). Pass complete on a &quot;Skinny Post&quot;\",\"type\":{\"id\":\"51\",\"text\":\"Pass\"}}";
+
+            // Act
+            var result = _sut.GetIncludableJson(espnPlayJson);
+
+            // Assert - HTML entities must be preserved, not decoded
+            Assert.NotNull(result);
+            Assert.Equal(espnPlayJson, result);
+            Assert.Contains("&quot;Skinny Post&quot;", result);
         }
 
         #endregion

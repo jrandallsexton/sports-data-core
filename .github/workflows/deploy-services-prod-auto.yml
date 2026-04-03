@@ -1,5 +1,8 @@
 name: Deploy Services to Production (Auto Latest)
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -229,3 +232,26 @@ jobs:
             
             echo "✅ Changes committed to sports-data-config. Flux will deploy automatically."
           fi
+
+  smoke-tests:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sports-data repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Wait for Flux reconciliation and pod rollout
+        run: |
+          echo "Waiting 5m30s for Flux to reconcile and pods to roll out..."
+          sleep 330
+
+      - name: Run smoke tests
+        env:
+          SMOKE_TEST_BASE_URL: https://api.sportdeets.com
+          SMOKE_TEST_API_KEY: ${{ secrets.SMOKE_TEST_API_KEY }}
+        run: dotnet test test/smoke/SportsData.Api.Tests.Smoke/ --verbosity normal

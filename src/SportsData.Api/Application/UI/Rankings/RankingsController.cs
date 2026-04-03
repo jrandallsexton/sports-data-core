@@ -8,6 +8,7 @@ using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollSeasonWeek
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsBySeasonYear;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Extensions;
 
 namespace SportsData.Api.Application.UI.Rankings;
@@ -29,16 +30,18 @@ public class RankingsController : ApiControllerBase
     [HttpGet("{seasonYear}")]
     public async Task<ActionResult<List<RankingsByPollIdByWeekDto>>> GetPolls(
         [FromRoute] int seasonYear,
-        [FromServices] IGetRankingsBySeasonYearQueryHandler handler,
-        CancellationToken cancellationToken)
+        [FromQuery] string sport = "football",
+        [FromQuery] string league = "ncaa",
+        [FromServices] IGetRankingsBySeasonYearQueryHandler handler = default!,
+        CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("GetPolls called with seasonYear={SeasonYear}", seasonYear);
 
         try
         {
-            // TODO: Support multiple sports
+            var mode = ModeMapper.ResolveMode(sport, league);
             var result = await handler.ExecuteAsync(
-                new GetRankingsBySeasonYearQuery { SeasonYear = seasonYear, Sport = Sport.FootballNcaa },
+                new GetRankingsBySeasonYearQuery { SeasonYear = seasonYear, Sport = mode },
                 cancellationToken);
 
             if (result.IsSuccess)
@@ -110,14 +113,18 @@ public class RankingsController : ApiControllerBase
     public async Task<ActionResult<RankingsByPollIdByWeekDto>> GetRankingsBySeasonWeekId(
         [FromRoute] Guid seasonWeekId,
         [FromRoute] string poll,
-        [FromServices] IGetRankingsByPollSeasonWeekIdQueryHandler handler,
-        CancellationToken cancellationToken)
+        [FromQuery] string sport = "football",
+        [FromQuery] string league = "ncaa",
+        [FromServices] IGetRankingsByPollSeasonWeekIdQueryHandler handler = default!,
+        CancellationToken cancellationToken = default)
     {
+        var mode = ModeMapper.ResolveMode(sport, league);
         var result = await handler.ExecuteAsync(
             new GetRankingsByPollSeasonWeekIdQuery
             {
                 SeasonWeekId = seasonWeekId,
-                Poll = poll
+                Poll = poll,
+                Sport = mode
             },
             cancellationToken);
 

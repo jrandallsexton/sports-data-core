@@ -24,8 +24,12 @@ public class ApiResourceRefGenerator : IGenerateApiResourceRefs
     public ApiResourceRefGenerator(IConfiguration configuration)
     {
         // External API base URL from Azure AppConfig
-        _externalApiBaseUrl = configuration["SportsData.Api:ApiConfig:BaseUrl"]
+        var baseUrl = configuration["SportsData.Api:ApiConfig:BaseUrl"]
             ?? throw new InvalidOperationException("SportsData.Api:ApiConfig:BaseUrl not configured in Azure AppConfig");
+        baseUrl = baseUrl.TrimEnd('/');
+        if (!baseUrl.EndsWith("/api"))
+            baseUrl += "/api";
+        _externalApiBaseUrl = baseUrl + "/";
     }
 
     public Uri ForVenue(Guid venueId, string sport, string league)

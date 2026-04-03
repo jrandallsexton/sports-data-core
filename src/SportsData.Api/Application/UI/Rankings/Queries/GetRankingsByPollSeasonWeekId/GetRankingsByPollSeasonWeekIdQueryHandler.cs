@@ -38,7 +38,7 @@ public class GetRankingsByPollSeasonWeekIdQueryHandler : IGetRankingsByPollSeaso
             "GetRankingsByPollSeasonWeekId: SeasonWeekId={SeasonWeekId}, Poll={Poll}",
             query.SeasonWeekId, poll);
 
-        var seasonClient = _seasonClientFactory.Resolve(Sport.FootballNcaa);
+        var seasonClient = _seasonClientFactory.Resolve(query.Sport);
         var result = await seasonClient.GetPollBySeasonWeekId(query.SeasonWeekId, poll, cancellationToken);
 
         if (!result.IsSuccess)

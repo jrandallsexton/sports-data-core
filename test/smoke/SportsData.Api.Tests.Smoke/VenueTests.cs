@@ -63,6 +63,7 @@ public class VenueTests : IClassFixture<SmokeTestFixture>
         var response = await _fixture.GetAsync<PaginatedResponse<VenueItem>>(
             $"api/{sport}/{league}/venues?pageSize=1");
 
+        response.Items.Should().NotBeEmpty("need at least one venue to validate HATEOAS links");
         var firstVenue = response.Items.First();
         firstVenue.Ref.Should().NotBeNull();
 

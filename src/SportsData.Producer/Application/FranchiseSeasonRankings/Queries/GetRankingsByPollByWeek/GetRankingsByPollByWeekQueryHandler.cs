@@ -69,13 +69,22 @@ public class GetRankingsByPollByWeekQueryHandler : IGetRankingsByPollByWeekQuery
                 new { query.PollType, query.WeekNumber, query.SeasonYear },
                 cancellationToken: cancellationToken))).ToList();
 
+        if (entries.Count == 0)
+        {
+            return new Failure<RankingsByPollIdByWeekDto>(
+                default!,
+                ResultStatus.NotFound,
+                [new FluentValidation.Results.ValidationFailure("Rankings",
+                    $"No rankings found for poll={query.PollType}, season={query.SeasonYear}, week={query.WeekNumber}")]);
+        }
+
         var result = new RankingsByPollIdByWeekDto
         {
             PollName = query.PollType,
             PollId = query.PollType,
             SeasonYear = query.SeasonYear,
             Week = query.WeekNumber,
-            PollDateUtc = entries.FirstOrDefault()?.PollDateUtc ?? DateTime.MinValue,
+            PollDateUtc = entries.First().PollDateUtc ?? DateTime.MinValue,
             Entries = entries,
         };
 

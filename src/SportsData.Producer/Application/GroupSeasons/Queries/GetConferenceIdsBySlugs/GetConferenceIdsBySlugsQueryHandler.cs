@@ -42,7 +42,7 @@ public class GetConferenceIdsBySlugsQueryHandler : IGetConferenceIdsBySlugsQuery
         var results = await connection.QueryAsync<(Guid Id, string Slug)>(
             new CommandDefinition(
                 Sql,
-                new { query.Slugs, query.SeasonYear },
+                new { Slugs = query.Slugs.ToArray(), query.SeasonYear },
                 cancellationToken: cancellationToken));
 
         var dict = results.ToDictionary(x => x.Id, x => x.Slug);

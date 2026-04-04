@@ -36,9 +36,3 @@ public class GroupSeasonsController : ControllerBase
         return result.ToActionResult();
     }
 }
-
-public class GetConferenceIdsBySlugsRequest
-{
-    public int SeasonYear { get; set; }
-    public List<string> Slugs { get; set; } = [];
-}

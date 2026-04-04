@@ -1,12 +1,14 @@
-﻿using AutoFixture;
+using AutoFixture;
 
 using Moq;
 
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Processing;
 
 using System.Linq.Expressions;
@@ -17,6 +19,15 @@ namespace SportsData.Api.Tests.Unit.Application.Scoring;
 
 public class ContestScoringJobTests : ApiTestBase<ContestScoringJob>
 {
+    private readonly Mock<IProvideSeasons> _seasonClientMock = new();
+
+    public ContestScoringJobTests()
+    {
+        Mocker.GetMock<ISeasonClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_seasonClientMock.Object);
+    }
+
     [Fact]
     public async Task Process_Should_Enqueue_ScoreContestCommand_For_Each_Finalized_Unscored_Contest()
     {
@@ -29,10 +40,9 @@ public class ContestScoringJobTests : ApiTestBase<ContestScoringJob>
 
         var background = Mocker.GetMock<IProvideBackgroundJobs>();
 
-        // Register mock canonical data
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetCurrentAndLastWeekSeasonWeeks())
-            .ReturnsAsync([currentWeek]);
+        _seasonClientMock
+            .Setup(x => x.GetCurrentAndLastSeasonWeeks(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<CanonicalSeasonWeekDto>>([currentWeek]));
 
         // These are the contest IDs referenced by unscored picks
         var contestId1 = Guid.NewGuid();

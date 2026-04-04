@@ -6,9 +6,9 @@ using Moq;
 
 using SportsData.Api.Application.UI.Articles.Queries.GetArticles;
 using SportsData.Api.Config;
-using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Season;
 
 using Xunit;
 
@@ -16,6 +16,15 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Articles.Queries.GetArticles;
 
 public class GetArticlesQueryHandlerTests : ApiTestBase<GetArticlesQueryHandler>
 {
+    private readonly Mock<IProvideSeasons> _seasonClientMock = new();
+
+    public GetArticlesQueryHandlerTests()
+    {
+        Mocker.GetMock<ISeasonClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_seasonClientMock.Object);
+    }
+
     private void SetupApiConfig()
     {
         var apiConfig = new ApiConfig { BaseUrl = "http://localhost:5262", UserIdSystem = Guid.NewGuid() };
@@ -29,9 +38,9 @@ public class GetArticlesQueryHandlerTests : ApiTestBase<GetArticlesQueryHandler>
     {
         // Arrange
         SetupApiConfig();
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetCurrentSeasonWeek())
-            .ReturnsAsync((CanonicalSeasonWeekDto?)null);
+        _seasonClientMock
+            .Setup(x => x.GetCurrentSeasonWeek(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Failure<CanonicalSeasonWeekDto>(default!, ResultStatus.NotFound, []));
 
         var sut = Mocker.CreateInstance<GetArticlesQueryHandler>();
         var query = new GetArticlesQuery();
@@ -58,9 +67,9 @@ public class GetArticlesQueryHandlerTests : ApiTestBase<GetArticlesQueryHandler>
             SeasonPhase = "Regular"
         };
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetCurrentSeasonWeek())
-            .ReturnsAsync(seasonWeek);
+        _seasonClientMock
+            .Setup(x => x.GetCurrentSeasonWeek(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<CanonicalSeasonWeekDto>(seasonWeek));
 
         var sut = Mocker.CreateInstance<GetArticlesQueryHandler>();
         var query = new GetArticlesQuery();

@@ -1,0 +1,3 @@
+namespace SportsData.Producer.Application.Seasons.Queries.GetCurrentAndLastSeasonWeeks;
+
+public record GetCurrentAndLastSeasonWeeksQuery;

@@ -70,30 +70,36 @@ namespace SportsData.Api.Application.Jobs
                         leagueWeeks.Count,
                         seasonWeek.WeekNumber);
 
+                    // Fetch finalized contests once per season week (shared across all leagues)
+                    var finalizedResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
+                        .GetFinalizedContestIds(seasonWeek.Id);
+                    if (!finalizedResult.IsSuccess)
+                    {
+                        _logger.LogWarning("Failed to retrieve finalized contests for week {WeekId}. Skipping.", seasonWeek.Id);
+                        continue;
+                    }
+                    var finalizedContestIds = finalizedResult.Value;
+
                     foreach (var leagueWeek in leagueWeeks)
                     {
                         try
                         {
                             // Check if this league week has been scored recently
                             var lastCalculated = await _dataContext.PickemGroupWeekResults
-                                .Where(r => 
-                                    r.PickemGroupId == leagueWeek.GroupId && 
-                                    r.SeasonYear == leagueWeek.SeasonYear && 
+                                .Where(r =>
+                                    r.PickemGroupId == leagueWeek.GroupId &&
+                                    r.SeasonYear == leagueWeek.SeasonYear &&
                                     r.SeasonWeek == leagueWeek.SeasonWeek)
                                 .MaxAsync(r => (DateTime?)r.CalculatedUtc);
 
                             // Check if all contests for this week are finalized
                             var allContestIds = await _dataContext.PickemGroupMatchups
-                                .Where(m => 
-                                    m.GroupId == leagueWeek.GroupId && 
-                                    m.SeasonYear == leagueWeek.SeasonYear && 
+                                .Where(m =>
+                                    m.GroupId == leagueWeek.GroupId &&
+                                    m.SeasonYear == leagueWeek.SeasonYear &&
                                     m.SeasonWeek == leagueWeek.SeasonWeek)
                                 .Select(m => m.ContestId)
                                 .ToListAsync();
-
-                            var finalizedResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
-                                .GetFinalizedContestIds(seasonWeek.Id);
-                            var finalizedContestIds = finalizedResult.IsSuccess ? finalizedResult.Value : [];
 
                             var allFinalized = allContestIds.All(id => finalizedContestIds.Contains(id));
 

@@ -65,10 +65,16 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
 
         var result = new LeagueWeekOverviewDto();
 
-        // TODO: multi-sport
-        var contestResultsResponse = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
+        var contestResultsResponse = await _contestClientFactory.Resolve(league.Sport)
             .GetContestResultsByContestIds(contestIds);
-        var canonicalContests = contestResultsResponse.IsSuccess ? contestResultsResponse.Value : [];
+        if (!contestResultsResponse.IsSuccess)
+        {
+            return new Failure<LeagueWeekOverviewDto>(
+                default!,
+                ResultStatus.Error,
+                [new ValidationFailure("contests", "Failed to retrieve contest results from Producer")]);
+        }
+        var canonicalContests = contestResultsResponse.Value;
 
         foreach (var canonicalContest in canonicalContests)
         {

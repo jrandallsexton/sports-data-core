@@ -51,7 +51,12 @@ namespace SportsData.Api.Application.Jobs
             {
                 var fbsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
                     .GetCompletedFbsContestIds(week.Id);
-                var completedContestIds = fbsResult.IsSuccess ? fbsResult.Value : [];
+                if (!fbsResult.IsSuccess)
+                {
+                    _logger.LogWarning("Failed to retrieve completed FBS contests for week {WeekId}. Skipping.", week.Id);
+                    continue;
+                }
+                var completedContestIds = fbsResult.Value;
 
                 foreach (var contestId in completedContestIds)
                 {

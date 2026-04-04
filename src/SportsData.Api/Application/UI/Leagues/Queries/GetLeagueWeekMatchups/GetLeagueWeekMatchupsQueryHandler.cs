@@ -140,9 +140,16 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.LeagueId,
                 query.Week);
 
-            // TODO: multi-sport
-            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsByContestIds(contestIds);
-            var canonicalMatchups = matchupsResult.IsSuccess ? matchupsResult.Value : new System.Collections.Generic.List<SportsData.Core.Dtos.Canonical.LeagueMatchupDto>();
+            var matchupsResult = await _contestClientFactory.Resolve(league.Sport).GetMatchupsByContestIds(contestIds);
+            if (!matchupsResult.IsSuccess)
+            {
+                _logger.LogError("Failed to retrieve canonical matchups for leagueId={LeagueId}, week={Week}", query.LeagueId, query.Week);
+                return new Failure<LeagueWeekMatchupsDto>(
+                    default!,
+                    ResultStatus.Error,
+                    [new FluentValidation.Results.ValidationFailure("matchups", "Failed to retrieve matchup data from Producer")]);
+            }
+            var canonicalMatchups = matchupsResult.Value;
 
             _logger.LogInformation(
                 "Received {CanonicalCount} canonical matchups from CanonicalDataProvider for leagueId={LeagueId}, week={Week}",

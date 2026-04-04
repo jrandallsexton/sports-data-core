@@ -87,7 +87,12 @@ namespace SportsData.Api.Application.Processors
 
             // TODO: multi-sport
             var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek);
-            var allMatchups = matchupsResult.IsSuccess ? matchupsResult.Value : new System.Collections.Generic.List<SportsData.Core.Dtos.Canonical.Matchup>();
+            if (!matchupsResult.IsSuccess)
+            {
+                _logger.LogWarning("Failed to retrieve matchups for season {Year} week {Week}. Skipping.", command.SeasonYear, command.SeasonWeek);
+                return;
+            }
+            var allMatchups = matchupsResult.Value;
 
             List<Matchup> groupMatchups;
 

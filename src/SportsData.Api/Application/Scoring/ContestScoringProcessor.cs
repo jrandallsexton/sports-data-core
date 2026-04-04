@@ -41,13 +41,20 @@ namespace SportsData.Api.Application.Scoring
         {
             // TODO: multi-sport
             var matchupResultResponse = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupResult(command.ContestId);
-            var result = matchupResultResponse.IsSuccess ? matchupResultResponse.Value : null;
 
-            if (result is null)
+            if (!matchupResultResponse.IsSuccess)
             {
-                _logger.LogWarning("Matchup result not found for contest {ContestId}. Skipping scoring.", command.ContestId);
-                return;
+                if (matchupResultResponse.Status == ResultStatus.NotFound)
+                {
+                    _logger.LogWarning("Matchup result not found for contest {ContestId}. Skipping scoring.", command.ContestId);
+                    return;
+                }
+
+                _logger.LogError("Failed to retrieve matchup result for contest {ContestId}. Status={Status}", command.ContestId, matchupResultResponse.Status);
+                throw new InvalidOperationException($"Failed to retrieve matchup result for contest {command.ContestId}");
             }
+
+            var result = matchupResultResponse.Value;
 
             // canonical data has the true spread winner, but that is based on the final spread
             // our matchups were generated with the opening spread, so we need to adjust

@@ -47,7 +47,12 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
             var contestIds = previews.Select(p => p.ContestId).ToList();
             // TODO: multi-sport
             var previewsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForPreviewBatch(contestIds.ToList(), cancellationToken);
-            var matchupsByContestId = previewsResult.IsSuccess ? previewsResult.Value : new System.Collections.Generic.Dictionary<System.Guid, SportsData.Core.Dtos.Canonical.MatchupForPreviewDto>();
+            if (!previewsResult.IsSuccess)
+            {
+                return new Failure<Guid>(Guid.Empty, ResultStatus.Error,
+                    [new FluentValidation.Results.ValidationFailure("matchups", "Failed to retrieve matchup previews from Producer")]);
+            }
+            var matchupsByContestId = previewsResult.Value;
 
             var errorCount = 0;
 

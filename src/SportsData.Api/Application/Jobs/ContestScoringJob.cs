@@ -70,7 +70,12 @@ namespace SportsData.Api.Application.Jobs
                 // get a list of all contests for the week that have been finalized
                 var finalizedResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
                     .GetFinalizedContestIds(seasonWeek.Id);
-                var contestIdsReadyToScore = finalizedResult.IsSuccess ? finalizedResult.Value : [];
+                if (!finalizedResult.IsSuccess)
+                {
+                    _logger.LogWarning("Failed to retrieve finalized contests for week {WeekId}. Skipping.", seasonWeek.Id);
+                    continue;
+                }
+                var contestIdsReadyToScore = finalizedResult.Value;
 
                 // determine if they have been enriched
                 var contestIdsToScore = unscoredContestIds

@@ -8,7 +8,7 @@ using Moq;
 using SportsData.Api.Application;
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;

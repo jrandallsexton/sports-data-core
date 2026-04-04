@@ -8,7 +8,7 @@ using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
 using SportsData.Api.Application.UI.Picks.Dtos;
 using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 

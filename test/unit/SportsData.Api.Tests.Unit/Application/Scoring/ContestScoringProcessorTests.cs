@@ -6,7 +6,7 @@ using Moq;
 using SportsData.Api.Application;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 
 using Xunit;

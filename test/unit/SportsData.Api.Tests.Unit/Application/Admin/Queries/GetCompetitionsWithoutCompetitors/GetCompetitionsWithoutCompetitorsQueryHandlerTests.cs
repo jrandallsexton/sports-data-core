@@ -5,6 +5,7 @@ using Moq;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
 
 using Xunit;

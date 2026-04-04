@@ -6,8 +6,11 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
+using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonCompetitionResults;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsBySeasonYear;
+using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonPreviewStats;
+using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonStatistics;
 
 namespace SportsData.Producer.Application.FranchiseSeasons;
 
@@ -51,6 +54,42 @@ public class FranchiseSeasonController : ControllerBase
             appMode.CurrentSport);
 
         var result = await handler.ExecuteAsync(command, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    [HttpGet("id/{franchiseSeasonId}/statistics")]
+    public async Task<ActionResult<FranchiseSeasonStatisticDto>> GetFranchiseSeasonStatistics(
+        [FromRoute] Guid franchiseSeasonId,
+        [FromServices] IGetFranchiseSeasonStatisticsQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetFranchiseSeasonStatisticsQuery(franchiseSeasonId);
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    [HttpGet("id/{franchiseSeasonId}/preview-stats")]
+    public async Task<ActionResult<FranchiseSeasonModelStatsDto>> GetFranchiseSeasonPreviewStats(
+        [FromRoute] Guid franchiseSeasonId,
+        [FromServices] IGetFranchiseSeasonPreviewStatsQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetFranchiseSeasonPreviewStatsQuery(franchiseSeasonId);
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    [HttpGet("id/{franchiseSeasonId}/competition-results")]
+    public async Task<ActionResult<List<FranchiseSeasonCompetitionResultDto>>> GetFranchiseSeasonCompetitionResults(
+        [FromRoute] Guid franchiseSeasonId,
+        [FromServices] IGetFranchiseSeasonCompetitionResultsQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetFranchiseSeasonCompetitionResultsQuery(franchiseSeasonId);
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }

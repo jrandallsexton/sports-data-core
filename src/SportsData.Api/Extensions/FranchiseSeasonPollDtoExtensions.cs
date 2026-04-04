@@ -1,5 +1,4 @@
-﻿using SportsData.Api.Application.UI.Rankings.Dtos;
-using SportsData.Core.Dtos.Canonical;
+﻿using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Api.Extensions
 {

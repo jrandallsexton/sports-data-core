@@ -1,10 +1,9 @@
 using FluentValidation.Results;
 
-using SportsData.Api.Application.UI.TeamCard.Dtos;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
-
-using SportsData.Api.Application.Common.Enums;
+using SportsData.Core.Common.Mapping;
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
 
@@ -18,14 +17,14 @@ public interface IGetTeamCardQueryHandler
 public class GetTeamCardQueryHandler : IGetTeamCardQueryHandler
 {
     private readonly ILogger<GetTeamCardQueryHandler> _logger;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IFranchiseClientFactory _franchiseClientFactory;
 
     public GetTeamCardQueryHandler(
         ILogger<GetTeamCardQueryHandler> logger,
-        IProvideCanonicalData canonicalDataProvider)
+        IFranchiseClientFactory franchiseClientFactory)
     {
         _logger = logger;
-        _canonicalDataProvider = canonicalDataProvider;
+        _franchiseClientFactory = franchiseClientFactory;
     }
 
     public async Task<Result<TeamCardDto>> ExecuteAsync(
@@ -34,7 +33,9 @@ public class GetTeamCardQueryHandler : IGetTeamCardQueryHandler
     {
         try
         {
-            var result = await _canonicalDataProvider.GetTeamCard(query, cancellationToken);
+            var mode = ModeMapper.ResolveMode(query.Sport, query.League);
+            var client = _franchiseClientFactory.Resolve(mode);
+            var result = await client.GetTeamCard(query.Slug, query.SeasonYear, cancellationToken);
 
             if (result is null)
             {

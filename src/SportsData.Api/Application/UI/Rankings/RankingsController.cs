@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 
-using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.Rankings.Queries.GetPollRankingsByWeek;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollSeasonWeekId;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsBySeasonYear;

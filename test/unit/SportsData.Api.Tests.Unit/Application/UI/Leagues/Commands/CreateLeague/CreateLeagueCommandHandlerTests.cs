@@ -5,8 +5,8 @@ using Moq;
 
 using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague.Dtos;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 using Xunit;
 
@@ -14,6 +14,18 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Commands.CreateLeague
 
 public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHandler>
 {
+    private readonly Mock<IFranchiseClientFactory> _franchiseClientFactoryMock;
+    private readonly Mock<IProvideFranchises> _franchiseClientMock;
+
+    public CreateLeagueCommandHandlerTests()
+    {
+        _franchiseClientFactoryMock = Mocker.GetMock<IFranchiseClientFactory>();
+        _franchiseClientMock = new Mock<IProvideFranchises>();
+        _franchiseClientFactoryMock
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_franchiseClientMock.Object);
+    }
+
     private CreateLeagueRequest BuildValidRequest() => new()
     {
         Name = "My League",
@@ -90,8 +102,8 @@ public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHa
         request.RankingFilter = "AP_TOP_25";
         request.ConferenceSlugs = ["acc", "big12", "garbage"];
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetConferenceIdsBySlugsAsync(Sport.FootballNcaa, currentYear, request.ConferenceSlugs))
+        _franchiseClientMock
+            .Setup(x => x.GetConferenceIdsBySlugs(currentYear, request.ConferenceSlugs, It.IsAny<CancellationToken>()))
             .ReturnsAsync(slugToGuid);
 
         var sut = Mocker.CreateInstance<CreateLeagueCommandHandler>();

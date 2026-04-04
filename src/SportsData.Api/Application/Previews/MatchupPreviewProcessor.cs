@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Application.Previews.Models;
 using SportsData.Api.Application.UI.Matchups;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Infrastructure.Prompts;
 using SportsData.Core.Common;
@@ -21,7 +20,6 @@ namespace SportsData.Api.Application.Previews
     {
         private readonly AppDataContext _dataContext;
         private readonly ILogger<MatchupPreviewProcessor> _logger;
-        private readonly IProvideCanonicalData _canonicalDataProvider;
         private readonly IContestClientFactory _contestClientFactory;
         private readonly IFranchiseClientFactory _franchiseClientFactory;
         private readonly IProvideAiCommunication _aiCommunication;
@@ -31,7 +29,6 @@ namespace SportsData.Api.Application.Previews
         public MatchupPreviewProcessor(
             AppDataContext dataContext,
             ILogger<MatchupPreviewProcessor> logger,
-            IProvideCanonicalData canonicalDataProvider,
             IContestClientFactory contestClientFactory,
             IFranchiseClientFactory franchiseClientFactory,
             IProvideAiCommunication aiCommunication,
@@ -40,7 +37,6 @@ namespace SportsData.Api.Application.Previews
         {
             _dataContext = dataContext;
             _logger = logger;
-            _canonicalDataProvider = canonicalDataProvider;
             _contestClientFactory = contestClientFactory;
             _franchiseClientFactory = franchiseClientFactory;
             _aiCommunication = aiCommunication;
@@ -72,13 +68,14 @@ namespace SportsData.Api.Application.Previews
                 return;
             }
 
-            matchup.AwayStats = await _canonicalDataProvider
-                .GetFranchiseSeasonStatsForPreview(matchup.AwayFranchiseSeasonId);
-            matchup.HomeStats = await _canonicalDataProvider
-                .GetFranchiseSeasonStatsForPreview(matchup.HomeFranchiseSeasonId);
-
             // TODO: Support multiple sports - currently hardcoded to FootballNcaa
             var franchiseClient = _franchiseClientFactory.Resolve(Sport.FootballNcaa);
+
+            matchup.AwayStats = await franchiseClient
+                .GetFranchiseSeasonPreviewStats(matchup.AwayFranchiseSeasonId);
+            matchup.HomeStats = await franchiseClient
+                .GetFranchiseSeasonPreviewStats(matchup.HomeFranchiseSeasonId);
+
             matchup.AwayMetrics = await franchiseClient
                 .GetFranchiseSeasonMetricsByFranchiseSeasonId(matchup.AwayFranchiseSeasonId);
             matchup.HomeMetrics = await franchiseClient
@@ -91,10 +88,10 @@ namespace SportsData.Api.Application.Previews
                 matchup.HomeMetrics = null;
             }
 
-            matchup.AwayCompetitionResults = await _canonicalDataProvider
-                .GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(matchup.AwayFranchiseSeasonId);
-            matchup.HomeCompetitionResults = await _canonicalDataProvider
-                .GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(matchup.HomeFranchiseSeasonId);
+            matchup.AwayCompetitionResults = await franchiseClient
+                .GetFranchiseSeasonCompetitionResults(matchup.AwayFranchiseSeasonId);
+            matchup.HomeCompetitionResults = await franchiseClient
+                .GetFranchiseSeasonCompetitionResults(matchup.HomeFranchiseSeasonId);
 
             var hasStats = (matchup.AwayStats.RushingYardsPerGame.HasValue &&
                             matchup.HomeStats.RushingYardsPerGame.HasValue);

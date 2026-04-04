@@ -135,7 +135,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.Week);
 
             _logger.LogDebug(
-                "Calling CanonicalDataProvider.GetMatchupsByContestIds for {ContestCount} contests, leagueId={LeagueId}, week={Week}",
+                "Calling ContestClient.GetMatchupsByContestIds for {ContestCount} contests, leagueId={LeagueId}, week={Week}",
                 contestIds.Count,
                 query.LeagueId,
                 query.Week);
@@ -152,7 +152,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             var canonicalMatchups = matchupsResult.Value;
 
             _logger.LogInformation(
-                "Received {CanonicalCount} canonical matchups from CanonicalDataProvider for leagueId={LeagueId}, week={Week}",
+                "Received {CanonicalCount} canonical matchups from ContestClient for leagueId={LeagueId}, week={Week}",
                 canonicalMatchups?.Count ?? 0,
                 query.LeagueId,
                 query.Week);
@@ -160,7 +160,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             if (canonicalMatchups == null || canonicalMatchups.Count == 0)
             {
                 _logger.LogWarning(
-                    "No canonical matchups returned from CanonicalDataProvider for leagueId={LeagueId}, week={Week}",
+                    "No canonical matchups returned from ContestClient for leagueId={LeagueId}, week={Week}",
                     query.LeagueId,
                     query.Week);
                 canonicalMatchups = [];

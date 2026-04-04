@@ -34,6 +34,18 @@ public interface IProvideContests : IProvideHealthChecks
     Task<Result<bool>> RefreshContest(Guid contestId, CancellationToken cancellationToken = default);
 
     Task<Result<bool>> RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default);
+
+    // Matchup query endpoints (Phase 2)
+    Task<Result<List<Matchup>>> GetMatchupsForCurrentWeek(CancellationToken ct = default);
+    Task<Result<List<Matchup>>> GetMatchupsForSeasonWeek(int year, int week, CancellationToken ct = default);
+    Task<Result<Matchup>> GetMatchupByContestId(Guid contestId, CancellationToken ct = default);
+    Task<Result<List<LeagueMatchupDto>>> GetMatchupsByContestIds(List<Guid> contestIds, CancellationToken ct = default);
+    Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default);
+    Task<Result<Dictionary<Guid, MatchupForPreviewDto>>> GetMatchupsForPreviewBatch(List<Guid> contestIds, CancellationToken ct = default);
+    Task<Result<MatchupResult>> GetMatchupResult(Guid contestId, CancellationToken ct = default);
+    Task<Result<List<ContestResultDto>>> GetContestResultsByContestIds(List<Guid> contestIds, CancellationToken ct = default);
+    Task<Result<List<Guid>>> GetFinalizedContestIds(Guid seasonWeekId, CancellationToken ct = default);
+    Task<Result<List<Guid>>> GetCompletedFbsContestIds(Guid seasonWeekId, CancellationToken ct = default);
 }
 
 public class ContestClient : ClientBase, IProvideContests
@@ -147,5 +159,77 @@ public class ContestClient : ClientBase, IProvideContests
             $"contests/{contestId}/media/refresh",
             "RefreshContestMedia",
             cancellationToken);
+    }
+
+    // ========== Matchup query methods (Phase 2) ==========
+
+    public async Task<Result<List<Matchup>>> GetMatchupsForCurrentWeek(CancellationToken ct = default)
+    {
+        return await GetAsync<List<Matchup>>(
+            "contests/matchups/current-week",
+            new List<Matchup>(), "Matchups for current week", ResultStatus.NotFound, ct);
+    }
+
+    public async Task<Result<List<Matchup>>> GetMatchupsForSeasonWeek(int year, int week, CancellationToken ct = default)
+    {
+        return await GetAsync<List<Matchup>>(
+            $"contests/matchups/by-season-week?year={year}&week={week}",
+            new List<Matchup>(), "Matchups for season week", ResultStatus.NotFound, ct);
+    }
+
+    public async Task<Result<Matchup>> GetMatchupByContestId(Guid contestId, CancellationToken ct = default)
+    {
+        return await GetAsync<Matchup>(
+            $"contests/{contestId}/matchup",
+            default!, "Matchup", ResultStatus.NotFound, ct);
+    }
+
+    public async Task<Result<List<LeagueMatchupDto>>> GetMatchupsByContestIds(List<Guid> contestIds, CancellationToken ct = default)
+    {
+        var result = await PostOrDefaultAsync<List<LeagueMatchupDto>, Guid[]>(
+            "contests/matchups/by-ids", contestIds.ToArray(), new List<LeagueMatchupDto>(), ct);
+        return new Success<List<LeagueMatchupDto>>(result);
+    }
+
+    public async Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default)
+    {
+        return await GetAsync<MatchupForPreviewDto>(
+            $"contests/{contestId}/matchup-preview",
+            default!, "Matchup preview", ResultStatus.NotFound, ct);
+    }
+
+    public async Task<Result<Dictionary<Guid, MatchupForPreviewDto>>> GetMatchupsForPreviewBatch(List<Guid> contestIds, CancellationToken ct = default)
+    {
+        var result = await PostOrDefaultAsync<Dictionary<Guid, MatchupForPreviewDto>, Guid[]>(
+            "contests/matchups/previews", contestIds.ToArray(), new Dictionary<Guid, MatchupForPreviewDto>(), ct);
+        return new Success<Dictionary<Guid, MatchupForPreviewDto>>(result);
+    }
+
+    public async Task<Result<MatchupResult>> GetMatchupResult(Guid contestId, CancellationToken ct = default)
+    {
+        return await GetAsync<MatchupResult>(
+            $"contests/{contestId}/result",
+            default!, "Matchup result", ResultStatus.NotFound, ct);
+    }
+
+    public async Task<Result<List<ContestResultDto>>> GetContestResultsByContestIds(List<Guid> contestIds, CancellationToken ct = default)
+    {
+        var result = await PostOrDefaultAsync<List<ContestResultDto>, Guid[]>(
+            "contests/results/by-ids", contestIds.ToArray(), new List<ContestResultDto>(), ct);
+        return new Success<List<ContestResultDto>>(result);
+    }
+
+    public async Task<Result<List<Guid>>> GetFinalizedContestIds(Guid seasonWeekId, CancellationToken ct = default)
+    {
+        return await GetAsync<List<Guid>>(
+            $"contests/finalized?seasonWeekId={seasonWeekId}",
+            new List<Guid>(), "Finalized contest IDs", ResultStatus.NotFound, ct);
+    }
+
+    public async Task<Result<List<Guid>>> GetCompletedFbsContestIds(Guid seasonWeekId, CancellationToken ct = default)
+    {
+        return await GetAsync<List<Guid>>(
+            $"contests/completed-fbs?seasonWeekId={seasonWeekId}",
+            new List<Guid>(), "Completed FBS contest IDs", ResultStatus.NotFound, ct);
     }
 }

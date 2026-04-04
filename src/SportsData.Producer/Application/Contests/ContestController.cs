@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
+using Dtos = SportsData.Core.Dtos;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
@@ -259,6 +260,108 @@ namespace SportsData.Producer.Application.Contests
             }
 
             return Accepted(new { CorrelationId = correlationId, ContestCount = contestIds.Count });
+        }
+
+        // ========== Matchup query endpoints (Phase 2 of CanonicalDataProvider elimination) ==========
+
+        [HttpGet("matchups/current-week")]
+        public async Task<ActionResult<List<Dtos.Canonical.Matchup>>> GetMatchupsForCurrentWeek(
+            [FromServices] Queries.Matchups.GetMatchupsForCurrentWeek.IGetMatchupsForCurrentWeekQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetMatchupsForCurrentWeek.GetMatchupsForCurrentWeekQuery(), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet("matchups/by-season-week")]
+        public async Task<ActionResult<List<Dtos.Canonical.Matchup>>> GetMatchupsForSeasonWeek(
+            [FromQuery] int year,
+            [FromQuery] int week,
+            [FromServices] Queries.Matchups.GetMatchupsForSeasonWeek.IGetMatchupsForSeasonWeekQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetMatchupsForSeasonWeek.GetMatchupsForSeasonWeekQuery(year, week), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet("{contestId}/matchup")]
+        public async Task<ActionResult<Dtos.Canonical.Matchup>> GetMatchupByContestId(
+            [FromRoute] Guid contestId,
+            [FromServices] Queries.Matchups.GetMatchupByContestId.IGetMatchupByContestIdQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetMatchupByContestId.GetMatchupByContestIdQuery(contestId), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpPost("matchups/by-ids")]
+        public async Task<ActionResult<List<LeagueMatchupDto>>> GetMatchupsByContestIds(
+            [FromBody] Guid[] contestIds,
+            [FromServices] Queries.Matchups.GetMatchupsByContestIds.IGetMatchupsByContestIdsQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetMatchupsByContestIds.GetMatchupsByContestIdsQuery(contestIds), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet("{contestId}/matchup-preview")]
+        public async Task<ActionResult<MatchupForPreviewDto>> GetMatchupForPreview(
+            [FromRoute] Guid contestId,
+            [FromServices] Queries.Matchups.GetMatchupForPreview.IGetMatchupForPreviewQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetMatchupForPreview.GetMatchupForPreviewQuery(contestId), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpPost("matchups/previews")]
+        public async Task<ActionResult<Dictionary<Guid, MatchupForPreviewDto>>> GetMatchupsForPreviewBatch(
+            [FromBody] Guid[] contestIds,
+            [FromServices] Queries.Matchups.GetMatchupForPreview.IGetMatchupForPreviewQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteBatchAsync(new Queries.Matchups.GetMatchupForPreview.GetMatchupsForPreviewBatchQuery(contestIds), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet("{contestId}/result")]
+        public async Task<ActionResult<MatchupResult>> GetMatchupResult(
+            [FromRoute] Guid contestId,
+            [FromServices] Queries.Matchups.GetMatchupResult.IGetMatchupResultQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetMatchupResult.GetMatchupResultQuery(contestId), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpPost("results/by-ids")]
+        public async Task<ActionResult<List<ContestResultDto>>> GetContestResultsByContestIds(
+            [FromBody] Guid[] contestIds,
+            [FromServices] Queries.Matchups.GetContestResults.IGetContestResultsByContestIdsQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetContestResults.GetContestResultsByContestIdsQuery(contestIds), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet("finalized")]
+        public async Task<ActionResult<List<Guid>>> GetFinalizedContestIds(
+            [FromQuery] Guid seasonWeekId,
+            [FromServices] Queries.Matchups.GetFinalizedContestIds.IGetFinalizedContestIdsQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetFinalizedContestIds.GetFinalizedContestIdsQuery(seasonWeekId), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet("completed-fbs")]
+        public async Task<ActionResult<List<Guid>>> GetCompletedFbsContestIds(
+            [FromQuery] Guid seasonWeekId,
+            [FromServices] Queries.Matchups.GetCompletedFbsContestIds.IGetCompletedFbsContestIdsQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetCompletedFbsContestIds.GetCompletedFbsContestIdsQuery(seasonWeekId), cancellationToken);
+            return result.ToActionResult();
         }
     }
 }

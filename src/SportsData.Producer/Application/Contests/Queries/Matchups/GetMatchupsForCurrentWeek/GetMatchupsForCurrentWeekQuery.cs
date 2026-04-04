@@ -1,0 +1,3 @@
+namespace SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsForCurrentWeek;
+
+public record GetMatchupsForCurrentWeekQuery;

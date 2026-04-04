@@ -1,6 +1,6 @@
 ﻿using SportsData.Api.Application.Contests;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Infrastructure.Clients.Season;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 
@@ -13,18 +13,18 @@ namespace SportsData.Api.Application.Jobs
     {
         private readonly ILogger<ContestRecapJob> _logger;
         private readonly ISeasonClientFactory _seasonClientFactory;
-        private readonly IProvideCanonicalData _canonicalDataProvider;
+        private readonly IContestClientFactory _contestClientFactory;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public ContestRecapJob(
             ILogger<ContestRecapJob> logger,
             ISeasonClientFactory seasonClientFactory,
-            IProvideCanonicalData canonicalDataProvider,
+            IContestClientFactory contestClientFactory,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _seasonClientFactory = seasonClientFactory;
-            _canonicalDataProvider = canonicalDataProvider;
+            _contestClientFactory = contestClientFactory;
             _backgroundJobProvider = backgroundJobProvider;
         }
 
@@ -49,8 +49,9 @@ namespace SportsData.Api.Application.Jobs
 
             foreach (var week in weeks)
             {
-                var completedContestIds = await _canonicalDataProvider
-                    .GetCompletedFbsContestIdsBySeasonWeekId(week.Id);
+                var fbsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
+                    .GetCompletedFbsContestIds(week.Id);
+                var completedContestIds = fbsResult.IsSuccess ? fbsResult.Value : [];
 
                 foreach (var contestId in completedContestIds)
                 {

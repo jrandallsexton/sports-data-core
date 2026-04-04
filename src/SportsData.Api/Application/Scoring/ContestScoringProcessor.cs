@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 
@@ -16,7 +16,7 @@ namespace SportsData.Api.Application.Scoring
     {
         private readonly ILogger<ContestScoringProcessor> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IProvideCanonicalData _canonicalData;
+        private readonly IContestClientFactory _contestClientFactory;
         private readonly IEventBus _bus;
         private readonly IPickScoringService _pickScoringService;
         private readonly ILeagueWeekScoringService _leagueWeekScoringService;
@@ -24,14 +24,14 @@ namespace SportsData.Api.Application.Scoring
         public ContestScoringProcessor(
             ILogger<ContestScoringProcessor> logger,
             AppDataContext dataContext,
-            IProvideCanonicalData canonicalData,
+            IContestClientFactory contestClientFactory,
             IEventBus bus,
             IPickScoringService pickScoringService,
             ILeagueWeekScoringService leagueWeekScoringService)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _canonicalData = canonicalData;
+            _contestClientFactory = contestClientFactory;
             _bus = bus;
             _pickScoringService = pickScoringService;
             _leagueWeekScoringService = leagueWeekScoringService;
@@ -39,8 +39,16 @@ namespace SportsData.Api.Application.Scoring
 
         public async Task Process(ScoreContestCommand command)
         {
-            var result = await _canonicalData.GetMatchupResult(command.ContestId);
-            
+            // TODO: multi-sport
+            var matchupResultResponse = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupResult(command.ContestId);
+            var result = matchupResultResponse.IsSuccess ? matchupResultResponse.Value : null;
+
+            if (result is null)
+            {
+                _logger.LogWarning("Matchup result not found for contest {ContestId}. Skipping scoring.", command.ContestId);
+                return;
+            }
+
             // canonical data has the true spread winner, but that is based on the final spread
             // our matchups were generated with the opening spread, so we need to adjust
             // we cannot score picks based on the final spread

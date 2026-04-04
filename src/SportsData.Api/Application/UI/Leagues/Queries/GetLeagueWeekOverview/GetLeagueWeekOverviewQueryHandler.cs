@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 
 using SportsData.Api.Application.Common.Enums;
@@ -23,18 +23,18 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
 {
     private readonly ILogger<GetLeagueWeekOverviewQueryHandler> _logger;
     private readonly AppDataContext _dbContext;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IContestClientFactory _contestClientFactory;
     private readonly IGetUserPicksByGroupAndWeekQueryHandler _userPicksQueryHandler;
 
     public GetLeagueWeekOverviewQueryHandler(
         ILogger<GetLeagueWeekOverviewQueryHandler> logger,
         AppDataContext dbContext,
-        IProvideCanonicalData canonicalDataProvider,
+        IContestClientFactory contestClientFactory,
         IGetUserPicksByGroupAndWeekQueryHandler userPicksQueryHandler)
     {
         _logger = logger;
         _dbContext = dbContext;
-        _canonicalDataProvider = canonicalDataProvider;
+        _contestClientFactory = contestClientFactory;
         _userPicksQueryHandler = userPicksQueryHandler;
     }
 
@@ -65,8 +65,10 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
 
         var result = new LeagueWeekOverviewDto();
 
-        var canonicalContests = await _canonicalDataProvider
+        // TODO: multi-sport
+        var contestResultsResponse = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
             .GetContestResultsByContestIds(contestIds);
+        var canonicalContests = contestResultsResponse.IsSuccess ? contestResultsResponse.Value : [];
 
         foreach (var canonicalContest in canonicalContests)
         {

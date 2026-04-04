@@ -10,6 +10,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Previews;
 using SportsData.Core.Infrastructure.Clients.AI;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
 using System.Text.Json;
@@ -21,6 +22,7 @@ namespace SportsData.Api.Application.Previews
         private readonly AppDataContext _dataContext;
         private readonly ILogger<MatchupPreviewProcessor> _logger;
         private readonly IProvideCanonicalData _canonicalDataProvider;
+        private readonly IContestClientFactory _contestClientFactory;
         private readonly IFranchiseClientFactory _franchiseClientFactory;
         private readonly IProvideAiCommunication _aiCommunication;
         private readonly MatchupPreviewPromptProvider _promptProvider;
@@ -30,6 +32,7 @@ namespace SportsData.Api.Application.Previews
             AppDataContext dataContext,
             ILogger<MatchupPreviewProcessor> logger,
             IProvideCanonicalData canonicalDataProvider,
+            IContestClientFactory contestClientFactory,
             IFranchiseClientFactory franchiseClientFactory,
             IProvideAiCommunication aiCommunication,
             MatchupPreviewPromptProvider promptProvider,
@@ -38,6 +41,7 @@ namespace SportsData.Api.Application.Previews
             _dataContext = dataContext;
             _logger = logger;
             _canonicalDataProvider = canonicalDataProvider;
+            _contestClientFactory = contestClientFactory;
             _franchiseClientFactory = franchiseClientFactory;
             _aiCommunication = aiCommunication;
             _promptProvider = promptProvider;
@@ -50,7 +54,9 @@ namespace SportsData.Api.Application.Previews
                 .OrderByDescending(x => x.CreatedUtc)
                 .FirstOrDefaultAsync(x => x.ContestId == command.ContestId && x.RejectedUtc != null);
 
-            var matchup = await _canonicalDataProvider.GetMatchupForPreview(command.ContestId);
+            // TODO: multi-sport
+            var previewResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupForPreview(command.ContestId);
+            var matchup = previewResult.IsSuccess ? previewResult.Value : null;
 
             if (matchup is null)
             {

@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Infrastructure.Clients.Season;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common.Jobs;
 
 namespace SportsData.Api.Application.Jobs
@@ -17,20 +17,20 @@ namespace SportsData.Api.Application.Jobs
         private readonly ILogger<LeagueWeekScoringJob> _logger;
         private readonly AppDataContext _dataContext;
         private readonly ISeasonClientFactory _seasonClientFactory;
-        private readonly IProvideCanonicalData _canonicalData;
+        private readonly IContestClientFactory _contestClientFactory;
         private readonly ILeagueWeekScoringService _leagueWeekScoringService;
 
         public LeagueWeekScoringJob(
             ILogger<LeagueWeekScoringJob> logger,
             AppDataContext dataContext,
             ISeasonClientFactory seasonClientFactory,
-            IProvideCanonicalData canonicalData,
+            IContestClientFactory contestClientFactory,
             ILeagueWeekScoringService leagueWeekScoringService)
         {
             _logger = logger;
             _dataContext = dataContext;
             _seasonClientFactory = seasonClientFactory;
-            _canonicalData = canonicalData;
+            _contestClientFactory = contestClientFactory;
             _leagueWeekScoringService = leagueWeekScoringService;
         }
 
@@ -91,8 +91,9 @@ namespace SportsData.Api.Application.Jobs
                                 .Select(m => m.ContestId)
                                 .ToListAsync();
 
-                            var finalizedContestIds = await _canonicalData
+                            var finalizedResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
                                 .GetFinalizedContestIds(seasonWeek.Id);
+                            var finalizedContestIds = finalizedResult.IsSuccess ? finalizedResult.Value : [];
 
                             var allFinalized = allContestIds.All(id => finalizedContestIds.Contains(id));
 

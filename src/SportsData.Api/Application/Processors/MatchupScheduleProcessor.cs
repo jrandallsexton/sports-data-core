@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -19,18 +19,18 @@ namespace SportsData.Api.Application.Processors
     {
         private readonly AppDataContext _dataContext;
         private readonly ILogger<MatchupScheduleProcessor> _logger;
-        private readonly IProvideCanonicalData _canonicalDataProvider;
+        private readonly IContestClientFactory _contestClientFactory;
         private readonly IEventBus _eventBus;
 
         public MatchupScheduleProcessor(
             AppDataContext dataContext,
             ILogger<MatchupScheduleProcessor> logger,
-            IProvideCanonicalData canonicalDataProvider,
+            IContestClientFactory contestClientFactory,
             IEventBus eventBus)
         {
             _dataContext = dataContext;
             _logger = logger;
-            _canonicalDataProvider = canonicalDataProvider;
+            _contestClientFactory = contestClientFactory;
             _eventBus = eventBus;
         }
 
@@ -85,7 +85,9 @@ namespace SportsData.Api.Application.Processors
             // 2. are there conferences to always be included?
             var conferenceSlugs = group.Conferences.Select(x => x.ConferenceSlug).ToList();
 
-            var allMatchups = await _canonicalDataProvider.GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek);
+            // TODO: multi-sport
+            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek);
+            var allMatchups = matchupsResult.IsSuccess ? matchupsResult.Value : new System.Collections.Generic.List<SportsData.Core.Dtos.Canonical.Matchup>();
 
             List<Matchup> groupMatchups;
 

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 
 using SportsData.Api.Application.Common.Enums;
@@ -23,16 +23,16 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
 {
     private readonly ILogger<GetLeagueWeekMatchupsQueryHandler> _logger;
     private readonly AppDataContext _dbContext;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IContestClientFactory _contestClientFactory;
 
     public GetLeagueWeekMatchupsQueryHandler(
         ILogger<GetLeagueWeekMatchupsQueryHandler> logger,
         AppDataContext dbContext,
-        IProvideCanonicalData canonicalDataProvider)
+        IContestClientFactory contestClientFactory)
     {
         _logger = logger;
         _dbContext = dbContext;
-        _canonicalDataProvider = canonicalDataProvider;
+        _contestClientFactory = contestClientFactory;
     }
 
     public async Task<Result<LeagueWeekMatchupsDto>> ExecuteAsync(
@@ -140,7 +140,16 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.LeagueId,
                 query.Week);
 
-            var canonicalMatchups = await _canonicalDataProvider.GetMatchupsByContestIds(contestIds);
+            var matchupsResult = await _contestClientFactory.Resolve(league.Sport).GetMatchupsByContestIds(contestIds);
+            if (!matchupsResult.IsSuccess)
+            {
+                _logger.LogError("Failed to retrieve canonical matchups for leagueId={LeagueId}, week={Week}", query.LeagueId, query.Week);
+                return new Failure<LeagueWeekMatchupsDto>(
+                    default!,
+                    ResultStatus.Error,
+                    [new FluentValidation.Results.ValidationFailure("matchups", "Failed to retrieve matchup data from Producer")]);
+            }
+            var canonicalMatchups = matchupsResult.Value;
 
             _logger.LogInformation(
                 "Received {CanonicalCount} canonical matchups from CanonicalDataProvider for leagueId={LeagueId}, week={Week}",
@@ -171,17 +180,16 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             {
                 if (canonicalMap.TryGetValue(matchup.ContestId, out var canonical))
                 {
-                    matchup.Status = canonical.Status;
+                    matchup.Status = Enum.TryParse<ContestStatus>(canonical.Status, true, out var status) ? status : ContestStatus.Undefined;
                     matchup.Broadcasts = canonical.Broadcasts;
-                    matchup.HeadLine = canonical.HeadLine ?? matchup.HeadLine;
 
                     // Away team
-                    matchup.Away = canonical.Away;
-                    matchup.AwayShort = canonical.AwayShort;
+                    matchup.Away = canonical.Away ?? matchup.Away;
+                    matchup.AwayShort = canonical.AwayShort ?? matchup.AwayShort;
                     matchup.AwayFranchiseSeasonId = canonical.AwayFranchiseSeasonId;
-                    matchup.AwayLogoUri = canonical.AwayLogoUri;
-                    matchup.AwaySlug = canonical.AwaySlug;
-                    matchup.AwayColor = canonical.AwayColor;
+                    matchup.AwayLogoUri = canonical.AwayLogoUri ?? matchup.AwayLogoUri;
+                    matchup.AwaySlug = canonical.AwaySlug ?? matchup.AwaySlug;
+                    matchup.AwayColor = canonical.AwayColor ?? matchup.AwayColor;
                     matchup.AwayWins = canonical.AwayWins;
                     matchup.AwayLosses = canonical.AwayLosses;
                     matchup.AwayConferenceWins = canonical.AwayConferenceWins;
@@ -189,12 +197,12 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     matchup.AwayRank = canonical.AwayRank;
 
                     // Home team
-                    matchup.Home = canonical.Home;
-                    matchup.HomeShort = canonical.HomeShort;
+                    matchup.Home = canonical.Home ?? matchup.Home;
+                    matchup.HomeShort = canonical.HomeShort ?? matchup.HomeShort;
                     matchup.HomeFranchiseSeasonId = canonical.HomeFranchiseSeasonId;
-                    matchup.HomeLogoUri = canonical.HomeLogoUri;
-                    matchup.HomeSlug = canonical.HomeSlug;
-                    matchup.HomeColor = canonical.HomeColor;
+                    matchup.HomeLogoUri = canonical.HomeLogoUri ?? matchup.HomeLogoUri;
+                    matchup.HomeSlug = canonical.HomeSlug ?? matchup.HomeSlug;
+                    matchup.HomeColor = canonical.HomeColor ?? matchup.HomeColor;
                     matchup.HomeWins = canonical.HomeWins;
                     matchup.HomeLosses = canonical.HomeLosses;
                     matchup.HomeConferenceWins = canonical.HomeConferenceWins;
@@ -203,25 +211,25 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
 
                     // Odds
                     matchup.SpreadCurrent = canonical.SpreadCurrent.HasValue
-                        ? Math.Round(canonical.SpreadCurrent.Value, 1, MidpointRounding.AwayFromZero)
-                        : (decimal?)null;
+                        ? (decimal)Math.Round(canonical.SpreadCurrent.Value, 1, MidpointRounding.AwayFromZero)
+                        : null;
 
                     matchup.SpreadOpen = canonical.SpreadOpen.HasValue
-                        ? Math.Round(canonical.SpreadOpen.Value, 1, MidpointRounding.AwayFromZero)
-                        : (decimal?)null;
+                        ? (decimal)Math.Round(canonical.SpreadOpen.Value, 1, MidpointRounding.AwayFromZero)
+                        : null;
 
                     matchup.OverUnderCurrent = canonical.OverUnderCurrent.HasValue
-                        ? Math.Round(canonical.OverUnderCurrent.Value, 1, MidpointRounding.AwayFromZero)
-                        : (decimal?)null;
+                        ? (decimal)Math.Round(canonical.OverUnderCurrent.Value, 1, MidpointRounding.AwayFromZero)
+                        : null;
 
                     matchup.OverUnderOpen = canonical.OverUnderOpen.HasValue
-                        ? Math.Round(canonical.OverUnderOpen.Value, 1, MidpointRounding.AwayFromZero)
-                        : (decimal?)null;
+                        ? (decimal)Math.Round(canonical.OverUnderOpen.Value, 1, MidpointRounding.AwayFromZero)
+                        : null;
 
                     // Venue
-                    matchup.Venue = canonical.Venue;
-                    matchup.VenueCity = canonical.VenueCity;
-                    matchup.VenueState = canonical.VenueState;
+                    matchup.Venue = canonical.Venue ?? matchup.Venue;
+                    matchup.VenueCity = canonical.VenueCity ?? matchup.VenueCity;
+                    matchup.VenueState = canonical.VenueState ?? matchup.VenueState;
 
                     // Result
                     matchup.IsComplete = canonical.CompletedUtc.HasValue;
@@ -229,7 +237,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     matchup.HomeScore = canonical.HomeScore;
                     matchup.WinnerFranchiseSeasonId = canonical.WinnerFranchiseSeasonId;
                     matchup.SpreadWinnerFranchiseSeasonId = canonical.SpreadWinnerFranchiseSeasonId;
-                    matchup.OverUnderResult = canonical.OverUnderResult;
+                    matchup.OverUnderResult = canonical.OverUnderResult.HasValue ? (OverUnderPick)canonical.OverUnderResult.Value : null;
                     matchup.CompletedUtc = canonical.CompletedUtc;
 
                     var preview = previews

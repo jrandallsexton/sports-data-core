@@ -5,9 +5,10 @@ using Moq;
 
 using SportsData.Api.Application;
 using SportsData.Api.Application.Scoring;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
@@ -15,6 +16,14 @@ namespace SportsData.Api.Tests.Unit.Application.Scoring;
 
 public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
 {
+    private readonly Mock<IProvideContests> _contestClientMock = new();
+
+    public ContestScoringProcessorTests()
+    {
+        Mocker.GetMock<IContestClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
+    }
     [Fact]
     public async Task Process_WithValidMatchupResult_ScoresEachPick()
     {
@@ -29,9 +38,9 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
             .With(x => x.SeasonWeekId, seasonWeekId)
             .Create();
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetMatchupResult(contestId))
-            .ReturnsAsync(result);
+        _contestClientMock
+            .Setup(x => x.GetMatchupResult(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<MatchupResult>(result));
 
         var matchup = Fixture.Build<PickemGroupMatchup>()
             .With(x => x.ContestId, contestId)
@@ -92,8 +101,8 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         }
 
         // Also ensure the result was fetched
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Verify(x => x.GetMatchupResult(contestId), Times.Once);
+        _contestClientMock
+            .Verify(x => x.GetMatchupResult(contestId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -102,9 +111,9 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         // Arrange
         var contestId = Guid.NewGuid();
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetMatchupResult(contestId))!
-            .ReturnsAsync((MatchupResult?)null);
+        _contestClientMock
+            .Setup(x => x.GetMatchupResult(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Failure<MatchupResult>(default!, ResultStatus.NotFound, []));
 
         var command = new ScoreContestCommand(contestId);
 
@@ -134,9 +143,9 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
             .With(x => x.WinnerFranchiseSeasonId, Guid.NewGuid())
             .Create();
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetMatchupResult(contestId))
-            .ReturnsAsync(result);
+        _contestClientMock
+            .Setup(x => x.GetMatchupResult(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<MatchupResult>(result));
 
         var pick = Fixture.Build<PickemGroupUserPick>()
             .With(x => x.ContestId, contestId)

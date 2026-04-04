@@ -1,5 +1,5 @@
 using SportsData.Api.Application.UI.Map.Dtos;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Map.Queries.GetMapMatchups;
@@ -14,14 +14,14 @@ public interface IGetMapMatchupsQueryHandler
 public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
 {
     private readonly ILogger<GetMapMatchupsQueryHandler> _logger;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IContestClientFactory _contestClientFactory;
 
     public GetMapMatchupsQueryHandler(
         ILogger<GetMapMatchupsQueryHandler> logger,
-        IProvideCanonicalData canonicalDataProvider)
+        IContestClientFactory contestClientFactory)
     {
         _logger = logger;
-        _canonicalDataProvider = canonicalDataProvider;
+        _contestClientFactory = contestClientFactory;
     }
 
     public async Task<Result<GetMapMatchupsResponse>> ExecuteAsync(
@@ -37,7 +37,8 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
         if (query.LeagueId is null && query.WeekNumber is null)
         {
             // TODO: Honor WeekNumber when LeagueId is provided
-            var matchups = await _canonicalDataProvider.GetMatchupsForCurrentWeek();
+            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForCurrentWeek();
+            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : new System.Collections.Generic.List<SportsData.Core.Dtos.Canonical.Matchup>();
 
             return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse
             {
@@ -48,7 +49,8 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
         {
             // we have a week, but no league
             var seasonYear = query.SeasonYear ?? DateTime.UtcNow.Year;
-            var matchups = await _canonicalDataProvider.GetMatchupsForSeasonWeek(seasonYear, query.WeekNumber!.Value);
+            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForSeasonWeek(seasonYear, query.WeekNumber!.Value);
+            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : new System.Collections.Generic.List<SportsData.Core.Dtos.Canonical.Matchup>();
 
             return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse
             {
@@ -58,7 +60,8 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
         else
         {
             // we have a league (and optionally a week)
-            var matchups = await _canonicalDataProvider.GetMatchupsForCurrentWeek();
+            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForCurrentWeek();
+            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : new System.Collections.Generic.List<SportsData.Core.Dtos.Canonical.Matchup>();
 
             return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse
             {

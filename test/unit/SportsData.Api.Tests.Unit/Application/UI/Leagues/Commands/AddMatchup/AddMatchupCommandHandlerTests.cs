@@ -6,12 +6,12 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
-using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
@@ -19,12 +19,14 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Commands.AddMatchup;
 
 public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandler>
 {
-    private readonly Mock<IProvideCanonicalData> _canonicalDataProviderMock;
+    private readonly Mock<IProvideContests> _contestClientMock = new();
     private readonly Mock<IEventBus> _eventBusMock;
 
     public AddMatchupCommandHandlerTests()
     {
-        _canonicalDataProviderMock = Mocker.GetMock<IProvideCanonicalData>();
+        Mocker.GetMock<IContestClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
         _eventBusMock = Mocker.GetMock<IEventBus>();
     }
 
@@ -112,9 +114,9 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
         DataContext.PickemGroups.Add(league);
         await DataContext.SaveChangesAsync();
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupByContestId(contestId))
-            .ReturnsAsync((Matchup?)null);
+        _contestClientMock
+            .Setup(x => x.GetMatchupByContestId(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Failure<Matchup>(default!, ResultStatus.NotFound, []));
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
         var command = CreateCommand(leagueId: league.Id, contestId: contestId);
@@ -142,9 +144,9 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
         await DataContext.SaveChangesAsync();
 
         var matchupData = CreateMatchupData(contestId, seasonWeekId);
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupByContestId(contestId))
-            .ReturnsAsync(matchupData);
+        _contestClientMock
+            .Setup(x => x.GetMatchupByContestId(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<Matchup>(matchupData));
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
         var command = CreateCommand(leagueId: league.Id, contestId: contestId);
@@ -182,9 +184,9 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
         await DataContext.SaveChangesAsync();
 
         var matchupData = CreateMatchupData(contestId, seasonWeekId);
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupByContestId(contestId))
-            .ReturnsAsync(matchupData);
+        _contestClientMock
+            .Setup(x => x.GetMatchupByContestId(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<Matchup>(matchupData));
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
         var command = CreateCommand(leagueId: league.Id, contestId: contestId);
@@ -213,9 +215,9 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
         await DataContext.SaveChangesAsync();
 
         var matchupData = CreateMatchupData(contestId, seasonWeekId);
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupByContestId(contestId))
-            .ReturnsAsync(matchupData);
+        _contestClientMock
+            .Setup(x => x.GetMatchupByContestId(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<Matchup>(matchupData));
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
         var command = CreateCommand(leagueId: league.Id, contestId: contestId);
@@ -258,9 +260,9 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
         await DataContext.SaveChangesAsync();
 
         var matchupData = CreateMatchupData(contestId, seasonWeekId);
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupByContestId(contestId))
-            .ReturnsAsync(matchupData);
+        _contestClientMock
+            .Setup(x => x.GetMatchupByContestId(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<Matchup>(matchupData));
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
         var command = CreateCommand(leagueId: league.Id, contestId: contestId);
@@ -293,9 +295,9 @@ public class AddMatchupCommandHandlerTests : ApiTestBase<AddMatchupCommandHandle
         await DataContext.SaveChangesAsync();
 
         var matchupData = CreateMatchupData(contestId, seasonWeekId);
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupByContestId(contestId))
-            .ReturnsAsync(matchupData);
+        _contestClientMock
+            .Setup(x => x.GetMatchupByContestId(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<Matchup>(matchupData));
 
         var handler = Mocker.CreateInstance<AddMatchupCommandHandler>();
         var command = CreateCommand(leagueId: league.Id, contestId: contestId);

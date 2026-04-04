@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Matchups.Dtos;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Matchups.Queries.GetMatchupPreview;
@@ -20,16 +20,16 @@ public class GetMatchupPreviewQueryHandler : IGetMatchupPreviewQueryHandler
 {
     private readonly ILogger<GetMatchupPreviewQueryHandler> _logger;
     private readonly AppDataContext _dbContext;
-    private readonly IProvideCanonicalData _canonicalData;
+    private readonly IContestClientFactory _contestClientFactory;
 
     public GetMatchupPreviewQueryHandler(
         ILogger<GetMatchupPreviewQueryHandler> logger,
         AppDataContext dbContext,
-        IProvideCanonicalData canonicalData)
+        IContestClientFactory contestClientFactory)
     {
         _logger = logger;
         _dbContext = dbContext;
-        _canonicalData = canonicalData;
+        _contestClientFactory = contestClientFactory;
     }
 
     public async Task<Result<MatchupPreviewDto>> ExecuteAsync(
@@ -50,7 +50,9 @@ public class GetMatchupPreviewQueryHandler : IGetMatchupPreviewQueryHandler
                 [new ValidationFailure(nameof(query.ContestId), "Matchup preview not found")]);
         }
 
-        var canonical = await _canonicalData.GetMatchupForPreview(query.ContestId);
+        // TODO: multi-sport
+        var previewResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupForPreview(query.ContestId);
+        var canonical = previewResult.IsSuccess ? previewResult.Value : null;
 
         if (canonical is null)
         {

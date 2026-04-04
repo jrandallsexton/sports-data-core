@@ -2,7 +2,8 @@
 
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
+using SportsData.Core.Common;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Jobs
@@ -11,25 +12,28 @@ namespace SportsData.Api.Application.Jobs
     {
         private readonly ILogger<MatchupPreviewGenerator> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IProvideCanonicalData _canonicalDataProvider;
+        private readonly IContestClientFactory _contestClientFactory;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public MatchupPreviewGenerator(
             ILogger<MatchupPreviewGenerator> logger,
             AppDataContext dataContext,
-            IProvideCanonicalData canonicalDataProvider,
+            IContestClientFactory contestClientFactory,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _canonicalDataProvider = canonicalDataProvider;
+            _contestClientFactory = contestClientFactory;
             _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task ExecuteAsync()
         {
             // Get all matchups for the current week
-            var matchups = await _canonicalDataProvider.GetMatchupsForCurrentWeek();
+            // TODO: multi-sport
+            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForCurrentWeek();
+            if (!matchupsResult.IsSuccess) { _logger.LogWarning("Failed to retrieve matchups from Producer."); return; }
+            var matchups = matchupsResult.Value;
 
             if (matchups is null || !matchups.Any())
             {

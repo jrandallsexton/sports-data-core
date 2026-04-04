@@ -5,9 +5,10 @@ using Moq;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
@@ -15,11 +16,13 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Queries.GetLeagueWeek
 
 public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekMatchupsQueryHandler>
 {
-    private readonly Mock<IProvideCanonicalData> _canonicalDataProviderMock;
+    private readonly Mock<IProvideContests> _contestClientMock = new();
 
     public GetLeagueWeekMatchupsQueryHandlerTests()
     {
-        _canonicalDataProviderMock = Mocker.GetMock<IProvideCanonicalData>();
+        Mocker.GetMock<IContestClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
     }
 
     [Fact]
@@ -52,9 +55,9 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         DataContext.PickemGroups.Add(league);
         await DataContext.SaveChangesAsync();
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([]);
+        _contestClientMock
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<LeagueMatchupDto>>([]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
         var query = new GetLeagueWeekMatchupsQuery
@@ -96,9 +99,9 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         var canonicalMatchup1 = CreateCanonicalMatchup(contestId1);
         var canonicalMatchup2 = CreateCanonicalMatchup(contestId2);
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([canonicalMatchup1, canonicalMatchup2]);
+        _contestClientMock
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<LeagueMatchupDto>>([canonicalMatchup1, canonicalMatchup2]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
         var query = new GetLeagueWeekMatchupsQuery
@@ -136,12 +139,12 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         canonicalMatchup.AwayShort = "ALA";
         canonicalMatchup.Home = "Georgia";
         canonicalMatchup.HomeShort = "UGA";
-        canonicalMatchup.SpreadCurrent = -7.5m;
-        canonicalMatchup.OverUnderCurrent = 52.5m;
+        canonicalMatchup.SpreadCurrent = -7.5;
+        canonicalMatchup.OverUnderCurrent = 52.5;
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([canonicalMatchup]);
+        _contestClientMock
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<LeagueMatchupDto>>([canonicalMatchup]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
         var query = new GetLeagueWeekMatchupsQuery
@@ -179,9 +182,9 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         DataContext.PickemGroupMatchups.Add(matchup);
         await DataContext.SaveChangesAsync();
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([]);
+        _contestClientMock
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<LeagueMatchupDto>>([]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
         var query = new GetLeagueWeekMatchupsQuery
@@ -226,9 +229,9 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         await DataContext.SaveChangesAsync();
 
         var canonicalMatchup = CreateCanonicalMatchup(contestId);
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([canonicalMatchup]);
+        _contestClientMock
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<LeagueMatchupDto>>([canonicalMatchup]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
         var query = new GetLeagueWeekMatchupsQuery
@@ -274,9 +277,9 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         await DataContext.SaveChangesAsync();
 
         var canonicalMatchup = CreateCanonicalMatchup(contestId);
-        _canonicalDataProviderMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([canonicalMatchup]);
+        _contestClientMock
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<LeagueMatchupDto>>([canonicalMatchup]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
         var query = new GetLeagueWeekMatchupsQuery
@@ -335,9 +338,9 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         };
     }
 
-    private static LeagueWeekMatchupsDto.MatchupForPickDto CreateCanonicalMatchup(Guid contestId)
+    private static LeagueMatchupDto CreateCanonicalMatchup(Guid contestId)
     {
-        return new LeagueWeekMatchupsDto.MatchupForPickDto
+        return new LeagueMatchupDto
         {
             ContestId = contestId,
             StartDateUtc = DateTime.UtcNow.AddDays(1),

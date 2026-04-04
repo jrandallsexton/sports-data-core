@@ -3,10 +3,10 @@ using FluentAssertions;
 using Moq;
 
 using SportsData.Api.Application.UI.Matchups.Queries.GetMatchupPreview;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
-using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
@@ -14,6 +14,14 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Matchups.Queries.GetMatchupPr
 
 public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQueryHandler>
 {
+    private readonly Mock<IProvideContests> _contestClientMock = new();
+
+    public GetMatchupPreviewQueryHandlerTests()
+    {
+        Mocker.GetMock<IContestClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
+    }
     [Fact]
     public async Task ExecuteAsync_ShouldReturnNotFound_WhenPreviewDoesNotExist()
     {
@@ -47,9 +55,9 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         await DataContext.MatchupPreviews.AddAsync(preview);
         await DataContext.SaveChangesAsync();
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetMatchupForPreview(contestId))
-            .ReturnsAsync((MatchupForPreviewDto)null!);
+        _contestClientMock
+            .Setup(x => x.GetMatchupForPreview(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Failure<MatchupForPreviewDto>(default!, ResultStatus.NotFound, []));
 
         var sut = Mocker.CreateInstance<GetMatchupPreviewQueryHandler>();
         var query = new GetMatchupPreviewQuery { ContestId = contestId };
@@ -103,9 +111,9 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
             OverUnder = 45.5
         };
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetMatchupForPreview(contestId))
-            .ReturnsAsync(canonicalData);
+        _contestClientMock
+            .Setup(x => x.GetMatchupForPreview(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<MatchupForPreviewDto>(canonicalData));
 
         var sut = Mocker.CreateInstance<GetMatchupPreviewQueryHandler>();
         var query = new GetMatchupPreviewQuery { ContestId = contestId };

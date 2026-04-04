@@ -3,8 +3,9 @@ using FluentAssertions;
 using Moq;
 
 using SportsData.Api.Application.UI.Map.Queries.GetMapMatchups;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
@@ -12,6 +13,14 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Map.Queries.GetMapMatchups;
 
 public class GetMapMatchupsQueryHandlerTests : ApiTestBase<GetMapMatchupsQueryHandler>
 {
+    private readonly Mock<IProvideContests> _contestClientMock = new();
+
+    public GetMapMatchupsQueryHandlerTests()
+    {
+        Mocker.GetMock<IContestClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
+    }
     private static Matchup CreateMatchup() => new()
     {
         ContestId = Guid.NewGuid(),
@@ -29,9 +38,9 @@ public class GetMapMatchupsQueryHandlerTests : ApiTestBase<GetMapMatchupsQueryHa
             CreateMatchup()
         };
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetMatchupsForCurrentWeek())
-            .ReturnsAsync(expectedMatchups);
+        _contestClientMock
+            .Setup(x => x.GetMatchupsForCurrentWeek(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<Matchup>>(expectedMatchups));
 
         var sut = Mocker.CreateInstance<GetMapMatchupsQueryHandler>();
         var query = new GetMapMatchupsQuery();
@@ -42,8 +51,8 @@ public class GetMapMatchupsQueryHandlerTests : ApiTestBase<GetMapMatchupsQueryHa
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Matchups.Should().HaveCount(2);
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Verify(x => x.GetMatchupsForCurrentWeek(), Times.Once);
+        _contestClientMock
+            .Verify(x => x.GetMatchupsForCurrentWeek(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -57,9 +66,9 @@ public class GetMapMatchupsQueryHandlerTests : ApiTestBase<GetMapMatchupsQueryHa
             CreateMatchup()
         };
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetMatchupsForSeasonWeek(currentYear, weekNumber))
-            .ReturnsAsync(expectedMatchups);
+        _contestClientMock
+            .Setup(x => x.GetMatchupsForSeasonWeek(currentYear, weekNumber, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<Matchup>>(expectedMatchups));
 
         var sut = Mocker.CreateInstance<GetMapMatchupsQueryHandler>();
         var query = new GetMapMatchupsQuery { WeekNumber = weekNumber };
@@ -70,8 +79,8 @@ public class GetMapMatchupsQueryHandlerTests : ApiTestBase<GetMapMatchupsQueryHa
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Matchups.Should().HaveCount(1);
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Verify(x => x.GetMatchupsForSeasonWeek(currentYear, weekNumber), Times.Once);
+        _contestClientMock
+            .Verify(x => x.GetMatchupsForSeasonWeek(currentYear, weekNumber, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -82,9 +91,9 @@ public class GetMapMatchupsQueryHandlerTests : ApiTestBase<GetMapMatchupsQueryHa
         var seasonYear = 2024;
         var expectedMatchups = new List<Matchup>();
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetMatchupsForSeasonWeek(seasonYear, weekNumber))
-            .ReturnsAsync(expectedMatchups);
+        _contestClientMock
+            .Setup(x => x.GetMatchupsForSeasonWeek(seasonYear, weekNumber, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<Matchup>>(expectedMatchups));
 
         var sut = Mocker.CreateInstance<GetMapMatchupsQueryHandler>();
         var query = new GetMapMatchupsQuery { WeekNumber = weekNumber, SeasonYear = seasonYear };
@@ -93,8 +102,8 @@ public class GetMapMatchupsQueryHandlerTests : ApiTestBase<GetMapMatchupsQueryHa
         await sut.ExecuteAsync(query);
 
         // Assert
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Verify(x => x.GetMatchupsForSeasonWeek(seasonYear, weekNumber), Times.Once);
+        _contestClientMock
+            .Verify(x => x.GetMatchupsForSeasonWeek(seasonYear, weekNumber, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -107,9 +116,9 @@ public class GetMapMatchupsQueryHandlerTests : ApiTestBase<GetMapMatchupsQueryHa
             CreateMatchup()
         };
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetMatchupsForCurrentWeek())
-            .ReturnsAsync(expectedMatchups);
+        _contestClientMock
+            .Setup(x => x.GetMatchupsForCurrentWeek(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<Matchup>>(expectedMatchups));
 
         var sut = Mocker.CreateInstance<GetMapMatchupsQueryHandler>();
         var query = new GetMapMatchupsQuery { LeagueId = leagueId };
@@ -119,7 +128,7 @@ public class GetMapMatchupsQueryHandlerTests : ApiTestBase<GetMapMatchupsQueryHa
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Verify(x => x.GetMatchupsForCurrentWeek(), Times.Once);
+        _contestClientMock
+            .Verify(x => x.GetMatchupsForCurrentWeek(It.IsAny<CancellationToken>()), Times.Once);
     }
 }

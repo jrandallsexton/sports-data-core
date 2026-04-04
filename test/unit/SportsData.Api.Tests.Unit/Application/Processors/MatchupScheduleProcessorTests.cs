@@ -7,11 +7,12 @@ using Moq;
 
 using SportsData.Api.Application;
 using SportsData.Api.Application.Processors;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
@@ -19,6 +20,14 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
 {
     public class MatchupScheduleProcessorTests : ApiTestBase<MatchupScheduleProcessor>
     {
+        private readonly Mock<IProvideContests> _contestClientMock = new();
+
+        public MatchupScheduleProcessorTests()
+        {
+            Mocker.GetMock<IContestClientFactory>()
+                .Setup(x => x.Resolve(It.IsAny<Sport>()))
+                .Returns(_contestClientMock.Object);
+        }
         /// <summary>
         /// Validates that when a PickemGroup does not exist for the given GroupId,
         /// the processor logs an error and returns early without attempting to fetch matchups.
@@ -41,8 +50,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             await sut.Process(command);
 
             // Assert
-            Mocker.GetMock<IProvideCanonicalData>()
-                .Verify(x => x.GetMatchupsForSeasonWeek(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            _contestClientMock
+                .Verify(x => x.GetMatchupsForSeasonWeek(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         /// <summary>
@@ -102,8 +111,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             await sut.Process(command);
 
             // Assert
-            Mocker.GetMock<IProvideCanonicalData>()
-                .Verify(x => x.GetMatchupsForSeasonWeek(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+            _contestClientMock
+                .Verify(x => x.GetMatchupsForSeasonWeek(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         /// <summary>
@@ -156,9 +165,9 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                     .Create()
             };
 
-            Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 1))
-                .ReturnsAsync(allMatchups);
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
 
             var command = new ScheduleGroupWeekMatchupsCommand(
                 groupId,
@@ -231,9 +240,9 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                     .Create()
             };
 
-            Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 16))
-                .ReturnsAsync(allMatchups);
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 16, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
 
             var command = new ScheduleGroupWeekMatchupsCommand(
                 groupId,
@@ -294,9 +303,9 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                     .Create()
             };
 
-            Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 16))
-                .ReturnsAsync(allMatchups);
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 16, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
 
             var command = new ScheduleGroupWeekMatchupsCommand(
                 groupId,
@@ -358,9 +367,9 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                     .Create()
             };
 
-            Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 17))
-                .ReturnsAsync(allMatchups);
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 17, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
 
             var command = new ScheduleGroupWeekMatchupsCommand(
                 groupId,
@@ -405,9 +414,9 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             await DataContext.PickemGroups.AddAsync(group);
             await DataContext.SaveChangesAsync();
 
-            Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 5))
-                .ReturnsAsync(new List<Matchup>());
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 5, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(new List<Matchup>()));
 
             var command = new ScheduleGroupWeekMatchupsCommand(
                 groupId,
@@ -461,9 +470,9 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .With(x => x.Status, "Scheduled")
                 .Create();
 
-            Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 3))
-                .ReturnsAsync(new List<Matchup> { activeMatchup });
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 3, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(new List<Matchup> { activeMatchup }));
 
             var command = new ScheduleGroupWeekMatchupsCommand(
                 groupId,
@@ -523,9 +532,9 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .With(x => x.Spread, () => "-3.5")
                 .Create();
 
-            Mocker.GetMock<IProvideCanonicalData>()
-                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 8))
-                .ReturnsAsync(new List<Matchup> { sourceMatchup });
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 8, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(new List<Matchup> { sourceMatchup }));
 
             var command = new ScheduleGroupWeekMatchupsCommand(
                 groupId,

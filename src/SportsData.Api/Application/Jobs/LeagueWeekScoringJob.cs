@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Common.Jobs;
 
 namespace SportsData.Api.Application.Jobs
@@ -15,17 +16,20 @@ namespace SportsData.Api.Application.Jobs
     {
         private readonly ILogger<LeagueWeekScoringJob> _logger;
         private readonly AppDataContext _dataContext;
+        private readonly ISeasonClientFactory _seasonClientFactory;
         private readonly IProvideCanonicalData _canonicalData;
         private readonly ILeagueWeekScoringService _leagueWeekScoringService;
 
         public LeagueWeekScoringJob(
             ILogger<LeagueWeekScoringJob> logger,
             AppDataContext dataContext,
+            ISeasonClientFactory seasonClientFactory,
             IProvideCanonicalData canonicalData,
             ILeagueWeekScoringService leagueWeekScoringService)
         {
             _logger = logger;
             _dataContext = dataContext;
+            _seasonClientFactory = seasonClientFactory;
             _canonicalData = canonicalData;
             _leagueWeekScoringService = leagueWeekScoringService;
         }
@@ -37,7 +41,9 @@ namespace SportsData.Api.Application.Jobs
             try
             {
                 // Get current and previous season weeks
-                var seasonWeeks = await _canonicalData.GetCurrentAndLastWeekSeasonWeeks();
+                // TODO: multi-sport
+                var weeksResult = await _seasonClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetCurrentAndLastSeasonWeeks();
+                var seasonWeeks = weeksResult.IsSuccess ? weeksResult.Value : [];
 
                 foreach (var seasonWeek in seasonWeeks)
                 {

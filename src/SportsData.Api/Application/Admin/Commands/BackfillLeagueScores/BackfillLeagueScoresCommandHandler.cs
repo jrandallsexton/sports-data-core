@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
@@ -18,20 +18,20 @@ public interface IBackfillLeagueScoresCommandHandler
 public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHandler
 {
     private readonly AppDataContext _dataContext;
-    private readonly IProvideCanonicalData _canonicalData;
+    private readonly ISeasonClientFactory _seasonClientFactory;
     private readonly ILeagueWeekScoringService _leagueWeekScoringService;
     private readonly IValidator<BackfillLeagueScoresCommand> _validator;
     private readonly ILogger<BackfillLeagueScoresCommandHandler> _logger;
 
     public BackfillLeagueScoresCommandHandler(
         AppDataContext dataContext,
-        IProvideCanonicalData canonicalData,
+        ISeasonClientFactory seasonClientFactory,
         ILeagueWeekScoringService leagueWeekScoringService,
         IValidator<BackfillLeagueScoresCommand> validator,
         ILogger<BackfillLeagueScoresCommandHandler> logger)
     {
         _dataContext = dataContext;
-        _canonicalData = canonicalData;
+        _seasonClientFactory = seasonClientFactory;
         _leagueWeekScoringService = leagueWeekScoringService;
         _validator = validator;
         _logger = logger;
@@ -58,7 +58,9 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
         try
         {
             // Get all completed weeks for the season
-            var seasonWeeks = await _canonicalData.GetCompletedSeasonWeeks(command.SeasonYear);
+            // TODO: multi-sport
+            var weeksResult = await _seasonClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetCompletedSeasonWeeks(command.SeasonYear);
+            var seasonWeeks = weeksResult.IsSuccess ? weeksResult.Value : [];
 
             if (seasonWeeks.Count == 0)
             {

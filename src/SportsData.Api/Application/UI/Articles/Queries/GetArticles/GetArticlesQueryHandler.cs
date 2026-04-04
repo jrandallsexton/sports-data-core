@@ -5,8 +5,8 @@ using Microsoft.Extensions.Options;
 using SportsData.Api.Application.UI.Articles.Dtos;
 using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Season;
 
 namespace SportsData.Api.Application.UI.Articles.Queries.GetArticles;
 
@@ -22,18 +22,18 @@ public class GetArticlesQueryHandler : IGetArticlesQueryHandler
     private readonly ILogger<GetArticlesQueryHandler> _logger;
     private readonly ApiConfig _config;
     private readonly AppDataContext _dataContext;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly ISeasonClientFactory _seasonClientFactory;
 
     public GetArticlesQueryHandler(
         ILogger<GetArticlesQueryHandler> logger,
         IOptions<ApiConfig> config,
         AppDataContext dataContext,
-        IProvideCanonicalData canonicalDataProvider)
+        ISeasonClientFactory seasonClientFactory)
     {
         _logger = logger;
         _config = config.Value;
         _dataContext = dataContext;
-        _canonicalDataProvider = canonicalDataProvider;
+        _seasonClientFactory = seasonClientFactory;
     }
 
     public async Task<Result<GetArticlesResponse>> ExecuteAsync(
@@ -42,7 +42,9 @@ public class GetArticlesQueryHandler : IGetArticlesQueryHandler
     {
         _logger.LogDebug("Getting articles for current season week");
 
-        var currentSeasonWeek = await _canonicalDataProvider.GetCurrentSeasonWeek();
+        // TODO: multi-sport — resolve sport from context instead of defaulting
+        var weekResult = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek();
+        var currentSeasonWeek = weekResult.IsSuccess ? weekResult.Value : null;
 
         if (currentSeasonWeek is null)
         {

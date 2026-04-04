@@ -6,9 +6,9 @@ using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Season;
 
 namespace SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 
@@ -19,7 +19,7 @@ public interface IRefreshAiExistenceCommandHandler
 
 public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandler
 {
-    private readonly IProvideCanonicalData _canonicalData;
+    private readonly ISeasonClientFactory _seasonClientFactory;
     private readonly AppDataContext _dataContext;
     private readonly IGetLeagueWeekMatchupsQueryHandler _getLeagueWeekMatchupsHandler;
     private readonly ILogger<RefreshAiExistenceCommandHandler> _logger;
@@ -27,13 +27,13 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
     public RefreshAiExistenceCommandHandler(
         ILogger<RefreshAiExistenceCommandHandler> logger,
         AppDataContext dataContext,
-        IProvideCanonicalData canonicalData,
+        ISeasonClientFactory seasonClientFactory,
         ISyntheticPickService syntheticPickService,
         IGetLeagueWeekMatchupsQueryHandler getLeagueWeekMatchupsHandler)
     {
         _logger = logger;
         _dataContext = dataContext;
-        _canonicalData = canonicalData;
+        _seasonClientFactory = seasonClientFactory;
         _syntheticPickService = syntheticPickService;
         _getLeagueWeekMatchupsHandler = getLeagueWeekMatchupsHandler;
     }
@@ -45,9 +45,9 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
             // TODO: Accept the seasonWeek as a parameter
 
             // get the current week
-            var currentWeek = await _canonicalData.GetCurrentSeasonWeek();
-            //var weeks = await _canonicalData.GetCurrentAndLastWeekSeasonWeeks();
-            //var currentWeek = weeks.Where(x => x.WeekNumber == 13).First()!;
+            // TODO: multi-sport — resolve sport from context instead of defaulting
+            var weekResult = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek();
+            var currentWeek = weekResult.IsSuccess ? weekResult.Value : null;
 
             if (currentWeek is null)
             {

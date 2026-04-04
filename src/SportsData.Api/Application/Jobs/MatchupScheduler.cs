@@ -2,9 +2,10 @@
 
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
 using SportsData.Core.Common.Jobs;
+using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Jobs
@@ -13,25 +14,27 @@ namespace SportsData.Api.Application.Jobs
     {
         private readonly ILogger<MatchupScheduler> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IProvideCanonicalData _canonicalDataProvider;
+        private readonly ISeasonClientFactory _seasonClientFactory;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public MatchupScheduler(
             ILogger<MatchupScheduler> logger,
             AppDataContext dataContext,
-            IProvideCanonicalData canonicalDataProvider,
+            ISeasonClientFactory seasonClientFactory,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _canonicalDataProvider = canonicalDataProvider;
+            _seasonClientFactory = seasonClientFactory;
             _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task ExecuteAsync()
         {
             // get the current week
-            var currentWeek = await _canonicalDataProvider.GetCurrentSeasonWeek();
+            // TODO: multi-sport — resolve sport from context instead of defaulting
+            var result = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek();
+            var currentWeek = result.IsSuccess ? result.Value : null;
 
             if (currentWeek is null)
             {

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Producer.Application.Contests.Queries.Matchups;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 using System.Collections.Generic;
@@ -21,13 +22,17 @@ public interface IGetFranchiseSeasonCompetitionResultsQueryHandler
 public class GetFranchiseSeasonCompetitionResultsQueryHandler : IGetFranchiseSeasonCompetitionResultsQueryHandler
 {
     private readonly TeamSportDataContext _dbContext;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public GetFranchiseSeasonCompetitionResultsQueryHandler(TeamSportDataContext dbContext)
+    public GetFranchiseSeasonCompetitionResultsQueryHandler(
+        TeamSportDataContext dbContext,
+        IDateTimeProvider dateTimeProvider)
     {
         _dbContext = dbContext;
+        _dateTimeProvider = dateTimeProvider;
     }
 
-    private const string Sql = """
+    private static readonly string Sql = $"""
         SELECT
           c."StartDateUtc",
           c."Id" AS "ContestId",
@@ -75,7 +80,7 @@ public class GetFranchiseSeasonCompetitionResultsQueryHandler : IGetFranchiseSea
                 fsrHome."DefaultRanking" = true and fsrHome."Type" in ('ap', 'cfp') and
                 fsrHome."SeasonWeekId" = c."SeasonWeekId"
         LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
-        WHERE c."StartDateUtc" <= NOW() AND ((fsAway."Id" = @FranchiseSeasonId) OR (fsHome."Id" = @FranchiseSeasonId))
+        WHERE c."StartDateUtc" <= @NowUtc AND ((fsAway."Id" = @FranchiseSeasonId) OR (fsHome."Id" = @FranchiseSeasonId))
         ORDER BY c."StartDateUtc", fHome."Slug"
         """;
 
@@ -88,7 +93,7 @@ public class GetFranchiseSeasonCompetitionResultsQueryHandler : IGetFranchiseSea
         var results = (await connection.QueryAsync<FranchiseSeasonCompetitionResultDto>(
             new CommandDefinition(
                 Sql,
-                new { query.FranchiseSeasonId },
+                new { query.FranchiseSeasonId, NowUtc = _dateTimeProvider.UtcNow() },
                 cancellationToken: cancellationToken))).ToList();
 
         return new Success<List<FranchiseSeasonCompetitionResultDto>>(results);

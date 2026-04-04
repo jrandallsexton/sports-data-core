@@ -46,7 +46,7 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
 
             // get the current week
             // TODO: multi-sport — resolve sport from context instead of defaulting
-            var weekResult = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek();
+            var weekResult = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek(cancellationToken);
             var currentWeek = weekResult.IsSuccess ? weekResult.Value : null;
 
             if (currentWeek is null)

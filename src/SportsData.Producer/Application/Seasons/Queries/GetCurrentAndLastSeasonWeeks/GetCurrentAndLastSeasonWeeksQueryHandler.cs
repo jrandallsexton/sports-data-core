@@ -31,6 +31,7 @@ public class GetCurrentAndLastSeasonWeeksQueryHandler : IGetCurrentAndLastSeason
         CancellationToken cancellationToken = default)
     {
         var now = _dateTimeProvider.UtcNow();
+        // 13 days covers two football weeks (7 days each) plus buffer for scheduling shifts
         var thirteenDaysAgo = now.AddDays(-13);
 
         var result = await _dbContext.SeasonWeeks

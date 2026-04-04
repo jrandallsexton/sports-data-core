@@ -43,7 +43,7 @@ public class GetArticlesQueryHandler : IGetArticlesQueryHandler
         _logger.LogDebug("Getting articles for current season week");
 
         // TODO: multi-sport — resolve sport from context instead of defaulting
-        var weekResult = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek();
+        var weekResult = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek(cancellationToken);
         var currentSeasonWeek = weekResult.IsSuccess ? weekResult.Value : null;
 
         if (currentSeasonWeek is null)

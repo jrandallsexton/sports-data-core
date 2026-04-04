@@ -59,8 +59,19 @@ public class BackfillLeagueScoresCommandHandler : IBackfillLeagueScoresCommandHa
         {
             // Get all completed weeks for the season
             // TODO: multi-sport
-            var weeksResult = await _seasonClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetCompletedSeasonWeeks(command.SeasonYear);
-            var seasonWeeks = weeksResult.IsSuccess ? weeksResult.Value : [];
+            var weeksResult = await _seasonClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
+                .GetCompletedSeasonWeeks(command.SeasonYear, cancellationToken);
+
+            if (!weeksResult.IsSuccess)
+            {
+                _logger.LogError("Failed to retrieve completed season weeks for year {SeasonYear}", command.SeasonYear);
+                return new Failure<BackfillLeagueScoresResult>(
+                    BackfillLeagueScoresResult.Empty(),
+                    ResultStatus.Error,
+                    [new FluentValidation.Results.ValidationFailure("SeasonWeeks", "Failed to retrieve completed season weeks from Producer")]);
+            }
+
+            var seasonWeeks = weeksResult.Value;
 
             if (seasonWeeks.Count == 0)
             {

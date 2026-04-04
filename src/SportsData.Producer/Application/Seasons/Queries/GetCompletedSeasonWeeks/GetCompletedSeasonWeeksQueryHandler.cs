@@ -35,6 +35,7 @@ public class GetCompletedSeasonWeeksQueryHandler : IGetCompletedSeasonWeeksQuery
         var result = await _dbContext.SeasonWeeks
             .AsNoTracking()
             .Include(sw => sw.Season)
+            .Include(sw => sw.SeasonPhase)
             .Where(sw => sw.Season!.Year == query.SeasonYear && sw.EndDate < now)
             .OrderBy(sw => sw.StartDate)
             .Select(sw => new CanonicalSeasonWeekDto
@@ -43,6 +44,7 @@ public class GetCompletedSeasonWeeksQueryHandler : IGetCompletedSeasonWeeksQuery
                 SeasonId = sw.SeasonId,
                 SeasonYear = sw.Season!.Year,
                 WeekNumber = sw.Number,
+                SeasonPhase = sw.SeasonPhase!.Name,
                 IsNonStandardWeek = sw.IsNonStandardWeek
             })
             .ToListAsync(cancellationToken);

@@ -33,7 +33,13 @@ namespace SportsData.Api.Application.Jobs
             // get the current and last season weeks
             // TODO: multi-sport
             var weeksResult = await _seasonClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetCurrentAndLastSeasonWeeks();
-            var weeks = weeksResult.IsSuccess ? weeksResult.Value : [];
+            if (!weeksResult.IsSuccess)
+            {
+                _logger.LogWarning("Failed to retrieve season weeks from Producer. Will retry on next run.");
+                return;
+            }
+
+            var weeks = weeksResult.Value;
 
             if (weeks.Count == 0)
             {

@@ -17,6 +17,15 @@ using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Contests.Commands;
 using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetCompletedFbsContestIds;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestResults;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetFinalizedContestIds;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupByContestId;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupForPreview;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupResult;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsByContestIds;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsForCurrentWeek;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsForSeasonWeek;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Franchises;
 using SportsData.Producer.Application.Franchises.Commands;
@@ -223,6 +232,17 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IGetCurrentSeasonWeekQueryHandler, GetCurrentSeasonWeekQueryHandler>();
             services.AddScoped<IGetCurrentAndLastSeasonWeeksQueryHandler, GetCurrentAndLastSeasonWeeksQueryHandler>();
             services.AddScoped<IGetCompletedSeasonWeeksQueryHandler, GetCompletedSeasonWeeksQueryHandler>();
+
+            // Contest Matchup Queries
+            services.AddScoped<IGetMatchupsForCurrentWeekQueryHandler, GetMatchupsForCurrentWeekQueryHandler>();
+            services.AddScoped<IGetMatchupsForSeasonWeekQueryHandler, GetMatchupsForSeasonWeekQueryHandler>();
+            services.AddScoped<IGetMatchupByContestIdQueryHandler, GetMatchupByContestIdQueryHandler>();
+            services.AddScoped<IGetMatchupsByContestIdsQueryHandler, GetMatchupsByContestIdsQueryHandler>();
+            services.AddScoped<IGetMatchupForPreviewQueryHandler, GetMatchupForPreviewQueryHandler>();
+            services.AddScoped<IGetMatchupResultQueryHandler, GetMatchupResultQueryHandler>();
+            services.AddScoped<IGetContestResultsByContestIdsQueryHandler, GetContestResultsByContestIdsQueryHandler>();
+            services.AddScoped<IGetFinalizedContestIdsQueryHandler, GetFinalizedContestIdsQueryHandler>();
+            services.AddScoped<IGetCompletedFbsContestIdsQueryHandler, GetCompletedFbsContestIdsQueryHandler>();
 
             // FranchiseSeasonRanking Queries
             services.AddScoped<IGetCurrentPollsQueryHandler, GetCurrentPollsQueryHandler>();

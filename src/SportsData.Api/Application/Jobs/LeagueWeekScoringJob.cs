@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Infrastructure.Clients.Season;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common.Jobs;
 
 namespace SportsData.Api.Application.Jobs
@@ -17,20 +17,20 @@ namespace SportsData.Api.Application.Jobs
         private readonly ILogger<LeagueWeekScoringJob> _logger;
         private readonly AppDataContext _dataContext;
         private readonly ISeasonClientFactory _seasonClientFactory;
-        private readonly IProvideCanonicalData _canonicalData;
+        private readonly IContestClientFactory _contestClientFactory;
         private readonly ILeagueWeekScoringService _leagueWeekScoringService;
 
         public LeagueWeekScoringJob(
             ILogger<LeagueWeekScoringJob> logger,
             AppDataContext dataContext,
             ISeasonClientFactory seasonClientFactory,
-            IProvideCanonicalData canonicalData,
+            IContestClientFactory contestClientFactory,
             ILeagueWeekScoringService leagueWeekScoringService)
         {
             _logger = logger;
             _dataContext = dataContext;
             _seasonClientFactory = seasonClientFactory;
-            _canonicalData = canonicalData;
+            _contestClientFactory = contestClientFactory;
             _leagueWeekScoringService = leagueWeekScoringService;
         }
 
@@ -70,29 +70,36 @@ namespace SportsData.Api.Application.Jobs
                         leagueWeeks.Count,
                         seasonWeek.WeekNumber);
 
+                    // Fetch finalized contests once per season week (shared across all leagues)
+                    var finalizedResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
+                        .GetFinalizedContestIds(seasonWeek.Id);
+                    if (!finalizedResult.IsSuccess)
+                    {
+                        _logger.LogWarning("Failed to retrieve finalized contests for week {WeekId}. Skipping.", seasonWeek.Id);
+                        continue;
+                    }
+                    var finalizedContestIds = finalizedResult.Value;
+
                     foreach (var leagueWeek in leagueWeeks)
                     {
                         try
                         {
                             // Check if this league week has been scored recently
                             var lastCalculated = await _dataContext.PickemGroupWeekResults
-                                .Where(r => 
-                                    r.PickemGroupId == leagueWeek.GroupId && 
-                                    r.SeasonYear == leagueWeek.SeasonYear && 
+                                .Where(r =>
+                                    r.PickemGroupId == leagueWeek.GroupId &&
+                                    r.SeasonYear == leagueWeek.SeasonYear &&
                                     r.SeasonWeek == leagueWeek.SeasonWeek)
                                 .MaxAsync(r => (DateTime?)r.CalculatedUtc);
 
                             // Check if all contests for this week are finalized
                             var allContestIds = await _dataContext.PickemGroupMatchups
-                                .Where(m => 
-                                    m.GroupId == leagueWeek.GroupId && 
-                                    m.SeasonYear == leagueWeek.SeasonYear && 
+                                .Where(m =>
+                                    m.GroupId == leagueWeek.GroupId &&
+                                    m.SeasonYear == leagueWeek.SeasonYear &&
                                     m.SeasonWeek == leagueWeek.SeasonWeek)
                                 .Select(m => m.ContestId)
                                 .ToListAsync();
-
-                            var finalizedContestIds = await _canonicalData
-                                .GetFinalizedContestIds(seasonWeek.Id);
 
                             var allFinalized = allContestIds.All(id => finalizedContestIds.Contains(id));
 

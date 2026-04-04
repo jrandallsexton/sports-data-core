@@ -8,10 +8,10 @@ using Moq;
 using SportsData.Api.Application;
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Scoring;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Season;
 
 using Xunit;
@@ -25,21 +25,23 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
 {
     private readonly Mock<ILogger<LeagueWeekScoringJob>> _loggerMock;
     private readonly Mock<IProvideSeasons> _seasonClientMock;
-    private readonly Mock<IProvideCanonicalData> _canonicalDataMock;
+    private readonly Mock<IProvideContests> _contestClientMock;
     private readonly Mock<ILeagueWeekScoringService> _leagueWeekScoringServiceMock;
 
     public LeagueWeekScoringJobTests()
     {
         _loggerMock = new Mock<ILogger<LeagueWeekScoringJob>>();
         _seasonClientMock = new Mock<IProvideSeasons>();
-        _canonicalDataMock = new Mock<IProvideCanonicalData>();
+        _contestClientMock = new Mock<IProvideContests>();
         _leagueWeekScoringServiceMock = new Mock<ILeagueWeekScoringService>();
 
         Mocker.Use(_loggerMock.Object);
         Mocker.GetMock<ISeasonClientFactory>()
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_seasonClientMock.Object);
-        Mocker.Use(_canonicalDataMock.Object);
+        Mocker.GetMock<IContestClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
         Mocker.Use(_leagueWeekScoringServiceMock.Object);
     }
 
@@ -97,9 +99,9 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
             .Setup(x => x.GetCurrentAndLastSeasonWeeks(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<CanonicalSeasonWeekDto>>(seasonWeeks));
 
-        _canonicalDataMock
-            .Setup(x => x.GetFinalizedContestIds(seasonWeekId))
-            .ReturnsAsync(new List<Guid> { matchup.ContestId });
+        _contestClientMock
+            .Setup(x => x.GetFinalizedContestIds(seasonWeekId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<Guid>>(new List<Guid> { matchup.ContestId }));
 
         var sut = Mocker.CreateInstance<LeagueWeekScoringJob>();
 
@@ -185,9 +187,9 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
             .Setup(x => x.GetCurrentAndLastSeasonWeeks(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<CanonicalSeasonWeekDto>>(seasonWeeks));
 
-        _canonicalDataMock
-            .Setup(x => x.GetFinalizedContestIds(seasonWeekId))
-            .ReturnsAsync(new List<Guid>()); // Not all finalized
+        _contestClientMock
+            .Setup(x => x.GetFinalizedContestIds(seasonWeekId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<Guid>>(new List<Guid>())); // Not all finalized
 
         var sut = Mocker.CreateInstance<LeagueWeekScoringJob>();
 
@@ -273,9 +275,9 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
             .Setup(x => x.GetCurrentAndLastSeasonWeeks(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<CanonicalSeasonWeekDto>>(seasonWeeks));
 
-        _canonicalDataMock
-            .Setup(x => x.GetFinalizedContestIds(seasonWeekId))
-            .ReturnsAsync(new List<Guid> { matchup.ContestId }); // All finalized
+        _contestClientMock
+            .Setup(x => x.GetFinalizedContestIds(seasonWeekId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<Guid>>(new List<Guid> { matchup.ContestId })); // All finalized
 
         var sut = Mocker.CreateInstance<LeagueWeekScoringJob>();
 

@@ -1,4 +1,3 @@
-﻿using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
@@ -15,31 +14,11 @@ public interface IProvideCanonicalData
 
     Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugsForSeasonYear(int seasonYear);
 
-    Task<List<Matchup>> GetMatchupsForCurrentWeek();
-
-    Task<List<Matchup>> GetMatchupsForSeasonWeek(int seasonYear, int seasonWeekNumber);
-
-    Task<List<LeagueWeekMatchupsDto.MatchupForPickDto>> GetMatchupsByContestIds(List<Guid> contestIds);
-
-    Task<MatchupForPreviewDto> GetMatchupForPreview(Guid contestId);
-
-    Task<Dictionary<Guid, MatchupForPreviewDto>> GetMatchupsForPreview(IReadOnlyCollection<Guid> contestIds, CancellationToken cancellationToken = default);
-
-    Task<MatchupResult> GetMatchupResult(Guid contestId);
-
-    Task<List<Guid>> GetFinalizedContestIds(Guid seasonWeekId);
-
     Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonStatsForPreview(Guid franchiseSeasonId);
-
-    Task<List<ContestResultDto>> GetContestResultsByContestIds(List<Guid> contestIds);
 
     Task<RankingsByPollIdByWeekDto> GetRankingsByPollIdByWeek(string pollType, int seasonYear, int weekNumber);
 
     Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId);
 
     Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(Guid franchiseSeasonId);
-
-    Task<List<Guid>> GetCompletedFbsContestIdsBySeasonWeekId(Guid seasonWeekId);
-
-    Task<Matchup?> GetMatchupByContestId(Guid contestId);
 }

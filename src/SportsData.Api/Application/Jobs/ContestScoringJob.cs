@@ -2,8 +2,8 @@
 
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Infrastructure.Clients.Season;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 
@@ -14,7 +14,7 @@ namespace SportsData.Api.Application.Jobs
         private readonly ILogger<ContestScoringJob> _logger;
         private readonly AppDataContext _dataContext;
         private readonly ISeasonClientFactory _seasonClientFactory;
-        private readonly IProvideCanonicalData _canonicalData;
+        private readonly IContestClientFactory _contestClientFactory;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly Guid _correlationId = Guid.NewGuid();
 
@@ -22,13 +22,13 @@ namespace SportsData.Api.Application.Jobs
             ILogger<ContestScoringJob> logger,
             AppDataContext dataContext,
             ISeasonClientFactory seasonClientFactory,
-            IProvideCanonicalData canonicalData,
+            IContestClientFactory contestClientFactory,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _seasonClientFactory = seasonClientFactory;
-            _canonicalData = canonicalData;
+            _contestClientFactory = contestClientFactory;
             _backgroundJobProvider = backgroundJobProvider;
         }
 
@@ -68,8 +68,14 @@ namespace SportsData.Api.Application.Jobs
                     .ToListAsync();
 
                 // get a list of all contests for the week that have been finalized
-                var contestIdsReadyToScore = await _canonicalData
+                var finalizedResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
                     .GetFinalizedContestIds(seasonWeek.Id);
+                if (!finalizedResult.IsSuccess)
+                {
+                    _logger.LogWarning("Failed to retrieve finalized contests for week {WeekId}. Skipping.", seasonWeek.Id);
+                    continue;
+                }
+                var contestIdsReadyToScore = finalizedResult.Value;
 
                 // determine if they have been enriched
                 var contestIdsToScore = unscoredContestIds

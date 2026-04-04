@@ -3,7 +3,7 @@ using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
@@ -22,18 +22,18 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
 {
     private readonly ILogger<AddMatchupCommandHandler> _logger;
     private readonly AppDataContext _dbContext;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IContestClientFactory _contestClientFactory;
     private readonly IEventBus _eventBus;
 
     public AddMatchupCommandHandler(
         ILogger<AddMatchupCommandHandler> logger,
         AppDataContext dbContext,
-        IProvideCanonicalData canonicalDataProvider,
+        IContestClientFactory contestClientFactory,
         IEventBus eventBus)
     {
         _logger = logger;
         _dbContext = dbContext;
-        _canonicalDataProvider = canonicalDataProvider;
+        _contestClientFactory = contestClientFactory;
         _eventBus = eventBus;
     }
 
@@ -73,7 +73,9 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
                 [new ValidationFailure(nameof(command.ContestId), "This matchup already exists in the league.")]);
 
         // 3. Get matchup data from canonical provider
-        var matchup = await _canonicalDataProvider.GetMatchupByContestId(command.ContestId);
+        // TODO: multi-sport
+        var matchupResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupByContestId(command.ContestId);
+        var matchup = matchupResult.IsSuccess ? matchupResult.Value : null;
 
         if (matchup is null)
             return new Failure<Guid>(

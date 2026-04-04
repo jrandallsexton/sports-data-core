@@ -7,10 +7,10 @@ using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
 using SportsData.Api.Application.UI.Picks.Dtos;
 using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
-using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 using Xunit;
 
@@ -20,12 +20,14 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Queries.GetLeagueWeek
 
 public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekOverviewQueryHandler>
 {
-    private readonly Mock<IProvideCanonicalData> _canonicalDataProviderMock;
+    private readonly Mock<IProvideContests> _contestClientMock = new();
     private readonly Mock<IGetUserPicksByGroupAndWeekQueryHandler> _userPicksQueryHandlerMock;
 
     public GetLeagueWeekOverviewQueryHandlerTests()
     {
-        _canonicalDataProviderMock = Mocker.GetMock<IProvideCanonicalData>();
+        Mocker.GetMock<IContestClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
         _userPicksQueryHandlerMock = Mocker.GetMock<IGetUserPicksByGroupAndWeekQueryHandler>();
     }
 
@@ -61,9 +63,10 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         DataContext.PickemGroups.Add(league);
         await DataContext.SaveChangesAsync();
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([]);
+        _contestClientMock
+            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<ContestResultDto>>([]));
+
 
         _userPicksQueryHandlerMock
             .Setup(x => x.ExecuteAsync(
@@ -102,9 +105,9 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
 
         // Return a contest with a different ContestId (mismatch)
         var differentContestId = Guid.NewGuid();
-        _canonicalDataProviderMock
-            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([CreateContestResult(differentContestId)]);
+        _contestClientMock
+            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<ContestResultDto>>([CreateContestResult(differentContestId)]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
         var query = new GetLeagueWeekOverviewQuery
@@ -142,9 +145,9 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         var contestResult1 = CreateContestResult(contestId1, startDateUtc: DateTime.UtcNow.AddHours(2));
         var contestResult2 = CreateContestResult(contestId2, startDateUtc: DateTime.UtcNow.AddHours(1)); // Earlier
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([contestResult1, contestResult2]);
+        _contestClientMock
+            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<ContestResultDto>>([contestResult1, contestResult2]));
 
         _userPicksQueryHandlerMock
             .Setup(x => x.ExecuteAsync(
@@ -196,9 +199,9 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         contestResult.AwayFranchiseSeasonId = awayFranchiseSeasonId;
         contestResult.HomeFranchiseSeasonId = homeFranchiseSeasonId;
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([contestResult]);
+        _contestClientMock
+            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<ContestResultDto>>([contestResult]));
 
         _userPicksQueryHandlerMock
             .Setup(x => x.ExecuteAsync(
@@ -236,9 +239,10 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         DataContext.PickemGroups.Add(league);
         await DataContext.SaveChangesAsync();
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>()))
-            .ReturnsAsync([]);
+        _contestClientMock
+            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<ContestResultDto>>([]));
+
 
         var user1Picks = new List<UserPickDto> { new() { UserId = user1.Id, ContestId = Guid.NewGuid() } };
         var user2Picks = new List<UserPickDto> { new() { UserId = user2.Id, ContestId = Guid.NewGuid() } };

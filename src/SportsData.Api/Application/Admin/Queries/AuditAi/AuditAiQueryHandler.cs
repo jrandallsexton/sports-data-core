@@ -3,7 +3,7 @@ using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.Admin.Queries.AuditAi;
@@ -22,16 +22,16 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
 {
     private readonly ILogger<AuditAiQueryHandler> _logger;
     private readonly AppDataContext _dataContext;
-    private readonly IProvideCanonicalData _canonicalData;
+    private readonly IContestClientFactory _contestClientFactory;
 
     public AuditAiQueryHandler(
         ILogger<AuditAiQueryHandler> logger,
         AppDataContext dataContext,
-        IProvideCanonicalData canonicalData)
+        IContestClientFactory contestClientFactory)
     {
         _logger = logger;
         _dataContext = dataContext;
-        _canonicalData = canonicalData;
+        _contestClientFactory = contestClientFactory;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(AuditAiQuery query, CancellationToken cancellationToken = default)
@@ -45,7 +45,14 @@ public class AuditAiQueryHandler : IAuditAiQueryHandler
 
             // Batch load all matchups in a single query
             var contestIds = previews.Select(p => p.ContestId).ToList();
-            var matchupsByContestId = await _canonicalData.GetMatchupsForPreview(contestIds, cancellationToken);
+            // TODO: multi-sport
+            var previewsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForPreviewBatch(contestIds.ToList(), cancellationToken);
+            if (!previewsResult.IsSuccess)
+            {
+                return new Failure<Guid>(Guid.Empty, ResultStatus.Error,
+                    [new FluentValidation.Results.ValidationFailure("matchups", "Failed to retrieve matchup previews from Producer")]);
+            }
+            var matchupsByContestId = previewsResult.Value;
 
             var errorCount = 0;
 

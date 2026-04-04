@@ -4,10 +4,10 @@ using Moq;
 
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Scoring;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Processing;
 
@@ -20,12 +20,16 @@ namespace SportsData.Api.Tests.Unit.Application.Scoring;
 public class ContestScoringJobTests : ApiTestBase<ContestScoringJob>
 {
     private readonly Mock<IProvideSeasons> _seasonClientMock = new();
+    private readonly Mock<IProvideContests> _contestClientMock = new();
 
     public ContestScoringJobTests()
     {
         Mocker.GetMock<ISeasonClientFactory>()
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_seasonClientMock.Object);
+        Mocker.GetMock<IContestClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
     }
 
     [Fact]
@@ -63,10 +67,10 @@ public class ContestScoringJobTests : ApiTestBase<ContestScoringJob>
 
         await DataContext.SaveChangesAsync();
 
-        // Canonical data provider returns 2 of the 3 as finalized
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetFinalizedContestIds(seasonWeekId))
-            .ReturnsAsync([contestId1, contestId2]);
+        // Contest client returns 2 of the 3 as finalized
+        _contestClientMock
+            .Setup(x => x.GetFinalizedContestIds(seasonWeekId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<Guid>>([contestId1, contestId2]));
 
         var sut = Mocker.CreateInstance<ContestScoringJob>();
 

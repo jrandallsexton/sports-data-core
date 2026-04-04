@@ -3,6 +3,7 @@
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 
@@ -12,6 +13,7 @@ namespace SportsData.Api.Application.Jobs
     {
         private readonly ILogger<ContestScoringJob> _logger;
         private readonly AppDataContext _dataContext;
+        private readonly ISeasonClientFactory _seasonClientFactory;
         private readonly IProvideCanonicalData _canonicalData;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly Guid _correlationId = Guid.NewGuid();
@@ -19,11 +21,13 @@ namespace SportsData.Api.Application.Jobs
         public ContestScoringJob(
             ILogger<ContestScoringJob> logger,
             AppDataContext dataContext,
+            ISeasonClientFactory seasonClientFactory,
             IProvideCanonicalData canonicalData,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
+            _seasonClientFactory = seasonClientFactory;
             _canonicalData = canonicalData;
             _backgroundJobProvider = backgroundJobProvider;
         }
@@ -44,7 +48,15 @@ namespace SportsData.Api.Application.Jobs
         private async Task ExecuteInternal()
         {
             // get the current week
-            var seasonWeeks = await _canonicalData.GetCurrentAndLastWeekSeasonWeeks();
+            // TODO: multi-sport
+            var weeksResult = await _seasonClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetCurrentAndLastSeasonWeeks();
+            if (!weeksResult.IsSuccess)
+            {
+                _logger.LogWarning("Failed to retrieve season weeks from Producer. Will retry on next run.");
+                return;
+            }
+
+            var seasonWeeks = weeksResult.Value;
 
             foreach (var seasonWeek in seasonWeeks)
             {

@@ -12,6 +12,7 @@ using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Season;
 
 using Xunit;
 
@@ -23,16 +24,21 @@ namespace SportsData.Api.Tests.Unit.Application.Jobs;
 public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
 {
     private readonly Mock<ILogger<LeagueWeekScoringJob>> _loggerMock;
+    private readonly Mock<IProvideSeasons> _seasonClientMock;
     private readonly Mock<IProvideCanonicalData> _canonicalDataMock;
     private readonly Mock<ILeagueWeekScoringService> _leagueWeekScoringServiceMock;
 
     public LeagueWeekScoringJobTests()
     {
         _loggerMock = new Mock<ILogger<LeagueWeekScoringJob>>();
+        _seasonClientMock = new Mock<IProvideSeasons>();
         _canonicalDataMock = new Mock<IProvideCanonicalData>();
         _leagueWeekScoringServiceMock = new Mock<ILeagueWeekScoringService>();
 
         Mocker.Use(_loggerMock.Object);
+        Mocker.GetMock<ISeasonClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_seasonClientMock.Object);
         Mocker.Use(_canonicalDataMock.Object);
         Mocker.Use(_leagueWeekScoringServiceMock.Object);
     }
@@ -87,9 +93,9 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
         await DataContext.PickemGroupMatchups.AddAsync(matchup);
         await DataContext.SaveChangesAsync();
 
-        _canonicalDataMock
-            .Setup(x => x.GetCurrentAndLastWeekSeasonWeeks())
-            .ReturnsAsync(seasonWeeks);
+        _seasonClientMock
+            .Setup(x => x.GetCurrentAndLastSeasonWeeks(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<CanonicalSeasonWeekDto>>(seasonWeeks));
 
         _canonicalDataMock
             .Setup(x => x.GetFinalizedContestIds(seasonWeekId))
@@ -175,9 +181,9 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
         await DataContext.PickemGroupWeekResults.AddAsync(existingResult);
         await DataContext.SaveChangesAsync();
 
-        _canonicalDataMock
-            .Setup(x => x.GetCurrentAndLastWeekSeasonWeeks())
-            .ReturnsAsync(seasonWeeks);
+        _seasonClientMock
+            .Setup(x => x.GetCurrentAndLastSeasonWeeks(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<CanonicalSeasonWeekDto>>(seasonWeeks));
 
         _canonicalDataMock
             .Setup(x => x.GetFinalizedContestIds(seasonWeekId))
@@ -263,9 +269,9 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
         await DataContext.PickemGroupWeekResults.AddAsync(existingResult);
         await DataContext.SaveChangesAsync();
 
-        _canonicalDataMock
-            .Setup(x => x.GetCurrentAndLastWeekSeasonWeeks())
-            .ReturnsAsync(seasonWeeks);
+        _seasonClientMock
+            .Setup(x => x.GetCurrentAndLastSeasonWeeks(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<CanonicalSeasonWeekDto>>(seasonWeeks));
 
         _canonicalDataMock
             .Setup(x => x.GetFinalizedContestIds(seasonWeekId))

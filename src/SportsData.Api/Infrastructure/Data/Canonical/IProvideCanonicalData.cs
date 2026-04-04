@@ -15,10 +15,6 @@ public interface IProvideCanonicalData
 
     Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugsForSeasonYear(int seasonYear);
 
-    Task<List<CanonicalSeasonWeekDto>> GetCompletedSeasonWeeks(int seasonYear);
-
-    Task<CanonicalSeasonWeekDto?> GetCurrentSeasonWeek();
-
     Task<List<Matchup>> GetMatchupsForCurrentWeek();
 
     Task<List<Matchup>> GetMatchupsForSeasonWeek(int seasonYear, int seasonWeekNumber);
@@ -40,8 +36,6 @@ public interface IProvideCanonicalData
     Task<RankingsByPollIdByWeekDto> GetRankingsByPollIdByWeek(string pollType, int seasonYear, int weekNumber);
 
     Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId);
-
-    Task<List<CanonicalSeasonWeekDto>> GetCurrentAndLastWeekSeasonWeeks();
 
     Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(Guid franchiseSeasonId);
 

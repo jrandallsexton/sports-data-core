@@ -1,5 +1,6 @@
 ﻿using SportsData.Api.Application.Contests;
 using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 
@@ -11,15 +12,18 @@ namespace SportsData.Api.Application.Jobs
     public class ContestRecapJob : IAmARecurringJob
     {
         private readonly ILogger<ContestRecapJob> _logger;
+        private readonly ISeasonClientFactory _seasonClientFactory;
         private readonly IProvideCanonicalData _canonicalDataProvider;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public ContestRecapJob(
             ILogger<ContestRecapJob> logger,
+            ISeasonClientFactory seasonClientFactory,
             IProvideCanonicalData canonicalDataProvider,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
+            _seasonClientFactory = seasonClientFactory;
             _canonicalDataProvider = canonicalDataProvider;
             _backgroundJobProvider = backgroundJobProvider;
         }
@@ -27,7 +31,15 @@ namespace SportsData.Api.Application.Jobs
         public async Task ExecuteAsync()
         {
             // get the current and last season weeks
-            var weeks = await _canonicalDataProvider.GetCurrentAndLastWeekSeasonWeeks();
+            // TODO: multi-sport
+            var weeksResult = await _seasonClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetCurrentAndLastSeasonWeeks();
+            if (!weeksResult.IsSuccess)
+            {
+                _logger.LogWarning("Failed to retrieve season weeks from Producer. Will retry on next run.");
+                return;
+            }
+
+            var weeks = weeksResult.Value;
 
             if (weeks.Count == 0)
             {

@@ -4,9 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.PickemGroups;
+using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.PickemGroups
@@ -15,18 +16,18 @@ namespace SportsData.Api.Application.PickemGroups
     {
         private readonly ILogger<PickemGroupCreatedHandler> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly IProvideCanonicalData _canonicalDataProvider;
+        private readonly ISeasonClientFactory _seasonClientFactory;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public PickemGroupCreatedHandler(
             ILogger<PickemGroupCreatedHandler> logger,
             AppDataContext dataContext,
-            IProvideCanonicalData canonicalDataProvider,
+            ISeasonClientFactory seasonClientFactory,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _canonicalDataProvider = canonicalDataProvider;
+            _seasonClientFactory = seasonClientFactory;
             _backgroundJobProvider = backgroundJobProvider;
         }
 
@@ -57,7 +58,9 @@ namespace SportsData.Api.Application.PickemGroups
             }
 
             // get the current week
-            var currentWeek = await _canonicalDataProvider.GetCurrentSeasonWeek();
+            // TODO: multi-sport — resolve sport from context instead of defaulting
+            var weekResult = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek();
+            var currentWeek = weekResult.IsSuccess ? weekResult.Value : null;
 
             if (currentWeek is null)
             {

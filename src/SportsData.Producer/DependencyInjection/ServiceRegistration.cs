@@ -35,6 +35,9 @@ using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeaso
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsBySeasonYear;
 using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Application.Images;
+using SportsData.Producer.Application.Seasons.Queries.GetCompletedSeasonWeeks;
+using SportsData.Producer.Application.Seasons.Queries.GetCurrentAndLastSeasonWeeks;
+using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeasonWeek;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonOverview;
 using SportsData.Producer.Application.SeasonWeek.Commands.EnqueueSeasonWeekContestsUpdate;
 using SportsData.Producer.Application.Services;
@@ -217,6 +220,9 @@ namespace SportsData.Producer.DependencyInjection
 
             // Season Queries
             services.AddScoped<IGetSeasonOverviewQueryHandler, GetSeasonOverviewQueryHandler>();
+            services.AddScoped<IGetCurrentSeasonWeekQueryHandler, GetCurrentSeasonWeekQueryHandler>();
+            services.AddScoped<IGetCurrentAndLastSeasonWeeksQueryHandler, GetCurrentAndLastSeasonWeeksQueryHandler>();
+            services.AddScoped<IGetCompletedSeasonWeeksQueryHandler, GetCompletedSeasonWeeksQueryHandler>();
 
             // FranchiseSeasonRanking Queries
             services.AddScoped<IGetCurrentPollsQueryHandler, GetCurrentPollsQueryHandler>();

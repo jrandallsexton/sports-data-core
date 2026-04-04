@@ -4,10 +4,9 @@ using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
-using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 
 using SportsData.Api.Application.Common.Enums;

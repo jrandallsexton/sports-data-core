@@ -1,4 +1,5 @@
-﻿namespace SportsData.Api.Infrastructure.Data.Canonical.Models
+using System;
+﻿namespace SportsData.Core.Dtos.Canonical
 {
     public class ConferenceDivisionNameAndSlugDto
     {

@@ -2,9 +2,8 @@
 using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
-using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Common;
 
 namespace SportsData.Api.Infrastructure.Data.Canonical;
 
@@ -12,15 +11,13 @@ public interface IProvideCanonicalData
 {
     Task<TeamCardDto?> GetTeamCard(GetTeamCardQuery query, CancellationToken cancellationToken = default);
 
-    Task<Dictionary<string, Guid>> GetFranchiseIdsBySlugsAsync(Sport sport, List<string> slugs);
-
     Task<Dictionary<Guid, string>> GetConferenceIdsBySlugsAsync(Sport sport, int seasonYear, List<string> slugs);
 
     Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugsForSeasonYear(int seasonYear);
 
-    Task<List<SeasonWeek>> GetCompletedSeasonWeeks(int seasonYear);
+    Task<List<CanonicalSeasonWeekDto>> GetCompletedSeasonWeeks(int seasonYear);
 
-    Task<SeasonWeek?> GetCurrentSeasonWeek();
+    Task<CanonicalSeasonWeekDto?> GetCurrentSeasonWeek();
 
     Task<List<Matchup>> GetMatchupsForCurrentWeek();
 
@@ -44,7 +41,7 @@ public interface IProvideCanonicalData
 
     Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId);
 
-    Task<List<SeasonWeek>> GetCurrentAndLastWeekSeasonWeeks();
+    Task<List<CanonicalSeasonWeekDto>> GetCurrentAndLastWeekSeasonWeeks();
 
     Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResultsByFranchiseSeasonId(Guid franchiseSeasonId);
 

@@ -5,7 +5,7 @@ using Moq;
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Processing;
 
@@ -23,7 +23,7 @@ public class ContestScoringJobTests : ApiTestBase<ContestScoringJob>
         // Arrange
         var seasonWeekId = Guid.NewGuid();
 
-        var currentWeek = Fixture.Build<SeasonWeek>()
+        var currentWeek = Fixture.Build<CanonicalSeasonWeekDto>()
             .With(x => x.Id, seasonWeekId)
             .Create();
 

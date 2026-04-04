@@ -1,7 +1,7 @@
 using FluentValidation.Results;
 
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;

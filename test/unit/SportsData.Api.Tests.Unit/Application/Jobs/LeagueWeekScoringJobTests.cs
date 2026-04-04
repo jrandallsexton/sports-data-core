@@ -9,7 +9,7 @@ using SportsData.Api.Application;
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
@@ -46,7 +46,7 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
         var seasonYear = 2024;
         var weekNumber = 1;
 
-        var seasonWeeks = new List<SeasonWeek>
+        var seasonWeeks = new List<CanonicalSeasonWeekDto>
         {
             new()
             {
@@ -117,7 +117,7 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
         var seasonYear = 2024;
         var weekNumber = 1;
 
-        var seasonWeeks = new List<SeasonWeek>
+        var seasonWeeks = new List<CanonicalSeasonWeekDto>
         {
             new()
             {
@@ -205,7 +205,7 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
         var seasonYear = 2024;
         var weekNumber = 1;
 
-        var seasonWeeks = new List<SeasonWeek>
+        var seasonWeeks = new List<CanonicalSeasonWeekDto>
         {
             new()
             {

@@ -17,6 +17,7 @@ using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
 using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;

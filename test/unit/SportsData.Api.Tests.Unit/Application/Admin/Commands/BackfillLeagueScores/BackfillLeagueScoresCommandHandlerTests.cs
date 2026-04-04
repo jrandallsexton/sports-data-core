@@ -7,7 +7,7 @@ using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
@@ -64,7 +64,7 @@ public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagu
         var seasonYear = 2024;
         Mocker.GetMock<IProvideCanonicalData>()
             .Setup(x => x.GetCompletedSeasonWeeks(seasonYear))
-            .ReturnsAsync(new List<SeasonWeek>());
+            .ReturnsAsync(new List<CanonicalSeasonWeekDto>());
 
         var handler = Mocker.CreateInstance<BackfillLeagueScoresCommandHandler>();
         var command = new BackfillLeagueScoresCommand(seasonYear);
@@ -85,7 +85,7 @@ public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagu
     {
         // Arrange
         var seasonYear = 2024;
-        var seasonWeeks = new List<SeasonWeek>
+        var seasonWeeks = new List<CanonicalSeasonWeekDto>
         {
             new() { SeasonYear = seasonYear, WeekNumber = 1 },
             new() { SeasonYear = seasonYear, WeekNumber = 2 }
@@ -156,7 +156,7 @@ public class BackfillLeagueScoresCommandHandlerTests : ApiTestBase<BackfillLeagu
     {
         // Arrange
         var seasonYear = 2024;
-        var seasonWeeks = new List<SeasonWeek>
+        var seasonWeeks = new List<CanonicalSeasonWeekDto>
         {
             new() { SeasonYear = seasonYear, WeekNumber = 1 }
         };

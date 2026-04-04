@@ -4,7 +4,7 @@ using Moq;
 
 using SportsData.Api.Application.UI.Matchups.Queries.GetMatchupPreview;
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 

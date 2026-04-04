@@ -5,9 +5,8 @@ using SportsData.Core.Extensions;
 using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
-using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Common;
 
 using System.Data;
 using static SportsData.Api.Application.UI.Rankings.Dtos.RankingsByPollIdByWeekDto;
@@ -72,30 +71,7 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
         }
 
-        public async Task<Dictionary<string, Guid>> GetFranchiseIdsBySlugsAsync(
-            Sport sport,
-            List<string> slugs)
-        {
-            const string sql =
-                "SELECT \"Slug\", \"Id\" " +
-                "FROM public.\"Franchise\" " +
-                "WHERE \"Sport\" = @Sport AND \"Slug\" IN @Slugs;";
 
-            try
-            {
-                var results = await _connection.QueryAsync<(string Slug, Guid Id)>(
-                    sql,
-                    new { Sport = (int)sport, Slugs = slugs }
-                );
-
-                return results.ToDictionary(x => x.Slug, x => x.Id);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to resolve Franchise IDs for slugs: {@Slugs}", slugs.Select(s => s.Sanitize()).ToList());
-                return new Dictionary<string, Guid>();
-            }
-        }
 
         public async Task<Dictionary<Guid, string>> GetConferenceIdsBySlugsAsync(
             Sport sport,
@@ -153,13 +129,13 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
         }
 
-        public async Task<List<SeasonWeek>> GetCompletedSeasonWeeks(int seasonYear)
+        public async Task<List<CanonicalSeasonWeekDto>> GetCompletedSeasonWeeks(int seasonYear)
         {
             var sql = _queryProvider.GetCompletedSeasonWeeks();
 
             try
             {
-                var result = await _connection.QueryAsync<SeasonWeek>(
+                var result = await _connection.QueryAsync<CanonicalSeasonWeekDto>(
                     sql,
                     new { SeasonYear = seasonYear });
                 return result.ToList();
@@ -171,20 +147,20 @@ namespace SportsData.Api.Infrastructure.Data.Canonical
             }
         }
 
-        public async Task<SeasonWeek?> GetCurrentSeasonWeek()
+        public async Task<CanonicalSeasonWeekDto?> GetCurrentSeasonWeek()
         {
             var sql = _queryProvider.GetCurrentSeasonWeek();
-            var result = await _connection.QueryFirstOrDefaultAsync<SeasonWeek>(sql);
+            var result = await _connection.QueryFirstOrDefaultAsync<CanonicalSeasonWeekDto>(sql);
             return result;
         }
 
-        public async Task<List<SeasonWeek>> GetCurrentAndLastWeekSeasonWeeks()
+        public async Task<List<CanonicalSeasonWeekDto>> GetCurrentAndLastWeekSeasonWeeks()
         {
             var sql = _queryProvider.GetCurrentAndLastWeekSeasonWeeks();
 
             try
             {
-                var result = await _connection.QueryAsync<SeasonWeek>(sql);
+                var result = await _connection.QueryAsync<CanonicalSeasonWeekDto>(sql);
                 return result.ToList();
             }
             catch (Exception ex)

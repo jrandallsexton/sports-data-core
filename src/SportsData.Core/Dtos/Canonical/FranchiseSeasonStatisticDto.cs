@@ -1,4 +1,6 @@
-﻿namespace SportsData.Api.Infrastructure.Data.Canonical.Models
+using System;
+using System.Collections.Generic;
+﻿namespace SportsData.Core.Dtos.Canonical
 {
     public class FranchiseSeasonStatisticDto
     {

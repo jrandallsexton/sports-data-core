@@ -7,7 +7,7 @@ using Moq;
 using SportsData.Api.Application.UI.Articles.Queries.GetArticles;
 using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
 
 using Xunit;
@@ -31,7 +31,7 @@ public class GetArticlesQueryHandlerTests : ApiTestBase<GetArticlesQueryHandler>
         SetupApiConfig();
         Mocker.GetMock<IProvideCanonicalData>()
             .Setup(x => x.GetCurrentSeasonWeek())
-            .ReturnsAsync((SeasonWeek?)null);
+            .ReturnsAsync((CanonicalSeasonWeekDto?)null);
 
         var sut = Mocker.CreateInstance<GetArticlesQueryHandler>();
         var query = new GetArticlesQuery();
@@ -49,7 +49,7 @@ public class GetArticlesQueryHandlerTests : ApiTestBase<GetArticlesQueryHandler>
     {
         // Arrange
         SetupApiConfig();
-        var seasonWeek = new SeasonWeek
+        var seasonWeek = new CanonicalSeasonWeekDto
         {
             Id = Guid.NewGuid(),
             SeasonId = Guid.NewGuid(),

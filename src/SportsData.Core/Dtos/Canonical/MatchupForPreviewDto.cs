@@ -1,7 +1,9 @@
+using System;
+using System.Collections.Generic;
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 
-namespace SportsData.Api.Infrastructure.Data.Canonical.Models
+namespace SportsData.Core.Dtos.Canonical
 {
     public class MatchupForPreviewDto
     {

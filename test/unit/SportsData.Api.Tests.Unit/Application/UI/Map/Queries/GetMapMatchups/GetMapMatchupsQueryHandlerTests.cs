@@ -4,7 +4,7 @@ using Moq;
 
 using SportsData.Api.Application.UI.Map.Queries.GetMapMatchups;
 using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 
 using Xunit;
 

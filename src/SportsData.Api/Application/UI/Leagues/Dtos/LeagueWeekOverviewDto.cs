@@ -1,5 +1,5 @@
 ﻿using SportsData.Api.Application.UI.Picks.Dtos;
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
+using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Api.Application.UI.Leagues.Dtos
 {

@@ -1,3 +1,5 @@
+using SportsData.Producer.Enums;
+
 namespace SportsData.Producer.Application.Contests.Queries.Matchups;
 
 /// <summary>
@@ -6,6 +8,28 @@ namespace SportsData.Producer.Application.Contests.Queries.Matchups;
 /// </summary>
 public static class MatchupSqlBuilder
 {
+    /// <summary>
+    /// Preferred odds provider (ESPN Bet). Fallback is DraftKings.
+    /// These map to SportsBook enum values stored in CompetitionOdds.ProviderId.
+    /// </summary>
+    public const int PreferredOddsProviderId = (int)SportsBook.EspnBet;       // 58
+    public const int FallbackOddsProviderId = (int)SportsBook.DraftKings100;   // 100
+
+    /// <summary>
+    /// LATERAL join to select the best available odds provider (ESPN Bet preferred, DraftKings fallback).
+    /// Expects Competition aliased as 'comp' to be in scope.
+    /// </summary>
+    public static readonly string OddsLateralJoin = $"""
+        LEFT JOIN LATERAL (
+          SELECT *
+          FROM public."CompetitionOdds"
+          WHERE "CompetitionId" = comp."Id"
+            AND "ProviderId" IN ('{PreferredOddsProviderId}', '{FallbackOddsProviderId}')
+          ORDER BY CASE WHEN "ProviderId" = '{PreferredOddsProviderId}' THEN 1 ELSE 2 END
+          LIMIT 1
+        ) co ON TRUE
+        """;
+
     /// <summary>
     /// Standard matchup SELECT columns used by GetMatchupsForCurrentWeek,
     /// GetMatchupsForSeasonWeek, and GetMatchupByContestId.
@@ -59,15 +83,15 @@ public static class MatchupSqlBuilder
     /// Standard matchup FROM/JOIN clause.
     /// Expects Contest aliased as 'c' to be already in scope (via FROM or JOIN).
     /// </summary>
-    public const string MatchupJoins = """
+    public static readonly string MatchupJoins = $"""
         INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
         LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'
         LEFT JOIN LATERAL (
           SELECT *
           FROM public."CompetitionOdds"
           WHERE "CompetitionId" = comp."Id"
-            AND "ProviderId" IN ('58', '100')
-          ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+            AND "ProviderId" IN ('{PreferredOddsProviderId}', '{FallbackOddsProviderId}')
+          ORDER BY CASE WHEN "ProviderId" = '{PreferredOddsProviderId}' THEN 1 ELSE 2 END
           LIMIT 1
         ) co ON TRUE
         LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"

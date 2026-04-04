@@ -1,3 +1,4 @@
+using SportsData.Producer.Application.Contests.Queries.Matchups;
 using Dapper;
 
 using Microsoft.EntityFrameworkCore;
@@ -39,7 +40,7 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
             return new Success<List<LeagueMatchupDto>>(new List<LeagueMatchupDto>());
         }
 
-        const string sql = """
+        string sql = """
             SELECT
               c."SeasonWeekId" AS "SeasonWeekId",
               c."Id" AS "ContestId",
@@ -75,8 +76,8 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
             LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
             LEFT JOIN LATERAL (
               SELECT * FROM public."CompetitionOdds"
-              WHERE "CompetitionId" = comp."Id" AND "ProviderId" IN ('58', '100')
-              ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+              WHERE "CompetitionId" = comp."Id" AND "ProviderId" IN ('{MatchupSqlBuilder.PreferredOddsProviderId}', '{MatchupSqlBuilder.FallbackOddsProviderId}')
+              ORDER BY CASE WHEN "ProviderId" = '{MatchupSqlBuilder.PreferredOddsProviderId}' THEN 1 ELSE 2 END
               LIMIT 1
             ) co ON TRUE
             LEFT JOIN public."CompetitionTeamOdds" cto ON cto."CompetitionOddsId" = co."Id" AND cto."Side" = 'Home'

@@ -31,7 +31,7 @@ public class GetMatchupForPreviewQueryHandler : IGetMatchupForPreviewQueryHandle
 {
     private readonly TeamSportDataContext _dbContext;
 
-    private const string PreviewSql = """
+    private static readonly string PreviewSql = """
         SELECT
           c."Sport" AS "Sport",
           sp."Year" AS "SeasonYear",
@@ -62,8 +62,8 @@ public class GetMatchupForPreviewQueryHandler : IGetMatchupForPreviewQueryHandle
         LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'
         LEFT JOIN LATERAL (
           SELECT * FROM public."CompetitionOdds"
-          WHERE "CompetitionId" = comp."Id" AND "ProviderId" IN ('58', '100')
-          ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+          WHERE "CompetitionId" = comp."Id" AND "ProviderId" IN ('{MatchupSqlBuilder.PreferredOddsProviderId}', '{MatchupSqlBuilder.FallbackOddsProviderId}')
+          ORDER BY CASE WHEN "ProviderId" = '{MatchupSqlBuilder.PreferredOddsProviderId}' THEN 1 ELSE 2 END
           LIMIT 1
         ) co ON TRUE
         INNER JOIN public."FranchiseSeason" fsAway ON fsAway."Id" = c."AwayTeamFranchiseSeasonId"

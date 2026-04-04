@@ -179,6 +179,10 @@ public class ContestClient : ClientBase, IProvideContests
 
     public async Task<Result<Matchup>> GetMatchupByContestId(Guid contestId, CancellationToken ct = default)
     {
+        if (contestId == Guid.Empty)
+            return new Failure<Matchup>(default!, ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+
         return await GetAsync<Matchup>(
             $"contests/{contestId}/matchup",
             default!, "Matchup", ResultStatus.NotFound, ct);
@@ -186,6 +190,9 @@ public class ContestClient : ClientBase, IProvideContests
 
     public async Task<Result<List<LeagueMatchupDto>>> GetMatchupsByContestIds(List<Guid> contestIds, CancellationToken ct = default)
     {
+        if (contestIds is null || contestIds.Count == 0)
+            return new Success<List<LeagueMatchupDto>>(new List<LeagueMatchupDto>());
+
         var result = await PostOrDefaultAsync<List<LeagueMatchupDto>, Guid[]>(
             "contests/matchups/by-ids", contestIds.ToArray(), new List<LeagueMatchupDto>(), ct);
         return new Success<List<LeagueMatchupDto>>(result);
@@ -193,6 +200,10 @@ public class ContestClient : ClientBase, IProvideContests
 
     public async Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default)
     {
+        if (contestId == Guid.Empty)
+            return new Failure<MatchupForPreviewDto>(default!, ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+
         return await GetAsync<MatchupForPreviewDto>(
             $"contests/{contestId}/matchup-preview",
             default!, "Matchup preview", ResultStatus.NotFound, ct);
@@ -200,6 +211,9 @@ public class ContestClient : ClientBase, IProvideContests
 
     public async Task<Result<Dictionary<Guid, MatchupForPreviewDto>>> GetMatchupsForPreviewBatch(List<Guid> contestIds, CancellationToken ct = default)
     {
+        if (contestIds is null || contestIds.Count == 0)
+            return new Success<Dictionary<Guid, MatchupForPreviewDto>>(new Dictionary<Guid, MatchupForPreviewDto>());
+
         var result = await PostOrDefaultAsync<Dictionary<Guid, MatchupForPreviewDto>, Guid[]>(
             "contests/matchups/previews", contestIds.ToArray(), new Dictionary<Guid, MatchupForPreviewDto>(), ct);
         return new Success<Dictionary<Guid, MatchupForPreviewDto>>(result);
@@ -207,6 +221,10 @@ public class ContestClient : ClientBase, IProvideContests
 
     public async Task<Result<MatchupResult>> GetMatchupResult(Guid contestId, CancellationToken ct = default)
     {
+        if (contestId == Guid.Empty)
+            return new Failure<MatchupResult>(default!, ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+
         return await GetAsync<MatchupResult>(
             $"contests/{contestId}/result",
             default!, "Matchup result", ResultStatus.NotFound, ct);
@@ -214,6 +232,9 @@ public class ContestClient : ClientBase, IProvideContests
 
     public async Task<Result<List<ContestResultDto>>> GetContestResultsByContestIds(List<Guid> contestIds, CancellationToken ct = default)
     {
+        if (contestIds is null || contestIds.Count == 0)
+            return new Success<List<ContestResultDto>>(new List<ContestResultDto>());
+
         var result = await PostOrDefaultAsync<List<ContestResultDto>, Guid[]>(
             "contests/results/by-ids", contestIds.ToArray(), new List<ContestResultDto>(), ct);
         return new Success<List<ContestResultDto>>(result);
@@ -221,6 +242,10 @@ public class ContestClient : ClientBase, IProvideContests
 
     public async Task<Result<List<Guid>>> GetFinalizedContestIds(Guid seasonWeekId, CancellationToken ct = default)
     {
+        if (seasonWeekId == Guid.Empty)
+            return new Failure<List<Guid>>(new List<Guid>(), ResultStatus.BadRequest,
+                [new ValidationFailure("seasonWeekId", "Season week ID cannot be empty")]);
+
         return await GetAsync<List<Guid>>(
             $"contests/finalized?seasonWeekId={seasonWeekId}",
             new List<Guid>(), "Finalized contest IDs", ResultStatus.NotFound, ct);
@@ -228,6 +253,10 @@ public class ContestClient : ClientBase, IProvideContests
 
     public async Task<Result<List<Guid>>> GetCompletedFbsContestIds(Guid seasonWeekId, CancellationToken ct = default)
     {
+        if (seasonWeekId == Guid.Empty)
+            return new Failure<List<Guid>>(new List<Guid>(), ResultStatus.BadRequest,
+                [new ValidationFailure("seasonWeekId", "Season week ID cannot be empty")]);
+
         return await GetAsync<List<Guid>>(
             $"contests/completed-fbs?seasonWeekId={seasonWeekId}",
             new List<Guid>(), "Completed FBS contest IDs", ResultStatus.NotFound, ct);

@@ -1,3 +1,4 @@
+using SportsData.Producer.Application.Contests.Queries.Matchups;
 using Dapper;
 
 using FluentValidation.Results;
@@ -34,7 +35,7 @@ public class GetMatchupResultQueryHandler : IGetMatchupResultQueryHandler
         GetMatchupResultQuery query,
         CancellationToken cancellationToken = default)
     {
-        const string sql = """
+        string sql = """
             SELECT
               c."Id" AS "ContestId",
               c."AwayTeamFranchiseSeasonId" AS "AwayFranchiseSeasonId",
@@ -52,8 +53,8 @@ public class GetMatchupResultQueryHandler : IGetMatchupResultQueryHandler
               SELECT *
               FROM public."CompetitionOdds"
               WHERE "CompetitionId" = co."Id"
-                AND "ProviderId" IN ('58', '100')
-              ORDER BY CASE WHEN "ProviderId" = '58' THEN 1 ELSE 2 END
+                AND "ProviderId" IN ('{MatchupSqlBuilder.PreferredOddsProviderId}', '{MatchupSqlBuilder.FallbackOddsProviderId}')
+              ORDER BY CASE WHEN "ProviderId" = '{MatchupSqlBuilder.PreferredOddsProviderId}' THEN 1 ELSE 2 END
               LIMIT 1
             ) coo ON TRUE
             WHERE c."Id" = @ContestId

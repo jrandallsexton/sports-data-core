@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Sql;
 
 using System.Collections.Generic;
 using System.Linq;
@@ -23,25 +24,21 @@ public interface IGetMatchupsForSeasonWeekQueryHandler
 public class GetMatchupsForSeasonWeekQueryHandler : IGetMatchupsForSeasonWeekQueryHandler
 {
     private readonly TeamSportDataContext _dbContext;
+    private readonly ProducerSqlQueryProvider _sqlProvider;
 
-    public GetMatchupsForSeasonWeekQueryHandler(TeamSportDataContext dbContext)
+    public GetMatchupsForSeasonWeekQueryHandler(
+        TeamSportDataContext dbContext,
+        ProducerSqlQueryProvider sqlProvider)
     {
         _dbContext = dbContext;
+        _sqlProvider = sqlProvider;
     }
 
     public async Task<Result<List<Matchup>>> ExecuteAsync(
         GetMatchupsForSeasonWeekQuery query,
         CancellationToken cancellationToken = default)
     {
-        var sql = $"""
-            SELECT
-            {MatchupSqlBuilder.MatchupSelectColumns}
-            FROM public."Contest" c
-            {MatchupSqlBuilder.MatchupJoins}
-            {MatchupSqlBuilder.RankingJoinsBySeasonWeek}
-            WHERE s."Year" = @SeasonYear AND sw."Number" = @SeasonWeekNumber
-            {MatchupSqlBuilder.MatchupOrderBy}
-            """;
+        var sql = _sqlProvider.GetMatchupsForSeasonWeek();
 
         var connection = _dbContext.Database.GetDbConnection();
         var result = await connection.QueryAsync<Matchup>(

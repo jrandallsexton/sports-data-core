@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Sql;
 
 using System;
 using System.Collections.Generic;
@@ -23,26 +24,21 @@ public interface IGetCompletedFbsContestIdsQueryHandler
 public class GetCompletedFbsContestIdsQueryHandler : IGetCompletedFbsContestIdsQueryHandler
 {
     private readonly TeamSportDataContext _dbContext;
+    private readonly ProducerSqlQueryProvider _sqlProvider;
 
-    public GetCompletedFbsContestIdsQueryHandler(TeamSportDataContext dbContext)
+    public GetCompletedFbsContestIdsQueryHandler(
+        TeamSportDataContext dbContext,
+        ProducerSqlQueryProvider sqlProvider)
     {
         _dbContext = dbContext;
+        _sqlProvider = sqlProvider;
     }
 
     public async Task<Result<List<Guid>>> ExecuteAsync(
         GetCompletedFbsContestIdsQuery query,
         CancellationToken cancellationToken = default)
     {
-        const string sql = """
-            SELECT c."Id"
-            FROM public."Contest" c
-            INNER JOIN public."FranchiseSeason" fsAway ON fsAway."Id" = c."AwayTeamFranchiseSeasonId"
-            INNER JOIN public."FranchiseSeason" fsHome ON fsHome."Id" = c."HomeTeamFranchiseSeasonId"
-            WHERE c."SeasonWeekId" = @SeasonWeekId
-              AND c."FinalizedUtc" IS NOT NULL
-              AND (fsAway."GroupSeasonMap" LIKE '%fbs%' OR fsHome."GroupSeasonMap" LIKE '%fbs%')
-            ORDER BY c."Name";
-            """;
+        var sql = _sqlProvider.GetCompletedFbsContestIds();
 
         var connection = _dbContext.Database.GetDbConnection();
         var result = await connection.QueryAsync<Guid>(

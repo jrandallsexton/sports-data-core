@@ -67,6 +67,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Golf;
 using SportsData.Producer.Infrastructure.Geo;
+using SportsData.Producer.Infrastructure.Sql;
 
 namespace SportsData.Producer.DependencyInjection
 {
@@ -102,6 +103,8 @@ namespace SportsData.Producer.DependencyInjection
             });
             services.AddScoped<IValidator<ReprocessDeadLetterQueueCommand>, ReprocessDeadLetterQueueCommandValidator>();
             services.AddScoped<IReprocessDeadLetterQueueCommandHandler, ReprocessDeadLetterQueueCommandHandler>();
+
+            services.AddSingleton<ProducerSqlQueryProvider>();
 
             services.AddScoped<IDataContextFactory, DataContextFactory>();
 

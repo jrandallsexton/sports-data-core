@@ -4,7 +4,7 @@ import { formatToEasternTime } from "../../utils/timeUtils";
 import { teamLink, contestLink } from '../../utils/sportLinks';
 import "./TeamSchedule.css";
 
-function TeamSchedule({ schedule, seasonYear }) {
+function TeamSchedule({ schedule, seasonYear, sport = 'football', league = 'ncaa' }) {
   // Helper function to format game result
   const formatGameResult = (game) => {
     if (game.status === "Final") {
@@ -42,7 +42,7 @@ function TeamSchedule({ schedule, seasonYear }) {
                 <td>{formatToEasternTime(game.date)}</td>
                 <td>
                   <Link
-                    to={teamLink(game.opponentSlug, seasonYear)}
+                    to={teamLink(game.opponentSlug, seasonYear, sport, league)}
                     className="team-link"
                   >
                     {game.opponent}
@@ -52,7 +52,7 @@ function TeamSchedule({ schedule, seasonYear }) {
                 <td className={getResultClass(game)}>
                   {game.contestId ? (
                     <Link
-                      to={contestLink(game.contestId)}
+                      to={contestLink(game.contestId, sport, league)}
                       className="result-link"
                     >
                       {formatGameResult(game)}

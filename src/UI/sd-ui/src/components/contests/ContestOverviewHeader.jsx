@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { teamLink } from '../../utils/sportLinks';
 import "./ContestOverview.css";
 
 export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScores, homeTeamColor, awayTeamColor }) {
@@ -36,7 +37,7 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
           <img src={awayTeam.logoUrl} alt={awayTeam.displayName} className="contest-team-logo" />
         </div>
         <Link 
-          to={`/app/sport/football/ncaa/team/${awayTeam.slug}/2025`}
+          to={teamLink(awayTeam.slug, 2025)}
           className="contest-team-name contest-header-team-name contest-team-link"
         >
           {awayTeam.displayName}
@@ -76,7 +77,7 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
         {/* Home Side */}
         <div className="contest-team-score contest-header-team-score-home">{homeTotal}</div>
         <Link 
-          to={`/app/sport/football/ncaa/team/${homeTeam.slug}/2025`}
+          to={teamLink(homeTeam.slug, 2025)}
           className="contest-team-name contest-header-team-name contest-team-link"
         >
           {homeTeam.displayName}

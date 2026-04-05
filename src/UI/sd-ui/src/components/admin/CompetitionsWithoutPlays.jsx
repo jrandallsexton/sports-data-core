@@ -10,6 +10,7 @@ import TablePagination from '@mui/material/TablePagination';
 import { FiExternalLink, FiRefreshCw } from 'react-icons/fi';
 import IconButton from '@mui/material/IconButton';
 import CircularProgress from '@mui/material/CircularProgress';
+import { contestLink } from '../../utils/sportLinks';
 import './AdminPage.css';
 
 export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading, playsError, page, rowsPerPage, handleChangePage, handleChangeRowsPerPage, refreshPlays }) {
@@ -72,7 +73,7 @@ export default function CompetitionsWithoutPlays({ playsItems = [], playsLoading
                       <TableCell sx={{ width: 340, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {it.contestId && it.contestName ? (
                           <a
-                            href={`/app/sport/football/ncaa/contest/${it.contestId}`}
+                            href={contestLink(it.contestId)}
                             target="_blank"
                             rel="noopener noreferrer"
                             style={{ color: '#61dafb', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: 6, overflow: 'hidden' }}

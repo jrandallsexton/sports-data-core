@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiWrapper from '../../api/apiWrapper';
+import { teamLink } from '../../utils/sportLinks';
 import './FranchiseMetricsGrid.css';
 
 function FranchiseMetricsGrid() {
@@ -282,7 +283,7 @@ function FranchiseMetricsGrid() {
               >
                 <td className="team-name">
                   <a
-                    href={`/app/sport/football/ncaa/team/${team.franchiseSlug}/2025`}
+                    href={teamLink(team.franchiseSlug, 2025)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="team-link"

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
+import { teamLink } from '../../utils/sportLinks';
 import { formatToEasternTime } from "../../utils/timeUtils";
 import {
   Paper,
@@ -68,7 +69,7 @@ export default function TeamScheduleMUI({ schedule = [], seasonYear }) {
 
                   <TableCell>
                     <Link
-                      to={`/app/sport/football/ncaa/team/${game.opponentSlug}/${seasonYear}`}
+                      to={teamLink(game.opponentSlug, seasonYear)}
                       style={{
                         textDecoration: "underline",
                         fontWeight: 500,

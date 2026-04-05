@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { FaSearchPlus, FaSearchMinus } from "react-icons/fa";
+import { teamLink } from '../../utils/sportLinks';
 import MiniSchedule from "./MiniSchedule";
 
 /**
@@ -53,7 +54,7 @@ function TeamRow({
                 <span className="team-ranking">#{rank}</span>
               )}
               <Link
-                to={`/app/sport/football/ncaa/team/${teamSlug}/${seasonYear}`}
+                to={teamLink(teamSlug, seasonYear)}
                 className="team-link"
               >
                 {teamName}

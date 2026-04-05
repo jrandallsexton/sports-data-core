@@ -2,20 +2,20 @@
 import apiClient from "./apiClient";
 
 const TeamCardApi = {
-  getBySlugAndSeason: (slug, seasonYear) =>
+  getBySlugAndSeason: (sport, league, slug, seasonYear) =>
     apiClient.get(
-      `/ui/teamcard/sport/football/league/ncaa/team/${slug}/${seasonYear}`
+      `/ui/teamcard/sport/${sport}/league/${league}/team/${slug}/${seasonYear}`
     ),
-  getStatistics: (slug, seasonYear, franchiseSeasonId) =>
+  getStatistics: (sport, league, slug, seasonYear, franchiseSeasonId) =>
     apiClient.get(
-      `/ui/teamcard/sport/football/league/ncaa/team/${slug}/${seasonYear}/statistics`,
+      `/ui/teamcard/sport/${sport}/league/${league}/team/${slug}/${seasonYear}/statistics`,
       {
         params: { franchiseSeasonId },
       }
     ),
-  getMetrics: (slug, seasonYear, franchiseSeasonId) =>
+  getMetrics: (sport, league, slug, seasonYear, franchiseSeasonId) =>
     apiClient.get(
-      `/ui/teamcard/sport/football/league/ncaa/team/${slug}/${seasonYear}/metrics`,
+      `/ui/teamcard/sport/${sport}/league/${league}/team/${slug}/${seasonYear}/metrics`,
       {
         params: { franchiseSeasonId },
       }

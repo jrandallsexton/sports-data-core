@@ -1,6 +1,7 @@
 import "./MatchupGrid.css";
 import { FaChartLine, FaLock, FaSpinner } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { teamLink } from '../../utils/sportLinks';
 import HelmetLogo from "./HelmetLogo";
 
 function MatchupGrid({
@@ -55,7 +56,7 @@ function MatchupGrid({
                     <span className="team-ranking">#{matchup.awayRank} </span>
                   )}
                   <Link
-                    to={`/app/sport/football/ncaa/team/${matchup.awayTeamSlug}/${matchup.seasonYear}`}
+                    to={teamLink(matchup.awayTeamSlug, matchup.seasonYear)}
                     className="team-link"
                   >
                     {matchup.away}
@@ -70,7 +71,7 @@ function MatchupGrid({
                     <span className="team-ranking">#{matchup.homeRank} </span>
                   )}
                   <Link
-                    to={`/app/sport/football/ncaa/team/${matchup.homeTeamSlug}/${matchup.seasonYear}`}
+                    to={teamLink(matchup.homeTeamSlug, matchup.seasonYear)}
                     className="team-link"
                   >
                     {matchup.home}

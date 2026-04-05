@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { contestLink } from '../../utils/sportLinks';
 
 /**
  * GameStatus component - displays game status (Final, Live, or Scheduled)
@@ -53,7 +54,7 @@ function GameStatus({
         <div className="final-score">
           {contestId ? (
             <Link
-              to={`/app/sport/football/ncaa/contest/${contestId}`}
+              to={contestLink(contestId)}
               className="final-score-link"
               target="_blank"
               rel="noopener noreferrer"
@@ -95,7 +96,7 @@ function GameStatus({
         <div className="final-score">
           {contestId ? (
             <Link
-              to={`/app/sport/football/ncaa/contest/${contestId}`}
+              to={contestLink(contestId)}
               className="final-score-link"
               target="_blank"
               rel="noopener noreferrer"

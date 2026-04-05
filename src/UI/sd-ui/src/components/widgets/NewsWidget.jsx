@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import apiWrapper from "../../api/apiWrapper";
+import { contestLink } from '../../utils/sportLinks';
 import "../home/HomePage.css";
 
 function NewsWidget() {
@@ -180,7 +181,7 @@ function NewsWidget() {
             {selectedArticle.contestId && (
               <p>
                 <a
-                  href={`/app/sport/football/ncaa/contest/${selectedArticle.contestId}`}
+                  href={contestLink(selectedArticle.contestId)}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "#ffc107" }}

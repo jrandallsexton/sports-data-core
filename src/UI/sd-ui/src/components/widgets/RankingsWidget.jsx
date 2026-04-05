@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import apiWrapper from "../../api/apiWrapper";
 import CFPBracket from "./CFPBracket";
+import { teamLink } from '../../utils/sportLinks';
 import "./RankingsWidget.css";
 
 function RankingsWidget() {
@@ -136,7 +137,7 @@ function RankingsWidget() {
                                 />
                               )}
                               <a
-                                href={`/app/sport/football/ncaa/team/${team.franchiseSlug || ''}/2025`}
+                                href={teamLink(team.franchiseSlug || '', 2025)}
                                 className="team-link"
                                 style={{ color: '#61dafb', textDecoration: 'underline', fontWeight: 500 }}
                               >

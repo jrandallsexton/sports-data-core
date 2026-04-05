@@ -1,5 +1,6 @@
 import React from "react";
 import { FaRobot } from "react-icons/fa";
+import { teamLink, contestLink } from '../../utils/sportLinks';
 import "./LeaderboardPage.css";
 
 function LeagueWeekOverviewTable({ overview }) {
@@ -44,7 +45,7 @@ function LeagueWeekOverviewTable({ overview }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ flex: 1, textAlign: 'left' }}>
                       <a 
-                        href={`/app/sport/football/ncaa/team/${contest.awaySlug}/2025`}
+                        href={teamLink(contest.awaySlug, 2025)}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ 
@@ -64,7 +65,7 @@ function LeagueWeekOverviewTable({ overview }) {
                     </span>
                     <span style={{ flex: 1, textAlign: 'right' }}>
                       <a 
-                        href={`/app/sport/football/ncaa/team/${contest.homeSlug}/2025`}
+                        href={teamLink(contest.homeSlug, 2025)}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ 
@@ -82,7 +83,7 @@ function LeagueWeekOverviewTable({ overview }) {
                     <span style={{ flex: 1, textAlign: 'right' }}>
                       {typeof contest.awayScore === 'number' && typeof contest.homeScore === 'number' ? (
                         <a 
-                          href={`/app/sport/football/ncaa/contest/${contest.contestId}`}
+                          href={contestLink(contest.contestId)}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{ color: '#aaa', textDecoration: 'none' }}

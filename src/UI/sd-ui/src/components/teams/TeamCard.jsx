@@ -8,7 +8,7 @@ import TeamNews from "./TeamNews";
 import TeamStatistics from "./TeamStatistics";
 
 function TeamCard() {
-  const { slug, seasonYear } = useParams();
+  const { sport = 'football', league = 'ncaa', slug, seasonYear } = useParams();
   const navigate = useNavigate();
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,7 +22,7 @@ function TeamCard() {
   useEffect(() => {
     const fetchTeam = async () => {
       try {
-        const response = await apiWrapper.TeamCard.getBySlugAndSeason(slug, resolvedSeason);
+        const response = await apiWrapper.TeamCard.getBySlugAndSeason(sport, league, slug, resolvedSeason);
         setTeam(response.data);
       } catch (error) {
         console.error("Failed to fetch team data:", error);
@@ -38,7 +38,7 @@ function TeamCard() {
     if (selectedTab === "statistics" && team && team.franchiseSeasonId) {
       setStatsLoading(true);
       setStatsError(null);
-      apiWrapper.TeamCard.getStatistics(slug, resolvedSeason, team.franchiseSeasonId)
+      apiWrapper.TeamCard.getStatistics(sport, league, slug, resolvedSeason, team.franchiseSeasonId)
         .then((response) => {
           setTeamStats(response.data);
         })
@@ -96,7 +96,7 @@ function TeamCard() {
             id="seasonYear"
             value={String(resolvedSeason)}
             onChange={(e) =>
-              navigate(`/app/sport/football/ncaa/team/${slug}/${e.target.value}`)
+              navigate(`/app/sport/${sport}/${league}/team/${slug}/${e.target.value}`)
             }
           >
             {team.seasonYears?.map((yr) => (

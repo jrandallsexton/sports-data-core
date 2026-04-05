@@ -4,7 +4,7 @@ import apiWrapper from "../../api/apiWrapper";
 import "./SeasonOverview.css";
 
 export default function SeasonOverview() {
-  const { seasonYear } = useParams();
+  const { seasonYear, sport = 'football' } = useParams();
   const navigate = useNavigate();
 
   const [overviewData, setOverviewData] = useState(null);
@@ -89,7 +89,7 @@ export default function SeasonOverview() {
   const handleYearChange = (e) => {
     const newYear = e.target.value;
     setSelectedYear(newYear);
-    navigate(`/app/football/${newYear}`);
+    navigate(`/app/${sport}/${newYear}`);
   };
 
   const handleWeekChange = (e) => {

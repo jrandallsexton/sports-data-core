@@ -1,6 +1,7 @@
 // src/components/teams/TeamSchedule.jsx
 import { Link } from "react-router-dom";
 import { formatToEasternTime } from "../../utils/timeUtils";
+import { teamLink, contestLink } from '../../utils/sportLinks';
 import "./TeamSchedule.css";
 
 function TeamSchedule({ schedule, seasonYear }) {
@@ -41,7 +42,7 @@ function TeamSchedule({ schedule, seasonYear }) {
                 <td>{formatToEasternTime(game.date)}</td>
                 <td>
                   <Link
-                    to={`/app/sport/football/ncaa/team/${game.opponentSlug}/${seasonYear}`}
+                    to={teamLink(game.opponentSlug, seasonYear)}
                     className="team-link"
                   >
                     {game.opponent}
@@ -51,7 +52,7 @@ function TeamSchedule({ schedule, seasonYear }) {
                 <td className={getResultClass(game)}>
                   {game.contestId ? (
                     <Link
-                      to={`/app/sport/football/ncaa/contest/${game.contestId}`}
+                      to={contestLink(game.contestId)}
                       className="result-link"
                     >
                       {formatGameResult(game)}

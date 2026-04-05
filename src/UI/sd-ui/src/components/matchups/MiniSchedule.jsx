@@ -3,6 +3,7 @@ import { FaSearchPlus, FaSearchMinus } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { formatToMonthDay } from "../../utils/timeUtils";
 import "./MiniSchedule.css";
+import { teamLink, contestLink } from '../../utils/sportLinks';
 import "./MiniScheduleDrilldown.css";
 
 function formatGameResult(game) {
@@ -65,7 +66,7 @@ export default function MiniSchedule({ schedule = [], seasonYear }) {
               <tr key={idx}>
                 <td>{formatToMonthDay(game.date)}</td>
                 <td style={{ display: 'flex', alignItems: 'center' }}>
-                  <Link to={`/app/sport/football/ncaa/team/${game.opponentSlug}/${seasonYear}`} className="team-link">
+                  <Link to={teamLink(game.opponentSlug, seasonYear)} className="team-link">
                     {game.locationType === 'Away' ? `@ ${game.opponentShortName ?? game.opponent ?? 'Opponent'}` : (game.opponentShortName ?? game.opponent ?? 'Opponent')}
                   </Link>
                   {game.opponentSlug && (
@@ -87,7 +88,7 @@ export default function MiniSchedule({ schedule = [], seasonYear }) {
                 <td>
                   {game.finalizedUtc && game.contestId ? (
                     <Link
-                      to={`/app/sport/football/ncaa/contest/${game.contestId}`}
+                      to={contestLink(game.contestId)}
                       className={`result-link ${getResultClass(game)}`}
                     >
                       {formatGameResult(game)}

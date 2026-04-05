@@ -128,11 +128,11 @@ function MainApp() {
             <Route path="/messageboard" element={<MessageBoardPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route
-              path="/sport/football/ncaa/team/:slug"
+              path="/sport/:sport/:league/team/:slug"
               element={<TeamCard />}
             />
             <Route
-              path="/sport/football/ncaa/team/:slug/:seasonYear"
+              path="/sport/:sport/:league/team/:slug/:seasonYear"
               element={<TeamCard />}
             />
             <Route
@@ -149,11 +149,11 @@ function MainApp() {
             <Route path="/league" element={<Leagues />} />
             <Route path="/join/:leagueId" element={<AutoJoinRedirect />} />
             <Route
-              path="/football/:seasonYear"
+              path="/:sport/:seasonYear"
               element={<SeasonOverview />}
             />
             <Route
-              path="/sport/football/ncaa/contest/:contestId"
+              path="/sport/:sport/:league/contest/:contestId"
               element={<ContestOverview />}
             />
             <Route

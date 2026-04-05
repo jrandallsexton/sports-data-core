@@ -3,8 +3,9 @@ using FluentAssertions;
 using Moq;
 
 using SportsData.Api.Application.UI.Conferences.Queries.GetConferenceNamesAndSlugs;
-using SportsData.Api.Infrastructure.Data.Canonical;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 using Xunit;
 
@@ -12,6 +13,18 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Conferences.Queries.GetConfer
 
 public class GetConferenceNamesAndSlugsQueryHandlerTests : ApiTestBase<GetConferenceNamesAndSlugsQueryHandler>
 {
+    private readonly Mock<IFranchiseClientFactory> _franchiseClientFactoryMock;
+    private readonly Mock<IProvideFranchises> _franchiseClientMock;
+
+    public GetConferenceNamesAndSlugsQueryHandlerTests()
+    {
+        _franchiseClientFactoryMock = Mocker.GetMock<IFranchiseClientFactory>();
+        _franchiseClientMock = new Mock<IProvideFranchises>();
+        _franchiseClientFactoryMock
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_franchiseClientMock.Object);
+    }
+
     [Fact]
     public async Task ExecuteAsync_ShouldReturnConferences_WhenDataExists()
     {
@@ -22,8 +35,8 @@ public class GetConferenceNamesAndSlugsQueryHandlerTests : ApiTestBase<GetConfer
             new() { ShortName = "ACC", Slug = "acc", Division = "FBS" }
         };
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetConferenceNamesAndSlugsForSeasonYear(It.IsAny<int>()))
+        _franchiseClientMock
+            .Setup(x => x.GetConferenceNamesAndSlugs(It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedConferences);
 
         var sut = Mocker.CreateInstance<GetConferenceNamesAndSlugsQueryHandler>();
@@ -46,8 +59,8 @@ public class GetConferenceNamesAndSlugsQueryHandlerTests : ApiTestBase<GetConfer
         var seasonYear = 2024;
         var expectedConferences = new List<ConferenceDivisionNameAndSlugDto>();
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetConferenceNamesAndSlugsForSeasonYear(seasonYear))
+        _franchiseClientMock
+            .Setup(x => x.GetConferenceNamesAndSlugs(seasonYear, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedConferences);
 
         var sut = Mocker.CreateInstance<GetConferenceNamesAndSlugsQueryHandler>();
@@ -57,8 +70,8 @@ public class GetConferenceNamesAndSlugsQueryHandlerTests : ApiTestBase<GetConfer
         await sut.ExecuteAsync(query);
 
         // Assert
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Verify(x => x.GetConferenceNamesAndSlugsForSeasonYear(seasonYear), Times.Once);
+        _franchiseClientMock
+            .Verify(x => x.GetConferenceNamesAndSlugs(seasonYear, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -68,8 +81,8 @@ public class GetConferenceNamesAndSlugsQueryHandlerTests : ApiTestBase<GetConfer
         var currentYear = DateTime.UtcNow.Year;
         var expectedConferences = new List<ConferenceDivisionNameAndSlugDto>();
 
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Setup(x => x.GetConferenceNamesAndSlugsForSeasonYear(currentYear))
+        _franchiseClientMock
+            .Setup(x => x.GetConferenceNamesAndSlugs(currentYear, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedConferences);
 
         var sut = Mocker.CreateInstance<GetConferenceNamesAndSlugsQueryHandler>();
@@ -79,7 +92,7 @@ public class GetConferenceNamesAndSlugsQueryHandlerTests : ApiTestBase<GetConfer
         await sut.ExecuteAsync(query);
 
         // Assert
-        Mocker.GetMock<IProvideCanonicalData>()
-            .Verify(x => x.GetConferenceNamesAndSlugsForSeasonYear(currentYear), Times.Once);
+        _franchiseClientMock
+            .Verify(x => x.GetConferenceNamesAndSlugs(currentYear, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

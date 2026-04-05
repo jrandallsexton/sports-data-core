@@ -1,4 +1,7 @@
-﻿namespace SportsData.Api.Application.UI.TeamCard.Dtos;
+using System;
+using System.Collections.Generic;
+
+namespace SportsData.Core.Dtos.Canonical;
 
 public record TeamCardDto
 {
@@ -12,7 +15,7 @@ public record TeamCardDto
 
     public int? Ranking { get; init; }
 
-    public string? Division { get; init; } // TODO
+    public string? Division { get; init; }
 
     public string? ConferenceName { get; init; }
 

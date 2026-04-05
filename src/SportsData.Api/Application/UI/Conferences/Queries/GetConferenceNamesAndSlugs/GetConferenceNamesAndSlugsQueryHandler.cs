@@ -1,6 +1,6 @@
 using SportsData.Api.Application.UI.Conferences.Dtos;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.UI.Conferences.Queries.GetConferenceNamesAndSlugs;
 
@@ -14,14 +14,14 @@ public interface IGetConferenceNamesAndSlugsQueryHandler
 public class GetConferenceNamesAndSlugsQueryHandler : IGetConferenceNamesAndSlugsQueryHandler
 {
     private readonly ILogger<GetConferenceNamesAndSlugsQueryHandler> _logger;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IFranchiseClientFactory _franchiseClientFactory;
 
     public GetConferenceNamesAndSlugsQueryHandler(
         ILogger<GetConferenceNamesAndSlugsQueryHandler> logger,
-        IProvideCanonicalData canonicalDataProvider)
+        IFranchiseClientFactory franchiseClientFactory)
     {
         _logger = logger;
-        _canonicalDataProvider = canonicalDataProvider;
+        _franchiseClientFactory = franchiseClientFactory;
     }
 
     public async Task<Result<List<ConferenceNameAndSlugDto>>> ExecuteAsync(
@@ -32,7 +32,9 @@ public class GetConferenceNamesAndSlugsQueryHandler : IGetConferenceNamesAndSlug
 
         _logger.LogDebug("Getting conference names and slugs for season year {SeasonYear}", seasonYear);
 
-        var conferencesAndSlugs = await _canonicalDataProvider.GetConferenceNamesAndSlugsForSeasonYear(seasonYear);
+        // TODO: multi-sport - resolve from context
+        var client = _franchiseClientFactory.Resolve(Sport.FootballNcaa);
+        var conferencesAndSlugs = await client.GetConferenceNamesAndSlugs(seasonYear, cancellationToken);
 
         var result = conferencesAndSlugs
             .Select(item => new ConferenceNameAndSlugDto

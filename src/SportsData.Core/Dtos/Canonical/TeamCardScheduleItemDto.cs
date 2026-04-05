@@ -1,4 +1,6 @@
-﻿namespace SportsData.Api.Application.UI.TeamCard.Dtos;
+using System;
+
+namespace SportsData.Core.Dtos.Canonical;
 
 public record TeamCardScheduleItemDto
 {

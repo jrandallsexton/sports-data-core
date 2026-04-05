@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague.Dtos;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 using SportsData.Api.Application.Common.Enums;
 
@@ -27,18 +27,18 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.CreateLeague
         private readonly ILogger<CreateLeagueCommandHandler> _logger;
         private readonly AppDataContext _dbContext;
         private readonly IEventBus _eventBus;
-        private readonly IProvideCanonicalData _canonicalDataProvider;
+        private readonly IFranchiseClientFactory _franchiseClientFactory;
 
         public CreateLeagueCommandHandler(
             ILogger<CreateLeagueCommandHandler> logger,
             AppDataContext dbContext,
             IEventBus eventBus,
-            IProvideCanonicalData canonicalDataProvider)
+            IFranchiseClientFactory franchiseClientFactory)
         {
             _logger = logger;
             _dbContext = dbContext;
             _eventBus = eventBus;
-            _canonicalDataProvider = canonicalDataProvider;
+            _franchiseClientFactory = franchiseClientFactory;
         }
 
         public async Task<Result<Guid>> ExecuteAsync(
@@ -81,10 +81,9 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.CreateLeague
             // === Canonical Resolution ===
             var seasonYear = request.SeasonYear ?? DateTime.UtcNow.Year;
             var conferenceIds = request.ConferenceSlugs.Count > 0
-                ? await _canonicalDataProvider.GetConferenceIdsBySlugsAsync(
-                    Sport.FootballNcaa,
-                    seasonYear,
-                    request.ConferenceSlugs)
+                ? await _franchiseClientFactory
+                    .Resolve(Sport.FootballNcaa)
+                    .GetConferenceIdsBySlugs(seasonYear, request.ConferenceSlugs)
                 : new Dictionary<Guid, string>();
 
             var unresolved = request.ConferenceSlugs

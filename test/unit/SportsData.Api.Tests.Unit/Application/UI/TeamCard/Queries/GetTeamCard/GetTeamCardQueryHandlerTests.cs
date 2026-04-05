@@ -2,10 +2,10 @@ using FluentAssertions;
 
 using Moq;
 
-using SportsData.Api.Application.UI.TeamCard.Dtos;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Tests.Shared;
 
 using Xunit;
@@ -14,11 +14,16 @@ namespace SportsData.Api.Tests.Unit.Application.UI.TeamCard.Queries.GetTeamCard;
 
 public class GetTeamCardQueryHandlerTests : UnitTestBase<GetTeamCardQueryHandler>
 {
-    private readonly Mock<IProvideCanonicalData> _canonicalDataProviderMock;
+    private readonly Mock<IFranchiseClientFactory> _franchiseClientFactoryMock;
+    private readonly Mock<IProvideFranchises> _franchiseClientMock;
 
     public GetTeamCardQueryHandlerTests()
     {
-        _canonicalDataProviderMock = Mocker.GetMock<IProvideCanonicalData>();
+        _franchiseClientFactoryMock = Mocker.GetMock<IFranchiseClientFactory>();
+        _franchiseClientMock = new Mock<IProvideFranchises>();
+        _franchiseClientFactoryMock
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_franchiseClientMock.Object);
     }
 
     [Fact]
@@ -45,13 +50,13 @@ public class GetTeamCardQueryHandlerTests : UnitTestBase<GetTeamCardQueryHandler
         var query = new GetTeamCardQuery
         {
             Sport = "football",
-            League = "ncaaf",
+            League = "ncaa",
             Slug = "alabama",
             SeasonYear = 2025
         };
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetTeamCard(query, It.IsAny<CancellationToken>()))
+        _franchiseClientMock
+            .Setup(x => x.GetTeamCard("alabama", 2025, It.IsAny<CancellationToken>()))
             .ReturnsAsync(teamCard);
 
         var handler = Mocker.CreateInstance<GetTeamCardQueryHandler>();
@@ -72,13 +77,13 @@ public class GetTeamCardQueryHandlerTests : UnitTestBase<GetTeamCardQueryHandler
         var query = new GetTeamCardQuery
         {
             Sport = "football",
-            League = "ncaaf",
+            League = "ncaa",
             Slug = "nonexistent",
             SeasonYear = 2025
         };
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetTeamCard(query, It.IsAny<CancellationToken>()))
+        _franchiseClientMock
+            .Setup(x => x.GetTeamCard("nonexistent", 2025, It.IsAny<CancellationToken>()))
             .ReturnsAsync((TeamCardDto?)null);
 
         var handler = Mocker.CreateInstance<GetTeamCardQueryHandler>();
@@ -98,14 +103,14 @@ public class GetTeamCardQueryHandlerTests : UnitTestBase<GetTeamCardQueryHandler
         var query = new GetTeamCardQuery
         {
             Sport = "football",
-            League = "ncaaf",
+            League = "ncaa",
             Slug = "alabama",
             SeasonYear = 2025
         };
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetTeamCard(query, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Database error"));
+        _franchiseClientMock
+            .Setup(x => x.GetTeamCard("alabama", 2025, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("HTTP error"));
 
         var handler = Mocker.CreateInstance<GetTeamCardQueryHandler>();
 

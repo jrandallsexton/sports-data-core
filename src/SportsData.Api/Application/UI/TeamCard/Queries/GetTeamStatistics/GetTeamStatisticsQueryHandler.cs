@@ -1,8 +1,8 @@
 using FluentValidation.Results;
 
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 
@@ -16,16 +16,16 @@ public interface IGetTeamStatisticsQueryHandler
 public class GetTeamStatisticsQueryHandler : IGetTeamStatisticsQueryHandler
 {
     private readonly ILogger<GetTeamStatisticsQueryHandler> _logger;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IFranchiseClientFactory _franchiseClientFactory;
     private readonly IStatFormattingService _statFormatting;
 
     public GetTeamStatisticsQueryHandler(
         ILogger<GetTeamStatisticsQueryHandler> logger,
-        IProvideCanonicalData canonicalDataProvider,
+        IFranchiseClientFactory franchiseClientFactory,
         IStatFormattingService statFormatting)
     {
         _logger = logger;
-        _canonicalDataProvider = canonicalDataProvider;
+        _franchiseClientFactory = franchiseClientFactory;
         _statFormatting = statFormatting;
     }
 
@@ -43,7 +43,9 @@ public class GetTeamStatisticsQueryHandler : IGetTeamStatisticsQueryHandler
 
         try
         {
-            var dto = await _canonicalDataProvider.GetFranchiseSeasonStatistics(query.FranchiseSeasonId);
+            // TODO: multi-sport - resolve from context
+            var client = _franchiseClientFactory.Resolve(Sport.FootballNcaa);
+            var dto = await client.GetFranchiseSeasonStatistics(query.FranchiseSeasonId, cancellationToken);
 
             if (dto == null)
             {

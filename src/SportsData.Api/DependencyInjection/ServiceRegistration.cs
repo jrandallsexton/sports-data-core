@@ -188,7 +188,6 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGenerateMatchupPreviews, MatchupPreviewProcessor>();
             services.AddScoped<INotificationService, NotificationService>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
-            services.AddScoped<IProvideCanonicalData, CanonicalDataProvider>();
             services.AddSingleton<CanonicalDataQueryProvider>();
             services.AddScoped<IProvideCanonicalAdminData, CanonicalAdminDataProvider>();
             services.AddSingleton<CanonicalAdminDataQueryProvider>();

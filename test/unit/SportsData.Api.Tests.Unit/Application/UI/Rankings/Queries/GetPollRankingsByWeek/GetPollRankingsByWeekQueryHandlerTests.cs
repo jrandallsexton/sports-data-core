@@ -2,8 +2,8 @@ using FluentAssertions;
 
 using Moq;
 
-using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.Rankings.Queries.GetPollRankingsByWeek;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
 using SportsData.Core.Common;
 using SportsData.Tests.Shared;

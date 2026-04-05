@@ -33,16 +33,23 @@ using SportsData.Producer.Application.Franchises.Queries.GetAllFranchises;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseById;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseSeasons;
 using SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
+using SportsData.Producer.Application.Franchises.Queries.GetTeamCard;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetPollBySeasonWeekId;
+using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetRankingsByPollByWeek;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
 using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
+using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonCompetitionResults;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsBySeasonYear;
+using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonPreviewStats;
+using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonStatistics;
 using SportsData.Producer.Application.GroupSeasons;
+using SportsData.Producer.Application.GroupSeasons.Queries.GetConferenceIdsBySlugs;
+using SportsData.Producer.Application.GroupSeasons.Queries.GetConferenceNamesAndSlugs;
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.Seasons.Queries.GetCompletedSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentAndLastSeasonWeeks;
@@ -201,11 +208,15 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IGetFranchiseByIdQueryHandler, GetFranchiseByIdQueryHandler>();
             services.AddScoped<IGetFranchiseSeasonsQueryHandler, GetFranchiseSeasonsQueryHandler>();
             services.AddScoped<IGetSeasonContestsQueryHandler, GetSeasonContestsQueryHandler>();
+            services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
 
             // FranchiseSeason Queries
             services.AddScoped<IGetFranchiseSeasonByIdQueryHandler, GetFranchiseSeasonByIdQueryHandler>();
             services.AddScoped<IGetFranchiseSeasonMetricsByIdQueryHandler, GetFranchiseSeasonMetricsByIdQueryHandler>();
             services.AddScoped<IGetFranchiseSeasonMetricsBySeasonYearQueryHandler, GetFranchiseSeasonMetricsBySeasonYearQueryHandler>();
+            services.AddScoped<IGetFranchiseSeasonStatisticsQueryHandler, GetFranchiseSeasonStatisticsQueryHandler>();
+            services.AddScoped<IGetFranchiseSeasonPreviewStatsQueryHandler, GetFranchiseSeasonPreviewStatsQueryHandler>();
+            services.AddScoped<IGetFranchiseSeasonCompetitionResultsQueryHandler, GetFranchiseSeasonCompetitionResultsQueryHandler>();
 
             // Contest Commands
             services.AddScoped<IFinalizeContestsBySeasonYearHandler, FinalizeContestsBySeasonYearHandler>();
@@ -247,6 +258,11 @@ namespace SportsData.Producer.DependencyInjection
             // FranchiseSeasonRanking Queries
             services.AddScoped<IGetCurrentPollsQueryHandler, GetCurrentPollsQueryHandler>();
             services.AddScoped<IGetPollBySeasonWeekIdQueryHandler, GetPollBySeasonWeekIdQueryHandler>();
+            services.AddScoped<IGetRankingsByPollByWeekQueryHandler, GetRankingsByPollByWeekQueryHandler>();
+
+            // GroupSeason Queries
+            services.AddScoped<SportsData.Producer.Application.GroupSeasons.Queries.GetConferenceNamesAndSlugs.IGetConferenceNamesAndSlugsQueryHandler, SportsData.Producer.Application.GroupSeasons.Queries.GetConferenceNamesAndSlugs.GetConferenceNamesAndSlugsQueryHandler>();
+            services.AddScoped<IGetConferenceIdsBySlugsQueryHandler, GetConferenceIdsBySlugsQueryHandler>();
 
             // Venue Commands
             services.AddScoped<IGeocodeVenueCommandHandler, GeocodeVenueCommandHandler>();

@@ -21,6 +21,7 @@ public interface IProvideSeasons : IProvideHealthChecks
     Task<Result<CanonicalSeasonWeekDto>> GetCurrentSeasonWeek(CancellationToken ct = default);
     Task<Result<List<CanonicalSeasonWeekDto>>> GetCurrentAndLastSeasonWeeks(CancellationToken ct = default);
     Task<Result<List<CanonicalSeasonWeekDto>>> GetCompletedSeasonWeeks(int seasonYear, CancellationToken ct = default);
+    Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken ct = default);
 }
 
 public class SeasonClient : ClientBase, IProvideSeasons
@@ -116,6 +117,20 @@ public class SeasonClient : ClientBase, IProvideSeasons
             new List<CanonicalSeasonWeekDto>(),
             "Completed season weeks",
             ResultStatus.NotFound,
+            ct);
+    }
+
+    public async Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken ct = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-season-rankings/by-poll?poll={poll}&seasonYear={seasonYear}&weekNumber={weekNumber}",
+            new RankingsByPollIdByWeekDto
+            {
+                PollName = poll,
+                PollId = poll,
+                SeasonYear = seasonYear,
+                Week = weekNumber
+            },
             ct);
     }
 }

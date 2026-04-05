@@ -1,6 +1,5 @@
 using FluentValidation.Results;
 
-using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Extensions;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;

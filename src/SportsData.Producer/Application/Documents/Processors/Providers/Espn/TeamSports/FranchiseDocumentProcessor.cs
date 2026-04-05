@@ -122,10 +122,15 @@ public class FranchiseDocumentProcessor<TDataContext> : DocumentProcessorBase<TD
             }
             else
             {
-                // Venue should already exist from Tier 1 sourcing
+                await PublishDependencyRequest<string?>(
+                    command,
+                    dto.Venue,
+                    parentId: null,
+                    DocumentType.Venue);
+
                 throw new ExternalDocumentNotSourcedException(
                     $"Venue not found in database. VenueRef={dto.Venue.Ref}, FranchiseId={newEntity.Id}. " +
-                    "Ensure Venue tier is sourced before Franchise tier.");
+                    "Requesting venue sourcing.");
             }
         }
 

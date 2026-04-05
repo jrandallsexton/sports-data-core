@@ -76,7 +76,7 @@ export default function ContestOverview() {
 
   return (
     <div className="contest-overview-container">
-      <ContestOverviewHeader homeTeam={homeTeam} awayTeam={awayTeam} quarterScores={quarterScores} sport={sport} league={league} />
+      <ContestOverviewHeader homeTeam={homeTeam} awayTeam={awayTeam} quarterScores={quarterScores} seasonYear={header.seasonYear} sport={sport} league={league} />
       <div className="contest-overview-grid">
         <div className="contest-overview-col">
           <ContestOverviewLeaders homeTeam={homeTeam} awayTeam={awayTeam} leaders={leaders} />

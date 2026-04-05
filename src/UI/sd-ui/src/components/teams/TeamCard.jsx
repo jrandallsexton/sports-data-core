@@ -32,7 +32,7 @@ function TeamCard() {
     };
 
     fetchTeam();
-  }, [slug, resolvedSeason]);
+  }, [sport, league, slug, resolvedSeason]);
 
   useEffect(() => {
     if (selectedTab === "statistics" && team && team.franchiseSeasonId) {
@@ -49,7 +49,7 @@ function TeamCard() {
           setStatsLoading(false);
         });
     }
-  }, [selectedTab, slug, resolvedSeason, team]);
+  }, [selectedTab, sport, league, slug, resolvedSeason, team]);
 
   if (loading) return <div className="team-card">Loading team data…</div>;
   if (!team) return <div className="team-card">Team not found.</div>;

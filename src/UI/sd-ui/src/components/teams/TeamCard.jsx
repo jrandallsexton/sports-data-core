@@ -129,7 +129,7 @@ function TeamCard() {
 
       <div className="team-card-content">
         {selectedTab === "schedule" && (
-          <TeamSchedule schedule={team.schedule} seasonYear={resolvedSeason} />
+          <TeamSchedule schedule={team.schedule} seasonYear={resolvedSeason} sport={sport} league={league} />
         )}
         {selectedTab === "statistics" && (
           statsLoading ? (

@@ -65,6 +65,12 @@ public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : DocumentProcess
 
         if (athleteSeason is null)
         {
+            await PublishDependencyRequest<string?>(
+                command,
+                dto.Athlete,
+                parentId: null,
+                DocumentType.AthleteSeason);
+
             throw new ExternalDocumentNotSourcedException(
                 $"AthleteSeason not found for athlete ref {dto.Athlete.Ref}");
         }

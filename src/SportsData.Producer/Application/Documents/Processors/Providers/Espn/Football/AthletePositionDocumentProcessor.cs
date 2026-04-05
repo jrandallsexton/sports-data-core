@@ -116,9 +116,15 @@ public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorB
             if (parentId is null)
             {
                 _logger.LogError(
-                    "Unable to resolve ParentId for AthletePosition with Name '{Name}' (Ref: {Ref}). Likely parent position has not yet been sourced. Throwing to allow Hangfire retry.",
+                    "Unable to resolve ParentId for AthletePosition with Name '{Name}' (Ref: {Ref}). Likely parent position has not yet been sourced.",
                     dto.Name,
                     dto.Parent?.Ref);
+
+                await PublishDependencyRequest<string?>(
+                    command,
+                    dto.Parent,
+                    parentId: null,
+                    DocumentType.AthletePosition);
 
                 throw new ExternalDocumentNotSourcedException($"Parent position not yet available for '{dto.Name}'. Will retry.");
             }

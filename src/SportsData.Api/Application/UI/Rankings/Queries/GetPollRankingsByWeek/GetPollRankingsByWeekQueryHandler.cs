@@ -1,7 +1,7 @@
 using FluentValidation.Results;
 
-using SportsData.Api.Application.UI.Rankings.Dtos;
 using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Rankings.Queries.GetPollRankingsByWeek;

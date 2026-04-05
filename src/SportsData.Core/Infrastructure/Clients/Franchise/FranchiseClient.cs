@@ -25,6 +25,13 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear, CancellationToken cancellationToken = default);
     Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
     Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default);
+    Task<TeamCardDto?> GetTeamCard(string slug, int seasonYear, CancellationToken cancellationToken = default);
+    Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
+    Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonPreviewStats(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
+    Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResults(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
+    Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugs(int seasonYear, CancellationToken cancellationToken = default);
+    Task<Dictionary<Guid, string>> GetConferenceIdsBySlugs(int seasonYear, List<string> slugs, CancellationToken cancellationToken = default);
+    Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken cancellationToken = default);
 }
 
 public class FranchiseClient : ClientBase, IProvideFranchises
@@ -120,6 +127,77 @@ public class FranchiseClient : ClientBase, IProvideFranchises
         return await GetOrDefaultAsync(
             $"franchise-season-rankings/seasonYear/{seasonYear}",
             new List<FranchiseSeasonPollDto>(),
+            cancellationToken);
+    }
+
+    public async Task<TeamCardDto?> GetTeamCard(string slug, int seasonYear, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await GetOrDefaultAsync<TeamCardDto>(
+                $"franchises/team-card?slug={slug}&seasonYear={seasonYear}",
+                null!,
+                cancellationToken);
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+    }
+
+    public async Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-seasons/id/{franchiseSeasonId}/statistics",
+            new FranchiseSeasonStatisticDto(),
+            cancellationToken);
+    }
+
+    public async Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonPreviewStats(Guid franchiseSeasonId, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-seasons/id/{franchiseSeasonId}/preview-stats",
+            new FranchiseSeasonModelStatsDto(),
+            cancellationToken);
+    }
+
+    public async Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResults(Guid franchiseSeasonId, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-seasons/id/{franchiseSeasonId}/competition-results",
+            new List<FranchiseSeasonCompetitionResultDto>(),
+            cancellationToken);
+    }
+
+    public async Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugs(int seasonYear, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"group-seasons/conferences?seasonYear={seasonYear}",
+            new List<ConferenceDivisionNameAndSlugDto>(),
+            cancellationToken);
+    }
+
+    public async Task<Dictionary<Guid, string>> GetConferenceIdsBySlugs(int seasonYear, List<string> slugs, CancellationToken cancellationToken = default)
+    {
+        var request = new { SeasonYear = seasonYear, Slugs = slugs };
+        return await PostOrDefaultAsync<Dictionary<Guid, string>, object>(
+            "group-seasons/conference-ids-by-slugs",
+            request,
+            new Dictionary<Guid, string>(),
+            cancellationToken);
+    }
+
+    public async Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken cancellationToken = default)
+    {
+        return await GetOrDefaultAsync(
+            $"franchise-season-rankings/by-poll?poll={poll}&seasonYear={seasonYear}&weekNumber={weekNumber}",
+            new RankingsByPollIdByWeekDto
+            {
+                PollName = poll,
+                PollId = poll,
+                SeasonYear = seasonYear,
+                Week = weekNumber
+            },
             cancellationToken);
     }
 }

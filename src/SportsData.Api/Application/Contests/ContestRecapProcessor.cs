@@ -2,7 +2,6 @@
 
 using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
@@ -15,7 +14,6 @@ namespace SportsData.Api.Application.Contests
     public class ContestRecapProcessor
     {
         private readonly ILogger<ContestRecapProcessor> _logger;
-        private readonly IProvideCanonicalData _canonicalDataProvider;
         private readonly AppDataContext _dataContext;
         private readonly IGenerateGameRecapCommandHandler _generateGameRecapHandler;
         private readonly IEventBus _publishEndpoint;
@@ -24,7 +22,6 @@ namespace SportsData.Api.Application.Contests
 
         public ContestRecapProcessor(
             ILogger<ContestRecapProcessor> logger,
-            IProvideCanonicalData canonicalDataProvider,
             AppDataContext dataContext,
             IGenerateGameRecapCommandHandler generateGameRecapHandler,
             IEventBus publishEndpoint,
@@ -32,7 +29,6 @@ namespace SportsData.Api.Application.Contests
             IContestClientFactory contestClientFactory)
         {
             _logger = logger;
-            _canonicalDataProvider = canonicalDataProvider;
             _dataContext = dataContext;
             _generateGameRecapHandler = generateGameRecapHandler;
             _publishEndpoint = publishEndpoint;

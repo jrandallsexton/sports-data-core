@@ -4,9 +4,9 @@ using Moq;
 
 using SportsData.Api.Application.UI.TeamCard;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
-using SportsData.Api.Infrastructure.Data.Canonical;
-using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Tests.Shared;
 
 using Xunit;
@@ -15,12 +15,17 @@ namespace SportsData.Api.Tests.Unit.Application.UI.TeamCard.Queries.GetTeamStati
 
 public class GetTeamStatisticsQueryHandlerTests : UnitTestBase<GetTeamStatisticsQueryHandler>
 {
-    private readonly Mock<IProvideCanonicalData> _canonicalDataProviderMock;
+    private readonly Mock<IFranchiseClientFactory> _franchiseClientFactoryMock;
+    private readonly Mock<IProvideFranchises> _franchiseClientMock;
     private readonly Mock<IStatFormattingService> _statFormattingServiceMock;
 
     public GetTeamStatisticsQueryHandlerTests()
     {
-        _canonicalDataProviderMock = Mocker.GetMock<IProvideCanonicalData>();
+        _franchiseClientFactoryMock = Mocker.GetMock<IFranchiseClientFactory>();
+        _franchiseClientMock = new Mock<IProvideFranchises>();
+        _franchiseClientFactoryMock
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_franchiseClientMock.Object);
         _statFormattingServiceMock = Mocker.GetMock<IStatFormattingService>();
     }
 
@@ -35,8 +40,8 @@ public class GetTeamStatisticsQueryHandlerTests : UnitTestBase<GetTeamStatistics
             Statistics = new Dictionary<string, List<FranchiseSeasonStatisticDto.FranchiseSeasonStatisticEntry>>()
         };
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetFranchiseSeasonStatistics(franchiseSeasonId))
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonStatistics(franchiseSeasonId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(statistics);
 
         var handler = Mocker.CreateInstance<GetTeamStatisticsQueryHandler>();
@@ -76,8 +81,8 @@ public class GetTeamStatisticsQueryHandlerTests : UnitTestBase<GetTeamStatistics
         // Arrange
         var franchiseSeasonId = Guid.NewGuid();
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetFranchiseSeasonStatistics(franchiseSeasonId))
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonStatistics(franchiseSeasonId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((FranchiseSeasonStatisticDto)null!);
 
         var handler = Mocker.CreateInstance<GetTeamStatisticsQueryHandler>();
@@ -97,9 +102,9 @@ public class GetTeamStatisticsQueryHandlerTests : UnitTestBase<GetTeamStatistics
         // Arrange
         var franchiseSeasonId = Guid.NewGuid();
 
-        _canonicalDataProviderMock
-            .Setup(x => x.GetFranchiseSeasonStatistics(franchiseSeasonId))
-            .ThrowsAsync(new Exception("Database error"));
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonStatistics(franchiseSeasonId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("HTTP error"));
 
         var handler = Mocker.CreateInstance<GetTeamStatisticsQueryHandler>();
         var query = new GetTeamStatisticsQuery { FranchiseSeasonId = franchiseSeasonId };

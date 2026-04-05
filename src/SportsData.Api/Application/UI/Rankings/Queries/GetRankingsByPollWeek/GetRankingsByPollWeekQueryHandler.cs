@@ -1,8 +1,8 @@
 using FluentValidation.Results;
 
-using SportsData.Api.Application.UI.Rankings.Dtos;
-using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.UI.Rankings.Queries.GetRankingsByPollWeek;
 
@@ -16,7 +16,7 @@ public interface IGetRankingsByPollWeekQueryHandler
 public class GetRankingsByPollWeekQueryHandler : IGetRankingsByPollWeekQueryHandler
 {
     private readonly ILogger<GetRankingsByPollWeekQueryHandler> _logger;
-    private readonly IProvideCanonicalData _canonicalDataProvider;
+    private readonly IFranchiseClientFactory _franchiseClientFactory;
 
     private const string PollIdAp = "ap";
     private const string PollIdCoaches = "usa";
@@ -24,10 +24,10 @@ public class GetRankingsByPollWeekQueryHandler : IGetRankingsByPollWeekQueryHand
 
     public GetRankingsByPollWeekQueryHandler(
         ILogger<GetRankingsByPollWeekQueryHandler> logger,
-        IProvideCanonicalData canonicalDataProvider)
+        IFranchiseClientFactory franchiseClientFactory)
     {
         _logger = logger;
-        _canonicalDataProvider = canonicalDataProvider;
+        _franchiseClientFactory = franchiseClientFactory;
     }
 
     public async Task<Result<RankingsByPollIdByWeekDto>> ExecuteAsync(
@@ -54,8 +54,9 @@ public class GetRankingsByPollWeekQueryHandler : IGetRankingsByPollWeekQueryHand
 
         try
         {
-            var rankings = await _canonicalDataProvider
-                .GetRankingsByPollIdByWeek(poll, query.SeasonYear, query.Week);
+            // TODO: multi-sport - resolve from context
+            var client = _franchiseClientFactory.Resolve(Sport.FootballNcaa);
+            var rankings = await client.GetRankingsByPollByWeek(poll, query.SeasonYear, query.Week, cancellationToken);
 
             if (rankings == null)
             {

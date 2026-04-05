@@ -1,4 +1,4 @@
-﻿namespace SportsData.Api.Application.UI.TeamCard.Dtos;
+namespace SportsData.Core.Dtos.Canonical;
 
 public record TeamCardNewsItemDto
 {

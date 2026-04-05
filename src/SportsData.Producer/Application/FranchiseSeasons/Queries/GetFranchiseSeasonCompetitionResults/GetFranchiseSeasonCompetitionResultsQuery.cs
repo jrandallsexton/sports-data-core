@@ -1,0 +1,5 @@
+using System;
+
+namespace SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonCompetitionResults;
+
+public record GetFranchiseSeasonCompetitionResultsQuery(Guid FranchiseSeasonId);

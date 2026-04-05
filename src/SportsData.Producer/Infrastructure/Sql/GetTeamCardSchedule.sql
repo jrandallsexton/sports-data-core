@@ -26,6 +26,7 @@ SELECT
     CASE
         WHEN fAway."Slug" = @Slug AND c."WinnerFranchiseId" = fsAway."Id" THEN true
         WHEN fHome."Slug" = @Slug AND c."WinnerFranchiseId" = fsHome."Id" THEN true
+        WHEN c."WinnerFranchiseId" IS NOT NULL THEN false
         ELSE null
     END AS "WasWinner"
 FROM public."Contest" C

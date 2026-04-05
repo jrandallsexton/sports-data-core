@@ -22,7 +22,7 @@ SELECT
 FROM public."Contest" c
 INNER JOIN public."SeasonPhase" sp ON sp."Id" = c."SeasonPhaseId"
 INNER JOIN public."SeasonWeek" sw ON sw."Id" = c."SeasonWeekId"
-INNER JOIN public."Venue" v ON v."Id" = c."VenueId"
+LEFT JOIN public."Venue" v ON v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
 INNER JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
 LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'

@@ -53,6 +53,12 @@ public class ProducerSqlQueryProvider
                 .Replace("{PreferredOddsProviderId}", preferredId)
                 .Replace("{FallbackOddsProviderId}", fallbackId);
 
+            // Fail fast if any placeholders remain unresolved
+            var unresolvedMatch = System.Text.RegularExpressions.Regex.Match(query, @"\{[A-Z][a-zA-Z]+\}");
+            if (unresolvedMatch.Success)
+                throw new InvalidOperationException(
+                    $"Unresolved placeholder '{unresolvedMatch.Value}' in SQL resource: {fileName}");
+
             _queries.Add(fileName, query);
         }
     }

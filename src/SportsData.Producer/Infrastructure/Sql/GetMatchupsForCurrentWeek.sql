@@ -6,7 +6,7 @@ WITH current_week AS (
   FROM public."Season" s
   JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
   JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
-  WHERE sw."StartDate" <= NOW() AND sw."EndDate" > NOW()
+  WHERE sw."StartDate" <= @NowUtc AND sw."EndDate" > @NowUtc
   ORDER BY sw."StartDate"
   LIMIT 1
 )

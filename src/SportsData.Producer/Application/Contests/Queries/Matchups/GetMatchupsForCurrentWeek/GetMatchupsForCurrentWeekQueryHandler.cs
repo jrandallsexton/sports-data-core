@@ -25,13 +25,16 @@ public class GetMatchupsForCurrentWeekQueryHandler : IGetMatchupsForCurrentWeekQ
 {
     private readonly TeamSportDataContext _dbContext;
     private readonly ProducerSqlQueryProvider _sqlProvider;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetMatchupsForCurrentWeekQueryHandler(
         TeamSportDataContext dbContext,
-        ProducerSqlQueryProvider sqlProvider)
+        ProducerSqlQueryProvider sqlProvider,
+        IDateTimeProvider dateTimeProvider)
     {
         _dbContext = dbContext;
         _sqlProvider = sqlProvider;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<List<Matchup>>> ExecuteAsync(
@@ -42,7 +45,7 @@ public class GetMatchupsForCurrentWeekQueryHandler : IGetMatchupsForCurrentWeekQ
 
         var connection = _dbContext.Database.GetDbConnection();
         var result = await connection.QueryAsync<Matchup>(
-            new CommandDefinition(sql, cancellationToken: cancellationToken));
+            new CommandDefinition(sql, new { NowUtc = _dateTimeProvider.UtcNow() }, cancellationToken: cancellationToken));
 
         return new Success<List<Matchup>>(result.ToList());
     }

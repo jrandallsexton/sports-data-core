@@ -21,7 +21,6 @@ SELECT
   c."OverUnder" as "OverUnderResult",
   c."EndDateUtc" as "CompletedUtc"
 FROM public."Contest" c
-INNER JOIN public."Venue" v on v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp on comp."ContestId" = c."Id"
 LEFT JOIN LATERAL (
   SELECT *
@@ -33,14 +32,12 @@ LEFT JOIN LATERAL (
 ) co ON TRUE
 INNER JOIN public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
-INNER JOIN public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
 LEFT JOIN public."FranchiseSeasonRanking" fsrAway on fsrAway."FranchiseSeasonId" = fsAway."Id" and
         fsrAway."DefaultRanking" = true and fsrAway."Type" in ('ap', 'cfp') and
         fsrAway."SeasonWeekId" = c."SeasonWeekId"
 LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
 INNER JOIN public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
-INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
 LEFT JOIN public."FranchiseSeasonRanking" fsrHome on fsrHome."FranchiseSeasonId" = fsHome."Id" and
         fsrHome."DefaultRanking" = true and fsrHome."Type" in ('ap', 'cfp') and
         fsrHome."SeasonWeekId" = c."SeasonWeekId"

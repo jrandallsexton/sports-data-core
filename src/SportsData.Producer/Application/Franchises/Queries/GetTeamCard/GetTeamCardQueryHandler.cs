@@ -25,13 +25,16 @@ public class GetTeamCardQueryHandler : IGetTeamCardQueryHandler
 {
     private readonly TeamSportDataContext _dbContext;
     private readonly ProducerSqlQueryProvider _sqlProvider;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetTeamCardQueryHandler(
         TeamSportDataContext dbContext,
-        ProducerSqlQueryProvider sqlProvider)
+        ProducerSqlQueryProvider sqlProvider,
+        IDateTimeProvider dateTimeProvider)
     {
         _dbContext = dbContext;
         _sqlProvider = sqlProvider;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<TeamCardDto>> ExecuteAsync(
@@ -39,7 +42,7 @@ public class GetTeamCardQueryHandler : IGetTeamCardQueryHandler
         CancellationToken cancellationToken = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
-        var parameters = new { query.Slug, query.SeasonYear };
+        var parameters = new { query.Slug, query.SeasonYear, NowUtc = _dateTimeProvider.UtcNow() };
 
         var teamCard = await connection.QueryFirstOrDefaultAsync<TeamCardDto>(
             new CommandDefinition(_sqlProvider.GetTeamCard(), parameters, cancellationToken: cancellationToken));

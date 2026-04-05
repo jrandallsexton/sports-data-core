@@ -1,14 +1,13 @@
-WITH next_week AS (
+WITH latest_week AS (
   SELECT sw."Id" AS "SeasonWeekId",
          sw."Number" AS "WeekNumber",
          s."Id" AS "SeasonId",
          s."Year" AS "SeasonYear"
   FROM public."Season" s
   JOIN public."SeasonWeek" sw ON sw."SeasonId" = s."Id"
-  JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
-  WHERE sp."Name" = 'Regular Season'
-    AND sw."StartDate" <= CURRENT_DATE and sw."EndDate" > CURRENT_DATE
-  ORDER BY sw."StartDate"
+  WHERE s."Year" = @SeasonYear
+    AND sw."EndDate" <= @NowUtc
+  ORDER BY sw."EndDate" DESC
   LIMIT 1
 )
 SELECT DISTINCT ON (F."Id")
@@ -34,7 +33,7 @@ FROM
     INNER JOIN PUBLIC."FranchiseSeason" FS on FS."FranchiseId" = F."Id"
     LEFT JOIN public."FranchiseSeasonRanking" fsr on fsr."FranchiseSeasonId" = FS."Id" and
         fsr."DefaultRanking" = true and fsr."Type" in ('ap', 'cfp') and
-        fsr."SeasonWeekId" = (select "SeasonWeekId" from next_week)
+        fsr."SeasonWeekId" = (select "SeasonWeekId" from latest_week)
     LEFT JOIN public."FranchiseSeasonRankingDetail" fsrd on fsrd."FranchiseSeasonRankingId" = fsr."Id"
     INNER JOIN PUBLIC."GroupSeason" GS ON GS."Id" = FS."GroupSeasonId"
     LEFT JOIN PUBLIC."FranchiseLogo" FL ON FL."FranchiseId" = F."Id"

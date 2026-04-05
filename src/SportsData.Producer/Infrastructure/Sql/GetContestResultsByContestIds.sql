@@ -21,7 +21,7 @@ SELECT
   c."OverUnder" AS "OverUnderResult",
   c."EndDateUtc" AS "CompletedUtc"
 FROM public."Contest" c
-INNER JOIN public."Venue" v ON v."Id" = c."VenueId"
+LEFT JOIN public."Venue" v ON v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
 LEFT JOIN LATERAL (
   SELECT * FROM public."CompetitionOdds"

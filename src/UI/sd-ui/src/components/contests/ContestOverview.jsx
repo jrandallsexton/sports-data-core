@@ -14,7 +14,7 @@ import ContestOverviewInfo from "./ContestOverviewInfo";
 import ContestOverviewMetrics from "./ContestOverviewMetrics";
 
 export default function ContestOverview() {
-  const { contestId } = useParams();
+  const { sport, league, contestId } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,7 +27,7 @@ export default function ContestOverview() {
 
   useEffect(() => {
     setLoading(true);
-    apiWrapper.Contest.getContestOverview(contestId)
+    apiWrapper.Contest.getContestOverview(contestId, sport, league)
       .then((result) => {
         setData(result);
         setLoading(false);
@@ -36,7 +36,7 @@ export default function ContestOverview() {
         setError(err);
         setLoading(false);
       });
-  }, [contestId]);
+  }, [contestId, sport, league]);
 
   if (loading) return <div>Loading contest overview...</div>;
   if (error) return <div>Error loading contest overview.</div>;
@@ -52,7 +52,7 @@ export default function ContestOverview() {
     setRefreshing(true);
     setRefreshError(null);
     try {
-      await apiWrapper.Contest.refresh(contestId);
+      await apiWrapper.Contest.refresh(contestId, sport, league);
       toast.success("Contest refresh request submitted.");
     } catch (err) {
       setRefreshError("Failed to refresh contest.");
@@ -65,7 +65,7 @@ export default function ContestOverview() {
     setRefreshingMedia(true);
     setRefreshMediaError(null);
     try {
-      await apiWrapper.Contest.refreshMedia(contestId);
+      await apiWrapper.Contest.refreshMedia(contestId, sport, league);
       toast.success("Media refresh request submitted.");
     } catch (err) {
       setRefreshMediaError("Failed to refresh media.");

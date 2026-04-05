@@ -1,4 +1,3 @@
-using SportsData.Producer.Application.Contests.Queries.Matchups;
 using Dapper;
 
 using FluentValidation.Results;
@@ -8,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Sql;
 
 using System;
 using System.Threading;
@@ -25,40 +25,21 @@ public interface IGetMatchupResultQueryHandler
 public class GetMatchupResultQueryHandler : IGetMatchupResultQueryHandler
 {
     private readonly TeamSportDataContext _dbContext;
+    private readonly ProducerSqlQueryProvider _sqlProvider;
 
-    public GetMatchupResultQueryHandler(TeamSportDataContext dbContext)
+    public GetMatchupResultQueryHandler(
+        TeamSportDataContext dbContext,
+        ProducerSqlQueryProvider sqlProvider)
     {
         _dbContext = dbContext;
+        _sqlProvider = sqlProvider;
     }
 
     public async Task<Result<MatchupResult>> ExecuteAsync(
         GetMatchupResultQuery query,
         CancellationToken cancellationToken = default)
     {
-        string sql = """
-            SELECT
-              c."Id" AS "ContestId",
-              c."AwayTeamFranchiseSeasonId" AS "AwayFranchiseSeasonId",
-              c."HomeTeamFranchiseSeasonId" AS "HomeFranchiseSeasonId",
-              c."SeasonWeekId",
-              coo."Spread" AS "Spread",
-              c."AwayScore",
-              c."HomeScore",
-              c."WinnerFranchiseId" AS "WinnerFranchiseSeasonId",
-              c."SpreadWinnerFranchiseId" AS "SpreadWinnerFranchiseSeasonId",
-              c."FinalizedUtc"
-            FROM public."Contest" c
-            INNER JOIN public."Competition" co ON co."ContestId" = c."Id"
-            LEFT JOIN LATERAL (
-              SELECT *
-              FROM public."CompetitionOdds"
-              WHERE "CompetitionId" = co."Id"
-                AND "ProviderId" IN ('{MatchupSqlBuilder.PreferredOddsProviderId}', '{MatchupSqlBuilder.FallbackOddsProviderId}')
-              ORDER BY CASE WHEN "ProviderId" = '{MatchupSqlBuilder.PreferredOddsProviderId}' THEN 1 ELSE 2 END
-              LIMIT 1
-            ) coo ON TRUE
-            WHERE c."Id" = @ContestId
-            """;
+        var sql = _sqlProvider.GetMatchupResultByContestId();
 
         var connection = _dbContext.Database.GetDbConnection();
         var result = await connection.QueryFirstOrDefaultAsync<MatchupResult>(

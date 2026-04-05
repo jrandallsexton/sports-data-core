@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Sql;
 
 using System;
 using System.Collections.Generic;
@@ -21,27 +22,26 @@ public interface IGetConferenceIdsBySlugsQueryHandler
 public class GetConferenceIdsBySlugsQueryHandler : IGetConferenceIdsBySlugsQueryHandler
 {
     private readonly TeamSportDataContext _dbContext;
+    private readonly ProducerSqlQueryProvider _sqlProvider;
 
-    public GetConferenceIdsBySlugsQueryHandler(TeamSportDataContext dbContext)
+    public GetConferenceIdsBySlugsQueryHandler(
+        TeamSportDataContext dbContext,
+        ProducerSqlQueryProvider sqlProvider)
     {
         _dbContext = dbContext;
+        _sqlProvider = sqlProvider;
     }
-
-    private const string Sql = """
-        SELECT "Id", "Slug"
-        FROM public."GroupSeason"
-        WHERE "Slug" = ANY(@Slugs) AND "SeasonYear" = @SeasonYear
-        """;
 
     public async Task<Result<Dictionary<Guid, string>>> ExecuteAsync(
         GetConferenceIdsBySlugsQuery query,
         CancellationToken cancellationToken = default)
     {
+        var sql = _sqlProvider.GetConferenceIdsBySlugs();
         var connection = _dbContext.Database.GetDbConnection();
 
         var results = await connection.QueryAsync<(Guid Id, string Slug)>(
             new CommandDefinition(
-                Sql,
+                sql,
                 new { Slugs = query.Slugs.ToArray(), query.SeasonYear },
                 cancellationToken: cancellationToken));
 

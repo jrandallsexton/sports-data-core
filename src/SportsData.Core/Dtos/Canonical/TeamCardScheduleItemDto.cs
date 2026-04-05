@@ -28,5 +28,5 @@ public record TeamCardScheduleItemDto
 
     public int? HomeScore { get; init; }
 
-    public bool WasWinner { get; init; }
+    public bool? WasWinner { get; init; }
 }

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Sql;
 
 using System;
 using System.Collections.Generic;
@@ -23,22 +24,21 @@ public interface IGetFinalizedContestIdsQueryHandler
 public class GetFinalizedContestIdsQueryHandler : IGetFinalizedContestIdsQueryHandler
 {
     private readonly TeamSportDataContext _dbContext;
+    private readonly ProducerSqlQueryProvider _sqlProvider;
 
-    public GetFinalizedContestIdsQueryHandler(TeamSportDataContext dbContext)
+    public GetFinalizedContestIdsQueryHandler(
+        TeamSportDataContext dbContext,
+        ProducerSqlQueryProvider sqlProvider)
     {
         _dbContext = dbContext;
+        _sqlProvider = sqlProvider;
     }
 
     public async Task<Result<List<Guid>>> ExecuteAsync(
         GetFinalizedContestIdsQuery query,
         CancellationToken cancellationToken = default)
     {
-        const string sql = """
-            SELECT "Id"
-            FROM public."Contest"
-            WHERE "FinalizedUtc" IS NOT NULL
-              AND "SeasonWeekId" = @SeasonWeekId;
-            """;
+        var sql = _sqlProvider.GetFinalizedContestIds();
 
         var connection = _dbContext.Database.GetDbConnection();
         var result = await connection.QueryAsync<Guid>(

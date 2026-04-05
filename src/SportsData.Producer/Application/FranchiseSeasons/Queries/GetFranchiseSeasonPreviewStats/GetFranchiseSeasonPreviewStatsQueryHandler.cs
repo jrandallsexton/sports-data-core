@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Sql;
 
 using System;
 
@@ -24,37 +25,28 @@ public class GetFranchiseSeasonPreviewStatsQueryHandler : IGetFranchiseSeasonPre
 {
     private readonly TeamSportDataContext _dbContext;
     private readonly ILogger<GetFranchiseSeasonPreviewStatsQueryHandler> _logger;
+    private readonly ProducerSqlQueryProvider _sqlProvider;
 
     public GetFranchiseSeasonPreviewStatsQueryHandler(
         TeamSportDataContext dbContext,
-        ILogger<GetFranchiseSeasonPreviewStatsQueryHandler> logger)
+        ILogger<GetFranchiseSeasonPreviewStatsQueryHandler> logger,
+        ProducerSqlQueryProvider sqlProvider)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _sqlProvider = sqlProvider;
     }
-
-    private const string Sql = """
-        SELECT fssc."Name" AS "Category",
-            fss."Name" AS "Statistic",
-            fss."DisplayValue",
-            fss."PerGameValue",
-            fss."PerGameDisplayValue",
-            fss."Rank"
-        FROM public."FranchiseSeasonStatisticCategory" fssc
-        INNER JOIN public."FranchiseSeasonStatistic" fss ON fss."FranchiseSeasonStatisticCategoryId" = fssc."Id"
-        WHERE fssc."FranchiseSeasonId" = @FranchiseSeasonId
-        ORDER BY "Category", "Statistic"
-        """;
 
     public async Task<Result<FranchiseSeasonModelStatsDto>> ExecuteAsync(
         GetFranchiseSeasonPreviewStatsQuery query,
         CancellationToken cancellationToken = default)
     {
+        var sql = _sqlProvider.GetFranchiseSeasonPreviewStats();
         var connection = _dbContext.Database.GetDbConnection();
 
         var rawStats = (await connection.QueryAsync<FranchiseSeasonRawStat>(
             new CommandDefinition(
-                Sql,
+                sql,
                 new { query.FranchiseSeasonId },
                 cancellationToken: cancellationToken))).ToList();
 

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Sql;
 
 namespace SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonStatistics;
 
@@ -20,35 +21,26 @@ public interface IGetFranchiseSeasonStatisticsQueryHandler
 public class GetFranchiseSeasonStatisticsQueryHandler : IGetFranchiseSeasonStatisticsQueryHandler
 {
     private readonly TeamSportDataContext _dbContext;
+    private readonly ProducerSqlQueryProvider _sqlProvider;
 
-    public GetFranchiseSeasonStatisticsQueryHandler(TeamSportDataContext dbContext)
+    public GetFranchiseSeasonStatisticsQueryHandler(
+        TeamSportDataContext dbContext,
+        ProducerSqlQueryProvider sqlProvider)
     {
         _dbContext = dbContext;
+        _sqlProvider = sqlProvider;
     }
-
-    private const string Sql = """
-        SELECT fssc."Name" AS "Category",
-            fss."Name" AS "StatisticKey",
-            fss."Name" AS "StatisticValue",
-            fss."DisplayValue",
-            fss."PerGameValue",
-            fss."PerGameDisplayValue",
-            fss."Rank"
-        FROM public."FranchiseSeasonStatisticCategory" fssc
-        INNER JOIN public."FranchiseSeasonStatistic" fss ON fss."FranchiseSeasonStatisticCategoryId" = fssc."Id"
-        WHERE fssc."FranchiseSeasonId" = @FranchiseSeasonId
-        ORDER BY "Category", "StatisticKey"
-        """;
 
     public async Task<Result<FranchiseSeasonStatisticDto>> ExecuteAsync(
         GetFranchiseSeasonStatisticsQuery query,
         CancellationToken cancellationToken = default)
     {
+        var sql = _sqlProvider.GetFranchiseSeasonStatistics();
         var connection = _dbContext.Database.GetDbConnection();
 
         var entries = (await connection.QueryAsync<FranchiseSeasonStatisticDto.FranchiseSeasonStatisticEntry>(
             new CommandDefinition(
-                Sql,
+                sql,
                 new { query.FranchiseSeasonId },
                 cancellationToken: cancellationToken))).ToList();
 

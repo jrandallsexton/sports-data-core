@@ -6,6 +6,7 @@ import TeamSchedule from "./TeamSchedule";
 //import TeamScheduleMUI from "./TeamScheduleMUI";
 import TeamNews from "./TeamNews";
 import TeamStatistics from "./TeamStatistics";
+import TeamRoster from "./TeamRoster";
 
 function TeamCard() {
   const { sport = 'football', league = 'ncaa', slug, seasonYear } = useParams();
@@ -71,7 +72,7 @@ function TeamCard() {
         <div>
           <h2 className="team-name">{team.name}</h2>
           <p className="team-conference">
-            {team.conferenceName} ({team.conferenceShortName})
+            {team.conferenceName}{team.conferenceShortName ? ` (${team.conferenceShortName})` : ''}
           </p>
           <p className="team-record">
             {team.overallRecord} ({team.conferenceRecord})
@@ -120,6 +121,12 @@ function TeamCard() {
           Schedule
         </button>
         <button
+          className={selectedTab === "roster" ? "active" : ""}
+          onClick={() => setSelectedTab("roster")}
+        >
+          Roster
+        </button>
+        <button
           className={selectedTab === "statistics" ? "active" : ""}
           onClick={() => setSelectedTab("statistics")}
         >
@@ -130,6 +137,9 @@ function TeamCard() {
       <div className="team-card-content">
         {selectedTab === "schedule" && (
           <TeamSchedule schedule={team.schedule} seasonYear={resolvedSeason} sport={sport} league={league} />
+        )}
+        {selectedTab === "roster" && (
+          <TeamRoster slug={slug} seasonYear={resolvedSeason} sport={sport} league={league} />
         )}
         {selectedTab === "statistics" && (
           statsLoading ? (

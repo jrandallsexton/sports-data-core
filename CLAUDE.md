@@ -37,7 +37,7 @@ Before reporting any task as complete:
 - **`IDateTimeProvider`**: Never use `DateTime.UtcNow` directly in production code or tests. Inject `IDateTimeProvider` (registered in `ServiceRegistration.cs`) and call `.UtcNow()`. This enables deterministic unit tests via mock. See `SportsData.Core.Common.DateTimeProvider`.
 - **`.AsNoTracking()`**: Required for all EF read queries. Project to DTOs in the query, don't return entities.
 - **`[FromServices]`**: All handler injection in controllers uses `[FromServices]`.
-- **Route conventions**: API uses slug-based routes (`/api/{sport}/{league}/{resource}/{slug}`), Producer uses GUID-based routes (`/api/{resource}/{id}`).
+- **Route conventions**: API uses slug-based routes (`/api/{sport}/{league}/{resource}/{slug}`). Producer uses GUID-based routes for write/command endpoints (`/api/{resource}/{id}`) and slug-based routes for read/query endpoints that serve the UI stack (e.g., `/api/franchises/{slug}/seasons/{year}/roster`).
 
 ## Service Communication
 - **API never hits Producer's database directly**. API calls Producer over HTTP via typed clients (SeasonClient, FranchiseClient, etc.).

@@ -32,6 +32,7 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugs(int seasonYear, CancellationToken cancellationToken = default);
     Task<Dictionary<Guid, string>> GetConferenceIdsBySlugs(int seasonYear, List<string> slugs, CancellationToken cancellationToken = default);
     Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken cancellationToken = default);
+    Task<Result<TeamRosterDto>> GetTeamRoster(string slug, int seasonYear, CancellationToken cancellationToken = default);
 }
 
 public class FranchiseClient : ClientBase, IProvideFranchises
@@ -199,6 +200,15 @@ public class FranchiseClient : ClientBase, IProvideFranchises
                 Week = weekNumber
             },
             cancellationToken);
+    }
+
+    public async Task<Result<TeamRosterDto>> GetTeamRoster(string slug, int seasonYear, CancellationToken cancellationToken = default)
+    {
+        var result = await GetOrDefaultAsync(
+            $"franchises/{slug}/seasons/{seasonYear}/roster",
+            new TeamRosterDto(),
+            cancellationToken);
+        return new Success<TeamRosterDto>(result);
     }
 }
 

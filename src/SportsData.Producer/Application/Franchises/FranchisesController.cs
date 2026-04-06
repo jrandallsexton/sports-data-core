@@ -7,6 +7,7 @@ using SportsData.Producer.Application.Franchises.Queries.GetFranchiseById;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseSeasons;
 using SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 using SportsData.Producer.Application.Franchises.Queries.GetTeamCard;
+using SportsData.Producer.Application.Franchises.Queries.GetTeamRoster;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
 
 namespace SportsData.Producer.Application.Franchises;
@@ -80,6 +81,17 @@ public class FranchisesController : ControllerBase
         var query = new Queries.GetTeamCard.GetTeamCardQuery(slug, seasonYear);
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
+        return result.ToActionResult();
+    }
+
+    [HttpGet("{slug}/seasons/{seasonYear}/roster")]
+    public async Task<ActionResult<TeamRosterDto>> GetTeamRoster(
+        [FromRoute] string slug,
+        [FromRoute] int seasonYear,
+        [FromServices] IGetTeamRosterQueryHandler handler,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await handler.ExecuteAsync(new GetTeamRosterQuery(slug, seasonYear), cancellationToken);
         return result.ToActionResult();
     }
 

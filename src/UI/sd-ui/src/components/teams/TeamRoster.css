@@ -1,0 +1,53 @@
+.team-roster {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.roster-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.roster-table thead th {
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-bottom: 2px solid var(--accent-color, #6c63ff);
+  color: #adb5bd;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.roster-table tbody tr {
+  border-bottom: 1px solid #2a2d33;
+  transition: background-color 0.15s;
+}
+
+.roster-table tbody tr:hover {
+  background-color: rgba(108, 99, 255, 0.08);
+}
+
+.roster-table tbody td {
+  padding: 0.5rem 0.8rem;
+  color: #f8f9fa;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background-color: rgba(40, 167, 69, 0.2);
+  color: #51cf66;
+}
+
+.status-badge.inactive {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: #ff6b6b;
+}

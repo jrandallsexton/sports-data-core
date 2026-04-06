@@ -24,6 +24,8 @@ function TeamRoster({ slug, seasonYear, sport, league }) {
 
     if (slug && seasonYear) {
       fetchRoster();
+    } else {
+      setLoading(false);
     }
   }, [sport, league, slug, seasonYear]);
 

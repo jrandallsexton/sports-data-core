@@ -20,6 +20,10 @@ const TeamCardApi = {
         params: { franchiseSeasonId },
       }
     ),
+  getRoster: (sport, league, slug, seasonYear) =>
+    apiClient.get(
+      `/api/${sport}/${league}/franchises/${slug}/seasons/${seasonYear}/roster`
+    ),
 };
 
 export default TeamCardApi;

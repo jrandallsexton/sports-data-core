@@ -7,7 +7,10 @@ using SportsData.Api.Application.Franchises.Seasons.Contests;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasons;
 using SportsData.Core.Common;
+using SportsData.Core.Common.Mapping;
+using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.Franchises;
 
@@ -74,6 +77,21 @@ public class FranchisesController : ApiControllerBase
         var query = new GetFranchiseSeasonByIdQuery(sport, league, franchiseIdOrSlug, seasonYear);
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
+        return result.ToActionResult();
+    }
+
+    [HttpGet("{franchiseIdOrSlug}/seasons/{seasonYear}/roster")]
+    public async Task<ActionResult<TeamRosterDto>> GetTeamRoster(
+        [FromRoute] string sport,
+        [FromRoute] string league,
+        [FromRoute] string franchiseIdOrSlug,
+        [FromRoute] int seasonYear,
+        [FromServices] IFranchiseClientFactory franchiseClientFactory,
+        CancellationToken cancellationToken = default)
+    {
+        var mode = ModeMapper.ResolveMode(sport, league);
+        var client = franchiseClientFactory.Resolve(mode);
+        var result = await client.GetTeamRoster(franchiseIdOrSlug, seasonYear, cancellationToken);
         return result.ToActionResult();
     }
 

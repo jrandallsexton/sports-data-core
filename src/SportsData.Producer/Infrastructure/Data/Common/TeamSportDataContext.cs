@@ -13,6 +13,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<AthletePosition> AthletePositions { get; set; }
         public DbSet<AthletePositionExternalId> AthletePositionExternalIds { get; set; }
 
+        public DbSet<Draft> Drafts { get; set; }
+        public DbSet<DraftRound> DraftRounds { get; set; }
+        public DbSet<DraftPick> DraftPicks { get; set; }
+
         public DbSet<AthleteSeason> AthleteSeasons { get; set; }
         public DbSet<AthleteSeasonExternalId> AthleteSeasonExternalIds { get; set; }
 
@@ -231,6 +235,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
             modelBuilder.ApplyConfiguration(new CompetitionDrive.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionDriveExternalId.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new Draft.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new DraftRound.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new DraftPick.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new Franchise.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseExternalId.EntityConfiguration());

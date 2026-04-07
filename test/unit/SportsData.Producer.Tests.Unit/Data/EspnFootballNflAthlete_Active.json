@@ -1,0 +1,178 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/3915511?lang=en&region=us",
+  "id": "3915511",
+  "uid": "s:20~l:28~a:3915511",
+  "guid": "e6957db5-5b2e-a82d-c788-d889115d9772",
+  "type": "football",
+  "alternateIds": {
+    "sdr": "3915511"
+  },
+  "firstName": "Joe",
+  "lastName": "Burrow",
+  "fullName": "Joe Burrow",
+  "displayName": "Joe Burrow",
+  "shortName": "J. Burrow",
+  "weight": 215.0,
+  "displayWeight": "215 lbs",
+  "height": 76.0,
+  "displayHeight": "6' 4\"",
+  "age": 29,
+  "dateOfBirth": "1996-12-10T08:00Z",
+  "debutYear": 2020,
+  "links": [
+    {
+      "language": "en-US",
+      "rel": [
+        "playercard",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/nfl/player/_/id/3915511/joe-burrow",
+      "text": "Player Card",
+      "shortText": "Player Card",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "stats",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/nfl/player/stats/_/id/3915511/joe-burrow",
+      "text": "Stats",
+      "shortText": "Stats",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "splits",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/nfl/player/splits/_/id/3915511/joe-burrow",
+      "text": "Splits",
+      "shortText": "Splits",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "gamelog",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/nfl/player/gamelog/_/id/3915511/joe-burrow",
+      "text": "Game Log",
+      "shortText": "Game Log",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "news",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/nfl/player/news/_/id/3915511/joe-burrow",
+      "text": "News",
+      "shortText": "News",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "bio",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/nfl/player/bio/_/id/3915511/joe-burrow",
+      "text": "Bio",
+      "shortText": "Bio",
+      "isExternal": false,
+      "isPremium": false
+    },
+    {
+      "language": "en-US",
+      "rel": [
+        "overview",
+        "desktop",
+        "athlete"
+      ],
+      "href": "https://www.espn.com/nfl/player/_/id/3915511/joe-burrow",
+      "text": "Overview",
+      "shortText": "Overview",
+      "isExternal": false,
+      "isPremium": false
+    }
+  ],
+  "birthPlace": {
+    "city": "Athens",
+    "state": "OH",
+    "country": "USA"
+  },
+  "college": {
+    "$ref": "http://sports.core.api.espn.com/v2/colleges/99?lang=en&region=us"
+  },
+  "slug": "joe-burrow",
+  "headshot": {
+    "href": "https://a.espncdn.com/i/headshots/nfl/players/full/3915511.png",
+    "alt": "Joe Burrow"
+  },
+  "jersey": "9",
+  "position": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/8?lang=en&region=us",
+    "id": "8",
+    "name": "Quarterback",
+    "displayName": "Quarterback",
+    "abbreviation": "QB",
+    "leaf": true,
+    "parent": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/positions/70?lang=en&region=us"
+    }
+  },
+  "linked": true,
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/4?lang=en&region=us"
+  },
+  "statistics": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/3915511/statistics?lang=en&region=us"
+  },
+  "contracts": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/3915511/contracts?lang=en&region=us"
+  },
+  "experience": {
+    "years": 6
+  },
+  "collegeAthlete": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/3915511?lang=en&region=us"
+  },
+  "active": true,
+  "draft": {
+    "displayText": "Year: 2020 Round: 1 Pick: 1",
+    "round": 1,
+    "year": 2020,
+    "selection": 1,
+    "team": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2020/teams/4?lang=en&region=us"
+    },
+    "pick": {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2020/draft/rounds/1/picks/1?lang=en&region=us"
+    }
+  },
+  "status": {
+    "id": "1",
+    "name": "Active",
+    "type": "active",
+    "abbreviation": "Active"
+  },
+  "statisticslog": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/3915511/statisticslog?lang=en&region=us"
+  }
+}

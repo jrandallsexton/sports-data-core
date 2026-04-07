@@ -41,6 +41,18 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public int ExperienceYears { get; set; } = -1;
 
+        public int? DebutYear { get; set; }
+
+        public string? DraftDisplayText { get; set; }
+        public int? DraftRound { get; set; }
+        public int? DraftYear { get; set; }
+        public int? DraftSelection { get; set; }
+        public string? DraftTeamRef { get; set; }
+
+        public string? CollegeAthleteRef { get; set; }
+
+        public string? Jersey { get; set; }
+
         public bool IsActive { get; set; }
 
         public Guid? StatusId { get; set; }
@@ -98,6 +110,11 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
                 builder.Property(x => x.Slug)
                     .HasMaxLength(64);
+
+                builder.Property(x => x.DraftDisplayText).HasMaxLength(100);
+                builder.Property(x => x.DraftTeamRef).HasMaxLength(250);
+                builder.Property(x => x.CollegeAthleteRef).HasMaxLength(250);
+                builder.Property(x => x.Jersey).HasMaxLength(10);
 
                 builder.HasOne(a => a.BirthLocation)
                     .WithMany()

@@ -96,6 +96,16 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
                 CausationId.Producer.AthleteDocumentProcessor));
         }
 
+        // Spawn career statistics for NFL athletes
+        if (dto.CareerStatistics?.Ref is not null)
+        {
+            await PublishChildDocumentRequest(
+                command,
+                dto.CareerStatistics,
+                entity.Id.ToString(),
+                DocumentType.AthleteCareerStatistics);
+        }
+
         await _publishEndpoint.Publish(new AthleteCreated(
             entity.ToCanonicalModel(),
             null,
@@ -250,6 +260,40 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
         Athlete entity,
         EspnFootballAthleteDto dto)
     {
+        // Update fields that may have changed
+        _dataContext.Set<Athlete>().Attach(entity);
+
+        entity.Age = dto.Age;
+        entity.IsActive = dto.Active;
+        entity.FirstName = dto.FirstName ?? string.Empty;
+        entity.LastName = dto.LastName ?? string.Empty;
+        entity.DisplayName = dto.DisplayName ?? string.Empty;
+        entity.ShortName = dto.ShortName ?? string.Empty;
+        entity.Slug = dto.Slug ?? string.Empty;
+        entity.HeightIn = dto.Height;
+        entity.HeightDisplay = dto.DisplayHeight ?? string.Empty;
+        entity.WeightLb = dto.Weight;
+        entity.WeightDisplay = dto.DisplayWeight ?? string.Empty;
+        entity.DoB = !string.IsNullOrWhiteSpace(dto.DateOfBirth)
+            ? DateTime.Parse(dto.DateOfBirth).ToUniversalTime()
+            : null;
+        entity.ExperienceYears = dto.Experience?.Years ?? 0;
+        entity.ExperienceAbbreviation = dto.Experience?.Abbreviation;
+        entity.ExperienceDisplayValue = dto.Experience?.DisplayValue;
+
+        entity.DebutYear = dto.DebutYear;
+        entity.CollegeAthleteRef = dto.CollegeAthlete?.Ref?.ToString();
+        entity.Jersey = dto.Jersey;
+
+        if (dto.Draft is not null)
+        {
+            entity.DraftDisplayText = dto.Draft.Display;
+            entity.DraftRound = dto.Draft.Round;
+            entity.DraftYear = dto.Draft.Year;
+            entity.DraftSelection = dto.Draft.Selection;
+            entity.DraftTeamRef = dto.Draft.Team?.Ref?.ToString();
+        }
+
         if (ShouldSpawn(DocumentType.AthleteImage, command))
         {
             if (dto.Headshot?.Href is not null)
@@ -270,6 +314,18 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
                     null,
                     command.CorrelationId,
                     CausationId.Producer.AthleteDocumentProcessor));
+            }
+        }
+
+        if (ShouldSpawn(DocumentType.AthleteCareerStatistics, command))
+        {
+            if (dto.CareerStatistics?.Ref is not null)
+            {
+                await PublishChildDocumentRequest(
+                    command,
+                    dto.CareerStatistics,
+                    entity.Id.ToString(),
+                    DocumentType.AthleteCareerStatistics);
             }
         }
     }

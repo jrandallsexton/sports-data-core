@@ -82,8 +82,9 @@ public class DraftDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 draftYear, draftId);
         }
 
-        // Spawn child document request for the rounds endpoint
-        if (ShouldSpawn(DocumentType.DraftRounds, command))
+        // For new drafts, always spawn the rounds child document.
+        // For existing drafts, only spawn if ShouldSpawn is true.
+        if (existing is null || ShouldSpawn(DocumentType.DraftRounds, command))
         {
             await PublishChildDocumentRequest(command, dto.Rounds, draftId, DocumentType.DraftRounds);
         }

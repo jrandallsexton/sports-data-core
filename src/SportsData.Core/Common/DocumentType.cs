@@ -69,6 +69,8 @@
         EventCompetitionCompetitorRecord = 64,
         AthleteSeasonNote = 65,
         CoachSeasonRecord = 66,
+        Draft = 69,
+        DraftRounds = 70,
         OutboxTest = 99, // Test document type for validating outbox pattern with BaseDataContext
         OutboxTestTeamSport = 98, // Test document type for validating outbox pattern with TeamSportDataContext
         Unknown = 9999

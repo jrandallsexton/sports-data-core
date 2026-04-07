@@ -648,6 +648,24 @@ public static class EspnUriMapper
         return new Uri(trimmed, UriKind.Absolute);
     }
 
+    /// <summary>
+    /// Maps an athlete career statistics ref to the athlete ref.
+    /// Example: .../athletes/{athleteId}/statistics -> .../athletes/{athleteId}
+    /// </summary>
+    public static Uri AthleteCareerStatisticsRefToAthleteRef(Uri statisticsRef)
+    {
+        if (statisticsRef == null) throw new ArgumentNullException(nameof(statisticsRef));
+
+        var path = statisticsRef.GetLeftPart(UriPartial.Path);
+
+        // Trim "/statistics" from the end
+        var trimmed = path;
+        if (trimmed.EndsWith("/statistics", StringComparison.OrdinalIgnoreCase))
+            trimmed = trimmed[..^"/statistics".Length];
+
+        return new Uri(trimmed, UriKind.Absolute);
+    }
+
     public static Uri AthleteSeasonStatisticsRefToAthleteSeasonRef(Uri statisticsRef)
     {
         if (statisticsRef == null) throw new ArgumentNullException(nameof(statisticsRef));

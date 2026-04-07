@@ -2,6 +2,7 @@
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
@@ -30,6 +31,19 @@ public static class AthleteExtensions
 
         dto.MapAthleteProperties(entity, identity);
 
+        if (dto is EspnFootballAthleteDto footballDto)
+        {
+            entity.Jersey = footballDto.Jersey;
+            if (footballDto.Draft is not null)
+            {
+                entity.DraftDisplayText = footballDto.Draft.Display;
+                entity.DraftRound = footballDto.Draft.Round;
+                entity.DraftYear = footballDto.Draft.Year;
+                entity.DraftSelection = footballDto.Draft.Selection;
+                entity.DraftTeamRef = footballDto.Draft.Team?.Ref?.ToString();
+            }
+        }
+
         return entity;
     }
 
@@ -53,13 +67,16 @@ public static class AthleteExtensions
         entity.WeightLb = dto.Weight;
         entity.WeightDisplay = dto.DisplayWeight ?? string.Empty;
 
-        entity.DoB = !string.IsNullOrWhiteSpace(dto.DateOfBirth)
-            ? DateTime.Parse(dto.DateOfBirth).ToUniversalTime()
+        entity.DoB = !string.IsNullOrWhiteSpace(dto.DateOfBirth) && DateTime.TryParse(dto.DateOfBirth, out var dob)
+            ? dob.ToUniversalTime()
             : null;
 
         entity.ExperienceYears = dto.Experience?.Years ?? 0;
         entity.ExperienceAbbreviation = dto.Experience?.Abbreviation;
         entity.ExperienceDisplayValue = dto.Experience?.DisplayValue;
+
+        entity.DebutYear = dto.DebutYear;
+        entity.CollegeAthleteRef = dto.CollegeAthlete?.Ref?.ToString();
 
         entity.ExternalIds =
         [
@@ -104,13 +121,16 @@ public static class AthleteExtensions
             WeightLb = dto.Weight,
             WeightDisplay = dto.DisplayWeight ?? string.Empty,
 
-            DoB = !string.IsNullOrWhiteSpace(dto.DateOfBirth)
-                ? DateTime.Parse(dto.DateOfBirth).ToUniversalTime()
+            DoB = !string.IsNullOrWhiteSpace(dto.DateOfBirth) && DateTime.TryParse(dto.DateOfBirth, out var dob2)
+                ? dob2.ToUniversalTime()
                 : null,
 
             ExperienceYears = dto.Experience?.Years ?? 0,
             ExperienceAbbreviation = dto.Experience?.Abbreviation,
             ExperienceDisplayValue = dto.Experience?.DisplayValue,
+
+            DebutYear = dto.DebutYear,
+            CollegeAthleteRef = dto.CollegeAthlete?.Ref?.ToString(),
 
             ExternalIds =
             [

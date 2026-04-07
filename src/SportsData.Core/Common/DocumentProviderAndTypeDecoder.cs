@@ -85,6 +85,8 @@ namespace SportsData.Core.Common
                     return (typeof(EspnAthletePositionDto), name);
                 case DocumentType.AthleteSeason:
                     return (typeof(EspnAthleteDto), name);
+                case DocumentType.AthleteCareerStatistics:
+                    return (typeof(EspnAthleteCareerStatisticsDto), name);
                 case DocumentType.Seasons:
                     return (typeof(EspnFootballSeasonDto), name);
                 case DocumentType.SeasonType:
@@ -154,6 +156,7 @@ namespace SportsData.Core.Common
                 case DocumentType.TeamSeasonNote:
                 case DocumentType.Weeks:
                 case DocumentType.Position:
+                case DocumentType.AthleteCareerStatistics:
                 default:
                     throw new ArgumentOutOfRangeException(nameof(documentType), documentType, null);
             }

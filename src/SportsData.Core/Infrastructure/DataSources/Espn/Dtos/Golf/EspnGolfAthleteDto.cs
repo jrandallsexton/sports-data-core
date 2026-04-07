@@ -8,9 +8,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Golf
 {
     public class EspnGolfAthleteDto : EspnAthleteDto
     {
-        [JsonPropertyName("debutYear")]
-        public int DebutYear { get; set; }
-
         [JsonPropertyName("turnedPro")]
         public int TurnedPro { get; set; }
 

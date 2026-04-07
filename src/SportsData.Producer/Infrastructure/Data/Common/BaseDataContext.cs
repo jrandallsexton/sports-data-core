@@ -16,6 +16,12 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<AthleteImage> AthleteImages { get; set; }
 
+        public DbSet<AthleteCareerStatistic> AthleteCareerStatistics { get; set; }
+
+        public DbSet<AthleteCareerStatisticCategory> AthleteCareerStatisticCategories { get; set; }
+
+        public DbSet<AthleteCareerStatisticStat> AthleteCareerStatisticStats { get; set; }
+
         public DbSet<AthleteSeasonStatistic> AthleteSeasonStatistics { get; set; }
 
         public DbSet<AthleteSeasonStatisticCategory> AthleteSeasonStatisticCategories { get; set; }
@@ -60,6 +66,10 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.WithUriConverter();
             modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteExternalId.EntityConfiguration());
+
+            modelBuilder.ApplyConfiguration(new AthleteCareerStatistic.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteCareerStatisticCategory.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteCareerStatisticStat.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new AthleteCompetitionStatistic.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteCompetitionStatisticCategory.EntityConfiguration());

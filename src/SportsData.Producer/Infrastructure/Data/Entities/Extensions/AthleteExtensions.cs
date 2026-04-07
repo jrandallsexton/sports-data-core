@@ -67,8 +67,8 @@ public static class AthleteExtensions
         entity.WeightLb = dto.Weight;
         entity.WeightDisplay = dto.DisplayWeight ?? string.Empty;
 
-        entity.DoB = !string.IsNullOrWhiteSpace(dto.DateOfBirth)
-            ? DateTime.Parse(dto.DateOfBirth).ToUniversalTime()
+        entity.DoB = !string.IsNullOrWhiteSpace(dto.DateOfBirth) && DateTime.TryParse(dto.DateOfBirth, out var dob)
+            ? dob.ToUniversalTime()
             : null;
 
         entity.ExperienceYears = dto.Experience?.Years ?? 0;
@@ -121,8 +121,8 @@ public static class AthleteExtensions
             WeightLb = dto.Weight,
             WeightDisplay = dto.DisplayWeight ?? string.Empty,
 
-            DoB = !string.IsNullOrWhiteSpace(dto.DateOfBirth)
-                ? DateTime.Parse(dto.DateOfBirth).ToUniversalTime()
+            DoB = !string.IsNullOrWhiteSpace(dto.DateOfBirth) && DateTime.TryParse(dto.DateOfBirth, out var dob2)
+                ? dob2.ToUniversalTime()
                 : null,
 
             ExperienceYears = dto.Experience?.Years ?? 0,

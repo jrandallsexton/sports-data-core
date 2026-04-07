@@ -18,8 +18,10 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Position)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.Position)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.Position)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthletePosition)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.AthletePosition)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.AthletePosition)]
 public class AthletePositionDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {

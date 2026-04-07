@@ -1,0 +1,25 @@
+{
+    "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/venues/1?lang=en&region=us",
+    "id": "1",
+    "fullName": "Oriole Park at Camden Yards",
+    "shortName": "Oriole Park at Camden Yards",
+    "address": {
+        "city": "Baltimore",
+        "state": "Maryland",
+        "zipCode": "21201"
+    },
+    "grass": true,
+    "indoor": false,
+    "images": [
+        {
+            "href": "https://a.espncdn.com/i/venues/mlb/day/1.jpg",
+            "width": 2000,
+            "height": 1125,
+            "alt": "",
+            "rel": [
+                "full",
+                "day"
+            ]
+        }
+    ]
+}

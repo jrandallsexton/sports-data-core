@@ -1,0 +1,98 @@
+{
+    "count": 2,
+    "pageIndex": 1,
+    "pageSize": 25,
+    "pageCount": 1,
+    "items": [
+        {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/5?lang=en&region=us",
+            "id": "5",
+            "uid": "s:1~l:10~t:5",
+            "type": "team",
+            "order": 0,
+            "homeAway": "home",
+            "winner": true,
+            "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/5?lang=en&region=us"
+            },
+            "score": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/5/score?lang=en&region=us"
+            },
+            "linescores": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/5/linescores?lang=en&region=us"
+            },
+            "roster": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/5/roster?lang=en&region=us"
+            },
+            "statistics": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/5/statistics?lang=en&region=us"
+            },
+            "leaders": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/5/leaders?lang=en&region=us"
+            },
+            "record": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/5/records?lang=en&region=us"
+            },
+            "probables": [
+                {
+                    "name": "probableStartingPitcher",
+                    "displayName": "Probable Starting Pitcher",
+                    "shortDisplayName": "Starter",
+                    "abbreviation": "SP",
+                    "playerId": 4345076,
+                    "athlete": {
+                        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4345076?lang=en&region=us"
+                    },
+                    "statistics": {
+                        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/athletes/4345076/statistics/0?lang=en&region=us"
+                    }
+                }
+            ]
+        },
+        {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/7?lang=en&region=us",
+            "id": "7",
+            "uid": "s:1~l:10~t:7",
+            "type": "team",
+            "order": 1,
+            "homeAway": "away",
+            "winner": false,
+            "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/7?lang=en&region=us"
+            },
+            "score": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/7/score?lang=en&region=us"
+            },
+            "linescores": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/7/linescores?lang=en&region=us"
+            },
+            "roster": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/7/roster?lang=en&region=us"
+            },
+            "statistics": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/7/statistics?lang=en&region=us"
+            },
+            "leaders": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/7/leaders?lang=en&region=us"
+            },
+            "record": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/7/records?lang=en&region=us"
+            },
+            "probables": [
+                {
+                    "name": "probableStartingPitcher",
+                    "displayName": "Probable Starting Pitcher",
+                    "shortDisplayName": "Starter",
+                    "abbreviation": "SP",
+                    "playerId": 4417208,
+                    "athlete": {
+                        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4417208?lang=en&region=us"
+                    },
+                    "statistics": {
+                        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/athletes/4417208/statistics/0?lang=en&region=us"
+                    }
+                }
+            ]
+        }
+    ]
+}

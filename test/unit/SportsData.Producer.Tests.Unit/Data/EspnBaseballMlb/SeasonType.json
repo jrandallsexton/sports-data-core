@@ -1,0 +1,36 @@
+{
+    "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2?lang=en&region=us",
+    "id": "2",
+    "type": 2,
+    "name": "Regular Season",
+    "abbreviation": "reg",
+    "year": 2026,
+    "startDate": "2026-03-25T07:00Z",
+    "endDate": "2026-09-30T06:59Z",
+    "hasGroups": false,
+    "hasStandings": true,
+    "hasLegs": false,
+    "groups": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/groups?lang=en&region=us"
+    },
+    "week": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/weeks/2?lang=en&region=us",
+        "number": 2,
+        "startDate": "2026-04-01T07:00Z",
+        "endDate": "2026-04-08T06:59Z",
+        "text": "Week 2",
+        "rankings": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/weeks/2/rankings?lang=en&region=us"
+        }
+    },
+    "weeks": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/weeks?lang=en&region=us"
+    },
+    "corrections": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/corrections?lang=en&region=us"
+    },
+    "leaders": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/leaders?lang=en&region=us"
+    },
+    "slug": "regular-season"
+}

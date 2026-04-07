@@ -8,7 +8,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Infrastructure.DataSources.Espn;
@@ -17,8 +17,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 {
     [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteSeasonStatistics)]
     [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.AthleteSeasonStatistics)]
+    [DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.AthleteSeasonStatistics)]
     public class AthleteSeasonStatisticsDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
-        where TDataContext : FootballDataContext
+        where TDataContext : TeamSportDataContext
     {
         public AthleteSeasonStatisticsDocumentProcessor(
             ILogger<AthleteSeasonStatisticsDocumentProcessor<TDataContext>> logger,

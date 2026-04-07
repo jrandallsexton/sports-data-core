@@ -1,0 +1,36 @@
+{
+    "$meta": {
+        "parameters": {
+            "season": [
+                "2026"
+            ],
+            "seasontypes": [
+                "2"
+            ],
+            "dates": [
+                "20260407"
+            ]
+        }
+    },
+    "count": 15,
+    "pageIndex": 1,
+    "pageSize": 5,
+    "pageCount": 3,
+    "items": [
+        {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844?lang=en&region=us"
+        },
+        {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814849?lang=en&region=us"
+        },
+        {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814840?lang=en&region=us"
+        },
+        {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814842?lang=en&region=us"
+        },
+        {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814843?lang=en&region=us"
+        }
+    ]
+}

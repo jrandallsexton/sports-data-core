@@ -11,8 +11,8 @@ Scope: 2-3 seasons of data (2024-2026), not full history. Pick'em format: weekly
 - `Sport.BaseballMlb` enum value (= 1)
 - `ModeMapper` routes `("baseball", "mlb")` to `Sport.BaseballMlb`
 - `SportExtensions` maps to `"baseball-mlb"` kebab-case
-- `BaseballDataContext` (extends `BaseDataContext` — needs to extend `TeamSportDataContext`)
-- `BaseballAthlete` entity (extends `TeamAthlete`, currently empty)
+- `BaseballDataContext` extends `TeamSportDataContext`, with `BaseballAthlete`, `BaseballAthleteSeason`, `AthleteSeasonHotZone`, and `AthleteSeasonHotZoneEntry` DbSets
+- `BaseballAthlete` entity extends `TeamAthlete` with `BatsType`, `BatsAbbreviation`, `ThrowsType`, `ThrowsAbbreviation` fields
 - `TeamSportDataContext` has all shared team-sport entities (Franchise, Competition, Coach, Draft, AthleteSeason, etc.)
 - Provider pipeline, DocumentProcessorBase, client factories, KEDA scaling — all sport-agnostic
 - Document types are generic — no baseball-specific types expected initially

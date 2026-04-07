@@ -1,5 +1,6 @@
 ﻿using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common.Draft;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 
 using System;
@@ -98,6 +99,10 @@ namespace SportsData.Core.Common
                     return (typeof(EspnFootballContestDto), name);
                 case DocumentType.FranchiseSeasonLogo:
                     return (typeof(EspnImageDto), name);
+                case DocumentType.Draft:
+                    return (typeof(EspnDraftDto), name);
+                case DocumentType.DraftRounds:
+                    return (typeof(EspnDraftRoundsDto), name);
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Weeks:
@@ -150,6 +155,8 @@ namespace SportsData.Core.Common
                 case DocumentType.CoachSeason:
                 case DocumentType.CoachSeasonRecord:
                 case DocumentType.Contest:
+                case DocumentType.Draft:
+                case DocumentType.DraftRounds:
                 case DocumentType.GameSummary:
                 case DocumentType.Scoreboard:
                 case DocumentType.Season:

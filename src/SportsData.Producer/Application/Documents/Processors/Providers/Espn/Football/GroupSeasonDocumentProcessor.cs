@@ -11,14 +11,15 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.GroupSeason)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.GroupSeason)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.GroupSeason)]
 public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
-    where TDataContext : FootballDataContext
+    where TDataContext : TeamSportDataContext
 {
     public GroupSeasonDocumentProcessor(
         ILogger<GroupSeasonDocumentProcessor<TDataContext>> logger,

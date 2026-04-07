@@ -2,6 +2,7 @@
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
@@ -29,6 +30,19 @@ public static class AthleteExtensions
         };
 
         dto.MapAthleteProperties(entity, identity);
+
+        if (dto is EspnFootballAthleteDto footballDto)
+        {
+            entity.Jersey = footballDto.Jersey;
+            if (footballDto.Draft is not null)
+            {
+                entity.DraftDisplayText = footballDto.Draft.Display;
+                entity.DraftRound = footballDto.Draft.Round;
+                entity.DraftYear = footballDto.Draft.Year;
+                entity.DraftSelection = footballDto.Draft.Selection;
+                entity.DraftTeamRef = footballDto.Draft.Team?.Ref?.ToString();
+            }
+        }
 
         return entity;
     }
@@ -60,6 +74,9 @@ public static class AthleteExtensions
         entity.ExperienceYears = dto.Experience?.Years ?? 0;
         entity.ExperienceAbbreviation = dto.Experience?.Abbreviation;
         entity.ExperienceDisplayValue = dto.Experience?.DisplayValue;
+
+        entity.DebutYear = dto.DebutYear;
+        entity.CollegeAthleteRef = dto.CollegeAthlete?.Ref?.ToString();
 
         entity.ExternalIds =
         [
@@ -111,6 +128,9 @@ public static class AthleteExtensions
             ExperienceYears = dto.Experience?.Years ?? 0,
             ExperienceAbbreviation = dto.Experience?.Abbreviation,
             ExperienceDisplayValue = dto.Experience?.DisplayValue,
+
+            DebutYear = dto.DebutYear,
+            CollegeAthleteRef = dto.CollegeAthlete?.Ref?.ToString(),
 
             ExternalIds =
             [

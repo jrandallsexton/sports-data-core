@@ -95,6 +95,9 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         [JsonPropertyName("statisticslog")]
         public EspnLinkDto? Statistics { get; set; }
 
+        [JsonPropertyName("statistics")]
+        public EspnLinkDto? CareerStatistics { get; set; }
+
         [JsonPropertyName("notes")]
         public EspnLinkDto? Notes { get; set; }
 
@@ -112,6 +115,18 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
 
         [JsonPropertyName("status")]
         public EspnAthleteStatusDto? Status { get; set; }
+
+        [JsonPropertyName("debutYear")]
+        public int? DebutYear { get; set; }
+
+        [JsonPropertyName("collegeAthlete")]
+        public EspnLinkDto? CollegeAthlete { get; set; }
+
+        [JsonPropertyName("contracts")]
+        public EspnLinkDto? Contracts { get; set; }
+
+        [JsonPropertyName("flag")]
+        public EspnAthleteHeadshot? Flag { get; set; }
     }
 
     public class EspnAthleteExperience

@@ -16,6 +16,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamSeasonInjuries)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.TeamSeasonInjuries)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.TeamSeasonInjuries)]
 public class TeamSeasonInjuriesDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {

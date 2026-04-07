@@ -1,0 +1,356 @@
+{
+    "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/33192?lang=en&region=us",
+    "id": "33192",
+    "uid": "s:1~l:10~a:33192",
+    "guid": "e3e39e69-2861-f5b5-49be-b0880534c802",
+    "type": "baseball",
+    "alternateIds": {
+        "sdr": "3090568"
+    },
+    "firstName": "Aaron",
+    "lastName": "Judge",
+    "fullName": "Aaron Judge",
+    "displayName": "Aaron Judge",
+    "nickname": "",
+    "shortName": "A. Judge",
+    "weight": 282.0,
+    "displayWeight": "282 lbs",
+    "height": 79.0,
+    "displayHeight": "6' 7\"",
+    "age": 33,
+    "dateOfBirth": "1992-04-26T07:00Z",
+    "debutYear": 2016,
+    "links": [
+        {
+            "language": "en-US",
+            "rel": [
+                "playercard",
+                "desktop",
+                "athlete"
+            ],
+            "href": "https://www.espn.com/mlb/player/_/id/33192",
+            "text": "Player Card",
+            "shortText": "Player Card",
+            "isExternal": false,
+            "isPremium": false
+        },
+        {
+            "language": "en-US",
+            "rel": [
+                "stats",
+                "desktop",
+                "athlete"
+            ],
+            "href": "https://www.espn.com/mlb/player/stats/_/id/33192/aaron-judge",
+            "text": "Stats",
+            "shortText": "Stats",
+            "isExternal": false,
+            "isPremium": false
+        },
+        {
+            "language": "en-US",
+            "rel": [
+                "splits",
+                "desktop",
+                "athlete"
+            ],
+            "href": "https://www.espn.com/mlb/player/splits/_/id/33192/aaron-judge",
+            "text": "Splits",
+            "shortText": "Splits",
+            "isExternal": false,
+            "isPremium": false
+        },
+        {
+            "language": "en-US",
+            "rel": [
+                "gamelog",
+                "desktop",
+                "athlete"
+            ],
+            "href": "https://www.espn.com/mlb/player/gamelog/_/id/33192/aaron-judge",
+            "text": "Game Log",
+            "shortText": "Game Log",
+            "isExternal": false,
+            "isPremium": false
+        },
+        {
+            "language": "en-US",
+            "rel": [
+                "news",
+                "desktop",
+                "athlete"
+            ],
+            "href": "https://www.espn.com/mlb/player/news/_/id/33192/aaron-judge",
+            "text": "News",
+            "shortText": "News",
+            "isExternal": false,
+            "isPremium": false
+        },
+        {
+            "language": "en-US",
+            "rel": [
+                "bio",
+                "desktop",
+                "athlete"
+            ],
+            "href": "https://www.espn.com/mlb/player/bio/_/id/33192/aaron-judge",
+            "text": "Bio",
+            "shortText": "Bio",
+            "isExternal": false,
+            "isPremium": false
+        },
+        {
+            "language": "en-US",
+            "rel": [
+                "overview",
+                "desktop",
+                "athlete"
+            ],
+            "href": "https://www.espn.com/mlb/player/_/id/33192/aaron-judge",
+            "text": "Overview",
+            "shortText": "Overview",
+            "isExternal": false,
+            "isPremium": false
+        },
+        {
+            "language": "en-US",
+            "rel": [
+                "batvspitch",
+                "desktop",
+                "athlete"
+            ],
+            "href": "https://www.espn.com/mlb/player/batvspitch/_/id/33192/aaron-judge",
+            "text": "Bat vs Pitch",
+            "shortText": "Bat vs Pitch",
+            "isExternal": false,
+            "isPremium": false
+        }
+    ],
+    "birthPlace": {
+        "city": "Linden",
+        "state": "CA",
+        "country": "United States"
+    },
+    "college": {
+        "$ref": "http://sports.core.api.espn.com/v2/colleges/278?lang=en&region=us"
+    },
+    "slug": "aaron-judge",
+    "headshot": {
+        "href": "https://a.espncdn.com/i/headshots/mlb/players/full/33192.png",
+        "alt": "Aaron Judge"
+    },
+    "jersey": "99",
+    "position": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/9?lang=en&region=us",
+        "id": "9",
+        "name": "Right Field",
+        "displayName": "Right Fielder",
+        "abbreviation": "RF",
+        "leaf": true,
+        "parent": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/14?lang=en&region=us"
+        }
+    },
+    "positions": [
+        {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/9?lang=en&region=us",
+            "id": "9",
+            "name": "Right Field",
+            "displayName": "Right Fielder",
+            "abbreviation": "RF",
+            "leaf": true,
+            "parent": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/14?lang=en&region=us"
+            },
+            "statistics": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/athletes/33192/statistics/85?lang=en&region=us"
+            }
+        }
+    ],
+    "injuries": [],
+    "linked": true,
+    "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/10?lang=en&region=us"
+    },
+    "teams": [
+        {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/10?lang=en&region=us"
+        }
+    ],
+    "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/athletes/33192/statistics?lang=en&region=us"
+    },
+    "projections": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/athletes/33192/projections?lang=en&region=us"
+    },
+    "notes": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/33192/notes?lang=en&region=us"
+    },
+    "contracts": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/athletes/33192/contracts?lang=en&region=us"
+    },
+    "hotZones": [
+        {
+            "configurationId": 0,
+            "name": "gamecast",
+            "active": true,
+            "splitTypeId": 0,
+            "season": 2026,
+            "seasonType": 0,
+            "zones": [
+                {
+                    "zoneId": 1,
+                    "xMin": 77.0,
+                    "xMax": 104.0,
+                    "yMin": 131.0,
+                    "yMax": 155.0,
+                    "atBats": 1,
+                    "hits": 1,
+                    "battingAvg": 1.0,
+                    "battingAvgScore": 0.878,
+                    "slugging": 1.0,
+                    "sluggingScore": 0.847
+                },
+                {
+                    "zoneId": 2,
+                    "xMin": 104.0,
+                    "xMax": 131.0,
+                    "yMin": 131.0,
+                    "yMax": 155.0,
+                    "atBats": 1,
+                    "hits": 1,
+                    "battingAvg": 1.0,
+                    "battingAvgScore": 0.891,
+                    "slugging": 4.0,
+                    "sluggingScore": 0.975
+                },
+                {
+                    "zoneId": 3,
+                    "xMin": 131.0,
+                    "xMax": 157.0,
+                    "yMin": 131.0,
+                    "yMax": 155.0
+                },
+                {
+                    "zoneId": 4,
+                    "xMin": 77.0,
+                    "xMax": 104.0,
+                    "yMin": 155.0,
+                    "yMax": 179.0,
+                    "atBats": 4,
+                    "hits": 2,
+                    "battingAvg": 0.5,
+                    "battingAvgScore": 0.762,
+                    "slugging": 0.5,
+                    "sluggingScore": 0.649
+                },
+                {
+                    "zoneId": 5,
+                    "xMin": 104.0,
+                    "xMax": 131.0,
+                    "yMin": 155.0,
+                    "yMax": 179.0,
+                    "atBats": 10,
+                    "hits": 4,
+                    "battingAvg": 0.4,
+                    "battingAvgScore": 0.679,
+                    "slugging": 0.8,
+                    "sluggingScore": 0.755
+                },
+                {
+                    "zoneId": 6,
+                    "xMin": 131.0,
+                    "xMax": 157.0,
+                    "yMin": 155.0,
+                    "yMax": 179.0,
+                    "atBats": 5,
+                    "hits": 1,
+                    "battingAvg": 0.2,
+                    "battingAvgScore": 0.466,
+                    "slugging": 0.8,
+                    "sluggingScore": 0.806
+                },
+                {
+                    "zoneId": 7,
+                    "xMin": 77.0,
+                    "xMax": 104.0,
+                    "yMin": 179.0,
+                    "yMax": 204.0,
+                    "atBats": 2,
+                    "hits": 0,
+                    "battingAvg": 0.0,
+                    "battingAvgScore": 0.003,
+                    "slugging": 0.0,
+                    "sluggingScore": 0.003
+                },
+                {
+                    "zoneId": 8,
+                    "xMin": 104.0,
+                    "xMax": 131.0,
+                    "yMin": 179.0,
+                    "yMax": 204.0,
+                    "atBats": 6,
+                    "hits": 0,
+                    "battingAvg": 0.0,
+                    "battingAvgScore": 0.003,
+                    "slugging": 0.0,
+                    "sluggingScore": 0.003
+                },
+                {
+                    "zoneId": 9,
+                    "xMin": 131.0,
+                    "xMax": 157.0,
+                    "yMin": 179.0,
+                    "yMax": 204.0,
+                    "atBats": 1,
+                    "hits": 0,
+                    "battingAvg": 0.0,
+                    "battingAvgScore": 0.003,
+                    "slugging": 0.0,
+                    "sluggingScore": 0.003
+                }
+            ]
+        }
+    ],
+    "experience": {
+        "years": 11
+    },
+    "debut": {
+        "year": 2016,
+        "event": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/360813110?lang=en&region=us"
+        },
+        "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/360813110/competitions/360813110/competitors/10/roster/33192/statistics/0?lang=en&region=us"
+        }
+    },
+    "active": true,
+    "eventLog": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/33192/eventlog?lang=en&region=us"
+    },
+    "draft": {
+        "displayText": "Year: 2013 Round: 1 Pick: 32",
+        "round": 1,
+        "year": 2013,
+        "selection": 32,
+        "team": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2013/teams/10?lang=en&region=us"
+        }
+    },
+    "status": {
+        "id": "1",
+        "name": "Active",
+        "type": "active",
+        "abbreviation": "Active"
+    },
+    "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+    },
+    "throws": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+    }
+}

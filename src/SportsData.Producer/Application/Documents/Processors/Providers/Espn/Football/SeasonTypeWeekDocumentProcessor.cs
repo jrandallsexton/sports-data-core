@@ -18,6 +18,7 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonTypeWeek)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.SeasonTypeWeek)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.SeasonTypeWeek)]
 public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : BaseDataContext
 {

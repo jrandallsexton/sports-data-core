@@ -1,8 +1,10 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
+using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
@@ -144,6 +146,48 @@ public static class AthleteExtensions
                 }
             ]
         };
+    }
+
+    public static BaseballAthlete AsBaseballAthlete(
+        this EspnAthleteDto dto,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        Guid? franchiseId,
+        Guid correlationId)
+    {
+        if (dto.Ref == null)
+            throw new ArgumentException("Athlete DTO is missing its $ref property.");
+
+        var identity = externalRefIdentityGenerator.Generate(dto.Ref);
+
+        var entity = new BaseballAthlete
+        {
+            Id = identity.CanonicalId,
+            FranchiseId = franchiseId,
+            CreatedBy = correlationId,
+            CreatedUtc = DateTime.UtcNow
+        };
+
+        dto.MapAthleteProperties(entity, identity);
+
+        if (dto is EspnBaseballAthleteDto baseballDto)
+        {
+            entity.Jersey = baseballDto.Jersey;
+            entity.BatsType = baseballDto.Bats?.Type;
+            entity.BatsAbbreviation = baseballDto.Bats?.Abbreviation;
+            entity.ThrowsType = baseballDto.Throws?.Type;
+            entity.ThrowsAbbreviation = baseballDto.Throws?.Abbreviation;
+
+            if (baseballDto.Draft is not null)
+            {
+                entity.DraftDisplayText = baseballDto.Draft.Display;
+                entity.DraftRound = baseballDto.Draft.Round;
+                entity.DraftYear = baseballDto.Draft.Year;
+                entity.DraftSelection = baseballDto.Draft.Selection;
+                entity.DraftTeamRef = baseballDto.Draft.Team?.Ref?.ToString();
+            }
+        }
+
+        return entity;
     }
 
     public static AthleteDto ToCanonicalModel(this Athlete entity)

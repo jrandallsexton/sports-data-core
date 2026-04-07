@@ -104,7 +104,7 @@ public class BaseballAthleteSeasonDocumentProcessor<TDataContext> : DocumentProc
         Guid athleteId,
         Guid positionId)
     {
-        var entity = dto.AsEntity(
+        var entity = dto.AsBaseballEntity(
             _externalRefIdentityGenerator,
             franchiseSeasonId,
             positionId,
@@ -131,7 +131,7 @@ public class BaseballAthleteSeasonDocumentProcessor<TDataContext> : DocumentProc
         Guid? franchiseSeasonId,
         Guid positionId)
     {
-        var newEntity = dto.AsEntity(
+        var newEntity = dto.AsBaseballEntity(
             _externalRefIdentityGenerator,
             franchiseSeasonId,
             positionId,

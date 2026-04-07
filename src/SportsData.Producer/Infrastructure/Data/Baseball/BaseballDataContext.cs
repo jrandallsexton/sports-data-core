@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Infrastructure.Data.Extensions;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Baseball
 {
@@ -10,6 +11,8 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
         TeamSportDataContext(options)
     {
         public new DbSet<BaseballAthlete> Athletes { get; set; }
+
+        public new DbSet<BaseballAthleteSeason> AthleteSeasons { get; set; }
 
         public DbSet<AthleteSeasonHotZone> AthleteSeasonHotZones { get; set; }
 
@@ -21,6 +24,7 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
             modelBuilder.WithUriConverter();
             modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballAthlete.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeasonHotZone.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeasonHotZoneEntry.EntityConfiguration());
         }

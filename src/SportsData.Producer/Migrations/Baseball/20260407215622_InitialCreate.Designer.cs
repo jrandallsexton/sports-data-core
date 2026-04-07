@@ -13,7 +13,7 @@ using SportsData.Producer.Infrastructure.Data.Baseball;
 namespace SportsData.Producer.Migrations.Baseball
 {
     [DbContext(typeof(BaseballDataContext))]
-    [Migration("20260407215158_InitialCreate")]
+    [Migration("20260407215622_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -1528,6 +1528,11 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("character varying(21)");
+
                     b.Property<string>("DisplayName")
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
@@ -1606,6 +1611,10 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasIndex("StatusId");
 
                     b.ToTable("AthleteSeason", (string)null);
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("AthleteSeason");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonExternalId", b =>
@@ -1782,9 +1791,6 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.Property<Guid>("AthleteSeasonId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("AthleteSeasonId1")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
@@ -1820,8 +1826,6 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("AthleteSeasonId");
-
-                    b.HasIndex("AthleteSeasonId1");
 
                     b.ToTable("AthleteSeasonStatistic", (string)null);
                 });
@@ -8047,6 +8051,13 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasDiscriminator().HasValue("BaseballAthlete");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Baseball.Entities.BaseballAthleteSeason", b =>
+                {
+                    b.HasBaseType("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason");
+
+                    b.HasDiscriminator().HasValue("BaseballAthleteSeason");
+                });
+
             modelBuilder.Entity("CompetitionOdds", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.Competition", null)
@@ -8356,14 +8367,10 @@ namespace SportsData.Producer.Migrations.Baseball
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeasonStatistic", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason", "AthleteSeason")
-                        .WithMany()
+                        .WithMany("Statistics")
                         .HasForeignKey("AthleteSeasonId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason", null)
-                        .WithMany("Statistics")
-                        .HasForeignKey("AthleteSeasonId1");
 
                     b.Navigation("AthleteSeason");
                 });

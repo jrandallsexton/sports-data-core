@@ -969,6 +969,7 @@ namespace SportsData.Producer.Migrations.Baseball
                     ExperienceYears = table.Column<int>(type: "integer", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     StatusId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Discriminator = table.Column<string>(type: "character varying(21)", maxLength: 21, nullable: false),
                     CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1119,7 +1120,6 @@ namespace SportsData.Producer.Migrations.Baseball
                     SplitName = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     SplitAbbreviation = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     SplitType = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
-                    AthleteSeasonId1 = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1134,11 +1134,6 @@ namespace SportsData.Producer.Migrations.Baseball
                         principalTable: "AthleteSeason",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_AthleteSeasonStatistic_AthleteSeason_AthleteSeasonId1",
-                        column: x => x.AthleteSeasonId1,
-                        principalTable: "AthleteSeason",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -4176,11 +4171,6 @@ namespace SportsData.Producer.Migrations.Baseball
                 name: "IX_AthleteSeasonStatistic_AthleteSeasonId",
                 table: "AthleteSeasonStatistic",
                 column: "AthleteSeasonId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AthleteSeasonStatistic_AthleteSeasonId1",
-                table: "AthleteSeasonStatistic",
-                column: "AthleteSeasonId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AthleteSeasonStatisticCategory_AthleteSeasonStatisticId",

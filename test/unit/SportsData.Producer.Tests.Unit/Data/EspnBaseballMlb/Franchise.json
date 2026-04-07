@@ -1,0 +1,44 @@
+{
+    "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/franchises/10?lang=en&region=us",
+    "id": "10",
+    "uid": "s:1~l:10~f:10",
+    "slug": "new-york-yankees",
+    "location": "New York",
+    "name": "Yankees",
+    "abbreviation": "NYY",
+    "displayName": "New York Yankees",
+    "shortDisplayName": "Yankees",
+    "color": "132448",
+    "isActive": true,
+    "venue": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/venues/208?lang=en&region=us",
+        "id": "208",
+        "fullName": "Yankee Stadium",
+        "shortName": "Yankee Stadium",
+        "address": {
+            "city": "Bronx",
+            "state": "New York",
+            "zipCode": "10451"
+        },
+        "grass": true,
+        "indoor": false,
+        "images": [
+            {
+                "href": "https://a.espncdn.com/i/venues/mlb/day/208.jpg",
+                "width": 2000,
+                "height": 1125,
+                "alt": "",
+                "rel": [
+                    "full",
+                    "day"
+                ]
+            }
+        ]
+    },
+    "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/10?lang=en&region=us"
+    },
+    "awards": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/franchises/10/awards?lang=en&region=us"
+    }
+}

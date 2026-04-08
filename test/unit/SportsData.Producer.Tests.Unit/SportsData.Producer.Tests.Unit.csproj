@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <Folder Include="Application\Handlers\" />
+    <Folder Include="Data\EspnBaseballMlb\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="xunit.runner.json">

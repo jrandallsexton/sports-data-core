@@ -15,7 +15,7 @@
     ]
   },
   {
-    "Name": "Everything",
+    "Name": "Everything.FootballNcaa",
     "Projects": [
       {
         "Path": "src\\SportsData.Provider\\SportsData.Provider.csproj",
@@ -46,6 +46,41 @@
         "Path": "src\\SportsData.Producer\\SportsData.Producer.csproj",
         "Action": "Start",
         "DebugTarget": "http.FootballNfl"
+      }
+    ]
+  },
+  {
+    "Name": "Everything.FootballNfl",
+    "Projects": [
+      {
+        "Path": "src\\SportsData.Provider\\SportsData.Provider.csproj",
+        "Action": "Start",
+        "DebugTarget": "http.FootballNfl"
+      },
+      {
+        "Path": "src\\SportsData.Producer\\SportsData.Producer.csproj",
+        "Action": "Start",
+        "DebugTarget": "http.FootballNfl"
+      },
+      {
+        "Path": "src\\SportsData.Api\\SportsData.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      }
+    ]
+  },
+  {
+    "Name": "ProviderProducer.BaseballMlb",
+    "Projects": [
+      {
+        "Path": "src\\SportsData.Provider\\SportsData.Provider.csproj",
+        "Action": "Start",
+        "DebugTarget": "http.BaseballMlb"
+      },
+      {
+        "Path": "src\\SportsData.Producer\\SportsData.Producer.csproj",
+        "Action": "Start",
+        "DebugTarget": "http.BaseballMlb"
       }
     ]
   }

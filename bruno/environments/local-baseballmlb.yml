@@ -1,0 +1,16 @@
+name: local-baseballmlb
+variables:
+  - name: baseUrlApi
+    value: https://localhost:7250
+  - name: baseUrlProvider
+    value: https://localhost:7140
+  - name: baseUrlProducer
+    value: https://localhost:7040
+  - name: sport
+    value: 1
+  - name: sportName
+    value: BaseballMlb
+  - name: adminToken
+    value: ""
+  - name: googleApiKey
+    value: ""

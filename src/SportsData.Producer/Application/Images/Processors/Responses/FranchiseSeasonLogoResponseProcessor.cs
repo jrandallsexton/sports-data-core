@@ -9,8 +9,10 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 {
     [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.TeamSeason)]
     [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.TeamSeason)]
+    [ImageResponseProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.TeamSeason)]
     [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.FranchiseSeasonLogo)]
     [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.FranchiseSeasonLogo)]
+    [ImageResponseProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.FranchiseSeasonLogo)]
     public class FranchiseSeasonLogoResponseProcessor<TDataContext> : IProcessLogoAndImageResponses
         where TDataContext : TeamSportDataContext
     {

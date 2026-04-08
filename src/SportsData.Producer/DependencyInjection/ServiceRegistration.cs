@@ -306,15 +306,18 @@ namespace SportsData.Producer.DependencyInjection
                 job => job.ExecuteAsync(),
                 Cron.Daily);
 
-            recurringJobManager.AddOrUpdate<FootballCompetitionMetricsAuditJob>(
-                nameof(FootballCompetitionMetricsAuditJob),
-                job => job.ExecuteAsync(),
-                "0 7 * * 0"); // Sunday at 07:00 UTC
+            if (mode is Sport.FootballNcaa or Sport.FootballNfl)
+            {
+                recurringJobManager.AddOrUpdate<FootballCompetitionMetricsAuditJob>(
+                    nameof(FootballCompetitionMetricsAuditJob),
+                    job => job.ExecuteAsync(),
+                    "0 7 * * 0"); // Sunday at 07:00 UTC
 
-            recurringJobManager.AddOrUpdate<FootballCompetitionStreamScheduler>(
-                nameof(FootballCompetitionStreamScheduler),
-                job => job.Execute(),
-                "0 7 * * 0"); // Sunday at 07:00 UTC
+                recurringJobManager.AddOrUpdate<FootballCompetitionStreamScheduler>(
+                    nameof(FootballCompetitionStreamScheduler),
+                    job => job.Execute(),
+                    "0 7 * * 0"); // Sunday at 07:00 UTC
+            }
 
             recurringJobManager.AddOrUpdate<FranchiseSeasonEnrichmentJob>(
                 nameof(FranchiseSeasonEnrichmentJob),

@@ -407,6 +407,159 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
     }
 
     [Fact]
+    public async Task WhenBaseballPreseason_NoWeekAvailable_ShouldCreateContestWithNullSeasonWeekId()
+    {
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        Mocker.GetMock<IProvideProviders>()
+            .Setup(s => s.GetExternalDocument(It.IsAny<GetExternalDocumentQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => Fixture.Build<GetExternalDocumentResponse>()
+                .OmitAutoProperties()
+                .Create());
+
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnBaseballMlb/Event_SpringTraining.json");
+        var dto = json.FromJson<EspnEventDto>();
+
+        // Setup season phase (Spring Training) but NO season weeks
+        var seasonId = Guid.NewGuid();
+        var seasonTypeIdentity = generator.Generate(dto!.SeasonType.Ref);
+
+        await FootballDataContext.Seasons.AddAsync(new Season
+        {
+            Id = seasonId, Name = "2026", Year = 2026,
+            CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.NewGuid()
+        });
+        await FootballDataContext.SaveChangesAsync();
+
+        await FootballDataContext.SeasonPhases.AddAsync(new SeasonPhase
+        {
+            Id = seasonTypeIdentity.CanonicalId,
+            Name = "Spring Training", Abbreviation = "pre", Slug = "spring-training",
+            SeasonId = seasonId, CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<SeasonPhaseExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(), SeasonPhaseId = seasonTypeIdentity.CanonicalId,
+                    Provider = SourceDataProvider.Espn, SourceUrl = seasonTypeIdentity.CleanUrl,
+                    SourceUrlHash = seasonTypeIdentity.UrlHash, Value = seasonTypeIdentity.UrlHash
+                }
+            }
+        });
+        await FootballDataContext.SaveChangesAsync();
+
+        await SetupFranchiseSeasonsAsync(generator, dto!);
+
+        // Setup venue
+        var venueDto = dto.Venues.FirstOrDefault();
+        if (venueDto?.Ref != null)
+        {
+            var venueIdentity = generator.Generate(venueDto.Ref);
+            await FootballDataContext.Venues.AddAsync(new Venue
+            {
+                Id = venueIdentity.CanonicalId,
+                Name = "Test Venue", Slug = "test-venue",
+                City = "Test", State = "FL", PostalCode = "33101",
+                CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new VenueExternalId
+                    {
+                        Id = Guid.NewGuid(), VenueId = venueIdentity.CanonicalId,
+                        Provider = SourceDataProvider.Espn, SourceUrlHash = venueIdentity.UrlHash,
+                        Value = venueIdentity.UrlHash, SourceUrl = venueIdentity.CleanUrl
+                    }
+                ]
+            });
+            await FootballDataContext.SaveChangesAsync();
+        }
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Event)
+            .With(x => x.SeasonYear, 2026)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.BaseballMlb)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert
+        var created = await FootballDataContext.Contests.FirstOrDefaultAsync();
+        created.Should().NotBeNull("baseball preseason events should be created even without a SeasonWeek");
+        created!.SeasonWeekId.Should().BeNull("Spring Training has no weeks defined in ESPN");
+        created.Sport.Should().Be(Sport.BaseballMlb);
+
+        bus.Verify(x => x.Publish(It.IsAny<ContestCreated>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task WhenFootball_NoWeekAvailable_ShouldThrow()
+    {
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnBaseballMlb/Event_SpringTraining.json");
+        var dto = json.FromJson<EspnEventDto>();
+
+        // Setup season phase but NO season weeks
+        var seasonId = Guid.NewGuid();
+        var seasonTypeIdentity = generator.Generate(dto!.SeasonType.Ref);
+
+        await FootballDataContext.Seasons.AddAsync(new Season
+        {
+            Id = seasonId, Name = "2026", Year = 2026,
+            CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.NewGuid()
+        });
+        await FootballDataContext.SaveChangesAsync();
+
+        await FootballDataContext.SeasonPhases.AddAsync(new SeasonPhase
+        {
+            Id = seasonTypeIdentity.CanonicalId,
+            Name = "Spring Training", Abbreviation = "pre", Slug = "spring-training",
+            SeasonId = seasonId, CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<SeasonPhaseExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(), SeasonPhaseId = seasonTypeIdentity.CanonicalId,
+                    Provider = SourceDataProvider.Espn, SourceUrl = seasonTypeIdentity.CleanUrl,
+                    SourceUrlHash = seasonTypeIdentity.UrlHash, Value = seasonTypeIdentity.UrlHash
+                }
+            }
+        });
+        await FootballDataContext.SaveChangesAsync();
+
+        await SetupFranchiseSeasonsAsync(generator, dto!);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Event)
+            .With(x => x.SeasonYear, 2026)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        var act = () => sut.ProcessAsync(command);
+
+        // assert
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*Cannot determine SeasonWeek*");
+    }
+
+    [Fact]
     public async Task WhenWeekRefMissing_ShouldInferSeasonWeekFromEventDate()
     {
         // arrange

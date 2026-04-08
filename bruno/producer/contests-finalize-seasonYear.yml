@@ -11,17 +11,13 @@ http:
       value: "{{X-Admin-Token}}"
   body:
     type: json
-    data: "{\r
-
-      \  \"sport\": 2,\r
-
-      \  \"seasonYear\": 2001,\r
-
-      \  \"reprocessEnriched\": true,\r
-
-      \  \"correlationId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\r
-
-      }"
+    data: |-
+      {
+        "sport": 3,
+        "seasonYear": 2000,
+        "reprocessEnriched": true,
+        "correlationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      }
 
 settings:
   encodeUrl: true

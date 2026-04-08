@@ -34,7 +34,6 @@
     "http.FootballNfl": {
       "commandName": "Project",
       "commandLineArgs": "-mode FootballNfl",
-      "launchBrowser": true,
       "launchUrl": "dashboard",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
@@ -55,7 +54,8 @@
         "APPCONFIG_LABEL": "Local"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "http://localhost:5205"
+      "applicationUrl": "http://localhost:5205",
+      "hotReloadEnabled": false
     },
     "http.GolfPga": {
       "commandName": "Project",

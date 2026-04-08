@@ -1,0 +1,16 @@
+name: prod-baseballmlb
+variables:
+  - name: baseUrlApi
+    value: https://api.sportdeets.com
+  - name: baseUrlProvider
+    value: https://provider.baseball-mlb.sportdeets.com
+  - name: baseUrlProducer
+    value: https://producer.baseball-mlb.sportdeets.com
+  - name: sport
+    value: 1
+  - name: sportName
+    value: BaseballMlb
+  - name: adminToken
+    value: ""
+  - name: googleApiKey
+    value: ""

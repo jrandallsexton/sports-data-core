@@ -58,6 +58,12 @@ public class Program
         app.UseHangfireDashboard("/footballnfl/provider", dashboardOptions, nflProviderStorage);
         app.UseHangfireDashboard("/footballnfl/producer", dashboardOptions, nflProducerStorage);
 
+        // MLB Baseball
+        var mlbProviderStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProvider.BaseballMlb.Hangfire;{poolOpts}");
+        var mlbProducerStorage = new PostgreSqlStorage($"{cleanBase};Database=sdProducer.BaseballMlb.Hangfire;{poolOpts}");
+        app.UseHangfireDashboard("/baseballmlb/provider", dashboardOptions, mlbProviderStorage);
+        app.UseHangfireDashboard("/baseballmlb/producer", dashboardOptions, mlbProducerStorage);
+
         // API (shared across all sports)
         var apiStorage = new PostgreSqlStorage($"{cleanBase};Database=sdApi.All.Hangfire;{poolOpts}");
         app.UseHangfireDashboard("/api", dashboardOptions, apiStorage);
@@ -77,6 +83,11 @@ public class Program
             <ul>
               <li><a href="/footballnfl/provider">Provider</a></li>
               <li><a href="/footballnfl/producer">Producer</a></li>
+            </ul>
+            <h3>MLB Baseball</h3>
+            <ul>
+              <li><a href="/baseballmlb/provider">Provider</a></li>
+              <li><a href="/baseballmlb/producer">Producer</a></li>
             </ul>
             <h3>Shared</h3>
             <ul>

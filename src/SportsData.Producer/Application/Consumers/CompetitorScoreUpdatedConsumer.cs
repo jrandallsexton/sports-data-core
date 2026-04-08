@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Consumers;
 
@@ -14,12 +14,12 @@ namespace SportsData.Producer.Application.Consumers;
 /// </summary>
 public class CompetitorScoreUpdatedConsumer : IConsumer<CompetitorScoreUpdated>
 {
-    private readonly FootballDataContext _dataContext;
+    private readonly TeamSportDataContext _dataContext;
     private readonly ILogger<CompetitorScoreUpdatedConsumer> _logger;
     private readonly IEventBus _eventBus;
 
     public CompetitorScoreUpdatedConsumer(
-        FootballDataContext dataContext,
+        TeamSportDataContext dataContext,
         ILogger<CompetitorScoreUpdatedConsumer> logger,
         IEventBus eventBus)
     {

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Contests.Queries.GetContestById;
 
@@ -13,9 +13,9 @@ public interface IGetContestByIdQueryHandler
 
 public class GetContestByIdQueryHandler : IGetContestByIdQueryHandler
 {
-    private readonly FootballDataContext _context;
+    private readonly TeamSportDataContext _context;
 
-    public GetContestByIdQueryHandler(FootballDataContext context)
+    public GetContestByIdQueryHandler(TeamSportDataContext context)
     {
         _context = context;
     }

@@ -4,7 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Contests
 {
@@ -16,13 +16,13 @@ namespace SportsData.Producer.Application.Contests
     public class ContestUpdateProcessor : IUpdateContests
     {
         private readonly ILogger<ContestUpdateProcessor> _logger;
-        private readonly FootballDataContext _dataContext;
+        private readonly TeamSportDataContext _dataContext;
         private readonly IEventBus _bus;
         private readonly IGenerateExternalRefIdentities _externalIdentityGenerator;
 
         public ContestUpdateProcessor(
             ILogger<ContestUpdateProcessor> logger,
-            FootballDataContext dataContext,
+            TeamSportDataContext dataContext,
             IEventBus bus,
             IGenerateExternalRefIdentities externalIdentityGenerator)
         {

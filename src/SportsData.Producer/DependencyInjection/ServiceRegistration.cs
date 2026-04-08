@@ -64,6 +64,7 @@ using SportsData.Producer.Application.Venues.Queries.GetAllVenues;
 using SportsData.Producer.Application.Venues.Queries.GetVenueById;
 using SportsData.Producer.Config;
 using SportsData.Producer.Infrastructure.Data;
+using SportsData.Producer.Infrastructure.Data.Baseball;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Golf;
@@ -139,7 +140,13 @@ namespace SportsData.Producer.DependencyInjection
                         provider.GetRequiredService<ILogger<DocumentProcessorFactory<GolfDataContext>>>(),
                         provider.GetRequiredService<GolfDataContext>(),
                         provider.GetRequiredService<IDocumentProcessorRegistry>()),
-                    
+
+                    Sport.BaseballMlb => new DocumentProcessorFactory<BaseballDataContext>(
+                        provider,
+                        provider.GetRequiredService<ILogger<DocumentProcessorFactory<BaseballDataContext>>>(),
+                        provider.GetRequiredService<BaseballDataContext>(),
+                        provider.GetRequiredService<IDocumentProcessorRegistry>()),
+
                     _ => throw new NotSupportedException($"Sport mode '{mode}' is not supported for document processing")
                 };
             });
@@ -165,7 +172,14 @@ namespace SportsData.Producer.DependencyInjection
                         provider,
                         provider.GetRequiredService<GolfDataContext>(),
                         provider.GetRequiredService<ILogger<ImageProcessorFactory<GolfDataContext>>>()),
-                    
+
+                    Sport.BaseballMlb => new ImageProcessorFactory<BaseballDataContext>(
+                        appMode,
+                        decoder,
+                        provider,
+                        provider.GetRequiredService<BaseballDataContext>(),
+                        provider.GetRequiredService<ILogger<ImageProcessorFactory<BaseballDataContext>>>()),
+
                     _ => throw new NotSupportedException($"Sport mode '{mode}' is not supported for image processing")
                 };
             });

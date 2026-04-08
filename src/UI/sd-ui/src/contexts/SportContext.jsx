@@ -20,6 +20,7 @@ const SportContext = createContext({
 export const SPORTS = {
   'football/ncaa': { sport: 'football', league: 'ncaa', label: 'NCAA Football' },
   'football/nfl': { sport: 'football', league: 'nfl', label: 'NFL' },
+  'baseball/mlb': { sport: 'baseball', league: 'mlb', label: 'MLB' },
 };
 
 export const DEFAULT_SPORT = 'football';

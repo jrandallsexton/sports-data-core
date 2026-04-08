@@ -11,6 +11,7 @@ namespace SportsData.Producer.Application.Images.Processors.Responses
 {
     [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.GroupSeasonLogo)]
     [ImageResponseProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.GroupSeasonLogo)]
+    [ImageResponseProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.GroupSeasonLogo)]
     public class GroupSeasonLogoResponseProcessor<TDataContext> : IProcessLogoAndImageResponses
         where TDataContext : TeamSportDataContext
     {

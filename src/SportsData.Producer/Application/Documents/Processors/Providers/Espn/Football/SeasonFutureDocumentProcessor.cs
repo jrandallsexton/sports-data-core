@@ -9,14 +9,15 @@ using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonFuture)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.SeasonFuture)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.SeasonFuture)]
 public class SeasonFutureDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
-    where TDataContext : FootballDataContext
+    where TDataContext : TeamSportDataContext
 {
     public SeasonFutureDocumentProcessor(
         ILogger<SeasonFutureDocumentProcessor<TDataContext>> logger,

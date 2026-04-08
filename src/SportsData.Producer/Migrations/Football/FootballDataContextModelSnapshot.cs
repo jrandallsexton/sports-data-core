@@ -4811,7 +4811,7 @@ namespace SportsData.Producer.Migrations.Football
                     b.Property<Guid>("SeasonPhaseId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("SeasonWeekId")
+                    b.Property<Guid?>("SeasonWeekId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("SeasonYear")
@@ -8880,8 +8880,7 @@ namespace SportsData.Producer.Migrations.Football
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.SeasonWeek", "SeasonWeek")
                         .WithMany()
                         .HasForeignKey("SeasonWeekId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Common.Venue", "Venue")
                         .WithMany()

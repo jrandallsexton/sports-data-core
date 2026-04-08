@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -30,8 +30,8 @@ namespace SportsData.Producer.Migrations.Football
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"),
                 oldClrType: typeof(Guid),
-                oldType: "uuid",
-                oldNullable: true);
+                oldNullable: true,
+                oldType: "uuid");
         }
     }
 }

@@ -13,7 +13,7 @@ using SportsData.Producer.Infrastructure.Data.Baseball;
 namespace SportsData.Producer.Migrations.Baseball
 {
     [DbContext(typeof(BaseballDataContext))]
-    [Migration("20260408213858_ContestSeasonWeekIdNullable")]
+    [Migration("20260408225223_ContestSeasonWeekIdNullable")]
     partial class ContestSeasonWeekIdNullable
     {
         /// <inheritdoc />

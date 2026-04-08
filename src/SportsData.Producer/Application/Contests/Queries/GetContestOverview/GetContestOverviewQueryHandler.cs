@@ -151,10 +151,10 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         {
             ContestId = contest.Id,
             Status = DetermineContestStatus(contest),
-            WeekLabel = contest.SeasonWeek.Number.ToString(),
-            SeasonWeekId = contest.SeasonWeek.Id,
+            WeekLabel = contest.SeasonWeek?.Number.ToString(),
+            SeasonWeekId = contest.SeasonWeek?.Id,
             SeasonYear = contest.SeasonYear,
-            SeasonWeekNumber = contest.SeasonWeek.Number,
+            SeasonWeekNumber = contest.SeasonWeek?.Number,
             StartTimeUtc = contest.StartDateUtc,
             VenueName = contest.Venue?.Name,
             Location = contest.Venue != null ? $"{contest.Venue.City}, {contest.Venue.State}" : null,

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 
@@ -12,9 +12,9 @@ public interface IGetSeasonContestsQueryHandler
 
 public class GetSeasonContestsQueryHandler : IGetSeasonContestsQueryHandler
 {
-    private readonly FootballDataContext _context;
+    private readonly TeamSportDataContext _context;
 
-    public GetSeasonContestsQueryHandler(FootballDataContext context)
+    public GetSeasonContestsQueryHandler(TeamSportDataContext context)
     {
         _context = context;
     }

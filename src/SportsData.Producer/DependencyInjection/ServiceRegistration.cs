@@ -241,7 +241,10 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IContestReplayService, ContestReplayService>();
 
-            services.AddScoped<IFootballCompetitionBroadcastingJob, FootballCompetitionStreamer>();
+            if (mode is Sport.FootballNcaa or Sport.FootballNfl)
+            {
+                services.AddScoped<IFootballCompetitionBroadcastingJob, FootballCompetitionStreamer>();
+            }
 
             // Season Queries
             services.AddScoped<IGetSeasonOverviewQueryHandler, GetSeasonOverviewQueryHandler>();

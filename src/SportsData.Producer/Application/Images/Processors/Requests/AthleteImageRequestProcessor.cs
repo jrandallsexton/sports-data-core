@@ -12,6 +12,7 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 {
     [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteImage)]
     [ImageRequestProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.AthleteImage)]
+    [ImageRequestProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.AthleteImage)]
     public class AthleteImageRequestProcessor<TDataContext> : IProcessLogoAndImageRequests
         where TDataContext : BaseDataContext
     {

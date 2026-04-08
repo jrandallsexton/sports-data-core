@@ -10,9 +10,9 @@ http:
     type: json
     data: |-
       {
-        "sport": 3,
+        "sport": 1,
         "sourceDataProvider": 0,
-        "seasonYear": 2019
+        "seasonYear": 2026
       }
   auth: inherit
 

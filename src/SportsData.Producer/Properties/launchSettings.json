@@ -33,7 +33,6 @@
     "http.FootballNcaa": {
       "commandName": "Project",
       "commandLineArgs": "-mode FootballNcaa",
-      "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
@@ -45,7 +44,6 @@
     "http.FootballNfl": {
       "commandName": "Project",
       "commandLineArgs": "-mode FootballNfl",
-      "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
@@ -74,6 +72,17 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "APPCONFIG_LABEL": "Dev"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5231"
+    },
+    "http.BaseballMlb": {
+      "commandName": "Project",
+      "commandLineArgs": "-mode BaseballMlb",
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPCONFIG_LABEL": "Local"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5231"

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
 
@@ -13,9 +13,9 @@ public interface IGetFranchiseSeasonByIdQueryHandler
 
 public class GetFranchiseSeasonByIdQueryHandler : IGetFranchiseSeasonByIdQueryHandler
 {
-    private readonly FootballDataContext _context;
+    private readonly TeamSportDataContext _context;
 
-    public GetFranchiseSeasonByIdQueryHandler(FootballDataContext context)
+    public GetFranchiseSeasonByIdQueryHandler(TeamSportDataContext context)
     {
         _context = context;
     }

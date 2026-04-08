@@ -8,6 +8,7 @@ using SportsData.Producer.Application.Documents;
 using SportsData.Producer.Application.Images.Handlers;
 using SportsData.Producer.Config;
 using SportsData.Producer.DependencyInjection;
+using SportsData.Producer.Infrastructure.Data.Baseball;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Golf;
@@ -84,8 +85,12 @@ public class Program
                 services.AddScoped<TeamSportDataContext, FootballDataContext>();
                 services.AddScoped<BaseDataContext, FootballDataContext>();
                 break;
-            case Sport.All:
             case Sport.BaseballMlb:
+                services.AddDataPersistence<BaseballDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize);
+                services.AddScoped<TeamSportDataContext, BaseballDataContext>();
+                services.AddScoped<BaseDataContext, BaseballDataContext>();
+                break;
+            case Sport.All:
             case Sport.BasketballNba:
             default:
                 throw new ArgumentOutOfRangeException();
@@ -118,8 +123,10 @@ public class Program
                 case Sport.GolfPga:
                     services.AddMessaging<GolfDataContext>(config, consumers);
                     break;
-                case Sport.All:
                 case Sport.BaseballMlb:
+                    services.AddMessaging<BaseballDataContext>(config, consumers);
+                    break;
+                case Sport.All:
                 case Sport.BasketballNba:
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -138,8 +145,10 @@ public class Program
                 case Sport.GolfPga:
                     services.AddMessaging<GolfDataContext>(config, consumers: null);
                     break;
-                case Sport.All:
                 case Sport.BaseballMlb:
+                    services.AddMessaging<BaseballDataContext>(config, consumers: null);
+                    break;
+                case Sport.All:
                 case Sport.BasketballNba:
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -159,8 +168,10 @@ public class Program
             case Sport.FootballNfl:
                 services.AddHealthChecks<FootballDataContext, Program>(builder.Environment.ApplicationName, mode);
                 break;
-            case Sport.All:
             case Sport.BaseballMlb:
+                services.AddHealthChecks<BaseballDataContext, Program>(builder.Environment.ApplicationName, mode);
+                break;
+            case Sport.All:
             case Sport.BasketballNba:
             default:
                 throw new ArgumentOutOfRangeException();
@@ -192,8 +203,11 @@ public class Program
                     var context = appServices.GetRequiredService<FootballDataContext>();
                     await context.Database.MigrateAsync();
                     break;
-                case Sport.All:
                 case Sport.BaseballMlb:
+                    var baseballContext = appServices.GetRequiredService<BaseballDataContext>();
+                    await baseballContext.Database.MigrateAsync();
+                    break;
+                case Sport.All:
                 case Sport.BasketballNba:
                 default:
                     throw new ArgumentOutOfRangeException();

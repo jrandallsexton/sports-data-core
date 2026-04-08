@@ -128,7 +128,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         _logger.LogInformation("Contest created successfully. ContestId={ContestId}", contest.Id);
     }
 
-    private async Task<Guid> GetSeasonWeekId(
+    private async Task<Guid?> GetSeasonWeekId(
         ProcessDocumentCommand command,
         EspnEventDto externalDto)
     {
@@ -153,7 +153,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 $"SeasonWeek not found for {externalDto.Week.Ref} (Id: {seasonWeekIdentity.CanonicalId})");
         }
 
-        // ESPN data is missing Week $ref (common in pre-2003 historical data).
+        // ESPN data is missing Week $ref (common in pre-2003 historical data and baseball preseason).
         // Infer from the event date alone. SeasonWeek date ranges do not overlap,
         // so no phase filter is needed — and omitting it avoids false negatives when
         // ESPN tags events with the wrong season type (e.g., bowl games as regular season).
@@ -180,8 +180,19 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 eventDateUtc);
         }
 
-        throw new InvalidOperationException(
-            $"Cannot determine SeasonWeek for event {externalDto.Ref}. ESPN data is missing Week $ref and date-based inference failed.");
+        // For football, SeasonWeek is required — every game belongs to a week
+        if (command.Sport is Sport.FootballNcaa or Sport.FootballNfl)
+        {
+            throw new InvalidOperationException(
+                $"Cannot determine SeasonWeek for event {externalDto.Ref}. ESPN data is missing Week $ref and date-based inference failed.");
+        }
+
+        // For other sports (e.g., baseball preseason), SeasonWeek may not exist
+        _logger.LogInformation(
+            "No SeasonWeek found for {Sport} event {Ref}. Proceeding with null SeasonWeekId.",
+            command.Sport, externalDto.Ref);
+
+        return null;
     }
 
     private async Task<Guid> GetSeasonPhaseId(ProcessDocumentCommand command, EspnEventDto externalDto)

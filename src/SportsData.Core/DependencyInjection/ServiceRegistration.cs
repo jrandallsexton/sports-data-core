@@ -114,9 +114,7 @@ namespace SportsData.Core.DependencyInjection
                 connString = $"{connString.TrimEnd(';')};Maximum Pool Size={maxPoolSize.Value};";
             }
 
-#if DEBUG
-            Console.WriteLine($"using: {connString}");
-#endif
+            Console.WriteLine($"PostgreSQL: {connString}");
 
             services.AddDbContext<T>((serviceProvider, options) =>
             {

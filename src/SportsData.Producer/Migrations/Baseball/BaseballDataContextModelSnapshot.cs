@@ -3624,7 +3624,6 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 

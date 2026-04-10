@@ -278,8 +278,8 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             .Where(l => l.Competition.ContestId == contestId)
             .SelectMany(l => l.Stats.Select(s => new FlatLeaderRow
             {
-                CategoryId = l.LeaderCategory.Name,
-                CategoryName = l.LeaderCategory.DisplayName ?? l.LeaderCategory.Name,
+                CategoryId = l.LeaderCategory.Name ?? l.LeaderCategory.Id.ToString(),
+                CategoryName = l.LeaderCategory.DisplayName ?? l.LeaderCategory.Name ?? l.LeaderCategory.Abbreviation,
                 Abbr = l.LeaderCategory.Abbreviation,
                 Unit = null,
                 DisplayOrder = 0,

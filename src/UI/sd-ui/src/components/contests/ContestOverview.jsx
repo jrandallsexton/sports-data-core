@@ -85,12 +85,12 @@ export default function ContestOverview() {
           {/* Video component above Win Probability */}
           <ContestOverviewVideo mediaItems={mediaItems} />
           {/* Win probability moved up until TeamStats is available */}
-          <ContestOverviewWinProb winProbability={winProbability} homeTeam={homeTeam} awayTeam={awayTeam} />
+          <ContestOverviewWinProb winProbability={winProbability} homeTeam={homeTeam} awayTeam={awayTeam} sport={sport} />
           <ContestOverviewMetrics homeMetrics={homeMetrics} awayMetrics={awayMetrics} homeName={homeTeam?.displayName} awayName={awayTeam?.displayName} />
           <ContestOverviewInfo info={info} />
         </div>
         <div className="contest-overview-col">
-          <ContestOverviewPlaylog playLog={playLog} />
+          <ContestOverviewPlaylog playLog={playLog} sport={sport} />
         </div>
       </div>
       {isAdmin && (

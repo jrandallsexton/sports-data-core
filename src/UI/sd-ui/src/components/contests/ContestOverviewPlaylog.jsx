@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { getPeriodPrefix } from "../../utils/periodLabel";
 import "./ContestOverview.css";
 
-export default function ContestOverviewPlaylog({ playLog }) {
+export default function ContestOverviewPlaylog({ playLog, sport }) {
+  const periodPrefix = getPeriodPrefix(sport);
   const [showAll, setShowAll] = useState(false);
   if (!playLog || !playLog.plays) return null;
   const { plays, awayTeamSlug, homeTeamSlug, awayTeamLogoUrl, homeTeamLogoUrl } = playLog;
@@ -54,7 +56,7 @@ export default function ContestOverviewPlaylog({ playLog }) {
                 padding: "14px 18px"
               }}
             >
-              <div style={{ fontWeight: 700, color: '#ffc107', marginBottom: 8 }}>Q{quarter}</div>
+              <div style={{ fontWeight: 700, color: '#ffc107', marginBottom: 8 }}>{periodPrefix}{quarter}</div>
               <div className="contest-scoring-summary-list">
                 {playsByQuarter[quarter].map((play, idx) => {
                   const logoUrl = getLogoUrl(play.team);

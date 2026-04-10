@@ -1,0 +1,68 @@
+{
+    "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/situation?lang=en&region=us",
+    "lastPlay": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/plays/4018148441704990099?lang=en&region=us"
+    },
+    "balls": 2,
+    "strikes": 2,
+    "outs": 1,
+    "onFirst": {
+        "playerId": 41217,
+        "period": 9,
+        "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/41217?lang=en&region=us"
+        },
+        "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+        },
+        "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/5/roster/41217/statistics/0?lang=en&region=us"
+        }
+    },
+    "onSecond": {
+        "playerId": 41183,
+        "period": 9,
+        "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/41183?lang=en&region=us"
+        },
+        "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/2?lang=en&region=us"
+        },
+        "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/5/roster/41183/statistics/0?lang=en&region=us"
+        }
+    },
+    "pitcher": {
+        "playerId": 39949,
+        "period": 9,
+        "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/39949?lang=en&region=us"
+        },
+        "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/7/roster/39949/statistics/0?lang=en&region=us"
+        }
+    },
+    "batter": {
+        "playerId": 41217,
+        "period": 9,
+        "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/41217?lang=en&region=us"
+        },
+        "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+        },
+        "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/competitors/5/roster/41217/statistics/0?lang=en&region=us"
+        }
+    },
+    "situationNotes": [
+        {
+            "type": "RISP_STATS",
+            "text": "Rocchio this year w/ RISP: 4 for 8 (.500 AVG), 0 HR, 2 SO"
+        },
+        {
+            "type": "BVP_STATS",
+            "text": "Rocchio career vs. Schreiber: 1 for 3 (.333 AVG), 0 HR, 0 SO"
+        }
+    ]
+}

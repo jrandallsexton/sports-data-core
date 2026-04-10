@@ -7,7 +7,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class CompetitionLeaderCategory : CanonicalEntityBase<int>
     {
-        public required string Name { get; set; }
+        public string? Name { get; set; }
 
         public required string DisplayName { get; set; }
 
@@ -25,7 +25,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.ToTable("lkLeaderCategory");
 
                 builder.Property(c => c.Name)
-                    .IsRequired()
+                    .IsRequired(false)
                     .HasMaxLength(50);
 
                 builder.Property(c => c.DisplayName)

@@ -3,6 +3,7 @@ import React from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
+import { getPeriodPrefix } from "../../utils/periodLabel";
 import "./ContestOverview.css";
 
 // Custom tooltip for dark theme
@@ -28,7 +29,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 
-export default function ContestOverviewWinProb({ winProbability }) {
+export default function ContestOverviewWinProb({ winProbability, sport }) {
+  const periodPrefix = getPeriodPrefix(sport);
   // Use colors and slugs from winProbability DTO
   const HOME_COLOR = `#${winProbability.homeTeamColor?.replace(/^#/, '') || '000000'}`;
   const AWAY_COLOR = `#${winProbability.awayTeamColor?.replace(/^#/, '') || 'ff5f05'}`;
@@ -56,7 +58,7 @@ export default function ContestOverviewWinProb({ winProbability }) {
               <XAxis
                 dataKey="quarter"
                 ticks={uniqueQuarters}
-                tickFormatter={q => `Q${q}`}
+                tickFormatter={q => `${periodPrefix}${q}`}
                 interval={0}
               />
               <YAxis domain={[0, 100]} tickFormatter={v => `${v}%`} />

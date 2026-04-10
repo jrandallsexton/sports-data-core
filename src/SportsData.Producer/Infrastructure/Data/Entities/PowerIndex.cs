@@ -13,7 +13,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public required string Description { get; set; }
 
-        public required string Abbreviation { get; set; }
+        public string? Abbreviation { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<PowerIndex>
         {
@@ -36,7 +36,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasMaxLength(256);
 
                 builder.Property(x => x.Abbreviation)
-                    .IsRequired()
+                    .IsRequired(false)
                     .HasMaxLength(20);
             }
         }

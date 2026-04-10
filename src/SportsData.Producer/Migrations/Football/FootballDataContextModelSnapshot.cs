@@ -7015,7 +7015,6 @@ namespace SportsData.Producer.Migrations.Football
                         .HasColumnType("uuid");
 
                     b.Property<string>("Abbreviation")
-                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 

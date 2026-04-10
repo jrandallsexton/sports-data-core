@@ -1,0 +1,104 @@
+{
+    "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/plays/4018148440202990057?lang=en&region=us",
+    "id": "4018148440202990057",
+    "sequenceNumber": "4",
+    "type": {
+        "id": "57",
+        "text": "Play Result",
+        "type": "play-result"
+    },
+    "alternativeType": {
+        "id": "28",
+        "text": "Home Run",
+        "abbreviation": "HR",
+        "alternativeText": "Home Run",
+        "type": "home-run"
+    },
+    "alternativePlay": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/plays/4018148440202030028?lang=en&region=us"
+    },
+    "text": "Jensen homered to right center (389 feet).",
+    "shortText": "Jensen homered to right center (389 feet).",
+    "alternativeText": "Jensen homered to right center (389 feet).",
+    "shortAlternativeText": "Carter Jensen homers (389 feet) on a fly ball to right center field",
+    "awayScore": 1,
+    "homeScore": 0,
+    "period": {
+        "type": "Top",
+        "number": 2,
+        "displayValue": "2nd Inning"
+    },
+    "valid": true,
+    "scoringPlay": true,
+    "priority": false,
+    "scoreValue": 1,
+    "modified": "2026-04-07T21:14Z",
+    "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/7?lang=en&region=us"
+    },
+    "participants": [
+        {
+            "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4345076?lang=en&region=us"
+            },
+            "position": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/15?lang=en&region=us"
+            },
+            "order": 1,
+            "type": "pitcher"
+        },
+        {
+            "athlete": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4917812?lang=en&region=us"
+            },
+            "position": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/2?lang=en&region=us"
+            },
+            "order": 2,
+            "type": "batter"
+        }
+    ],
+    "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/probabilities/4018148440202990057?lang=en&region=us"
+    },
+    "wallclock": "2026-04-07T17:22:43Z",
+    "atBatId": "4018148440202",
+    "batOrder": 5,
+    "bats": {
+        "type": "LEFT",
+        "abbreviation": "L",
+        "displayValue": "Left"
+    },
+    "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+    },
+    "atBatPitchNumber": 2,
+    "pitchCoordinate": {
+        "x": 113,
+        "y": 159
+    },
+    "hitCoordinate": {
+        "x": 205,
+        "y": 62
+    },
+    "summaryType": "S",
+    "pitchCount": {
+        "balls": 1,
+        "strikes": 0
+    },
+    "resultCount": {
+        "balls": 1,
+        "strikes": 0
+    },
+    "trajectory": "F",
+    "awayErrors": 1,
+    "awayHits": 1,
+    "homeErrors": 0,
+    "homeHits": 0,
+    "outs": 1,
+    "rbiCount": 1,
+    "doublePlay": false,
+    "triplePlay": false
+}

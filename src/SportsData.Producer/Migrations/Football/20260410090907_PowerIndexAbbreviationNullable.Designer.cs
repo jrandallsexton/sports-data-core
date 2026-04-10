@@ -3,18 +3,21 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using SportsData.Producer.Infrastructure.Data.Baseball;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 #nullable disable
 
-namespace SportsData.Producer.Migrations.Baseball
+namespace SportsData.Producer.Migrations.Football
 {
-    [DbContext(typeof(BaseballDataContext))]
-    partial class BaseballDataContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(FootballDataContext))]
+    [Migration("20260410090907_PowerIndexAbbreviationNullable")]
+    partial class PowerIndexAbbreviationNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -412,120 +415,6 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasIndex("Created");
 
                     b.ToTable("OutboxState", (string)null);
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Baseball.Entities.AthleteSeasonHotZone", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("Active")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("AthleteSeasonId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("ConfigurationId")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<int>("Season")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SeasonType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SplitTypeId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AthleteSeasonId", "ConfigurationId", "Season", "SeasonType");
-
-                    b.ToTable("AthleteSeasonHotZone", (string)null);
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Baseball.Entities.AthleteSeasonHotZoneEntry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("AtBats")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("AthleteSeasonHotZoneId")
-                        .HasColumnType("uuid");
-
-                    b.Property<double?>("BattingAvg")
-                        .HasPrecision(7, 4)
-                        .HasColumnType("double precision");
-
-                    b.Property<double?>("BattingAvgScore")
-                        .HasPrecision(7, 4)
-                        .HasColumnType("double precision");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("Hits")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("ModifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ModifiedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<double?>("Slugging")
-                        .HasPrecision(7, 4)
-                        .HasColumnType("double precision");
-
-                    b.Property<double?>("SluggingScore")
-                        .HasPrecision(7, 4)
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("XMax")
-                        .HasPrecision(7, 2)
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("XMin")
-                        .HasPrecision(7, 2)
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("YMax")
-                        .HasPrecision(7, 2)
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("YMin")
-                        .HasPrecision(7, 2)
-                        .HasColumnType("double precision");
-
-                    b.Property<int>("ZoneId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AthleteSeasonHotZoneId");
-
-                    b.ToTable("AthleteSeasonHotZoneEntry", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Common.Athlete", b =>
@@ -8013,17 +7902,9 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.ToTable("SeasonWeekExternalId", (string)null);
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Baseball.Entities.BaseballAthlete", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FootballAthlete", b =>
                 {
                     b.HasBaseType("SportsData.Producer.Infrastructure.Data.Common.Athlete");
-
-                    b.Property<string>("BatsAbbreviation")
-                        .HasMaxLength(5)
-                        .HasColumnType("character varying(5)");
-
-                    b.Property<string>("BatsType")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
 
                     b.Property<Guid?>("FranchiseId")
                         .HasColumnType("uuid");
@@ -8034,24 +7915,16 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.Property<Guid?>("PositionId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ThrowsAbbreviation")
-                        .HasMaxLength(5)
-                        .HasColumnType("character varying(5)");
-
-                    b.Property<string>("ThrowsType")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
                     b.HasIndex("PositionId");
 
-                    b.HasDiscriminator().HasValue("BaseballAthlete");
+                    b.HasDiscriminator().HasValue("FootballAthlete");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Baseball.Entities.BaseballAthleteSeason", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FootballAthleteSeason", b =>
                 {
                     b.HasBaseType("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason");
 
-                    b.HasDiscriminator().HasValue("BaseballAthleteSeason");
+                    b.HasDiscriminator().HasValue("FootballAthleteSeason");
                 });
 
             modelBuilder.Entity("CompetitionOdds", b =>
@@ -8084,17 +7957,6 @@ namespace SportsData.Producer.Migrations.Baseball
                         .WithMany()
                         .HasForeignKey("InboxMessageId", "InboxConsumerId")
                         .HasPrincipalKey("MessageId", "ConsumerId");
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Baseball.Entities.AthleteSeasonHotZoneEntry", b =>
-                {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Baseball.Entities.AthleteSeasonHotZone", "HotZone")
-                        .WithMany("Entries")
-                        .HasForeignKey("AthleteSeasonHotZoneId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("HotZone");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Common.Athlete", b =>
@@ -9631,7 +9493,7 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.Navigation("SeasonWeek");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Baseball.Entities.BaseballAthlete", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FootballAthlete", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthletePosition", "Position")
                         .WithMany()
@@ -9647,11 +9509,6 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.Navigation("Links");
 
                     b.Navigation("Teams");
-                });
-
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Baseball.Entities.AthleteSeasonHotZone", b =>
-                {
-                    b.Navigation("Entries");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Common.Athlete", b =>

@@ -1,0 +1,48 @@
+{
+    "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/plays/4018148440000000059?lang=en&region=us",
+    "id": "4018148440000000059",
+    "sequenceNumber": "1",
+    "type": {
+        "id": "59",
+        "text": "Start Inning",
+        "type": "start-inning"
+    },
+    "text": "Top of the 1st inning",
+    "shortText": "Top of the 1st inning",
+    "alternativeText": "Top of the 1st inning",
+    "shortAlternativeText": "Top of the 1st inning",
+    "awayScore": 0,
+    "homeScore": 0,
+    "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+    },
+    "valid": true,
+    "scoringPlay": false,
+    "priority": false,
+    "scoreValue": 0,
+    "modified": "2026-04-07T17:14Z",
+    "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/7?lang=en&region=us"
+    },
+    "wallclock": "2026-04-07T17:10:55Z",
+    "atBatId": "4018148440001",
+    "summaryType": "I",
+    "pitchCount": {
+        "balls": 0,
+        "strikes": 0
+    },
+    "resultCount": {
+        "balls": 0,
+        "strikes": 0
+    },
+    "awayErrors": 0,
+    "awayHits": 0,
+    "homeErrors": 0,
+    "homeHits": 0,
+    "outs": 0,
+    "rbiCount": 0,
+    "doublePlay": false,
+    "triplePlay": false
+}

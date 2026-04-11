@@ -29,12 +29,12 @@ public class CompetitionCompetitorStatisticStat : CanonicalEntityBase<Guid>
         {
             builder.HasKey(x => x.Id);
 
-            builder.Property(x => x.Name).IsRequired().HasMaxLength(256);
-            builder.Property(x => x.DisplayName).IsRequired().HasMaxLength(256);
-            builder.Property(x => x.ShortDisplayName).IsRequired().HasMaxLength(256);
+            builder.Property(x => x.Name).IsRequired().HasMaxLength(512);
+            builder.Property(x => x.DisplayName).IsRequired().HasMaxLength(512);
+            builder.Property(x => x.ShortDisplayName).IsRequired().HasMaxLength(512);
             builder.Property(x => x.Abbreviation).IsRequired().HasMaxLength(64);
             builder.Property(x => x.Description).HasMaxLength(1024);
-            builder.Property(x => x.DisplayValue).HasMaxLength(256);
+            builder.Property(x => x.DisplayValue).HasMaxLength(1024);
             builder.Property(x => x.Value).HasPrecision(18, 6);
 
             builder.HasOne(x => x.CompetitionCompetitorStatisticCategory)

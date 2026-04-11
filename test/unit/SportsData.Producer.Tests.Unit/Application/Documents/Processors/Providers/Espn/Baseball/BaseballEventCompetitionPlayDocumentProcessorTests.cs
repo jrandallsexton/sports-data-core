@@ -20,7 +20,7 @@ using Xunit;
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Baseball;
 
 [Collection("Sequential")]
-public class BaseballCompetitionPlayDocumentProcessorTests : ProducerTestBase<FootballDataContext>
+public class BaseballEventCompetitionPlayDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private async Task<(Guid competitionId, Guid teamFranchiseSeasonId)> SetupTestDataAsync(
         ExternalRefIdentityGenerator generator,
@@ -85,7 +85,7 @@ public class BaseballCompetitionPlayDocumentProcessorTests : ProducerTestBase<Fo
         var teamRef = dto!.Team.Ref.ToString();
         var (competitionId, teamFranchiseSeasonId) = await SetupTestDataAsync(generator, teamRef);
 
-        var sut = Mocker.CreateInstance<BaseballCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)
@@ -137,7 +137,7 @@ public class BaseballCompetitionPlayDocumentProcessorTests : ProducerTestBase<Fo
         var teamRef = dto!.Team.Ref.ToString();
         var (competitionId, _) = await SetupTestDataAsync(generator, teamRef);
 
-        var sut = Mocker.CreateInstance<BaseballCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)
@@ -206,7 +206,7 @@ public class BaseballCompetitionPlayDocumentProcessorTests : ProducerTestBase<Fo
         await FootballDataContext.CompetitionPlays.AddAsync(existingPlay);
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<BaseballCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)

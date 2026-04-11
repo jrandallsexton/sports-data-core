@@ -241,6 +241,16 @@ namespace SportsData.Core.DependencyInjection
                     options.UseNpgsqlConnection(connString);
                 });
                 x.UseTagsWithPostgreSql();
+
+                // Custom retry delays — longer than Hangfire defaults.
+                // Dependencies (Coach, TeamSeason, etc.) may not be sourced yet;
+                // faster retries just waste cycles and add noise to logs.
+                // 1m, 2m, 5m, 10m, 20m, 40m, 1h, 2h, 4h, 8h
+                x.UseFilter(new AutomaticRetryAttribute
+                {
+                    Attempts = 10,
+                    DelaysInSeconds = [60, 120, 300, 600, 1200, 2400, 3600, 7200, 14400, 28800]
+                });
             });
 
             if (includeServer)
@@ -372,7 +382,8 @@ namespace SportsData.Core.DependencyInjection
                         "Microsoft.AspNetCore.Hosting",
                         "Microsoft.AspNetCore.Server.Kestrel",
                         "System.Net.Http",
-                        "SportsData.Provider.Espn");
+                        "SportsData.Provider.Espn",
+                        "SportsData.Producer.Documents");
 
                     // Prometheus scraping endpoint
                     builder.AddPrometheusExporter(options =>

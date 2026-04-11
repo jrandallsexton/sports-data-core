@@ -1,4 +1,6 @@
-﻿using SportsData.Core.Common;
+﻿using System.Diagnostics.Metrics;
+
+using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
@@ -18,6 +20,14 @@ namespace SportsData.Producer.Application.Documents.Processors;
 public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     where TDataContext : BaseDataContext
 {
+    private static readonly Meter Meter = new("SportsData.Producer.Documents");
+    private static readonly Counter<long> DocumentsProcessed = Meter.CreateCounter<long>(
+        "documents.processed", description: "Documents successfully processed by Producer");
+    private static readonly Counter<long> DocumentsFailed = Meter.CreateCounter<long>(
+        "documents.failed", description: "Documents that failed processing in Producer");
+    private static readonly Counter<long> DocumentsRetried = Meter.CreateCounter<long>(
+        "documents.retried", description: "Documents scheduled for retry due to missing dependencies");
+
     protected readonly ILogger _logger;
     protected readonly TDataContext _dataContext;
     protected readonly IEventBus _publishEndpoint;
@@ -60,10 +70,18 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
                     await PublishCompletionNotification(command);
                 }
                 
+                DocumentsProcessed.Add(1,
+                    new KeyValuePair<string, object?>("DocumentType", command.DocumentType.ToString()),
+                    new KeyValuePair<string, object?>("Sport", command.Sport.ToString()));
+
                 _logger.LogInformation("Processing completed.");
             }
             catch (ExternalDocumentNotSourcedException retryEx)
             {
+                DocumentsRetried.Add(1,
+                    new KeyValuePair<string, object?>("DocumentType", command.DocumentType.ToString()),
+                    new KeyValuePair<string, object?>("Sport", command.Sport.ToString()));
+
                 _logger.LogWarning(retryEx,
                     "Dependency not ready (attempt {Attempt}). Will retry later.",
                     command.AttemptCount + 1);
@@ -80,6 +98,10 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             }
             catch (Exception ex)
             {
+                DocumentsFailed.Add(1,
+                    new KeyValuePair<string, object?>("DocumentType", command.DocumentType.ToString()),
+                    new KeyValuePair<string, object?>("Sport", command.Sport.ToString()));
+
                 _logger.LogError(ex, "Processing failed.");
                 throw;
             }

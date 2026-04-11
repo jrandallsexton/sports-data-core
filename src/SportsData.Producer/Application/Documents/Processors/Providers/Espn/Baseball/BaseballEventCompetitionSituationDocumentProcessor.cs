@@ -15,11 +15,11 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Baseball;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.EventCompetitionSituation)]
-public class BaseballCompetitionSituationDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+public class BaseballEventCompetitionSituationDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    public BaseballCompetitionSituationDocumentProcessor(
-        ILogger<BaseballCompetitionSituationDocumentProcessor<TDataContext>> logger,
+    public BaseballEventCompetitionSituationDocumentProcessor(
+        ILogger<BaseballEventCompetitionSituationDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,

@@ -20,7 +20,7 @@ using Xunit;
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Baseball;
 
 [Collection("Sequential")]
-public class BaseballCompetitionSituationDocumentProcessorTests : ProducerTestBase<FootballDataContext>
+public class BaseballEventCompetitionSituationDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private async Task<(Guid competitionId, Guid lastPlayId)> SetupTestDataAsync(
         ExternalRefIdentityGenerator generator,
@@ -82,7 +82,7 @@ public class BaseballCompetitionSituationDocumentProcessorTests : ProducerTestBa
 
         var (competitionId, lastPlayId) = await SetupTestDataAsync(generator, dto!);
 
-        var sut = Mocker.CreateInstance<BaseballCompetitionSituationDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionSituationDocumentProcessor<FootballDataContext>>();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)
@@ -140,7 +140,7 @@ public class BaseballCompetitionSituationDocumentProcessorTests : ProducerTestBa
         });
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<BaseballCompetitionSituationDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionSituationDocumentProcessor<FootballDataContext>>();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)
@@ -183,7 +183,7 @@ public class BaseballCompetitionSituationDocumentProcessorTests : ProducerTestBa
         });
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<BaseballCompetitionSituationDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionSituationDocumentProcessor<FootballDataContext>>();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)

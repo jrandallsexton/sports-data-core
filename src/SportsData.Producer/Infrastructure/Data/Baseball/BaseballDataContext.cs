@@ -14,6 +14,12 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
 
         public new DbSet<BaseballAthleteSeason> AthleteSeasons { get; set; }
 
+        public new DbSet<BaseballContest> Contests { get; set; }
+
+        public new DbSet<BaseballCompetition> Competitions { get; set; }
+
+        public new DbSet<BaseballCompetitionPlay> CompetitionPlays { get; set; }
+
         public DbSet<AthleteSeasonHotZone> AthleteSeasonHotZones { get; set; }
 
         public DbSet<AthleteSeasonHotZoneEntry> AthleteSeasonHotZoneEntries { get; set; }
@@ -25,6 +31,8 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
             modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballAthlete.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeason.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new BaseballCompetition.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new BaseballCompetitionPlay.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeasonHotZone.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeasonHotZoneEntry.EntityConfiguration());
         }

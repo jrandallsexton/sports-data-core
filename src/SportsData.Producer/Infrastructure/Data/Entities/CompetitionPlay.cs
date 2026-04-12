@@ -8,15 +8,11 @@ using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class CompetitionPlay : CanonicalEntityBase<Guid>, IHasExternalIds   
+    public abstract class CompetitionPlay : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public Competition Competition { get; set; } = null!;
 
         public Guid CompetitionId { get; set; }
-
-        public CompetitionDrive? Drive { get; set; }
-
-        public Guid? DriveId { get; set; }
 
         public required string EspnId { get; set; } // Maps to "id" in JSON
 
@@ -46,10 +42,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int PeriodNumber { get; set; }
 
-        public double ClockValue { get; set; }
-
-        public string? ClockDisplayValue { get; set; }
-
         public bool ScoringPlay { get; set; }
 
         public bool Priority { get; set; }
@@ -58,27 +50,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public DateTime Modified { get; set; }
 
-        public int? StartDown { get; set; }
-
-        public int? StartDistance { get; set; }
-
-        public int? StartYardLine { get; set; }
-
-        public int? StartYardsToEndzone { get; set; }
-
         public Guid? StartFranchiseSeasonId { get; set; }
-
-        public Guid? EndFranchiseSeasonId { get; set; } // FK to FranchiseSeason
-
-        public int? EndDown { get; set; }
-
-        public int? EndDistance { get; set; }
-
-        public int? EndYardLine { get; set; }
-
-        public int? EndYardsToEndzone { get; set; }
-
-        public int StatYardage { get; set; }
 
         public ICollection<CompetitionProbability> Probabilities { get; set; } = [];
 
@@ -96,9 +68,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasKey(x => x.Id);
 
                 builder.Property(x => x.AlternativeText).HasMaxLength(1024);
-                builder.Property(x => x.ClockDisplayValue).HasMaxLength(32);
                 builder.Property(x => x.CompetitionId).IsRequired();
-                builder.Property(x => x.DriveId).IsRequired(false); // Nullable FK
                 builder.Property(x => x.EspnId).IsRequired().HasMaxLength(32);
                 builder.Property(x => x.Modified).IsRequired();
                 builder.Property(x => x.SequenceNumber).IsRequired().HasMaxLength(32);
@@ -110,16 +80,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.Type)
                     .IsRequired()
                     .HasConversion<int>();
-
-                builder.HasOne(x => x.Drive)
-                    .WithMany(x => x.Plays)
-                    .HasForeignKey(x => x.DriveId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                builder.HasOne(x => x.Competition)
-                    .WithMany(x => x.Plays)
-                    .HasForeignKey(x => x.CompetitionId)
-                    .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(x => x.ExternalIds)
                     .WithOne()

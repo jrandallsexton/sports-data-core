@@ -10,6 +10,7 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Infrastructure.DataSources.Espn;
@@ -145,7 +146,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
             competitionDriveId,
             externalDto.Type?.Text);
 
-        var play = externalDto.AsEntity(
+        var play = externalDto.AsFootballEntity(
             _externalRefIdentityGenerator,
             command.CorrelationId,
             competition.Id,
@@ -190,14 +191,18 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
         Guid? startFranchiseSeasonId,
         Guid? endFranchiseSeasonId)
     {
-        _logger.LogInformation("Updating CompetitionPlay. PlayId={PlayId}, DriveId={DriveId}", 
+        _logger.LogInformation("Updating CompetitionPlay. PlayId={PlayId}, DriveId={DriveId}",
             entity.Id,
             competitionDriveId);
 
         entity.StartFranchiseSeasonId = startFranchiseSeasonId;
-        entity.EndFranchiseSeasonId = endFranchiseSeasonId;
-        entity.DriveId = competitionDriveId;
-        
+
+        if (entity is FootballCompetitionPlay footballPlay)
+        {
+            footballPlay.EndFranchiseSeasonId = endFranchiseSeasonId;
+            footballPlay.DriveId = competitionDriveId;
+        }
+
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Persisted CompetitionPlay update. PlayId={PlayId}", entity.Id);

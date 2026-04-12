@@ -113,13 +113,11 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
             "Creating baseball CompetitionPlay. CompetitionId={CompId}, PlayType={PlayType}",
             competition.Id, externalDto.Type?.Text);
 
-        var play = externalDto.AsEntity(
+        var play = externalDto.AsBaseballEntity(
             _externalRefIdentityGenerator,
             command.CorrelationId,
             competition.Id,
-            driveId: null,
-            startFranchiseSeasonId: teamFranchiseSeasonId,
-            endFranchiseSeasonId: null);
+            teamFranchiseSeasonId);
 
         if (competition.Status is not null && !competition.Status.IsCompleted)
         {

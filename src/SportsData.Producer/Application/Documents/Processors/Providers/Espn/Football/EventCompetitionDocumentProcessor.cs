@@ -100,10 +100,13 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
     {
         _logger.LogInformation("Creating new Competition. ContestId={ContestId}", contestId);
 
-        var competition = externalDto.AsEntity(
-            _externalRefIdentityGenerator,
-            contestId,
-            command.CorrelationId);
+        var competition = command.Sport switch
+        {
+            Sport.BaseballMlb => (Competition)externalDto.AsBaseballEntity(
+                _externalRefIdentityGenerator, contestId, command.CorrelationId),
+            _ => externalDto.AsFootballEntity(
+                _externalRefIdentityGenerator, contestId, command.CorrelationId)
+        };
 
         await AddVenue(command, externalDto, competition);
 
@@ -163,10 +166,13 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
         Competition competition)
     {
         // Map DTO to a temporary entity with all properties populated
-        var updatedEntity = dto.AsEntity(
-            _externalRefIdentityGenerator,
-            competition.ContestId,
-            command.CorrelationId);
+        var updatedEntity = command.Sport switch
+        {
+            Sport.BaseballMlb => (Competition)dto.AsBaseballEntity(
+                _externalRefIdentityGenerator, competition.ContestId, command.CorrelationId),
+            _ => dto.AsFootballEntity(
+                _externalRefIdentityGenerator, competition.ContestId, command.CorrelationId)
+        };
 
         // Store the original date for comparison (needed for ContestStartTimeUpdated event)
         var originalDate = competition.Date;

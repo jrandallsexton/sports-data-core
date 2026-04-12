@@ -11,7 +11,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Contest : CanonicalEntityBase<Guid>, IHasExternalIds
+    public abstract class Contest : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public required string Name { get; set; }
 
@@ -75,8 +75,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public ICollection<ContestLink> Links { get; set; } = new List<ContestLink>(); // Normalized set of rel/href for downstream use
         
         public ICollection<ContestExternalId> ExternalIds { get; set; } = new List<ContestExternalId>();
-
-        public ICollection<Competition> Competitions { get; set; } = new List<Competition>();
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 

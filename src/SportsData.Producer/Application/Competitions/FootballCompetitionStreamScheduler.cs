@@ -4,19 +4,19 @@ using SportsData.Core.Common;
 using SportsData.Core.Processing;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data;
-using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Competitions;
 
 public class FootballCompetitionStreamScheduler
 {
     private readonly ILogger<FootballCompetitionStreamScheduler> _logger;
-    private readonly TeamSportDataContext _dataContext;
+    private readonly FootballDataContext _dataContext;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
     public FootballCompetitionStreamScheduler(
         ILogger<FootballCompetitionStreamScheduler> logger,
-        TeamSportDataContext dataContext,
+        FootballDataContext dataContext,
         IProvideBackgroundJobs backgroundJobProvider)
     {
         _logger = logger;

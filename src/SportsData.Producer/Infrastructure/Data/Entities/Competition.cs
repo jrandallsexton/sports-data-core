@@ -8,7 +8,7 @@ using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Competition : CanonicalEntityBase<Guid>, IHasExternalIds
+    public abstract class Competition : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public Contest Contest { get; set; } = null!;
 
@@ -100,10 +100,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionNote> Notes { get; set; } = [];
 
-        public ICollection<CompetitionPlay> Plays { get; set; } = [];
-
-        public ICollection<CompetitionDrive> Drives { get; set; } = [];
-
         public ICollection<CompetitionBroadcast> Broadcasts { get; set; } = [];
 
         public string? FormatRegulationDisplayName { get; set; }
@@ -167,11 +163,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                builder.HasOne(x => x.Contest)
-                    .WithMany(x => x.Competitions)
-                    .HasForeignKey(x => x.ContestId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
                 builder.HasMany(x => x.ExternalIds)
                     .WithOne()
                     .HasForeignKey(x => x.CompetitionId)
@@ -194,11 +185,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .WithMany()
                     .HasForeignKey(x => x.VenueId)
                     .OnDelete(DeleteBehavior.Restrict);
-
-                builder.HasMany(x => x.Plays)
-                    .WithOne(x => x.Competition)
-                    .HasForeignKey(x => x.CompetitionId)
-                    .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(x => x.Leaders)
                     .WithOne(x => x.Competition)

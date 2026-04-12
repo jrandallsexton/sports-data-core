@@ -84,13 +84,13 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         var seasonPhaseId = await GetSeasonPhaseId(command, externalDto);
         var seasonWeekId = await GetSeasonWeekId(command, externalDto);
 
-        var contest = externalDto.AsEntity(
-            _externalRefIdentityGenerator,
-            command.Sport,
-            seasonYear,
-            seasonWeekId,
-            seasonPhaseId,
-            command.CorrelationId);
+        var contest = command.Sport switch
+        {
+            Sport.BaseballMlb => (Contest)externalDto.AsBaseballEntity(
+                _externalRefIdentityGenerator, command.Sport, seasonYear, seasonWeekId, seasonPhaseId, command.CorrelationId),
+            _ => externalDto.AsFootballEntity(
+                _externalRefIdentityGenerator, command.Sport, seasonYear, seasonWeekId, seasonPhaseId, command.CorrelationId)
+        };
 
         // Add contest links from dto.Links
         AddLinks(externalDto, contest);

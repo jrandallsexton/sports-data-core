@@ -30,6 +30,6 @@ BEGIN
         END IF;
     END LOOP;
 
-    RAISE NOTICE 'Total Row Count (Excluding OutboxMessage) | %', total_rows;
+    RAISE NOTICE 'MLB | 325,502 @ 0427 10Apr | Total Row Count (Excluding OutboxMessage) | %', total_rows;
 END;
 $$;

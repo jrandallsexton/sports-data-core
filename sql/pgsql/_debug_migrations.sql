@@ -1,0 +1,1 @@
+select * from public."__EFMigrationsHistory" order by "MigrationId"

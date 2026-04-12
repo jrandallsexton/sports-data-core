@@ -83,5 +83,35 @@
         "DebugTarget": "http.BaseballMlb"
       }
     ]
+  },
+  {
+    "Name": "Api.FootballNcaa",
+    "Projects": [
+      {
+        "Path": "src\\SportsData.Producer\\SportsData.Producer.csproj",
+        "Action": "Start",
+        "DebugTarget": "http.FootballNcaa.Api"
+      },
+      {
+        "Path": "src\\SportsData.Api\\SportsData.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      }
+    ]
+  },
+  {
+    "Name": "Api.BaseballMlb",
+    "Projects": [
+      {
+        "Path": "src\\SportsData.Producer\\SportsData.Producer.csproj",
+        "Action": "Start",
+        "DebugTarget": "http.BaseballMlb.Api"
+      },
+      {
+        "Path": "src\\SportsData.Api\\SportsData.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
+      }
+    ]
   }
 ]

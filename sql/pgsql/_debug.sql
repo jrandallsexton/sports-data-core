@@ -92,7 +92,7 @@ select * from public."Coach"
 select * from public."CoachExternalId"
 select * from public."CoachRecord"
 select * from public."CoachRecordStat" order by "Name"
-select * from public."CoachSeason"
+select * from public."CoachSeason" order by "CreatedUtc" desc limit 10;
 --update public."FranchiseSeasonRanking" set "DefaultRanking" = false where "SeasonWeekId" = '749b10f2-7d08-98fe-4bcb-58b9d9138e7f' and "Type" = 'ap' 
 
 --update public."FranchiseSeasonRanking" set "SeasonWeekId" = '99105d46-d7d3-cd2d-380a-0e9302395a3c' where "ShortHeadline" = '2025 CFP Rankings: Week 16'

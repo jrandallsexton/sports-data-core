@@ -38,5 +38,6 @@ inner join public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchise
 inner join public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"
 inner join public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
 left join public."Venue" v on v."Id" = c."VenueId"
-where (fAway."Slug" = 'lsu-tigers' OR fHome."Slug" = 'lsu-tigers') and C."SeasonYear" = 2015
+--where (fAway."Slug" = 'lsu-tigers' OR fHome."Slug" = 'lsu-tigers') and C."SeasonYear" = 2026
+where (fAway."Slug" = 'texas-rangers' OR fHome."Slug" = 'texas-rangers') and C."SeasonYear" = 2026
 ORDER BY C."StartDateUtc"

@@ -36,7 +36,27 @@
       "Bash(npm ls:*)",
       "Bash(npm view:*)",
       "Bash(kubectl logs:*)",
-      "WebFetch(domain:datalust.co)"
+      "WebFetch(domain:datalust.co)",
+      "Bash(kubectl get:*)",
+      "Bash(az acr repository show-tags:*)",
+      "Bash(PGPASSWORD='3439Acapulco!!!' psql:*)",
+      "Bash(mongosh:*)",
+      "Bash(python -m json.tool)",
+      "Bash(python:*)",
+      "Bash(/c/Program Files/GitHub CLI/gh.exe pr:*)",
+      "Bash(mv Athlete.cs AthleteBase.cs)",
+      "Bash(mv TeamAthlete.cs TeamAthleteBase.cs)",
+      "Bash(mv Contest.cs ContestBase.cs)",
+      "Bash(mv Competition.cs CompetitionBase.cs)",
+      "Bash(mv CompetitionPlay.cs CompetitionPlayBase.cs)",
+      "Bash(sed -i 's/: Contest$/: ContestBase/' src/SportsData.Producer/Infrastructure/Data/Football/Entities/FootballContest.cs src/SportsData.Producer/Infrastructure/Data/Baseball/Entities/BaseballContest.cs)",
+      "Bash(sed -i 's/: Competition$/: CompetitionBase/' src/SportsData.Producer/Infrastructure/Data/Football/Entities/FootballCompetition.cs src/SportsData.Producer/Infrastructure/Data/Baseball/Entities/BaseballCompetition.cs)",
+      "Bash(sed -i 's/: CompetitionPlay$/: CompetitionPlayBase/' src/SportsData.Producer/Infrastructure/Data/Football/Entities/FootballCompetitionPlay.cs src/SportsData.Producer/Infrastructure/Data/Baseball/Entities/BaseballCompetitionPlay.cs)",
+      "Bash(sed -i 's/: TeamAthlete$/: TeamAthleteBase/' src/SportsData.Producer/Infrastructure/Data/Football/Entities/FootballAthlete.cs src/SportsData.Producer/Infrastructure/Data/Basketball/Entities/BasketballAthlete.cs src/SportsData.Producer/Infrastructure/Data/Baseball/Entities/BaseballAthlete.cs)",
+      "Bash(sed -i 's/: Athlete$/: AthleteBase/' src/SportsData.Producer/Infrastructure/Data/Golf/Entities/GolfAthlete.cs src/SportsData.Producer/Infrastructure/Data/Entities/TeamAthleteBase.cs)",
+      "Bash(sed:*)",
+      "Read(//tmp/**)",
+      "Read(//d/sdprod-backups/logs/**)"
     ]
   }
 }

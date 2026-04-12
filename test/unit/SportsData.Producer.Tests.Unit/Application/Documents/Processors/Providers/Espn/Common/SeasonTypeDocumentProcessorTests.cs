@@ -45,7 +45,7 @@ public class SeasonTypeDocumentProcessorTests
         });
         await FootballDataContext.SaveChangesAsync();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaSeasonType_PreSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonType_PreSeason.json");
         const string srcUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1?lang=en&region=us";
         var command = new ProcessDocumentCommand(
             SourceDataProvider.Espn,
@@ -91,7 +91,7 @@ public class SeasonTypeDocumentProcessorTests
     public async Task WhenParentSeasonNotFound_DoesNotCreatePhase()
     {
         // Arrange — do NOT seed a Season so the parent lookup fails
-        var json = await LoadJsonTestData("EspnFootballNcaaSeasonType_PreSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonType_PreSeason.json");
         var nonExistentSeasonId = Guid.NewGuid();
         const string srcUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1?lang=en&region=us";
 

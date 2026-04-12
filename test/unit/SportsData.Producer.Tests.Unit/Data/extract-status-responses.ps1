@@ -114,4 +114,4 @@ Write-Host "1. Review the extracted files in: $OutputPath" -ForegroundColor Whit
 Write-Host "2. Update GameStateManager to point to this directory" -ForegroundColor White
 Write-Host "3. Remove [Skip] attribute from FootballCompetitionStreamer_LiveGameTests" -ForegroundColor White
 Write-Host "4. Run: dotnet test --filter 'StreamCompleteGame'" -ForegroundColor White
-Write-Host ""
+

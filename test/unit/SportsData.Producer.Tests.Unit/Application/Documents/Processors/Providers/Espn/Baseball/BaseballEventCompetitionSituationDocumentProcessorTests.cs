@@ -13,7 +13,9 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Baseball;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -27,7 +29,7 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests : ProducerT
         EspnEventCompetitionSituationDto dto)
     {
         var competitionId = Guid.NewGuid();
-        await FootballDataContext.Competitions.AddAsync(new Competition
+        await FootballDataContext.Competitions.AddAsync(new FootballCompetition
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
@@ -39,7 +41,7 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests : ProducerT
 
         // Create the last play so the situation can resolve it
         var lastPlayIdentity = generator.Generate(dto.LastPlay.Ref);
-        var lastPlay = new CompetitionPlay
+        var lastPlay = new FootballCompetitionPlay
         {
             Id = lastPlayIdentity.CanonicalId,
             CompetitionId = competitionId,
@@ -173,7 +175,7 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests : ProducerT
 
         // Create competition but NOT the last play
         var competitionId = Guid.NewGuid();
-        await FootballDataContext.Competitions.AddAsync(new Competition
+        await FootballDataContext.Competitions.AddAsync(new FootballCompetition
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),

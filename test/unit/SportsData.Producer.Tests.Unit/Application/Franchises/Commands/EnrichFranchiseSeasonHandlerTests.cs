@@ -1,3 +1,4 @@
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using AutoFixture;
 
 using FluentAssertions;
@@ -444,7 +445,7 @@ public class EnrichFranchiseSeasonHandlerTests :
             .Create();
     }
 
-    private Contest CreateContest(
+    private FootballContest CreateContest(
         Guid homeTeamId,
         Guid awayTeamId,
         int seasonYear,
@@ -452,7 +453,7 @@ public class EnrichFranchiseSeasonHandlerTests :
         int awayScore,
         Guid? winnerId)
     {
-        return Fixture.Build<Contest>()
+        return Fixture.Build<FootballContest>()
             .OmitAutoProperties()
             .With(x => x.Id, Guid.NewGuid())
             .With(x => x.HomeTeamFranchiseSeasonId, homeTeamId)

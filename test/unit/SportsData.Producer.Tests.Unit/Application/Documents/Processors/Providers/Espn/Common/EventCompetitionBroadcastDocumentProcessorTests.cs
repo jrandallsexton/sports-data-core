@@ -1,3 +1,4 @@
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 ﻿using AutoFixture;
 
 using FluentAssertions;
@@ -25,7 +26,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenJsonIsValid_DtoDeserializes()
         {
             // arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionBroadcasts.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionBroadcasts.json");
 
             // act
             var dto = json.FromJson<EspnEventCompetitionBroadcastDto>();
@@ -41,12 +42,12 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionBroadcasts.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionBroadcasts.json");
             var dto = json.FromJson<EspnEventCompetitionBroadcastDto>();
 
             var competitionIdentity = generator.Generate(dto.Items.First().Competition.Ref);
 
-            var competition = Fixture.Build<Competition>()
+            var competition = Fixture.Build<FootballCompetition>()
                 .OmitAutoProperties()
                 .With(x => x.Id, competitionIdentity.CanonicalId)
                 .With(x => x.ExternalIds, new List<CompetitionExternalId>

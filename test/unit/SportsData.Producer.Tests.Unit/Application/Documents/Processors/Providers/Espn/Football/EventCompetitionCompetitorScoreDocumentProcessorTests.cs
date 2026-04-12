@@ -10,7 +10,9 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -52,7 +54,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
         var contestId = Guid.NewGuid();
         
         // Create Contest first (required by Competition)
-        var contest = new Contest
+        var contest = new FootballContest
         {
             Id = contestId,
             Name = "Test Contest",
@@ -69,7 +71,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
         await FootballDataContext.Contests.AddAsync(contest);
         
         // Create Competition (required by CompetitionCompetitor)
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = contestId,
@@ -96,7 +98,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
 
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorScoreDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorScore.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorScore.json");
         var command = CreateCommand(json, competitorId.ToString());
 
         // Act
@@ -120,7 +122,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
     {
         // Arrange
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorScoreDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorScore.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorScore.json");
 
         var command = CreateCommand(json, "not-a-guid");
 
@@ -141,7 +143,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorScoreDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorScore.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorScore.json");
 
         var command = CreateCommand(json, null);
         command.ParentId = null;

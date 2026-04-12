@@ -16,6 +16,7 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -34,7 +35,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         {
             // Arrange
             // OPTIMIZATION: Direct instantiation
-            var competition = new Competition
+            var competition = new FootballCompetition
             {
                 Id = Guid.NewGuid(),
                 ContestId = Guid.NewGuid(),
@@ -60,7 +61,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await TeamSportDataContext.CompetitionCompetitors.AddAsync(competitionCompetitor);
             await TeamSportDataContext.SaveChangesAsync();
 
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.ParentId, competitionCompetitor.Id.ToString())
@@ -79,7 +80,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_Inserts_WhenValid()
         {
             // Arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
             var dto = json.FromJson<EspnEventCompetitionCompetitorStatisticsDto>();
             
             var generator = new ExternalRefIdentityGenerator();
@@ -116,7 +117,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             };
 
             // OPTIMIZATION: Direct instantiation
-            var competition = new Competition
+            var competition = new FootballCompetition
             {
                 Id = Guid.NewGuid(),
                 ContestId = Guid.NewGuid(),
@@ -171,7 +172,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_ReplacesExisting_WhenAlreadyPresent()
         {
             // Arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
             var dto = json.FromJson<EspnEventCompetitionCompetitorStatisticsDto>();
 
             var generator = new ExternalRefIdentityGenerator();
@@ -208,7 +209,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             };
 
             // OPTIMIZATION: Direct instantiation
-            var competition = new Competition
+            var competition = new FootballCompetition
             {
                 Id = Guid.NewGuid(),
                 ContestId = Guid.NewGuid(),
@@ -284,7 +285,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_RequestsCompetitionCompetitor_WhenCompetitionCompetitorNotFound()
         {
             // Arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorStatistics.json");
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);

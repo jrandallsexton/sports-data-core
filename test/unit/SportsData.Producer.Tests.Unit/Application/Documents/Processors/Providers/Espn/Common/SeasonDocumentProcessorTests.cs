@@ -33,7 +33,7 @@ public class SeasonDocumentProcessorTests
         // Arrange
         const string srcUrl =
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025?lang=en&region=us";
-        var json = await LoadJsonTestData("EspnFootballNcaaSeason2025.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeason2025.json");
         var command = new ProcessDocumentCommand(
             SourceDataProvider.Espn,
             Sport.FootballNcaa,
@@ -69,7 +69,7 @@ public class SeasonDocumentProcessorTests
         // Arrange
         const string srcUrl =
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024?lang=en&region=us";
-        var json = await LoadJsonTestData("EspnFootballNcaaSeason2024.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeason2024.json");
         var command = new ProcessDocumentCommand(
             SourceDataProvider.Espn,
             Sport.FootballNcaa,
@@ -105,7 +105,7 @@ public class SeasonDocumentProcessorTests
         // Arrange - first ingestion
         const string srcUrl =
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024?lang=en&region=us";
-        var json2025 = await LoadJsonTestData("EspnFootballNcaaSeason2025.json");
+        var json2025 = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeason2025.json");
         var command = new ProcessDocumentCommand(
             SourceDataProvider.Espn,
             Sport.FootballNcaa,

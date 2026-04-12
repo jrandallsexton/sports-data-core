@@ -16,7 +16,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenJsonIsValid_DtoDeserializes()
         {
             // arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitor.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitor.json");
 
             // act
             var dto = json.FromJson<EspnEventCompetitionCompetitorDto>();

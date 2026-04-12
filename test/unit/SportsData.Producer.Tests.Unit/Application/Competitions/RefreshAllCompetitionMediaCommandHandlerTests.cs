@@ -1,3 +1,4 @@
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using AutoFixture;
 
 using FluentAssertions;
@@ -78,7 +79,7 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
             homeFranchiseSeason2, awayFranchiseSeason2);
 
         // Create finalized contests
-        var contest1 = Fixture.Build<Contest>()
+        var contest1 = Fixture.Build<FootballContest>()
             .With(x => x.Id, contestId1)
             .With(x => x.SeasonYear, seasonYear)
             .With(x => x.Sport, Sport.FootballNcaa)
@@ -92,7 +93,7 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
             .Without(x => x.Competitions)
             .Create();
 
-        var contest2 = Fixture.Build<Contest>()
+        var contest2 = Fixture.Build<FootballContest>()
             .With(x => x.Id, contestId2)
             .With(x => x.SeasonYear, seasonYear)
             .With(x => x.Sport, Sport.FootballNcaa)
@@ -109,7 +110,7 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
         await FootballDataContext.Contests.AddRangeAsync(contest1, contest2);
 
         // Create competitions without media
-        var competition1 = Fixture.Build<Competition>()
+        var competition1 = Fixture.Build<FootballCompetition>()
             .With(x => x.Id, competitionId1)
             .With(x => x.ContestId, contestId1)
             .With(x => x.Contest, contest1)
@@ -120,7 +121,7 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
             .Without(x => x.Metrics)
             .Create();
 
-        var competition2 = Fixture.Build<Competition>()
+        var competition2 = Fixture.Build<FootballCompetition>()
             .With(x => x.Id, competitionId2)
             .With(x => x.ContestId, contestId2)
             .With(x => x.Contest, contest2)
@@ -188,7 +189,7 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
 
         await FootballDataContext.FranchiseSeasons.AddRangeAsync(homeFranchiseSeason, awayFranchiseSeason);
 
-        var contest = Fixture.Build<Contest>()
+        var contest = Fixture.Build<FootballContest>()
             .With(x => x.Id, contestId)
             .With(x => x.SeasonYear, seasonYear)
             .With(x => x.Sport, Sport.FootballNcaa)
@@ -204,7 +205,7 @@ public class RefreshAllCompetitionMediaCommandHandlerTests : ProducerTestBase<Re
 
         await FootballDataContext.Contests.AddAsync(contest);
 
-        var competition = Fixture.Build<Competition>()
+        var competition = Fixture.Build<FootballCompetition>()
             .With(x => x.Id, competitionId)
             .With(x => x.ContestId, contestId)
             .With(x => x.Contest, contest)

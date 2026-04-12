@@ -12,7 +12,9 @@ using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using System.Net;
 
@@ -29,7 +31,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
 {
     #region Helper Methods
 
-    private async Task<(Contest contest, Competition competition, CompetitionStream stream)> CreateTestGameAsync(
+    private async Task<(ContestBase contest, CompetitionBase competition, CompetitionStream stream)> CreateTestGameAsync(
         Guid? competitionId = null,
         Guid? contestId = null,
         bool isFinal = false)
@@ -37,7 +39,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         var compId = competitionId ?? Guid.NewGuid();
         var contId = contestId ?? Guid.NewGuid();
 
-        var contest = new Contest
+        var contest = new FootballContest
         {
             Id = contId,
             Name = "Test Game",
@@ -57,7 +59,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
             contest.FinalizedUtc = DateTime.UtcNow.AddHours(-1);
         }
 
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = compId,
             ContestId = contest.Id,

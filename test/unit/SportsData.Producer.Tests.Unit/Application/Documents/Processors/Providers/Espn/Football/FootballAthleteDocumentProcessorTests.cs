@@ -32,7 +32,7 @@ public class FootballAthleteDocumentProcessorTests :
         var publishEndpoint = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<FootballAthleteDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthlete_Debug.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthlete_Debug.json");
         var dto = json.FromJson<EspnFootballAthleteDto>();
 
         var dtoIdentity = generator.Generate(dto.Ref);

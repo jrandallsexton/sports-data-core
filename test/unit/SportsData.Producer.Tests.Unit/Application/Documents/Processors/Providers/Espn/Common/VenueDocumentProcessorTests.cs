@@ -15,6 +15,7 @@ using SportsData.Core.Eventing.Events.Venues;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using Xunit;
@@ -35,7 +36,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var sut = Mocker.CreateInstance<VenueDocumentProcessor<FootballDataContext>>();
 
-            var documentJson = await LoadJsonTestData("EspnFootballNflVenue.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflVenue.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
@@ -108,7 +109,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             FootballDataContext.Venues.Add(originalVenue);
             await FootballDataContext.SaveChangesAsync();
 
-            var updatedJson = await LoadJsonTestData("EspnFootballNflVenue.json");
+            var updatedJson = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflVenue.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
@@ -183,7 +184,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             FootballDataContext.Venues.Add(originalVenue);
             await FootballDataContext.SaveChangesAsync();
 
-            var updatedJson = await LoadJsonTestData("EspnFootballNflVenue.json");
+            var updatedJson = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflVenue.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)

@@ -40,7 +40,7 @@ public class EventCompetitionAthleteStatisticsDocumentProcessorTests
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EventCompetitionAthleteStatisticsDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionAthleteStatistics.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionAthleteStatistics.json");
         var dto = json.FromJson<EspnEventCompetitionAthleteStatisticsDto>();
 
         // Generate identities from the DTO's refs
@@ -55,7 +55,7 @@ public class EventCompetitionAthleteStatisticsDocumentProcessorTests
 
         await FootballDataContext.AthleteSeasons.AddAsync(athleteSeason);
 
-        var competition = Fixture.Build<Competition>()
+        var competition = Fixture.Build<FootballCompetition>()
             .WithAutoProperties()
             .With(x => x.Id, competitionIdentity.CanonicalId)
             .Create();
@@ -117,7 +117,7 @@ public class EventCompetitionAthleteStatisticsDocumentProcessorTests
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EventCompetitionAthleteStatisticsDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionAthleteStatistics.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionAthleteStatistics.json");
         var dto = json.FromJson<EspnEventCompetitionAthleteStatisticsDto>();
 
         // Resolve identities from DTO refs
@@ -133,7 +133,7 @@ public class EventCompetitionAthleteStatisticsDocumentProcessorTests
 
         await FootballDataContext.AthleteSeasons.AddAsync(athleteSeason);
 
-        var competition = Fixture.Build<Competition>()
+        var competition = Fixture.Build<FootballCompetition>()
             .WithAutoProperties()
             .With(x => x.Id, competitionIdentity.CanonicalId)
             .Create();

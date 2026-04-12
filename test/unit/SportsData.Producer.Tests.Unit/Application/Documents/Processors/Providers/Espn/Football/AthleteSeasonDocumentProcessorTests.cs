@@ -46,7 +46,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeason.json");
         var dto = json.FromJson<EspnAthleteSeasonDto>();
 
         var dtoIdentity = generator.Generate(dto!.Ref);
@@ -198,7 +198,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeason.json");
         var dto = json.FromJson<EspnAthleteSeasonDto>();
 
         var dtoIdentity = generator.Generate(dto!.Ref);
@@ -351,7 +351,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeason.json");
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
@@ -397,7 +397,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeason.json");
         var dto = json.FromJson<EspnAthleteSeasonDto>();
 
         var athleteRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto!.Id}";
@@ -463,7 +463,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeason.json");
         var dto = json.FromJson<EspnAthleteSeasonDto>();
 
         var franchiseSeasonIdentity = generator.Generate(dto!.Team.Ref!);
@@ -608,7 +608,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeason.json");
         var dto = json.FromJson<EspnAthleteSeasonDto>();
 
         // Setup all dependencies
@@ -711,7 +711,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeason.json");
         var dto = json.FromJson<EspnAthleteSeasonDto>();
 
         // Setup all dependencies
@@ -815,7 +815,7 @@ public class AthleteSeasonDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonNoTeam.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeasonNoTeam.json");
         var dto = json.FromJson<EspnAthleteSeasonDto>();
 
         var dtoIdentity = generator.Generate(dto!.Ref);

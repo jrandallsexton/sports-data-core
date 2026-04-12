@@ -1,3 +1,4 @@
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 ﻿using AutoFixture;
 
 using FluentAssertions;
@@ -29,13 +30,13 @@ public class EventCompetitionProbabilityDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionProbability.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionProbability.json");
         var dto = JsonSerializer.Deserialize<EspnEventCompetitionProbabilityDto>(documentJson)!;
 
         var competitionIdentity = generator.Generate(dto.Competition.Ref!);
         var playIdentity = generator.Generate(dto.Play.Ref!);
 
-        var competition = Fixture.Build<Competition>()
+        var competition = Fixture.Build<FootballCompetition>()
             .OmitAutoProperties()
             .With(x => x.Id, competitionIdentity.CanonicalId)
             .With(x => x.Probabilities, new List<CompetitionProbability>())
@@ -52,7 +53,7 @@ public class EventCompetitionProbabilityDocumentProcessorTests :
             })
             .Create();
 
-        var play = Fixture.Build<CompetitionPlay>()
+        var play = Fixture.Build<FootballCompetitionPlay>()
             .OmitAutoProperties()
             .With(x => x.Id, playIdentity.CanonicalId)
             .With(x => x.EspnId, "0")
@@ -110,13 +111,13 @@ public class EventCompetitionProbabilityDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionProbability.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionProbability.json");
         var dto = JsonSerializer.Deserialize<EspnEventCompetitionProbabilityDto>(documentJson)!;
 
         var competitionIdentity = generator.Generate(dto.Competition.Ref!);
         var playIdentity = generator.Generate(dto.Play.Ref!);
 
-        var competition = Fixture.Build<Competition>()
+        var competition = Fixture.Build<FootballCompetition>()
             .With(x => x.Id, competitionIdentity.CanonicalId)
             .With(x => x.ExternalIds, new List<CompetitionExternalId>
             {
@@ -131,7 +132,7 @@ public class EventCompetitionProbabilityDocumentProcessorTests :
             })
             .Create();
 
-        var play = Fixture.Build<CompetitionPlay>()
+        var play = Fixture.Build<FootballCompetitionPlay>()
             .With(x => x.Id, playIdentity.CanonicalId)
             .With(x => x.ExternalIds, new List<CompetitionPlayExternalId>
             {

@@ -42,7 +42,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeasonStatistics.json");
         var dto = json.FromJson<EspnAthleteSeasonStatisticsDto>();
 
         // Create AthleteSeason
@@ -131,7 +131,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeasonStatistics.json");
         var dto = json.FromJson<EspnAthleteSeasonStatisticsDto>();
 
         var dtoIdentity = generator.Generate(dto!.Ref);
@@ -231,7 +231,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
 
         var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeasonStatistics.json");
 
         var nonExistentAthleteSeasonId = Guid.NewGuid();
 
@@ -268,7 +268,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
 
         var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeasonStatistics.json");
 
         var initialCount = await FootballDataContext.AthleteSeasonStatistics.CountAsync();
 
@@ -387,7 +387,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
 
         var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaAthleteSeasonStatistics.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeasonStatistics.json");
 
         var athleteSeason = Fixture.Build<FootballAthleteSeason>()
             .WithAutoProperties()

@@ -44,7 +44,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     public EventCompetitionLeadersDocumentProcessorTests(ITestOutputHelper output)
     {
         _output = output;
-        var documentJson = LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json").Result;
+        var documentJson = LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionLeaders.json").Result;
         _dto = documentJson.FromJson<EspnLeadersDto>()!;
     }
 
@@ -55,7 +55,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
         var competitionRef = EspnUriMapper.CompetitionLeadersRefToCompetitionRef(leadersDto.Ref);
         var competitionIdentity = identityGenerator.Generate(competitionRef);
 
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
@@ -164,7 +164,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     [Fact]
     public async Task WhenFoo_DoesBar()
     {
-        var json = await base.LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders_LaTechLsu2025.json");
+        var json = await base.LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionLeaders_LaTechLsu2025.json");
         var dto = json.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();
@@ -346,7 +346,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     public async Task WhenCompetitionExists_LeadersAreCreated()
     {
         // arrange
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionLeaders.json");
         var leadersDto = documentJson.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();
@@ -388,7 +388,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     public async Task WhenCompetitionExistsAndDataIsResolvable_LeadersAndStatsAreCreated()
     {
         // Arrange
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionLeaders.json");
         var leadersDto = documentJson.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();
@@ -446,7 +446,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     public async Task WhenCompetitionExistsAndDataIsResolvable_LeadersAndStatsReplaceExistingData()
     {
         // Arrange
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionLeaders.json");
         var leadersDto = documentJson.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();
@@ -520,7 +520,7 @@ public class EventCompetitionLeadersDocumentProcessorTests :
     public async Task ProcessAsync_DeduplicatesStatisticsRequests_WhenSameAthleteInMultipleCategories()
     {
         // Arrange - Use the real test JSON which has 153 total statistics refs but only 53 unique
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionLeaders.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionLeaders.json");
         var dto = documentJson.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();

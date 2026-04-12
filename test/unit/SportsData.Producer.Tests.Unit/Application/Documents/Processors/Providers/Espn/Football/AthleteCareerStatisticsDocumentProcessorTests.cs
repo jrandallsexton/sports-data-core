@@ -33,7 +33,7 @@ public class AthleteCareerStatisticsDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteCareerStatisticsDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNflAthleteCareerStatistics.json");
+        var json = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflAthleteCareerStatistics.json");
         var dto = json.FromJson<EspnAthleteCareerStatisticsDto>();
 
         // Derive the athlete ref from the career stats ref
@@ -41,7 +41,7 @@ public class AthleteCareerStatisticsDocumentProcessorTests :
         var athleteRef = dto!.Athlete.Ref;
         var athleteIdentity = generator.Generate(athleteRef);
 
-        // Seed an Athlete entity (Joe Burrow, id 3915511)
+        // Seed an AthleteBase entity (Joe Burrow, id 3915511)
         var athlete = new FootballAthlete
         {
             Id = athleteIdentity.CanonicalId,
@@ -98,11 +98,11 @@ public class AthleteCareerStatisticsDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<AthleteCareerStatisticsDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNflAthleteCareerStatistics.json");
+        var json = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflAthleteCareerStatistics.json");
         var dto = json.FromJson<EspnAthleteCareerStatisticsDto>();
         var statsIdentity = generator.Generate(dto!.Ref);
 
-        // Derive athlete ID so the ParentId resolves, but do NOT seed the Athlete entity
+        // Derive athlete ID so the ParentId resolves, but do NOT seed the AthleteBase entity
         var athleteRef = dto.Athlete.Ref;
         var athleteIdentity = generator.Generate(athleteRef);
 

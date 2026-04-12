@@ -13,6 +13,7 @@ using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 using System.Net;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using Xunit;
 
 namespace SportsData.Producer.Tests.Integration.Application.Competitions;
@@ -177,7 +178,7 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
         return postmanPath;
     }
     
-    private async Task<(Contest contest, Competition competition, CompetitionStream stream)> CreateTestGameAsync(
+    private async Task<(FootballContest contest, FootballCompetition competition, CompetitionStream stream)> CreateTestGameAsync(
         Guid? competitionId = null,
         Guid? contestId = null)
     {
@@ -307,7 +308,7 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
             CreatedBy = Guid.NewGuid()
         };
 
-        var contest = new Contest
+        var contest = new FootballContest
         {
             Id = contId,
             Name = "Iowa State @ Kansas State",
@@ -323,7 +324,7 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
             CreatedBy = Guid.NewGuid()
         };
 
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = compId,
             ContestId = contest.Id,

@@ -37,7 +37,7 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
         await FootballDataContext.Seasons.AddAsync(season);
         await FootballDataContext.SaveChangesAsync();
 
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaSeasonFuture.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonFuture.json");
         const string url = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/2758?lang=en";
         var urlHash = url.UrlHash();
         var command = Fixture.Build<ProcessDocumentCommand>()
@@ -126,7 +126,7 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
         await FootballDataContext.SaveChangesAsync();
 
         // Build the document command
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaSeasonFuture.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonFuture.json");
         const string url = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/2758?lang=en";
         var urlHash = url.UrlHash();
 

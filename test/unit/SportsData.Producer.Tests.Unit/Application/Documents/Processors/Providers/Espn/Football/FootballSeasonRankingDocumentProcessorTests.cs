@@ -26,7 +26,7 @@ public class FootballSeasonRankingDocumentProcessorTests : ProducerTestBase<Foot
         // Arrange
         var bus = Mocker.GetMock<IEventBus>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaSeasonPoll.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonPoll.json");
         var dto = json.FromJson<EspnFootballSeasonRankingDto>();
         
         var generator = new ExternalRefIdentityGenerator();

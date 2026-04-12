@@ -29,7 +29,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
     public async Task WhenJsonIsValid_DtoDeserializes()
     {
         // arrange
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorRoster.json");
 
         // act
         var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
@@ -53,12 +53,12 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorRoster.json");
         var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
 
         // Create Competition in database (required for FK)
         var competitionIdentity = generator.Generate(dto!.Competition!.Ref!);
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionIdentity.CanonicalId,
             ContestId = Guid.NewGuid(),
@@ -132,12 +132,12 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorRoster.json");
         var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
 
         // Create Competition in database (required for FK)
         var competitionIdentity = generator.Generate(dto!.Competition!.Ref!);
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionIdentity.CanonicalId,
             ContestId = Guid.NewGuid(),
@@ -219,12 +219,12 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorRoster.json");
         var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
 
         // Create Competition in database
         var competitionIdentity = generator.Generate(dto!.Competition!.Ref!);
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionIdentity.CanonicalId,
             ContestId = Guid.NewGuid(),
@@ -306,12 +306,12 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorRoster.json");
         var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
 
         // Create Competition in database
         var competitionIdentity = generator.Generate(dto!.Competition!.Ref!);
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionIdentity.CanonicalId,
             ContestId = Guid.NewGuid(),
@@ -383,12 +383,12 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorRoster.json");
         var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
 
         // Create Competition in database
         var competitionIdentity = generator.Generate(dto!.Competition!.Ref!);
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionIdentity.CanonicalId,
             ContestId = Guid.NewGuid(),

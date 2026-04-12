@@ -16,9 +16,6 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Season)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.Season)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.Season)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Seasons)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.Seasons)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.Seasons)]
 public class SeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : BaseDataContext
 {

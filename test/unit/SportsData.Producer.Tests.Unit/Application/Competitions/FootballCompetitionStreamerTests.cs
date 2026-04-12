@@ -12,7 +12,6 @@ using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
-using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 

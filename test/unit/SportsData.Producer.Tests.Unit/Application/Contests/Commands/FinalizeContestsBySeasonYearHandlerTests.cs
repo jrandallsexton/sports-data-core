@@ -1,3 +1,5 @@
+#nullable enable
+
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using AutoFixture;
 

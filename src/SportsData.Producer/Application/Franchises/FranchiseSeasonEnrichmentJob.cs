@@ -3,6 +3,7 @@
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Franchises.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Franchises
 {

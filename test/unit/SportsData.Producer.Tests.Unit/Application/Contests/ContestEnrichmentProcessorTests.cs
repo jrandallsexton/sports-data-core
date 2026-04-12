@@ -10,6 +10,7 @@ using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -50,7 +51,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
     {
         var contestId = Guid.NewGuid();
         var contest = CreateContest(contestId);
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
@@ -76,7 +77,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
         var contest = CreateContest(contestId);
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = contestId,
@@ -105,7 +106,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
         var contest = CreateContest(contestId);
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = contestId,
@@ -147,7 +148,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
         var contest = CreateContest(contestId);
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = contestId,
@@ -481,7 +482,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
 
     #region Helpers
 
-    private static Contest CreateContest(Guid contestId) => new()
+    private static FootballContest CreateContest(Guid contestId) => new()
     {
         Id = contestId,
         Name = "Test Game",
@@ -506,7 +507,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
         var contest = CreateContest(contestId);
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = contestId,
@@ -531,7 +532,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
         return (contestId, competitionId);
     }
 
-    private static CompetitionPlay CreatePlay(
+    private static FootballCompetitionPlay CreatePlay(
         Guid competitionId, bool scoringPlay, int awayScore, int homeScore, int period, double clock) => new()
     {
         Id = Guid.NewGuid(),

@@ -25,7 +25,7 @@ public class TeamSeasonInjuriesDocumentProcessorTests : ProducerTestBase<TeamSea
     public async Task ProcessAsync_DeserializesDto_Successfully()
     {
         // Arrange
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonInjury.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonInjury.json");
         var dto = documentJson.FromJson<EspnTeamSeasonInjuryDto>();
 
         // Assert - Verify DTO deserialization
@@ -84,7 +84,7 @@ public class TeamSeasonInjuriesDocumentProcessorTests : ProducerTestBase<TeamSea
         await FootballDataContext.AthleteSeasons.AddAsync(athleteSeason);
         await FootballDataContext.SaveChangesAsync();
 
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonInjury.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonInjury.json");
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .OmitAutoProperties()
@@ -168,7 +168,7 @@ public class TeamSeasonInjuriesDocumentProcessorTests : ProducerTestBase<TeamSea
         await FootballDataContext.AthleteSeasonInjuries.AddAsync(existingInjury);
         await FootballDataContext.SaveChangesAsync();
 
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonInjury.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonInjury.json");
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .OmitAutoProperties()
@@ -253,7 +253,7 @@ public class TeamSeasonInjuriesDocumentProcessorTests : ProducerTestBase<TeamSea
         await FootballDataContext.AthleteSeasonInjuries.AddAsync(existingInjury);
         await FootballDataContext.SaveChangesAsync();
 
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonInjury.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonInjury.json");
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .OmitAutoProperties()
@@ -283,7 +283,7 @@ public class TeamSeasonInjuriesDocumentProcessorTests : ProducerTestBase<TeamSea
         Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
 
         // Do NOT seed an AthleteSeason — the processor should throw ExternalDocumentNotSourcedException
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonInjury.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonInjury.json");
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .OmitAutoProperties()

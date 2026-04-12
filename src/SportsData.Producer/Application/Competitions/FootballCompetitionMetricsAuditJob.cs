@@ -5,6 +5,7 @@ using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Competitions
 {

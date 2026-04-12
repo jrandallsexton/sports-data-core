@@ -4,6 +4,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 using SportsData.Core.Infrastructure.Refs;
 

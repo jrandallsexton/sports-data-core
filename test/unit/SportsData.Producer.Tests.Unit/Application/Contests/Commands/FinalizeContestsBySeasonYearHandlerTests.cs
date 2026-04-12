@@ -1,3 +1,4 @@
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using AutoFixture;
 
 using FluentAssertions;
@@ -359,9 +360,9 @@ public class FinalizeContestsBySeasonYearHandlerTests :
         }
     }
 
-    private Contest CreateContest(Sport sport, int seasonYear, bool finalized)
+    private FootballContest CreateContest(Sport sport, int seasonYear, bool finalized)
     {
-        return Fixture.Build<Contest>()
+        return Fixture.Build<FootballContest>()
             .OmitAutoProperties()
             .With(x => x.Id, Guid.NewGuid())
             .With(x => x.Name, "Test Game")

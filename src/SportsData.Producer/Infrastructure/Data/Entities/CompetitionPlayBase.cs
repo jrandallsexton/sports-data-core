@@ -1,0 +1,102 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
+
+namespace SportsData.Producer.Infrastructure.Data.Entities
+{
+    public abstract class CompetitionPlayBase : CanonicalEntityBase<Guid>, IHasExternalIds
+    {
+        public CompetitionBase Competition { get; set; } = null!;
+
+        public Guid CompetitionId { get; set; }
+
+        public required string EspnId { get; set; } // Maps to "id" in JSON
+
+        /// <summary>
+        /// Our canonical ordinal position of the play within the competition
+        /// Generated via enrichment after the fact, not from source
+        /// </summary>
+        public int? Ordinal { get; set; }
+
+        public required string SequenceNumber { get; set; } // this is from ESPN
+
+        public PlayType Type { get; set; }
+
+        public required string TypeId { get; set; }
+
+        public required string Text { get; set; }
+
+        public string? ShortText { get; set; }
+
+        public string? AlternativeText { get; set; }
+
+        public string? ShortAlternativeText { get; set; }
+
+        public int AwayScore { get; set; }
+
+        public int HomeScore { get; set; }
+
+        public int PeriodNumber { get; set; }
+
+        public bool ScoringPlay { get; set; }
+
+        public bool Priority { get; set; }
+
+        public int ScoreValue { get; set; }
+
+        public DateTime Modified { get; set; }
+
+        public Guid? StartFranchiseSeasonId { get; set; }
+
+        public ICollection<CompetitionProbability> Probabilities { get; set; } = [];
+
+        public ICollection<CompetitionPlayExternalId> ExternalIds { get; set; } = [];
+
+        public ICollection<CompetitionSituation> SituationsAsLastPlay { get; set; } = [];
+
+        public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
+
+        public class EntityConfiguration : IEntityTypeConfiguration<CompetitionPlayBase>
+        {
+            public void Configure(EntityTypeBuilder<CompetitionPlayBase> builder)
+            {
+                builder.ToTable("CompetitionPlay");
+                builder.HasKey(x => x.Id);
+
+                builder.Property(x => x.AlternativeText).HasMaxLength(1024);
+                builder.Property(x => x.CompetitionId).IsRequired();
+                builder.Property(x => x.EspnId).IsRequired().HasMaxLength(32);
+                builder.Property(x => x.Modified).IsRequired();
+                builder.Property(x => x.SequenceNumber).IsRequired().HasMaxLength(32);
+                builder.Property(x => x.ShortAlternativeText).HasMaxLength(256);
+                builder.Property(x => x.ShortText).HasMaxLength(256);
+                builder.Property(x => x.Text).IsRequired().HasMaxLength(1024);
+                builder.Property(x => x.TypeId).IsRequired().HasMaxLength(32);
+
+                builder.Property(x => x.Type)
+                    .IsRequired()
+                    .HasConversion<int>();
+
+                builder.HasOne(x => x.Competition)
+                    .WithMany()
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.ExternalIds)
+                    .WithOne()
+                    .HasForeignKey(x => x.CompetitionPlayId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasMany(x => x.Probabilities)
+                    .WithOne(x => x.Play)
+                    .HasForeignKey(x => x.PlayId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            }
+        }
+    }
+}

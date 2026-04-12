@@ -10,6 +10,7 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Infrastructure.DataSources.Espn;
@@ -110,7 +111,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
 
         if (entity is null)
         {
-            _logger.LogInformation("Processing new CompetitionPlay entity. Ref={Ref}", externalDto.Ref);
+            _logger.LogInformation("Processing new CompetitionPlayBase entity. Ref={Ref}", externalDto.Ref);
             await ProcessNewEntity(
                 command,
                 externalDto,
@@ -135,7 +136,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
     private async Task ProcessNewEntity(
         ProcessDocumentCommand command,
         EspnEventCompetitionPlayDto externalDto,
-        Competition competition,
+        CompetitionBase competition,
         Guid? competitionDriveId,
         Guid? startFranchiseSeasonId,
         Guid? endFranchiseSeasonId)
@@ -145,7 +146,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
             competitionDriveId,
             externalDto.Type?.Text);
 
-        var play = externalDto.AsEntity(
+        var play = externalDto.AsFootballEntity(
             _externalRefIdentityGenerator,
             command.CorrelationId,
             competition.Id,
@@ -186,18 +187,24 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
         ProcessDocumentCommand command,
         EspnEventCompetitionPlayDto externalDto,
         Guid? competitionDriveId,
-        CompetitionPlay entity,
+        CompetitionPlayBase entity,
         Guid? startFranchiseSeasonId,
         Guid? endFranchiseSeasonId)
     {
-        _logger.LogInformation("Updating CompetitionPlay. PlayId={PlayId}, DriveId={DriveId}", 
+        _logger.LogInformation("Updating CompetitionPlay. PlayId={PlayId}, DriveId={DriveId}",
             entity.Id,
             competitionDriveId);
 
-        entity.StartFranchiseSeasonId = startFranchiseSeasonId;
-        entity.EndFranchiseSeasonId = endFranchiseSeasonId;
-        entity.DriveId = competitionDriveId;
-        
+        if (entity is not FootballCompetitionPlay footballPlay)
+        {
+            throw new InvalidOperationException(
+                $"Expected FootballCompetitionPlay but got {entity.GetType().Name}. PlayId={entity.Id}");
+        }
+
+        footballPlay.StartFranchiseSeasonId = startFranchiseSeasonId;
+        footballPlay.EndFranchiseSeasonId = endFranchiseSeasonId;
+        footballPlay.DriveId = competitionDriveId;
+
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Persisted CompetitionPlay update. PlayId={PlayId}", entity.Id);

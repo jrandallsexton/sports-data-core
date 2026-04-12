@@ -13,10 +13,12 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -31,9 +33,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         : ProducerTestBase<EventCompetitionOddsDocumentProcessor<FootballDataContext>>
     {
         // OPTIMIZATION: Helper method to create test contest and competition
-        private async Task<(Contest contest, Competition competition)> CreateTestContestAndCompetitionAsync(Guid competitionId)
+        private async Task<(ContestBase contest, CompetitionBase competition)> CreateTestContestAndCompetitionAsync(Guid competitionId)
         {
-            var contest = new Contest
+            var contest = new FootballContest
             {
                 Id = Guid.NewGuid(),
                 Name = "Test Contest",
@@ -47,7 +49,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 CreatedBy = Guid.NewGuid()
             };
 
-            var competition = new Competition
+            var competition = new FootballCompetition
             {
                 Id = competitionId,
                 ContestId = contest.Id,
@@ -66,7 +68,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task Test_Deserialization_SpotChecks()
         {
             // Arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json");
 
             // Act
             var dto = json.FromJson<EspnEventCompetitionOddsDto>();
@@ -144,7 +146,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         [Fact]
         public async Task EspnEventCompetitionOddsDto_Deserializes_AllFieldsCorrectly()
         {
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json");
             var actual = json.FromJson<EspnEventCompetitionOddsDto>();
 
             actual.Should().NotBeNull();
@@ -214,7 +216,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // OPTIMIZATION: Use helper method
             await CreateTestContestAndCompetitionAsync(compId);
 
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json");
 
             idGen.Setup(x => x.Generate(It.IsAny<Uri>()))
                 .Returns(new ExternalRefIdentity(Guid.NewGuid(), "hash", "http://x/clean"));
@@ -276,7 +278,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // OPTIMIZATION: Use helper method
             await CreateTestContestAndCompetitionAsync(compId);
 
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds.json");
             var dto = json.FromJson<EspnEventCompetitionOddsDto>();
 
             idGen.Setup(x => x.Generate(It.IsAny<Uri>()))
@@ -338,8 +340,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await CreateTestContestAndCompetitionAsync(compId);
 
             // Load fixtures
-            var jsonOriginal = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_20Sep25.json");
-            var jsonUpdated = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_23Sep25.json");
+            var jsonOriginal = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_20Sep25.json");
+            var jsonUpdated = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_23Sep25.json");
 
             // Stable identity (same odds row)
             var canonicalId = Guid.NewGuid();
@@ -428,7 +430,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task AsEntity_Maps_LineFromPointSpread_AndPriceFromSpread_SingleDto()
         {
             // Arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_27Sep25.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_27Sep25.json");
             var dto = json.FromJson<EspnEventCompetitionOddsDto>();
             dto.Should().NotBeNull();
 
@@ -504,14 +506,14 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         {
             // Arrange: seed contest/competition
             var compId = Guid.NewGuid();
-            var contest = Fixture.Build<Contest>()
+            var contest = Fixture.Build<FootballContest>()
                 .WithAutoProperties()
                 .With(x => x.HomeTeamFranchiseSeasonId, Guid.NewGuid())
                 .With(x => x.AwayTeamFranchiseSeasonId, Guid.NewGuid())
-                .With(x => x.Competitions, new List<Competition>())
+                .With(x => x.Competitions, new List<FootballCompetition>())
                 .Create();
 
-            var competition = Fixture.Build<Competition>()
+            var competition = Fixture.Build<FootballCompetition>()
                 .WithAutoProperties()
                 .With(x => x.Id, compId)
                 .With(x => x.ContestId, contest.Id)
@@ -524,7 +526,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await FootballDataContext.SaveChangesAsync();
 
             // load the SINGLE-DTO payload you pasted
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_27Sep25.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionOdds_LsuOleMiss_27Sep25.json");
 
             var idGen = Mocker.GetMock<IGenerateExternalRefIdentities>();
             idGen.Setup(x => x.Generate(It.IsAny<Uri>()))

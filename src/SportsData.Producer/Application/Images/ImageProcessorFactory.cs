@@ -1,6 +1,7 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Producer.Application.Images.Processors;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 using System.Reflection;
 using SportsData.Core.DependencyInjection;

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
@@ -10,10 +11,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     public class CompetitionProbability : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public Guid CompetitionId { get; set; }
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
 
         public Guid? PlayId { get; set; }
-        public CompetitionPlay? Play { get; set; }
+        public CompetitionPlayBase? Play { get; set; }
 
         public double TiePercentage { get; set; }
         public double HomeWinPercentage { get; set; }

@@ -10,7 +10,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -31,7 +31,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenJsonIsValid_DtoDeserializes()
         {
             // arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonTypeWeekRankings.json");
 
             // act
             var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
@@ -70,7 +70,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenDtoIsValid_EntityIsCreated()
         {
             // arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonTypeWeekRankings.json");
             var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
 
             var seasonPollId = Guid.NewGuid();
@@ -170,7 +170,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         [Fact]
         public async Task ProcessNewSeasonTypeWeekRankings_CreatesRankingEntity()
         {
-            var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonTypeWeekRankings.json");
             var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
 
             // Arrange
@@ -291,7 +291,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         [Fact]
         public async Task WhenParentIdIsNotGuid_DerivesSeasonPollIdFromRef()
         {
-            var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonTypeWeekRankings.json");
             var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
 
             var correlationId = Guid.NewGuid();
@@ -390,7 +390,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         [Fact]
         public async Task WhenParentIdIsNotGuid_AndSeasonPollNotFound_ReturnsEarly()
         {
-            var json = await LoadJsonTestData("EspnFootballNcaaSeasonTypeWeekRankings.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonTypeWeekRankings.json");
             var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
 
             var generator = new ExternalRefIdentityGenerator();

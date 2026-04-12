@@ -29,7 +29,7 @@ public class TeamSeasonRankDocumentProcessorTests :
     public async Task AsEntity_ShouldCorrectlyMapJsonToRankingEntity()
     {
         // Arrange
-        var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRank.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonRank.json");
         var dto = json.FromJson<EspnTeamSeasonRankDto>();
 
         var generator = new ExternalRefIdentityGenerator();
@@ -118,7 +118,7 @@ public class TeamSeasonRankDocumentProcessorTests :
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
         var sut = Mocker.CreateInstance<TeamSeasonRankDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRank.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonRank.json");
 
         var franchise = Fixture.Build<Franchise>()
             .WithAutoProperties()

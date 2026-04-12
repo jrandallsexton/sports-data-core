@@ -14,7 +14,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         public FranchiseSeason FranchiseSeason { get; set; } = null!;
 
         public Guid CompetitionId { get; set; }
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
 
         public ICollection<CompetitionCompetitorStatisticCategory> Categories { get; set; } = [];
 

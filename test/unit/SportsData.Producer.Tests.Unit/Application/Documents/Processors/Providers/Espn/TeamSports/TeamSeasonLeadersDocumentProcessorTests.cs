@@ -38,7 +38,7 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
 
     public TeamSeasonLeadersDocumentProcessorTests()
     {
-        var documentJson = LoadJsonTestData("EspnFootballNcaaTeamSeasonLeaders.json").Result;
+        var documentJson = LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonLeaders.json").Result;
         _dto = documentJson.FromJson<EspnLeadersDto>()!;
     }
 
@@ -190,7 +190,7 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
     public async Task ProcessAsync_CreatesLeaders_WhenValidData()
     {
         // Arrange
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonLeaders.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonLeaders.json");
         var dto = documentJson.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();
@@ -233,7 +233,7 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
     public async Task ProcessAsync_ReplacesExistingLeaders_WhenLeadersAlreadyExist()
     {
         // Arrange
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonLeaders.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonLeaders.json");
         var leadersDto = documentJson.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();
@@ -282,7 +282,7 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
     public async Task ProcessAsync_CreatesCategory_WhenLeaderCategoryNotFound()
     {
         // Arrange
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonLeaders.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonLeaders.json");
         var dto = documentJson.FromJson<EspnLeadersDto>();
 
         // Modify DTO to include unknown category
@@ -505,7 +505,7 @@ public class TeamSeasonLeadersDocumentProcessorTests : ProducerTestBase<TeamSeas
     public async Task ProcessAsync_DeduplicatesStatisticsRequests_WhenSameAthleteInMultipleCategories()
     {
         // Arrange - Use the real test JSON which has 148 total statistics refs but only 46 unique
-        var documentJson = await LoadJsonTestData("EspnFootballNcaaTeamSeasonLeaders.json");
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonLeaders.json");
         var dto = documentJson.FromJson<EspnLeadersDto>();
 
         var identityGenerator = new ExternalRefIdentityGenerator();

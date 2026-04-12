@@ -1,3 +1,4 @@
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using System.Linq.Expressions;
 
 using AutoFixture;
@@ -113,9 +114,9 @@ public class EnqueueSeasonWeekContestsUpdateCommandHandlerTests :
             Times.Exactly(2));
     }
 
-    private Contest CreateContest(Guid seasonWeekId, int seasonYear)
+    private FootballContest CreateContest(Guid seasonWeekId, int seasonYear)
     {
-        return Fixture.Build<Contest>()
+        return Fixture.Build<FootballContest>()
             .OmitAutoProperties()
             .With(x => x.Id, Guid.NewGuid())
             .With(x => x.Name, "Test Game")

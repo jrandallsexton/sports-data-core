@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Infrastructure.Data.Extensions;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -14,14 +14,20 @@ namespace SportsData.Producer.Infrastructure.Data.Football
 
         public new DbSet<FootballAthleteSeason> AthleteSeasons { get; set; }
 
-        //public new DbSet<CompetitionLeaderStat> CompetitionLeaderStats { get; set; } = default!;
+        public new DbSet<FootballContest> Contests { get; set; }
+
+        public new DbSet<FootballCompetition> Competitions { get; set; }
+
+        public new DbSet<FootballCompetitionPlay> CompetitionPlays { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.WithUriConverter();
-            modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeason.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FootballCompetition.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FootballCompetitionPlay.EntityConfiguration());
         }
     }
 }

@@ -1,3 +1,4 @@
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using AutoFixture;
 
 using FluentAssertions;
@@ -28,7 +29,7 @@ public class CalculateFranchiseSeasonMetricsCommandHandlerTests :
         var contest = CreateContest(franchiseSeasonId, seasonYear);
         await FootballDataContext.Contests.AddAsync(contest);
 
-        var competition = Fixture.Build<Competition>()
+        var competition = Fixture.Build<FootballCompetition>()
             .OmitAutoProperties()
             .With(x => x.Id, Guid.NewGuid())
             .With(x => x.ContestId, contest.Id)
@@ -107,7 +108,7 @@ public class CalculateFranchiseSeasonMetricsCommandHandlerTests :
         var contest = CreateContest(franchiseSeasonId, seasonYear);
         await FootballDataContext.Contests.AddAsync(contest);
 
-        var competition = Fixture.Build<Competition>()
+        var competition = Fixture.Build<FootballCompetition>()
             .OmitAutoProperties()
             .With(x => x.Id, Guid.NewGuid())
             .With(x => x.ContestId, contest.Id)
@@ -160,9 +161,9 @@ public class CalculateFranchiseSeasonMetricsCommandHandlerTests :
         metrics[0].Ypp.Should().Be(6.0m);
     }
 
-    private Contest CreateContest(Guid franchiseSeasonId, int seasonYear)
+    private FootballContest CreateContest(Guid franchiseSeasonId, int seasonYear)
     {
-        return Fixture.Build<Contest>()
+        return Fixture.Build<FootballContest>()
             .OmitAutoProperties()
             .With(x => x.Id, Guid.NewGuid())
             .With(x => x.Name, "Test Game")

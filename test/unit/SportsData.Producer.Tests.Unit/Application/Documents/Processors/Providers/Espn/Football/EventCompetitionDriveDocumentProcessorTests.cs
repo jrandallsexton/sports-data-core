@@ -11,7 +11,9 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -51,7 +53,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         var competitionId = Guid.NewGuid();
         
         // OPTIMIZATION: Direct instantiation instead of AutoFixture
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
@@ -98,7 +100,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         await FootballDataContext.SaveChangesAsync();
 
         var sut = Mocker.CreateInstance<EventCompetitionDriveDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionDrive.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionDrive.json");
         
         var command = CreateCommand(json, competitionId.ToString());
 
@@ -132,7 +134,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         var competitionId = Guid.NewGuid();
         
         // OPTIMIZATION: Direct instantiation instead of AutoFixture
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
@@ -210,7 +212,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         var initialCount = await FootballDataContext.Drives.CountAsync();
         
         var sut = Mocker.CreateInstance<EventCompetitionDriveDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionDrive.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionDrive.json");
         var command = CreateCommand(json, competitionId.ToString());
 
         // act
@@ -229,7 +231,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         // OPTIMIZATION: Direct instantiation instead of AutoFixture
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = Guid.NewGuid(),
             ContestId = Guid.NewGuid(),
@@ -241,7 +243,7 @@ public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<Foot
         await FootballDataContext.SaveChangesAsync();
 
         var sut = Mocker.CreateInstance<EventCompetitionDriveDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionDrive.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionDrive.json");
         var command = CreateCommand(json, competition.Id.ToString());
 
         // act & assert

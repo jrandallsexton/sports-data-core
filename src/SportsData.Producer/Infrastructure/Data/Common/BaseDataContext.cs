@@ -10,7 +10,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 {
     public abstract class BaseDataContext(DbContextOptions options) : DbContext(options)
     {
-        public DbSet<Athlete> Athletes { get; set; }
+        public DbSet<AthleteBase> Athletes { get; set; }
 
         public DbSet<AthleteExternalId> AthleteExternalIds { get; set; }
 
@@ -64,7 +64,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.WithUriConverter();
-            modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteExternalId.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new AthleteCareerStatistic.EntityConfiguration());

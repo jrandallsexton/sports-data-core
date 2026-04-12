@@ -3,12 +3,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class CompetitionDrive : CanonicalEntityBase<Guid>
     {
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
 
         public Guid CompetitionId { get; set; }
 
@@ -149,7 +151,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         /// </summary>
         public double? TimeElapsedValue { get; set; }
 
-        public ICollection<CompetitionPlay> Plays { get; set; } = new List<CompetitionPlay>();
+        public ICollection<FootballCompetitionPlay> Plays { get; set; } = new List<FootballCompetitionPlay>();
         
         public ICollection<CompetitionDriveExternalId> ExternalIds { get; set; } = new List<CompetitionDriveExternalId>();
 
@@ -187,7 +189,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.CompetitionId).IsRequired();
 
                 builder.HasOne(x => x.Competition)
-                    .WithMany(x => x.Drives)
+                    .WithMany()
                     .HasForeignKey(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
 

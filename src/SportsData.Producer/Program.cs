@@ -10,6 +10,7 @@ using SportsData.Producer.Config;
 using SportsData.Producer.DependencyInjection;
 using SportsData.Producer.Infrastructure.Data.Baseball;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Golf;
 using SportsData.Producer.Mapping;

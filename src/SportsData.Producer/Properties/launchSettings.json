@@ -86,6 +86,28 @@
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5231"
+    },
+    "http.FootballNcaa.Api": {
+      "commandName": "Project",
+      "commandLineArgs": "-mode FootballNcaa -role Api",
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPCONFIG_LABEL": "Local"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5231"
+    },
+    "http.BaseballMlb.Api": {
+      "commandName": "Project",
+      "commandLineArgs": "-mode BaseballMlb -role Api",
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "APPCONFIG_LABEL": "Local"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5231"
     }
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",

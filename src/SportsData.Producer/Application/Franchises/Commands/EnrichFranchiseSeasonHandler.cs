@@ -82,7 +82,7 @@ namespace SportsData.Producer.Application.Franchises.Commands
                 Guid.NewGuid()));
         }
 
-        private async Task<List<Contest>> GetFinalizedContestsForFranchiseSeason(Guid franchiseSeasonId)
+        private async Task<List<ContestBase>> GetFinalizedContestsForFranchiseSeason(Guid franchiseSeasonId)
         {
             return await _dataContext.Contests
                 .AsNoTracking()
@@ -95,7 +95,7 @@ namespace SportsData.Producer.Application.Franchises.Commands
         private async Task UpdateWinsAndLosses(
             EnrichFranchiseSeasonCommand command,
             FranchiseSeason franchiseSeason,
-            List<Contest> contests)
+            List<ContestBase> contests)
         {
             var wins = 0;
             var losses = 0;
@@ -162,7 +162,7 @@ namespace SportsData.Producer.Application.Franchises.Commands
             franchiseSeason.ConferenceTies = conferenceTies;
         }
 
-        private void UpdateScoringMargins(FranchiseSeason franchiseSeason, List<Contest> contests)
+        private void UpdateScoringMargins(FranchiseSeason franchiseSeason, List<ContestBase> contests)
         {
             var scored = new List<int>();
             var allowed = new List<int>();

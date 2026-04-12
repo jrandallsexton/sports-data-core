@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Infrastructure.Data.Extensions;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Golf.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Golf
@@ -17,7 +18,7 @@ namespace SportsData.Producer.Infrastructure.Data.Golf
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.WithUriConverter();
-            modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteBase.EntityConfiguration());
         }
     }
 }

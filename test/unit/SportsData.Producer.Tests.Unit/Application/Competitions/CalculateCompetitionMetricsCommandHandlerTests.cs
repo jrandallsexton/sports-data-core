@@ -1,3 +1,4 @@
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 #nullable enable
 
 using AutoFixture;
@@ -33,7 +34,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
         private Guid _competitionId;
         private Guid _homeTeamId;
         private Guid _awayTeamId;
-        private Competition? _competition;
+        private FootballCompetition? _competition;
 
         public CalculateCompetitionMetricsCommandHandlerTests(ITestOutputHelper output)
         {
@@ -54,7 +55,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             _homeTeamId = homeTeamId;
             _awayTeamId = awayTeamId;
 
-            _output.WriteLine($"Test data initialized: Competition {_competitionId}");
+            _output.WriteLine($"Test data initialized: CompetitionBase {_competitionId}");
         }
 
         public Task DisposeAsync() => Task.CompletedTask;
@@ -242,12 +243,12 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
 
         private static string? _cachedJson; // Cache JSON across test instances
 
-        private async Task<(Competition competition, Guid homeTeamId, Guid awayTeamId)> SeedCompetitionWithRealGameDataAsync(Guid competitionId)
+        private async Task<(FootballCompetition competition, Guid homeTeamId, Guid awayTeamId)> SeedCompetitionWithRealGameDataAsync(Guid competitionId)
         {
             // Load JSON once and cache it
             if (_cachedJson == null)
             {
-                _cachedJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlays.json");
+                _cachedJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlays.json");
                 _output.WriteLine("JSON loaded and cached");
             }
 
@@ -306,7 +307,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             await FootballDataContext.FranchiseSeasonExternalIds.AddRangeAsync(homeExternalId, awayExternalId);
 
             // Create contest
-            var contest = Fixture.Build<Contest>()
+            var contest = Fixture.Build<FootballContest>()
                 .With(x => x.Id, Guid.NewGuid())
                 .With(x => x.HomeTeamFranchiseSeasonId, homeTeamId)
                 .With(x => x.AwayTeamFranchiseSeasonId, awayTeamId)
@@ -320,7 +321,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             await FootballDataContext.Contests.AddAsync(contest);
 
             // Create competition
-            var competition = Fixture.Build<Competition>()
+            var competition = Fixture.Build<FootballCompetition>()
                 .With(x => x.Id, competitionId)
                 .With(x => x.ContestId, contest.Id)
                 .With(x => x.Contest, contest)
@@ -332,7 +333,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             await FootballDataContext.Competitions.AddAsync(competition);
 
             // Convert DTOs to entities (batch process for performance)
-            var plays = new List<CompetitionPlay>(playDtos.Count);
+            var plays = new List<FootballCompetitionPlay>(playDtos.Count);
             
             foreach (var dto in playDtos)
             {
@@ -353,7 +354,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
                                           teamIdStr.Contains("/teams/30") ? awayTeamId : null;
                 }
 
-                var play = dto.AsEntity(
+                var play = dto.AsFootballEntity(
                     generator,
                     Guid.NewGuid(),
                     competitionId,

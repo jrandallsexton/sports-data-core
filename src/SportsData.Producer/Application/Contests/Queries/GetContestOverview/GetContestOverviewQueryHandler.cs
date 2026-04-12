@@ -6,6 +6,7 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Application.Services;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 namespace SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 
@@ -47,7 +48,6 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         // Fetch basic contest info to get team slugs and franchise season IDs
         var contest = await _dbContext.Contests
             .AsNoTracking()
-            .Include(x => x.Competitions)
             .Include(x => x.AwayTeamFranchiseSeason!)
             .ThenInclude(x => x.Franchise)
             .ThenInclude(x => x.Logos)
@@ -69,7 +69,20 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
                 [new FluentValidation.Results.ValidationFailure("ContestId", $"Contest with ID {query.ContestId} not found")]);
         }
 
-        var competitionId = contest.Competitions.First().Id;
+        var competition = await _dbContext.Competitions
+            .AsNoTracking()
+            .Include(c => c.Status)
+            .FirstOrDefaultAsync(c => c.ContestId == contest.Id, cancellationToken);
+
+        if (competition is null)
+        {
+            return new Failure<ContestOverviewDto>(
+                default!,
+                ResultStatus.NotFound,
+                [new FluentValidation.Results.ValidationFailure("ContestId", $"No competition found for contest {query.ContestId}")]);
+        }
+
+        var competitionId = competition.Id;
 
         var awayTeamSlug = contest.AwayTeamFranchiseSeason!.Franchise!.Slug!;
         var homeTeamSlug = contest.HomeTeamFranchiseSeason!.Franchise!.Slug!;
@@ -118,13 +131,16 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
     {
         var contest = await _dbContext.Contests
             .AsNoTracking()
-            .Include(c => c.Competitions)
-                .ThenInclude(comp => comp.Status)
             .Include(c => c.SeasonWeek)
             .Include(c => c.Venue)
             .FirstOrDefaultAsync(c => c.Id == contestId, cancellationToken);
 
         if (contest == null) return null;
+
+        var comp = await _dbContext.Competitions
+            .AsNoTracking()
+            .Include(c => c.Status)
+            .FirstOrDefaultAsync(c => c.ContestId == contestId, cancellationToken);
 
         var homeTeamSeason = await _dbContext.FranchiseSeasons
             .AsNoTracking()
@@ -140,17 +156,19 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             .Include(fs => fs.GroupSeason)
             .FirstOrDefaultAsync(fs => fs.Id == contest.AwayTeamFranchiseSeasonId, cancellationToken);
 
+        var competitionIdForHeader = comp?.Id ?? Guid.Empty;
+
         var quarterScores = await _dbContext.CompetitionCompetitorLineScores
             .AsNoTracking()
             .Include(ls => ls.CompetitionCompetitor)
-            .Where(ls => ls.CompetitionCompetitor.CompetitionId == contest.Competitions.First().Id)
+            .Where(ls => ls.CompetitionCompetitor.CompetitionId == competitionIdForHeader)
             .OrderBy(ls => ls.Period)
             .ToListAsync(cancellationToken);
 
         var header = new GameHeaderDto
         {
             ContestId = contest.Id,
-            Status = DetermineContestStatus(contest),
+            Status = DetermineContestStatus(contest, comp?.Status),
             WeekLabel = contest.SeasonWeek?.Number.ToString(),
             SeasonWeekId = contest.SeasonWeek?.Id,
             SeasonYear = contest.SeasonYear,
@@ -199,10 +217,9 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
     /// Uses CompetitionStatus.StatusState and StatusTypeName as primary indicators,
     /// with fallback to Contest timestamps and current time.
     /// </summary>
-    private static ContestStatus DetermineContestStatus(Contest contest)
+    private static ContestStatus DetermineContestStatus(ContestBase contest, CompetitionStatus? competitionStatus = null)
     {
         var now = DateTime.UtcNow;
-        var competitionStatus = contest.Competitions?.FirstOrDefault()?.Status;
 
         // If we have CompetitionStatus data, use it as the primary source
         if (competitionStatus != null)
@@ -404,7 +421,6 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
                 Play = p.Play != null
                     ? new
                     {
-                        p.Play.ClockDisplayValue,
                         p.Play.PeriodNumber
                     }
                     : null
@@ -419,7 +435,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
 
         var points = ordered.Select(r => new WinProbabilityPointDto
         {
-            GameClock = r.Play?.ClockDisplayValue,
+            GameClock = null, // ClockDisplayValue is football-specific; use sequence for ordering
             Quarter = r.Play?.PeriodNumber ?? 0,
             HomeWinPercent = ToPct(r.HomeWinPercentage),
             AwayWinPercent = ToPct(r.AwayWinPercentage)
@@ -455,16 +471,23 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             .OrderBy(p => p.SequenceNumber)
             .ToListAsync(cancellationToken);
 
-        var playDtos = plays.Select((p, x) => new PlayDto
+        var playDtos = plays.Select((p, x) =>
         {
-            Ordinal = x,
-            Quarter = p.PeriodNumber,
-            FranchiseSeasonId = p.EndFranchiseSeasonId ?? Guid.Empty,
-            Team = p.EndFranchiseSeasonId == awayTeamFranchiseSeasonId ? awayTeamSlug : homeTeamSlug,
-            Description = p.ShortAlternativeText ?? p.Text,
-            TimeRemaining = p.ClockDisplayValue,
-            IsScoringPlay = p.ScoringPlay,
-            IsKeyPlay = p.Priority
+            // Use StartFranchiseSeasonId (shared) — for football this is the start team,
+            // for baseball this is the batting team. Both serve as the "team on play".
+            var teamId = p.StartFranchiseSeasonId ?? Guid.Empty;
+
+            return new PlayDto
+            {
+                Ordinal = x,
+                Quarter = p.PeriodNumber,
+                FranchiseSeasonId = teamId,
+                Team = teamId == awayTeamFranchiseSeasonId ? awayTeamSlug : homeTeamSlug,
+                Description = p.ShortAlternativeText ?? p.Text,
+                TimeRemaining = (p as FootballCompetitionPlay)?.ClockDisplayValue,
+                IsScoringPlay = p.ScoringPlay,
+                IsKeyPlay = p.Priority
+            };
         }).ToList();
 
         return new PlayLogDto()
@@ -490,14 +513,13 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
 
     private async Task<GameInfoDto?> GetGameInfoAsync(Guid contestId, CancellationToken cancellationToken)
     {
-        return await _dbContext.Contests
+        var contestInfo = await _dbContext.Contests
             .AsNoTracking()
             .Where(c => c.Id == contestId)
-            .Select(c => new GameInfoDto
+            .Select(c => new
             {
-                StartDateUtc = c.StartDateUtc,
-                Broadcast = string.Empty,
-                Venue = c.Venue != null ? c.Venue.Name : null,
+                c.StartDateUtc,
+                VenueName = c.Venue != null ? c.Venue.Name : null,
                 VenueCity = c.Venue != null ? c.Venue.City : null,
                 VenueState = c.Venue != null ? c.Venue.State : null,
                 VenueImageUrl = c.Venue != null
@@ -505,13 +527,29 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
                         .OrderBy(i => i.CreatedUtc)
                         .Select(i => i.Uri.OriginalString)
                         .FirstOrDefault()
-                    : null,
-                Attendance = c.Competitions
-                    .OrderBy(comp => comp.Date)
-                    .Select(comp => comp.Attendance)
-                    .FirstOrDefault()
+                    : null
             })
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (contestInfo is null) return null;
+
+        var attendance = await _dbContext.Competitions
+            .AsNoTracking()
+            .Where(c => c.ContestId == contestId)
+            .OrderBy(c => c.Date)
+            .Select(c => c.Attendance)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return new GameInfoDto
+        {
+            StartDateUtc = contestInfo.StartDateUtc,
+            Broadcast = string.Empty,
+            Venue = contestInfo.VenueName,
+            VenueCity = contestInfo.VenueCity,
+            VenueState = contestInfo.VenueState,
+            VenueImageUrl = contestInfo.VenueImageUrl,
+            Attendance = attendance
+        };
     }
 
     private async Task<List<MediaItemDto>> GetMedia(Guid competitionId, CancellationToken cancellationToken)

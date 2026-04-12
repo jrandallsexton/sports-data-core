@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
@@ -9,7 +10,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid ContestId { get; set; }
 
-        public Contest Contest { get; set; } = null!;
+        public ContestBase Contest { get; set; } = null!;
 
         public class EntityConfiguration : IEntityTypeConfiguration<ContestExternalId>
         {

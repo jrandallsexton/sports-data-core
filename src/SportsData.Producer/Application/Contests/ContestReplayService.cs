@@ -3,7 +3,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
-using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Contests
 {
@@ -18,12 +18,12 @@ namespace SportsData.Producer.Application.Contests
     public class ContestReplayService : IContestReplayService
     {
         private readonly ILogger<ContestReplayService> _logger;
-        private readonly TeamSportDataContext _dataContext;
+        private readonly FootballDataContext _dataContext;
         private readonly IEventBus _eventBus;
 
         public ContestReplayService(
             ILogger<ContestReplayService> logger,
-            TeamSportDataContext dataContext,
+            FootballDataContext dataContext,
             IEventBus eventBus)
         {
             _logger = logger;
@@ -48,7 +48,6 @@ namespace SportsData.Producer.Application.Contests
             }
 
             var competition = await _dataContext.Competitions
-                .Include(x => x.Plays)
                 .FirstOrDefaultAsync(c => c.ContestId == contestId, ct);
 
             if (competition is null)

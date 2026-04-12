@@ -14,9 +14,12 @@ using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -30,7 +33,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task CanDeserializeCompetitionBroadcasts()
         {
             // arrange
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionBroadcasts.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionBroadcasts.json");
 
             // act
             var broadcastsDto = documentJson.FromJson<EspnEventCompetitionBroadcastDto>();
@@ -45,7 +48,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task CanDeserializeCompetition()
         {
             // arrange
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetition.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetition.json");
 
             // act
             var dto = documentJson.FromJson<EspnEventCompetitionDto>();
@@ -61,7 +64,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenEntityDoesNotExist_IsAdded()
         {
             // arrange
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetition.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetition.json");
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
@@ -120,7 +123,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await base.FootballDataContext.SaveChangesAsync();
 
             // Create the parent contest entity before processing the competition document
-            var contest = new Contest
+            var contest = new FootballContest
             {
                 Id = Guid.NewGuid(),
                 Name = "Test",
@@ -172,7 +175,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenEntityExists_IsUpdated()
         {
             // arrange
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetition.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetition.json");
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
@@ -231,7 +234,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             }
             await base.FootballDataContext.SaveChangesAsync();
 
-            var contest = new Contest
+            var contest = new FootballContest
             {
                 Id = Guid.NewGuid(),
                 Name = "Test",
@@ -249,7 +252,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await base.FootballDataContext.SaveChangesAsync();
 
             // Create existing competition
-            var existingCompetition = new Competition
+            var existingCompetition = new FootballCompetition
             {
                 Id = competitionIdentity.CanonicalId,
                 ContestId = contest.Id,
@@ -310,7 +313,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenDateChanges_PublishesContestStartTimeUpdated()
         {
             // arrange
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetition.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetition.json");
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
@@ -364,7 +367,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await base.FootballDataContext.FranchiseSeasons.AddAsync(awayFranchiseSeason);
             await base.FootballDataContext.SaveChangesAsync();
 
-            var contest = new Contest
+            var contest = new FootballContest
             {
                 Id = Guid.NewGuid(),
                 Name = "Test",
@@ -381,7 +384,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await base.FootballDataContext.Contests.AddAsync(contest);
 
             var oldDate = DateTime.UtcNow.AddDays(-10);
-            var existingCompetition = new Competition
+            var existingCompetition = new FootballCompetition
             {
                 Id = competitionIdentity.CanonicalId,
                 ContestId = contest.Id,
@@ -441,7 +444,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenParentIdMissing_LogsErrorAndReturns()
         {
             // arrange
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetition.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetition.json");
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
@@ -470,7 +473,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenContestNotFound_ThrowsException()
         {
             // arrange
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetition.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetition.json");
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
@@ -499,14 +502,14 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenSeasonYearMissing_LogsErrorAndReturns()
         {
             // arrange
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetition.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetition.json");
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
             var sut = Mocker.CreateInstance<EventCompetitionDocumentProcessor<FootballDataContext>>();
 
-            var contest = new Contest
+            var contest = new FootballContest
             {
                 Id = Guid.NewGuid(),
                 Name = "Test",
@@ -547,7 +550,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessUpdate_CallsAllHelperMethods()
         {
             // arrange
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetition.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetition.json");
 
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
@@ -601,7 +604,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await base.FootballDataContext.FranchiseSeasons.AddAsync(awayFranchiseSeason);
             await base.FootballDataContext.SaveChangesAsync();
 
-            var contest = new Contest
+            var contest = new FootballContest
             {
                 Id = Guid.NewGuid(),
                 Name = "Test",
@@ -617,7 +620,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             await base.FootballDataContext.Contests.AddAsync(contest);
 
-            var existingCompetition = new Competition
+            var existingCompetition = new FootballCompetition
             {
                 Id = competitionIdentity.CanonicalId,
                 ContestId = contest.Id,

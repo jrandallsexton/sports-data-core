@@ -6,6 +6,8 @@ using SportsData.Core.Common;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
+using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 namespace SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
 
@@ -17,11 +19,11 @@ public interface ICalculateCompetitionMetricsCommandHandler
 public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMetricsCommandHandler
 {
     private readonly ILogger<CalculateCompetitionMetricsCommandHandler> _logger;
-    private readonly TeamSportDataContext _dataContext;
+    private readonly FootballDataContext _dataContext;
 
     public CalculateCompetitionMetricsCommandHandler(
         ILogger<CalculateCompetitionMetricsCommandHandler> logger,
-        TeamSportDataContext dataContext)
+        FootballDataContext dataContext)
     {
         _logger = logger;
         _dataContext = dataContext;
@@ -84,7 +86,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     private (CompetitionMetric, CompetitionMetric) CalculateMetrics(
         int seasonYear,
         Guid competitionId,
-        List<CompetitionPlay> plays,
+        List<FootballCompetitionPlay> plays,
         List<CompetitionDrive> drives,
         Guid awayFranchiseSeasonId,
         Guid homeFranchiseSeasonId)
@@ -159,7 +161,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     private static decimal CalculateTimeOfPossessionRatio(
         Guid franchiseSeasonId,
         Guid opponentFranchiseSeasonId,
-        IReadOnlyCollection<CompetitionPlay> plays)
+        IReadOnlyCollection<FootballCompetitionPlay> plays)
     {
         double GetTeamSeconds(Guid fsId)
         {
@@ -182,7 +184,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
                 });
         }
 
-        double GameClockInSeconds(CompetitionPlay play)
+        double GameClockInSeconds(FootballCompetitionPlay play)
         {
             double clock = play.ClockValue;
             int period = play.PeriodNumber;
@@ -202,7 +204,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
 
     private static decimal CalculateFgPctShrunk(
         Guid franchiseSeasonId,
-        IReadOnlyCollection<CompetitionPlay> plays,
+        IReadOnlyCollection<FootballCompetitionPlay> plays,
         int maxDistance = 45)
     {
         var fgAttempts = plays
@@ -240,7 +242,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
 
     private static decimal CalculateTurnoverMarginPerDrive(
         Guid teamId,
-        IReadOnlyCollection<CompetitionPlay> plays,
+        IReadOnlyCollection<FootballCompetitionPlay> plays,
         IReadOnlyCollection<CompetitionDrive> drives)
     {
         if (!plays.Any() || !drives.Any())
@@ -271,7 +273,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     }
 
 
-    private decimal CalculatePenaltyYardsPerPlay(Guid franchiseSeasonId, List<CompetitionPlay> plays)
+    private decimal CalculatePenaltyYardsPerPlay(Guid franchiseSeasonId, List<FootballCompetitionPlay> plays)
     {
         var penalties = plays
             .Where(p => p.Type == PlayType.Penalty && p.StartFranchiseSeasonId == franchiseSeasonId)
@@ -291,7 +293,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     }
 
 
-    private decimal CalculateYpp(Guid franchiseSeasonId, List<CompetitionPlay> plays)
+    private decimal CalculateYpp(Guid franchiseSeasonId, List<FootballCompetitionPlay> plays)
     {
         var snaps = plays.Where(p => IsOffensiveScrimmageSnap(p, franchiseSeasonId)).ToList();
         if (snaps.Count == 0) return 0m;
@@ -304,7 +306,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     // 1st: >=7 yards OR first down by yardage
     // 2nd: >=4 yards OR first down by yardage
     // 3rd/4th: first down by yardage OR >=2 yards
-    private decimal CalculateSuccessRate(Guid franchiseSeasonId, List<CompetitionPlay> plays)
+    private decimal CalculateSuccessRate(Guid franchiseSeasonId, List<FootballCompetitionPlay> plays)
     {
         var snaps = plays.Where(p => IsOffensiveScrimmageSnap(p, franchiseSeasonId)).ToList();
         if (snaps.Count == 0) return 0m;
@@ -335,7 +337,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     // Default threshold is 20 (common definition).
     private decimal CalculateExplosiveRate(
         Guid franchiseSeasonId,
-        List<CompetitionPlay> plays,
+        List<FootballCompetitionPlay> plays,
         int thresholdYards = 20)
     {
         var snaps = plays.Where(p => IsOffensiveScrimmageSnap(p, franchiseSeasonId)).ToList();
@@ -348,7 +350,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     // Third/Fourth Conversion Rate (0..1)
     // attempts: offensive scrimmage snaps on 3rd or 4th down
     // conversions: first down gained by yardage on those snaps
-    private decimal CalculateThirdFourthConversionRate(Guid franchiseSeasonId, List<CompetitionPlay> plays)
+    private decimal CalculateThirdFourthConversionRate(Guid franchiseSeasonId, List<FootballCompetitionPlay> plays)
     {
         var snaps = plays.Where(p => IsOffensiveScrimmageSnap(p, franchiseSeasonId)
                                      && (p.StartDown == 3 || p.StartDown == 4))
@@ -366,7 +368,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     // by the same offense. homeFsId/awayFsId are used to read the correct scoreboard.
     private decimal CalculatePointsPerDrive(
         Guid franchiseSeasonId,
-        List<CompetitionPlay> plays,
+        List<FootballCompetitionPlay> plays,
         Guid homeFsId,
         Guid awayFsId)
     {
@@ -403,7 +405,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
 
 
     // Red Zone TD Rate (null if no trips): TD-trips / trips
-    private decimal? CalculateRedZoneTdRate(Guid franchiseSeasonId, List<CompetitionPlay> plays)
+    private decimal? CalculateRedZoneTdRate(Guid franchiseSeasonId, List<FootballCompetitionPlay> plays)
     {
         int trips = 0;
         int tdTrips = 0;
@@ -461,7 +463,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     // A scoring trip is one where, before the trip ends, THIS offense records:
     //   - RushingTouchdown or PassingTouchdown, OR
     //   - FieldGoalGood
-    private decimal? CalculateRedZoneScoringRate(Guid franchiseSeasonId, List<CompetitionPlay> plays)
+    private decimal? CalculateRedZoneScoringRate(Guid franchiseSeasonId, List<FootballCompetitionPlay> plays)
     {
         int trips = 0;
         int scoringTrips = 0;
@@ -518,14 +520,14 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
 
 
     /* ================= HELPERS ================ */
-    private static int Yardage(CompetitionPlay p) => p.StatYardage;
+    private static int Yardage(FootballCompetitionPlay p) => p.StatYardage;
 
     // first down purely by distance-to-gain (no FirstDown flag in your data)
-    private static bool AchievedFirstDownByYardage(CompetitionPlay p)
+    private static bool AchievedFirstDownByYardage(FootballCompetitionPlay p)
         => p.StartDistance.HasValue && Yardage(p) >= p.StartDistance.Value;
 
     // which team is on offense at the snap? (null means unknown → not this offense)
-    private static bool IsOffense(CompetitionPlay p, Guid franchiseSeasonId)
+    private static bool IsOffense(FootballCompetitionPlay p, Guid franchiseSeasonId)
         => p.StartFranchiseSeasonId.HasValue
            && p.StartFranchiseSeasonId.Value == franchiseSeasonId;
 
@@ -546,7 +548,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     }
 
     // full filter for "counts toward offense's snaps"
-    private static bool IsOffensiveScrimmageSnap(CompetitionPlay p, Guid franchiseSeasonId)
+    private static bool IsOffensiveScrimmageSnap(FootballCompetitionPlay p, Guid franchiseSeasonId)
     {
         if (!IsOffense(p, franchiseSeasonId)) return false;
 

@@ -7,9 +7,11 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -23,7 +25,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 public class EventCompetitionPredictionDocumentProcessorTests :
     ProducerTestBase<EventCompetitionPredictionDocumentProcessor<FootballDataContext>>
 {
-    private readonly string _documentPath = "EspnFootballNcaaEventCompetitionPredictor.json";
+    private readonly string _documentPath = "EspnFootballNcaa/EspnFootballNcaaEventCompetitionPredictor.json";
 
     private async Task<ProcessDocumentCommand> SeedRequiredEntitiesAsync(Guid competitionId)
     {
@@ -90,7 +92,7 @@ public class EventCompetitionPredictionDocumentProcessorTests :
             });
 
         // OPTIMIZATION: Direct instantiation
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),

@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Contests
 {
@@ -132,7 +133,7 @@ namespace SportsData.Producer.Application.Contests
             }).ToList();
 
             _logger.LogInformation(
-                "📋 CONTEST_DETAILS: Contest summary. Contests={@Contests}",
+                "📋 CONTEST_DETAILS: ContestBase summary. Contests={@Contests}",
                 contestSummaries);
 
             var enqueuedCount = 0;
@@ -154,7 +155,7 @@ namespace SportsData.Producer.Application.Contests
                     enqueuedCount++;
                     
                     _logger.LogDebug(
-                        "✅ CONTEST_ENQUEUED: Contest update job enqueued. ContestId={ContestId}, " +
+                        "✅ CONTEST_ENQUEUED: ContestBase update job enqueued. ContestId={ContestId}, " +
                         "ShortName={ShortName}, HangfireJobId={JobId}, StartDate={StartDate}",
                         contest.Id,
                         contest.ShortName,
@@ -176,7 +177,7 @@ namespace SportsData.Producer.Application.Contests
             }
 
             _logger.LogInformation(
-                "📊 ENQUEUE_SUMMARY: Contest update jobs enqueued. Total={Total}, Succeeded={Succeeded}, " +
+                "📊 ENQUEUE_SUMMARY: ContestBase update jobs enqueued. Total={Total}, Succeeded={Succeeded}, " +
                 "Failed={Failed}, SeasonWeekId={SeasonWeekId}, CorrelationId={CorrelationId}",
                 contests.Count,
                 enqueuedCount,

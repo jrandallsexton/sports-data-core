@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -16,7 +17,7 @@ public class AthleteCareerStatistic : CanonicalEntityBase<Guid>
 
     public string SplitAbbreviation { get; set; } = string.Empty;
 
-    public Athlete Athlete { get; set; } = null!;
+    public AthleteBase Athlete { get; set; } = null!;
 
     public List<AthleteCareerStatisticCategory> Categories { get; set; } = [];
 

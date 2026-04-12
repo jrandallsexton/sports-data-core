@@ -25,7 +25,7 @@ public class CoachDocumentProcessorTests : ProducerTestBase<CoachDocumentProcess
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
         var sut = Mocker.CreateInstance<CoachDocumentProcessor<TeamSportDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaCoach.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaCoach.json");
         var url = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/559872?lang=en&region=us";
         var urlHash = HashProvider.UrlHash(url);
         var command = Fixture.Build<ProcessDocumentCommand>()
@@ -78,7 +78,7 @@ public class CoachDocumentProcessorTests : ProducerTestBase<CoachDocumentProcess
         await TeamSportDataContext.Coaches.AddAsync(existing);
         await TeamSportDataContext.SaveChangesAsync();
         var sut = Mocker.CreateInstance<CoachDocumentProcessor<TeamSportDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaCoach.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaCoach.json");
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)
             .With(x => x.DocumentType, DocumentType.Coach)
@@ -105,7 +105,7 @@ public class CoachDocumentProcessorTests : ProducerTestBase<CoachDocumentProcess
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
         var sut = Mocker.CreateInstance<CoachDocumentProcessor<TeamSportDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaCoach.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaCoach.json");
         var url = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/559872?lang=en&region=us";
         var urlHash = HashProvider.UrlHash(url);
         var command = Fixture.Build<ProcessDocumentCommand>()

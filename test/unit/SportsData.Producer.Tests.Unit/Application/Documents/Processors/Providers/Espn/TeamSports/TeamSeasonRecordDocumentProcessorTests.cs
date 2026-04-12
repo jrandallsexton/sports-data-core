@@ -40,7 +40,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
             await TeamSportDataContext.SaveChangesAsync();
 
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRecord.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonRecord.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.Document, json)
@@ -112,7 +112,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
             await TeamSportDataContext.SaveChangesAsync();
 
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRecord.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonRecord.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.Document, json)
@@ -257,7 +257,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
             await TeamSportDataContext.SaveChangesAsync();
 
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRecord.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonRecord.json");
             var correlationId = Guid.NewGuid();
 
             var command = Fixture.Build<ProcessDocumentCommand>()
@@ -324,7 +324,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
             await TeamSportDataContext.SaveChangesAsync();
 
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRecord.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonRecord.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.Document, json)

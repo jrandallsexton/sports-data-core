@@ -1,79 +1,99 @@
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
     public static class CompetitionExtensions
     {
-        public static Competition AsEntity(
+        public static FootballCompetition AsFootballEntity(
             this EspnEventCompetitionDto dto,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
+            Guid contestId,
+            Guid correlationId)
+        {
+            var entity = new FootballCompetition();
+            MapSharedProperties(dto, entity, externalRefIdentityGenerator, contestId, correlationId);
+            return entity;
+        }
+
+        public static BaseballCompetition AsBaseballEntity(
+            this EspnEventCompetitionDto dto,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
+            Guid contestId,
+            Guid correlationId)
+        {
+            var entity = new BaseballCompetition();
+            MapSharedProperties(dto, entity, externalRefIdentityGenerator, contestId, correlationId);
+            return entity;
+        }
+
+        private static void MapSharedProperties(
+            EspnEventCompetitionDto dto,
+            CompetitionBase entity,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid contestId,
             Guid correlationId)
         {
             var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
-            var entity = new Competition
+            entity.Id = identity.CanonicalId;
+            entity.Attendance = dto.Attendance;
+            entity.ContestId = contestId;
+            entity.CreatedBy = correlationId;
+            entity.CreatedUtc = DateTime.UtcNow;
+            entity.Date = DateTime.TryParse(dto.Date, out var date) ? date.ToUniversalTime() : DateTime.MinValue.ToUniversalTime();
+            entity.DateValid = dto.DateValid;
+            entity.FormatOvertimeDisplayName = dto.Format?.Overtime?.DisplayName;
+            entity.FormatOvertimePeriods = dto.Format?.Overtime?.Periods;
+            entity.FormatOvertimeSlug = dto.Format?.Overtime?.Slug;
+            entity.FormatRegulationClock = dto.Format?.Regulation?.Clock;
+            entity.FormatRegulationDisplayName = dto.Format?.Regulation?.DisplayName;
+            entity.FormatRegulationPeriods = dto.Format?.Regulation?.Periods;
+            entity.FormatRegulationSlug = dto.Format?.Regulation?.Slug;
+            entity.HasDefensiveStats = dto.HasDefensiveStats;
+            entity.IsBoxscoreAvailable = dto.BoxscoreAvailable;
+            entity.IsBracketAvailable = dto.BracketAvailable;
+            entity.IsCommentaryAvailable = dto.CommentaryAvailable;
+            entity.IsConferenceCompetition = dto.ConferenceCompetition;
+            entity.IsConversationAvailable = dto.ConversationAvailable;
+            entity.IsDivisionCompetition = dto.DivisionCompetition;
+            entity.IsGamecastAvailable = dto.GamecastAvailable;
+            entity.IsHighlightsAvailable = dto.HighlightsAvailable;
+            entity.IsLineupAvailable = dto.LineupAvailable;
+            entity.IsLiveAvailable = dto.LiveAvailable;
+            entity.IsNeutralSite = dto.NeutralSite;
+            entity.IsOnWatchEspn = dto.OnWatchESPN;
+            entity.IsPickCenterAvailable = dto.PickcenterAvailable;
+            entity.IsPlayByPlayAvailable = dto.PlayByPlayAvailable;
+            entity.IsPossessionArrowAvailable = dto.PossessionArrowAvailable;
+            entity.IsPreviewAvailable = dto.PreviewAvailable;
+            entity.IsRecapAvailable = dto.RecapAvailable;
+            entity.IsRecent = dto.Recent;
+            entity.IsShotChartAvailable = dto.ShotChartAvailable;
+            entity.IsSummaryAvailable = dto.SummaryAvailable;
+            entity.IsTicketsAvailable = dto.TicketsAvailable;
+            entity.IsTimeoutsAvailable = dto.TimeoutsAvailable;
+            entity.IsWallClockAvailable = dto.WallclockAvailable;
+            entity.TimeValid = dto.TimeValid;
+            entity.TypeAbbreviation = dto.Type?.Abbreviation;
+            entity.TypeId = dto.Type?.Id;
+            entity.TypeName = dto.Type?.TypeName;
+            entity.TypeSlug = dto.Type?.Slug;
+            entity.TypeText = dto.Type?.Text;
+            entity.ExternalIds = new List<CompetitionExternalId>()
             {
-                Id = identity.CanonicalId,
-                Attendance = dto.Attendance,
-                ContestId = contestId,
-                CreatedBy = correlationId,
-                CreatedUtc = DateTime.UtcNow,
-                Date = DateTime.TryParse(dto.Date, out var date) ? date.ToUniversalTime() : DateTime.MinValue.ToUniversalTime(),
-                DateValid = dto.DateValid,
-                FormatOvertimeDisplayName = dto.Format?.Overtime?.DisplayName,
-                FormatOvertimePeriods = dto.Format?.Overtime?.Periods,
-                FormatOvertimeSlug = dto.Format?.Overtime?.Slug,
-                FormatRegulationClock = dto.Format?.Regulation?.Clock,
-                FormatRegulationDisplayName = dto.Format?.Regulation?.DisplayName,
-                FormatRegulationPeriods = dto.Format?.Regulation?.Periods,
-                FormatRegulationSlug = dto.Format?.Regulation?.Slug,
-                HasDefensiveStats = dto.HasDefensiveStats,
-                IsBoxscoreAvailable = dto.BoxscoreAvailable,
-                IsBracketAvailable = dto.BracketAvailable,
-                IsCommentaryAvailable = dto.CommentaryAvailable,
-                IsConferenceCompetition = dto.ConferenceCompetition,
-                IsConversationAvailable = dto.ConversationAvailable,
-                IsDivisionCompetition = dto.DivisionCompetition,
-                IsGamecastAvailable = dto.GamecastAvailable,
-                IsHighlightsAvailable = dto.HighlightsAvailable,
-                IsLineupAvailable = dto.LineupAvailable,
-                IsLiveAvailable = dto.LiveAvailable,
-                IsNeutralSite = dto.NeutralSite,
-                IsOnWatchEspn = dto.OnWatchESPN,
-                IsPickCenterAvailable = dto.PickcenterAvailable,
-                IsPlayByPlayAvailable = dto.PlayByPlayAvailable,
-                IsPossessionArrowAvailable = dto.PossessionArrowAvailable,
-                IsPreviewAvailable = dto.PreviewAvailable,
-                IsRecapAvailable = dto.RecapAvailable,
-                IsRecent = dto.Recent,
-                IsShotChartAvailable = dto.ShotChartAvailable,
-                IsSummaryAvailable = dto.SummaryAvailable,
-                IsTicketsAvailable = dto.TicketsAvailable,
-                IsTimeoutsAvailable = dto.TimeoutsAvailable,
-                IsWallClockAvailable = dto.WallclockAvailable,
-                TimeValid = dto.TimeValid,
-                TypeAbbreviation = dto.Type?.Abbreviation,
-                TypeId = dto.Type?.Id,
-                TypeName = dto.Type?.TypeName,
-                TypeSlug = dto.Type?.Slug,
-                TypeText = dto.Type?.Text,
-                ExternalIds = new List<CompetitionExternalId>()
+                new()
                 {
-                    new()
-                    {
-                        Id = identity.CanonicalId,
-                        Value = identity.UrlHash,
-                        Provider = SourceDataProvider.Espn,
-                        SourceUrlHash = identity.UrlHash,
-                        SourceUrl = identity.CleanUrl
-                    }
+                    Id = identity.CanonicalId,
+                    Value = identity.UrlHash,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrlHash = identity.UrlHash,
+                    SourceUrl = identity.CleanUrl
                 }
             };
-
-            return entity;
         }
     }
 }

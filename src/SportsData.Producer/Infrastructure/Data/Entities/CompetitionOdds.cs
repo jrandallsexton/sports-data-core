@@ -70,7 +70,7 @@ public class CompetitionOdds : CanonicalEntityBase<Guid>, IHasExternalIds
             builder.HasIndex(x => new { x.CompetitionId, x.ProviderId }).IsUnique();
             builder.HasIndex(x => x.CompetitionId);
 
-            builder.HasOne<Competition>()
+            builder.HasOne<CompetitionBase>()
                    .WithMany(x => x.Odds)
                    .HasForeignKey(x => x.CompetitionId);
 

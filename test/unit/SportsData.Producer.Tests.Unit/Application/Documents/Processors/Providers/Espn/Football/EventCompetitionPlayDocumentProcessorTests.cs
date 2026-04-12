@@ -13,7 +13,9 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -47,7 +49,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     public async Task WhenJsonIsValid_CanDeserialize()
     {
         // arrange
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlay_Debug.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_Debug.json");
         var play = json.FromJson<EspnEventCompetitionPlayDto>();
 
         // act
@@ -61,7 +63,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     public async Task WhenPlayCollectionIsProvided_ScoreCanBeCalculate()
     {
         // arrange
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlays.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlays.json");
         var plays = json.FromJson<List<EspnEventCompetitionPlayDto>>();
 
         // act
@@ -81,7 +83,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         var competitionId = Guid.NewGuid();
         
         // OPTIMIZATION: Direct instantiation
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
@@ -167,7 +169,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
 
         var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json, competitionId.ToString());
 
         // act
@@ -202,7 +204,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         var competitionId = Guid.NewGuid();
         
         // OPTIMIZATION: Direct instantiation
-        var competition = new Competition
+        var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
@@ -285,7 +287,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
 
         var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json, competitionId.ToString());
 
         // act
@@ -310,7 +312,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var competitionId = Guid.NewGuid();
-        var competition = Fixture.Build<Competition>()
+        var competition = Fixture.Build<FootballCompetition>()
             .With(x => x.Id, competitionId)
             .With(x => x.ContestId, Guid.NewGuid())
             .With(x => x.CreatedBy, Guid.NewGuid())
@@ -318,7 +320,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         await FootballDataContext.Competitions.AddAsync(competition);
 
         var playId = Guid.NewGuid();
-        var play = Fixture.Build<CompetitionPlay>()
+        var play = Fixture.Build<FootballCompetitionPlay>()
             .With(x => x.Id, playId)
             .With(x => x.CompetitionId, competitionId)
             .With(x => x.CreatedBy, Guid.NewGuid())
@@ -337,7 +339,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
 
         var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json, competitionId.ToString());
 
         // act
@@ -359,7 +361,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         // arrange
         var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json);
         command = new ProcessDocumentCommand(
             command.SourceDataProvider,
@@ -383,7 +385,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         // arrange
         var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json);
         command = new ProcessDocumentCommand(
             command.SourceDataProvider,
@@ -407,7 +409,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         // arrange
         var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json);
         command = new ProcessDocumentCommand(
             command.SourceDataProvider,

@@ -13,6 +13,7 @@ using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Baseball;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Baseball;
@@ -107,7 +108,7 @@ public class BaseballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
         _logger.LogInformation("Created new baseball athlete entity: {AthleteId}", entity.Id);
     }
 
-    private async Task ProcessBirthplace(EspnBaseballAthleteDto dto, Athlete newEntity)
+    private async Task ProcessBirthplace(EspnBaseballAthleteDto dto, AthleteBase newEntity)
     {
         if (dto.BirthPlace is null) return;
 
@@ -146,7 +147,7 @@ public class BaseballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
         newEntity.BirthLocationId = location.Id;
     }
 
-    private async Task ProcessAthleteStatus(EspnBaseballAthleteDto dto, Athlete newEntity)
+    private async Task ProcessAthleteStatus(EspnBaseballAthleteDto dto, AthleteBase newEntity)
     {
         if (dto.Status is null) return;
 
@@ -210,10 +211,10 @@ public class BaseballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
 
     private async Task ProcessExisting(
         ProcessDocumentCommand command,
-        Athlete entity,
+        AthleteBase entity,
         EspnBaseballAthleteDto dto)
     {
-        _dataContext.Set<Athlete>().Attach(entity);
+        _dataContext.Set<AthleteBase>().Attach(entity);
 
         entity.Age = dto.Age;
         entity.IsActive = dto.Active;

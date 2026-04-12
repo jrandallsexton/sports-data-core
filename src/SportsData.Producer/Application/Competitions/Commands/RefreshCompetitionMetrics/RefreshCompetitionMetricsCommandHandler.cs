@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
-using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMetrics;
 
@@ -18,11 +18,11 @@ public class RefreshCompetitionMetricsCommandHandler : IRefreshCompetitionMetric
 {
     private const int ExpectedCompetitionMetricsCount = 2; // both teams should have metrics
 
-    private readonly TeamSportDataContext _dataContext;
+    private readonly FootballDataContext _dataContext;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
     public RefreshCompetitionMetricsCommandHandler(
-        TeamSportDataContext dataContext,
+        FootballDataContext dataContext,
         IProvideBackgroundJobs backgroundJobProvider)
     {
         _dataContext = dataContext;

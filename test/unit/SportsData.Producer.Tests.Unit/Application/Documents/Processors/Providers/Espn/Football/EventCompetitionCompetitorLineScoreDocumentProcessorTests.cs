@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 
@@ -67,7 +67,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
 
         var sut = Mocker.CreateInstance<EventCompetitionCompetitorLineScoreDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorLineScore.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorLineScore.json");
         var command = CreateCommand(json, competitorId.ToString());
 
         // Act
@@ -96,7 +96,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var competitorId = Guid.NewGuid();
-        var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitorLineScore.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorLineScore.json");
         var command = CreateCommand(json, competitorId.ToString());
 
         var identity = generator.Generate(TestUrl);

@@ -24,7 +24,7 @@ public class CoachRecordDocumentProcessorTests : ProducerTestBase<CoachRecordDoc
         var url = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/coaches/559872?lang=en&region=us";
         var urlHash = HashProvider.UrlHash(url);
         var sut = Mocker.CreateInstance<CoachRecordDocumentProcessor<TeamSportDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaCoachRecord.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaCoachRecord.json");
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)
             .With(x => x.DocumentType, DocumentType.Coach)
@@ -79,7 +79,7 @@ public class CoachRecordDocumentProcessorTests : ProducerTestBase<CoachRecordDoc
         await TeamSportDataContext.SaveChangesAsync();
 
         var sut = Mocker.CreateInstance<CoachRecordDocumentProcessor<TeamSportDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaCoachRecord.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaCoachRecord.json");
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.Document, json)
             .With(x => x.DocumentType, DocumentType.Coach)

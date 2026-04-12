@@ -7,7 +7,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities;
 
 public class CompetitionBroadcast : CanonicalEntityBase<Guid>
 {
-    public Competition Competition { get; set; } = null!;
+    public CompetitionBase Competition { get; set; } = null!;
     public Guid CompetitionId { get; set; }
 
     public string TypeId { get; set; } = default!;
@@ -76,7 +76,7 @@ public class CompetitionBroadcast : CanonicalEntityBase<Guid>
 
             builder.Property(x => x.Partnered).IsRequired();
 
-            builder.HasOne<Competition>()
+            builder.HasOne<CompetitionBase>()
                 .WithMany(x => x.Broadcasts)
                 .HasForeignKey(x => x.CompetitionId)
                 .OnDelete(DeleteBehavior.Cascade);

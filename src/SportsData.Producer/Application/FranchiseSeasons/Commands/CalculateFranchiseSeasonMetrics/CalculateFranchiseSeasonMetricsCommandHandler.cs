@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
-using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
 
 namespace SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
@@ -16,11 +16,11 @@ public interface ICalculateFranchiseSeasonMetricsCommandHandler
 public class CalculateFranchiseSeasonMetricsCommandHandler : ICalculateFranchiseSeasonMetricsCommandHandler
 {
     private readonly ILogger<CalculateFranchiseSeasonMetricsCommandHandler> _logger;
-    private readonly TeamSportDataContext _dataContext;
+    private readonly FootballDataContext _dataContext;
 
     public CalculateFranchiseSeasonMetricsCommandHandler(
         ILogger<CalculateFranchiseSeasonMetricsCommandHandler> logger,
-        TeamSportDataContext dataContext)
+        FootballDataContext dataContext)
     {
         _logger = logger;
         _dataContext = dataContext;

@@ -28,7 +28,7 @@ public class TeamSeasonRecordAtsDocumentProcessorTests :
 
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<TeamSeasonRecordAtsDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRecordAts.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonRecordAts.json");
 
         var franchiseSeason = Fixture.Build<FranchiseSeason>()
             .WithAutoProperties()
@@ -68,7 +68,7 @@ public class TeamSeasonRecordAtsDocumentProcessorTests :
     {
         // Arrange
         var sut = Mocker.CreateInstance<TeamSeasonRecordAtsDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonRecordAts.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonRecordAts.json");
 
         var command = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.SourceDataProvider, SourceDataProvider.Espn)

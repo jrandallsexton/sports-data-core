@@ -2,7 +2,7 @@
 
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using Xunit;
@@ -16,7 +16,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task WhenJsonIsValid_DtoDeserializes()
         {
             // arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaEventCompetitionCompetitor.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitor.json");
 
             // act
             var dto = json.FromJson<EspnEventCompetitionCompetitorDto>();

@@ -35,7 +35,7 @@ public class DraftDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<DraftDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNflDraft.json");
+        var json = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflDraft.json");
         var dto = json.FromJson<EspnDraftDto>();
         var draftIdentity = generator.Generate(dto!.Ref);
 
@@ -72,7 +72,7 @@ public class DraftDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<DraftDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNflDraft.json");
+        var json = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflDraft.json");
         var dto = json.FromJson<EspnDraftDto>();
         var draftIdentity = generator.Generate(dto!.Ref);
 
@@ -123,7 +123,7 @@ public class DraftDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<DraftDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNflDraft.json");
+        var json = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflDraft.json");
         var dto = json.FromJson<EspnDraftDto>();
         var draftIdentity = generator.Generate(dto!.Ref);
 

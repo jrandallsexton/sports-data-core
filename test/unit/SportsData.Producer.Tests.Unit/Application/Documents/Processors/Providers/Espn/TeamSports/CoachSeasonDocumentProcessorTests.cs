@@ -24,7 +24,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 [Collection("Sequential")]
 public class CoachSeasonDocumentProcessorTests : ProducerTestBase<CoachSeasonDocumentProcessor<FootballDataContext>>
 {
-    private const string TestDataFile = "EspnFootballNcaaTeamSeasonCoach.json";
+    private const string TestDataFile = "EspnFootballNcaa/EspnFootballNcaaTeamSeasonCoach.json";
 
     private async Task<Guid> SeedFranchiseSeasonAsync()
     {

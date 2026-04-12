@@ -62,7 +62,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_ReplacesExistingStatistics_WhenDocumentReceived()
         {
             // Arrange
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonStatistics.json");
 
             var franchiseSeason = Fixture.Build<FranchiseSeason>()
                 .WithAutoProperties()
@@ -110,7 +110,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_SkipsUpdate_WhenIncomingSnapshotIsOlder()
         {
             // Arrange - Create existing statistics with 13 games played
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonStatistics.json");
 
             var franchiseSeason = Fixture.Build<FranchiseSeason>()
                 .WithAutoProperties()
@@ -207,7 +207,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_UpdatesStatistics_WhenIncomingSnapshotIsNewer()
         {
             // Arrange - Create existing statistics with 10 games played
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonStatistics.json");
 
             var franchiseSeason = Fixture.Build<FranchiseSeason>()
                 .WithAutoProperties()
@@ -288,7 +288,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_UpdatesStatistics_WhenIncomingSnapshotHasSameGamesPlayed()
         {
             // Arrange - Create existing statistics with same games played (may be stat corrections)
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonStatistics.json");
 
             var franchiseSeason = Fixture.Build<FranchiseSeason>()
                 .WithAutoProperties()
@@ -382,7 +382,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_UpdatesStatistics_WhenNoGamesPlayedStatFound()
         {
             // Arrange - Edge case: existing stats without teamGamesPlayed stat
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonStatistics.json");
 
             var franchiseSeason = Fixture.Build<FranchiseSeason>()
                 .WithAutoProperties()
@@ -461,7 +461,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         public async Task ProcessAsync_RetriesOnConcurrencyConflict_WhenAnotherProcessUpdatesConcurrently()
         {
             // Arrange - Simulate concurrent update scenario
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonStatistics.json");
 
             var franchiseSeason = Fixture.Build<FranchiseSeason>()
                 .WithAutoProperties()
@@ -546,7 +546,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // Arrange - This test specifically validates the fix for:
             // "Collection was modified; enumeration operation may not execute"
             // which occurred when RemoveRange was called on a tracked navigation property
-            var json = await LoadJsonTestData("EspnFootballNcaaTeamSeasonStatistics.json");
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonStatistics.json");
 
             var franchiseSeason = Fixture.Build<FranchiseSeason>()
                 .WithAutoProperties()

@@ -106,20 +106,18 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
     private async Task ProcessNew(
         ProcessDocumentCommand command,
         EspnEventCompetitionPlayDto externalDto,
-        Competition competition,
+        CompetitionBase competition,
         Guid? teamFranchiseSeasonId)
     {
         _logger.LogInformation(
             "Creating baseball CompetitionPlay. CompetitionId={CompId}, PlayType={PlayType}",
             competition.Id, externalDto.Type?.Text);
 
-        var play = externalDto.AsEntity(
+        var play = externalDto.AsBaseballEntity(
             _externalRefIdentityGenerator,
             command.CorrelationId,
             competition.Id,
-            driveId: null,
-            startFranchiseSeasonId: teamFranchiseSeasonId,
-            endFranchiseSeasonId: null);
+            teamFranchiseSeasonId);
 
         if (competition.Status is not null && !competition.Status.IsCompleted)
         {
@@ -144,7 +142,7 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
     }
 
     private async Task ProcessExisting(
-        CompetitionPlay entity,
+        CompetitionPlayBase entity,
         Guid? teamFranchiseSeasonId)
     {
         _logger.LogInformation("Updating baseball CompetitionPlay. PlayId={PlayId}", entity.Id);

@@ -9,6 +9,7 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Producer.Application.Venues.Commands.GeocodeVenue;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Geo;
 
 using Xunit;

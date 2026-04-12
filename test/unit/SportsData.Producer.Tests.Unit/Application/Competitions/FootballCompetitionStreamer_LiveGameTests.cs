@@ -1,3 +1,4 @@
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;

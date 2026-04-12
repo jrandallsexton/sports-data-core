@@ -1,3 +1,4 @@
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using AutoFixture;
 
 using FluentAssertions;
@@ -30,7 +31,7 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
         var competitionId2 = Guid.NewGuid();
 
         // Create finalized contests with competitions that have no metrics
-        var contest1 = Fixture.Build<Contest>()
+        var contest1 = Fixture.Build<FootballContest>()
             .With(x => x.Id, contestId1)
             .With(x => x.SeasonYear, seasonYear)
             .With(x => x.FinalizedUtc, DateTime.UtcNow)
@@ -41,7 +42,7 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
             .Without(x => x.AwayTeamFranchiseSeason)
             .Create();
 
-        var contest2 = Fixture.Build<Contest>()
+        var contest2 = Fixture.Build<FootballContest>()
             .With(x => x.Id, contestId2)
             .With(x => x.SeasonYear, seasonYear)
             .With(x => x.FinalizedUtc, DateTime.UtcNow)
@@ -52,7 +53,7 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
             .Without(x => x.AwayTeamFranchiseSeason)
             .Create();
 
-        var competition1 = Fixture.Build<Competition>()
+        var competition1 = Fixture.Build<FootballCompetition>()
             .With(x => x.Id, competitionId1)
             .With(x => x.ContestId, contestId1)
             .Without(x => x.Plays)
@@ -63,7 +64,7 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
             .Without(x => x.Contest)
             .Create();
 
-        var competition2 = Fixture.Build<Competition>()
+        var competition2 = Fixture.Build<FootballCompetition>()
             .With(x => x.Id, competitionId2)
             .With(x => x.ContestId, contestId2)
             .Without(x => x.Plays)
@@ -105,7 +106,7 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
 
-        var contest = Fixture.Build<Contest>()
+        var contest = Fixture.Build<FootballContest>()
             .With(x => x.Id, contestId)
             .With(x => x.SeasonYear, seasonYear)
             .With(x => x.FinalizedUtc, DateTime.UtcNow)
@@ -116,7 +117,7 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
             .Without(x => x.AwayTeamFranchiseSeason)
             .Create();
 
-        var competition = Fixture.Build<Competition>()
+        var competition = Fixture.Build<FootballCompetition>()
             .With(x => x.Id, competitionId)
             .With(x => x.ContestId, contestId)
             .Without(x => x.Plays)

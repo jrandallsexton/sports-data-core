@@ -18,5 +18,5 @@ public class CompetitionLink : EntityBase<Guid>
 
     public Guid CompetitionId { get; set; }
 
-    public Competition Competition { get; set; } = null!;
+    public CompetitionBase Competition { get; set; } = null!;
 }

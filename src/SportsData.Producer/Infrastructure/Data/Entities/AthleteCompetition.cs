@@ -13,7 +13,7 @@ public class AthleteCompetition : CanonicalEntityBase<Guid>
 {
     public Guid CompetitionId { get; set; }
 
-    public Competition Competition { get; set; } = null!;
+    public CompetitionBase Competition { get; set; } = null!;
 
     public Guid CompetitionCompetitorId { get; set; }
 

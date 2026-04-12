@@ -32,7 +32,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var sut = Mocker.CreateInstance<FranchiseDocumentProcessor<TeamSportDataContext>>();
 
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaFranchise.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaFranchise.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
@@ -93,7 +93,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var sut = Mocker.CreateInstance<FranchiseDocumentProcessor<TeamSportDataContext>>();
 
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaFranchise.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaFranchise.json");
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
@@ -133,7 +133,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var sut = Mocker.CreateInstance<FranchiseDocumentProcessor<TeamSportDataContext>>();
 
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaFranchise.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaFranchise.json");
 
             // add venue to test db
             var venueId = Guid.NewGuid();

@@ -5,7 +5,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Extensions;
-using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Contests
 {
@@ -17,13 +17,13 @@ namespace SportsData.Producer.Application.Contests
     public class ContestEnrichmentProcessor : IEnrichContests
     {
         private readonly ILogger<ContestEnrichmentProcessor> _logger;
-        private readonly TeamSportDataContext _dataContext;
+        private readonly FootballDataContext _dataContext;
         private readonly IEventBus _bus;
         private readonly IDateTimeProvider _dateTimeProvider;
 
         public ContestEnrichmentProcessor(
             ILogger<ContestEnrichmentProcessor> logger,
-            TeamSportDataContext dataContext,
+            FootballDataContext dataContext,
             IEventBus bus,
             IDateTimeProvider dateTimeProvider)
         {

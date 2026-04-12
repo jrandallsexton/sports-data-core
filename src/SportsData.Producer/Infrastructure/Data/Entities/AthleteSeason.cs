@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities;
@@ -10,7 +11,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities;
 public class AthleteSeason : CanonicalEntityBase<Guid>, IHasExternalIds
 {
     public Guid AthleteId { get; set; }
-    public Athlete Athlete { get; set; } = default!;
+    public AthleteBase Athlete { get; set; } = default!;
 
     public Guid? FranchiseSeasonId { get; set; }
 

@@ -7,9 +7,11 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -30,13 +32,13 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var identityGenerator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
 
-            var documentJson = await LoadJsonTestData("EspnFootballNcaaEventCompetitionProbability.json");
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionProbability.json");
 
             var competitionId = Guid.NewGuid();
             var competitionRef = identityGenerator.Generate("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en");
 
             // OPTIMIZATION: Direct instantiation
-            var competition = new Competition
+            var competition = new FootballCompetition
             {
                 Id = competitionId,
                 ContestId = Guid.NewGuid(),

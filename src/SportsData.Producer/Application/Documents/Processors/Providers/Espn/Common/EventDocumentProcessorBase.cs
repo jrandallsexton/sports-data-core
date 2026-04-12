@@ -1,0 +1,422 @@
+using System.Globalization;
+
+using Microsoft.EntityFrameworkCore;
+
+using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.Refs;
+using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Exceptions;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
+
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
+
+public abstract class EventDocumentProcessorBase<TDataContext> : DocumentProcessorBase<TDataContext>
+    where TDataContext : TeamSportDataContext
+{
+    protected EventDocumentProcessorBase(
+        ILogger logger,
+        TDataContext dataContext,
+        IEventBus publishEndpoint,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
+
+    protected abstract ContestBase CreateEntity(
+        EspnEventDto dto,
+        IGenerateExternalRefIdentities identityGenerator,
+        Sport sport,
+        int seasonYear,
+        Guid? seasonWeekId,
+        Guid seasonPhaseId,
+        Guid correlationId);
+
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
+    {
+        var externalDto = command.Document.FromJson<EspnEventDto>();
+
+        if (externalDto is null)
+        {
+            _logger.LogError("Failed to deserialize EspnEventDto.");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
+        {
+            _logger.LogError("EspnEventDto Ref is null.");
+            return;
+        }
+
+        if (!command.SeasonYear.HasValue)
+        {
+            _logger.LogError("Command missing SeasonYear.");
+            throw new InvalidOperationException("SeasonYear must be defined in the command.");
+        }
+
+        var entity = await _dataContext.Contests
+            .Include(x => x.ExternalIds)
+            .FirstOrDefaultAsync(x =>
+                x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
+                                       z.Provider == command.SourceDataProvider));
+
+        if (entity is null)
+        {
+            _logger.LogInformation("Processing new Contest entity. Ref={Ref}", externalDto.Ref);
+            await ProcessNewEntity(command, externalDto, command.SeasonYear.Value);
+        }
+        else
+        {
+            _logger.LogInformation("Processing Contest update. ContestId={ContestId}, Ref={Ref}", entity.Id, externalDto.Ref);
+            await ProcessUpdate(command, externalDto, entity);
+        }
+    }
+
+    private async Task ProcessNewEntity(
+        ProcessDocumentCommand command,
+        EspnEventDto externalDto,
+        int seasonYear)
+    {
+        _logger.LogInformation("Creating new Contest. SeasonYear={SeasonYear}", seasonYear);
+
+        var seasonPhaseId = await GetSeasonPhaseId(command, externalDto);
+        var seasonWeekId = await GetSeasonWeekId(command, externalDto);
+
+        var contest = CreateEntity(
+            externalDto, _externalRefIdentityGenerator, command.Sport,
+            seasonYear, seasonWeekId, seasonPhaseId, command.CorrelationId);
+
+        AddLinks(externalDto, contest);
+
+        var teamsAdded = await AddTeams(command, externalDto, contest);
+        if (!teamsAdded)
+        {
+            _logger.LogError(
+                "Skipping contest creation due to missing competition data. CorrelationId={CorrelationId}",
+                command.CorrelationId);
+            return;
+        }
+
+        await AddVenue(command, externalDto, contest);
+
+        await ProcessCompetitions(command, externalDto, contest);
+
+        await _dataContext.AddAsync(contest);
+
+        _logger.LogInformation("Publishing ContestCreated event. ContestId={ContestId}", contest.Id);
+
+        await _publishEndpoint.Publish(new ContestCreated(
+            contest.ToCanonicalModel(),
+            null,
+            command.Sport,
+            seasonYear,
+            command.CorrelationId,
+            command.MessageId));
+
+        await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Contest created successfully. ContestId={ContestId}", contest.Id);
+    }
+
+    private async Task<Guid?> GetSeasonWeekId(
+        ProcessDocumentCommand command,
+        EspnEventDto externalDto)
+    {
+        if (externalDto.Week is not null)
+        {
+            var seasonWeekIdentity = _externalRefIdentityGenerator.Generate(externalDto.Week.Ref);
+
+            var seasonWeek = await _dataContext.SeasonWeeks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(sw => sw.Id == seasonWeekIdentity.CanonicalId);
+
+            if (seasonWeek is not null)
+                return seasonWeek.Id;
+
+            await PublishDependencyRequest<string?>(
+                command,
+                externalDto.Week,
+                parentId: null,
+                DocumentType.SeasonTypeWeek);
+
+            throw new ExternalDocumentNotSourcedException(
+                $"SeasonWeek not found for {externalDto.Week.Ref} (Id: {seasonWeekIdentity.CanonicalId})");
+        }
+
+        if (DateTime.TryParse(externalDto.Date, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var eventDateUtc))
+        {
+            var inferredWeek = await _dataContext.SeasonWeeks
+                .AsNoTracking()
+                .Where(sw => sw.StartDate <= eventDateUtc &&
+                             sw.EndDate >= eventDateUtc)
+                .OrderBy(sw => sw.Number)
+                .FirstOrDefaultAsync();
+
+            if (inferredWeek is not null)
+            {
+                _logger.LogWarning(
+                    "Inferred SeasonWeek from event date. EventDate={EventDate}, WeekNumber={WeekNumber}, SeasonWeekId={SeasonWeekId}",
+                    eventDateUtc, inferredWeek.Number, inferredWeek.Id);
+                return inferredWeek.Id;
+            }
+
+            _logger.LogWarning(
+                "Could not infer SeasonWeek from event date. No week covers EventDate={EventDate}",
+                eventDateUtc);
+        }
+
+        if (command.Sport is Sport.FootballNcaa or Sport.FootballNfl)
+        {
+            throw new InvalidOperationException(
+                $"Cannot determine SeasonWeek for event {externalDto.Ref}. ESPN data is missing Week $ref and date-based inference failed.");
+        }
+
+        _logger.LogInformation(
+            "No SeasonWeek found for {Sport} event {Ref}. Proceeding with null SeasonWeekId.",
+            command.Sport, externalDto.Ref);
+
+        return null;
+    }
+
+    private async Task<Guid> GetSeasonPhaseId(ProcessDocumentCommand command, EspnEventDto externalDto)
+    {
+        var seasonPhaseId = await _dataContext.ResolveIdAsync<
+            SeasonPhase, SeasonPhaseExternalId>(
+            externalDto.SeasonType,
+            command.SourceDataProvider,
+            () => _dataContext.SeasonPhases,
+            externalIdsNav: "ExternalIds",
+            key: sp => sp.Id);
+
+        if (seasonPhaseId is null)
+        {
+            await PublishDependencyRequest<string?>(
+                command,
+                externalDto.SeasonType,
+                parentId: null,
+                DocumentType.SeasonType);
+
+            throw new ExternalDocumentNotSourcedException(
+                $"SeasonPhase not found for {externalDto.SeasonType.Ref}");
+        }
+
+        return seasonPhaseId.Value;
+    }
+
+    private async Task ProcessCompetitions(
+        ProcessDocumentCommand command,
+        EspnEventDto externalDto,
+        ContestBase contest)
+    {
+        _logger.LogInformation("Processing {Count} competitions. ContestId={ContestId}",
+            externalDto.Competitions.Count(),
+            contest.Id);
+
+        foreach (var competition in externalDto.Competitions)
+        {
+            _logger.LogDebug("Publishing DocumentRequested for EventCompetition. CompetitionRef={CompetitionRef}",
+                competition.Ref);
+
+            await PublishChildDocumentRequest(
+                command,
+                competition,
+                contest.Id,
+                DocumentType.EventCompetition);
+        }
+    }
+
+    private static void AddLinks(
+        EspnEventDto externalDto,
+        ContestBase contest)
+    {
+        if (externalDto.Links?.Any() != true)
+            return;
+
+        foreach (var link in externalDto.Links)
+        {
+            contest.Links.Add(new ContestLink
+            {
+                Id = Guid.NewGuid(),
+                ContestId = contest.Id,
+                Rel = string.Join("|", link.Rel),
+                Href = link.Href.ToCleanUrl(),
+                Text = link.Text,
+                ShortText = link.ShortText,
+                IsExternal = link.IsExternal,
+                IsPremium = link.IsPremium,
+                SourceUrlHash = HashProvider.GenerateHashFromUri(link.Href)
+            });
+        }
+    }
+
+    private async Task AddVenue(
+        ProcessDocumentCommand command,
+        EspnEventDto externalDto,
+        ContestBase contest)
+    {
+        var venue = externalDto.Venues.FirstOrDefault();
+        if (venue != null)
+        {
+            var venueId = await _dataContext.ResolveIdAsync<
+                Venue, VenueExternalId>(
+                venue,
+                command.SourceDataProvider,
+                () => _dataContext.Venues,
+                externalIdsNav: "ExternalIds",
+                key: v => v.Id);
+
+            if (venueId != null)
+            {
+                contest.VenueId = venueId.Value;
+            }
+            else
+            {
+                await PublishChildDocumentRequest(
+                    command,
+                    venue,
+                    string.Empty,
+                    DocumentType.Venue);
+
+                throw new ExternalDocumentNotSourcedException(
+                    $"Venue not found for {venue.Ref}");
+            }
+        }
+    }
+
+    private async Task<bool> AddTeams(
+        ProcessDocumentCommand command,
+        EspnEventDto externalDto,
+        ContestBase contest)
+    {
+        var competition = externalDto.Competitions.FirstOrDefault();
+        if (competition is null)
+        {
+            _logger.LogError(
+                "No competitions found in ESPN event document. CorrelationId={CorrelationId}, Ref={Ref}",
+                command.CorrelationId,
+                command.GetDocumentRef());
+            return false;
+        }
+
+        var competitors = competition.Competitors;
+
+        var awayTeamFranchiseSeasonId = await ResolveFranchiseSeasonIdAsync(
+            command, competitors, "away");
+        contest.AwayTeamFranchiseSeasonId = awayTeamFranchiseSeasonId;
+
+        var homeTeamFranchiseSeasonId = await ResolveFranchiseSeasonIdAsync(
+            command, competitors, "home");
+        contest.HomeTeamFranchiseSeasonId = homeTeamFranchiseSeasonId;
+
+        if (string.IsNullOrEmpty(contest.ShortName))
+        {
+            await SetContestShortName(contest, awayTeamFranchiseSeasonId, homeTeamFranchiseSeasonId);
+        }
+
+        return true;
+    }
+
+    private async Task<Guid> ResolveFranchiseSeasonIdAsync(
+        ProcessDocumentCommand command,
+        IEnumerable<EspnEventCompetitionCompetitorDto> competitors,
+        string homeAway)
+    {
+        var competitor = competitors.First(x =>
+            x.HomeAway.Equals(homeAway, StringComparison.OrdinalIgnoreCase));
+
+        var franchiseSeasonId = await _dataContext.ResolveIdAsync<
+            FranchiseSeason, FranchiseSeasonExternalId>(
+            competitor.Team,
+            command.SourceDataProvider,
+            () => _dataContext.FranchiseSeasons,
+            externalIdsNav: "ExternalIds",
+            key: fs => fs.Id);
+
+        if (franchiseSeasonId != null)
+        {
+            return franchiseSeasonId.Value;
+        }
+
+        var teamLabel = char.ToUpper(homeAway[0]) + homeAway[1..].ToLower();
+
+        var franchiseUri = EspnUriMapper.TeamSeasonToFranchiseRef(competitor.Team.Ref);
+        var franchiseIdentity = _externalRefIdentityGenerator.Generate(franchiseUri);
+
+        await PublishChildDocumentRequest(
+            command,
+            competitor.Team,
+            franchiseIdentity.CanonicalId.ToString(),
+            DocumentType.TeamSeason);
+
+        await _dataContext.SaveChangesAsync();
+
+        throw new ExternalDocumentNotSourcedException(
+            $"{teamLabel} team franchise season not found for {competitor.Ref}. Requesting.");
+    }
+
+    private async Task SetContestShortName(
+        ContestBase contest,
+        Guid awayTeamFranchiseSeasonId,
+        Guid homeTeamFranchiseSeasonId)
+    {
+        var franchiseSeasons = await _dataContext.FranchiseSeasons
+            .Include(s => s.Franchise)
+            .Where(x => x.Id == homeTeamFranchiseSeasonId || x.Id == awayTeamFranchiseSeasonId)
+            .ToListAsync();
+
+        var homeFranchise = franchiseSeasons.FirstOrDefault(x => x.Id == homeTeamFranchiseSeasonId);
+        var awayFranchise = franchiseSeasons.FirstOrDefault(x => x.Id == awayTeamFranchiseSeasonId);
+
+        if (awayFranchise != null && homeFranchise != null)
+        {
+            var awayName = awayFranchise.Franchise.Abbreviation ?? awayFranchise.Franchise.Name;
+            var homeName = homeFranchise.Franchise.Abbreviation ?? homeFranchise.Franchise.Name;
+            contest.ShortName = $"{awayName} @ {homeName}";
+        }
+    }
+
+    private async Task ProcessUpdate(
+        ProcessDocumentCommand command,
+        EspnEventDto dto,
+        ContestBase contest)
+    {
+        _logger.LogInformation("Updating Contest. ContestId={ContestId}", contest.Id);
+
+        if (DateTime.TryParse(dto.Date, out var startDateTime))
+        {
+            _logger.LogInformation(
+                "Updating Contest StartDateUtc. ContestId={ContestId}, OldDate={OldDate}, NewDate={NewDate}",
+                contest.Id,
+                contest.StartDateUtc,
+                startDateTime.ToUniversalTime());
+
+            contest.StartDateUtc = DateTime.Parse(dto.Date).ToUniversalTime();
+            await _dataContext.SaveChangesAsync();
+        }
+
+        _logger.LogInformation(
+            "Re-sourcing {Count} competitions for updated Contest. ContestId={ContestId}",
+            dto.Competitions.Count(),
+            contest.Id);
+
+        foreach (var competition in dto.Competitions)
+        {
+            await PublishChildDocumentRequest(
+                command,
+                competition,
+                contest.Id,
+                DocumentType.EventCompetition);
+        }
+
+        await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Contest update completed. ContestId={ContestId}", contest.Id);
+    }
+}

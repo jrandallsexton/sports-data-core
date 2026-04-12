@@ -33,7 +33,7 @@ public class DraftRoundsDocumentProcessorTests :
         var sut = Mocker.CreateInstance<DraftRoundsDocumentProcessor<FootballDataContext>>();
 
         // Load the draft root JSON to generate the deterministic draft ID
-        var draftJson = await LoadJsonTestData("EspnFootballNflDraft.json");
+        var draftJson = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflDraft.json");
         var draftDto = draftJson.FromJson<EspnDraftDto>();
         var draftIdentity = generator.Generate(draftDto!.Ref);
 
@@ -53,7 +53,7 @@ public class DraftRoundsDocumentProcessorTests :
         await FootballDataContext.SaveChangesAsync();
 
         // Load the rounds JSON
-        var roundsJson = await LoadJsonTestData("EspnFootballNflDraftRounds.json");
+        var roundsJson = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflDraftRounds.json");
 
         // The rounds JSON is a collection (no $ref at root), so generate UrlHash from the known rounds URI
         var roundsUri = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2024/draft/rounds");
@@ -100,7 +100,7 @@ public class DraftRoundsDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<DraftRoundsDocumentProcessor<FootballDataContext>>();
 
-        var roundsJson = await LoadJsonTestData("EspnFootballNflDraftRounds.json");
+        var roundsJson = await LoadJsonTestData("EspnFootballNfl/EspnFootballNflDraftRounds.json");
 
         var roundsUri = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2024/draft/rounds");
         var roundsUrlHash = generator.Generate(roundsUri).UrlHash;

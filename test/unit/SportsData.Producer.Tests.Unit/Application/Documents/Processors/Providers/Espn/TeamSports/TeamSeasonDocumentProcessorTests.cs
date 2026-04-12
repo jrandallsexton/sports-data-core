@@ -36,7 +36,7 @@ public class TeamSeasonDocumentProcessorTests :
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
         
-        var json = await LoadJsonTestData("EspnFootballNcaaTeamSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeason.json");
         var dto = json.FromJson<EspnTeamSeasonDto>();
 
         var groupSeasonIdentity = generator.Generate(dto.Groups.Ref);
@@ -115,7 +115,7 @@ public class TeamSeasonDocumentProcessorTests :
 
         var bus = Mocker.GetMock<IEventBus>();
         var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
-        var json = await LoadJsonTestData("EspnFootballNcaaTeamSeason.json");
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeason.json");
 
         var franchiseId = Guid.NewGuid();
         var season = 2024;

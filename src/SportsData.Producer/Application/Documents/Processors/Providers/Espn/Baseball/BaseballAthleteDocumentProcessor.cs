@@ -12,7 +12,6 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Baseball;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
-using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 

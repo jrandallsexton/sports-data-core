@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Diagnostics.Metrics;
 using System.Linq.Expressions;
 

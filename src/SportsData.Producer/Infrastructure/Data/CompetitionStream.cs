@@ -10,7 +10,7 @@ namespace SportsData.Producer.Infrastructure.Data
     public class CompetitionStream : CanonicalEntityBase<Guid>
     {
         public Guid CompetitionId { get; set; }
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
 
         public Guid SeasonWeekId { get; set; }
         public SeasonWeek SeasonWeek { get; set; } = null!;

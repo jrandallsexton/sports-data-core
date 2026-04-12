@@ -69,7 +69,7 @@ public static class CompetitionPlayExtensions
 
     private static void MapSharedProperties(
         EspnEventCompetitionPlayDto dto,
-        CompetitionPlay entity,
+        CompetitionPlayBase entity,
         ExternalRefIdentity identity,
         Guid correlationId,
         Guid competitionId,

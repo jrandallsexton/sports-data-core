@@ -217,7 +217,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
     /// Uses CompetitionStatus.StatusState and StatusTypeName as primary indicators,
     /// with fallback to Contest timestamps and current time.
     /// </summary>
-    private static ContestStatus DetermineContestStatus(Contest contest, CompetitionStatus? competitionStatus = null)
+    private static ContestStatus DetermineContestStatus(ContestBase contest, CompetitionStatus? competitionStatus = null)
     {
         var now = DateTime.UtcNow;
 

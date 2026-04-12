@@ -86,7 +86,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
         var contest = command.Sport switch
         {
-            Sport.BaseballMlb => (Contest)externalDto.AsBaseballEntity(
+            Sport.BaseballMlb => (ContestBase)externalDto.AsBaseballEntity(
                 _externalRefIdentityGenerator, command.Sport, seasonYear, seasonWeekId, seasonPhaseId, command.CorrelationId),
             _ => externalDto.AsFootballEntity(
                 _externalRefIdentityGenerator, command.Sport, seasonYear, seasonWeekId, seasonPhaseId, command.CorrelationId)
@@ -223,7 +223,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
     private async Task ProcessCompetitions(
         ProcessDocumentCommand command,
         EspnEventDto externalDto,
-        Contest contest)
+        ContestBase contest)
     {
         _logger.LogInformation("Processing {Count} competitions. ContestId={ContestId}", 
             externalDto.Competitions.Count(), 
@@ -244,7 +244,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
 
     private static void AddLinks(
         EspnEventDto externalDto,
-        Contest contest)
+        ContestBase contest)
     {
         if (externalDto.Links?.Any() != true)
             return;
@@ -269,7 +269,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
     private async Task AddVenue(
         ProcessDocumentCommand command,
         EspnEventDto externalDto,
-        Contest contest)
+        ContestBase contest)
     {
         var venue = externalDto.Venues.FirstOrDefault();
         if (venue != null)
@@ -305,7 +305,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
     private async Task<bool> AddTeams(
         ProcessDocumentCommand command,
         EspnEventDto externalDto,
-        Contest contest)
+        ContestBase contest)
     {
         var competition = externalDto.Competitions.FirstOrDefault();
         if (competition is null)
@@ -374,7 +374,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
     }
 
     private async Task SetContestShortName(
-        Contest contest,
+        ContestBase contest,
         Guid awayTeamFranchiseSeasonId,
         Guid homeTeamFranchiseSeasonId)
     {
@@ -397,7 +397,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
     private async Task ProcessUpdate(
         ProcessDocumentCommand command,
         EspnEventDto dto,
-        Contest contest)
+        ContestBase contest)
     {
         _logger.LogInformation("Updating Contest. ContestId={ContestId}", contest.Id);
 

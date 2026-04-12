@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 
-namespace SportsData.Producer.Infrastructure.Data.Common
+namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class AthleteStatus : CanonicalEntityBase<Guid>
     {

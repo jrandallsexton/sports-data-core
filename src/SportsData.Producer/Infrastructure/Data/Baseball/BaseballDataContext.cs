@@ -28,7 +28,7 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.WithUriConverter();
-            modelBuilder.ApplyConfiguration(new Athlete.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new AthleteBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballAthlete.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballCompetition.EntityConfiguration());

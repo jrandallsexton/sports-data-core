@@ -52,7 +52,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionStream> CompetitionStreams { get; set; }
 
-        public DbSet<Competition> Competitions { get; set; }
+        public DbSet<CompetitionBase> Competitions { get; set; }
 
         public DbSet<CompetitionCompetitor> CompetitionCompetitors { get; set; }
 
@@ -104,7 +104,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionStatusExternalId> CompetitionStatusExternalIds { get; set; }
 
-        public DbSet<Contest> Contests { get; set; }
+        public DbSet<ContestBase> Contests { get; set; }
         public DbSet<ContestExternalId> ContestExternalIds { get; set; }
 
         public DbSet<CompetitionDrive> Drives { get; set; }
@@ -147,7 +147,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<GroupSeasonLogo> GroupSeasonLogos { get; set; }
 
-        public DbSet<CompetitionPlay> CompetitionPlays { get; set; }
+        public DbSet<CompetitionPlayBase> CompetitionPlays { get; set; }
         public DbSet<CompetitionPlayExternalId> CompetitionPlayExternalIds { get; set; }
 
         public DbSet<PlayTypeCategory> PlayTypeCategories { get; set; }
@@ -187,7 +187,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CoachSeasonRecord.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CoachSeasonRecordStat.EntityConfiguration());
 
-            modelBuilder.ApplyConfiguration(new Competition.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionExternalId.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CompetitionCompetitor.EntityConfiguration());
@@ -230,7 +230,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
             modelBuilder.ApplyConfiguration(new CompetitionStream.EntityConfiguration());
 
-            modelBuilder.ApplyConfiguration(new Contest.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new ContestBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CompetitionDrive.EntityConfiguration());
@@ -275,7 +275,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
             modelBuilder.ApplyConfiguration(new GroupSeasonLogo.EntityConfiguration());
 
-            modelBuilder.ApplyConfiguration(new CompetitionPlay.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionPlayBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionPlayExternalId.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new PlayTypeCategory.EntityConfiguration());

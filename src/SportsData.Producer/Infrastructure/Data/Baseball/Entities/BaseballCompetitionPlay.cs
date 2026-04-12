@@ -5,7 +5,7 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 
-public class BaseballCompetitionPlay : CompetitionPlay
+public class BaseballCompetitionPlay : CompetitionPlayBase
 {
     public string? AtBatId { get; set; }
 

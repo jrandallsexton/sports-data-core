@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
-namespace SportsData.Producer.Infrastructure.Data.Common
+namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class AthleteImage : CanonicalEntityBase<Guid>, ILogo
     {
         public Guid AthleteId { get; set; }
 
-        public Athlete Athlete { get; set; } = null!;
+        public AthleteBase Athlete { get; set; } = null!;
 
         public required string OriginalUrlHash { get; set; }
 

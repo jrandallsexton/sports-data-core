@@ -11,6 +11,7 @@ using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
@@ -121,7 +122,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
 
     private async Task ProcessBirthplace(
         EspnFootballAthleteDto externalProviderDto,
-        Athlete newEntity)
+        AthleteBase newEntity)
     {
         if (externalProviderDto.BirthPlace is null)
         {
@@ -173,7 +174,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
 
     private async Task ProcessAthleteStatus(
         EspnFootballAthleteDto externalProviderDto,
-        Athlete newEntity)
+        AthleteBase newEntity)
     {
         if (externalProviderDto.Status is null)
         {
@@ -257,11 +258,11 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
 
     private async Task ProcessExisting(
         ProcessDocumentCommand command,
-        Athlete entity,
+        AthleteBase entity,
         EspnFootballAthleteDto dto)
     {
         // Update fields that may have changed
-        _dataContext.Set<Athlete>().Attach(entity);
+        _dataContext.Set<AthleteBase>().Attach(entity);
 
         entity.Age = dto.Age;
         entity.IsActive = dto.Active;

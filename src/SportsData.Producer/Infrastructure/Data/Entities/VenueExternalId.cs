@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace SportsData.Producer.Infrastructure.Data.Common;
+namespace SportsData.Producer.Infrastructure.Data.Entities;
 
 public class VenueExternalId : ExternalId
 {

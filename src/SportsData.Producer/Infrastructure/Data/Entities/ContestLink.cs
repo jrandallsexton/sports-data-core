@@ -18,6 +18,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid ContestId { get; set; }
 
-        public Contest Contest { get; set; } = null!;
+        public ContestBase Contest { get; set; } = null!;
     }
 }

@@ -3,14 +3,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public abstract class Competition : CanonicalEntityBase<Guid>, IHasExternalIds
+    public abstract class CompetitionBase : CanonicalEntityBase<Guid>, IHasExternalIds
     {
-        public Contest Contest { get; set; } = null!;
+        public ContestBase Contest { get; set; } = null!;
 
         public Guid ContestId { get; set; }
 
@@ -136,11 +137,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public class EntityConfiguration : IEntityTypeConfiguration<Competition>
+        public class EntityConfiguration : IEntityTypeConfiguration<CompetitionBase>
         {
-            public void Configure(EntityTypeBuilder<Competition> builder)
+            public void Configure(EntityTypeBuilder<CompetitionBase> builder)
             {
-                builder.ToTable(nameof(Competition));
+                builder.ToTable("Competition");
                 builder.HasKey(x => x.Id);
                 builder.Property(x => x.TypeId).HasMaxLength(50);
                 builder.Property(x => x.TypeText).HasMaxLength(50);
@@ -156,6 +157,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.HasMany(c => c.Competitors)
                     .WithOne(cc => cc.Competition)        // <-- bind the inverse explicitly
                     .HasForeignKey(cc => cc.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(x => x.Contest)
+                    .WithMany()
+                    .HasForeignKey(x => x.ContestId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(x => x.Notes)

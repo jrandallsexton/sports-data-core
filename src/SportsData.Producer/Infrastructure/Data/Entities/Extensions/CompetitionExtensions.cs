@@ -32,7 +32,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 
         private static void MapSharedProperties(
             EspnEventCompetitionDto dto,
-            Competition entity,
+            CompetitionBase entity,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid contestId,
             Guid correlationId)

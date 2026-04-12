@@ -5,13 +5,14 @@ using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public abstract class Contest : CanonicalEntityBase<Guid>, IHasExternalIds
+    public abstract class ContestBase : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public required string Name { get; set; }
 
@@ -78,11 +79,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public class EntityConfiguration : IEntityTypeConfiguration<Contest>
+        public class EntityConfiguration : IEntityTypeConfiguration<ContestBase>
         {
-            public void Configure(EntityTypeBuilder<Contest> builder)
+            public void Configure(EntityTypeBuilder<ContestBase> builder)
             {
-                builder.ToTable(nameof(Contest));
+                builder.ToTable("Contest");
 
                 builder.HasKey(x => x.Id);
 

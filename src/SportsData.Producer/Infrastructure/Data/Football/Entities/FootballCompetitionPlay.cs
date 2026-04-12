@@ -5,7 +5,7 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Football.Entities;
 
-public class FootballCompetitionPlay : CompetitionPlay
+public class FootballCompetitionPlay : CompetitionPlayBase
 {
     public CompetitionDrive? Drive { get; set; }
 

@@ -5,9 +5,9 @@ using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
-namespace SportsData.Producer.Infrastructure.Data.Common
+namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class Athlete : CanonicalEntityBase<Guid>, IHasExternalIds
+    public class AthleteBase : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public string? LastName { get; set; }
 
@@ -67,11 +67,11 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public class EntityConfiguration : IEntityTypeConfiguration<Athlete>
+        public class EntityConfiguration : IEntityTypeConfiguration<AthleteBase>
         {
-            public void Configure(EntityTypeBuilder<Athlete> builder)
+            public void Configure(EntityTypeBuilder<AthleteBase> builder)
             {
-                builder.ToTable(nameof(Athlete));
+                builder.ToTable("Athlete");
                 builder.HasKey(t => t.Id);
 
                 builder.Property(x => x.FirstName)

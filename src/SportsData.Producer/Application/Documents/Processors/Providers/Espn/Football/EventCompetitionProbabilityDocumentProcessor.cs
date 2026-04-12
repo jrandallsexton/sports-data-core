@@ -50,7 +50,7 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
         }
 
         var competitionId = await _dataContext.ResolveIdAsync<
-            Competition, CompetitionExternalId>(
+            CompetitionBase, CompetitionExternalId>(
             dto.Competition,
             command.SourceDataProvider,
             () => _dataContext.Competitions,
@@ -69,7 +69,7 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
         if (!string.IsNullOrEmpty(dto.Play?.Ref?.ToString()))
         {
             playId = await _dataContext.ResolveIdAsync<
-                CompetitionPlay, CompetitionPlayExternalId>(
+                CompetitionPlayBase, CompetitionPlayExternalId>(
                 dto.Play,
                 command.SourceDataProvider,
                 () => _dataContext.CompetitionPlays,

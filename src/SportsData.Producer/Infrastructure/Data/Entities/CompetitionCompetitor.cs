@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities;
@@ -11,7 +12,7 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
 {
     public required Guid CompetitionId { get; set; }
 
-    public Competition Competition { get; set; } = null!;
+    public CompetitionBase Competition { get; set; } = null!;
 
     public required Guid FranchiseSeasonId { get; set; }
 
@@ -63,7 +64,7 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
             builder.Property(x => x.CompetitionId).IsRequired();
             builder.Property(x => x.FranchiseSeasonId).IsRequired();
 
-            // FK: Competition (parent) -> Competitors (children)
+            // FK: CompetitionBase (parent) -> Competitors (children)
             builder.HasOne(cc => cc.Competition)
                 .WithMany(c => c.Competitors)
                 .HasForeignKey(cc => cc.CompetitionId)

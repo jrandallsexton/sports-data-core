@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
@@ -11,7 +12,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid CompetitionId { get; set; }
 
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
 
         public double Clock { get; set; }
 

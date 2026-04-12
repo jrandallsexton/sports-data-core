@@ -111,7 +111,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
 
         if (entity is null)
         {
-            _logger.LogInformation("Processing new CompetitionPlay entity. Ref={Ref}", externalDto.Ref);
+            _logger.LogInformation("Processing new CompetitionPlayBase entity. Ref={Ref}", externalDto.Ref);
             await ProcessNewEntity(
                 command,
                 externalDto,
@@ -136,7 +136,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
     private async Task ProcessNewEntity(
         ProcessDocumentCommand command,
         EspnEventCompetitionPlayDto externalDto,
-        Competition competition,
+        CompetitionBase competition,
         Guid? competitionDriveId,
         Guid? startFranchiseSeasonId,
         Guid? endFranchiseSeasonId)
@@ -187,7 +187,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
         ProcessDocumentCommand command,
         EspnEventCompetitionPlayDto externalDto,
         Guid? competitionDriveId,
-        CompetitionPlay entity,
+        CompetitionPlayBase entity,
         Guid? startFranchiseSeasonId,
         Guid? endFranchiseSeasonId)
     {

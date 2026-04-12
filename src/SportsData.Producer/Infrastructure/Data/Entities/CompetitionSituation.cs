@@ -8,11 +8,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     public class CompetitionSituation : CanonicalEntityBase<Guid>
     {
         public Guid CompetitionId { get; set; }
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
 
         public Guid? LastPlayId { get; set; }
 
-        public CompetitionPlay? LastPlay { get; set; }
+        public CompetitionPlayBase? LastPlay { get; set; }
 
         public int Down { get; set; }
 
@@ -34,7 +34,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
                 builder.HasKey(x => x.Id);
 
-                // -------- Parent: Competition (required) --------
+                // -------- Parent: CompetitionBase (required) --------
                 builder.HasOne(x => x.Competition)
                        .WithMany(c => c.Situations)
                        .HasForeignKey(x => x.CompetitionId)

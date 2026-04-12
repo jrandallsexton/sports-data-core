@@ -6,6 +6,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -51,7 +52,7 @@ public static class AthleteExtensions
 
     private static void MapAthleteProperties(
         this EspnAthleteDto dto,
-        Athlete entity,
+        AthleteBase entity,
         ExternalRefIdentity identity)
     {
         entity.Age = dto.Age;
@@ -93,60 +94,8 @@ public static class AthleteExtensions
         ];
     }
 
-    public static Athlete AsAthlete(
-        this EspnAthleteDto dto,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        Guid correlationId)
-    {
-        if (dto.Ref == null)
-            throw new ArgumentException("Athlete DTO is missing its $ref property.");
-
-        var identity = externalRefIdentityGenerator.Generate(dto.Ref);
-
-        return new Athlete
-        {
-            Id = identity.CanonicalId,
-            CreatedBy = correlationId,
-            CreatedUtc = DateTime.UtcNow,
-
-            Age = dto.Age,
-            IsActive = dto.Active,
-
-            FirstName = dto.FirstName ?? string.Empty,
-            LastName = dto.LastName ?? string.Empty,
-            DisplayName = dto.DisplayName ?? string.Empty,
-            ShortName = dto.ShortName ?? string.Empty,
-
-            HeightIn = dto.Height,
-            HeightDisplay = dto.DisplayHeight ?? string.Empty,
-
-            WeightLb = dto.Weight,
-            WeightDisplay = dto.DisplayWeight ?? string.Empty,
-
-            DoB = !string.IsNullOrWhiteSpace(dto.DateOfBirth) && DateTime.TryParse(dto.DateOfBirth, out var dob2)
-                ? dob2.ToUniversalTime()
-                : null,
-
-            ExperienceYears = dto.Experience?.Years ?? 0,
-            ExperienceAbbreviation = dto.Experience?.Abbreviation,
-            ExperienceDisplayValue = dto.Experience?.DisplayValue,
-
-            DebutYear = dto.DebutYear,
-            CollegeAthleteRef = dto.CollegeAthlete?.Ref?.ToString(),
-
-            ExternalIds =
-            [
-                new AthleteExternalId()
-                {
-                    Id = identity.CanonicalId,
-                    Provider = SourceDataProvider.Espn,
-                    Value = identity.UrlHash,
-                    SourceUrlHash = identity.UrlHash,
-                    SourceUrl = identity.CleanUrl
-                }
-            ]
-        };
-    }
+    // AsAthlete removed — AthleteBase is now abstract.
+    // Use AsFootballAthlete or AsBaseballAthlete instead.
 
     public static BaseballAthlete AsBaseballAthlete(
         this EspnAthleteDto dto,
@@ -190,7 +139,7 @@ public static class AthleteExtensions
         return entity;
     }
 
-    public static AthleteDto ToCanonicalModel(this Athlete entity)
+    public static AthleteDto ToCanonicalModel(this AthleteBase entity)
     {
         return new AthleteDto
         {

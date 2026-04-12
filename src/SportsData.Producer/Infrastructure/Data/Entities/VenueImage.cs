@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
-namespace SportsData.Producer.Infrastructure.Data.Common
+namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class VenueImage : CanonicalEntityBase<Guid>, ILogo
     {

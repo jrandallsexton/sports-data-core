@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using FluentValidation.Results;
 
 namespace SportsData.Producer.Application.Franchises.Queries.GetFranchiseById;

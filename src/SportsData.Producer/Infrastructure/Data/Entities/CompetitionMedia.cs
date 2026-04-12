@@ -7,7 +7,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class CompetitionMedia : CanonicalEntityBase<Guid>
     {
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
         public Guid CompetitionId { get; set; }
 
         public Guid AwayFranchiseSeasonId { get; set; }

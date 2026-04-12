@@ -106,7 +106,7 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
     private async Task ProcessNew(
         ProcessDocumentCommand command,
         EspnEventCompetitionPlayDto externalDto,
-        Competition competition,
+        CompetitionBase competition,
         Guid? teamFranchiseSeasonId)
     {
         _logger.LogInformation(
@@ -142,7 +142,7 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
     }
 
     private async Task ProcessExisting(
-        CompetitionPlay entity,
+        CompetitionPlayBase entity,
         Guid? teamFranchiseSeasonId)
     {
         _logger.LogInformation("Updating baseball CompetitionPlay. PlayId={PlayId}", entity.Id);

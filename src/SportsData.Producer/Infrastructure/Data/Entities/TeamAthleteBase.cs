@@ -2,9 +2,9 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
-namespace SportsData.Producer.Infrastructure.Data.Common
+namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public abstract class TeamAthlete : Athlete
+    public abstract class TeamAthleteBase : AthleteBase
     {
         public Guid? FranchiseId { get; set; }
 
@@ -14,9 +14,9 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public AthletePosition? Position { get; set; }
 
-        public class TeamAthleteConfiguration : IEntityTypeConfiguration<TeamAthlete>
+        public class TeamAthleteConfiguration : IEntityTypeConfiguration<TeamAthleteBase>
         {
-            public void Configure(EntityTypeBuilder<TeamAthlete> builder)
+            public void Configure(EntityTypeBuilder<TeamAthleteBase> builder)
             {
                 builder.Property(a => a.FranchiseId);
 

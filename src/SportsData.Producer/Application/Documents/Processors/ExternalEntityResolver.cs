@@ -6,7 +6,7 @@ using SportsData.Core.Common; // SourceDataProvider
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts; // IHasRef
 
-using SDExternalId = SportsData.Producer.Infrastructure.Data.Common.ExternalId;
+using SDExternalId = SportsData.Producer.Infrastructure.Data.Entities.ExternalId;
 
 public static class ExternalEntityResolverExtensions
 {

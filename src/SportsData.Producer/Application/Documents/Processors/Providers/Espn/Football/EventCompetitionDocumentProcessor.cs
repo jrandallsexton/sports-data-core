@@ -102,7 +102,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
 
         var competition = command.Sport switch
         {
-            Sport.BaseballMlb => (Competition)externalDto.AsBaseballEntity(
+            Sport.BaseballMlb => (CompetitionBase)externalDto.AsBaseballEntity(
                 _externalRefIdentityGenerator, contestId, command.CorrelationId),
             _ => externalDto.AsFootballEntity(
                 _externalRefIdentityGenerator, contestId, command.CorrelationId)
@@ -125,7 +125,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
     private async Task AddVenue(
         ProcessDocumentCommand command,
         EspnEventCompetitionDto externalDto,
-        Competition competition)
+        CompetitionBase competition)
     {
         var venue = externalDto.Venue;
 
@@ -163,12 +163,12 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
     private async Task ProcessUpdate(
         ProcessDocumentCommand command,
         EspnEventCompetitionDto dto,
-        Competition competition)
+        CompetitionBase competition)
     {
         // Map DTO to a temporary entity with all properties populated
         var updatedEntity = command.Sport switch
         {
-            Sport.BaseballMlb => (Competition)dto.AsBaseballEntity(
+            Sport.BaseballMlb => (CompetitionBase)dto.AsBaseballEntity(
                 _externalRefIdentityGenerator, competition.ContestId, command.CorrelationId),
             _ => dto.AsFootballEntity(
                 _externalRefIdentityGenerator, competition.ContestId, command.CorrelationId)
@@ -251,7 +251,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
     private async Task ProcessChildDocuments(
         ProcessDocumentCommand command,
         EspnEventCompetitionDto dto,
-        Competition competition,
+        CompetitionBase competition,
         bool isNew)
     {
         _logger.LogInformation("Processing child documents for Competition. CompetitionId={CompId}, IsNew={IsNew}", competition.Id, isNew);
@@ -298,7 +298,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
     private async Task ProcessCompetitors(
         ProcessDocumentCommand command,
         EspnEventCompetitionDto externalDto,
-        Competition competition)
+        CompetitionBase competition)
     {
         _logger.LogInformation("Requesting {Count} competitors. CompetitionId={CompId}", 
             externalDto.Competitors.Count, 
@@ -327,7 +327,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
     private static void ProcessNotes(
         ProcessDocumentCommand command,
         EspnEventCompetitionDto externalDto,
-        Competition competition)
+        CompetitionBase competition)
     {
         if (!externalDto.Notes.Any())
         {
@@ -349,7 +349,7 @@ public class EventCompetitionDocumentProcessor<TDataContext> : DocumentProcessor
     private static void ProcessLinks(
         ProcessDocumentCommand command,
         EspnEventCompetitionDto externalDto,
-        Competition competition)
+        CompetitionBase competition)
     {
         if (externalDto.Links?.Any() != true)
             return;

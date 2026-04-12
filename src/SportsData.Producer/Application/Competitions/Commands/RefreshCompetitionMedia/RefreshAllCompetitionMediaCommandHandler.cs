@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMedia;
 

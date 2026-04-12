@@ -3,13 +3,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class CompetitionDrive : CanonicalEntityBase<Guid>
     {
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
 
         public Guid CompetitionId { get; set; }
 

@@ -9,7 +9,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid CompetitionId { get; set; }
 
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
 
         public Guid FranchiseSeasonId { get; set; }
 

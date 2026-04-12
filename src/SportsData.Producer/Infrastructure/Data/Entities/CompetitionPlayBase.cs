@@ -4,13 +4,14 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public abstract class CompetitionPlay : CanonicalEntityBase<Guid>, IHasExternalIds
+    public abstract class CompetitionPlayBase : CanonicalEntityBase<Guid>, IHasExternalIds
     {
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
 
         public Guid CompetitionId { get; set; }
 
@@ -60,11 +61,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public class EntityConfiguration : IEntityTypeConfiguration<CompetitionPlay>
+        public class EntityConfiguration : IEntityTypeConfiguration<CompetitionPlayBase>
         {
-            public void Configure(EntityTypeBuilder<CompetitionPlay> builder)
+            public void Configure(EntityTypeBuilder<CompetitionPlayBase> builder)
             {
-                builder.ToTable(nameof(CompetitionPlay));
+                builder.ToTable("CompetitionPlay");
                 builder.HasKey(x => x.Id);
 
                 builder.Property(x => x.AlternativeText).HasMaxLength(1024);
@@ -80,6 +81,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.Type)
                     .IsRequired()
                     .HasConversion<int>();
+
+                builder.HasOne(x => x.Competition)
+                    .WithMany()
+                    .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasMany(x => x.ExternalIds)
                     .WithOne()

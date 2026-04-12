@@ -12,7 +12,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid CompetitionId { get; set; }
 
-        public Competition Competition { get; set; } = null!;
+        public CompetitionBase Competition { get; set; } = null!;
 
         public ICollection<AthleteCompetitionStatisticCategory> Categories { get; set; } = [];
 

@@ -1,13 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace SportsData.Producer.Infrastructure.Data.Common
+namespace SportsData.Producer.Infrastructure.Data.Entities
 {
     public class AthleteExternalId : ExternalId
     {
         public Guid AthleteId { get; set; }
 
-        public Athlete Athlete { get; set; } = null!;
+        public AthleteBase Athlete { get; set; } = null!;
 
         public class EntityConfiguration : IEntityTypeConfiguration<AthleteExternalId>
         {

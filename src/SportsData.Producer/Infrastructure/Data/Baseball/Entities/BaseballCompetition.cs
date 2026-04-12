@@ -5,7 +5,7 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities
 {
-    public class BaseballCompetition : Competition
+    public class BaseballCompetition : CompetitionBase
     {
         public ICollection<BaseballCompetitionPlay> Plays { get; set; } = [];
 

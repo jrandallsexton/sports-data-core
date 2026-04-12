@@ -83,7 +83,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
-        public static ContestDto ToCanonicalModel(this Contest entity)
+        public static ContestDto ToCanonicalModel(this ContestBase entity)
         {
             return new ContestDto()
             {

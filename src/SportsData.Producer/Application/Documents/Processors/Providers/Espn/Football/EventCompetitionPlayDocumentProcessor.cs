@@ -195,13 +195,15 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
             entity.Id,
             competitionDriveId);
 
-        entity.StartFranchiseSeasonId = startFranchiseSeasonId;
-
-        if (entity is FootballCompetitionPlay footballPlay)
+        if (entity is not FootballCompetitionPlay footballPlay)
         {
-            footballPlay.EndFranchiseSeasonId = endFranchiseSeasonId;
-            footballPlay.DriveId = competitionDriveId;
+            throw new InvalidOperationException(
+                $"Expected FootballCompetitionPlay but got {entity.GetType().Name}. PlayId={entity.Id}");
         }
+
+        footballPlay.StartFranchiseSeasonId = startFranchiseSeasonId;
+        footballPlay.EndFranchiseSeasonId = endFranchiseSeasonId;
+        footballPlay.DriveId = competitionDriveId;
 
         await _dataContext.SaveChangesAsync();
 

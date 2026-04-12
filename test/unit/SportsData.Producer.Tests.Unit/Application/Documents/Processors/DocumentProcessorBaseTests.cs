@@ -1,3 +1,5 @@
+#nullable enable
+
 using FluentAssertions;
 
 using Microsoft.Extensions.Logging;
@@ -103,7 +105,7 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             It.Is<DocumentCreated>(e =>
                 e.DocumentType == DocumentType.EventCompetition &&
                 e.AttemptCount == 1 &&
-                e.RequestedDependencies.Count == 2 &&
+                e.RequestedDependencies!.Count == 2 &&
                 e.RequestedDependencies.Any(d => d.Type == DocumentType.Franchise && d.UrlHash == "hash1") &&
                 e.RequestedDependencies.Any(d => d.Type == DocumentType.Venue && d.UrlHash == "hash2")),
             It.IsAny<Dictionary<string, object>>(),

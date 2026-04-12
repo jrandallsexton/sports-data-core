@@ -13,7 +13,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Baseball;
 using SportsData.Producer.Infrastructure.Data.Entities;
-using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
@@ -40,7 +39,7 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests : ProducerT
         await FootballDataContext.SaveChangesAsync();
 
         // Create the last play so the situation can resolve it
-        var lastPlayIdentity = generator.Generate(dto.LastPlay.Ref);
+        var lastPlayIdentity = generator.Generate(dto.LastPlay!.Ref);
         var lastPlay = new FootballCompetitionPlay
         {
             Id = lastPlayIdentity.CanonicalId,

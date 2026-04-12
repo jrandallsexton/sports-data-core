@@ -1,3 +1,5 @@
+#nullable enable
+
 using Microsoft.Extensions.Logging;
 
 using Moq;
@@ -79,7 +81,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Services
         public void GetIncludableJson_WithNullInput_ReturnsNull()
         {
             // Act
-            var result = _sut.GetIncludableJson(null);
+            var result = _sut.GetIncludableJson(null!);
 
             // Assert
             Assert.Null(result);
@@ -109,7 +111,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Services
                 x => x.Log(
                     LogLevel.Information,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("exceeds") && v.ToString().Contains("KB limit")),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("exceeds") && v.ToString()!.Contains("KB limit")),
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.Once);
@@ -191,7 +193,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Services
         public void ExceedsSizeLimit_WithNullInput_ReturnsFalse()
         {
             // Act
-            var result = _sut.ExceedsSizeLimit(null);
+            var result = _sut.ExceedsSizeLimit(null!);
 
             // Assert
             Assert.False(result);
@@ -228,7 +230,7 @@ namespace SportsData.Provider.Tests.Unit.Application.Services
         public void GetDocumentSize_WithNullInput_ReturnsZero()
         {
             // Act
-            var size = _sut.GetDocumentSize(null);
+            var size = _sut.GetDocumentSize(null!);
 
             // Assert
             Assert.Equal(0, size);

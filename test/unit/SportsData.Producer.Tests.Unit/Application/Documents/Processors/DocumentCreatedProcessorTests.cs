@@ -1,3 +1,5 @@
+#nullable enable
+
 using Microsoft.Extensions.Logging;
 
 using Moq;
@@ -104,7 +106,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         var evt = CreateDocumentCreatedEvent(documentJson: null);
         
         _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType))
-            .ReturnsAsync((string?)null);
+            .Returns(Task.FromResult((string)null!));
 
         var sut = Mocker.CreateInstance<DocumentCreatedProcessor>();
 
@@ -203,7 +205,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         var evt = CreateDocumentCreatedEvent(documentJson: null);
         
         _providerMock.Setup(p => p.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType))
-            .ReturnsAsync((string?)null);
+            .Returns(Task.FromResult((string)null!));
 
         var sut = Mocker.CreateInstance<DocumentCreatedProcessor>();
 

@@ -13,7 +13,7 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Common;
 
-namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.GroupSeason)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.GroupSeason)]

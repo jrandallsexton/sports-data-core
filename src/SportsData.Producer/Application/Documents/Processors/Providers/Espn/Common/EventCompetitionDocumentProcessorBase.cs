@@ -1,0 +1,345 @@
+using Microsoft.EntityFrameworkCore;
+
+using SportsData.Core.Common;
+using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.Refs;
+using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
+
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
+
+public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : DocumentProcessorBase<TDataContext>
+    where TDataContext : TeamSportDataContext
+{
+    protected EventCompetitionDocumentProcessorBase(
+        ILogger logger,
+        TDataContext dataContext,
+        IEventBus publishEndpoint,
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
+
+    protected abstract CompetitionBase CreateEntity(
+        EspnEventCompetitionDto dto,
+        IGenerateExternalRefIdentities identityGenerator,
+        Guid contestId,
+        Guid correlationId);
+
+    protected override async Task ProcessInternal(ProcessDocumentCommand command)
+    {
+        var externalDto = command.Document.FromJson<EspnEventCompetitionDto>();
+
+        if (externalDto is null)
+        {
+            _logger.LogError("Failed to deserialize EspnEventCompetitionDto.");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
+        {
+            _logger.LogError("EspnEventCompetitionDto Ref is null.");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(command.ParentId))
+        {
+            _logger.LogError("ParentId not provided. Cannot process competition for null ContestId.");
+            return;
+        }
+
+        if (!Guid.TryParse(command.ParentId, out var contestId))
+        {
+            _logger.LogError("Invalid ParentId format for ContestId. Cannot parse to Guid.");
+            return;
+        }
+
+        if (!command.SeasonYear.HasValue)
+        {
+            _logger.LogError("Command missing SeasonYear.");
+            return;
+        }
+
+        var contest = await _dataContext.Contests
+            .FirstOrDefaultAsync(c => c.Id == contestId);
+
+        if (contest is null)
+        {
+            _logger.LogError("Contest not found. ContestId={ContestId}", contestId);
+            throw new InvalidOperationException($"Contest with ID {contestId} not found.");
+        }
+
+        var entity = await _dataContext.Competitions
+            .Include(c => c.Competitors)
+            .ThenInclude(c => c.ExternalIds)
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(x =>
+                x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
+                                       z.Provider == command.SourceDataProvider));
+
+        if (entity is null)
+        {
+            _logger.LogInformation("Processing new Competition entity. Ref={Ref}", externalDto.Ref);
+            await ProcessNewEntity(command, externalDto, command.SeasonYear.Value, contestId);
+        }
+        else
+        {
+            _logger.LogInformation("Processing Competition update. CompetitionId={CompetitionId}, Ref={Ref}", entity.Id, externalDto.Ref);
+            await ProcessUpdate(command, externalDto, entity);
+        }
+    }
+
+    private async Task ProcessNewEntity(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto externalDto,
+        int seasonYear,
+        Guid contestId)
+    {
+        _logger.LogInformation("Creating new Competition. ContestId={ContestId}", contestId);
+
+        var competition = CreateEntity(externalDto, _externalRefIdentityGenerator, contestId, command.CorrelationId);
+
+        await AddVenue(command, externalDto, competition);
+
+        ProcessNotes(command, externalDto, competition);
+        ProcessLinks(command, externalDto, competition);
+
+        await _dataContext.Competitions.AddAsync(competition);
+        await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Competition created. CompetitionId={CompetitionId}", competition.Id);
+
+        await ProcessChildDocuments(command, externalDto, competition, isNew: true);
+    }
+
+    private async Task AddVenue(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto externalDto,
+        CompetitionBase competition)
+    {
+        var venue = externalDto.Venue;
+
+        if (venue?.Ref is null)
+        {
+            _logger.LogDebug("No venue information provided in the competition document.");
+            return;
+        }
+
+        var venueId = await _dataContext.ResolveIdAsync<
+            Venue, VenueExternalId>(
+            venue,
+            command.SourceDataProvider,
+            () => _dataContext.Venues,
+            externalIdsNav: "ExternalIds",
+            key: v => v.Id);
+
+        if (venueId != null)
+        {
+            competition.VenueId = venueId.Value;
+        }
+        else
+        {
+            var venueHash = HashProvider.GenerateHashFromUri(venue.Ref);
+            _logger.LogWarning("Venue not found, publishing sourcing request. VenueHash={VenueHash}", venueHash);
+
+            await PublishChildDocumentRequest<string?>(
+                command,
+                venue,
+                parentId: null,
+                DocumentType.Venue);
+        }
+    }
+
+    private async Task ProcessUpdate(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto dto,
+        CompetitionBase competition)
+    {
+        var updatedEntity = CreateEntity(dto, _externalRefIdentityGenerator, competition.ContestId, command.CorrelationId);
+
+        var originalDate = competition.Date;
+
+        var originalCreatedBy = competition.CreatedBy;
+        var originalCreatedUtc = competition.CreatedUtc;
+
+        _dataContext.Entry(competition).CurrentValues.SetValues(updatedEntity);
+
+        competition.CreatedBy = originalCreatedBy;
+        competition.CreatedUtc = originalCreatedUtc;
+
+        if (_dataContext.Entry(competition).State == EntityState.Modified)
+        {
+            var changedProperties = _dataContext.Entry(competition)
+                .Properties
+                .Where(p => p.IsModified)
+                .Select(p => $"{p.Metadata.Name}: {p.OriginalValue} -> {p.CurrentValue}")
+                .ToList();
+
+            _logger.LogInformation(
+                "Updating Competition. CompetitionId={CompetitionId}, ChangedProperties={Changes}",
+                competition.Id,
+                string.Join(", ", changedProperties));
+
+            if (competition.Date != originalDate)
+            {
+                _logger.LogInformation(
+                    "Competition date changed. OldDate={OldDate}, NewDate={NewDate}",
+                    originalDate,
+                    competition.Date);
+
+                await _publishEndpoint.Publish(
+                    new ContestStartTimeUpdated(
+                        competition.ContestId,
+                        competition.Date,
+                        null,
+                        command.Sport,
+                        command.SeasonYear,
+                        command.CorrelationId,
+                        CausationId.Producer.EventCompetitionDocumentProcessor));
+            }
+
+            competition.ModifiedUtc = DateTime.UtcNow;
+            competition.ModifiedBy = command.CorrelationId;
+
+            await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Competition updated. CompetitionId={CompetitionId}, PropertyCount={PropertyCount}",
+                competition.Id,
+                changedProperties.Count);
+        }
+        else
+        {
+            _logger.LogInformation("No property changes detected. CompetitionId={CompetitionId}", competition.Id);
+        }
+
+        await ProcessChildDocuments(command, dto, competition, isNew: false);
+    }
+
+    private async Task ProcessChildDocuments(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto dto,
+        CompetitionBase competition,
+        bool isNew)
+    {
+        _logger.LogInformation("Processing child documents for Competition. CompetitionId={CompId}, IsNew={IsNew}", competition.Id, isNew);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionOdds, command))
+            await PublishChildDocumentRequest(command, dto.Odds, competition.Id, DocumentType.EventCompetitionOdds);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionStatus, command))
+            await PublishChildDocumentRequest(command, dto.Status, competition.Id, DocumentType.EventCompetitionStatus);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionSituation, command))
+            await PublishChildDocumentRequest(command, dto.Situation, competition.Id, DocumentType.EventCompetitionSituation);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionBroadcast, command))
+            await PublishChildDocumentRequest(command, dto.Broadcasts, competition.Id, DocumentType.EventCompetitionBroadcast);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionPlay, command))
+            await PublishChildDocumentRequest(command, dto.Details, competition.Id, DocumentType.EventCompetitionPlay);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionLeaders, command))
+            await PublishChildDocumentRequest(command, dto.Leaders, competition.Id, DocumentType.EventCompetitionLeaders);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionPrediction, command))
+            await PublishChildDocumentRequest(command, dto.Predictor, competition.Id, DocumentType.EventCompetitionPrediction);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionProbability, command))
+            await PublishChildDocumentRequest(command, dto.Probabilities, competition.Id, DocumentType.EventCompetitionProbability);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionPowerIndex, command))
+            await PublishChildDocumentRequest(command, dto.PowerIndexes, competition.Id, DocumentType.EventCompetitionPowerIndex);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionDrive, command))
+            await PublishChildDocumentRequest(command, dto.Drives, competition.Id, DocumentType.EventCompetitionDrive);
+
+        if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitor, command))
+            await ProcessCompetitors(command, dto, competition);
+
+        await _dataContext.SaveChangesAsync();
+
+        _logger.LogInformation("Completed processing child documents for Competition. CompetitionId={CompId}", competition.Id);
+    }
+
+    private async Task ProcessCompetitors(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto externalDto,
+        CompetitionBase competition)
+    {
+        _logger.LogInformation("Requesting {Count} competitors. CompetitionId={CompId}",
+            externalDto.Competitors.Count,
+            competition.Id);
+
+        foreach (var competitorDto in externalDto.Competitors)
+        {
+            if (competitorDto?.Ref is null)
+            {
+                _logger.LogWarning("Competitor reference is null, skipping.");
+                continue;
+            }
+
+            _logger.LogDebug("Requesting competitor. CompetitionId={CompId}, CompetitorRef={Ref}",
+                competition.Id,
+                competitorDto.Ref);
+
+            await PublishChildDocumentRequest(
+                command,
+                competitorDto,
+                competition.Id.ToString(),
+                DocumentType.EventCompetitionCompetitor);
+        }
+    }
+
+    private static void ProcessNotes(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto externalDto,
+        CompetitionBase competition)
+    {
+        if (!externalDto.Notes.Any())
+        {
+            return;
+        }
+
+        foreach (var note in externalDto.Notes)
+        {
+            var newNote = new CompetitionNote
+            {
+                Type = note.Type,
+                Headline = note.Headline,
+                CompetitionId = competition.Id
+            };
+            competition.Notes.Add(newNote);
+        }
+    }
+
+    private static void ProcessLinks(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDto externalDto,
+        CompetitionBase competition)
+    {
+        if (externalDto.Links?.Any() != true)
+            return;
+
+        foreach (var link in externalDto.Links)
+        {
+            competition.Links.Add(new CompetitionLink()
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competition.Id,
+                Rel = string.Join("|", link.Rel),
+                Href = link.Href.ToCleanUrl(),
+                Text = link.Text,
+                ShortText = link.ShortText,
+                IsExternal = link.IsExternal,
+                IsPremium = link.IsPremium,
+                SourceUrlHash = HashProvider.GenerateHashFromUri(link.Href)
+            });
+        }
+    }
+}

@@ -10,7 +10,7 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
-namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonPoll)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.SeasonPoll)]

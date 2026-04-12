@@ -16,22 +16,27 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Event)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.Event)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.Event)]
-public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+public abstract class EventDocumentProcessorBase<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-
-    public EventDocumentProcessor(
-        ILogger<EventDocumentProcessor<TDataContext>> logger,
+    protected EventDocumentProcessorBase(
+        ILogger logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IGenerateResourceRefs refs)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
+
+    protected abstract ContestBase CreateEntity(
+        EspnEventDto dto,
+        IGenerateExternalRefIdentities identityGenerator,
+        Sport sport,
+        int seasonYear,
+        Guid? seasonWeekId,
+        Guid seasonPhaseId,
+        Guid correlationId);
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -55,7 +60,6 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             throw new InvalidOperationException("SeasonYear must be defined in the command.");
         }
 
-        // Determine if this entity exists. Do NOT trust that it says it is a new document!
         var entity = await _dataContext.Contests
             .Include(x => x.ExternalIds)
             .FirstOrDefaultAsync(x =>
@@ -84,18 +88,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         var seasonPhaseId = await GetSeasonPhaseId(command, externalDto);
         var seasonWeekId = await GetSeasonWeekId(command, externalDto);
 
-        var contest = command.Sport switch
-        {
-            Sport.BaseballMlb => (ContestBase)externalDto.AsBaseballEntity(
-                _externalRefIdentityGenerator, command.Sport, seasonYear, seasonWeekId, seasonPhaseId, command.CorrelationId),
-            _ => externalDto.AsFootballEntity(
-                _externalRefIdentityGenerator, command.Sport, seasonYear, seasonWeekId, seasonPhaseId, command.CorrelationId)
-        };
+        var contest = CreateEntity(
+            externalDto, _externalRefIdentityGenerator, command.Sport,
+            seasonYear, seasonWeekId, seasonPhaseId, command.CorrelationId);
 
-        // Add contest links from dto.Links
         AddLinks(externalDto, contest);
 
-        // Get the team IDs from the external DTO
         var teamsAdded = await AddTeams(command, externalDto, contest);
         if (!teamsAdded)
         {
@@ -105,10 +103,8 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             return;
         }
 
-        // Attempt to resolve Venue from $ref
         await AddVenue(command, externalDto, contest);
 
-        // process competitions
         await ProcessCompetitions(command, externalDto, contest);
 
         await _dataContext.AddAsync(contest);
@@ -124,7 +120,7 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             command.MessageId));
 
         await _dataContext.SaveChangesAsync();
-        
+
         _logger.LogInformation("Contest created successfully. ContestId={ContestId}", contest.Id);
     }
 
@@ -153,10 +149,6 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 $"SeasonWeek not found for {externalDto.Week.Ref} (Id: {seasonWeekIdentity.CanonicalId})");
         }
 
-        // ESPN data is missing Week $ref (common in pre-2003 historical data and baseball preseason).
-        // Infer from the event date alone. SeasonWeek date ranges do not overlap,
-        // so no phase filter is needed — and omitting it avoids false negatives when
-        // ESPN tags events with the wrong season type (e.g., bowl games as regular season).
         if (DateTime.TryParse(externalDto.Date, CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var eventDateUtc))
         {
@@ -180,14 +172,12 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
                 eventDateUtc);
         }
 
-        // For football, SeasonWeek is required — every game belongs to a week
         if (command.Sport is Sport.FootballNcaa or Sport.FootballNfl)
         {
             throw new InvalidOperationException(
                 $"Cannot determine SeasonWeek for event {externalDto.Ref}. ESPN data is missing Week $ref and date-based inference failed.");
         }
 
-        // For other sports (e.g., baseball preseason), SeasonWeek may not exist
         _logger.LogInformation(
             "No SeasonWeek found for {Sport} event {Ref}. Proceeding with null SeasonWeekId.",
             command.Sport, externalDto.Ref);
@@ -225,13 +215,13 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         EspnEventDto externalDto,
         ContestBase contest)
     {
-        _logger.LogInformation("Processing {Count} competitions. ContestId={ContestId}", 
-            externalDto.Competitions.Count(), 
+        _logger.LogInformation("Processing {Count} competitions. ContestId={ContestId}",
+            externalDto.Competitions.Count(),
             contest.Id);
 
         foreach (var competition in externalDto.Competitions)
         {
-            _logger.LogDebug("Publishing DocumentRequested for EventCompetition. CompetitionRef={CompetitionRef}", 
+            _logger.LogDebug("Publishing DocumentRequested for EventCompetition. CompetitionRef={CompetitionRef}",
                 competition.Ref);
 
             await PublishChildDocumentRequest(
@@ -274,7 +264,6 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
         var venue = externalDto.Venues.FirstOrDefault();
         if (venue != null)
         {
-            // Resolve VenueId via SourceUrlHash
             var venueId = await _dataContext.ResolveIdAsync<
                 Venue, VenueExternalId>(
                 venue,
@@ -289,7 +278,6 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             }
             else
             {
-                // Use base class helper for Venue request
                 await PublishChildDocumentRequest(
                     command,
                     venue,
@@ -413,8 +401,6 @@ public class EventDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataC
             await _dataContext.SaveChangesAsync();
         }
 
-        // I'm not sure if there is anything to update here,
-        // but we will request sourcing of competitions again
         _logger.LogInformation(
             "Re-sourcing {Count} competitions for updated Contest. ContestId={ContestId}",
             dto.Competitions.Count(),

@@ -4,19 +4,18 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
+using SportsData.Producer.Infrastructure.Data.Baseball;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
-using SportsData.Producer.Infrastructure.Data.Football;
 
-namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Baseball;
 
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetition)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.EventCompetition)]
-public class EventCompetitionDocumentProcessor<TDataContext> : EventCompetitionDocumentProcessorBase<TDataContext>
-    where TDataContext : FootballDataContext
+[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.EventCompetition)]
+public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventCompetitionDocumentProcessorBase<TDataContext>
+    where TDataContext : BaseballDataContext
 {
-    public EventCompetitionDocumentProcessor(
-        ILogger<EventCompetitionDocumentProcessor<TDataContext>> logger,
+    public BaseballEventCompetitionDocumentProcessor(
+        ILogger<BaseballEventCompetitionDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
@@ -29,6 +28,6 @@ public class EventCompetitionDocumentProcessor<TDataContext> : EventCompetitionD
         Guid contestId,
         Guid correlationId)
     {
-        return dto.AsFootballEntity(identityGenerator, contestId, correlationId);
+        return dto.AsBaseballEntity(identityGenerator, contestId, correlationId);
     }
 }

@@ -13,7 +13,7 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 
-namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common
 {
     [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteSeasonStatistics)]
     [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.AthleteSeasonStatistics)]

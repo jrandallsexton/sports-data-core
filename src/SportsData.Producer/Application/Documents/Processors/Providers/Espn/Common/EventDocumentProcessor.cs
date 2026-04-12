@@ -3,32 +3,35 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
-namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetition)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.EventCompetition)]
-public class EventCompetitionDocumentProcessor<TDataContext> : EventCompetitionDocumentProcessorBase<TDataContext>
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.Event)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.Event)]
+public class EventDocumentProcessor<TDataContext> : EventDocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {
-    public EventCompetitionDocumentProcessor(
-        ILogger<EventCompetitionDocumentProcessor<TDataContext>> logger,
+    public EventDocumentProcessor(
+        ILogger<EventDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IGenerateResourceRefs refs)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
-    protected override CompetitionBase CreateEntity(
-        EspnEventCompetitionDto dto,
+    protected override ContestBase CreateEntity(
+        EspnEventDto dto,
         IGenerateExternalRefIdentities identityGenerator,
-        Guid contestId,
+        Sport sport,
+        int seasonYear,
+        Guid? seasonWeekId,
+        Guid seasonPhaseId,
         Guid correlationId)
     {
-        return dto.AsFootballEntity(identityGenerator, contestId, correlationId);
+        return dto.AsFootballEntity(
+            identityGenerator, sport, seasonYear, seasonWeekId, seasonPhaseId, correlationId);
     }
 }

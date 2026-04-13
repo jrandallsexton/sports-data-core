@@ -5,14 +5,14 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
-namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
+namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionSituation)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.EventCompetitionSituation)]
@@ -29,11 +29,11 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var dto = command.Document.FromJson<EspnEventCompetitionSituationDto>();
+        var dto = command.Document.FromJson<EspnFootballEventCompetitionSituationDto>();
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize EspnEventCompetitionSituationDto.");
+            _logger.LogError("Failed to deserialize EspnFootballEventCompetitionSituationDto.");
             return;
         }
 
@@ -67,7 +67,6 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
 
             if (lastPlay == null)
             {
-
                 await PublishChildDocumentRequest(
                     command,
                     dto.LastPlay,
@@ -96,7 +95,7 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
             return;
         }
 
-        _logger.LogInformation("Creating new CompetitionSituation. CompetitionId={CompId}, Down={Down}, Distance={Distance}, YardLine={YardLine}", 
+        _logger.LogInformation("Creating new CompetitionSituation. CompetitionId={CompId}, Down={Down}, Distance={Distance}, YardLine={YardLine}",
             competitionIdValue,
             dto.Down,
             dto.Distance,
@@ -105,7 +104,7 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
         await _dataContext.CompetitionSituations.AddAsync(entity);
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Persisted CompetitionSituation. CompetitionId={CompId}, SituationId={SituationId}", 
+        _logger.LogInformation("Persisted CompetitionSituation. CompetitionId={CompId}, SituationId={SituationId}",
             competitionId,
             entity.Id);
     }

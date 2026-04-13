@@ -10,6 +10,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Baseball;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -25,7 +26,7 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests : ProducerT
 {
     private async Task<(Guid competitionId, Guid lastPlayId)> SetupTestDataAsync(
         ExternalRefIdentityGenerator generator,
-        EspnEventCompetitionSituationDto dto)
+        EspnBaseballEventCompetitionSituationDto dto)
     {
         var competitionId = Guid.NewGuid();
         await FootballDataContext.Competitions.AddAsync(new FootballCompetition
@@ -79,7 +80,7 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests : ProducerT
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetitionSituation.json");
-        var dto = json.FromJson<EspnEventCompetitionSituationDto>();
+        var dto = json.FromJson<EspnBaseballEventCompetitionSituationDto>();
 
         var (competitionId, lastPlayId) = await SetupTestDataAsync(generator, dto!);
 
@@ -119,7 +120,7 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests : ProducerT
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetitionSituation.json");
-        var dto = json.FromJson<EspnEventCompetitionSituationDto>();
+        var dto = json.FromJson<EspnBaseballEventCompetitionSituationDto>();
 
         var (competitionId, lastPlayId) = await SetupTestDataAsync(generator, dto!);
 

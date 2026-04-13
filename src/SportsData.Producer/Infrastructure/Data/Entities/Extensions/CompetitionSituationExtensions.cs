@@ -1,12 +1,12 @@
 ﻿using SportsData.Core.Common.Hashing;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
     public static class CompetitionSituationExtensions
     {
         public static CompetitionSituation AsEntity(
-            this EspnEventCompetitionSituationDto dto,
+            this EspnFootballEventCompetitionSituationDto dto,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid competitionId,
             Guid? lastPlayId,

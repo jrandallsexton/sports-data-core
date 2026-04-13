@@ -234,7 +234,7 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
         }
     }
 
-    private async Task<EspnEventCompetitionStatusDto?> GetStatusAsync(Uri uri, CancellationToken cancellationToken)
+    private async Task<EspnEventCompetitionStatusDtoBase?> GetStatusAsync(Uri uri, CancellationToken cancellationToken)
     {
         try
         {
@@ -246,7 +246,7 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
             }
 
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            return json.FromJson<EspnEventCompetitionStatusDto>();
+            return json.FromJson<EspnEventCompetitionStatusDtoBase>();
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

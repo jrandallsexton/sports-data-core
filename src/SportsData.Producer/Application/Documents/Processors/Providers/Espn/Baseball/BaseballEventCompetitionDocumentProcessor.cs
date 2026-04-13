@@ -1,6 +1,8 @@
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
@@ -22,8 +24,11 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
         IGenerateResourceRefs refs)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
+    protected override EspnEventCompetitionDtoBase? DeserializeDto(string document)
+        => document.FromJson<EspnBaseballEventCompetitionDto>();
+
     protected override CompetitionBase CreateEntity(
-        EspnEventCompetitionDto dto,
+        EspnEventCompetitionDtoBase dto,
         IGenerateExternalRefIdentities identityGenerator,
         Guid contestId,
         Guid correlationId)

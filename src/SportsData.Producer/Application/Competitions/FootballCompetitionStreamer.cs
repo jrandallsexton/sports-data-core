@@ -6,6 +6,7 @@ using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -210,7 +211,7 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
         }
     }
 
-    private async Task<EspnEventCompetitionDto?> GetCompetitionAsync(Uri uri, CancellationToken cancellationToken)
+    private async Task<EspnFootballEventCompetitionDto?> GetCompetitionAsync(Uri uri, CancellationToken cancellationToken)
     {
         try
         {
@@ -222,7 +223,7 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
             }
 
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var result = json.FromJson<EspnEventCompetitionDto>();
+            var result = json.FromJson<EspnFootballEventCompetitionDto>();
 
             return result;
         }
@@ -304,7 +305,7 @@ public class FootballCompetitionStreamer : IFootballCompetitionBroadcastingJob
     }
 
     private void StartPollingWorkers(
-        EspnEventCompetitionDto competitionDto,
+        EspnFootballEventCompetitionDto competitionDto,
         StreamFootballCompetitionCommand command,
         CancellationToken cancellationToken)
     {

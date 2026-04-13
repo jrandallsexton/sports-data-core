@@ -13,6 +13,7 @@ using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -49,7 +50,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetition.json");
 
             // act
-            var dto = documentJson.FromJson<EspnEventCompetitionDto>();
+            var dto = documentJson.FromJson<EspnFootballEventCompetitionDto>();
 
             // assert
             dto.Should().NotBeNull();
@@ -69,7 +70,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var bus = Mocker.GetMock<IEventBus>();
 
-            var dto = documentJson.FromJson<EspnEventCompetitionDto>();
+            var dto = documentJson.FromJson<EspnFootballEventCompetitionDto>();
 
             Guid homeId = Guid.Empty;
             Guid awayId = Guid.Empty;
@@ -180,7 +181,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var bus = Mocker.GetMock<IEventBus>();
 
-            var dto = documentJson.FromJson<EspnEventCompetitionDto>();
+            var dto = documentJson.FromJson<EspnFootballEventCompetitionDto>();
             var competitionIdentity = generator.Generate(dto.Ref);
 
             Guid homeId = Guid.Empty;
@@ -318,7 +319,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var bus = Mocker.GetMock<IEventBus>();
 
-            var dto = documentJson.FromJson<EspnEventCompetitionDto>();
+            var dto = documentJson.FromJson<EspnFootballEventCompetitionDto>();
             var competitionIdentity = generator.Generate(dto.Ref);
 
             Guid homeId = Guid.NewGuid();
@@ -555,7 +556,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             var bus = Mocker.GetMock<IEventBus>();
 
-            var dto = documentJson.FromJson<EspnEventCompetitionDto>();
+            var dto = documentJson.FromJson<EspnFootballEventCompetitionDto>();
             var competitionIdentity = generator.Generate(dto.Ref);
 
             Guid homeId = Guid.NewGuid();

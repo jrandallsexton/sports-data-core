@@ -24,16 +24,16 @@ using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Common;
 
 /// <summary>
-/// Tests for EventDocumentProcessor.
+/// Tests for FootballEventDocumentProcessor.
 /// Optimized to eliminate AutoFixture overhead.
 /// </summary>
 [Collection("Sequential")]
-public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
+public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     // Helper method to setup common test data
     private async Task SetupSeasonDataAsync(ExternalRefIdentityGenerator generator, EspnEventDto dto)
@@ -226,7 +226,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                 .Create());
 
         var bus = Mocker.GetMock<IEventBus>();
-        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEvent.json");
 
@@ -304,7 +304,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                 .Create());
 
         var bus = Mocker.GetMock<IEventBus>();
-        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEvent.json");
 
@@ -351,7 +351,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var bus = Mocker.GetMock<IEventBus>();
-        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEvent.json");
 
@@ -422,7 +422,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                 .Create());
 
         var bus = Mocker.GetMock<IEventBus>();
-        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnBaseballMlb/Event_SpringTraining.json");
         var dto = json.FromJson<EspnEventDto>();
@@ -513,7 +513,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnBaseballMlb/Event_SpringTraining.json");
         var dto = json.FromJson<EspnEventDto>();
@@ -579,7 +579,7 @@ public class EventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
                 .Create());
 
         var bus = Mocker.GetMock<IEventBus>();
-        var sut = Mocker.CreateInstance<EventDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEvent_MissingWeek.json");
 

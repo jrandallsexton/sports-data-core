@@ -50,7 +50,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common
         public bool TimeValid { get; set; }
 
         [JsonPropertyName("competitions")]
-        public List<EspnEventCompetitionDto> Competitions { get; set; }
+        public List<EspnEventCompetitionDtoBase> Competitions { get; set; }
 
         [JsonPropertyName("links")]
         public List<EspnLinkFullDto> Links { get; set; }

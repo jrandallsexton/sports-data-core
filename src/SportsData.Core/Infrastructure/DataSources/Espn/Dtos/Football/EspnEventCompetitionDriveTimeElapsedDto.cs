@@ -2,7 +2,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 
 public class EspnEventCompetitionDriveTimeElapsedDto
 {

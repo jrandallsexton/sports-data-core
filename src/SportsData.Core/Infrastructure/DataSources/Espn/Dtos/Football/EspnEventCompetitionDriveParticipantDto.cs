@@ -1,28 +1,22 @@
 ﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
 
 using System.Collections.Generic;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using System.Text.Json.Serialization;
-
-namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
-
+namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 #pragma warning disable CS8618
 public class EspnEventCompetitionDriveParticipantDto
 {
     [JsonPropertyName("athlete")]
     public EspnLinkDto Athlete { get; set; }
-
     [JsonPropertyName("position")]
     public EspnLinkDto Position { get; set; }
-
     [JsonPropertyName("statistics")]
     public EspnLinkDto Statistics { get; set; }
-
     [JsonPropertyName("stats")]
     public List<EspnEventCompetitionParticipantStatDto> Stats { get; set; }
-
     [JsonPropertyName("order")]
     public int Order { get; set; }
-
     [JsonPropertyName("type")]
     public string Type { get; set; }
 }

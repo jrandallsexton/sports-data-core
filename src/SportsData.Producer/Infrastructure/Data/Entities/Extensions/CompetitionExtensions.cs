@@ -1,6 +1,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
@@ -9,18 +10,25 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
     public static class CompetitionExtensions
     {
         public static FootballCompetition AsFootballEntity(
-            this EspnEventCompetitionDto dto,
+            this EspnEventCompetitionDtoBase dto,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid contestId,
             Guid correlationId)
         {
             var entity = new FootballCompetition();
             MapSharedProperties(dto, entity, externalRefIdentityGenerator, contestId, correlationId);
+
+            if (dto is EspnFootballEventCompetitionDto footballDto)
+            {
+                entity.DateValid = footballDto.DateValid;
+                entity.HasDefensiveStats = footballDto.HasDefensiveStats;
+            }
+
             return entity;
         }
 
         public static BaseballCompetition AsBaseballEntity(
-            this EspnEventCompetitionDto dto,
+            this EspnEventCompetitionDtoBase dto,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid contestId,
             Guid correlationId)
@@ -31,7 +39,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
         }
 
         private static void MapSharedProperties(
-            EspnEventCompetitionDto dto,
+            EspnEventCompetitionDtoBase dto,
             CompetitionBase entity,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid contestId,
@@ -45,7 +53,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             entity.CreatedBy = correlationId;
             entity.CreatedUtc = DateTime.UtcNow;
             entity.Date = DateTime.TryParse(dto.Date, out var date) ? date.ToUniversalTime() : DateTime.MinValue.ToUniversalTime();
-            entity.DateValid = dto.DateValid;
             entity.FormatOvertimeDisplayName = dto.Format?.Overtime?.DisplayName;
             entity.FormatOvertimePeriods = dto.Format?.Overtime?.Periods;
             entity.FormatOvertimeSlug = dto.Format?.Overtime?.Slug;
@@ -53,7 +60,6 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             entity.FormatRegulationDisplayName = dto.Format?.Regulation?.DisplayName;
             entity.FormatRegulationPeriods = dto.Format?.Regulation?.Periods;
             entity.FormatRegulationSlug = dto.Format?.Regulation?.Slug;
-            entity.HasDefensiveStats = dto.HasDefensiveStats;
             entity.IsBoxscoreAvailable = dto.BoxscoreAvailable;
             entity.IsBracketAvailable = dto.BracketAvailable;
             entity.IsCommentaryAvailable = dto.CommentaryAvailable;

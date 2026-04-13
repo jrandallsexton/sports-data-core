@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8618 // Non-nullable property is uninitialized
+#pragma warning disable CS8618 // Non-nullable property is uninitialized
 
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 
@@ -9,14 +9,10 @@ using System.Text.Json.Serialization;
 namespace SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 /// <summary>
-/// Represents a competition within an ESPN event, providing detailed information about the competition's attributes, 
-/// participants, status, and related resources.
-/// http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334
+/// Base DTO for an ESPN event competition. Contains properties shared across all sports.
+/// Sport-specific subclasses add fields unique to football, baseball, etc.
 /// </summary>
-/// <remarks>This class encapsulates various properties that describe the competition, including its unique
-/// identifiers,  date, venue, competitors, and availability of features such as play-by-play, boxscore, and commentary.
-/// It also includes links to related resources such as broadcasts, odds, and leaders.</remarks>
-public class EspnEventCompetitionDto : IHasRef
+public class EspnEventCompetitionDtoBase : IHasRef
 {
     [JsonPropertyName("$ref")]
     public Uri Ref { get; set; }
@@ -41,9 +37,6 @@ public class EspnEventCompetitionDto : IHasRef
 
     [JsonPropertyName("timeValid")]
     public bool TimeValid { get; set; }
-
-    [JsonPropertyName("dateValid")]
-    public bool DateValid { get; set; }
 
     [JsonPropertyName("neutralSite")]
     public bool NeutralSite { get; set; }
@@ -170,10 +163,4 @@ public class EspnEventCompetitionDto : IHasRef
 
     [JsonPropertyName("format")]
     public EspnEventCompetitionFormatDto Format { get; set; }
-
-    [JsonPropertyName("drives")]
-    public EspnLinkDto Drives { get; set; }
-
-    [JsonPropertyName("hasDefensiveStats")]
-    public bool HasDefensiveStats { get; set; }
 }

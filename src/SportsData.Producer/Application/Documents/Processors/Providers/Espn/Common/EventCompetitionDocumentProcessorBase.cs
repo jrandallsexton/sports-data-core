@@ -25,24 +25,27 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
     protected abstract CompetitionBase CreateEntity(
-        EspnEventCompetitionDto dto,
+        EspnEventCompetitionDtoBase dto,
         IGenerateExternalRefIdentities identityGenerator,
         Guid contestId,
         Guid correlationId);
 
+    protected virtual EspnEventCompetitionDtoBase? DeserializeDto(string document)
+        => document.FromJson<EspnEventCompetitionDtoBase>();
+
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var externalDto = command.Document.FromJson<EspnEventCompetitionDto>();
+        var externalDto = DeserializeDto(command.Document);
 
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize EspnEventCompetitionDto.");
+            _logger.LogError("Failed to deserialize EspnEventCompetitionDtoBase.");
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionDto Ref is null.");
+            _logger.LogError("EspnEventCompetitionDtoBase Ref is null.");
             return;
         }
 
@@ -95,7 +98,7 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
 
     private async Task ProcessNewEntity(
         ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
+        EspnEventCompetitionDtoBase externalDto,
         int seasonYear,
         Guid contestId)
     {
@@ -118,7 +121,7 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
 
     private async Task AddVenue(
         ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
+        EspnEventCompetitionDtoBase externalDto,
         CompetitionBase competition)
     {
         var venue = externalDto.Venue;
@@ -156,7 +159,7 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
 
     private async Task ProcessUpdate(
         ProcessDocumentCommand command,
-        EspnEventCompetitionDto dto,
+        EspnEventCompetitionDtoBase dto,
         CompetitionBase competition)
     {
         var updatedEntity = CreateEntity(dto, _externalRefIdentityGenerator, competition.ContestId, command.CorrelationId);
@@ -222,7 +225,7 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
 
     private async Task ProcessChildDocuments(
         ProcessDocumentCommand command,
-        EspnEventCompetitionDto dto,
+        EspnEventCompetitionDtoBase dto,
         CompetitionBase competition,
         bool isNew)
     {
@@ -255,8 +258,7 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionPowerIndex, command))
             await PublishChildDocumentRequest(command, dto.PowerIndexes, competition.Id, DocumentType.EventCompetitionPowerIndex);
 
-        if (isNew || ShouldSpawn(DocumentType.EventCompetitionDrive, command))
-            await PublishChildDocumentRequest(command, dto.Drives, competition.Id, DocumentType.EventCompetitionDrive);
+        await ProcessSportSpecificChildDocuments(command, dto, competition, isNew);
 
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionCompetitor, command))
             await ProcessCompetitors(command, dto, competition);
@@ -266,9 +268,15 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
         _logger.LogInformation("Completed processing child documents for Competition. CompetitionId={CompId}", competition.Id);
     }
 
+    protected virtual Task ProcessSportSpecificChildDocuments(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDtoBase dto,
+        CompetitionBase competition,
+        bool isNew) => Task.CompletedTask;
+
     private async Task ProcessCompetitors(
         ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
+        EspnEventCompetitionDtoBase externalDto,
         CompetitionBase competition)
     {
         _logger.LogInformation("Requesting {Count} competitors. CompetitionId={CompId}",
@@ -297,7 +305,7 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
 
     private static void ProcessNotes(
         ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
+        EspnEventCompetitionDtoBase externalDto,
         CompetitionBase competition)
     {
         if (!externalDto.Notes.Any())
@@ -319,7 +327,7 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
 
     private static void ProcessLinks(
         ProcessDocumentCommand command,
-        EspnEventCompetitionDto externalDto,
+        EspnEventCompetitionDtoBase externalDto,
         CompetitionBase competition)
     {
         if (externalDto.Links?.Any() != true)

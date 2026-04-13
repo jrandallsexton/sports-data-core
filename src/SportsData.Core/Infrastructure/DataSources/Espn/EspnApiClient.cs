@@ -109,10 +109,10 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
             return await _http.GetDeserializedAsync<EspnEventCompetitionPlaysDto>(uri, bypassCache: false);
         }
 
-        public async Task<EspnEventCompetitionStatusDto?> GetCompetitionStatusAsync(Uri uri)
+        public async Task<EspnEventCompetitionStatusDtoBase?> GetCompetitionStatusAsync(Uri uri)
         {
             _logger.LogDebug("Fetching CompetitionStatus from {Uri}", uri);
-            return await _http.GetDeserializedAsync<EspnEventCompetitionStatusDto>(uri, bypassCache: false);
+            return await _http.GetDeserializedAsync<EspnEventCompetitionStatusDtoBase>(uri, bypassCache: false);
         }
 
     }

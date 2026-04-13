@@ -18,11 +18,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             var entity = new FootballCompetition();
             MapSharedProperties(dto, entity, externalRefIdentityGenerator, contestId, correlationId);
 
-            if (dto is EspnFootballEventCompetitionDto footballDto)
+            if (dto is not EspnFootballEventCompetitionDto footballDto)
             {
-                entity.DateValid = footballDto.DateValid;
-                entity.HasDefensiveStats = footballDto.HasDefensiveStats;
+                throw new InvalidOperationException(
+                    $"Expected EspnFootballEventCompetitionDto but got {dto.GetType().Name}");
             }
+
+            entity.DateValid = footballDto.DateValid;
+            entity.HasDefensiveStats = footballDto.HasDefensiveStats;
 
             return entity;
         }

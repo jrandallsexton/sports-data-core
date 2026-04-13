@@ -11,6 +11,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -252,7 +253,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
                 _output.WriteLine("JSON loaded and cached");
             }
 
-            var playDtos = _cachedJson.FromJson<List<EspnEventCompetitionPlayDto>>();
+            var playDtos = _cachedJson.FromJson<List<EspnFootballEventCompetitionPlayDto>>();
 
             if (playDtos == null || !playDtos.Any())
             {

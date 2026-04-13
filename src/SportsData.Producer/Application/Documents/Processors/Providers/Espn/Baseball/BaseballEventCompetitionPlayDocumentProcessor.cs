@@ -7,6 +7,7 @@ using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -31,17 +32,17 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var externalDto = command.Document.FromJson<EspnEventCompetitionPlayDto>();
+        var externalDto = command.Document.FromJson<EspnBaseballEventCompetitionPlayDto>();
 
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize EspnEventCompetitionPlayDto.");
+            _logger.LogError("Failed to deserialize EspnBaseballEventCompetitionPlayDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionPlayDto Ref is null.");
+            _logger.LogError("EspnBaseballEventCompetitionPlayDto Ref is null.");
             return;
         }
 
@@ -105,7 +106,7 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
 
     private async Task ProcessNew(
         ProcessDocumentCommand command,
-        EspnEventCompetitionPlayDto externalDto,
+        EspnBaseballEventCompetitionPlayDto externalDto,
         CompetitionBase competition,
         Guid? teamFranchiseSeasonId)
     {

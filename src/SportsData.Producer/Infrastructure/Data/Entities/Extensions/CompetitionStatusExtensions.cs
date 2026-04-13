@@ -7,7 +7,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
     public static class CompetitionStatusExtensions
     {
         public static CompetitionStatus AsEntity(
-            this EspnEventCompetitionStatusDto dto,
+            this EspnEventCompetitionStatusDtoBase dto,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid competitionId,
             Guid correlationId)

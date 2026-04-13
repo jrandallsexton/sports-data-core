@@ -34,17 +34,17 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
     {
         var publishEvent = false;
 
-        var dto = command.Document.FromJson<EspnEventCompetitionStatusDto>();
+        var dto = command.Document.FromJson<EspnEventCompetitionStatusDtoBase>();
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize EspnEventCompetitionStatusDto.");
+            _logger.LogError("Failed to deserialize EspnEventCompetitionStatusDtoBase.");
             return; // terminal failure — don't retry
         }
 
         if (string.IsNullOrEmpty(dto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionStatusDto Ref is null or empty.");
+            _logger.LogError("EspnEventCompetitionStatusDtoBase Ref is null or empty.");
             return; // terminal failure — don't retry
         }
 

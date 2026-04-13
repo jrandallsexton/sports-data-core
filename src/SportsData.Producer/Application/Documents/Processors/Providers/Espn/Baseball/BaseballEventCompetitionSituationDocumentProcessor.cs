@@ -5,6 +5,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -30,11 +31,11 @@ public class BaseballEventCompetitionSituationDocumentProcessor<TDataContext> : 
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var dto = command.Document.FromJson<EspnEventCompetitionSituationDto>();
+        var dto = command.Document.FromJson<EspnBaseballEventCompetitionSituationDto>();
 
         if (dto is null)
         {
-            _logger.LogError("Failed to deserialize EspnEventCompetitionSituationDto.");
+            _logger.LogError("Failed to deserialize EspnBaseballEventCompetitionSituationDto.");
             return;
         }
 

@@ -6,6 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -34,17 +35,17 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var externalDto = command.Document.FromJson<EspnEventCompetitionPlayDto>();
+        var externalDto = command.Document.FromJson<EspnFootballEventCompetitionPlayDto>();
             
         if (externalDto is null)
         {
-            _logger.LogError("Failed to deserialize EspnEventCompetitionPlayDto.");
+            _logger.LogError("Failed to deserialize EspnFootballEventCompetitionPlayDto.");
             return;
         }
 
         if (string.IsNullOrEmpty(externalDto.Ref?.ToString()))
         {
-            _logger.LogError("EspnEventCompetitionPlayDto Ref is null.");
+            _logger.LogError("EspnFootballEventCompetitionPlayDto Ref is null.");
             return;
         }
 
@@ -135,7 +136,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
 
     private async Task ProcessNewEntity(
         ProcessDocumentCommand command,
-        EspnEventCompetitionPlayDto externalDto,
+        EspnFootballEventCompetitionPlayDto externalDto,
         CompetitionBase competition,
         Guid? competitionDriveId,
         Guid? startFranchiseSeasonId,
@@ -185,7 +186,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
 
     private async Task ProcessUpdate(
         ProcessDocumentCommand command,
-        EspnEventCompetitionPlayDto externalDto,
+        EspnFootballEventCompetitionPlayDto externalDto,
         Guid? competitionDriveId,
         CompetitionPlayBase entity,
         Guid? startFranchiseSeasonId,

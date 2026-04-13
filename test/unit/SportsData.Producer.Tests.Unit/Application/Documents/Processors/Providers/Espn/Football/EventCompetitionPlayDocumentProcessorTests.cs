@@ -10,6 +10,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -49,7 +50,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     {
         // arrange
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_Debug.json");
-        var play = json.FromJson<EspnEventCompetitionPlayDto>();
+        var play = json.FromJson<EspnFootballEventCompetitionPlayDto>();
 
         // act
 
@@ -63,7 +64,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     {
         // arrange
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlays.json");
-        var plays = json.FromJson<List<EspnEventCompetitionPlayDto>>();
+        var plays = json.FromJson<List<EspnFootballEventCompetitionPlayDto>>();
 
         // act
         var scoringPlays = plays!.Where(x => x.ScoringPlay).ToList();

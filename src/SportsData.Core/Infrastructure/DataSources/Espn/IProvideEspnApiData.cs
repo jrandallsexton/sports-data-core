@@ -25,6 +25,6 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 
         Task<EspnEventCompetitionPlaysDto?> GetCompetitionPlaysAsync(Uri uri);
 
-        Task<EspnEventCompetitionStatusDto?> GetCompetitionStatusAsync(Uri uri);
+        Task<EspnEventCompetitionStatusDtoBase?> GetCompetitionStatusAsync(Uri uri);
     }
 }

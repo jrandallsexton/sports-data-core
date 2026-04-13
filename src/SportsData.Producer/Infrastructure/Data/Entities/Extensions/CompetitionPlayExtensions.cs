@@ -1,6 +1,8 @@
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
@@ -9,7 +11,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 public static class CompetitionPlayExtensions
 {
     public static FootballCompetitionPlay AsFootballEntity(
-        this EspnEventCompetitionPlayDto dto,
+        this EspnFootballEventCompetitionPlayDto dto,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         Guid correlationId,
         Guid competitionId,
@@ -46,7 +48,7 @@ public static class CompetitionPlayExtensions
     }
 
     public static BaseballCompetitionPlay AsBaseballEntity(
-        this EspnEventCompetitionPlayDto dto,
+        this EspnBaseballEventCompetitionPlayDto dto,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         Guid correlationId,
         Guid competitionId,
@@ -68,7 +70,7 @@ public static class CompetitionPlayExtensions
     }
 
     private static void MapSharedProperties(
-        EspnEventCompetitionPlayDto dto,
+        EspnEventCompetitionPlayDtoBase dto,
         CompetitionPlayBase entity,
         ExternalRefIdentity identity,
         Guid correlationId,

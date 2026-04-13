@@ -10,6 +10,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Baseball;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
@@ -82,7 +83,7 @@ public class BaseballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetitionPlay.json");
-        var dto = json.FromJson<EspnEventCompetitionPlayDto>();
+        var dto = json.FromJson<EspnBaseballEventCompetitionPlayDto>();
 
         var teamRef = dto!.Team.Ref.ToString();
         var (competitionId, teamFranchiseSeasonId) = await SetupTestDataAsync(generator, teamRef);
@@ -125,7 +126,7 @@ public class BaseballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetitionPlay_Scoring.json");
-        var dto = json.FromJson<EspnEventCompetitionPlayDto>();
+        var dto = json.FromJson<EspnBaseballEventCompetitionPlayDto>();
 
         var teamRef = dto!.Team.Ref.ToString();
         var (competitionId, _) = await SetupTestDataAsync(generator, teamRef);
@@ -163,7 +164,7 @@ public class BaseballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetitionPlay.json");
-        var dto = json.FromJson<EspnEventCompetitionPlayDto>();
+        var dto = json.FromJson<EspnBaseballEventCompetitionPlayDto>();
 
         var teamRef = dto!.Team.Ref.ToString();
         var (competitionId, teamFranchiseSeasonId) = await SetupTestDataAsync(generator, teamRef);

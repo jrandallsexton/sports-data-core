@@ -150,6 +150,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             .ThenInclude(f => f.Logos)
             .Include(fs => fs.Logos)
             .Include(fs => fs.GroupSeason)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(fs => fs.Id == contest.HomeTeamFranchiseSeasonId, cancellationToken);
 
         var awayTeamSeason = await _dbContext.FranchiseSeasons
@@ -158,6 +159,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             .ThenInclude(f => f.Logos)
             .Include(fs => fs.Logos)
             .Include(fs => fs.GroupSeason)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(fs => fs.Id == contest.AwayTeamFranchiseSeasonId, cancellationToken);
 
         var competitionIdForHeader = comp?.Id ?? Guid.Empty;

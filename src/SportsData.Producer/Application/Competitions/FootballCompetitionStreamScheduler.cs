@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data;
@@ -13,15 +14,18 @@ public class FootballCompetitionStreamScheduler
     private readonly ILogger<FootballCompetitionStreamScheduler> _logger;
     private readonly FootballDataContext _dataContext;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
+    private readonly IAppMode _appMode;
 
     public FootballCompetitionStreamScheduler(
         ILogger<FootballCompetitionStreamScheduler> logger,
         FootballDataContext dataContext,
-        IProvideBackgroundJobs backgroundJobProvider)
+        IProvideBackgroundJobs backgroundJobProvider,
+        IAppMode appMode)
     {
         _logger = logger;
         _dataContext = dataContext;
         _backgroundJobProvider = backgroundJobProvider;
+        _appMode = appMode;
     }
 
     /// <summary>
@@ -95,7 +99,7 @@ public class FootballCompetitionStreamScheduler
                 {
                     ContestId = competition.ContestId,
                     CompetitionId = competition.Id,
-                    Sport = Sport.FootballNcaa,
+                    Sport = _appMode.CurrentSport,
                     SeasonYear = contest.SeasonYear,
                     DataProvider = SourceDataProvider.Espn,
                     CorrelationId = correlationId

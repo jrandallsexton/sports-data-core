@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -19,15 +20,18 @@ namespace SportsData.Producer.Application.Franchises.Commands
         private readonly ILogger<EnrichFranchiseSeasonHandler<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IEventBus _eventBus;
+        private readonly IAppMode _appMode;
 
         public EnrichFranchiseSeasonHandler(
             ILogger<EnrichFranchiseSeasonHandler<TDataContext>> logger,
             TDataContext dataContext,
-            IEventBus eventBus)
+            IEventBus eventBus,
+            IAppMode appMode)
         {
             _logger = logger;
             _dataContext = dataContext;
             _eventBus = eventBus;
+            _appMode = appMode;
         }
 
         public async Task Process(EnrichFranchiseSeasonCommand command)
@@ -76,7 +80,7 @@ namespace SportsData.Producer.Application.Franchises.Commands
             await _eventBus.Publish(new FranchiseSeasonEnrichmentCompleted(
                 command.FranchiseSeasonId,
                 null,
-                Sport.FootballNcaa,
+                _appMode.CurrentSport,
                 command.SeasonYear,
                 command.CorrelationId,
                 Guid.NewGuid()));

@@ -2,6 +2,7 @@
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Jobs;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -17,15 +18,18 @@ namespace SportsData.Producer.Application.Contests
         private readonly ILogger<ContestUpdateJob> _logger;
         private readonly TeamSportDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IAppMode _appMode;
 
         public ContestUpdateJob(
             ILogger<ContestUpdateJob> logger,
             TeamSportDataContext dataContext,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IAppMode appMode)
         {
             _logger = logger;
             _dataContext = dataContext;
             _backgroundJobProvider = backgroundJobProvider;
+            _appMode = appMode;
         }
 
         public async Task ExecuteAsync()
@@ -147,7 +151,7 @@ namespace SportsData.Producer.Application.Contests
                     var cmd = new UpdateContestCommand(
                         contest.Id,
                         SourceDataProvider.Espn,
-                        Sport.FootballNcaa,
+                        _appMode.CurrentSport,
                         correlationId); // Use same correlation ID for all updates in this job run
                     
                     var jobId = _backgroundJobProvider.Enqueue<IUpdateContests>(p => p.Process(cmd));

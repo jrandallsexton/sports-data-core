@@ -90,8 +90,10 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         var awayTeamColor = contest.AwayTeamFranchiseSeason!.Franchise.ColorCodeHex;
         var homeTeamColor = contest.HomeTeamFranchiseSeason!.Franchise.ColorCodeHex;
 
-        var awayTeamLogoUri = _logoSelectionService.SelectLogoForDarkBackground(contest.AwayTeamFranchiseSeason?.Logos);
-        var homeTeamLogoUri = _logoSelectionService.SelectLogoForDarkBackground(contest.HomeTeamFranchiseSeason?.Logos);
+        var awayTeamLogoUri = _logoSelectionService.SelectLogoForDarkBackground(contest.AwayTeamFranchiseSeason?.Logos)
+                              ?? _logoSelectionService.SelectLogoForDarkBackground(contest.AwayTeamFranchiseSeason?.Franchise?.Logos);
+        var homeTeamLogoUri = _logoSelectionService.SelectLogoForDarkBackground(contest.HomeTeamFranchiseSeason?.Logos)
+                              ?? _logoSelectionService.SelectLogoForDarkBackground(contest.HomeTeamFranchiseSeason?.Franchise?.Logos);
 
         var awayTeamFranchiseSeasonId = contest.AwayTeamFranchiseSeasonId;
         var homeTeamFranchiseSeasonId = contest.HomeTeamFranchiseSeasonId;
@@ -145,6 +147,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         var homeTeamSeason = await _dbContext.FranchiseSeasons
             .AsNoTracking()
             .Include(fs => fs.Franchise)
+            .ThenInclude(f => f.Logos)
             .Include(fs => fs.Logos)
             .Include(fs => fs.GroupSeason)
             .FirstOrDefaultAsync(fs => fs.Id == contest.HomeTeamFranchiseSeasonId, cancellationToken);
@@ -152,6 +155,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         var awayTeamSeason = await _dbContext.FranchiseSeasons
             .AsNoTracking()
             .Include(fs => fs.Franchise)
+            .ThenInclude(f => f.Logos)
             .Include(fs => fs.Logos)
             .Include(fs => fs.GroupSeason)
             .FirstOrDefaultAsync(fs => fs.Id == contest.AwayTeamFranchiseSeasonId, cancellationToken);
@@ -180,7 +184,8 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             {
                 FranchiseSeasonId = contest.HomeTeamFranchiseSeasonId,
                 DisplayName = homeTeamSeason?.Franchise?.Name,
-                LogoUrl = _logoSelectionService.SelectLogoForDarkBackground(homeTeamSeason?.Logos)?.OriginalString,
+                LogoUrl = (_logoSelectionService.SelectLogoForDarkBackground(homeTeamSeason?.Logos)
+                          ?? _logoSelectionService.SelectLogoForDarkBackground(homeTeamSeason?.Franchise?.Logos))?.OriginalString,
                 ColorPrimary = homeTeamSeason?.Franchise?.ColorCodeHex,
                 FinalScore = contest.HomeScore,
                 Slug = homeTeamSeason?.Franchise?.Slug ?? string.Empty,
@@ -191,7 +196,8 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             {
                 FranchiseSeasonId = contest.AwayTeamFranchiseSeasonId,
                 DisplayName = awayTeamSeason?.Franchise?.Name,
-                LogoUrl = _logoSelectionService.SelectLogoForDarkBackground(awayTeamSeason?.Logos)?.OriginalString,
+                LogoUrl = (_logoSelectionService.SelectLogoForDarkBackground(awayTeamSeason?.Logos)
+                          ?? _logoSelectionService.SelectLogoForDarkBackground(awayTeamSeason?.Franchise?.Logos))?.OriginalString,
                 ColorPrimary = awayTeamSeason?.Franchise?.ColorCodeHex,
                 FinalScore = contest.AwayScore,
                 Slug = awayTeamSeason?.Franchise?.Slug ?? string.Empty,

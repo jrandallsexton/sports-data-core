@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -25,15 +26,18 @@ public class OutboxTestController : ControllerBase
     private readonly FootballDataContext _footballDb;
     private readonly IEventBus _bus;
     private readonly ILogger<OutboxTestController> _logger;
+    private readonly IAppMode _appMode;
 
     public OutboxTestController(
         FootballDataContext footballDb,
         IEventBus bus,
-        ILogger<OutboxTestController> logger)
+        ILogger<OutboxTestController> logger,
+        IAppMode appMode)
     {
         _footballDb = footballDb;
         _bus = bus;
         _logger = logger;
+        _appMode = appMode;
     }
 
     /// <summary>
@@ -64,7 +68,7 @@ public class OutboxTestController : ControllerBase
             SourceRef: new Uri("http://test.com/outbox-test"),
             DocumentJson: "{}",
             SourceUrlHash: "test-hash",
-            Sport: Sport.FootballNcaa,
+            Sport: _appMode.CurrentSport,
             SeasonYear: 2024,
             DocumentType: DocumentType.OutboxTest,
             SourceDataProvider: SourceDataProvider.Espn,

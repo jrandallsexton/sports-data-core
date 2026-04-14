@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using Dtos = SportsData.Core.Dtos;
@@ -25,15 +26,18 @@ namespace SportsData.Producer.Application.Contests
         private readonly ILogger<ContestController> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly TeamSportDataContext _dataContext;
+        private readonly IAppMode _appMode;
 
         public ContestController(
             ILogger<ContestController> logger,
             IProvideBackgroundJobs backgroundJobProvider,
-            TeamSportDataContext dataContext)
+            TeamSportDataContext dataContext,
+            IAppMode appMode)
         {
             _logger = logger;
             _backgroundJobProvider = backgroundJobProvider;
             _dataContext = dataContext;
+            _appMode = appMode;
         }
 
         [HttpGet("{contestId}")]
@@ -62,7 +66,7 @@ namespace SportsData.Producer.Application.Contests
             var cmd = new UpdateContestCommand(
                 contestId,
                 SourceDataProvider.Espn,
-                Sport.FootballNcaa,
+                _appMode.CurrentSport,
                 correlationId);
                 
             _backgroundJobProvider.Enqueue<IUpdateContests>(p => p.Process(cmd));

@@ -48,15 +48,15 @@ export default function ContestOverviewPlaylog({ playLog, sport }) {
               key={quarter}
               className="contest-playlog-panel"
               style={{
-                background: "#23272f",
-                border: "1px solid #343a40",
+                background: "var(--bg-input)",
+                border: "1px solid var(--border-primary)",
                 borderRadius: 10,
                 boxShadow: "0 1px 6px rgba(33,150,243,0.07)",
                 marginBottom: 16,
                 padding: "14px 18px"
               }}
             >
-              <div style={{ fontWeight: 700, color: '#ffc107', marginBottom: 8 }}>{periodPrefix}{quarter}</div>
+              <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 8 }}>{periodPrefix}{quarter}</div>
               <div className="contest-scoring-summary-list">
                 {playsByQuarter[quarter].map((play, idx) => {
                   const logoUrl = getLogoUrl(play.team);

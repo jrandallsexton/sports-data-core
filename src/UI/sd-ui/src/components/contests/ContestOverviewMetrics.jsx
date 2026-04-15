@@ -53,7 +53,7 @@ export default function ContestOverviewMetrics({ homeMetrics = {}, awayMetrics =
           <tbody>
             {sortedKeys.map((k) => (
               <tr key={k}>
-                <td style={{ padding: '8px 12px', color: '#b0b3b8' }}>{formatLabel(k)}</td>
+                <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>{formatLabel(k)}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right' }}>{formatValue(k, awayMetrics?.[k])}</td>
                 <td style={{ padding: '8px 12px', textAlign: 'right' }}>{formatValue(k, homeMetrics?.[k])}</td>
               </tr>

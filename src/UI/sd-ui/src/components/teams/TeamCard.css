@@ -1,6 +1,6 @@
-/* Link to contest overview uses same color as team-name */
+/* Link to contest overview inherits win/loss color from parent td */
 .result-link {
-  color: var(--accent);
+  color: inherit;
   text-decoration: underline;
   font-weight: 600;
   transition: color 0.2s;

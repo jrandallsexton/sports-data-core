@@ -59,18 +59,18 @@ export default function ContestOverviewInfo({ info }) {
               onClick={handleOpenLightbox}
             />
             <Dialog open={lightboxOpen} onClose={handleCloseLightbox} maxWidth="md" fullWidth>
-              <div style={{ position: 'relative', background: '#23272f', padding: 0 }}>
+              <div style={{ position: 'relative', background: 'var(--bg-input)', padding: 0 }}>
                 <button
                   aria-label="close"
                   onClick={handleCloseLightbox}
-                  style={{ position: 'absolute', top: 8, right: 8, color: '#fff', zIndex: 2, background: 'none', border: 'none', cursor: 'pointer', fontSize: 28 }}
+                  style={{ position: 'absolute', top: 8, right: 8, color: 'var(--text-primary)', zIndex: 2, background: 'none', border: 'none', cursor: 'pointer', fontSize: 28 }}
                 >
                   <FaTimes />
                 </button>
                 <img
                   src={info.venueImageUrl}
                   alt="Venue Large"
-                  style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'contain', maxHeight: '80vh', display: 'block', margin: '0 auto', background: '#23272f' }}
+                  style={{ width: '100%', height: 'auto', borderRadius: 6, objectFit: 'contain', maxHeight: '80vh', display: 'block', margin: '0 auto', background: 'var(--bg-input)' }}
                 />
               </div>
             </Dialog>

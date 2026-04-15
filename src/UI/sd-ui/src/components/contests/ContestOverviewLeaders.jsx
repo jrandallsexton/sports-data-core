@@ -4,15 +4,34 @@ import "./ContestOverview.css";
 
 export default function ContestOverviewLeaders({ homeTeam, awayTeam, leaders }) {
   const categories = leaders?.categories || [];
-  // Helper to decide if statLine is 'simple' (inline) or 'complex' (break line)
-  const isSimpleStat = (statLine) => {
-    if (!statLine) return true;
-    // Consider simple if it's a number or short string without comma/space
-    if (typeof statLine === 'number') return true;
-    if (statLine.length <= 5 && !statLine.match(/[ ,]/)) return true;
-    // If statLine contains comma, multiple stats, or is long, treat as complex
-    if (statLine.length > 12 || statLine.includes(',') || statLine.match(/\d+\s+\w+/)) return false;
-    return true;
+
+  const renderPlayer = (l, team) => {
+    if (!l) return <div className="contest-leader-item">-</div>;
+    const logoUrl = team?.logoUrl;
+    return (
+      <div className="contest-leader-item" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {logoUrl && (
+          <img
+            src={logoUrl}
+            alt={team?.displayName || ''}
+            className="contest-leader-team-logo"
+          />
+        )}
+        {l.playerHeadshotUrl && (
+          <img
+            src={l.playerHeadshotUrl}
+            alt={l.playerName}
+            style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
+          />
+        )}
+        <div style={{ minWidth: 0 }}>
+          <span className="contest-leader-player">{l.playerName}</span>
+          {l.statLine && (
+            <span className="contest-leader-statline"> - {l.statLine}</span>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -27,83 +46,22 @@ export default function ContestOverviewLeaders({ homeTeam, awayTeam, leaders }) 
               key={cat.categoryId || idx}
               className="contest-leaders-panel"
               style={{
-                background: "#23272f",
-                border: "1px solid #343a40",
+                background: "var(--bg-input)",
+                border: "1px solid var(--border-primary)",
                 borderRadius: 10,
                 boxShadow: "0 1px 6px rgba(33,150,243,0.07)",
-                marginBottom: 16,
-                padding: "14px 18px"
+                marginBottom: 12,
+                padding: "10px 14px"
               }}
             >
-              <div className="contest-leaders-row">
-                {/* Away leaders */}
-                <div className="contest-leaders-team contest-leaders-away">
-                  {cat.away?.leaders && cat.away.leaders.length > 0 ? (
-                    cat.away.leaders.map((l, i) => (
-                      <div key={i} className="contest-leader-item" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {l.playerHeadshotUrl && (
-                          <img 
-                            src={l.playerHeadshotUrl} 
-                            alt={l.playerName}
-                            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
-                          />
-                        )}
-                        <div>
-                          {isSimpleStat(l.statLine) ? (
-                            <span>
-                              <span className="contest-leader-player">{l.playerName}</span>
-                              {" - "}
-                              <span className="contest-leader-statline">{l.statLine}</span>
-                            </span>
-                          ) : (
-                            <>
-                              <span className="contest-leader-player">{l.playerName}</span>
-                              <div className="contest-leader-statline">{l.statLine}</div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="contest-leader-item">-</div>
-                  )}
-                </div>
-                {/* Category name center */}
-                <div className="contest-leader-category" style={{ minWidth: 120, textAlign: 'center', fontWeight: 600, color: '#b0b3b8' }}>
-                  {cat.categoryName}
-                </div>
-                {/* Home leaders */}
-                <div className="contest-leaders-team contest-leaders-home">
-                  {cat.home?.leaders && cat.home.leaders.length > 0 ? (
-                    cat.home.leaders.map((l, i) => (
-                      <div key={i} className="contest-leader-item" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        {l.playerHeadshotUrl && (
-                          <img 
-                            src={l.playerHeadshotUrl} 
-                            alt={l.playerName}
-                            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
-                          />
-                        )}
-                        <div>
-                          {isSimpleStat(l.statLine) ? (
-                            <span>
-                              <span className="contest-leader-player">{l.playerName}</span>
-                              {" - "}
-                              <span className="contest-leader-statline">{l.statLine}</span>
-                            </span>
-                          ) : (
-                            <>
-                              <span className="contest-leader-player">{l.playerName}</span>
-                              <div className="contest-leader-statline">{l.statLine}</div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="contest-leader-item">-</div>
-                  )}
-                </div>
+              <div className="contest-leader-category-header">
+                {cat.categoryName}
+              </div>
+              <div className="contest-leaders-stacked">
+                {cat.away?.leaders?.length > 0 &&
+                  cat.away.leaders.map((l, i) => <React.Fragment key={`a${i}`}>{renderPlayer(l, awayTeam)}</React.Fragment>)}
+                {cat.home?.leaders?.length > 0 &&
+                  cat.home.leaders.map((l, i) => <React.Fragment key={`h${i}`}>{renderPlayer(l, homeTeam)}</React.Fragment>)}
               </div>
             </div>
           ))

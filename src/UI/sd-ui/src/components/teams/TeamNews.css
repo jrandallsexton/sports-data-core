@@ -4,9 +4,9 @@
 
 .team-news h3 {
   font-size: 1.25rem;
-  color: var(--highlight-color, #ffc107);
+  color: var(--warning);
   margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--highlight-color, #ffc107);
+  border-bottom: 1px solid var(--warning);
   padding-bottom: 0.25rem;
 }
 
@@ -20,7 +20,7 @@
 }
 
 .team-news a {
-  color: #0dcaf0;
+  color: var(--info);
   text-decoration: none;
 }
 

@@ -1,11 +1,11 @@
 .landing-header {
   width: 100%;
-  background-color: #111;
+  background-color: var(--bg-primary);
   padding: 15px 20px;
   display: flex;
   justify-content: center; /* Center inner content */
   align-items: center;
-  color: #61dafb;
+  color: var(--accent);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -27,7 +27,7 @@
 
 .logo a, .logo-link {
   font-size: 1.8rem;
-  color: #61dafb;
+  color: var(--accent);
   text-decoration: none;
   font-weight: bold;
 }
@@ -42,8 +42,8 @@
 
 .signin-button {
   background: none;
-  border: 2px solid #61dafb;
-  color: #61dafb;
+  border: 2px solid var(--accent);
+  color: var(--accent);
   padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
@@ -52,8 +52,8 @@
 }
 
 .signin-button:hover {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
 }
 
 /* Login Dropdown */
@@ -61,12 +61,12 @@
   position: absolute;
   right: 0;
   top: 50px;
-  background-color: #222;
-  border: 1px solid #444;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-strong);
   padding: 20px;
   border-radius: 10px;
   width: 250px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
   flex-direction: column;
   align-items: stretch;
   opacity: 0;
@@ -89,17 +89,17 @@
   width: 100%;
   margin-bottom: 10px;
   padding: 10px;
-  border: 1px solid #444;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background-color: #333;
-  color: #fff;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
 }
 
 /* Submit Button */
 .submit-button {
   width: 100%;
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
   padding: 10px;
   border: none;
   border-radius: 6px;
@@ -110,12 +110,12 @@
 }
 
 .submit-button:hover {
-  background-color: #4ea0d9;
+  background-color: var(--accent-hover);
 }
 
 /* Footer text inside login dropdown */
 .login-footer-text {
   font-size: 0.8rem;
-  color: #bbb;
+  color: var(--text-secondary);
   text-align: center;
 }

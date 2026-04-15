@@ -1,6 +1,6 @@
 .landing-footer {
-  background-color: #111;
-  color: #777;
+  background-color: var(--bg-primary);
+  color: var(--text-muted);
   padding: 20px 0;
   text-align: center;
   font-size: 0.9rem;
@@ -20,17 +20,17 @@
 }
 
 .footer-links a {
-  color: #61dafb;
+  color: var(--text-link);
   text-decoration: none;
   transition: color 0.3s ease;
 }
 
 .footer-links a:hover {
-  color: #4ea0d9;
+  color: var(--text-link-hover);
 }
 
 .footer-brand {
-  color: #61dafb;
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -41,5 +41,5 @@
   margin-left: 2px;
   position: relative;
   top: 0.25em;
-  color: #61dafb;
+  color: var(--accent);
 }

@@ -2,21 +2,21 @@
   max-width: 800px;
   margin: 2rem auto;
   padding: 0 1rem;
-  color: #f8f9fa;
-  background-color: #0d1117;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .league-info-card {
-  background-color: #1c1e22;
-  border: 2px solid #61dafb;
+  background-color: var(--bg-modal);
+  border: 2px solid var(--accent);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
 }
 
 .league-info-card h2 {
-  color: #61dafb;
+  color: var(--accent);
   font-size: 2rem;
   margin-bottom: 1.5rem;
   font-weight: 600;
@@ -32,32 +32,32 @@
 }
 
 .league-details-list li {
-  background-color: #2a2d33;
+  background-color: var(--bg-card-hover);
   padding: 1rem;
   border-radius: 8px;
-  border-left: 4px solid #61dafb;
+  border-left: 4px solid var(--accent);
   transition: background-color 0.3s ease;
 }
 
 .league-details-list li:hover {
-  background-color: #343a40;
+  background-color: var(--badge-bg);
 }
 
 .league-details-list strong {
-  color: #61dafb;
+  color: var(--accent);
   margin-right: 0.5rem;
 }
 
 .members-section {
-  background-color: #1c1e22;
-  border: 2px solid #61dafb;
+  background-color: var(--bg-modal);
+  border: 2px solid var(--accent);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
 }
 
 .members-section h2 {
-  color: #61dafb;
+  color: var(--accent);
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
   font-weight: 600;
@@ -72,7 +72,7 @@
 }
 
 .members-list li {
-  background-color: #2a2d33;
+  background-color: var(--bg-card-hover);
   padding: 1rem;
   border-radius: 8px;
   display: flex;
@@ -82,17 +82,17 @@
 }
 
 .members-list li:hover {
-  background-color: #343a40;
+  background-color: var(--badge-bg);
 }
 
 .member-username {
   font-weight: 500;
-  color: #f8f9fa;
+  color: var(--text-primary);
 }
 
 .member-role {
-  background-color: #61dafb;
-  color: #1c1e22;
+  background-color: var(--accent);
+  color: var(--bg-modal);
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.85rem;
@@ -101,29 +101,29 @@
 }
 
 .member-role.commissioner {
-  background-color: #ffc107;
-  color: #1c1e22;
+  background-color: var(--warning);
+  color: var(--bg-modal);
 }
 
 .no-members-message {
-  color: #adb5bd;
+  color: var(--text-secondary);
   font-style: italic;
   text-align: center;
   padding: 2rem;
-  background-color: #2a2d33;
+  background-color: var(--bg-card-hover);
   border-radius: 8px;
 }
 
 .danger-zone {
-  background-color: #1c1e22;
-  border: 2px solid #dc3545;
+  background-color: var(--bg-modal);
+  border: 2px solid var(--error);
   border-radius: 12px;
   padding: 2rem;
   margin-bottom: 2rem;
 }
 
 .danger-zone h2 {
-  color: #dc3545;
+  color: var(--error);
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
   font-weight: 600;
@@ -138,14 +138,14 @@
 }
 
 .danger-zone p {
-  color: #adb5bd;
+  color: var(--text-secondary);
   margin-bottom: 1.5rem;
   line-height: 1.4;
 }
 
 .delete-button {
-  background-color: #dc3545;
-  color: white;
+  background-color: var(--error);
+  color: var(--text-primary);
   border: none;
   padding: 0.75rem 2rem;
   border-radius: 6px;
@@ -160,8 +160,8 @@
 }
 
 .confirm-delete-button {
-  background-color: #dc3545;
-  color: white;
+  background-color: var(--error);
+  color: var(--text-primary);
   border: none;
   padding: 0.75rem 2rem;
   border-radius: 6px;
@@ -177,13 +177,13 @@
 }
 
 .confirm-delete-button:disabled {
-  background-color: #6c757d;
+  background-color: var(--text-muted);
   cursor: not-allowed;
 }
 
 .cancel-button {
-  background-color: #6c757d;
-  color: white;
+  background-color: var(--text-muted);
+  color: var(--text-primary);
   border: none;
   padding: 0.75rem 2rem;
   border-radius: 6px;
@@ -194,7 +194,7 @@
 }
 
 .cancel-button:hover {
-  background-color: #5a6268;
+  background-color: var(--active-bg);
 }
 
 /* Mobile responsive */

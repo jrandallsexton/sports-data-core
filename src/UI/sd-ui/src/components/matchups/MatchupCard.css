@@ -3,8 +3,8 @@
   padding: 0.5rem;
   border: none;
   border-radius: 8px;
-  background-color: #2a2d33;
-  color: #f8f9fa;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -13,17 +13,17 @@
 }
 
 .comparison-button:hover {
-  background-color: #3a3d43;
+  background-color: var(--bg-card-hover);
 }
 
 .comparison-button:disabled {
-  opacity: 0.5;
+  opacity: var(--disabled-opacity);
   cursor: not-allowed;
 }
 .ai-pick-indicator-selected {
-  color: #222 !important;
-  fill: #222 !important;
-  stroke: #222 !important;
+  color: var(--text-inverse) !important;
+  fill: var(--text-inverse) !important;
+  stroke: var(--text-inverse) !important;
 }
 .ai-pick-indicator {
   margin-left: 6px;
@@ -36,49 +36,49 @@
   /* margin-bottom removed, spacing handled by flex gap */
 }
 .pick-button.selected {
-  color: #111 !important;
-  filter: drop-shadow(0 0 2px #fff);
+  color: var(--text-inverse) !important;
+  filter: drop-shadow(0 0 2px var(--text-primary));
 }
 
 .ai-pick-indicator-selected {
-  color: #222 !important;
-  text-shadow: 0 1px 2px #fff, 0 -1px 2px #fff;
+  color: var(--text-inverse) !important;
+  text-shadow: 0 1px 2px var(--text-primary), 0 -1px 2px var(--text-primary);
 }
 
 .insight-button.insight-reviewed {
-  background-color: #2a2d33;
-  color: #ffc107;
-  border: 2px solid #ffc107;
+  background-color: var(--bg-card);
+  color: var(--warning);
+  border: 2px solid var(--warning);
   box-shadow: 0 0 6px 1px rgba(255, 193, 7, 0.15);
 }
 .insight-button.insight-reviewed svg {
-  color: #ffc107;
+  color: var(--warning);
 }
 
 .insight-button.insight-admin-missing {
-  background-color: #2a2d33;
-  color: #ff1744;
-  border: 2px solid #ff1744;
+  background-color: var(--bg-card);
+  color: var(--error);
+  border: 2px solid var(--error);
   box-shadow: 0 0 6px 1px rgba(255, 23, 68, 0.2);
 }
 
 .insight-button.insight-admin-missing svg {
-  color: #ff1744;
+  color: var(--error);
 }
 
 .insight-button.insight-admin-missing:hover {
-  background-color: #3a3d43;
-  border-color: #ff1744;
+  background-color: var(--bg-card-hover);
+  border-color: var(--error);
 }
 
 .matchup-card {
-  background-color: #1c1e22;
-  color: #f8f9fa;
-  border: 2px solid #61dafb;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 2px solid var(--accent);
   border-radius: 16px;
   padding: 20px;
   margin: 0;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-lg);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   overflow-x: hidden; /* Prevent horizontal overflow */
   word-wrap: break-word; /* Allow long words to break */
@@ -91,8 +91,8 @@
 }
 
 .matchup-headline {
-  background-color: #61dafb;
-  color: #1c1e22;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
   text-align: center;
   padding: 6px;
   font-weight: bold;
@@ -102,7 +102,7 @@
   border-top-right-radius: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .matchup-card-content {
@@ -122,7 +122,7 @@
   align-items: center;
   padding: 0.65rem 1rem;
   border-radius: 8px;
-  background-color: #2a2d33;
+  background-color: var(--bg-card);
   margin-bottom: 0.5rem;
   gap: 1rem;
 }
@@ -139,10 +139,10 @@
   width: 60px;
   height: 60px;
   object-fit: contain;
-  background-color: #fff;
+  background-color: var(--text-primary);
   border-radius: 8px;
   padding: 0.25rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-subtle);
 }
 
 .team-details {
@@ -161,19 +161,19 @@
 
 .team-ranking {
   font-weight: bold;
-  color: #61dafb;
+  color: var(--accent);
   flex-shrink: 0;
 }
 
 .team-link {
-  color: #f8f9fa;
+  color: var(--text-primary);
   text-decoration: none;
   font-weight: 600;
   font-size: 1.1rem;
 }
 
 .team-link:hover {
-  color: var(--accent-color, #6c63ff);
+  color: var(--text-link-hover);
 }
 
 .team-record-row {
@@ -188,13 +188,13 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
-  color: #adb5bd;
+  color: var(--text-muted);
 }
 
 .team-spread {
   font-weight: bold;
   font-size: 1.2rem;
-  color: #61dafb;
+  color: var(--spread-line);
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -203,14 +203,14 @@
   text-align: center;
   margin: 0.05rem 0;
   font-weight: bold;
-  color: #adb5bd;
+  color: var(--text-muted);
 }
 
 .game-time-location {
   text-align: center;
   /* margin-top: 1rem; */
   /* margin-bottom: 0; */
-  color: #adb5bd;
+  color: var(--text-muted);
   font-size: 0.9rem;
   min-height: 1.8em;
   display: flex;
@@ -225,7 +225,7 @@
 .game-result {
   text-align: center;
   padding: 8px;
-  background: linear-gradient(135deg, #2d2d30 0%, #1c1e22 100%);
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-primary) 100%);
   border-radius: 6px;
   margin: 8px 0;
 }
@@ -252,23 +252,23 @@
 }
 
 .final-score-link:hover .result-label {
-  color: #61dafb;
+  color: var(--accent);
 }
 
 .final-score-link:hover .score-display {
-  color: #61dafb;
+  color: var(--accent);
 }
 
 .result-label {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #61dafb;
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .live-indicator {
-  color: #ff1744;
+  color: var(--error);
   animation: pulse-live 2s ease-in-out infinite;
 }
 
@@ -284,14 +284,14 @@
 .game-clock {
   font-size: 0.85rem;
   font-weight: 500;
-  color: #adb5bd;
+  color: var(--text-muted);
   margin: 0 8px;
 }
 
 .score-display {
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -314,7 +314,7 @@
 /* Scoring Play Animation */
 .game-result.scoring-play {
   animation: score-pulse 2s ease-in-out;
-  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+  background: linear-gradient(135deg, var(--ranking-gold) 0%, #ff8c00 100%);
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
 }
 
@@ -336,20 +336,20 @@
 
 @keyframes flash-score {
   0%, 100% {
-    color: #fff;
+    color: var(--text-primary);
     text-shadow: none;
   }
   50% {
-    color: #ffd700;
-    text-shadow: 0 0 10px #ffd700, 0 0 20px #ff8c00;
+    color: var(--ranking-gold);
+    text-shadow: 0 0 10px var(--ranking-gold), 0 0 20px #ff8c00;
   }
 }
 
 .touchdown-indicator {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #ffd700;
-  text-shadow: 0 0 10px #ffd700;
+  color: var(--ranking-gold);
+  text-shadow: 0 0 10px var(--ranking-gold);
   animation: slide-in 0.5s ease-out;
   margin-top: 4px;
 }
@@ -371,7 +371,7 @@
 
 .distribution-bar {
   height: 20px;
-  background-color: #2a2d33;
+  background-color: var(--bg-card);
   border-radius: 10px;
   overflow: hidden;
   display: flex;
@@ -383,18 +383,18 @@
 }
 
 .distribution-fill.away {
-  background-color: #ff1744; /* Red for underdog */
+  background-color: var(--pick-incorrect); /* Red for underdog */
 }
 
 .distribution-fill.home {
-  background-color: #00c853; /* Green for favorite */
+  background-color: var(--pick-correct); /* Green for favorite */
 }
 
 .distribution-text {
   text-align: center;
   margin-top: 0.5rem;
   font-size: 0.9rem;
-  color: #adb5bd;
+  color: var(--text-muted);
 }
 
 .spread-ou {
@@ -402,7 +402,7 @@
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   font-weight: bold;
-  color: #61dafb;
+  color: var(--spread-line);
 }
 
 .spread-display {
@@ -412,7 +412,7 @@
 }
 
 .ou-separator {
-  color: #adb5bd;
+  color: var(--text-muted);
 }
 
 .ou-display {
@@ -436,8 +436,8 @@
   padding: 0.5rem 0.25rem;
   border: 2px solid transparent;
   border-radius: 8px;
-  background-color: #2a2d33;
-  color: #f8f9fa;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -445,12 +445,12 @@
 }
 
 .pick-button:hover {
-  background-color: #3a3d43;
+  background-color: var(--bg-card-hover);
 }
 
 .pick-button.selected {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
 }
 
 .pick-button:disabled {
@@ -460,13 +460,13 @@
 
 .pick-check-icon {
   margin-right: 6px;
-  color: #61dafb;
+  color: var(--accent);
   vertical-align: middle;
 }
 
 .pick-lock-icon {
   margin-right: 0.5rem;
-  color: #888;
+  color: var(--text-muted);
 }
 
 /* .pick-button.selected {
@@ -479,8 +479,8 @@
   padding: 0.5rem;
   border: none;
   border-radius: 8px;
-  background-color: #2a2d33;
-  color: #f8f9fa;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -489,11 +489,11 @@
 }
 
 .insight-button:hover {
-  background-color: #3a3d43;
+  background-color: var(--bg-card-hover);
 }
 
 .insight-button:disabled {
-  opacity: 0.5;
+  opacity: var(--disabled-opacity);
   cursor: not-allowed;
 }
 
@@ -505,15 +505,15 @@
 
 /* Pick Result Styling */
 .pick-button.result-correct {
-  background-color: #28a745 !important; /* Green for correct picks */
-  color: white !important;
-  border: 2px solid #1e7e34;
+  background-color: var(--pick-correct) !important; /* Green for correct picks */
+  color: var(--text-inverse) !important;
+  border: 2px solid var(--pick-correct);
 }
 
 .pick-button.result-incorrect {
-  background-color: #dc3545 !important; /* Red for incorrect picks */
-  color: white !important;
-  border: 2px solid #c82333;
+  background-color: var(--pick-incorrect) !important; /* Red for incorrect picks */
+  color: var(--text-inverse) !important;
+  border: 2px solid var(--pick-incorrect);
 }
 
 .pick-result-icon {
@@ -524,17 +524,17 @@
 
 /* Card border based on pick result */
 .matchup-card.pick-correct {
-  border: 2px solid #28a745;
-  box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+  border: 2px solid var(--pick-correct);
+  box-shadow: var(--shadow-glow);
 }
 
 .matchup-card.pick-incorrect {
-  border: 2px solid #dc3545;
+  border: 2px solid var(--pick-incorrect);
   box-shadow: 0 0 10px rgba(220, 53, 69, 0.3);
 }
 
 .matchup-card.pick-no-submission {
-  border: 2px solid #dc3545;
+  border: 2px solid var(--pick-incorrect);
   box-shadow: 0 0 10px rgba(220, 53, 69, 0.3);
 }
 
@@ -624,8 +624,8 @@
 }
 
 .confidence-badge {
-  background-color: #fff;
-  color: #333;
+  background-color: var(--badge-bg);
+  color: var(--text-inverse);
   border-radius: 50%;
   width: 20px;
   height: 20px;
@@ -637,4 +637,3 @@
   margin-right: 6px;
   vertical-align: middle;
 }
-

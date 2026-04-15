@@ -1,12 +1,12 @@
 /* MiniSchedule: improved contrast and less white */
 .mini-schedule {
   margin: 8px 0 0 0;
-  background: #23252a;
+  background: var(--bg-input);
   border-radius: 12px;
-  border: 1.5px solid #2a2d33;
+  border: 1.5px solid var(--border-subtle);
   box-shadow: 0 2px 8px rgba(30, 41, 59, 0.18);
   padding: 12px 14px;
-  color: #f8f9fa;
+  color: var(--text-primary);
 }
 .mini-schedule table {
   width: 100%;
@@ -21,29 +21,29 @@
 }
 .mini-schedule th {
   font-weight: 700;
-  background: #2a2d33;
-  color: #61dafb;
-  border-bottom: 1.5px solid #23252a;
+  background: var(--bg-card-hover);
+  color: var(--accent);
+  border-bottom: 1.5px solid var(--bg-input);
 }
 .mini-schedule tr:nth-child(even) {
-  background: #23252a;
+  background: var(--bg-input);
 }
 .mini-schedule tr:nth-child(odd) {
-  background: #282b31;
+  background: var(--bg-elevated);
 }
 .mini-schedule tr:hover td {
-  background: #2a2d33;
+  background: var(--bg-card-hover);
 }
 .result-win {
-  color: #00c853;
+  color: var(--success-text);
   font-weight: 600;
 }
 .result-loss {
-  color: #ff1744;
+  color: var(--error-text);
   font-weight: 600;
 }
 .result-tbd {
-  color: #adb5bd;
+  color: var(--text-secondary);
 }
 .result-link {
   color: inherit;
@@ -51,13 +51,13 @@
   text-underline-offset: 2px;
 }
 .result-link.result-win {
-  color: #00c853 !important;
+  color: var(--success-text) !important;
 }
 .result-link.result-loss {
-  color: #ff1744 !important;
+  color: var(--error-text) !important;
 }
 .mini-schedule-icon-btn {
-  background: #e3e6ee;
+  background: var(--text-secondary);
   border: none;
   border-radius: 50%;
   width: 22px;
@@ -71,11 +71,11 @@
   padding: 0;
 }
 .mini-schedule-icon-btn:hover {
-  background: #cfd8dc;
+  background: var(--border-input);
 }
 .mini-schedule-icon {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #374151;
+  color: var(--text-inverse);
   user-select: none;
 }

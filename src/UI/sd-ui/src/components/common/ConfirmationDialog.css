@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: var(--bg-overlay);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -12,8 +12,8 @@
 }
 
 .confirmation-dialog {
-  background-color: #1c1e22;
-  border: 2px solid #61dafb;
+  background-color: var(--bg-modal);
+  border: 2px solid var(--accent);
   border-radius: 16px;
   padding: 24px;
   max-width: 400px;
@@ -22,13 +22,13 @@
 }
 
 .confirmation-dialog-title {
-  color: #61dafb;
+  color: var(--accent);
   margin: 0 0 16px 0;
   font-size: 1.5rem;
 }
 
 .confirmation-dialog-message {
-  color: #f8f9fa;
+  color: var(--text-primary);
   margin: 0 0 20px 0;
   line-height: 1.5;
 }
@@ -47,7 +47,7 @@
 }
 
 .confirmation-dialog-checkbox label {
-  color: #f8f9fa;
+  color: var(--text-primary);
   cursor: pointer;
 }
 
@@ -66,21 +66,21 @@
 }
 
 .confirmation-dialog-button.cancel {
-  background-color: #444;
-  color: #f8f9fa;
-  border: 1px solid #666;
+  background-color: var(--border-strong);
+  color: var(--text-primary);
+  border: 1px solid var(--text-muted);
 }
 
 .confirmation-dialog-button.cancel:hover {
-  background-color: #555;
+  background-color: var(--active-bg);
 }
 
 .confirmation-dialog-button.confirm {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
   border: none;
 }
 
 .confirmation-dialog-button.confirm:hover {
-  background-color: #4ea0d9;
-} 
+  background-color: var(--accent-hover);
+}

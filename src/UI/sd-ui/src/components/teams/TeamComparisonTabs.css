@@ -8,8 +8,8 @@
 .team-comparison-tab {
   padding: 0.4rem 0.7rem;
   border-radius: 6px 6px 0 0;
-  background: #23272f;
-  color: #adb5bd;
+  background: var(--bg-input);
+  color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.95rem;
   cursor: pointer;
@@ -24,13 +24,13 @@
   justify-content: center;
 }
 .team-comparison-tab.selected {
-  background: #61dafb;
-  color: #23272f;
+  background: var(--accent);
+  color: var(--bg-input);
   font-weight: bold;
 }
 .team-comparison-tab:hover:not(.selected) {
-  background: #2a2d33;
-  color: #f8f9fa;
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
 }
 
 .category-gradient-bar {
@@ -39,7 +39,7 @@
   height: 2px;
   border-radius: 1px;
   overflow: hidden;
-  background: #2a2d33;
+  background: var(--bg-card-hover);
   border: 1px solid rgba(255, 255, 255, 0.15);
   max-width: 80px;
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.2);

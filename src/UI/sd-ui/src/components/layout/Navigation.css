@@ -1,10 +1,10 @@
 .navigation {
-  background-color: #222;
-  color: #fff;
+  background-color: var(--bg-nav);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: var(--theme-transition);
+  box-shadow: var(--shadow-sm);
   position: fixed;
   top: 0;
   left: 0;
@@ -29,7 +29,7 @@
 }
 
 .logo {
-  color: #61dafb;
+  color: var(--accent);
   font-size: 1.5rem;
   font-weight: bold;
   text-decoration: none;
@@ -65,7 +65,7 @@
 }
 
 .nav-link {
-  color: #61dafb;
+  color: var(--accent);
   text-decoration: none;
   font-size: 1rem;
   display: flex;
@@ -78,19 +78,19 @@
 
 .nav-link:hover {
   background-color: transparent;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .nav-link.active {
   font-weight: bold;
-  color: #61dafb;
+  color: var(--accent);
   background-color: transparent !important;
   box-shadow: none !important;
 }
 
 .nav-link.active .nav-icon {
-  color: #61dafb;
-  text-shadow: 0 0 6px rgba(97, 218, 251, 0.6);
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent-glow);
 }
 
 .nav-icon {
@@ -104,7 +104,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-left: auto; /* Push to far right */
+  margin-left: auto;
   padding-right: 10px;
   flex-shrink: 0;
 }
@@ -112,7 +112,7 @@
 .nav-toggle {
   background: none;
   border: none;
-  color: #61dafb;
+  color: var(--accent);
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0.5rem;
@@ -123,7 +123,7 @@
 }
 
 .nav-toggle:hover {
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .logout-button {
@@ -140,7 +140,7 @@
   left: 0;
   bottom: 0;
   width: 220px;
-  background-color: #222;
+  background-color: var(--bg-nav);
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -177,7 +177,7 @@
   padding: 20px 0;
   width: 100%;
   flex-direction: column;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border-primary);
 }
 
 .side-nav .nav-toggle {
@@ -209,44 +209,41 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  /* Mobile top navigation layout */
   .top-nav {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 15px;
   }
-  
+
   .nav-header {
     order: 2;
     min-width: auto;
-    margin-left: 15px; /* Space after hamburger */
+    margin-left: 15px;
   }
-  
+
   .nav-actions {
     order: 3;
     margin-left: 0;
     padding-right: 0;
   }
-  
+
   .nav-toggle {
     order: 1;
   }
-  
-  /* Hide nav-actions (Settings and Sign Out) on mobile - they're in the hamburger menu */
+
   .top-nav .nav-actions {
     display: none;
   }
-  
-  /* Hide "Sign Out" text on mobile, show icon only */
+
   .logout-button span {
     display: none;
   }
-  
+
   .logout-button .nav-icon {
     margin-right: 0;
   }
-  
+
   .top-nav .nav-links {
     display: none;
   }
@@ -285,16 +282,8 @@
   .top-nav .home-nav-link {
     display: none;
   }
-  
-  /* Hide hamburger menu on desktop */
+
   .top-nav .nav-toggle {
     display: none;
   }
 }
-
-/* Hide Home link in top navigation on non-mobile devices */
-@media (min-width: 769px) {
-  .top-nav .home-nav-link {
-    display: none;
-  }
-} 

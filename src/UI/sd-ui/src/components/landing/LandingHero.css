@@ -1,12 +1,12 @@
 .landing-hero {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #111, #222);
+  background: linear-gradient(to bottom, var(--bg-primary), var(--bg-card));
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 40px;
   text-align: center;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .hero-content {
@@ -16,13 +16,13 @@
 .hero-content h1 {
   font-size: 2.8rem;
   margin-bottom: 20px;
-  color: #61dafb;
+  color: var(--accent);
 }
 
 .hero-content p {
   font-size: 1.2rem;
   margin-bottom: 30px;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .hero-buttons {
@@ -42,23 +42,23 @@
 }
 
 .primary-button {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
 }
 
 .primary-button:hover {
-  background-color: #4ea0d9;
+  background-color: var(--accent-hover);
 }
 
 .secondary-button {
   background-color: transparent;
-  border: 2px solid #61dafb;
-  color: #61dafb;
+  border: 2px solid var(--accent);
+  color: var(--accent);
 }
 
 .secondary-button:hover {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
 }
 
 .tm-symbol {
@@ -67,6 +67,5 @@
   margin-left: 2px;
   position: relative;
   top: 0.25em;
-  color: #61dafb;
+  color: var(--accent);
 }
-

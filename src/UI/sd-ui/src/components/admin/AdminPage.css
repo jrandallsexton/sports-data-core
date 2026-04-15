@@ -4,24 +4,24 @@
 .admin-header h1 {
   margin: 0 0 8px 0;
   /* Match card h2 styling used elsewhere: light-blue title, larger, bold, with underline */
-  color: #61dafb;
+  color: var(--accent);
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   padding-left: 2px;
-  border-bottom: 1.5px solid #61dafb;
+  border-bottom: 1.5px solid var(--accent);
   padding-bottom: 0.4rem;
 }
 .admin-subtitle {
-  color: #9aa0a6;
+  color: var(--text-secondary);
   margin-bottom: 12px;
 }
 .admin-header {
-  background: #23272f;
-  color: #f8f9fa;
+  background: var(--bg-input);
+  color: var(--text-primary);
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #343a40;
+  border: 1px solid var(--border-primary);
   margin-bottom: 12px;
 }
 .admin-grid {
@@ -60,11 +60,11 @@
   .admin-top-widgets { flex-direction: column; }
 }
 .admin-card {
-  background: #23272f;
-  color: #f8f9fa;
+  background: var(--bg-input);
+  color: var(--text-primary);
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid #343a40;
+  border: 1px solid var(--border-primary);
 }
 .admin-card.large {
   grid-column: 1 / 2;
@@ -74,8 +74,8 @@
 }
 .placeholder {
   padding: 12px;
-  color: #b0b3b8;
-  background: rgba(255,255,255,0.02);
+  color: var(--text-secondary);
+  background: var(--table-stripe);
   border-radius: 6px;
   min-height: 84px;
 }

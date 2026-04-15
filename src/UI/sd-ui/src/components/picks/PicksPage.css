@@ -36,10 +36,10 @@
 }
 
 .view-mode-toggle {
-  background-color: #444;
-  color: #61dafb;
+  background-color: var(--active-bg);
+  color: var(--accent);
   padding: 0 12px;
-  border: 1px solid #61dafb;
+  border: 1px solid var(--accent);
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
@@ -52,8 +52,8 @@
 }
 
 .view-mode-toggle:hover {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-inverse);
 }
 
 .spinner {
@@ -69,7 +69,7 @@
 
 .week-dates {
   font-size: 1rem;
-  color: #bbb;
+  color: var(--text-secondary);
   margin-top: 5px;
 }
 
@@ -84,12 +84,12 @@
 
 .pick-status {
   font-size: 1rem;
-  color: #ccc;
+  color: var(--text-secondary);
 }
 
 .hide-picked-toggle {
   font-size: 0.95rem;
-  color: #ccc;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 6px;

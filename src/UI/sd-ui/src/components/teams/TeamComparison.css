@@ -4,7 +4,7 @@
   gap: 0.5rem;
   margin-bottom: 1.5rem;
   justify-content: center;
-  border-bottom: 2px solid #343a40;
+  border-bottom: 2px solid var(--badge-bg);
   padding-bottom: 0.5rem;
 }
 
@@ -12,7 +12,7 @@
   padding: 0.75rem 2rem;
   border-radius: 8px 8px 0 0;
   background: transparent;
-  color: #adb5bd;
+  color: var(--text-secondary);
   font-weight: 500;
   font-size: 1.1rem;
   cursor: pointer;
@@ -45,7 +45,7 @@
   height: 4px;
   border-radius: 2px;
   overflow: hidden;
-  background: #2a2d33;
+  background: var(--hover-bg);
   border: 1px solid rgba(255, 255, 255, 0.2);
   max-width: 180px;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -69,15 +69,15 @@
 }
 
 .main-tab.active {
-  background: #61dafb;
-  color: #23272f;
+  background: var(--accent);
+  color: var(--text-on-accent);
   font-weight: bold;
   transform: translateY(-2px);
 }
 
 .main-tab:hover:not(.active) {
-  background: #2a2d33;
-  color: #f8f9fa;
+  background: var(--hover-bg);
+  color: var(--text-primary);
 }
 
 .tab-content {
@@ -89,20 +89,20 @@
     gap: 0.25rem;
     margin-bottom: 1rem;
   }
-  
+
   .main-tab {
     padding: 0.5rem 0.75rem;
     font-size: 0.95rem;
     white-space: nowrap;
     min-height: 50px;
   }
-  
+
   .tab-gradient-bar {
     height: 3px;
     max-width: 140px;
     border-width: 1px;
   }
-  
+
   .gradient-segment {
     border-width: 1px;
   }
@@ -127,7 +127,7 @@
   min-width: 28px;
   max-width: 32px;
   text-align: center;
-  color: #adb5bd;
+  color: var(--text-secondary);
   font-size: 0.95em;
   display: flex;
   align-items: center;
@@ -182,7 +182,7 @@
  .team-comparison-dialog-backdrop {
    position: fixed;
    top: 0; left: 0; right: 0; bottom: 0;
-   background: rgba(0,0,0,0.45);
+   background: var(--bg-overlay-light);
    z-index: 1000;
    display: flex;
    align-items: flex-start;
@@ -191,15 +191,15 @@
 }
 
  .team-comparison-dialog {
-   background: #23272f;
+   background: var(--bg-input);
    border-radius: 14px;
-   box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+   box-shadow: var(--shadow-lg);
    padding: 0;
    min-width: 340px;
    max-width: 90vw;
    max-height: 90vh;
    min-height: 200px;
-   color: #f8f9fa;
+   color: var(--text-primary);
    position: relative;
    display: flex;
    flex-direction: column;
@@ -217,8 +217,8 @@
 
 .team-comparison-footer {
    padding: 1rem 2.5rem 1.5rem 2.5rem;
-   border-top: 1px solid #343a40;
-   background: #23272f;
+   border-top: 1px solid var(--badge-bg);
+   background: var(--bg-input);
    border-radius: 0 0 14px 14px;
    flex-shrink: 0;
 }
@@ -229,15 +229,15 @@
     min-width: 0;
     margin-top: 2vh;
   }
-  
+
   .team-comparison-content {
     padding: 1rem 0.5rem 0 0.5rem;
   }
-  
+
   .team-comparison-footer {
     padding: 0.75rem 0.5rem 1rem 0.5rem;
   }
-  
+
   .team-comparison-table {
     width: 100%;
     overflow-x: auto;
@@ -306,14 +306,14 @@
 .team-name {
   font-weight: 600;
   font-size: 1.1rem;
-  color: #61dafb;
+  color: var(--accent);
   text-align: center;
 }
 
 .vs-col {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #adb5bd;
+  color: var(--text-secondary);
 }
 
  .team-comparison-tabs {
@@ -336,7 +336,7 @@
   flex: 1;
   min-width: 0;
   text-align: center;
-  color: #adb5bd;
+  color: var(--text-secondary);
   font-weight: 500;
   font-size: 0.9rem;
   overflow: hidden;
@@ -398,16 +398,16 @@
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   border: none;
-  background: #61dafb;
-  color: #23272f;
+  background: var(--accent);
+  color: var(--text-on-accent);
   font-weight: bold;
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.2s;
 }
 .close-btn:hover {
-  background: #4b6cb7;
-  color: #fff;
+  background: var(--accent-hover);
+  color: var(--text-primary);
 }
 
 /* Metrics tab styles - reuses stat-row styles above */
@@ -423,5 +423,4 @@
   flex-direction: column;
   min-width: 100%;
 }
-
 

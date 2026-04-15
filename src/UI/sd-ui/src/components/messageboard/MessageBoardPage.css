@@ -1,5 +1,5 @@
 .message-board {
-  color: #fff;
+  color: var(--text-primary);
   max-width: 1280px;
   margin: 0 auto;
   padding: 20px;
@@ -15,8 +15,8 @@
 
 /* New Post Form Styling */
 .new-post-form {
-  background-color: #2a2a2a;
-  border: 1px solid #444;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 20px;
@@ -27,9 +27,9 @@
   width: 100%;
   max-width: 100%;
   min-height: 80px;
-  background-color: #333;
-  color: #fff;
-  border: 1px solid #555;
+  background-color: var(--bg-tooltip);
+  color: var(--text-primary);
+  border: 1px solid var(--active-bg);
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 12px;
@@ -43,16 +43,16 @@
 .new-post-form textarea:focus,
 .reply-form textarea:focus {
   outline: none;
-  border-color: #61dafb;
-  box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-muted);
 }
 
 .new-post-form button,
 .reply-form button,
 .reply-form .submit-button,
 .new-post-form .submit-button {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
   padding: 10px 16px;
   border: none;
   border-radius: 8px;
@@ -64,14 +64,14 @@
 
 .new-post-form button:hover,
 .reply-form button:hover {
-  background-color: #4ea0d9;
+  background-color: var(--accent-hover);
   transform: translateY(-1px);
 }
 
 .new-post-form button:disabled,
 .reply-form button:disabled {
-  background-color: #444;
-  color: #666;
+  background-color: var(--border-strong);
+  color: var(--text-muted);
   cursor: not-allowed;
   transform: none;
 }
@@ -84,15 +84,15 @@
 }
 
 .post-card {
-  background-color: #2a2a2a;
-  border: 1px solid #444;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-strong);
   padding: 16px;
   border-radius: 12px;
   transition: border-color 0.2s ease;
 }
 
 .post-card:hover {
-  border-color: #555;
+  border-color: var(--active-bg);
 }
 
 /* Pagination Styling */
@@ -103,9 +103,9 @@
 }
 
 .pager button {
-  background-color: #333;
-  color: #61dafb;
-  border: 1px solid #61dafb;
+  background-color: var(--bg-tooltip);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   padding: 12px 24px;
   border-radius: 8px;
   cursor: pointer;
@@ -114,12 +114,12 @@
 }
 
 .pager button:hover:not(:disabled) {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
 }
 
 .pager button:disabled {
-  opacity: 0.5;
+  opacity: var(--disabled-opacity);
   cursor: not-allowed;
 }
 
@@ -130,14 +130,14 @@
   gap: 12px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--border-strong);
 }
 
 /* Post Headers and Content */
 .post-header,
 .reply-header {
   font-size: 0.9rem;
-  color: #aaa;
+  color: var(--text-secondary);
   margin-bottom: 8px;
   font-weight: 500;
 }
@@ -147,14 +147,14 @@
   font-size: 1rem;
   line-height: 1.5;
   margin-bottom: 12px;
-  color: #e0e0e0;
+  color: var(--text-secondary);
 }
 
 /* Replies Section */
 .replies {
   margin-top: 16px;
   padding-left: 20px;
-  border-left: 3px solid #444;
+  border-left: 3px solid var(--border-strong);
   position: relative;
 }
 
@@ -165,13 +165,13 @@
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(to bottom, #61dafb, transparent);
+  background: linear-gradient(to bottom, var(--accent), transparent);
   opacity: 0.3;
 }
 
 .reply-card {
-  background-color: #333;
-  border: 1px solid #444;
+  background-color: var(--bg-tooltip);
+  border: 1px solid var(--border-strong);
   padding: 12px;
   border-radius: 8px;
   margin-bottom: 12px;
@@ -179,7 +179,7 @@
 }
 
 .reply-card:hover {
-  border-color: #555;
+  border-color: var(--active-bg);
 }
 
 .reply-card:last-child {
@@ -195,7 +195,7 @@
 .reply-icon-button {
   background: none;
   border: none;
-  color: #61dafb;
+  color: var(--accent);
   font-size: 1rem;
   cursor: pointer;
   padding: 4px;
@@ -207,14 +207,14 @@
 }
 
 .reply-icon-button:hover {
-  color: #4ea0d9;
-  background-color: rgba(97, 218, 251, 0.1);
+  color: var(--accent-hover);
+  background-color: var(--accent-subtle);
 }
 
 .reply-text-button {
   background-color: transparent;
   border: none;
-  color: #61dafb;
+  color: var(--accent);
   font-size: 1.2rem;
   cursor: pointer;
   display: none;
@@ -223,7 +223,7 @@
 }
 
 .reply-text-button:hover {
-  color: #4ea0d9;
+  color: var(--accent-hover);
 }
 
 /* Responsive Design */
@@ -232,19 +232,19 @@
     padding: 12px;
     gap: 16px;
   }
-  
+
   .new-post-form {
     padding: 12px;
   }
-  
+
   .post-card {
     padding: 12px;
   }
-  
+
   .replies {
     padding-left: 16px;
   }
-  
+
   .new-post-form textarea {
     min-height: 60px;
     font-size: 16px; /* Prevent zoom on iOS */
@@ -256,20 +256,20 @@
   .reply-icon-button {
     display: none;
   }
-  
+
   .reply-text-button {
     display: flex;
-    background-color: #61dafb;
-    color: #111;
+    background-color: var(--accent);
+    color: var(--text-on-accent);
     padding: 8px 12px;
     border-radius: 6px;
     font-size: 0.9rem;
     font-weight: 600;
   }
-  
+
   .reply-text-button:hover {
-    background-color: #4ea0d9;
-    color: #111;
+    background-color: var(--accent-hover);
+    color: var(--text-on-accent);
   }
 }
 
@@ -278,12 +278,12 @@
     padding: 8px;
     gap: 12px;
   }
-  
+
   .post-card,
   .reply-card {
     padding: 10px;
   }
-  
+
   .replies {
     padding-left: 12px;
   }
@@ -299,7 +299,7 @@
 .reaction-button {
   background: none;
   border: none;
-  color: #bbb;
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.9rem;
   display: flex;
@@ -308,7 +308,7 @@
 }
 
 .reaction-button:hover {
-  color: #61dafb;
+  color: var(--accent);
 }
 
 .reaction-count {
@@ -316,21 +316,21 @@
 }
 
 .liked {
-  color: #00c853;
+  color: var(--success-text);
 }
 
 .disliked {
-  color: #ff1744;
+  color: var(--error-text);
 }
 
 .reaction-button.liked,
 .reaction-button.liked:hover {
-  color: #00c853;
+  color: var(--success-text);
 }
 
 .reaction-button.disliked,
 .reaction-button.disliked:hover {
-  color: #ff1744;
+  color: var(--error-text);
 }
 
 @keyframes pop {

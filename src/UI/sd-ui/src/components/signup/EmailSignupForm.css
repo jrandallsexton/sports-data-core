@@ -12,26 +12,26 @@
 .email-signup-form button {
   padding: 0.5rem;
   font-size: 1rem;
-  background-color: #234e70;
-  color: white;
+  background-color: var(--accent-hover);
+  color: var(--text-primary);
   border: none;
   cursor: pointer;
 }
 
 .email-signup-form .error-message {
-  color: red;
+  color: var(--error);
   font-size: 0.9rem;
 }
 
 .cancel-button {
   background: none;
   border: none;
-  color: #666;
+  color: var(--text-muted);
   font-size: 0.9rem;
   cursor: pointer;
   text-decoration: underline;
 }
 
 .cancel-button:hover {
-  color: #000;
+  color: var(--text-primary);
 }

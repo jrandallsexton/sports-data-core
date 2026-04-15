@@ -1,22 +1,22 @@
 .rankings-widget {
   width: 100%;
   overflow-x: visible;
-  background: var(--card-background-color);
+  background: var(--bg-card);
   border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  padding: 0 0 .5rem 0;  
-  color: var(--text-color);
+  box-shadow: var(--shadow-sm);
+  padding: 0 0 .5rem 0;
+  color: var(--text-primary);
 }
 
 .rankings-widget h2 {
   text-align: left;
-  color: #61dafb;
+  color: var(--accent);
   margin-bottom: 1.2rem;
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   padding-left: 2px;
-  border-bottom: 1.5px solid #61dafb;
+  border-bottom: 1.5px solid var(--accent);
   padding-bottom: 0.4rem;
   margin-top: 0;
 }
@@ -26,7 +26,7 @@
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1rem;
-  border-bottom: 2px solid #333;
+  border-bottom: 2px solid var(--border-primary);
   overflow-x: auto;
   flex-wrap: wrap;
 }
@@ -35,7 +35,7 @@
   padding: 0.75rem 1.25rem;
   background: transparent;
   border: none;
-  color: #aaa;
+  color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 500;
@@ -45,13 +45,13 @@
 }
 
 .rankings-tab:hover {
-  color: #61dafb;
-  background: rgba(97, 218, 251, 0.05);
+  color: var(--accent);
+  background: var(--accent-subtle);
 }
 
 .rankings-tab.active {
-  color: #61dafb;
-  border-bottom-color: #61dafb;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
   font-weight: 600;
 }
 
@@ -59,7 +59,7 @@
   .rankings-tabs {
     gap: 0.25rem;
   }
-  
+
   .rankings-tab {
     padding: 0.5rem 0.75rem;
     font-size: 0.85rem;
@@ -103,7 +103,7 @@
   .rankings-content.cfp-layout {
     grid-template-columns: 1fr;
   }
-  
+
   .cfp-bracket-container {
     min-height: auto;
   }
@@ -124,7 +124,7 @@
   flex: 1 1 0;
   margin-top: 20px;
   border-collapse: collapse;
-  color: #fff;
+  color: var(--text-primary);
   background: none;
   border-radius: 0;
   box-shadow: none;
@@ -134,29 +134,29 @@
 }
 
 .rankings-table th, .rankings-table td {
-  border: 1px solid #333;
+  border: 1px solid var(--border-primary);
   padding: 10px;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   background: inherit;
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .rankings-table th {
-  background-color: #222;
-  color: #61dafb;
+  background-color: var(--table-header-bg);
+  color: var(--accent);
   font-weight: bold;
   padding: 10px;
   text-align: center;
-  border: 1px solid #333;
+  border: 1px solid var(--border-primary);
 }
 
 .rankings-table td {
-  border: 1px solid #333;
+  border: 1px solid var(--border-primary);
   padding: 10px;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .rankings-table td:not(.rank-cell) {
@@ -164,11 +164,11 @@
 }
 
 .rankings-table tr:nth-child(even) {
-  background-color: #2c2c2c;
+  background-color: var(--hover-bg);
 }
 
 .rankings-table tr:hover {
-  background-color: #333;
+  background-color: var(--table-row-hover);
 }
 
 /* Responsive rank header text */
@@ -184,7 +184,7 @@
   .rank-header-desktop {
     display: none;
   }
-  
+
   .rank-header-mobile {
     display: inline;
   }
@@ -256,7 +256,7 @@
 .rankings-table th:first-child, .rankings-table td:first-child {
   position: sticky;
   left: 0;
-  background: var(--sidebar-background-color);
+  background: var(--bg-sidebar);
   z-index: 1;
   min-width: 36px;
   max-width: 40px;

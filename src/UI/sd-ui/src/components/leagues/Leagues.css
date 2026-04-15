@@ -84,12 +84,12 @@
 }
 
 .card {
-  background-color: #1c1e22;
-  color: #f8f9fa;
-  border: 2px solid #61dafb;
+  background-color: var(--bg-modal);
+  color: var(--text-primary);
+  border: 2px solid var(--accent);
   border-radius: 16px;
   padding: 20px 20px 16px 20px; /* Reduced bottom padding to prevent button overflow */
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-lg);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   overflow-x: hidden; /* Prevent horizontal overflow */
@@ -109,26 +109,26 @@
   height: auto;
   margin-bottom: 1rem;
   border-radius: 8px;
-  border: 1px solid #444;
-  background-color: #fff;
+  border: 1px solid var(--border-strong);
+  background-color: var(--text-primary);
   padding: 4px;
   box-sizing: border-box;
 }
 
 .card h2 {
   margin: 0 0 1rem 0;
-  color: #61dafb;
+  color: var(--accent);
   font-size: 1.25rem;
   word-break: break-word;
 }
 
 .card p {
   margin: 0.5rem 0;
-  color: #adb5bd;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   line-height: 1.4;
 }
 
 .card p strong {
-  color: #f8f9fa;
+  color: var(--text-primary);
 }

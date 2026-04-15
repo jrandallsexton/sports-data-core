@@ -2,8 +2,8 @@
   display: block;
   box-sizing: border-box;
   padding: 0.75rem 1rem;
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
   border: none;
   border-radius: 8px;
   text-decoration: none;
@@ -25,7 +25,7 @@
 }
 
 .submit-button:hover {
-  background-color: #4ea0d9;
+  background-color: var(--accent-hover);
   transform: translateY(-1px);
 }
 

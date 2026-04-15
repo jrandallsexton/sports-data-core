@@ -34,58 +34,58 @@ em + .league-records {
 .pick-record-table td {
   padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid var(--border-color, #e9ecef);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .pick-record-table th {
   font-weight: 600;
-  color: var(--text-color);
-  border-bottom: 2px solid var(--border-color, #e9ecef);
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-subtle);
 }
 
 .pick-record-table td {
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .pick-record-table tr:hover {
-  background-color: var(--hover-background, rgba(0, 0, 0, 0.02));
+  background-color: var(--table-stripe);
 }
 
 .overall-totals-row {
-  border-top: 2px solid var(--primary-color, #007bff);
-  background-color: var(--highlight-background, rgba(0, 123, 255, 0.05));
+  border-top: 2px solid var(--accent);
+  background-color: var(--accent-subtle);
 }
 
 .overall-totals-row:hover {
-  background-color: var(--highlight-background, rgba(0, 123, 255, 0.08));
+  background-color: var(--accent-subtle);
 }
 
 .overall-totals-row td {
-  color: var(--text-color);
+  color: var(--text-primary);
   font-weight: bold;
 }
 
 .league-link {
-  color: var(--link-color, #007bff);
+  color: var(--text-link);
   text-decoration: none;
   transition: color 0.2s ease;
 }
 
 .league-link:hover {
-  color: var(--link-hover-color, #0056b3);
+  color: var(--text-link-hover);
   text-decoration: underline;
 }
 
 .league-link:visited {
-  color: var(--link-color, #007bff);
+  color: var(--text-link);
 }
 
 .league-link:visited:hover {
-  color: var(--link-hover-color, #0056b3);
+  color: var(--text-link-hover);
 }
 
 .card-link {
-  color: var(--link-color, #007bff);
+  color: var(--text-link);
   text-decoration: none;
   transition: color 0.2s ease;
   display: inline-block;
@@ -93,19 +93,19 @@ em + .league-records {
 }
 
 .card-link:hover {
-  color: var(--link-hover-color, #0056b3);
+  color: var(--text-link-hover);
   text-decoration: underline;
 }
 
 .card-link:visited {
-  color: var(--link-color, #007bff);
+  color: var(--text-link);
 }
 
 .card-link:visited:hover {
-  color: var(--link-hover-color, #0056b3);
+  color: var(--text-link-hover);
 }
 
 .error-text {
-  color: var(--error-color, #dc3545);
+  color: var(--error);
   margin: 1rem 0;
 }

@@ -1,7 +1,7 @@
 .league-invitation {
-  background-color: #1c1e22;
-  color: #f8f9fa;
-  border: 2px solid #61dafb;
+  background-color: var(--bg-modal);
+  color: var(--text-primary);
+  border: 2px solid var(--accent);
   border-radius: 12px;
   padding: 2rem;
   margin: 1rem 0;
@@ -10,7 +10,7 @@
 }
 
 .league-invitation h2 {
-  color: #61dafb;
+  color: var(--accent);
   margin-bottom: 1rem;
   font-size: 1.5rem;
   font-weight: 600;
@@ -18,7 +18,7 @@
 
 .league-invitation p {
   margin-bottom: 1rem;
-  color: #adb5bd;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -32,10 +32,10 @@
 .invite-link-input {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background-color: #2a2d33;
-  color: #f8f9fa;
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
   font-family: 'Courier New', monospace;
   font-size: 0.9rem;
   outline: none;
@@ -43,13 +43,13 @@
 }
 
 .invite-link-input:focus {
-  border-color: #61dafb;
+  border-color: var(--accent);
 }
 
 .copy-button {
   padding: 0.75rem 1.5rem;
-  background-color: #61dafb;
-  color: #1c1e22;
+  background-color: var(--accent);
+  color: var(--bg-modal);
   border: none;
   border-radius: 6px;
   font-weight: 600;
@@ -59,11 +59,11 @@
 }
 
 .copy-button:hover {
-  background-color: #4ea8d8;
+  background-color: var(--accent-hover);
 }
 
 .invite-form {
-  border-top: 1px solid #444;
+  border-top: 1px solid var(--border-strong);
   padding-top: 1.5rem;
 }
 
@@ -74,10 +74,10 @@
 .form-input {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #444;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background-color: #2a2d33;
-  color: #f8f9fa;
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
   font-size: 1rem;
   outline: none;
   transition: border-color 0.3s ease;
@@ -85,17 +85,17 @@
 }
 
 .form-input::placeholder {
-  color: #6c757d;
+  color: var(--text-muted);
 }
 
 .form-input:focus {
-  border-color: #61dafb;
+  border-color: var(--accent);
 }
 
 .send-button {
   padding: 0.75rem 2rem;
-  background-color: #28a745;
-  color: white;
+  background-color: var(--success);
+  color: var(--text-primary);
   border: none;
   border-radius: 6px;
   font-weight: 600;
@@ -109,7 +109,7 @@
 }
 
 .send-button:disabled {
-  background-color: #6c757d;
+  background-color: var(--text-muted);
   cursor: not-allowed;
 }
 
@@ -121,14 +121,14 @@
 }
 
 .confirmation-success {
-  background-color: rgba(40, 167, 69, 0.1);
-  color: #28a745;
+  background-color: var(--success-bg);
+  color: var(--success);
   border: 1px solid rgba(40, 167, 69, 0.3);
 }
 
 .confirmation-error {
-  background-color: rgba(220, 53, 69, 0.1);
-  color: #dc3545;
+  background-color: var(--error-bg);
+  color: var(--error);
   border: 1px solid rgba(220, 53, 69, 0.3);
 }
 

@@ -6,13 +6,13 @@
 .badges-heading {
   font-size: 1.75rem;
   margin-bottom: 1.25rem;
-  color: var(--text-color-primary, #f8f9fa);
+  color: var(--text-primary);
 }
 
 .badges-empty,
 .badges-error,
 .badges-spinner {
-  color: var(--text-color-secondary, #adb5bd);
+  color: var(--text-secondary);
   font-size: 0.95rem;
   padding: 0.5rem 0;
 }
@@ -24,18 +24,18 @@
 }
 
 .badge-card {
-  border: 1px solid var(--border-color, #3a3f44);
+  border: 1px solid var(--border-primary);
   border-radius: 16px;
   padding: 1.5rem;
-  background-color: var(--tile-bg, #212529);
-  color: var(--text-color-primary, #f8f9fa);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
   box-shadow: 0 0 0 transparent;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .badge-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-lg);
 }
 
 .badge-locked {
@@ -53,12 +53,12 @@
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 0.25rem;
-  color: var(--text-color-primary, #ffffff);
+  color: var(--text-primary);
 }
 
 .badge-description {
   font-size: 0.9rem;
-  color: var(--text-color-muted, #ced4da);
+  color: var(--text-muted);
   margin-bottom: 0.5rem;
 }
 
@@ -73,26 +73,26 @@
 }
 
 .badge-rarity.common {
-  background-color: #6c757d;
-  color: #fff;
+  background-color: var(--text-muted);
+  color: var(--text-primary);
 }
 
 .badge-rarity.rare {
-  background-color: #0d6efd;
-  color: #fff;
+  background-color: var(--info);
+  color: var(--text-primary);
 }
 
 .badge-rarity.epic {
   background-color: #6610f2;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .badge-rarity.legendary {
-  background-color: #ffc107;
-  color: #212529;
+  background-color: var(--warning);
+  color: var(--text-inverse);
 }
 
 .badge-date {
   font-size: 0.75rem;
-  color: var(--text-color-muted, #adb5bd);
+  color: var(--text-secondary);
 }

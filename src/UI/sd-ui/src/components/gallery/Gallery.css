@@ -1,6 +1,6 @@
 .gallery-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1d23 0%, #23272f 100%);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-input) 100%);
   padding: 2rem;
 }
 
@@ -11,14 +11,14 @@
 }
 
 .gallery-header h1 {
-  color: #61dafb;
+  color: var(--accent);
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
 }
 
 .gallery-header p {
-  color: #adb5bd;
+  color: var(--text-secondary);
   font-size: 1.1rem;
   margin: 0;
 }
@@ -37,14 +37,14 @@
   overflow: hidden;
   border-radius: 12px;
   cursor: pointer;
-  background: #2a2d35;
+  background: var(--bg-card-hover);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .gallery-item:hover {
   transform: translateY(-8px);
-  box-shadow: 0 8px 24px rgba(97, 218, 251, 0.3);
+  box-shadow: 0 8px 24px var(--accent-glow);
 }
 
 .gallery-item img {
@@ -75,7 +75,7 @@
 }
 
 .gallery-item-title {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 600;
   display: block;
@@ -86,7 +86,7 @@
   top: 1rem;
   right: 1rem;
   background: rgba(97, 218, 251, 0.9);
-  color: #1a1d23;
+  color: var(--bg-primary);
   padding: 0.5rem 0.75rem;
   border-radius: 50%;
   font-size: 1rem;
@@ -159,7 +159,7 @@
   right: 0;
   background: transparent;
   border: none;
-  color: #fff;
+  color: var(--text-primary);
   font-size: 3rem;
   cursor: pointer;
   padding: 0;
@@ -173,12 +173,12 @@
 }
 
 .lightbox-close:hover {
-  color: #61dafb;
+  color: var(--accent);
   transform: scale(1.1);
 }
 
 .lightbox-caption {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 1.2rem;
   margin-top: 1.5rem;
   text-align: center;
@@ -189,7 +189,7 @@
 }
 
 .lightbox-counter {
-  color: #adb5bd;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   font-weight: 400;
 }
@@ -199,9 +199,9 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(97, 218, 251, 0.2);
-  border: 2px solid rgba(97, 218, 251, 0.5);
-  color: #61dafb;
+  background: var(--accent-muted);
+  border: 2px solid var(--focus-ring);
+  color: var(--accent);
   font-size: 4rem;
   cursor: pointer;
   padding: 1rem 1.5rem;
@@ -214,8 +214,8 @@
 }
 
 .lightbox-nav:hover {
-  background: rgba(97, 218, 251, 0.4);
-  border-color: #61dafb;
+  background: var(--accent-glow);
+  border-color: var(--accent);
   transform: translateY(-50%) scale(1.1);
 }
 

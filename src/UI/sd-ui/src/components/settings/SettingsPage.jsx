@@ -53,44 +53,46 @@ function SettingsPage() {
 
       {error && <p className="error">{error}</p>}
 
-      <section className="settings-section">
-        <h2>Profile</h2>
-        <div className="settings-item">
-          <span className="label">Email:</span>
-          <span>{user?.email || "Not set"}</span>
-        </div>
-        <div className="settings-item">
-          <span className="label">Display Name:</span>
-          <span>{user?.displayName || "Not set"}</span>
-        </div>
-        <div className="settings-item">
-          <span className="label">Timezone:</span>
-          <span>{user?.timezone || "Not set"}</span>
-        </div>
-      </section>
+      <div className="settings-grid">
+        <section className="settings-section">
+          <h2>Profile</h2>
+          <div className="settings-item">
+            <span className="label">Email:</span>
+            <span>{user?.email || "Not set"}</span>
+          </div>
+          <div className="settings-item">
+            <span className="label">Display Name:</span>
+            <span>{user?.displayName || "Not set"}</span>
+          </div>
+          <div className="settings-item">
+            <span className="label">Timezone:</span>
+            <span>{user?.timezone || "Not set"}</span>
+          </div>
+        </section>
 
-      <section className="settings-section">
-        <h2>Theme</h2>
-        <div className="settings-item">
-          <span className="label">Current Theme:</span>
-          <span>{theme}</span>
-          <button className="toggle-theme-button" onClick={toggleTheme}>
-            Toggle Theme
-          </button>
-        </div>
-      </section>
+        <section className="settings-section">
+          <h2>Theme</h2>
+          <div className="settings-item">
+            <span className="label">Theme:</span>
+            <div className="theme-toggle" onClick={toggleTheme} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && toggleTheme()}>
+              <span className={`theme-toggle-option ${theme === 'light' ? 'active' : ''}`}>Light</span>
+              <span className={`theme-toggle-option ${theme === 'dark' ? 'active' : ''}`}>Dark</span>
+            </div>
+          </div>
+        </section>
 
-      <section className="settings-section">
-        <h2>Notifications</h2>
-        <div className="settings-item">
-          <span className="label">Email Alerts:</span>
-          <input type="checkbox" disabled />
-        </div>
-        <div className="settings-item">
-          <span className="label">Push Notifications:</span>
-          <input type="checkbox" disabled />
-        </div>
-      </section>
+        <section className="settings-section">
+          <h2>Notifications</h2>
+          <div className="settings-item">
+            <span className="label">Email Alerts:</span>
+            <input type="checkbox" disabled />
+          </div>
+          <div className="settings-item">
+            <span className="label">Push Notifications:</span>
+            <input type="checkbox" disabled />
+          </div>
+        </section>
+      </div>
 
       <BadgesPanel />
     </div>

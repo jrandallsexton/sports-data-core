@@ -26,8 +26,8 @@
 .league-selector select {
   padding: 6px 10px;
   font-size: 1rem;
-  background-color: var(--bg-card);
-  color: var(--accent);
+  background-color: var(--bg-input);
+  color: var(--text-primary);
   border: 1px solid var(--border-strong);
   border-radius: 6px;
   transition: background-color 0.3s, color 0.3s;
@@ -37,10 +37,15 @@
 }
 
 .league-selector select:hover {
-  background-color: var(--bg-tooltip);
+  background-color: var(--hover-bg);
 }
 
 .league-selector select:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.league-selector select option {
+  background-color: var(--bg-input);
+  color: var(--text-primary);
 }

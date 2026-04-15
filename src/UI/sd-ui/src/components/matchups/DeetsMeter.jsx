@@ -37,11 +37,11 @@ const DeetsMeter = ({ predictions, pickType, homeFranchiseSeasonId, awayFranchis
       <div className="deetsmeter-row">
         <div className="deetsmeter-meter">
           <div className="meter-gradient" style={{
-            background: `linear-gradient(to right, 
-              var(--away-color, #444) 0%, 
-              var(--away-color, #444) ${awayPercentage}%, 
-              var(--home-color, #666) ${awayPercentage}%, 
-              var(--home-color, #666) 100%)`
+            background: `linear-gradient(to right,
+              var(--away-color, var(--meter-away-fallback)) 0%,
+              var(--away-color, var(--meter-away-fallback)) ${awayPercentage}%,
+              var(--home-color, var(--meter-home-fallback)) ${awayPercentage}%,
+              var(--home-color, var(--meter-home-fallback)) 100%)`
           }}>
             {/* Label */}
             <div className="meter-label">{label}</div>

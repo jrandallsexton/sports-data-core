@@ -91,6 +91,10 @@ body[data-theme="dark"] {
   --ranking-gold: #ffd700;
   --ranking-silver: #adb5bd;
   --ranking-bronze: #ff8c00;
+
+  /* --- Meter fallback (when team colors unavailable) --- */
+  --meter-away-fallback: #444;
+  --meter-home-fallback: #666;
 }
 
 /* ============================================================
@@ -174,6 +178,10 @@ body[data-theme="light"] {
   --ranking-gold: #ff8c00;
   --ranking-silver: #6c757d;
   --ranking-bronze: #a0522d;
+
+  /* --- Meter fallback (when team colors unavailable) --- */
+  --meter-away-fallback: var(--accent);
+  --meter-home-fallback: var(--accent-hover);
 }
 
 /* ============================================================

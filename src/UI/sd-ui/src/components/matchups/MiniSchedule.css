@@ -57,7 +57,7 @@
   color: var(--error-text) !important;
 }
 .mini-schedule-icon-btn {
-  background: var(--text-secondary);
+  background: var(--accent);
   border: none;
   border-radius: 50%;
   width: 22px;
@@ -71,7 +71,7 @@
   padding: 0;
 }
 .mini-schedule-icon-btn:hover {
-  background: var(--border-input);
+  background: var(--accent-hover);
 }
 .mini-schedule-icon {
   font-size: 0.95rem;

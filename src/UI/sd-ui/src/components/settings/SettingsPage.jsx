@@ -7,7 +7,7 @@ import BadgesPanel from "../../components/badges/BadgesPanel.tsx";
 
 function SettingsPage() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -74,7 +74,7 @@ function SettingsPage() {
         <div className="settings-item">
           <span className="label">Current Theme:</span>
           <span>{theme}</span>
-          <button className="toggle-theme-button" onClick={setTheme}>
+          <button className="toggle-theme-button" onClick={toggleTheme}>
             Toggle Theme
           </button>
         </div>

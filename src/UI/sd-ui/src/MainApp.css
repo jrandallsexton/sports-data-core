@@ -27,11 +27,11 @@
   .main-content {
     padding: 1rem;
   }
-  
+
   .main-content.dev-env {
     padding-top: 100px; /* More clearance needed on mobile for environment banner */
   }
-  
+
   .main-content.side-nav-active {
     margin-left: 0;
   }
@@ -39,7 +39,7 @@
 
 .sidebar {
   width: 220px;
-  background-color: #222;
+  background-color: var(--bg-nav);
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -60,7 +60,7 @@
 }
 
 .nav-link {
-  color: #61dafb;
+  color: var(--accent);
   text-decoration: none;
   font-size: 1.2rem;
   display: flex;
@@ -71,14 +71,14 @@
 }
 
 .nav-link:hover {
-  background-color: #333;
+  background-color: var(--bg-tooltip);
 }
 
 .nav-link.active {
   font-weight: bold;
-  color: #ffffff;
-  background-color: #333;
-  box-shadow: 0 0 8px rgba(97, 218, 251, 0.6); /* ✨ Light blue glow */
+  color: var(--text-primary);
+  background-color: var(--bg-tooltip);
+  box-shadow: var(--shadow-glow);
 }
 
 .nav-icon {
@@ -89,7 +89,7 @@
 .logout-button {
   background: none;
   border: none;
-  color: #61dafb;
+  color: var(--accent);
   font-size: 1.2rem;
   display: flex;
   align-items: center;
@@ -102,11 +102,11 @@
 }
 
 .logout-button:hover {
-  background-color: #333;
-  color: #ffffff;
+  background-color: var(--bg-tooltip);
+  color: var(--text-primary);
 }
 
 .logout-button:focus {
   outline: none;
-  box-shadow: 0 0 8px rgba(97, 218, 251, 0.6);
+  box-shadow: var(--shadow-glow);
 }

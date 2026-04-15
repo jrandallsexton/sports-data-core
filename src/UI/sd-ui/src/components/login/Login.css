@@ -27,7 +27,7 @@
 .login-card label {
   text-align: left;
   font-weight: bold;
-  color: #ccc;
+  color: var(--text-secondary);
   margin-bottom: 6px;
   font-size: 0.9rem;
 }
@@ -36,21 +36,21 @@
   padding: 10px;
   border: none;
   border-radius: 8px;
-  background-color: #333;
-  color: #fff;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
   font-size: 1rem;
 }
 
 .login-card input::placeholder {
-  color: #888;
+  color: var(--text-muted);
 }
 
 .login-card button {
-  align-self: flex-start; 
-  margin-left: 102px; 
+  align-self: flex-start;
+  margin-left: 102px;
   padding: 10px 20px;
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
   border: none;
   border-radius: 8px;
   font-weight: bold;
@@ -73,11 +73,11 @@
 
 
 .login-card button:hover {
-  background-color: #4ea0d9;
+  background-color: var(--accent-hover);
 }
 
 .login-card .error {
-  color: #ff6b6b;
+  color: var(--error);
   font-size: 0.85rem;
   text-align: center;
 }
@@ -86,7 +86,7 @@
   margin-top: 20px;
   font-size: 0.8rem;
   word-break: break-word;
-  background-color: #333;
+  background-color: var(--bg-input);
   padding: 10px;
   border-radius: 8px;
   text-align: left;
@@ -102,7 +102,7 @@
 
 .form-group label {
   font-weight: bold;
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   padding-left: 4px;
 }
@@ -113,8 +113,8 @@
   padding: 10px;
   border: none;
   border-radius: 8px;
-  background-color: #333;
-  color: #fff;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
   font-size: 1rem;
 }
 
@@ -123,7 +123,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background-color: #333;
+  background-color: var(--bg-input);
   border-radius: 8px;
   padding: 8px 10px;
   width: 100%;
@@ -133,12 +133,12 @@
 .input-wrapper input {
   border: none;
   background: transparent;
-  color: #fff;
+  color: var(--text-primary);
   width: 100%;
   font-size: 1rem;
   outline: none;
 }
 
 .input-wrapper input::placeholder {
-  color: #888;
+  color: var(--text-muted);
 }

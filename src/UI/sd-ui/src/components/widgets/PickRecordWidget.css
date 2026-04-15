@@ -23,62 +23,62 @@
 .pick-record-table td {
   padding: 0.75rem;
   text-align: left;
-  border-bottom: 1px solid var(--border-color, #e9ecef);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .pick-record-table th {
   font-weight: 600;
-  color: var(--text-color);
-  border-bottom: 2px solid var(--border-color, #e9ecef);
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border-subtle);
 }
 
 .pick-record-table td {
-  color: var(--text-color);
+  color: var(--text-primary);
 }
 
 .pick-record-table tr:hover {
-  background-color: var(--hover-background, rgba(0, 0, 0, 0.02));
+  background-color: var(--table-stripe);
 }
 
 .overall-totals-row {
-  border-top: 2px solid var(--primary-color, #007bff);
-  background-color: var(--highlight-background, rgba(0, 123, 255, 0.05));
+  border-top: 2px solid var(--accent);
+  background-color: var(--accent-subtle);
 }
 
 .overall-totals-row:hover {
-  background-color: var(--highlight-background, rgba(0, 123, 255, 0.08));
+  background-color: var(--accent-subtle);
 }
 
 .overall-totals-row td {
-  color: var(--text-color);
+  color: var(--text-primary);
   font-weight: bold;
 }
 
 .league-link {
-  color: var(--primary-color, #007bff);
+  color: var(--accent);
   text-decoration: underline;
-  text-decoration-color: rgba(0, 123, 255, 0.3);
+  text-decoration-color: var(--accent-muted);
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .league-link:hover {
-  color: var(--primary-color, #007bff);
+  color: var(--accent);
   text-decoration: underline;
-  text-decoration-color: var(--primary-color, #007bff);
+  text-decoration-color: var(--accent);
   text-decoration-thickness: 2px;
 }
 
 .league-link:visited {
-  color: var(--primary-color, #007bff);
+  color: var(--accent);
   text-decoration: underline;
-  text-decoration-color: rgba(0, 123, 255, 0.3);
+  text-decoration-color: var(--accent-muted);
 }
 
 .league-link:visited:hover {
-  color: var(--primary-color, #007bff);
+  color: var(--accent);
   text-decoration: underline;
-  text-decoration-color: var(--primary-color, #007bff);
+  text-decoration-color: var(--accent);
   text-decoration-thickness: 2px;
 }
 
@@ -92,6 +92,6 @@
 }
 
 .error-text {
-  color: var(--error-color, #dc3545);
+  color: var(--error);
   font-style: italic;
 }

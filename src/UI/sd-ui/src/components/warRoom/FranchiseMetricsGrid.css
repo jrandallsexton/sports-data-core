@@ -1,13 +1,13 @@
 .franchise-metrics-grid {
   margin: 2rem 0;
-  background-color: #23272f;
+  background-color: var(--bg-input);
   border-radius: 12px;
   padding: 1.5rem;
 }
 
 .franchise-metrics-grid h2 {
   margin: 0;
-  color: #61dafb;
+  color: var(--accent);
   font-size: 1.5rem;
   font-weight: 600;
 }
@@ -26,9 +26,9 @@
 }
 
 .conference-filter {
-  background-color: #2a2a2a;
-  color: #fff;
-  border: 1px solid #444;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 0.9rem;
@@ -38,17 +38,17 @@
 
 .conference-filter:focus {
   outline: none;
-  border-color: #61dafb;
+  border-color: var(--accent);
 }
 
 .conference-filter option {
-  background-color: #2a2a2a;
-  color: #fff;
+  background-color: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .show-all-btn {
-  background-color: #61dafb;
-  color: #1a1d23;
+  background-color: var(--accent);
+  color: var(--bg-primary);
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -59,7 +59,7 @@
 }
 
 .show-all-btn:hover {
-  background-color: #4fa8c5;
+  background-color: var(--accent-hover);
   transform: translateY(-1px);
 }
 
@@ -70,19 +70,19 @@
 .metrics-table-container {
   overflow-x: auto;
   border-radius: 8px;
-  border: 1px solid #333;
+  border: 1px solid var(--border-primary);
 }
 
 .metrics-table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #1a1d23;
+  background-color: var(--table-header-bg);
   font-size: 0.85rem;
   min-width: 1944px; /* Reduced from 2160px (10% reduction) */
 }
 
 .metrics-table thead {
-  background-color: #2a2d35;
+  background-color: var(--bg-card-hover);
   position: sticky;
   top: 0;
   z-index: 1;
@@ -91,9 +91,9 @@
 .metrics-table th {
   padding: 12px 8px;
   text-align: center;
-  color: #61dafb;
+  color: var(--accent);
   font-weight: 600;
-  border-bottom: 2px solid #333;
+  border-bottom: 2px solid var(--border-primary);
   white-space: pre-line;
   user-select: none;
   line-height: 1.2;
@@ -107,24 +107,24 @@
   position: sticky;
   left: 0;
   z-index: 2;
-  background-color: #2a2d35;
+  background-color: var(--bg-card-hover);
 }
 
 .metrics-table tbody tr:hover td:first-child {
-  background-color: #3a4050;
+  background-color: var(--active-bg);
 }
 
 .metrics-table tbody tr.even-row td:first-child {
-  background-color: #1a1d23;
+  background-color: var(--table-header-bg);
 }
 
 .metrics-table tbody tr.odd-row td:first-child {
-  background-color: #1f2329;
+  background-color: var(--bg-modal);
 }
 
 .metrics-table tbody tr:hover.even-row td:first-child,
 .metrics-table tbody tr:hover.odd-row td:first-child {
-  background-color: #3a4050;
+  background-color: var(--active-bg);
 }
 
 .metrics-table th.sortable {
@@ -133,25 +133,25 @@
 }
 
 .metrics-table th.sortable:hover {
-  background-color: #333;
+  background-color: var(--bg-tooltip);
 }
 
 .metrics-table th.conference-header {
   cursor: default;
-  color: #a0a0a0;
+  color: var(--text-secondary);
 }
 
 .metrics-table td {
   padding: 10px 8px;
-  border-bottom: 1px solid #333;
-  color: #e1e8ed;
+  border-bottom: 1px solid var(--border-primary);
+  color: var(--text-secondary);
   white-space: nowrap;
   text-align: center;
 }
 
 .metrics-table .team-name {
   font-weight: 500;
-  color: #fff;
+  color: var(--text-primary);
   min-width: 68px; /* Reduced from 90px (25% reduction) */
   font-size: 0.8rem;
   text-align: left;
@@ -159,23 +159,23 @@
 }
 
 .metrics-table .team-link {
-  color: #61dafb;
+  color: var(--accent);
   text-decoration: none;
   font-weight: 100;
   transition: color 0.2s ease;
 }
 
 .metrics-table .team-link:hover {
-  color: #4fa8c5;
+  color: var(--accent-hover);
   text-decoration: underline;
 }
 
 .metrics-table .even-row {
-  background-color: #1a1d23;
+  background-color: var(--table-header-bg);
 }
 
 .metrics-table .odd-row {
-  background-color: #1f2329;
+  background-color: var(--bg-modal);
 }
 
 .metrics-table tr:hover {
@@ -184,22 +184,22 @@
 
 .metrics-table tr:hover td {
   background-color: #2a3a50 !important;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .metrics-table tr:hover .team-link {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 /* Selected row state (persists on click) */
 .metrics-table tr.selected-row td {
   background-color: #2a3a50 !important;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .metrics-table tr.selected-row .team-link {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -221,23 +221,23 @@
 .error-state {
   text-align: center;
   padding: 3rem;
-  color: #adb5bd;
+  color: var(--text-secondary);
   font-size: 1.1rem;
 }
 
 .error-state {
-  color: #ff6b6b;
+  color: var(--error-text);
 }
 
 .metrics-summary {
   margin-top: 1rem;
   text-align: right;
-  color: #adb5bd;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
 .top-ten-note {
-  color: #61dafb;
+  color: var(--accent);
   font-weight: 500;
 }
 
@@ -247,15 +247,15 @@
     margin: 1rem 0;
     padding: 1rem;
   }
-  
+
   .franchise-metrics-grid h2 {
     font-size: 1.3rem;
   }
-  
+
   .metrics-table {
     font-size: 0.8rem;
   }
-  
+
   .metrics-table th,
   .metrics-table td {
     padding: 8px 6px;

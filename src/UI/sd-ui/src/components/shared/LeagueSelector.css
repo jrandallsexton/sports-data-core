@@ -18,7 +18,7 @@
 
 .league-selector label {
   font-size: 1rem;
-  color: #ccc;
+  color: var(--text-secondary);
   white-space: nowrap;
   line-height: 32px;
 }
@@ -26,9 +26,9 @@
 .league-selector select {
   padding: 6px 10px;
   font-size: 1rem;
-  background-color: #222;
-  color: #61dafb;
-  border: 1px solid #444;
+  background-color: var(--bg-card);
+  color: var(--accent);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   transition: background-color 0.3s, color 0.3s;
   min-width: 150px;
@@ -37,10 +37,10 @@
 }
 
 .league-selector select:hover {
-  background-color: #333;
+  background-color: var(--bg-tooltip);
 }
 
 .league-selector select:focus {
   outline: none;
-  border-color: #61dafb;
+  border-color: var(--accent);
 }

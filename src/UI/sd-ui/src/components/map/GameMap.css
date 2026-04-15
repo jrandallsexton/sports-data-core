@@ -3,15 +3,15 @@
   height: calc(100vh - 60px);
   display: flex;
   flex-direction: column;
-  background: #1a1d23;
-  color: #e0e0e0;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
 }
 
 .map-controls {
   padding: 15px 20px;
-  background: linear-gradient(135deg, #1e2127 0%, #2a2d35 100%);
-  border-bottom: 2px solid #61dafb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, var(--bg-modal) 0%, var(--bg-card-hover) 100%);
+  border-bottom: 2px solid var(--accent);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -27,10 +27,10 @@
 
 .filter-select {
   padding: 10px 15px;
-  background: #2a2d35;
-  border: 1px solid #3a3d45;
+  background: var(--bg-card-hover);
+  border: 1px solid var(--border-input);
   border-radius: 8px;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -38,21 +38,21 @@
 }
 
 .filter-select:hover {
-  border-color: #61dafb;
-  background: #333640;
+  border-color: var(--accent);
+  background: var(--bg-tooltip);
 }
 
 .filter-select:focus {
-  border-color: #61dafb;
-  box-shadow: 0 0 0 3px rgba(97, 218, 251, 0.2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-muted);
 }
 
 .filter-button {
   padding: 8px 16px;
-  background: #61dafb;
-  border: 2px solid #61dafb;
+  background: var(--accent);
+  border: 2px solid var(--accent);
   border-radius: 8px;
-  color: #1a1d23;
+  color: var(--bg-primary);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -62,10 +62,10 @@
 }
 
 .filter-button:hover:not(:disabled) {
-  background: #4fc3f7;
-  border-color: #4fc3f7;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(97, 218, 251, 0.3);
+  box-shadow: 0 2px 8px var(--accent-glow);
 }
 
 .filter-button:active:not(:disabled) {
@@ -73,14 +73,14 @@
 }
 
 .filter-button:disabled {
-  opacity: 0.5;
+  opacity: var(--disabled-opacity);
   cursor: not-allowed;
 }
 
 .filter-button.clear-filter {
-  background: #f44336;
-  border-color: #f44336;
-  color: white;
+  background: var(--error);
+  border-color: var(--error);
+  color: var(--text-primary);
 }
 
 .filter-button.clear-filter:hover {
@@ -98,10 +98,10 @@
 
 .tooltip-toggle {
   padding: 8px 16px;
-  background: #2a2d35;
-  border: 2px solid #3a3d45;
+  background: var(--bg-card-hover);
+  border: 2px solid var(--border-input);
   border-radius: 8px;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -110,14 +110,14 @@
 }
 
 .tooltip-toggle:hover {
-  border-color: #61dafb;
-  background: #333640;
+  border-color: var(--accent);
+  background: var(--bg-tooltip);
 }
 
 .tooltip-toggle.active {
-  background: #61dafb;
-  color: #1a1d23;
-  border-color: #61dafb;
+  background: var(--accent);
+  color: var(--bg-primary);
+  border-color: var(--accent);
 }
 
 .legend-item {
@@ -125,14 +125,14 @@
   align-items: center;
   gap: 8px;
   font-size: 0.9rem;
-  color: #b0b0b0;
+  color: var(--text-secondary);
 }
 
 .legend-dot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid #fff;
+  border: 2px solid var(--text-primary);
 }
 
 .map-loading,
@@ -142,14 +142,14 @@
   align-items: center;
   height: 100%;
   font-size: 1.5rem;
-  color: #61dafb;
+  color: var(--accent);
 }
 
 .map-error {
-  color: #f44336;
+  color: var(--error);
 }
 
-/* Info Window Styles */
+/* Info Window Styles - these render inside Google Maps white popups */
 .info-window {
   padding: 4px 12px 8px 12px;
   min-width: 250px;
@@ -162,7 +162,7 @@
 /* Scoring Play Animation */
 .info-window.scoring-play {
   animation: score-pulse 5s ease-in-out;
-  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+  background: linear-gradient(135deg, var(--ranking-gold) 0%, var(--ranking-bronze) 100%);
   box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
   border-radius: 8px;
 }
@@ -232,7 +232,7 @@
 }
 
 .map-rank-inline {
-  background: #FFD700;
+  background: var(--ranking-gold);
   color: #1a1d23;
   padding: 1px 4px;
   border-radius: 3px;
@@ -282,10 +282,10 @@
 .map-game-status {
   margin: 8px 0 6px 0;
   padding: 6px 10px;
-  background: linear-gradient(135deg, #F44336 0%, #E53935 100%);
+  background: linear-gradient(135deg, var(--error) 0%, #E53935 100%);
   border-radius: 4px;
   text-align: center;
-  color: white;
+  color: var(--text-primary);
   font-weight: 700;
   font-size: 0.85rem;
   letter-spacing: 0.5px;
@@ -294,7 +294,7 @@
 }
 
 .map-game-status.map-final-status {
-  background: linear-gradient(135deg, #4CAF50 0%, #43A047 100%);
+  background: linear-gradient(135deg, var(--success) 0%, #43A047 100%);
   box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
   animation: none;
 }
@@ -310,8 +310,8 @@
 }
 
 .game-status.live {
-  background: linear-gradient(135deg, #F44336 0%, #E53935 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--error) 0%, #E53935 100%);
+  color: var(--text-primary);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -332,8 +332,8 @@
 }
 
 .game-status.final {
-  background: linear-gradient(135deg, #4CAF50 0%, #43A047 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--success) 0%, #43A047 100%);
+  color: var(--text-primary);
   box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
 }
 
@@ -341,7 +341,7 @@
   margin: 8px 0 6px 0;
   padding: 6px 8px;
   background: #f5f5f5;
-  border-left: 3px solid #61dafb;
+  border-left: 3px solid var(--accent);
   color: #555;
   font-size: 0.85rem;
   font-weight: 600;
@@ -370,7 +370,7 @@
   margin-bottom: 6px;
   background: #f8f9fa;
   border-radius: 4px;
-  border-left: 3px solid #61dafb;
+  border-left: 3px solid var(--accent);
   transition: all 0.2s ease;
 }
 
@@ -395,7 +395,7 @@
 }
 
 .map-rank-badge {
-  background: linear-gradient(135deg, #FFD700 0%, #FFC107 100%);
+  background: linear-gradient(135deg, var(--ranking-gold) 0%, var(--warning) 100%);
   color: #1a1d23;
   padding: 2px 6px;
   border-radius: 3px;
@@ -462,11 +462,11 @@
 
 /* Hover Tooltip */
 .hover-tooltip {
-  background: #1a1d23;
-  border: 2px solid #61dafb;
+  background: var(--bg-primary);
+  border: 2px solid var(--accent);
   border-radius: 8px;
   padding: 12px 16px;
-  color: #e0e0e0;
+  color: var(--text-secondary);
   font-size: 0.9rem;
   white-space: nowrap;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8);
@@ -485,8 +485,8 @@
 
 .hover-tooltip.clickable:hover {
   transform: scale(1.05);
-  box-shadow: 0 6px 16px rgba(97, 218, 251, 0.4);
-  border-color: #fff;
+  box-shadow: 0 6px 16px var(--accent-glow);
+  border-color: var(--text-primary);
 }
 
 @keyframes tooltipFadeIn {
@@ -508,7 +508,7 @@
   height: 0;
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
-  border-top: 8px solid #61dafb;
+  border-top: 8px solid var(--accent);
 }
 
 .tooltip-matchup {
@@ -525,8 +525,8 @@
 }
 
 .tooltip-rank {
-  background: #FFD700;
-  color: #1a1d23;
+  background: var(--ranking-gold);
+  color: var(--bg-primary);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -534,13 +534,13 @@
 }
 
 .tooltip-team-name {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 600;
 }
 
 .tooltip-vs {
-  color: #999;
+  color: var(--text-muted);
   font-weight: normal;
   font-size: 0.85rem;
 }
@@ -548,17 +548,17 @@
 .tooltip-score {
   margin-top: 6px;
   padding-top: 6px;
-  border-top: 1px solid #3a3d45;
+  border-top: 1px solid var(--border-input);
   text-align: center;
   font-size: 1.1rem;
   font-weight: bold;
-  color: #F44336;
+  color: var(--error);
 }
 
 /* Mini Info Windows for Details Mode */
 .mini-info-window {
   background: white;
-  border: 2px solid #61dafb;
+  border: 2px solid var(--accent);
   border-radius: 6px;
   padding: 8px 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
@@ -571,7 +571,7 @@
 .mini-info-window:hover {
   transform: scale(1.05);
   box-shadow: 0 6px 16px rgba(97, 218, 251, 0.5);
-  border-color: #fff;
+  border-color: var(--text-primary);
 }
 
 .mini-venue-name {
@@ -592,7 +592,7 @@
 }
 
 .mini-rank {
-  background: #FFD700;
+  background: var(--ranking-gold);
   color: #1a1d23;
   padding: 1px 4px;
   border-radius: 3px;

@@ -11,5 +11,5 @@
 
 .error-page p {
   font-size: 1.2rem;
-  color: #555;
+  color: var(--text-muted);
 }

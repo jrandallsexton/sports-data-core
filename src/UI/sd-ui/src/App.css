@@ -1,33 +1,199 @@
+/* ============================================================
+   Theme System - CSS Custom Properties
+   ============================================================
+   All colors flow from these variables. Components should NEVER
+   use hardcoded color values — always reference var(--name).
+   ============================================================ */
+
 :root {
-  --background-color: #f5f5f5;
-  --text-color: #111;
-  --card-background-color: #fff;
-  --sidebar-background-color: #e0e0e0;
+  /* --- Transition for smooth theme switching --- */
+  --theme-transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
 }
 
-/* When dark theme is active */
+/* ============================================================
+   DARK THEME (default)
+   ============================================================ */
 body[data-theme="dark"] {
-  --background-color: #111;
-  --text-color: #eee;
-  --card-background-color: #222;
-  --sidebar-background-color: #1a1a1a;
+  /* --- Backgrounds --- */
+  --bg-primary: #111;
+  --bg-secondary: #1a1a1a;
+  --bg-card: #222;
+  --bg-card-hover: #2a2d33;
+  --bg-input: #23272f;
+  --bg-elevated: #282c34;
+  --bg-nav: #222;
+  --bg-sidebar: #1a1a1a;
+  --bg-modal: #1e2127;
+  --bg-tooltip: #333;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+  --bg-overlay-light: rgba(0, 0, 0, 0.4);
+
+  /* --- Text --- */
+  --text-primary: #f8f9fa;
+  --text-secondary: #adb5bd;
+  --text-muted: #6c757d;
+  --text-inverse: #111;
+  --text-on-accent: #111;
+  --text-link: #61dafb;
+  --text-link-hover: #4ea0d9;
+
+  /* --- Accent / Brand --- */
+  --accent: #61dafb;
+  --accent-hover: #4ea0d9;
+  --accent-muted: rgba(97, 218, 251, 0.2);
+  --accent-subtle: rgba(97, 218, 251, 0.08);
+  --accent-glow: rgba(97, 218, 251, 0.4);
+
+  /* --- Borders --- */
+  --border-primary: #333;
+  --border-subtle: #2a2d33;
+  --border-strong: #444;
+  --border-input: #3a3d43;
+  --border-accent: #61dafb;
+
+  /* --- Status colors --- */
+  --success: #28a745;
+  --success-bg: rgba(40, 167, 69, 0.15);
+  --success-text: #51cf66;
+  --error: #dc3545;
+  --error-bg: rgba(220, 53, 69, 0.15);
+  --error-text: #ff6b6b;
+  --warning: #ffc107;
+  --warning-bg: rgba(255, 193, 7, 0.15);
+  --warning-text: #ffd700;
+  --info: #0dcaf0;
+  --info-bg: rgba(13, 202, 240, 0.15);
+
+  /* --- Interactive states --- */
+  --hover-bg: #2a2d33;
+  --active-bg: #3a3d43;
+  --disabled-opacity: 0.5;
+  --focus-ring: rgba(97, 218, 251, 0.5);
+
+  /* --- Shadows --- */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 12px rgba(97, 218, 251, 0.3);
+
+  /* --- Specific UI elements --- */
+  --badge-bg: #343a40;
+  --table-header-bg: #1a1d23;
+  --table-row-hover: #23272f;
+  --table-stripe: rgba(255, 255, 255, 0.02);
+  --scrollbar-track: #1a1a1a;
+  --scrollbar-thumb: #444;
+
+  /* --- Semantic / domain --- */
+  --pick-correct: #28a745;
+  --pick-incorrect: #dc3545;
+  --spread-line: #ffc107;
+  --ranking-gold: #ffd700;
+  --ranking-silver: #adb5bd;
+  --ranking-bronze: #ff8c00;
 }
 
-/* Apply the colors globally */
-body {
-  background-color: var(--background-color);
-  color: var(--text-color);
-  transition: background-color 0.3s, color 0.3s;
+/* ============================================================
+   LIGHT THEME
+   ============================================================ */
+body[data-theme="light"] {
+  /* --- Backgrounds --- */
+  --bg-primary: #f5f7fa;
+  --bg-secondary: #e9ecef;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f1f1;
+  --bg-input: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-nav: #ffffff;
+  --bg-sidebar: #f5f7fa;
+  --bg-modal: #ffffff;
+  --bg-tooltip: #343a40;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --bg-overlay-light: rgba(0, 0, 0, 0.2);
+
+  /* --- Text --- */
+  --text-primary: #1a1a1a;
+  --text-secondary: #555;
+  --text-muted: #888;
+  --text-inverse: #f8f9fa;
+  --text-on-accent: #ffffff;
+  --text-link: #0077cc;
+  --text-link-hover: #005fa3;
+
+  /* --- Accent / Brand --- */
+  --accent: #0077cc;
+  --accent-hover: #005fa3;
+  --accent-muted: rgba(0, 119, 204, 0.15);
+  --accent-subtle: rgba(0, 119, 204, 0.06);
+  --accent-glow: rgba(0, 119, 204, 0.3);
+
+  /* --- Borders --- */
+  --border-primary: #ddd;
+  --border-subtle: #e9ecef;
+  --border-strong: #ccc;
+  --border-input: #ced4da;
+  --border-accent: #0077cc;
+
+  /* --- Status colors --- */
+  --success: #1b5e20;
+  --success-bg: rgba(40, 167, 69, 0.1);
+  --success-text: #1b5e20;
+  --error: #b71c1c;
+  --error-bg: rgba(220, 53, 69, 0.1);
+  --error-text: #b71c1c;
+  --warning: #ff8c00;
+  --warning-bg: rgba(255, 140, 0, 0.1);
+  --warning-text: #e65100;
+  --info: #0077cc;
+  --info-bg: rgba(0, 119, 204, 0.1);
+
+  /* --- Interactive states --- */
+  --hover-bg: #e9ecef;
+  --active-bg: #ddd;
+  --disabled-opacity: 0.5;
+  --focus-ring: rgba(0, 119, 204, 0.4);
+
+  /* --- Shadows --- */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --shadow-glow: 0 0 12px rgba(0, 119, 204, 0.2);
+
+  /* --- Specific UI elements --- */
+  --badge-bg: #e9ecef;
+  --table-header-bg: #f5f7fa;
+  --table-row-hover: #f1f1f1;
+  --table-stripe: rgba(0, 0, 0, 0.02);
+  --scrollbar-track: #f1f1f1;
+  --scrollbar-thumb: #ccc;
+
+  /* --- Semantic / domain --- */
+  --pick-correct: #1b5e20;
+  --pick-incorrect: #b71c1c;
+  --spread-line: #e65100;
+  --ranking-gold: #ff8c00;
+  --ranking-silver: #6c757d;
+  --ranking-bronze: #a0522d;
 }
+
+/* ============================================================
+   Global Styles
+   ============================================================ */
 
 html, body {
   margin: 0;
   padding: 0;
 }
 
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: var(--theme-transition);
+}
+
 .App {
   text-align: center;
-  overflow-x: hidden; /* ✨ Prevent horizontal scrolling - moved from html/body to prevent scroll issues */
+  overflow-x: hidden;
 }
 
 .App-logo {
@@ -41,74 +207,30 @@ html, body {
   }
 }
 
-/* Base (light theme) */
-body[data-theme="light"] {
-  background-color: #f5f5f5;
-  color: #111;
-}
-
-/* Dark Theme */
-body[data-theme="dark"] {
-  background-color: #111;
-  color: #eee;
-}
-
-/* You can target other elements if you want */
-body[data-theme="dark"] .card {
-  background-color: #222;
-  color: #eee;
-}
-
-body[data-theme="light"] .card {
-  background-color: #fff;
-  color: #111;
-}
-
-body {
-  transition: background-color 0.3s, color 0.3s;
-}
-
-
-
-/* .App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-} */
-
 .App-link {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
   padding: 10px 20px;
   margin: 8px;
   text-decoration: none;
   border-radius: 8px;
   font-weight: bold;
   font-size: 1.1rem;
-  transition: background-color 0.3s, opacity 0.3s, transform 0.3s, box-shadow 0.3s;
+  transition: var(--theme-transition), transform 0.3s, box-shadow 0.3s;
   display: inline-block;
-  box-shadow: 0 0 0 rgba(0, 0, 0, 0); /* ✨ No shadow by default */
-  transform: translateY(0); /* ✨ No lift by default */
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  transform: translateY(0);
 }
 
 .App-link:hover {
-  background-color: #4ea0d9;
+  background-color: var(--accent-hover);
   transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 @keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .landing-links {
@@ -119,25 +241,25 @@ body {
 
 .secondary-link {
   background-color: transparent;
-  border: 2px solid #61dafb;
-  color: #61dafb;
+  border: 2px solid var(--accent);
+  color: var(--accent);
   font-size: 1rem;
   padding: 8px 18px;
   opacity: 0.9;
-  transition: background-color 0.3s, opacity 0.3s, transform 0.3s, box-shadow 0.3s;
+  transition: var(--theme-transition), transform 0.3s, box-shadow 0.3s;
 }
 
 .secondary-link:hover {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
   opacity: 1;
-  transform: translateY(-3px); /* ✨ Lift */
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3); /* ✨ Shadow */
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .app {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--bg-primary);
 }
 
 .main-content {
@@ -150,12 +272,8 @@ body {
   .main-content {
     padding: 1rem;
   }
-  
+
   .main-content.side-nav-active {
     margin-left: 0;
   }
 }
-
-
-
-

@@ -11,7 +11,7 @@
 .season-overview-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #ffc107;
+  color: var(--warning);
   margin-bottom: 18px;
   letter-spacing: 1px;
 }
@@ -34,15 +34,15 @@
 .season-overview-selector-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: #b0b3b8;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .season-overview-select {
-  background: #23272f;
-  color: #f8f9fa;
-  border: 1px solid #343a40;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--badge-bg);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 1rem;
@@ -52,13 +52,13 @@
 }
 
 .season-overview-select:hover {
-  border-color: #61dafb;
+  border-color: var(--accent);
 }
 
 .season-overview-select:focus {
   outline: none;
-  border-color: #61dafb;
-  box-shadow: 0 0 4px rgba(97, 218, 251, 0.3);
+  border-color: var(--accent);
+  box-shadow: 0 0 4px var(--focus-ring);
 }
 
 /* Rankings table */
@@ -69,10 +69,10 @@
 .season-overview-table {
   width: 100%;
   border-collapse: collapse;
-  background: #23272f;
+  background: var(--bg-input);
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #343a40;
+  border: 1px solid var(--badge-bg);
 }
 
 .season-overview-table th {
@@ -80,9 +80,9 @@
   text-align: left;
   font-weight: 700;
   font-size: 0.9rem;
-  color: #ffc107;
-  background: #343a40;
-  border-bottom: 1px solid #343a40;
+  color: var(--warning);
+  background: var(--badge-bg);
+  border-bottom: 1px solid var(--badge-bg);
   white-space: nowrap;
 }
 
@@ -102,12 +102,12 @@
 .season-overview-table td {
   padding: 8px 14px;
   font-size: 1rem;
-  color: #f8f9fa;
-  border-bottom: 1px solid #2a2e36;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .season-overview-table tbody tr:hover {
-  background: #2a2e36;
+  background: var(--hover-bg);
 }
 
 .season-overview-table tbody tr:last-child td {
@@ -142,7 +142,7 @@
 
 .season-overview-team-name {
   font-weight: 600;
-  color: #61dafb;
+  color: var(--accent);
   white-space: nowrap;
 }
 
@@ -150,27 +150,27 @@
 .season-overview-rank {
   font-weight: 700;
   font-size: 1.05rem;
-  color: #f8f9fa;
+  color: var(--text-primary);
 }
 
 /* Record column */
 .season-overview-record {
-  color: #b0b3b8;
+  color: var(--text-secondary);
 }
 
 /* Trend column */
 .season-overview-trend-up {
-  color: #43a047;
+  color: var(--success);
   font-weight: 600;
 }
 
 .season-overview-trend-down {
-  color: #e57373;
+  color: var(--error);
   font-weight: 600;
 }
 
 .season-overview-trend-none {
-  color: #b0b3b8;
+  color: var(--text-secondary);
 }
 
 /* Loading and error states */
@@ -179,12 +179,12 @@
 .season-overview-empty {
   text-align: center;
   padding: 40px 20px;
-  color: #b0b3b8;
+  color: var(--text-secondary);
   font-size: 1.1rem;
 }
 
 .season-overview-error {
-  color: #e57373;
+  color: var(--error);
 }
 
 /* Responsive */

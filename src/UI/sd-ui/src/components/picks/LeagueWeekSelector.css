@@ -1,8 +1,8 @@
 .league-week-selector {
   display: flex;
-  flex-wrap: wrap; /* ✅ allow stacking on small screens */
+  flex-wrap: wrap; /* allow stacking on small screens */
   gap: 12px;
-  align-items: flex-start; /* ✅ aligns stacked controls nicely */
+  align-items: flex-start; /* aligns stacked controls nicely */
   margin-top: 2px;
   margin-bottom: 0;
   flex: 0 1 auto;
@@ -40,13 +40,13 @@
 
 @media (min-width: 600px) {
   .league-week-selector {
-    flex-wrap: nowrap; /* ✅ desktop: horizontal layout restored */
+    flex-wrap: nowrap; /* desktop: horizontal layout restored */
     gap: 20px;
     align-items: center;
   }
 
   .league-week-selector > div {
-    flex-direction: row; /* ✅ horizontal label + select on desktop */
+    flex-direction: row; /* horizontal label + select on desktop */
     align-items: center;
     height: 32px;
     flex: 0 1 auto;
@@ -109,10 +109,10 @@
 
 .league-week-selector label {
   font-size: 1rem;
-  color: #ccc;
+  color: var(--text-secondary);
   white-space: nowrap;
   line-height: 1.2;
-  min-width: 60px;  /* 👈 forces both labels to same width on desktop */
+  min-width: 60px;  /* forces both labels to same width on desktop */
 }
 
 .league-week-selector .selector-block label {
@@ -129,24 +129,24 @@
 .league-week-selector .league-selector select {
   padding: 6px 10px;
   font-size: 1rem;
-  background-color: #222;
-  color: #61dafb;
-  border: 1px solid #444;
+  background-color: var(--bg-card);
+  color: var(--accent);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   transition: background-color 0.3s, color 0.3s;
   min-width: 150px;
   height: 32px;
-  margin-top: 0; /* ✅ prevent margin issues on mobile */
-  box-sizing: border-box; /* ✅ ensure consistent sizing */
+  margin-top: 0; /* prevent margin issues on mobile */
+  box-sizing: border-box; /* ensure consistent sizing */
 }
 
 .league-week-selector select:hover,
 .league-week-selector .league-selector select:hover {
-  background-color: #333;
+  background-color: var(--bg-tooltip);
 }
 
 .league-week-selector select:focus,
 .league-week-selector .league-selector select:focus {
   outline: none;
-  border-color: #61dafb;
+  border-color: var(--accent);
 }

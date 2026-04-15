@@ -3,27 +3,27 @@
 .settings-page {
   max-width: 1280px;
   margin: 0 auto;
-  color: #ddd;
+  color: var(--text-secondary);
 }
 
 .settings-page h1 {
   font-size: 2rem;
   margin-bottom: 20px;
-  color: #61dafb;
+  color: var(--accent);
 }
 
 .settings-section {
-  background-color: #1e1e1e;
+  background-color: var(--bg-card);
   padding: 20px;
   border-radius: 10px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .settings-section h2 {
   font-size: 1.5rem;
   margin-bottom: 15px;
-  color: #4ea0d9;
+  color: var(--text-link);
 }
 
 .setting-option {
@@ -35,21 +35,21 @@
 .setting-option label {
   margin-left: 10px;
   font-size: 1rem;
-  color: #ccc;
+  color: var(--text-muted);
 }
 
 input[type="checkbox"] {
   width: 20px;
   height: 20px;
-  accent-color: #61dafb;
+  accent-color: var(--accent);
 }
 
 select {
-  background-color: #333;
-  color: #fff;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
   padding: 8px;
   border-radius: 6px;
-  border: 1px solid #555;
+  border: 1px solid var(--border-primary);
   margin-top: 10px;
   font-size: 1rem;
 }
@@ -63,7 +63,6 @@ select {
 
 .label {
   font-weight: bold;
-  color: #ccc;
+  color: var(--text-muted);
   min-width: 140px;
 }
-

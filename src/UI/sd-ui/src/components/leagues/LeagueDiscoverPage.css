@@ -1,12 +1,12 @@
 .league-discover-page {
-  color: #fff;
+  color: var(--text-primary);
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
 }
 
 .league-discover-page h2 {
-  color: #61dafb;
+  color: var(--accent);
   font-size: 2rem;
   font-weight: 600;
   margin-bottom: 24px;
@@ -17,28 +17,28 @@
 .no-leagues-message {
   text-align: center;
   font-size: 1.1rem;
-  color: #aaa;
+  color: var(--text-secondary);
   padding: 40px 20px;
 }
 
 /* Table/Grid Layout */
 .leagues-table {
-  background-color: #2a2a2a;
+  background-color: var(--bg-card);
   border-radius: 12px;
-  border: 1px solid #444;
+  border: 1px solid var(--border-strong);
   overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .table-header {
-  background-color: #333;
-  border-bottom: 2px solid #61dafb;
+  background-color: var(--bg-tooltip);
+  border-bottom: 2px solid var(--accent);
   display: grid;
   grid-template-columns: 2fr 1.5fr 3fr 1fr;
   gap: 16px;
   padding: 16px 20px;
   font-weight: 600;
-  color: #61dafb;
+  color: var(--accent);
   text-transform: uppercase;
   font-size: 0.9rem;
   letter-spacing: 0.5px;
@@ -49,13 +49,13 @@
   grid-template-columns: 2fr 1.5fr 3fr 1fr;
   gap: 16px;
   padding: 16px 20px;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--border-strong);
   transition: background-color 0.2s ease;
   align-items: center;
 }
 
 .table-row:hover {
-  background-color: #333;
+  background-color: var(--bg-tooltip);
 }
 
 .table-row:last-child {
@@ -66,16 +66,16 @@
 .league-name {
   font-weight: 600;
   font-size: 1.1rem;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .commissioner-name {
-  color: #ccc;
+  color: var(--text-secondary);
   font-size: 1rem;
 }
 
 .league-description {
-  color: #aaa;
+  color: var(--text-secondary);
   font-size: 0.95rem;
   line-height: 1.4;
   overflow: hidden;
@@ -91,8 +91,8 @@
 }
 
 .join-button {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
   text-decoration: none;
   padding: 8px 16px;
   border-radius: 6px;
@@ -105,9 +105,9 @@
 }
 
 .join-button:hover {
-  background-color: #4ea0d9;
+  background-color: var(--accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(97, 218, 251, 0.3);
+  box-shadow: 0 2px 4px var(--accent-glow);
 }
 
 /* Responsive Design */
@@ -118,7 +118,7 @@
     gap: 12px;
     padding: 14px 16px;
   }
-  
+
   .league-description {
     -webkit-line-clamp: 1;
     line-clamp: 1;
@@ -129,61 +129,61 @@
   .league-discover-page {
     padding: 16px;
   }
-  
+
   .league-discover-page h2 {
     font-size: 1.6rem;
     margin-bottom: 20px;
   }
-  
+
   .table-header,
   .table-row {
     grid-template-columns: 1fr;
     gap: 8px;
     padding: 16px;
   }
-  
+
   .table-header {
     display: none; /* Hide headers on mobile */
   }
-  
+
   .table-row {
-    background-color: #333;
+    background-color: var(--bg-tooltip);
     border-radius: 8px;
     margin-bottom: 12px;
-    border: 1px solid #444;
-    border-bottom: 1px solid #444;
+    border: 1px solid var(--border-strong);
+    border-bottom: 1px solid var(--border-strong);
   }
-  
+
   .table-row:hover {
-    background-color: #3a3a3a;
+    background-color: var(--active-bg);
   }
-  
+
   /* Mobile card layout */
   .league-name {
     font-size: 1.2rem;
     margin-bottom: 4px;
   }
-  
+
   .commissioner-name {
     margin-bottom: 8px;
   }
-  
+
   .commissioner-name::before {
     content: "Commissioner: ";
-    color: #61dafb;
+    color: var(--accent);
     font-weight: 600;
   }
-  
+
   .league-description {
     margin-bottom: 12px;
     -webkit-line-clamp: 3;
     line-clamp: 3;
   }
-  
+
   .join-action {
     justify-content: stretch;
   }
-  
+
   .join-button {
     width: 100%;
     padding: 12px;
@@ -195,7 +195,7 @@
   .league-discover-page {
     padding: 12px;
   }
-  
+
   .table-row {
     padding: 12px;
   }

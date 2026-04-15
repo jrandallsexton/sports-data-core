@@ -3,19 +3,19 @@
   justify-content: center;
   align-items: center;
   min-height: 90vh;
-  background-color: #111;
+  background-color: var(--bg-primary);
   padding: 20px;
 }
 
 .signup-card {
-  background-color: #222;
+  background-color: var(--bg-card);
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-md);
   width: 100%;
   max-width: 400px;
   text-align: center;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 .third-party-buttons {
@@ -26,8 +26,8 @@
 }
 
 .third-party-button {
-  background-color: #333;
-  color: #eee;
+  background-color: var(--bg-tooltip);
+  color: var(--text-secondary);
   border: none;
   border-radius: 8px;
   padding: 10px;
@@ -41,12 +41,12 @@
 }
 
 .third-party-button:hover {
-  background-color: #444;
+  background-color: var(--border-strong);
 }
 
 .third-party-button:disabled {
   cursor: not-allowed;
-  opacity: 0.6; /* optional for visual clarity */
+  opacity: var(--disabled-opacity); /* optional for visual clarity */
 }
 
 .google {
@@ -58,11 +58,11 @@
 }
 
 .github {
-  background-color: #333;
+  background-color: var(--bg-tooltip);
 }
 
 .apple {
-  background-color: #000;
+  background-color: var(--text-inverse);
 }
 
 .icon {
@@ -72,13 +72,13 @@
 .divider {
   border: 0;
   height: 1px;
-  background: #444;
+  background: var(--border-strong);
   margin: 20px 0;
 }
 
 .email-signup-button {
-  background-color: #61dafb;
-  color: #111;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
   border: none;
   border-radius: 8px;
   padding: 10px;
@@ -89,5 +89,5 @@
 }
 
 .email-signup-button:hover {
-  background-color: #4ea0d9;
+  background-color: var(--accent-hover);
 }

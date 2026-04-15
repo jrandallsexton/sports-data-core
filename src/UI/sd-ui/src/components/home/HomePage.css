@@ -14,13 +14,13 @@
 /* Consistent underline for all widget headers */
 .card h2 {
   text-align: left;
-  color: #61dafb;
+  color: var(--accent);
   margin-bottom: 1.2rem;
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: 0.01em;
   padding-left: 2px;
-  border-bottom: 1.5px solid #61dafb;
+  border-bottom: 1.5px solid var(--accent);
   padding-bottom: 0.4rem;
   margin-top: 0;
 }
@@ -33,7 +33,7 @@
 }
 
 h1 {
-  color: #fff;
+  color: var(--text-primary);
   font-size: 2.2rem;
   margin-bottom: 30px;
 }
@@ -43,7 +43,7 @@ h1 {
 }
 
 h2 {
-  color: #61dafb;
+  color: var(--accent);
   margin-bottom: 20px;
   font-size: 1.8rem;
 }
@@ -58,12 +58,12 @@ h2 {
 
 /* HomePage card style override */
 .card {
-  background-color: #1e1e1e;
+  background-color: var(--bg-card);
   padding: 1rem;
   border-radius: 10px;
   flex: 1 1 300px;
-  color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -71,7 +71,7 @@ h2 {
 
 .card-link {
   margin-top: 10px;
-  color: #61dafb;
+  color: var(--text-link);
   text-decoration: underline;
   font-weight: bold;
 }
@@ -89,12 +89,12 @@ h2 {
 }
 
 .highlight-number {
-  color: #61dafb;
+  color: var(--accent);
 }
 
 /* Chart container */
 .chart-container {
-  background-color: #1e1e1e;
+  background-color: var(--bg-card);
   padding: 20px;
   border-radius: 10px;
   height: 300px;
@@ -107,11 +107,11 @@ h2 {
 
 /* Tip Card */
 .tip-card {
-  background-color: #2a2a2a;
+  background-color: var(--bg-elevated);
   padding: 20px;
   border-radius: 10px;
-  color: #eee;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-md);
   flex: 1;
 }
 
@@ -123,10 +123,10 @@ h2 {
 
 /* News Card */
 .news-card {
-  background-color: #2a2a2a;
+  background-color: var(--bg-elevated);
   padding: 20px;
   border-radius: 10px;
-  color: #ddd;
+  color: var(--text-secondary);
   flex: 1;
 }
 
@@ -142,18 +142,18 @@ h2 {
 }
 
 .chart-block {
-  background-color: #1e1e1e;
+  background-color: var(--bg-card);
   padding: 20px;
   border-radius: 10px;
   flex: 1;
   min-width: 300px;
   max-width: 600px;
-  color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   align-items: center;
-  border: 1px solid rgba(97, 218, 251, 0.1);
+  border: 1px solid var(--accent-subtle);
   overflow: visible;
   height: 400px;
 }
@@ -172,17 +172,17 @@ h2 {
 }
 
 .featured-article h2 {
-  color: #61dafb;
+  color: var(--accent);
   margin-bottom: 20px;
   font-size: 1.8rem;
 }
 
 .article-card {
-  background-color: #2a2a2a;
+  background-color: var(--bg-elevated);
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.4);
-  color: #eee;
+  box-shadow: var(--shadow-lg);
+  color: var(--text-secondary);
   line-height: 1.6;
   font-size: 1rem;
 }
@@ -198,9 +198,9 @@ h2 {
 }
 
 .group-dropdown {
-  background-color: #2a2a2a;
-  color: #eee;
-  border: 1px solid #444;
+  background-color: var(--bg-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
   border-radius: 4px;
   padding: 2px 12px;
   font-size: 1rem;
@@ -211,12 +211,12 @@ h2 {
 
 .group-dropdown:focus {
   outline: none;
-  border-color: #61dafb;
+  border-color: var(--accent);
 }
 
 .group-dropdown option {
-  background-color: #2a2a2a;
-  color: #eee;
+  background-color: var(--bg-elevated);
+  color: var(--text-secondary);
 }
 
 /* Adding min-height to group-selector for consistent chart alignment */
@@ -242,8 +242,7 @@ h2 {
 }
 
 .info-block h2 {
-  color: #61dafb;
+  color: var(--accent);
   margin-bottom: 20px;
   font-size: 1.8rem;
 }
-

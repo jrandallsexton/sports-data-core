@@ -193,6 +193,22 @@ html, body {
   padding: 0;
 }
 
+/* Prevent unwanted hover lift on content elements */
+*:hover {
+  transform: none !important;
+}
+
+/* Re-enable transform for elements that need it */
+button:hover,
+a:hover,
+.App-link:hover,
+.secondary-link:hover,
+.scroll-to-top-button:hover,
+.feature-card:hover,
+.step-card:hover {
+  transform: revert !important;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);

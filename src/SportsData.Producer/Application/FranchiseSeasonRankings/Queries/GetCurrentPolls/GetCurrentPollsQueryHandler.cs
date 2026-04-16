@@ -67,7 +67,7 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
             {
                 _logger.LogWarning("No polls found. SeasonYear={SeasonYear}", query.SeasonYear);
                 return new Failure<List<FranchiseSeasonPollDto>>(
-                    [],
+                    default!,
                     ResultStatus.NotFound,
                     [new ValidationFailure("seasonYear", $"No polls found for season year {query.SeasonYear}")]);
             }
@@ -158,7 +158,7 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
         {
             _logger.LogError(ex, "Error in GetCurrentPolls. SeasonYear={SeasonYear}", query.SeasonYear);
             return new Failure<List<FranchiseSeasonPollDto>>(
-                [],
+                default!,
                 ResultStatus.Error,
                 [new ValidationFailure("Error", ex.Message)]);
         }
@@ -176,9 +176,9 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
         public int Wins { get; init; }
         public int Losses { get; init; }
         public int Rank { get; init; }
-        public int PreviousRank { get; init; }
+        public int? PreviousRank { get; init; }
         public double Points { get; init; }
-        public int FirstPlaceVotes { get; init; }
+        public int? FirstPlaceVotes { get; init; }
         public string? Trend { get; init; }
     }
 }

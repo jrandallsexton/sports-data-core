@@ -125,9 +125,13 @@ function RankingsWidget() {
                           <tr key={team.franchiseSeasonId || i}>
                             <td>{team.rank}</td>
                             <td>
-                              {(team.franchiseLogoUrl || team.franchiseLogoUrlDark || team.franchiseLogoUrlLight) && (
+                              {(() => {
+                                const logoSrc = theme === 'dark'
+                                  ? (team.franchiseLogoUrlDark || team.franchiseLogoUrlLight || team.franchiseLogoUrl)
+                                  : (team.franchiseLogoUrlLight || team.franchiseLogoUrlDark || team.franchiseLogoUrl);
+                                return logoSrc ? (
                                 <img
-                                  src={theme === 'dark' ? (team.franchiseLogoUrlDark || team.franchiseLogoUrl) : (team.franchiseLogoUrlLight || team.franchiseLogoUrl)}
+                                  src={logoSrc}
                                   alt={team.franchiseName || "Logo"}
                                   style={{
                                     width: 20,
@@ -137,7 +141,8 @@ function RankingsWidget() {
                                     verticalAlign: "middle",
                                   }}
                                 />
-                              )}
+                                ) : null;
+                              })()}
                               <a
                                 href={teamLink(team.franchiseSlug || '', 2025)}
                                 className="team-link"

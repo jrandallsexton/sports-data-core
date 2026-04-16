@@ -332,6 +332,61 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
         }
     }
 
+    protected async Task<Result<bool>> PatchWithResultAsync<TRequest>(
+        string url,
+        TRequest request,
+        string operationName,
+        CancellationToken cancellationToken = default)
+    {
+        if (request == null)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.BadRequest,
+                [new ValidationFailure(operationName, "Request cannot be null")]);
+        }
+
+        try
+        {
+            var content = new StringContent(request.ToJson(), Encoding.UTF8, "application/json");
+            using var response = await HttpClient.PatchAsync(url, content, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new Success<bool>(true, ResultStatus.Accepted);
+            }
+
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            Failure<bool>? failure = null;
+            try
+            {
+                failure = responseContent.FromJson<Failure<bool>>();
+            }
+            catch (System.Text.Json.JsonException)
+            {
+            }
+
+            var status = failure?.Status ?? MapHttpStatusCode(response.StatusCode, ResultStatus.Error);
+            var errors = failure?.Errors ?? [new ValidationFailure(operationName, $"{operationName} failed with status {response.StatusCode}")];
+
+            return new Failure<bool>(false, status, errors);
+        }
+        catch (HttpRequestException ex)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.Error,
+                [new ValidationFailure(operationName, $"{operationName} failed: {ex.Message}")]);
+        }
+        catch (TaskCanceledException ex)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.Error,
+                [new ValidationFailure(operationName, $"{operationName} timed out: {ex.Message}")]);
+        }
+    }
+
     public string GetProviderName() =>
         HttpClient?.BaseAddress?.Host ?? "Unknown";
 

@@ -2,8 +2,10 @@
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
+using SportsData.Producer.Application.Franchises.Commands.UpdateLogoDarkBg;
 using SportsData.Producer.Application.Franchises.Queries.GetAllFranchises;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseById;
+using SportsData.Producer.Application.Franchises.Queries.GetFranchiseLogos;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseSeasons;
 using SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 using SportsData.Producer.Application.Franchises.Queries.GetTeamCard;
@@ -110,4 +112,31 @@ public class FranchisesController : ControllerBase
 
         return result.ToActionResult();
     }
+
+    [HttpGet("{slug}/logos")]
+    public async Task<ActionResult<FranchiseLogosDto>> GetFranchiseLogos(
+        [FromServices] IGetFranchiseLogosQueryHandler handler,
+        [FromRoute] string slug,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetFranchiseLogosQuery(slug);
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    [HttpPatch("logos/{logoId}/dark-bg")]
+    public async Task<ActionResult<bool>> UpdateLogoDarkBg(
+        [FromServices] IUpdateLogoDarkBgCommandHandler handler,
+        [FromRoute] Guid logoId,
+        [FromBody] UpdateLogoDarkBgRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new UpdateLogoDarkBgCommand(logoId, request.IsForDarkBg, request.LogoType);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
+
+        return result.ToActionResult();
+    }
 }
+
+public record UpdateLogoDarkBgRequest(bool IsForDarkBg, string LogoType);

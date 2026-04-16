@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Producer.Application.Services;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -20,13 +21,16 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
 {
     private readonly TeamSportDataContext _dataContext;
     private readonly ILogger<GetCurrentPollsQueryHandler> _logger;
+    private readonly ILogoSelectionService _logoSelectionService;
 
     public GetCurrentPollsQueryHandler(
         TeamSportDataContext dataContext,
-        ILogger<GetCurrentPollsQueryHandler> logger)
+        ILogger<GetCurrentPollsQueryHandler> logger,
+        ILogoSelectionService logoSelectionService)
     {
         _dataContext = dataContext;
         _logger = logger;
+        _logoSelectionService = logoSelectionService;
     }
 
     public async Task<Result<List<FranchiseSeasonPollDto>>> ExecuteAsync(
@@ -152,14 +156,26 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
                 pollId, 
                 seasonYear);
 
-            var pollEntries = await _dataContext.FranchiseSeasonRankings
+            var rankings = await _dataContext.FranchiseSeasonRankings
+                .AsNoTracking()
                 .Where(x => x.SeasonWeekId == mostRecentPoll.SeasonWeekId && x.Type == pollId)
                 .OrderBy(x => x.Rank.Current)
-                .Select(x => new FranchiseSeasonPollDto.FranchiseSeasonPollEntryDto()
+                .Include(x => x.Franchise)
+                    .ThenInclude(f => f.Logos)
+                .Include(x => x.FranchiseSeason)
+                    .ThenInclude(fs => fs.Logos)
+                .Include(x => x.Rank)
+                .AsSplitQuery()
+                .ToListAsync(cancellationToken);
+
+            var pollEntries = rankings.Select(x =>
+            {
+                var logoUri = _logoSelectionService.SelectWithFallback(
+                    x.FranchiseSeason?.Logos, x.Franchise.Logos);
+
+                return new FranchiseSeasonPollDto.FranchiseSeasonPollEntryDto()
                 {
-                    FranchiseLogoUrl = x.FranchiseSeason.Logos.FirstOrDefault() != null 
-                        ? x.FranchiseSeason.Logos.FirstOrDefault()!.Uri.OriginalString 
-                        : string.Empty,
+                    FranchiseLogoUrl = logoUri?.OriginalString ?? string.Empty,
                     FranchiseName = x.Franchise.DisplayNameShort,
                     FranchiseSlug = x.Franchise.Slug,
                     Rank = x.Rank.Current,
@@ -167,11 +183,11 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
                     FranchiseSeasonId = x.FranchiseSeasonId,
                     Points = (int)x.Rank.Points,
                     Trend = x.Rank.Trend,
-                    Losses = x.FranchiseSeason.Losses,
+                    Losses = x.FranchiseSeason?.Losses ?? 0,
                     PreviousRank = x.Rank.Previous,
-                    Wins = x.FranchiseSeason.Wins
-                })
-                .ToListAsync(cancellationToken);
+                    Wins = x.FranchiseSeason?.Wins ?? 0
+                };
+            }).ToList();
 
             if (pollEntries.Count == 0)
             {

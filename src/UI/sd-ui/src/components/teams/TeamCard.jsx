@@ -7,6 +7,7 @@ import TeamSchedule from "./TeamSchedule";
 import TeamNews from "./TeamNews";
 import TeamStatistics from "./TeamStatistics";
 import TeamRoster from "./TeamRoster";
+import TeamLogos from "./TeamLogos";
 
 function TeamCard() {
   const { sport = 'football', league = 'ncaa', slug, seasonYear } = useParams();
@@ -132,6 +133,12 @@ function TeamCard() {
         >
           Statistics
         </button>
+        <button
+          className={selectedTab === "logos" ? "active" : ""}
+          onClick={() => setSelectedTab("logos")}
+        >
+          Logos
+        </button>
       </div>
 
       <div className="team-card-content">
@@ -149,6 +156,9 @@ function TeamCard() {
           ) : (
             <TeamStatistics team={team} seasonYear={resolvedSeason} stats={teamStats} />
           )
+        )}
+        {selectedTab === "logos" && (
+          <TeamLogos slug={slug} seasonYear={resolvedSeason} sport={sport} league={league} />
         )}
       </div>
       {/* <TeamScheduleMUI schedule={team.schedule} seasonYear={resolvedSeason} /> */}

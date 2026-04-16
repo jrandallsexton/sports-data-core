@@ -292,13 +292,13 @@
   gap: 0.5rem;
 }
 
-.team-logo {
+.team-comparison-content .team-logo {
   width: 54px;
   height: 54px;
   object-fit: contain;
-  background: #fff !important;
-  border-radius: 8px !important;
-  border: 1px solid #ccc !important;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
   padding: 4px;
   box-sizing: border-box;
 }

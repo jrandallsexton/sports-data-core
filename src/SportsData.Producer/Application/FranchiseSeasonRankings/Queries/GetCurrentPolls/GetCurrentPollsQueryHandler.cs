@@ -1,3 +1,5 @@
+using Dapper;
+
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
@@ -6,7 +8,8 @@ using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Application.Services;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
+using SportsData.Producer.Infrastructure.Sql;
 
 namespace SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
 
@@ -22,226 +25,160 @@ public class GetCurrentPollsQueryHandler : IGetCurrentPollsQueryHandler
     private readonly TeamSportDataContext _dataContext;
     private readonly ILogger<GetCurrentPollsQueryHandler> _logger;
     private readonly ILogoSelectionService _logoSelectionService;
+    private readonly ProducerSqlQueryProvider _sqlProvider;
 
     public GetCurrentPollsQueryHandler(
         TeamSportDataContext dataContext,
         ILogger<GetCurrentPollsQueryHandler> logger,
-        ILogoSelectionService logoSelectionService)
+        ILogoSelectionService logoSelectionService,
+        ProducerSqlQueryProvider sqlProvider)
     {
         _dataContext = dataContext;
         _logger = logger;
         _logoSelectionService = logoSelectionService;
+        _sqlProvider = sqlProvider;
     }
 
     public async Task<Result<List<FranchiseSeasonPollDto>>> ExecuteAsync(
         GetCurrentPollsQuery query,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation(
-            "GetCurrentPolls started. SeasonYear={SeasonYear}", 
-            query.SeasonYear);
-        
+        _logger.LogInformation("GetCurrentPolls started. SeasonYear={SeasonYear}", query.SeasonYear);
+
         try
         {
             var pollsToLoad = new List<string> { "cfp", "ap", "usa" };
-            var polls = new List<FranchiseSeasonPollDto>();
+            var allEntries = new Dictionary<string, List<PollEntryRow>>();
+            var connection = _dataContext.Database.GetDbConnection();
+            var sql = _sqlProvider.GetPollByTypeAndSeason();
 
+            // One SQL call per poll — each is a single CTE query, no round-trips
             foreach (var pollId in pollsToLoad)
             {
-                _logger.LogDebug(
-                    "Loading poll. PollId={PollId}, SeasonYear={SeasonYear}", 
-                    pollId, 
-                    query.SeasonYear);
-                
-                var pollResult = await GetFranchiseSeasonPoll(pollId, query.SeasonYear, cancellationToken);
+                var entries = (await connection.QueryAsync<PollEntryRow>(
+                    new CommandDefinition(sql, new { SeasonYear = query.SeasonYear, PollId = pollId },
+                        cancellationToken: cancellationToken))).ToList();
 
-                if (pollResult.IsSuccess)
-                {
-                    _logger.LogInformation(
-                        "Poll loaded successfully. PollId={PollId}, EntryCount={EntryCount}, SeasonYear={SeasonYear}", 
-                        pollId, 
-                        pollResult.Value.Entries.Count, 
-                        query.SeasonYear);
-                    polls.Add(pollResult.Value);
-                }
-                else
-                {
-                    _logger.LogWarning(
-                        "Poll load failed. PollId={PollId}, SeasonYear={SeasonYear}, Status={Status}", 
-                        pollId, 
-                        query.SeasonYear, 
-                        pollResult.Status);
-                }
+                if (entries.Count > 0)
+                    allEntries[pollId] = entries;
             }
 
-            if (polls.Count == 0)
+            if (allEntries.Count == 0)
             {
-                _logger.LogWarning(
-                    "No polls found. SeasonYear={SeasonYear}", 
-                    query.SeasonYear);
-                
+                _logger.LogWarning("No polls found. SeasonYear={SeasonYear}", query.SeasonYear);
                 return new Failure<List<FranchiseSeasonPollDto>>(
-                    new List<FranchiseSeasonPollDto>(),
+                    default!,
                     ResultStatus.NotFound,
                     [new ValidationFailure("seasonYear", $"No polls found for season year {query.SeasonYear}")]);
             }
 
+            // Single batch logo load for all franchises across all polls
+            var allFranchiseIds = allEntries.Values
+                .SelectMany(e => e.Select(x => x.FranchiseId))
+                .Distinct().ToList();
+            var allFranchiseSeasonIds = allEntries.Values
+                .SelectMany(e => e.Select(x => x.FranchiseSeasonId))
+                .Distinct().ToList();
+
+            var franchiseLogos = await _dataContext.FranchiseLogos
+                .AsNoTracking()
+                .Where(fl => allFranchiseIds.Contains(fl.FranchiseId))
+                .ToListAsync(cancellationToken);
+
+            var seasonLogos = await _dataContext.FranchiseSeasonLogos
+                .AsNoTracking()
+                .Where(fsl => allFranchiseSeasonIds.Contains(fsl.FranchiseSeasonId))
+                .ToListAsync(cancellationToken);
+
+            var franchiseLogoLookup = franchiseLogos
+                .GroupBy(l => l.FranchiseId)
+                .ToDictionary(g => g.Key, g => (IEnumerable<ILogo>)g.ToList());
+            var seasonLogoLookup = seasonLogos
+                .GroupBy(l => l.FranchiseSeasonId)
+                .ToDictionary(g => g.Key, g => (IEnumerable<ILogo>)g.ToList());
+
+            // Build poll DTOs
+            var polls = new List<FranchiseSeasonPollDto>();
+
+            foreach (var (pollId, entries) in allEntries)
+            {
+                var first = entries[0];
+
+                var pollEntries = entries.Select(x =>
+                {
+                    franchiseLogoLookup.TryGetValue(x.FranchiseId, out var fLogos);
+                    seasonLogoLookup.TryGetValue(x.FranchiseSeasonId, out var fsLogos);
+
+                    var logoUriDark = _logoSelectionService.SelectWithFallback(fsLogos, fLogos, darkBackground: true);
+                    var logoUriLight = _logoSelectionService.SelectWithFallback(fsLogos, fLogos, darkBackground: false);
+
+                    return new FranchiseSeasonPollDto.FranchiseSeasonPollEntryDto
+                    {
+                        FranchiseLogoUrl = logoUriDark?.OriginalString ?? string.Empty,
+                        FranchiseLogoUrlDark = logoUriDark?.OriginalString,
+                        FranchiseLogoUrlLight = logoUriLight?.OriginalString,
+                        FranchiseName = x.FranchiseName,
+                        FranchiseSlug = x.FranchiseSlug,
+                        Rank = x.Rank,
+                        FirstPlaceVotes = x.FirstPlaceVotes,
+                        FranchiseSeasonId = x.FranchiseSeasonId,
+                        Points = (int)x.Points,
+                        Trend = x.Trend,
+                        Losses = x.Losses,
+                        PreviousRank = x.PreviousRank,
+                        Wins = x.Wins
+                    };
+                }).ToList();
+
+                polls.Add(new FranchiseSeasonPollDto
+                {
+                    Entries = pollEntries,
+                    PollId = pollId,
+                    PollName = first.PollName,
+                    SeasonYear = query.SeasonYear,
+                    Week = first.WeekNumber,
+                    HasFirstPlaceVotes = pollEntries.Sum(x => x.FirstPlaceVotes) > 0,
+                    HasPoints = pollEntries.Sum(x => x.Points) > 0,
+                    HasTrends = pollEntries.Any(x => x.Trend != null),
+                    PollDateUtc = first.PollDateUtc
+                });
+
+                _logger.LogInformation(
+                    "Poll loaded. PollId={PollId}, EntryCount={EntryCount}, Week={Week}",
+                    pollId, pollEntries.Count, first.WeekNumber);
+            }
+
             _logger.LogInformation(
-                "GetCurrentPolls completed successfully. SeasonYear={SeasonYear}, PollCount={PollCount}", 
-                query.SeasonYear, 
-                polls.Count);
+                "GetCurrentPolls completed. SeasonYear={SeasonYear}, PollCount={PollCount}",
+                query.SeasonYear, polls.Count);
 
             return new Success<List<FranchiseSeasonPollDto>>(polls);
         }
         catch (Exception ex)
         {
-            _logger.LogError(
-                ex, 
-                "Error in GetCurrentPolls. SeasonYear={SeasonYear}", 
-                query.SeasonYear);
-            
+            _logger.LogError(ex, "Error in GetCurrentPolls. SeasonYear={SeasonYear}", query.SeasonYear);
             return new Failure<List<FranchiseSeasonPollDto>>(
-                new List<FranchiseSeasonPollDto>(),
+                default!,
                 ResultStatus.Error,
                 [new ValidationFailure("Error", ex.Message)]);
         }
     }
 
-    private async Task<Result<FranchiseSeasonPollDto>> GetFranchiseSeasonPoll(
-        string pollId, 
-        int seasonYear, 
-        CancellationToken cancellationToken)
+    private record PollEntryRow
     {
-        _logger.LogDebug(
-            "GetFranchiseSeasonPoll started. PollId={PollId}, SeasonYear={SeasonYear}", 
-            pollId, 
-            seasonYear);
-        
-        try
-        {
-            var mostRecentPoll = await _dataContext.FranchiseSeasonRankings
-                .Where(x => x.SeasonYear == seasonYear && x.Type == pollId && x.Date != null)
-                .OrderByDescending(x => x.Date)
-                .Select(x => new { x.SeasonWeekId, Date = x.Date!.Value, x.ShortHeadline })
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (mostRecentPoll is null)
-            {
-                _logger.LogWarning(
-                    "No rankings found. PollId={PollId}, SeasonYear={SeasonYear}", 
-                    pollId, 
-                    seasonYear);
-                
-                return new Failure<FranchiseSeasonPollDto>(
-                    default!,
-                    ResultStatus.NotFound,
-                    [new ValidationFailure("pollId", $"No rankings found for poll '{pollId}' in season {seasonYear}")]);
-            }
-
-            _logger.LogInformation(
-                "Most recent poll found. PollId={PollId}, SeasonYear={SeasonYear}, SeasonWeekId={SeasonWeekId}, Date={Date}", 
-                pollId, 
-                seasonYear, 
-                mostRecentPoll.SeasonWeekId, 
-                mostRecentPoll.Date);
-
-            var seasonWeekNumber = await _dataContext.SeasonWeeks
-                .Where(x => x.Id == mostRecentPoll.SeasonWeekId)
-                .Select(x => x.Number)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            _logger.LogDebug(
-                "Retrieved season week. WeekNumber={WeekNumber}, PollId={PollId}, SeasonYear={SeasonYear}", 
-                seasonWeekNumber, 
-                pollId, 
-                seasonYear);
-
-            var rankings = await _dataContext.FranchiseSeasonRankings
-                .AsNoTracking()
-                .Where(x => x.SeasonWeekId == mostRecentPoll.SeasonWeekId && x.Type == pollId)
-                .OrderBy(x => x.Rank.Current)
-                .Include(x => x.Franchise)
-                    .ThenInclude(f => f.Logos)
-                .Include(x => x.FranchiseSeason)
-                    .ThenInclude(fs => fs.Logos)
-                .Include(x => x.Rank)
-                .AsSplitQuery()
-                .ToListAsync(cancellationToken);
-
-            var pollEntries = rankings.Select(x =>
-            {
-                var logoUri = _logoSelectionService.SelectWithFallback(
-                    x.FranchiseSeason?.Logos, x.Franchise.Logos);
-
-                return new FranchiseSeasonPollDto.FranchiseSeasonPollEntryDto()
-                {
-                    FranchiseLogoUrl = logoUri?.OriginalString ?? string.Empty,
-                    FranchiseName = x.Franchise.DisplayNameShort,
-                    FranchiseSlug = x.Franchise.Slug,
-                    Rank = x.Rank.Current,
-                    FirstPlaceVotes = x.Rank.FirstPlaceVotes,
-                    FranchiseSeasonId = x.FranchiseSeasonId,
-                    Points = (int)x.Rank.Points,
-                    Trend = x.Rank.Trend,
-                    Losses = x.FranchiseSeason?.Losses ?? 0,
-                    PreviousRank = x.Rank.Previous,
-                    Wins = x.FranchiseSeason?.Wins ?? 0
-                };
-            }).ToList();
-
-            if (pollEntries.Count == 0)
-            {
-                _logger.LogWarning(
-                    "No poll entries found. PollId={PollId}, SeasonYear={SeasonYear}, SeasonWeekId={SeasonWeekId}", 
-                    pollId, 
-                    seasonYear, 
-                    mostRecentPoll.SeasonWeekId);
-                
-                return new Failure<FranchiseSeasonPollDto>(
-                    default!,
-                    ResultStatus.NotFound,
-                    [new ValidationFailure("pollId", $"No entries found for poll '{pollId}' in season {seasonYear}")]);
-            }
-
-            _logger.LogInformation(
-                "Poll entries retrieved successfully. PollId={PollId}, SeasonYear={SeasonYear}, EntryCount={EntryCount}", 
-                pollId, 
-                seasonYear, 
-                pollEntries.Count);
-
-            var dto = new FranchiseSeasonPollDto()
-            {
-                Entries = pollEntries,
-                PollId = pollId,
-                PollName = mostRecentPoll.ShortHeadline,
-                SeasonYear = seasonYear,
-                Week = seasonWeekNumber,
-                HasFirstPlaceVotes = pollEntries.Sum(x => x.FirstPlaceVotes) > 0,
-                HasPoints = pollEntries.Sum(x => x.Points) > 0,
-                HasTrends = pollEntries.Any(x => x.Trend != null),
-                PollDateUtc = mostRecentPoll.Date
-            };
-
-            _logger.LogInformation(
-                "Poll DTO created successfully. PollId={PollId}, SeasonYear={SeasonYear}, EntryCount={EntryCount}", 
-                pollId, 
-                seasonYear, 
-                dto.Entries.Count);
-
-            return new Success<FranchiseSeasonPollDto>(dto);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex, 
-                "Error in GetFranchiseSeasonPoll. PollId={PollId}, SeasonYear={SeasonYear}", 
-                pollId, 
-                seasonYear);
-            
-            return new Failure<FranchiseSeasonPollDto>(
-                default!,
-                ResultStatus.Error,
-                [new ValidationFailure("Error", ex.Message)]);
-        }
+        public int WeekNumber { get; init; }
+        public DateTime PollDateUtc { get; init; }
+        public string PollName { get; init; } = string.Empty;
+        public Guid FranchiseSeasonId { get; init; }
+        public Guid FranchiseId { get; init; }
+        public string FranchiseSlug { get; init; } = string.Empty;
+        public string FranchiseName { get; init; } = string.Empty;
+        public int Wins { get; init; }
+        public int Losses { get; init; }
+        public int Rank { get; init; }
+        public int? PreviousRank { get; init; }
+        public double Points { get; init; }
+        public int? FirstPlaceVotes { get; init; }
+        public string? Trend { get; init; }
     }
 }

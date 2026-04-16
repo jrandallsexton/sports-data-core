@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTheme } from "../../contexts/ThemeContext";
 import apiWrapper from "../../api/apiWrapper";
 import "./TeamCard.css";
 import TeamSchedule from "./TeamSchedule";
@@ -12,6 +13,7 @@ import TeamLogos from "./TeamLogos";
 function TeamCard() {
   const { sport = 'football', league = 'ncaa', slug, seasonYear } = useParams();
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState("schedule");
@@ -66,7 +68,7 @@ function TeamCard() {
     >
       <div className="team-header">
         <img
-          src={team.logoUrl}
+          src={theme === 'dark' ? (team.logoUrlDark || team.logoUrl) : (team.logoUrlLight || team.logoUrl)}
           alt={`${team.name} logo`}
           className="team-logo"
         />

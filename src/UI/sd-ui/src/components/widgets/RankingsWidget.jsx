@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { useTheme } from "../../contexts/ThemeContext";
 import apiWrapper from "../../api/apiWrapper";
 import CFPBracket from "./CFPBracket";
 import { teamLink } from '../../utils/sportLinks';
 import "./RankingsWidget.css";
 
 function RankingsWidget() {
+  const { theme } = useTheme();
   const [pollsData, setPollsData] = useState(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -123,9 +125,13 @@ function RankingsWidget() {
                           <tr key={team.franchiseSeasonId || i}>
                             <td>{team.rank}</td>
                             <td>
-                              {team.franchiseLogoUrl && (
+                              {(() => {
+                                const logoSrc = theme === 'dark'
+                                  ? (team.franchiseLogoUrlDark || team.franchiseLogoUrlLight || team.franchiseLogoUrl)
+                                  : (team.franchiseLogoUrlLight || team.franchiseLogoUrlDark || team.franchiseLogoUrl);
+                                return logoSrc ? (
                                 <img
-                                  src={team.franchiseLogoUrl}
+                                  src={logoSrc}
                                   alt={team.franchiseName || "Logo"}
                                   style={{
                                     width: 20,
@@ -135,7 +141,8 @@ function RankingsWidget() {
                                     verticalAlign: "middle",
                                   }}
                                 />
-                              )}
+                                ) : null;
+                              })()}
                               <a
                                 href={teamLink(team.franchiseSlug || '', 2025)}
                                 className="team-link"

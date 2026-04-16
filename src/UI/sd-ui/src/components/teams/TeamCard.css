@@ -5,9 +5,11 @@
   font-weight: 600;
   transition: color 0.2s;
 }
+
 .result-link:hover {
   color: var(--text-link-hover);
 }
+
 .team-card {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
@@ -55,7 +57,7 @@
   width: 160px;
   height: 160px;
   object-fit: contain;
-  background-color: #fff;
+  /* background-color: #fff; */
   border-radius: 16px;
   padding: 0.5rem;
   border: 1px solid #ccc;

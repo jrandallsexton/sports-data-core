@@ -25,7 +25,8 @@ public class ProducerSqlQueryProvider
         "GetTeamCard.sql",
         "GetTeamCardSchedule.sql",
         "GetTeamSeasons.sql",
-        "GetTeamRoster.sql"
+        "GetTeamRoster.sql",
+        "GetPollByTypeAndSeason.sql"
     ];
 
     private readonly Dictionary<string, string> _queries = new();
@@ -111,4 +112,6 @@ public class ProducerSqlQueryProvider
     public string GetTeamSeasons() => Get("GetTeamSeasons.sql");
 
     public string GetTeamRoster() => Get("GetTeamRoster.sql");
+
+    public string GetPollByTypeAndSeason() => Get("GetPollByTypeAndSeason.sql");
 }

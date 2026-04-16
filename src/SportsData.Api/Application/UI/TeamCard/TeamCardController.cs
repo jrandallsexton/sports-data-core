@@ -7,6 +7,7 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 
 using SportsData.Api.Application.Common.Enums;
 
@@ -87,4 +88,36 @@ public class TeamCardController : ApiControllerBase
 
         return result.ToActionResult();
     }
+
+    [HttpGet("logos")]
+    public async Task<ActionResult<FranchiseLogosDto>> GetFranchiseLogos(
+        string sport,
+        string league,
+        string slug,
+        [FromServices] IFranchiseClientFactory franchiseClientFactory,
+        CancellationToken cancellationToken)
+    {
+        var mode = ModeMapper.ResolveMode(sport, league);
+        var client = franchiseClientFactory.Resolve(mode);
+        var result = await client.GetFranchiseLogos(slug, cancellationToken);
+        return result.ToActionResult();
+    }
+
+    [HttpPatch("logos/{logoId}/dark-bg")]
+    public async Task<ActionResult<bool>> UpdateLogoDarkBg(
+        string sport,
+        string league,
+        string slug,
+        [FromRoute] Guid logoId,
+        [FromBody] UpdateLogoDarkBgRequest request,
+        [FromServices] IFranchiseClientFactory franchiseClientFactory,
+        CancellationToken cancellationToken)
+    {
+        var mode = ModeMapper.ResolveMode(sport, league);
+        var client = franchiseClientFactory.Resolve(mode);
+        var result = await client.UpdateLogoDarkBg(logoId, request.IsForDarkBg, request.LogoType, cancellationToken);
+        return result.ToActionResult();
+    }
 }
+
+public record UpdateLogoDarkBgRequest(bool IsForDarkBg, string LogoType);

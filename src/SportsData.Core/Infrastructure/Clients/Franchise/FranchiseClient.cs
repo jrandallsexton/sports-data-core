@@ -33,6 +33,8 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<Dictionary<Guid, string>> GetConferenceIdsBySlugs(int seasonYear, List<string> slugs, CancellationToken cancellationToken = default);
     Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken cancellationToken = default);
     Task<Result<TeamRosterDto>> GetTeamRoster(string slug, int seasonYear, CancellationToken cancellationToken = default);
+    Task<Result<FranchiseLogosDto>> GetFranchiseLogos(string slug, CancellationToken cancellationToken = default);
+    Task<Result<bool>> UpdateLogoDarkBg(Guid logoId, bool isForDarkBg, string logoType, CancellationToken cancellationToken = default);
 }
 
 public class FranchiseClient : ClientBase, IProvideFranchises
@@ -209,6 +211,26 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             new TeamRosterDto(),
             cancellationToken);
         return new Success<TeamRosterDto>(result);
+    }
+
+    public async Task<Result<FranchiseLogosDto>> GetFranchiseLogos(string slug, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync(
+            $"franchises/{slug}/logos",
+            new FranchiseLogosDto(),
+            "FranchiseLogos",
+            ResultStatus.NotFound,
+            cancellationToken);
+    }
+
+    public async Task<Result<bool>> UpdateLogoDarkBg(Guid logoId, bool isForDarkBg, string logoType, CancellationToken cancellationToken = default)
+    {
+        var payload = new { IsForDarkBg = isForDarkBg, LogoType = logoType };
+        return await PatchWithResultAsync(
+            $"franchises/logos/{logoId}/dark-bg",
+            payload,
+            "UpdateLogoDarkBg",
+            cancellationToken);
     }
 }
 

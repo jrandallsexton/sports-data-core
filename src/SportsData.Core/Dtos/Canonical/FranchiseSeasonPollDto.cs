@@ -33,6 +33,10 @@ namespace SportsData.Core.Dtos.Canonical
 
             public required string FranchiseLogoUrl { get; init; }
 
+            public string? FranchiseLogoUrlDark { get; init; }
+
+            public string? FranchiseLogoUrlLight { get; init; }
+
             public int Wins { get; init; }
 
             public int Losses { get; init; }

@@ -8,11 +8,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Application.Services;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Sql;
-
-using System.Collections.Generic;
-using System.Linq;
 
 namespace SportsData.Producer.Application.Franchises.Queries.GetTeamCard;
 
@@ -94,9 +90,11 @@ public class GetTeamCardQueryHandler : IGetTeamCardQueryHandler
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
-        // Select logo through the service with franchise fallback
-        var logoUri = _logoSelectionService.SelectWithFallback(
-            franchiseSeason.Logos, franchise.Logos);
+        // Select logos for both background types
+        var logoUriDark = _logoSelectionService.SelectWithFallback(
+            franchiseSeason.Logos, franchise.Logos, darkBackground: true);
+        var logoUriLight = _logoSelectionService.SelectWithFallback(
+            franchiseSeason.Logos, franchise.Logos, darkBackground: false);
 
         // Get venue
         var venue = franchise.VenueId != Guid.Empty
@@ -119,7 +117,9 @@ public class GetTeamCardQueryHandler : IGetTeamCardQueryHandler
             ConferenceRecord = $"{franchiseSeason.ConferenceWins}-{franchiseSeason.ConferenceLosses}-{franchiseSeason.ConferenceTies}",
             ColorPrimary = franchise.ColorCodeHex ?? string.Empty,
             ColorSecondary = franchise.ColorCodeAltHex ?? string.Empty,
-            LogoUrl = logoUri?.OriginalString ?? string.Empty,
+            LogoUrl = logoUriDark?.OriginalString ?? string.Empty,
+            LogoUrlDark = logoUriDark?.OriginalString,
+            LogoUrlLight = logoUriLight?.OriginalString,
             HelmetUrl = string.Empty,
             Location = franchise.Location ?? string.Empty,
             StadiumName = venue?.Name ?? string.Empty,

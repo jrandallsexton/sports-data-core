@@ -33,6 +33,10 @@ public record TeamCardDto
 
     public required string LogoUrl { get; init; }
 
+    public string? LogoUrlDark { get; init; }
+
+    public string? LogoUrlLight { get; init; }
+
     public required string HelmetUrl { get; init; }
 
     public required string Location { get; init; }

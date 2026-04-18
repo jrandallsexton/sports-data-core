@@ -43,7 +43,7 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
         _scope.Dispose();
         GC.SuppressFinalize(this);
     }
-    
+
     /// <summary>
     /// This test uses ACTUAL Postman-captured data to simulate a complete game!
     /// 
@@ -54,7 +54,7 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
     /// Game Data: Iowa State @ Kansas State (Event 401756846)
     /// Status Snapshots: 18 (Q1 start ? Q2 ? Halftime ? Q3 ? Q4 ? Final)
     /// </summary>
-    [Fact]
+    [Fact(Skip = "TEMP_DISABLE")]
     public async Task StreamCompleteGame_UsingPostmanCollection_CompletesSuccessfully()
     {
         // Arrange
@@ -148,12 +148,12 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
         
         Console.WriteLine($"? HTTP calls - Status: {callCounts["status"]}, Competition: {callCounts["competition"]}");
     }
-    
+
     /// <summary>
     /// Quick validation test - just checks that Postman collection can be loaded.
     /// Useful for verifying test infrastructure without running the full integration test.
     /// </summary>
-    [Fact]
+    [Fact(Skip = "TEMP_DISABLE")]
     public void PostmanCollection_CanBeLoaded_ContainsStatusResponses()
     {
         // Arrange

@@ -37,7 +37,9 @@ using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
 using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboard;
 using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboardWidget;
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
-using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.DeleteLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
 using SportsData.Api.Application.UI.Leagues.Commands.JoinLeague;
@@ -93,7 +95,9 @@ namespace SportsData.Api.DependencyInjection
 
             // League Commands
             services.AddScoped<IAddMatchupCommandHandler, AddMatchupCommandHandler>();
-            services.AddScoped<ICreateLeagueCommandHandler, CreateLeagueCommandHandler>();
+            services.AddScoped<ICreateFootballNcaaLeagueCommandHandler, CreateFootballNcaaLeagueCommandHandler>();
+            services.AddScoped<ICreateFootballNflLeagueCommandHandler, CreateFootballNflLeagueCommandHandler>();
+            services.AddScoped<ICreateBaseballMlbLeagueCommandHandler, CreateBaseballMlbLeagueCommandHandler>();
             services.AddScoped<IDeleteLeagueCommandHandler, DeleteLeagueCommandHandler>();
             services.AddScoped<IGenerateLeagueWeekPreviewsCommandHandler, GenerateLeagueWeekPreviewsCommandHandler>();
             services.AddScoped<IJoinLeagueCommandHandler, JoinLeagueCommandHandler>();

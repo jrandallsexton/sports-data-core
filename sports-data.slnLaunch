@@ -70,17 +70,17 @@
     ]
   },
   {
-    "Name": "ProviderProducer.BaseballMlb",
+    "Name": "Api.FootballNcaa",
     "Projects": [
-      {
-        "Path": "src\\SportsData.Provider\\SportsData.Provider.csproj",
-        "Action": "Start",
-        "DebugTarget": "http.BaseballMlb"
-      },
       {
         "Path": "src\\SportsData.Producer\\SportsData.Producer.csproj",
         "Action": "Start",
-        "DebugTarget": "http.BaseballMlb"
+        "DebugTarget": "http.FootballNcaa.Api"
+      },
+      {
+        "Path": "src\\SportsData.Api\\SportsData.Api.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
       }
     ]
   }

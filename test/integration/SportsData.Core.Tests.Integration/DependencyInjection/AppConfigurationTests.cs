@@ -24,6 +24,6 @@ public class AppConfigurationTests : IntegrationTestBase<AppConfigurationTests>
         CommonConfig.Logging.Overrides["System"].Should().Be("Error");
 
         CommonConfig.Logging.Overrides.Should().ContainKey("SportsData");
-        CommonConfig.Logging.Overrides["SportsData"].Should().Be("Warning");
+        CommonConfig.Logging.Overrides["SportsData"].Should().Be("Information");
     }
 }

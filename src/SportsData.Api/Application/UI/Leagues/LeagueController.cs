@@ -2,8 +2,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
-using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague;
-using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague.Dtos;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague.Dtos;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague.Dtos;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague.Dtos;
 using SportsData.Api.Application.UI.Leagues.Commands.DeleteLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
 using SportsData.Api.Application.UI.Leagues.Commands.JoinLeague;
@@ -27,9 +31,52 @@ public class LeagueController : ApiControllerBase
 {
     [HttpPost]
     [Authorize]
-    public async Task<ActionResult<Guid>> Create(
-        [FromBody] CreateLeagueRequest request,
-        [FromServices] ICreateLeagueCommandHandler handler,
+    [Obsolete("Use POST /ui/leagues/football/ncaa instead. This alias will be removed once the FE cuts over.")]
+    public Task<ActionResult<Guid>> Create(
+        [FromBody] CreateFootballNcaaLeagueRequest request,
+        [FromServices] ICreateFootballNcaaLeagueCommandHandler handler,
+        CancellationToken cancellationToken)
+        => CreateFootballNcaaLeague(request, handler, cancellationToken);
+
+    [HttpPost("football/ncaa")]
+    [Authorize]
+    public async Task<ActionResult<Guid>> CreateFootballNcaaLeague(
+        [FromBody] CreateFootballNcaaLeagueRequest request,
+        [FromServices] ICreateFootballNcaaLeagueCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var result = await handler.ExecuteAsync(request, userId, cancellationToken);
+
+        if (result.IsSuccess)
+            return CreatedAtAction(nameof(GetById), new { id = result.Value }, new { id = result.Value });
+
+        return result.ToActionResult();
+    }
+
+    [HttpPost("football/nfl")]
+    [Authorize]
+    public async Task<ActionResult<Guid>> CreateFootballNflLeague(
+        [FromBody] CreateFootballNflLeagueRequest request,
+        [FromServices] ICreateFootballNflLeagueCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var result = await handler.ExecuteAsync(request, userId, cancellationToken);
+
+        if (result.IsSuccess)
+            return CreatedAtAction(nameof(GetById), new { id = result.Value }, new { id = result.Value });
+
+        return result.ToActionResult();
+    }
+
+    [HttpPost("baseball/mlb")]
+    [Authorize]
+    public async Task<ActionResult<Guid>> CreateBaseballMlbLeague(
+        [FromBody] CreateBaseballMlbLeagueRequest request,
+        [FromServices] ICreateBaseballMlbLeagueCommandHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();

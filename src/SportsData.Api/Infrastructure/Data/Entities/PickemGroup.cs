@@ -37,7 +37,19 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public int? MaxUsers { get; set; }
 
         public int? DropLowWeeksCount { get; set; }
-        
+
+        /// <summary>
+        /// Inclusive start of the league window. Null = from the start of the season.
+        /// Contests with StartTime &gt;= StartsOn are in-window.
+        /// </summary>
+        public DateTime? StartsOn { get; set; }
+
+        /// <summary>
+        /// Inclusive end of the league window. Null = through the end of the season.
+        /// Contests with StartTime &lt;= EndsOn are in-window.
+        /// </summary>
+        public DateTime? EndsOn { get; set; }
+
         public Guid CommissionerUserId { get; set; }
 
         public User CommissionerUser { get; set; } = default!;

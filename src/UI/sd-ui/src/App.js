@@ -25,6 +25,7 @@ import { LeagueProvider } from "./contexts/LeagueContext";
 import { ContestUpdatesProvider } from "./contexts/ContestUpdatesContext";
 import { setGlobalApiErrorHandler } from "api/apiClient";
 import MaintenancePage from "./components/maintenance/MaintenancePage";
+import ScrollToTop from "./components/shared/ScrollToTop";
 
 function AppRoutes() {
   const navigate = useNavigate();
@@ -94,6 +95,7 @@ function App() {
           <LeagueProvider>
             <ContestUpdatesProvider>
               <Router>
+                <ScrollToTop />
                 <AppRoutes />
               </Router>
             </ContestUpdatesProvider>

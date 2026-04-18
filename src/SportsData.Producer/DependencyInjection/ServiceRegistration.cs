@@ -195,8 +195,12 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
 
-            services.AddScoped<IEnrichContests, ContestEnrichmentProcessor>();
-            services.AddScoped<ContestEnrichmentJob>();
+            if (mode is Sport.FootballNcaa or Sport.FootballNfl)
+            {
+                // ContestEnrichmentProcessor depends on FootballDataContext.
+                services.AddScoped<IEnrichContests, ContestEnrichmentProcessor>();
+                services.AddScoped<ContestEnrichmentJob>();
+            }
 
             services.AddScoped<IEnrichFranchiseSeasons, EnrichFranchiseSeasonHandler<TeamSportDataContext>>();
             services.AddScoped<FranchiseSeasonEnrichmentJob>();
@@ -209,9 +213,13 @@ namespace SportsData.Producer.DependencyInjection
 
             // Competition Commands
             services.AddScoped<IRefreshCompetitionDrivesCommandHandler, RefreshCompetitionDrivesCommandHandler>();
-            services.AddScoped<ICalculateCompetitionMetricsCommandHandler, CalculateCompetitionMetricsCommandHandler>();
             services.AddScoped<IEnqueueCompetitionMetricsCalculationCommandHandler, EnqueueCompetitionMetricsCalculationCommandHandler>();
-            services.AddScoped<IRefreshCompetitionMetricsCommandHandler, RefreshCompetitionMetricsCommandHandler>();
+            if (mode is Sport.FootballNcaa or Sport.FootballNfl)
+            {
+                // Both depend on FootballDataContext.
+                services.AddScoped<ICalculateCompetitionMetricsCommandHandler, CalculateCompetitionMetricsCommandHandler>();
+                services.AddScoped<IRefreshCompetitionMetricsCommandHandler, RefreshCompetitionMetricsCommandHandler>();
+            }
             services.AddScoped<IRefreshCompetitionMediaCommandHandler, RefreshCompetitionMediaCommandHandler>();
             services.AddScoped<IEnqueueCompetitionMediaRefreshCommandHandler, EnqueueCompetitionMediaRefreshCommandHandler>();
             services.AddScoped<IRefreshAllCompetitionMediaCommandHandler, RefreshAllCompetitionMediaCommandHandler>();
@@ -219,7 +227,11 @@ namespace SportsData.Producer.DependencyInjection
             // FranchiseSeason Commands
             services.AddScoped<IEnqueueFranchiseSeasonMetricsGenerationCommandHandler, EnqueueFranchiseSeasonMetricsGenerationCommandHandler>();
             services.AddScoped<IEnqueueFranchiseSeasonEnrichmentCommandHandler, EnqueueFranchiseSeasonEnrichmentCommandHandler>();
-            services.AddScoped<ICalculateFranchiseSeasonMetricsCommandHandler, CalculateFranchiseSeasonMetricsCommandHandler>();
+            if (mode is Sport.FootballNcaa or Sport.FootballNfl)
+            {
+                // CalculateFranchiseSeasonMetricsCommandHandler depends on FootballDataContext.
+                services.AddScoped<ICalculateFranchiseSeasonMetricsCommandHandler, CalculateFranchiseSeasonMetricsCommandHandler>();
+            }
 
             // FranchiseSeason Command Validators
             services.AddScoped<FluentValidation.IValidator<EnqueueFranchiseSeasonEnrichmentCommand>, EnqueueFranchiseSeasonEnrichmentCommandValidator>();
@@ -258,10 +270,10 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IGroupSeasonsService, GroupSeasonsService>();
             services.AddScoped<ILogoSelectionService, LogoSelectionService>();
 
-            services.AddScoped<IContestReplayService, ContestReplayService>();
-
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)
             {
+                // Both depend on FootballDataContext.
+                services.AddScoped<IContestReplayService, ContestReplayService>();
                 services.AddScoped<IFootballCompetitionBroadcastingJob, FootballCompetitionStreamer>();
             }
 

@@ -34,6 +34,12 @@ public class Program
         // Add services to the container.
         var config = builder.Configuration;
         config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName, mode);
+        // Re-add env vars *after* AppConfig so container-level overrides (e.g. the
+        // docker-compose `CommonConfig__SqlBaseConnectionString=host.docker.internal`)
+        // beat AppConfig's host-native `localhost` value. Prod is unaffected — the
+        // app-config ConfigMap only carries ASPNETCORE_ENVIRONMENT and
+        // DOTNET_SYSTEM_GLOBALIZATION_INVARIANT, neither of which overlaps AppConfig.
+        config.AddEnvironmentVariables();
 
         builder.WithLoggingContext(mode, role.ToString());
         builder.UseCommon();

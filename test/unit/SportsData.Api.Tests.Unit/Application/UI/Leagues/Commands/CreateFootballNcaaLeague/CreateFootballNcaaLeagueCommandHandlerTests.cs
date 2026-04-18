@@ -1,23 +1,22 @@
 using FluentAssertions;
-using SportsData.Api.Application.Common.Enums;
 
 using Moq;
 
-using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague;
-using SportsData.Api.Application.UI.Leagues.Commands.CreateLeague.Dtos;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague.Dtos;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Commands.CreateLeague;
+namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
 
-public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHandler>
+public class CreateFootballNcaaLeagueCommandHandlerTests : ApiTestBase<CreateFootballNcaaLeagueCommandHandler>
 {
     private readonly Mock<IFranchiseClientFactory> _franchiseClientFactoryMock;
     private readonly Mock<IProvideFranchises> _franchiseClientMock;
 
-    public CreateLeagueCommandHandlerTests()
+    public CreateFootballNcaaLeagueCommandHandlerTests()
     {
         _franchiseClientFactoryMock = Mocker.GetMock<IFranchiseClientFactory>();
         _franchiseClientMock = new Mock<IProvideFranchises>();
@@ -26,7 +25,7 @@ public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHa
             .Returns(_franchiseClientMock.Object);
     }
 
-    private CreateLeagueRequest BuildValidRequest() => new()
+    private CreateFootballNcaaLeagueRequest BuildValidRequest() => new()
     {
         Name = "My League",
         PickType = "StraightUp",
@@ -40,7 +39,7 @@ public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHa
     [Fact]
     public async Task ShouldFail_WhenNameIsNull()
     {
-        var sut = Mocker.CreateInstance<CreateLeagueCommandHandler>();
+        var sut = Mocker.CreateInstance<CreateFootballNcaaLeagueCommandHandler>();
         var request = BuildValidRequest();
         request.Name = null!;
 
@@ -52,7 +51,7 @@ public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHa
     [Fact]
     public async Task ShouldFail_WhenPickTypeIsInvalid()
     {
-        var sut = Mocker.CreateInstance<CreateLeagueCommandHandler>();
+        var sut = Mocker.CreateInstance<CreateFootballNcaaLeagueCommandHandler>();
         var request = BuildValidRequest();
         request.PickType = "Garbage";
 
@@ -64,7 +63,7 @@ public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHa
     [Fact]
     public async Task ShouldFail_WhenTiebreakerTypeIsInvalid()
     {
-        var sut = Mocker.CreateInstance<CreateLeagueCommandHandler>();
+        var sut = Mocker.CreateInstance<CreateFootballNcaaLeagueCommandHandler>();
         var request = BuildValidRequest();
         request.TiebreakerType = "Garbage";
 
@@ -76,7 +75,7 @@ public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHa
     [Fact]
     public async Task ShouldFail_WhenTiebreakerTiePolicyIsInvalid()
     {
-        var sut = Mocker.CreateInstance<CreateLeagueCommandHandler>();
+        var sut = Mocker.CreateInstance<CreateFootballNcaaLeagueCommandHandler>();
         var request = BuildValidRequest();
         request.RankingFilter = "AP_TOP_25";
         request.TiebreakerTiePolicy = "Nope";
@@ -106,7 +105,7 @@ public class CreateLeagueCommandHandlerTests : ApiTestBase<CreateLeagueCommandHa
             .Setup(x => x.GetConferenceIdsBySlugs(currentYear, request.ConferenceSlugs, It.IsAny<CancellationToken>()))
             .ReturnsAsync(slugToGuid);
 
-        var sut = Mocker.CreateInstance<CreateLeagueCommandHandler>();
+        var sut = Mocker.CreateInstance<CreateFootballNcaaLeagueCommandHandler>();
 
         var result = await sut.ExecuteAsync(request, currentUserId);
 

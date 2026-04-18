@@ -1,31 +1,26 @@
-.page-container .card {
-  /* ...existing styles... */
-}
-
-@media (max-width: 600px) {
-  .page-container .card {
-    padding-left: 0;
-    padding-right: 0;
-  }
-}
-.page-container {
-  max-width: 700px;
-  margin: 2rem auto;
-  padding: 2rem;
+.league-create-container {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
   font-family: system-ui, sans-serif;
   color: var(--text-primary);
 }
 
-h1 {
+.league-create-container h1 {
   font-size: 2rem;
+  margin-top: 0;
   margin-bottom: 0.5rem;
 }
 
-p {
+.league-create-container > p {
+  margin-top: 0;
   margin-bottom: 1rem;
 }
 
-.page-container .card {
+.league-create-container .card {
+  max-width: 960px;
   background-color: var(--bg-card);
   border-radius: 12px;
   padding: 2rem;
@@ -33,17 +28,24 @@ p {
   box-shadow: var(--shadow-md);
 }
 
-h2 {
+@media (max-width: 600px) {
+  .league-create-container .card {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+.league-create-container h2 {
   font-size: 1.5rem;
   margin-bottom: 1rem;
 }
 
-ul {
+.league-create-container ul {
   padding-left: 1.2rem;
   margin-bottom: 1rem;
 }
 
-ul li {
+.league-create-container ul li {
   margin-bottom: 0.5rem;
 }
 
@@ -61,6 +63,99 @@ ul li {
 .form-group label {
   font-weight: 600;
   margin-bottom: 0.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.checkbox-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--bg-muted, rgba(255, 255, 255, 0.03));
+  border-radius: 8px;
+}
+
+.checkbox-section h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+}
+
+.checkbox-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.checkbox-table td {
+  padding: 0.35rem 0.75rem 0.35rem 0;
+  vertical-align: middle;
+}
+
+.table-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: normal;
+}
+
+.inline-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+}
+
+.ranking-select {
+  max-width: 260px;
+}
+
+.segmented-control {
+  display: inline-flex;
+  align-self: flex-start;
+  border: 1px solid var(--border-input);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sport-selector {
+  margin-bottom: 1.5rem;
+}
+
+.duration-detail {
+  margin-top: 0.75rem;
+}
+
+.segmented-tab {
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.segmented-tab + .segmented-tab {
+  border-left: 1px solid var(--border-input);
+}
+
+.segmented-tab.active {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.segmented-tab:hover:not(.active) {
+  background-color: var(--bg-muted, rgba(255, 255, 255, 0.05));
+}
+
+.inline-options label {
+  font-weight: normal;
+  display: inline-flex;
+  align-items: center;
 }
 
 input[type="text"],

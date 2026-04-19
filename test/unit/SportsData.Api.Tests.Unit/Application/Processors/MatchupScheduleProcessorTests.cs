@@ -129,6 +129,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             var conferenceSlug = "sec";
 
             var group = Fixture.Build<PickemGroup>()
+                .Without(x => x.StartsOn)
+                .Without(x => x.EndsOn)
                 .With(x => x.Id, groupId)
                 .With(x => x.RankingFilter, () => TeamRankingFilter.AP_TOP_25)
                 .With(x => x.Conferences, new List<PickemGroupConference>
@@ -206,6 +208,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             var seasonWeekId = Guid.NewGuid();
 
             var group = Fixture.Build<PickemGroup>()
+                .Without(x => x.StartsOn)
+                .Without(x => x.EndsOn)
                 .With(x => x.Id, groupId)
                 .With(x => x.RankingFilter, () => TeamRankingFilter.AP_TOP_25)
                 .With(x => x.NonStandardWeekGroupSeasonMapFilter, "fbs")
@@ -284,6 +288,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             var seasonWeekId = Guid.NewGuid();
 
             var group = Fixture.Build<PickemGroup>()
+                .Without(x => x.StartsOn)
+                .Without(x => x.EndsOn)
                 .With(x => x.Id, groupId)
                 .With(x => x.RankingFilter, () => (TeamRankingFilter?)null)
                 .With(x => x.NonStandardWeekGroupSeasonMapFilter, filter) // Use the filter parameter
@@ -342,6 +348,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             var seasonWeekId = Guid.NewGuid();
 
             var group = Fixture.Build<PickemGroup>()
+                .Without(x => x.StartsOn)
+                .Without(x => x.EndsOn)
                 .With(x => x.Id, groupId)
                 .With(x => x.RankingFilter, () => (TeamRankingFilter?)null)
                 .With(x => x.NonStandardWeekGroupSeasonMapFilter, "fbs|bowl") // Multiple filters
@@ -406,6 +414,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             var seasonWeekId = Guid.NewGuid();
 
             var group = Fixture.Build<PickemGroup>()
+                .Without(x => x.StartsOn)
+                .Without(x => x.EndsOn)
                 .With(x => x.Id, groupId)
                 .With(x => x.RankingFilter, () => TeamRankingFilter.AP_TOP_25)
                 .With(x => x.Conferences, new List<PickemGroupConference>())
@@ -455,6 +465,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             var correlationId = Guid.NewGuid();
 
             var group = Fixture.Build<PickemGroup>()
+                .Without(x => x.StartsOn)
+                .Without(x => x.EndsOn)
                 .With(x => x.Id, groupId)
                 .With(x => x.RankingFilter, () => TeamRankingFilter.AP_TOP_25)
                 .With(x => x.Conferences, new List<PickemGroupConference>())
@@ -512,6 +524,8 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             var contestId = Guid.NewGuid();
 
             var group = Fixture.Build<PickemGroup>()
+                .Without(x => x.StartsOn)
+                .Without(x => x.EndsOn)
                 .With(x => x.Id, groupId)
                 .With(x => x.RankingFilter, () => TeamRankingFilter.AP_TOP_25)
                 .With(x => x.Conferences, new List<PickemGroupConference>())
@@ -566,6 +580,93 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             savedMatchup.HomeWins.Should().Be(7);
             savedMatchup.HomeLosses.Should().Be(3);
             savedMatchup.Spread.Should().Be("-3.5");
+        }
+
+        /// <summary>
+        /// Validates that when a PickemGroup defines a league window (StartsOn/EndsOn),
+        /// matchups whose kickoff falls outside the window are excluded from the
+        /// PickemGroupMatchup set — supporting partial-season leagues (e.g. "September
+        /// games only" or "Weeks 1–4"). Null bounds are the full-season default and
+        /// act as "no constraint".
+        /// </summary>
+        [Fact]
+        public async Task Process_LeagueWindow_ExcludesContestsOutsideBounds()
+        {
+            // Arrange
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+            var conferenceSlug = "sec";
+
+            var windowStart = new DateTime(2024, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+            var windowEnd = new DateTime(2024, 9, 21, 23, 59, 59, DateTimeKind.Utc);
+
+            var group = Fixture.Build<PickemGroup>()
+                .With(x => x.Id, groupId)
+                .With(x => x.RankingFilter, () => TeamRankingFilter.AP_TOP_25)
+                .With(x => x.StartsOn, (DateTime?)windowStart)
+                .With(x => x.EndsOn, (DateTime?)windowEnd)
+                .With(x => x.Conferences, new List<PickemGroupConference>
+                {
+                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.Empty }
+                })
+                .Create();
+
+            await DataContext.PickemGroups.AddAsync(group);
+            await DataContext.SaveChangesAsync();
+
+            // Build three SEC matchups: one before the window, one inside, one after.
+            // Without the window filter, all three would match the conference rule
+            // and land in PickemGroupMatchup.
+            var allMatchups = new List<Matchup>
+            {
+                Fixture.Build<Matchup>()
+                    .With(x => x.AwayRank, (int?)null)
+                    .With(x => x.HomeRank, (int?)null)
+                    .With(x => x.AwayConferenceSlug, conferenceSlug)
+                    .With(x => x.HomeConferenceSlug, conferenceSlug)
+                    .With(x => x.StartDateUtc, new DateTime(2024, 9, 8, 19, 0, 0, DateTimeKind.Utc))
+                    .Create(),
+                Fixture.Build<Matchup>()
+                    .With(x => x.AwayRank, (int?)null)
+                    .With(x => x.HomeRank, (int?)null)
+                    .With(x => x.AwayConferenceSlug, conferenceSlug)
+                    .With(x => x.HomeConferenceSlug, conferenceSlug)
+                    .With(x => x.StartDateUtc, new DateTime(2024, 9, 18, 19, 0, 0, DateTimeKind.Utc))
+                    .Create(),
+                Fixture.Build<Matchup>()
+                    .With(x => x.AwayRank, (int?)null)
+                    .With(x => x.HomeRank, (int?)null)
+                    .With(x => x.AwayConferenceSlug, conferenceSlug)
+                    .With(x => x.HomeConferenceSlug, conferenceSlug)
+                    .With(x => x.StartDateUtc, new DateTime(2024, 9, 28, 19, 0, 0, DateTimeKind.Utc))
+                    .Create(),
+            };
+
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
+
+            var command = new ScheduleGroupWeekMatchupsCommand(
+                groupId,
+                seasonWeekId,
+                2024,
+                1,
+                false,
+                Guid.NewGuid());
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert — only the in-window matchup survives.
+            var savedGroupWeek = DataContext.PickemGroupWeeks
+                .Include(gw => gw.Matchups)
+                .FirstOrDefault(x => x.SeasonWeekId == seasonWeekId);
+
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.Matchups.Should().ContainSingle()
+                .Which.StartDateUtc.Should().Be(new DateTime(2024, 9, 18, 19, 0, 0, DateTimeKind.Utc));
         }
     }
 }

@@ -37,7 +37,11 @@ const LeagueDetail = () => {
       navigate("/app/league");
     } catch (err) {
       console.error("Failed to delete league:", err);
-      alert("Error deleting league. Please try again.");
+      // Surface the specific server error (e.g. "Cannot delete a league that
+      // already has user picks.") instead of a generic string so the user
+      // knows why the delete was refused.
+      const serverMessage = err?.response?.data?.errors?.[0]?.errorMessage;
+      alert(serverMessage || "Error deleting league. Please try again.");
     } finally {
       setDeleting(false);
     }
@@ -51,43 +55,46 @@ const LeagueDetail = () => {
   const isCommissioner = userDto?.id === commissionerId;
 
   return (
-    <div className="page-container">
-      <div className="league-info-card">
-        <h2>{league.name}</h2>
-        <ul className="league-details-list">
-          <li><strong>Description:</strong> {league.description}</li>
-          <li><strong>Pick Type:</strong> {league.pickType}</li>
-          <li><strong>Tiebreaker:</strong> {league.tiebreakerType}</li>
-          <li><strong>Tie Policy:</strong> {league.tiebreakerTiePolicy}</li>
-          <li><strong>Confidence Points:</strong> {league.useConfidencePoints ? "Yes" : "No"}</li>
-          <li><strong>Ranking Filter:</strong> {league.rankingFilter || "None"}</li>
-          <li><strong>Visibility:</strong> {league.isPublic ? "Public" : "Private"}</li>
-          <li><strong>Conferences:</strong> {
-            [...new Set(league.conferenceSlugs)]?.join(", ") || "None"
-          }</li>
-        </ul>
-      </div>
-
-      <div className="members-section">
-        <h2>Members</h2>
-        {league.members?.length > 0 ? (
-          <ul className="members-list">
-            {league.members.map((member) => (
-              <li key={member.userId}>
-                <span className="member-username">{member.username}</span>
-                <span className={`member-role ${member.role}`}>{member.role}</span>
-              </li>
-            ))}
+    <div className="league-detail-container">
+      <div className="league-detail-primary">
+        <div className="league-info-card">
+          <h2>{league.name}</h2>
+          <ul className="league-details-list">
+            <li><strong>Description:</strong> {league.description}</li>
+            <li><strong>Pick Type:</strong> {league.pickType}</li>
+            <li><strong>Tiebreaker:</strong> {league.tiebreakerType}</li>
+            <li><strong>Tie Policy:</strong> {league.tiebreakerTiePolicy}</li>
+            <li><strong>Confidence Points:</strong> {league.useConfidencePoints ? "Yes" : "No"}</li>
+            <li><strong>Ranking Filter:</strong> {league.rankingFilter || "None"}</li>
+            <li><strong>Visibility:</strong> {league.isPublic ? "Public" : "Private"}</li>
+            <li><strong>Conferences:</strong> {
+              [...new Set(league.conferenceSlugs)]?.join(", ") || "None"
+            }</li>
           </ul>
-        ) : (
-          <p className="no-members-message">No members yet.</p>
-        )}
+        </div>
       </div>
 
-      <LeagueInvitation leagueId={league.id} leagueName={league.name} />
+      <div className="league-detail-sidebar">
+        <div className="members-section">
+          <h2>Members</h2>
+          {league.members?.length > 0 ? (
+            <ul className="members-list">
+              {league.members.map((member) => (
+                <li key={member.userId}>
+                  <span className="member-username">{member.username}</span>
+                  <span className={`member-role ${member.role}`}>{member.role}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="no-members-message">No members yet.</p>
+          )}
+        </div>
 
-      {isCommissioner && (
-        <div className="danger-zone">
+        <LeagueInvitation leagueId={league.id} leagueName={league.name} />
+
+        {isCommissioner && (
+          <div className="danger-zone">
           <h2>Danger Zone</h2>
           {confirmingDelete ? (
             <>
@@ -108,8 +115,9 @@ const LeagueDetail = () => {
               Delete League
             </button>
           )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

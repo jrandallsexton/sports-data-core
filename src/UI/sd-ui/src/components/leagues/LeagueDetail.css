@@ -1,10 +1,32 @@
-.page-container {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+.league-detail-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
   color: var(--text-primary);
-  background-color: var(--bg-primary);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  display: grid;
+  /* Single column on mobile; the breakpoint below switches to two columns.
+     Each column is its own flex stack so sidebar items pack tight
+     underneath the members card instead of hanging below an empty gap. */
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .league-detail-container {
+    grid-template-columns: 1.2fr 1fr;
+  }
+}
+
+.league-detail-primary,
+.league-detail-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 0;
 }
 
 .league-info-card {
@@ -12,7 +34,6 @@
   border: 2px solid var(--accent);
   border-radius: 12px;
   padding: 2rem;
-  margin-bottom: 2rem;
 }
 
 .league-info-card h2 {
@@ -53,7 +74,6 @@
   border: 2px solid var(--accent);
   border-radius: 12px;
   padding: 2rem;
-  margin-bottom: 2rem;
 }
 
 .members-section h2 {
@@ -119,7 +139,6 @@
   border: 2px solid var(--error);
   border-radius: 12px;
   padding: 2rem;
-  margin-bottom: 2rem;
 }
 
 .danger-zone h2 {
@@ -199,16 +218,15 @@
 
 /* Mobile responsive */
 @media (max-width: 768px) {
-  .page-container {
-    margin: 1rem auto;
-    padding: 0 0.5rem;
+  .league-detail-container {
+    padding: 12px;
+    gap: 1rem;
   }
 
   .league-info-card,
   .members-section,
   .danger-zone {
     padding: 1.5rem;
-    margin-bottom: 1.5rem;
   }
 
   .league-info-card h2 {

@@ -85,14 +85,31 @@ namespace SportsData.Api.Application.Processors
             // 2. are there conferences to always be included?
             var conferenceSlugs = group.Conferences.Select(x => x.ConferenceSlug).ToList();
 
-            // TODO: multi-sport
-            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek);
+            var matchupsResult = await _contestClientFactory
+                .Resolve(group.Sport)
+                .GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek);
             if (!matchupsResult.IsSuccess)
             {
                 _logger.LogWarning("Failed to retrieve matchups for season {Year} week {Week}. Skipping.", command.SeasonYear, command.SeasonWeek);
                 return;
             }
             var allMatchups = matchupsResult.Value;
+
+            // League window filter — excludes contests whose kickoff falls outside
+            // [StartsOn, EndsOn]. Null bounds mean "no constraint" (full-season league),
+            // so this is a no-op when neither is set.
+            if (group.StartsOn.HasValue || group.EndsOn.HasValue)
+            {
+                var preCount = allMatchups.Count;
+                allMatchups = allMatchups
+                    .Where(m =>
+                        (!group.StartsOn.HasValue || m.StartDateUtc >= group.StartsOn.Value) &&
+                        (!group.EndsOn.HasValue || m.StartDateUtc <= group.EndsOn.Value))
+                    .ToList();
+                _logger.LogInformation(
+                    "League window {StartsOn}..{EndsOn} filtered {Before} -> {After} matchups for group {GroupId} week {Week}",
+                    group.StartsOn, group.EndsOn, preCount, allMatchups.Count, group.Id, command.SeasonWeek);
+            }
 
             List<Matchup> groupMatchups;
 

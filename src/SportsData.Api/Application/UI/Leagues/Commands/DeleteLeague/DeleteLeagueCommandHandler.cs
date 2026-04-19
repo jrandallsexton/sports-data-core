@@ -47,6 +47,18 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
                 ResultStatus.Unauthorized,
                 [new ValidationFailure(nameof(command.UserId), $"User {command.UserId} is not the commissioner of league {command.LeagueId}.")]);
 
+        // Don't let a commissioner nuke a league that members have already started picking
+        // for — too easy to destroy real scoring data during testing. Empty leagues (no
+        // picks yet) are fair game to delete.
+        var hasPicks = await _dbContext.UserPicks
+            .AnyAsync(p => p.PickemGroupId == command.LeagueId, cancellationToken);
+
+        if (hasPicks)
+            return new Failure<Guid>(
+                default,
+                ResultStatus.BadRequest,
+                [new ValidationFailure(nameof(command.LeagueId), "Cannot delete a league that already has user picks.")]);
+
         _logger.LogInformation(
             "Deleting league {LeagueId} by commissioner {UserId}",
             command.LeagueId,

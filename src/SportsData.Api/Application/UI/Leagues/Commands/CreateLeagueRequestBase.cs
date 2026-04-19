@@ -35,4 +35,16 @@ public abstract class CreateLeagueRequestBase
     /// Inclusive end of the league window. Null = through the end of the season.
     /// </summary>
     public DateTime? EndsOn { get; set; }
+
+    /// <summary>
+    /// Normalized form of <see cref="EndsOn"/> for persistence and querying.
+    /// When the caller supplies a midnight timestamp (i.e. a date with no time
+    /// component), this property returns end-of-day so "inclusive end" behaves
+    /// as documented. Values with an explicit time (e.g. the FE's
+    /// <c>YYYY-MM-DDT23:59:59Z</c>) pass through unchanged.
+    /// </summary>
+    public DateTime? EffectiveEndsOn =>
+        EndsOn is { TimeOfDay.Ticks: 0 } endsOn
+            ? endsOn.Date.AddDays(1).AddTicks(-1)
+            : EndsOn;
 }

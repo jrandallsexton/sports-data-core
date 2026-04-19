@@ -1,3 +1,4 @@
+using FluentValidation;
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
@@ -30,17 +31,20 @@ public class CreateFootballNcaaLeagueCommandHandler : ICreateFootballNcaaLeagueC
     private readonly AppDataContext _dbContext;
     private readonly IEventBus _eventBus;
     private readonly IFranchiseClientFactory _franchiseClientFactory;
+    private readonly IValidator<CreateFootballNcaaLeagueRequest> _validator;
 
     public CreateFootballNcaaLeagueCommandHandler(
         ILogger<CreateFootballNcaaLeagueCommandHandler> logger,
         AppDataContext dbContext,
         IEventBus eventBus,
-        IFranchiseClientFactory franchiseClientFactory)
+        IFranchiseClientFactory franchiseClientFactory,
+        IValidator<CreateFootballNcaaLeagueRequest> validator)
     {
         _logger = logger;
         _dbContext = dbContext;
         _eventBus = eventBus;
         _franchiseClientFactory = franchiseClientFactory;
+        _validator = validator;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -48,40 +52,18 @@ public class CreateFootballNcaaLeagueCommandHandler : ICreateFootballNcaaLeagueC
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
-            return new Failure<Guid>(
-                default!,
-                ResultStatus.Validation,
-                [new ValidationFailure(nameof(request.Name), "League name is required.")]);
+        var validation = await _validator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+            return new Failure<Guid>(default!, ResultStatus.Validation, validation.Errors);
 
-        if (!Enum.TryParse<PickType>(request.PickType, ignoreCase: true, out var pickType))
-            return new Failure<Guid>(
-                default!,
-                ResultStatus.Validation,
-                [new ValidationFailure(nameof(request.PickType), $"Invalid pick type: {request.PickType}")]);
+        // Enum parsing is guaranteed by the validator above.
+        var pickType = Enum.Parse<PickType>(request.PickType, ignoreCase: true);
+        var tiebreakerType = Enum.Parse<TiebreakerType>(request.TiebreakerType, ignoreCase: true);
+        var tiebreakerTiePolicy = Enum.Parse<TiebreakerTiePolicy>(request.TiebreakerTiePolicy, ignoreCase: true);
 
-        if (!Enum.TryParse<TiebreakerType>(request.TiebreakerType, ignoreCase: true, out var tiebreakerType))
-            return new Failure<Guid>(
-                default!,
-                ResultStatus.Validation,
-                [new ValidationFailure(nameof(request.TiebreakerType), $"Invalid tiebreaker type: {request.TiebreakerType}")]);
-
-        if (!Enum.TryParse<TiebreakerTiePolicy>(request.TiebreakerTiePolicy, ignoreCase: true, out var tiebreakerTiePolicy))
-            return new Failure<Guid>(
-                default!,
-                ResultStatus.Validation,
-                [new ValidationFailure(nameof(request.TiebreakerTiePolicy), $"Invalid tiebreaker tie policy: {request.TiebreakerTiePolicy}")]);
-
-        TeamRankingFilter? rankingFilter = null;
-        if (!string.IsNullOrWhiteSpace(request.RankingFilter))
-        {
-            if (!Enum.TryParse<TeamRankingFilter>(request.RankingFilter, ignoreCase: true, out var parsed))
-                return new Failure<Guid>(
-                    default!,
-                    ResultStatus.Validation,
-                    [new ValidationFailure(nameof(request.RankingFilter), $"Invalid ranking filter: {request.RankingFilter}")]);
-            rankingFilter = parsed;
-        }
+        var rankingFilter = string.IsNullOrWhiteSpace(request.RankingFilter)
+            ? (TeamRankingFilter?)null
+            : Enum.Parse<TeamRankingFilter>(request.RankingFilter, ignoreCase: true);
 
         var seasonYear = request.SeasonYear ?? DateTime.UtcNow.Year;
         var conferenceIds = request.ConferenceSlugs.Count > 0
@@ -117,7 +99,7 @@ public class CreateFootballNcaaLeagueCommandHandler : ICreateFootballNcaaLeagueC
             UseConfidencePoints = request.UseConfidencePoints,
             DropLowWeeksCount = request.DropLowWeeksCount,
             StartsOn = request.StartsOn,
-            EndsOn = request.EndsOn
+            EndsOn = request.EffectiveEndsOn
         };
 
         foreach (var kvp in conferenceIds)

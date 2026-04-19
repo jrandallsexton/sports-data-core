@@ -9,6 +9,12 @@
 #   - Create a .env file (gitignored) with:
 #       APPCONFIG_CONNSTR=<your Azure App Config connection string>
 #       PG_CONNSTR=Host=host.docker.internal;Port=5432;Username=postgres;Password=<your-password>
+#       AZURE_CLIENT_ID=<dev service principal app id>
+#       AZURE_CLIENT_SECRET=<dev service principal client secret>
+#       AZURE_TENANT_ID=<azure tenant id>
+#     The AZURE_* trio is used by DefaultAzureCredential to resolve Key Vault
+#     references coming through AppConfig; mirrors the prod k3s azure-identity
+#     secret. See .env.example for the full key layout.
 #
 # The API is available at http://localhost:5262
 # Producer NCAA API at http://localhost:7040 (for direct testing)
@@ -19,6 +25,26 @@
 # environment variable overrides for the sport-keyed client config URLs.
 # This does NOT modify Azure App Config — the overrides are local to Docker only.
 
+x-common-env: &common-env
+  APPCONFIG_CONNSTR: ${APPCONFIG_CONNSTR}
+  APPCONFIG_LABEL: Local
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_HTTP_PORTS: "8080"
+  AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
+  AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET}
+  AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+  CommonConfig__SqlBaseConnectionString: ${PG_CONNSTR}
+
+# Readiness probe reused by every Producer service. Uses bash's /dev/tcp to
+# verify Kestrel is accepting connections on 8080 without needing curl or
+# wget (neither is in the aspnet:10.0-noble base image).
+x-producer-healthcheck: &producer-healthcheck
+  test: ["CMD", "bash", "-c", "exec 6<>/dev/tcp/127.0.0.1/8080"]
+  interval: 5s
+  timeout: 3s
+  retries: 12
+  start_period: 20s
+
 services:
   producer-ncaa-api:
     build:
@@ -28,15 +54,9 @@ services:
     ports:
       - "7040:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
-      - APPCONFIG_CONNSTR=${APPCONFIG_CONNSTR}
-      - APPCONFIG_LABEL=Local
-      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
-      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
-      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
-      - CommonConfig__SqlBaseConnectionString=${PG_CONNSTR}
+      <<: *common-env
     command: ["dotnet", "SportsData.Producer.dll", "-mode", "FootballNcaa", "-role", "Api"]
+    healthcheck: *producer-healthcheck
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -48,15 +68,9 @@ services:
     ports:
       - "7041:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
-      - APPCONFIG_CONNSTR=${APPCONFIG_CONNSTR}
-      - APPCONFIG_LABEL=Local
-      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
-      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
-      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
-      - CommonConfig__SqlBaseConnectionString=${PG_CONNSTR}
+      <<: *common-env
     command: ["dotnet", "SportsData.Producer.dll", "-mode", "FootballNfl", "-role", "Api"]
+    healthcheck: *producer-healthcheck
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -68,15 +82,9 @@ services:
     ports:
       - "7042:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
-      - APPCONFIG_CONNSTR=${APPCONFIG_CONNSTR}
-      - APPCONFIG_LABEL=Local
-      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
-      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
-      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
-      - CommonConfig__SqlBaseConnectionString=${PG_CONNSTR}
+      <<: *common-env
     command: ["dotnet", "SportsData.Producer.dll", "-mode", "BaseballMlb", "-role", "Api"]
+    healthcheck: *producer-healthcheck
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -88,41 +96,37 @@ services:
     ports:
       - "5262:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=8080
-      - APPCONFIG_CONNSTR=${APPCONFIG_CONNSTR}
-      - APPCONFIG_LABEL=Local
-      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
-      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
-      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
-      - CommonConfig__SqlBaseConnectionString=${PG_CONNSTR}
+      <<: *common-env
       # Sport-keyed client URLs pointing to Docker service names.
       # These override the localhost URLs from App Config's Local label
       # so the API routes to the correct Producer container per sport.
-      - CommonConfig__ContestClientConfig__FootballNcaa__ApiUrl=http://producer-ncaa-api:8080/api/
-      - CommonConfig__ContestClientConfig__FootballNfl__ApiUrl=http://producer-nfl-api:8080/api/
-      - CommonConfig__ContestClientConfig__BaseballMlb__ApiUrl=http://producer-mlb-api:8080/api/
-      - CommonConfig__FranchiseClientConfig__FootballNcaa__ApiUrl=http://producer-ncaa-api:8080/api/
-      - CommonConfig__FranchiseClientConfig__FootballNfl__ApiUrl=http://producer-nfl-api:8080/api/
-      - CommonConfig__FranchiseClientConfig__BaseballMlb__ApiUrl=http://producer-mlb-api:8080/api/
-      - CommonConfig__ProducerClientConfig__FootballNcaa__ApiUrl=http://producer-ncaa-api:8080/api/
-      - CommonConfig__ProducerClientConfig__FootballNfl__ApiUrl=http://producer-nfl-api:8080/api/
-      - CommonConfig__ProducerClientConfig__BaseballMlb__ApiUrl=http://producer-mlb-api:8080/api/
-      - CommonConfig__SeasonClientConfig__FootballNcaa__ApiUrl=http://producer-ncaa-api:8080/api/
-      - CommonConfig__SeasonClientConfig__FootballNfl__ApiUrl=http://producer-nfl-api:8080/api/
-      - CommonConfig__SeasonClientConfig__BaseballMlb__ApiUrl=http://producer-mlb-api:8080/api/
-      - CommonConfig__VenueClientConfig__FootballNcaa__ApiUrl=http://producer-ncaa-api:8080/api/
-      - CommonConfig__VenueClientConfig__FootballNfl__ApiUrl=http://producer-nfl-api:8080/api/
-      - CommonConfig__VenueClientConfig__BaseballMlb__ApiUrl=http://producer-mlb-api:8080/api/
-      - CommonConfig__PlayerClientConfig__FootballNcaa__ApiUrl=http://producer-ncaa-api:8080/api/
-      - CommonConfig__PlayerClientConfig__FootballNfl__ApiUrl=http://producer-nfl-api:8080/api/
-      - CommonConfig__PlayerClientConfig__BaseballMlb__ApiUrl=http://producer-mlb-api:8080/api/
-      - CommonConfig__NotificationClientConfig__FootballNcaa__ApiUrl=http://producer-ncaa-api:8080/api/
-      - CommonConfig__NotificationClientConfig__FootballNfl__ApiUrl=http://producer-nfl-api:8080/api/
-      - CommonConfig__NotificationClientConfig__BaseballMlb__ApiUrl=http://producer-mlb-api:8080/api/
+      CommonConfig__ContestClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__ContestClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__ContestClientConfig__BaseballMlb__ApiUrl: http://producer-mlb-api:8080/api/
+      CommonConfig__FranchiseClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__FranchiseClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__FranchiseClientConfig__BaseballMlb__ApiUrl: http://producer-mlb-api:8080/api/
+      CommonConfig__ProducerClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__ProducerClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__ProducerClientConfig__BaseballMlb__ApiUrl: http://producer-mlb-api:8080/api/
+      CommonConfig__SeasonClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__SeasonClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__SeasonClientConfig__BaseballMlb__ApiUrl: http://producer-mlb-api:8080/api/
+      CommonConfig__VenueClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__VenueClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__VenueClientConfig__BaseballMlb__ApiUrl: http://producer-mlb-api:8080/api/
+      CommonConfig__PlayerClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__PlayerClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__PlayerClientConfig__BaseballMlb__ApiUrl: http://producer-mlb-api:8080/api/
+      CommonConfig__NotificationClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__NotificationClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__NotificationClientConfig__BaseballMlb__ApiUrl: http://producer-mlb-api:8080/api/
     depends_on:
-      - producer-ncaa-api
-      - producer-nfl-api
-      - producer-mlb-api
+      producer-ncaa-api:
+        condition: service_healthy
+      producer-nfl-api:
+        condition: service_healthy
+      producer-mlb-api:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"

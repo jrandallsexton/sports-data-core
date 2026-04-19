@@ -209,6 +209,14 @@ its own focused change.
 - [ ] Week-level views (leaderboard, overview) clamp to window
 - [ ] Tests for partial-season leagues (e.g., weeks 1–4 league, date-range
       league)
+- [ ] **Query-plan check before shipping:** the new filter joins
+      `PickemGroup.StartsOn`/`EndsOn` against `Contest.StartTime` scoped by
+      sport/league. Run `EXPLAIN` on the real query before merge; if the
+      planner falls back to seq-scan on `Contest`, add a composite index
+      on `(Sport, StartTime)` (or `(Sport, League, StartTime)`) in a
+      follow-up migration. The current `17AprV1_PickemGroupWindow`
+      migration only adds the columns — no index decision was made there
+      because no query consumes them yet.
 
 ### Phase 4 — Cleanup
 

@@ -1,11 +1,21 @@
 // Sport-specific create-league request builders.
 // Each maps FE form state to the shape expected by the corresponding BE endpoint.
 
-const toStartOfDayIso = (dateStr) =>
-  dateStr ? `${dateStr}T00:00:00Z` : null;
+// Convert a `<input type="date">` value (YYYY-MM-DD, no timezone) into an ISO
+// instant that represents midnight/end-of-day in the caller's local timezone.
+// Appending "Z" would wrongly treat the local calendar date as UTC, skewing
+// the window by up to 24 hours for non-UTC users.
+const toStartOfDayIso = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day, 0, 0, 0).toISOString();
+};
 
-const toEndOfDayIso = (dateStr) =>
-  dateStr ? `${dateStr}T23:59:59Z` : null;
+const toEndOfDayIso = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day, 23, 59, 59).toISOString();
+};
 
 const buildWindow = ({ durationMode, startsOn, endsOn }) => {
   if (durationMode === "dates") {
@@ -16,6 +26,14 @@ const buildWindow = ({ durationMode, startsOn, endsOn }) => {
   }
   // Full season or Week Range (week→date translation is a BE follow-up).
   return { startsOn: null, endsOn: null };
+};
+
+// Coerce to a non-negative integer; any string, decimal, negative, or non-numeric
+// input collapses to 0. Protects the BE from malformed payloads if a caller other
+// than our own form ever hits these builders.
+const toNonNegativeInt = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 };
 
 // Map the form's tiebreaker UI value to the BE enum name.
@@ -51,7 +69,7 @@ const buildShared = ({
   tiebreakerTiePolicy: "EarliestSubmission",
   useConfidencePoints,
   isPublic,
-  dropLowWeeksCount: dropLowWeeksCount || 0,
+  dropLowWeeksCount: toNonNegativeInt(dropLowWeeksCount),
   ...buildWindow({ durationMode, startsOn, endsOn }),
 });
 

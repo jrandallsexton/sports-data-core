@@ -9,6 +9,8 @@ using SportsData.Core.Infrastructure.Clients.Franchise;
 
 using Xunit;
 
+using FailureResult = SportsData.Core.Common.Failure<System.Guid>;
+
 namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Commands.CreateFootballNflLeague;
 
 public class CreateFootballNflLeagueCommandHandlerTests : ApiTestBase<CreateFootballNflLeagueCommandHandler>
@@ -23,6 +25,11 @@ public class CreateFootballNflLeagueCommandHandlerTests : ApiTestBase<CreateFoot
         _franchiseClientFactoryMock
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_franchiseClientMock.Object);
+
+        // Use the real validator so Name/enum/date-window assertions exercise the
+        // production rules rather than AutoMocker's default IsValid=true stub.
+        Mocker.Use<FluentValidation.IValidator<CreateFootballNflLeagueRequest>>(
+            new CreateFootballNflLeagueRequestValidator());
     }
 
     private CreateFootballNflLeagueRequest BuildValidRequest() => new()
@@ -45,7 +52,11 @@ public class CreateFootballNflLeagueCommandHandlerTests : ApiTestBase<CreateFoot
 
         var result = await sut.ExecuteAsync(request, Guid.NewGuid());
 
-        result.IsSuccess.Should().BeFalse();
+        var failure = result.Should().BeOfType<FailureResult>().Subject;
+        failure.Status.Should().Be(ResultStatus.Validation);
+        failure.Errors.Should().ContainSingle()
+            .Which.PropertyName.Should().Be(nameof(CreateFootballNflLeagueRequest.Name));
+        failure.Errors.Single().ErrorMessage.Should().Contain("League name is required");
     }
 
     [Fact]
@@ -57,15 +68,23 @@ public class CreateFootballNflLeagueCommandHandlerTests : ApiTestBase<CreateFoot
 
         var result = await sut.ExecuteAsync(request, Guid.NewGuid());
 
-        result.IsSuccess.Should().BeFalse();
+        var failure = result.Should().BeOfType<FailureResult>().Subject;
+        failure.Status.Should().Be(ResultStatus.Validation);
+        failure.Errors.Should().ContainSingle()
+            .Which.PropertyName.Should().Be(nameof(CreateFootballNflLeagueRequest.PickType));
+        failure.Errors.Single().ErrorMessage.Should().Contain("Invalid pick type: Garbage");
     }
 
     [Fact]
     public async Task ShouldFail_WhenAnyDivisionSlugNotResolved()
     {
+        // Pin SeasonYear on the request so the handler's DateTime.UtcNow.Year
+        // fallback never fires — the mock setup below stays deterministic.
+        const int SeasonYear = 2025;
+
         var request = BuildValidRequest();
+        request.SeasonYear = SeasonYear;
         var currentUserId = Guid.NewGuid();
-        var currentYear = DateTime.UtcNow.Year;
 
         var slugToGuid = new Dictionary<Guid, string>
         {
@@ -76,13 +95,18 @@ public class CreateFootballNflLeagueCommandHandlerTests : ApiTestBase<CreateFoot
         request.DivisionSlugs = ["afc-east", "afc-north", "garbage"];
 
         _franchiseClientMock
-            .Setup(x => x.GetConferenceIdsBySlugs(currentYear, request.DivisionSlugs, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetConferenceIdsBySlugs(SeasonYear, request.DivisionSlugs, It.IsAny<CancellationToken>()))
             .ReturnsAsync(slugToGuid);
 
         var sut = Mocker.CreateInstance<CreateFootballNflLeagueCommandHandler>();
 
         var result = await sut.ExecuteAsync(request, currentUserId);
 
-        result.IsSuccess.Should().BeFalse();
+        var failure = result.Should().BeOfType<FailureResult>().Subject;
+        failure.Status.Should().Be(ResultStatus.Validation);
+        failure.Errors.Should().ContainSingle()
+            .Which.PropertyName.Should().Be(nameof(CreateFootballNflLeagueRequest.DivisionSlugs));
+        failure.Errors.Single().ErrorMessage.Should().Contain("Unknown division slugs")
+            .And.Contain("garbage");
     }
 }

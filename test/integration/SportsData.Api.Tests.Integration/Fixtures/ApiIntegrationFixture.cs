@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Tests.Integration.Fakes;
+using SportsData.Core.Common;
 
 using Testcontainers.PostgreSql;
 
@@ -41,9 +42,10 @@ public sealed class ApiIntegrationFixture : IAsyncLifetime
         // Applying migrations also builds the DI container — forces lazy issues to surface early.
         using var scope = Factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDataContext>();
+        var clock = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
         await db.Database.MigrateAsync();
 
-        TestUserId = await SeedTestUserAsync(db);
+        TestUserId = await SeedTestUserAsync(db, clock);
     }
 
     public async Task DisposeAsync()
@@ -59,7 +61,18 @@ public sealed class ApiIntegrationFixture : IAsyncLifetime
     }
 
     /// <summary>
-    /// Wipes mutable test-scoped tables between scenarios. The seeded test user stays.
+    /// Resets <b>league-scoped</b> state between scenarios. TRUNCATE on
+    /// <c>PickemGroup</c> with CASCADE also clears the FK-child tables
+    /// (<c>PickemGroupMember</c>, <c>PickemGroupConference</c>,
+    /// <c>PickemGroupInvitation</c>, <c>PickemGroupWeek</c>). The seeded test
+    /// user stays.
+    /// <para>
+    /// Other mutable tables (<c>ContestPrediction</c>, <c>PickResult</c>,
+    /// <c>MatchupPreview</c>, <c>Article</c>, outbox/inbox, messageboard, …)
+    /// are intentionally <b>not</b> cleared — no current integration test
+    /// writes to them. When a future test does, add the targeted truncate
+    /// here (or split into purpose-specific reset helpers).
+    /// </para>
     /// </summary>
     public async Task ResetDatabaseAsync()
     {
@@ -73,7 +86,7 @@ public sealed class ApiIntegrationFixture : IAsyncLifetime
     /// <summary>Gives tests a scoped <see cref="AppDataContext"/> for direct assertions.</summary>
     public IServiceScope CreateScope() => Factory.Services.CreateScope();
 
-    private static async Task<Guid> SeedTestUserAsync(AppDataContext db)
+    private static async Task<Guid> SeedTestUserAsync(AppDataContext db, IDateTimeProvider clock)
     {
         var existing = await db.Users
             .FirstOrDefaultAsync(u => u.FirebaseUid == TestIdentity.FirebaseUid);
@@ -90,7 +103,7 @@ public sealed class ApiIntegrationFixture : IAsyncLifetime
             SignInProvider = "test",
             DisplayName = TestIdentity.DisplayName,
             IsAdmin = true,
-            LastLoginUtc = DateTime.UtcNow,
+            LastLoginUtc = clock.UtcNow(),
         };
 
         db.Users.Add(user);

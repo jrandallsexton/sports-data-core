@@ -18,14 +18,15 @@ public class SmokeTestFixture : IDisposable
 
     public SmokeTestFixture()
     {
-        // Resolve from user-secrets first, env vars second. Secrets are stored per
-        // developer under %APPDATA%\Microsoft\UserSecrets and never hit the repo.
-        // Seed locally with:
+        // Env vars provide the baseline (also the sole source in CI); user-secrets are
+        // added last so developers can override an ambient env var per-project without
+        // touching their shell profile. Secrets live under %APPDATA%\Microsoft\UserSecrets
+        // and never hit the repo. Seed locally with:
         //     dotnet user-secrets set SMOKE_TEST_API_KEY <value> \
         //         --project test/smoke/SportsData.Api.Tests.Smoke
         var config = new ConfigurationBuilder()
-            .AddUserSecrets<SmokeTestFixture>(optional: true)
             .AddEnvironmentVariables()
+            .AddUserSecrets<SmokeTestFixture>(optional: true)
             .Build();
 
         BaseUrl = config["SMOKE_TEST_BASE_URL"]

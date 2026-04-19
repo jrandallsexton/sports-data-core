@@ -38,9 +38,14 @@ public sealed class SportsDataApiFactory : WebApplicationFactory<Program>
         builder.ConfigureTestServices(services =>
         {
             // --- DbContext ----------------------------------------------------------
-            // Program.cs skipped AddDataPersistence in Testing mode; register our own
-            // pointing at the Testcontainers Postgres.
+            // Program.cs skipped AddDataPersistence in Testing mode, so no prod-side
+            // registration exists today. These RemoveAll calls are defensive hygiene —
+            // if the Testing gate is ever loosened we still get a clean single
+            // registration (otherwise DbContextOptions<T> *and* the DbContext service
+            // itself would both be duplicated).
             services.RemoveAll<DbContextOptions<AppDataContext>>();
+            services.RemoveAll<DbContextOptions>();
+            services.RemoveAll<AppDataContext>();
             services.AddDbContext<AppDataContext>(options =>
                 options.UseNpgsql(_postgresConnectionString, npg =>
                 {

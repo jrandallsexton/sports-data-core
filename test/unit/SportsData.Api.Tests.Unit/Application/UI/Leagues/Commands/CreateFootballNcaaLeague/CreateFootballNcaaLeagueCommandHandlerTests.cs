@@ -23,6 +23,11 @@ public class CreateFootballNcaaLeagueCommandHandlerTests : ApiTestBase<CreateFoo
         _franchiseClientFactoryMock
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_franchiseClientMock.Object);
+
+        // Use the real validator so Name/enum/date-window assertions exercise the
+        // production rules rather than AutoMocker's default IsValid=true stub.
+        Mocker.Use<FluentValidation.IValidator<CreateFootballNcaaLeagueRequest>>(
+            new CreateFootballNcaaLeagueRequestValidator());
     }
 
     private CreateFootballNcaaLeagueRequest BuildValidRequest() => new()

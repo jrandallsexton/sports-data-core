@@ -1,5 +1,7 @@
 using FluentAssertions;
 
+using FluentValidation;
+
 using Moq;
 
 using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague;
@@ -23,6 +25,11 @@ public class CreateBaseballMlbLeagueCommandHandlerTests : ApiTestBase<CreateBase
         _franchiseClientFactoryMock
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_franchiseClientMock.Object);
+
+        // Use the real validator so Name/enum/date-window assertions exercise the
+        // production rules rather than AutoMocker's default IsValid=true stub.
+        Mocker.Use<IValidator<CreateBaseballMlbLeagueRequest>>(
+            new CreateBaseballMlbLeagueRequestValidator());
     }
 
     private CreateBaseballMlbLeagueRequest BuildValidRequest() => new()

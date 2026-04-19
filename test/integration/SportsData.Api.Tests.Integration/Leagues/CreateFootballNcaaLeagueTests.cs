@@ -90,10 +90,10 @@ public sealed class CreateFootballNcaaLeagueTests
                 It.IsAny<int>(),
                 It.IsAny<List<string>>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync((int _, List<string> slugs, CancellationToken _) =>
+            .ReturnsAsync((int seasonYear, List<string> slugs, CancellationToken cancellationToken) =>
                 slugs
-                    .Where(s => s != "nope")
-                    .ToDictionary(_ => Guid.NewGuid(), s => s));
+                    .Where(slug => slug != "nope")
+                    .ToDictionary(slug => Guid.NewGuid(), slug => slug));
 
         var client = _fixture.Factory.CreateClient();
 

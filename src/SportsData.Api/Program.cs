@@ -31,8 +31,16 @@ using System.Text.Json.Serialization;
 
 namespace SportsData.Api
 {
-    public class Program
+    public partial class Program
     {
+        /// <summary>
+        /// Short-circuits prod-only subsystems (Azure AppConfig, Firebase, Azure SignalR,
+        /// MassTransit messaging, Hangfire recurring jobs) so integration tests can boot
+        /// the app with a WebApplicationFactory and supply substitutes via ConfigureTestServices.
+        /// Activated by setting ASPNETCORE_ENVIRONMENT to "Testing".
+        /// </summary>
+        public const string TestingEnvironmentName = "Testing";
+
         public static async Task Main(string[] args)
         {
             var mode = (args.Length > 0 && args[0] == "-mode") ?
@@ -40,6 +48,7 @@ namespace SportsData.Api
                 Sport.All;
 
             var builder = WebApplication.CreateBuilder(args);
+            var isTestingEnv = builder.Environment.IsEnvironment(TestingEnvironmentName);
 
             // configure JWT Authentication
             builder.Services
@@ -104,34 +113,49 @@ namespace SportsData.Api
 
             // Add services to the container.
             var config = builder.Configuration;
-            config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
+            if (!isTestingEnv)
+            {
+                config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName);
+                // Re-add env vars *after* AppConfig so container-level overrides (e.g. the
+                // docker-compose `CommonConfig__SqlBaseConnectionString=host.docker.internal`)
+                // beat AppConfig's host-native `localhost` value. Gated off in Production
+                // so a stray pod env var can never silently shadow a deliberate AppConfig
+                // value — AppConfig is the source of truth in prod.
+                if (!builder.Environment.IsProduction())
+                {
+                    config.AddEnvironmentVariables();
+                }
+            }
 
             var services = builder.Services;
             services.Configure<CommonConfig>(config.GetSection("CommonConfig"));
             services.Configure<ApiConfig>(config.GetSection("SportsData.Api:ApiConfig"));
             services.Configure<NotificationConfig>(config.GetSection("CommonConfig:NotificationConfig"));
             services.Configure<SyntheticUserPickStylesConfig>(config.GetSection("SportsData.Api:SyntheticUserPickStyles"));
-            
-            var firebaseSection = config.GetSection("CommonConfig:Firebase");
-            var firebaseJson = System.Text.Json.JsonSerializer.Serialize(new
-            {
-                type = firebaseSection["Type"],
-                project_id = firebaseSection["ProjectId"],
-                private_key_id = firebaseSection["PrivateKeyId"],
-                private_key = firebaseSection["PrivateKey"],
-                client_email = firebaseSection["ClientEmail"],
-                client_id = firebaseSection["ClientId"],
-                auth_uri = firebaseSection["AuthUri"],
-                token_uri = firebaseSection["TokenUri"],
-                auth_provider_x509_cert_url = firebaseSection["AuthProviderX509CertUrl"],
-                client_x509_cert_url = firebaseSection["ClientX509CertUrl"],
-                universe_domain = firebaseSection["UniverseDomain"]
-            });
 
-            FirebaseApp.Create(new AppOptions
+            if (!isTestingEnv)
             {
-                Credential = GoogleCredential.FromJson(firebaseJson)
-            });
+                var firebaseSection = config.GetSection("CommonConfig:Firebase");
+                var firebaseJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    type = firebaseSection["Type"],
+                    project_id = firebaseSection["ProjectId"],
+                    private_key_id = firebaseSection["PrivateKeyId"],
+                    private_key = firebaseSection["PrivateKey"],
+                    client_email = firebaseSection["ClientEmail"],
+                    client_id = firebaseSection["ClientId"],
+                    auth_uri = firebaseSection["AuthUri"],
+                    token_uri = firebaseSection["TokenUri"],
+                    auth_provider_x509_cert_url = firebaseSection["AuthProviderX509CertUrl"],
+                    client_x509_cert_url = firebaseSection["ClientX509CertUrl"],
+                    universe_domain = firebaseSection["UniverseDomain"]
+                });
+
+                FirebaseApp.Create(new AppOptions
+                {
+                    Credential = GoogleCredential.FromJson(firebaseJson)
+                });
+            }
 
             builder.Services.AddScoped<IDbConnection>(sp =>
             {
@@ -190,35 +214,42 @@ namespace SportsData.Api
 
             // API is a single pod — keep pool small to leave headroom for Producer/Provider
             const int apiPoolSize = 10;
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, apiPoolSize);
+            if (!isTestingEnv)
+            {
+                services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, apiPoolSize);
+            }
 
-            services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: apiPoolSize);
+            string? sigRConnString = null;
+            if (!isTestingEnv)
+            {
+                services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: apiPoolSize);
 
-            services.AddMessaging<AppDataContext>(config,
-            [
-                typeof(ContestOddsUpdatedHandler),
-                typeof(ContestRecapArticlePublishedHandler),
-                typeof(ContestStartTimeUpdatedHandler),
-                typeof(ContestStatusChangedHandler),
-                typeof(PickemGroupCreatedHandler),
-                typeof(PickemGroupMatchupAddedHandler),
-                typeof(PickemGroupWeekMatchupsGeneratedHandler),
-                typeof(PreviewGeneratedHandler)
-            ]);
+                services.AddMessaging<AppDataContext>(config,
+                [
+                    typeof(ContestOddsUpdatedHandler),
+                    typeof(ContestRecapArticlePublishedHandler),
+                    typeof(ContestStartTimeUpdatedHandler),
+                    typeof(ContestStatusChangedHandler),
+                    typeof(PickemGroupCreatedHandler),
+                    typeof(PickemGroupMatchupAddedHandler),
+                    typeof(PickemGroupWeekMatchupsGeneratedHandler),
+                    typeof(PreviewGeneratedHandler)
+                ]);
 
-            var sigRConnString = config["CommonConfig:AzureSignalR:ConnectionString"];
-            services
-                .AddSignalR(options =>
-                {
-                    options.EnableDetailedErrors = true;
-                    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
-                    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
-                    options.HandshakeTimeout = TimeSpan.FromSeconds(15);
-                })
-                .AddAzureSignalR(options =>
-                {
-                    options.ConnectionString = sigRConnString;
-                });
+                sigRConnString = config["CommonConfig:AzureSignalR:ConnectionString"];
+                services
+                    .AddSignalR(options =>
+                    {
+                        options.EnableDetailedErrors = true;
+                        options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+                        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+                        options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+                    })
+                    .AddAzureSignalR(options =>
+                    {
+                        options.ConnectionString = sigRConnString;
+                    });
+            }
 
             // Configure CORS
             builder.Services.AddCors(options =>
@@ -292,7 +323,11 @@ namespace SportsData.Api
             app.UseAuthorization();
             app.UseOutputCache();
 
-            await app.Services.ApplyMigrations<AppDataContext>();
+            // Tests apply migrations themselves against a Testcontainers-managed database.
+            if (!isTestingEnv)
+            {
+                await app.Services.ApplyMigrations<AppDataContext>();
+            }
 
             app.UseHealthChecks("/health", new HealthCheckOptions()
             {
@@ -313,12 +348,15 @@ namespace SportsData.Api
                 app.MapPrometheusScrapingEndpoint();
             }
 
-            app.MapHub<NotificationHub>("/hubs/notifications");
+            if (!isTestingEnv)
+            {
+                app.MapHub<NotificationHub>("/hubs/notifications");
 
-            var logger = app.Services.GetRequiredService<ILogger<Program>>();
-            logger.LogInformation("Azure SignalR registration complete with {connString}", sigRConnString);
+                var logger = app.Services.GetRequiredService<ILogger<Program>>();
+                logger.LogInformation("Azure SignalR registration complete with {connString}", sigRConnString);
 
-            app.Services.ConfigureHangfireJobs(mode);
+                app.Services.ConfigureHangfireJobs(mode);
+            }
 
             await app.RunAsync();
         }

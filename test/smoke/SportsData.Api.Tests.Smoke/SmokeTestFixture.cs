@@ -1,6 +1,8 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 
+using Microsoft.Extensions.Configuration;
+
 namespace SportsData.Api.Tests.Smoke;
 
 public class SmokeTestFixture : IDisposable
@@ -16,13 +18,26 @@ public class SmokeTestFixture : IDisposable
 
     public SmokeTestFixture()
     {
-        BaseUrl = Environment.GetEnvironmentVariable("SMOKE_TEST_BASE_URL")
+        // Env vars provide the baseline (also the sole source in CI); user-secrets are
+        // added last so developers can override an ambient env var per-project without
+        // touching their shell profile. Secrets live under %APPDATA%\Microsoft\UserSecrets
+        // and never hit the repo. Seed locally with:
+        //     dotnet user-secrets set SMOKE_TEST_API_KEY <value> \
+        //         --project test/smoke/SportsData.Api.Tests.Smoke
+        var config = new ConfigurationBuilder()
+            .AddEnvironmentVariables()
+            .AddUserSecrets<SmokeTestFixture>(optional: true)
+            .Build();
+
+        BaseUrl = config["SMOKE_TEST_BASE_URL"]
             ?? "https://api.sportdeets.com";
 
-        var apiKey = Environment.GetEnvironmentVariable("SMOKE_TEST_API_KEY")
+        var apiKey = config["SMOKE_TEST_API_KEY"]
             ?? throw new InvalidOperationException(
-                "SMOKE_TEST_API_KEY environment variable is required. " +
-                "Set it before running smoke tests.");
+                "SMOKE_TEST_API_KEY is required. Set it via:\n" +
+                "  dotnet user-secrets set SMOKE_TEST_API_KEY <value> " +
+                "--project test/smoke/SportsData.Api.Tests.Smoke\n" +
+                "or as an environment variable before running smoke tests.");
 
         Client = new HttpClient
         {

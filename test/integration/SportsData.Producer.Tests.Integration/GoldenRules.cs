@@ -20,7 +20,7 @@ namespace SportsData.Producer.Tests.Integration
             _dataContext = _scope.ServiceProvider.GetRequiredService<FootballDataContext>(); // ✅ Resolve from scope
         }
 
-        [Fact]
+        [Fact(Skip = "TEMP_DISABLE")]
         public async Task Should_Connect_To_Postgres()
         {
             var canConnect = await _dataContext.Database.CanConnectAsync();

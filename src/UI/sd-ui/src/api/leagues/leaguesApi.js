@@ -5,12 +5,29 @@ import apiClient from "../apiClient";
 const BASE_PATH = "/ui/leagues";
 
 /**
- * Sends a request to create a new league.
- * @param {CreateLeagueRequest} request - DTO matching the backend model
+ * Creates a new NCAA football pick'em league.
  * @returns {Promise<{ id: string }>} Created league ID
  */
-const createLeague = async (request) => {
-  const response = await apiClient.post(BASE_PATH, request);
+const createFootballNcaaLeague = async (request) => {
+  const response = await apiClient.post(`${BASE_PATH}/football/ncaa`, request);
+  return response.data;
+};
+
+/**
+ * Creates a new NFL pick'em league.
+ * @returns {Promise<{ id: string }>} Created league ID
+ */
+const createFootballNflLeague = async (request) => {
+  const response = await apiClient.post(`${BASE_PATH}/football/nfl`, request);
+  return response.data;
+};
+
+/**
+ * Creates a new MLB pick'em league (admin-gated).
+ * @returns {Promise<{ id: string }>} Created league ID
+ */
+const createBaseballMlbLeague = async (request) => {
+  const response = await apiClient.post(`${BASE_PATH}/baseball/mlb`, request);
   return response.data;
 };
 
@@ -94,7 +111,9 @@ const getLeagueScores = async (leagueId) => {
 };
 
 const LeaguesApi = {
-  createLeague,
+  createFootballNcaaLeague,
+  createFootballNflLeague,
+  createBaseballMlbLeague,
   getLeagueById,
   getUserLeagues,
   joinLeague,

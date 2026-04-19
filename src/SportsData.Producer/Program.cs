@@ -34,6 +34,15 @@ public class Program
         // Add services to the container.
         var config = builder.Configuration;
         config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName, mode);
+        // Re-add env vars *after* AppConfig so container-level overrides (e.g. the
+        // docker-compose `CommonConfig__SqlBaseConnectionString=host.docker.internal`)
+        // beat AppConfig's host-native `localhost` value. Gated off in Production
+        // so a stray pod env var can never silently shadow a deliberate AppConfig
+        // value — AppConfig is the source of truth in prod.
+        if (!builder.Environment.IsProduction())
+        {
+            config.AddEnvironmentVariables();
+        }
 
         builder.WithLoggingContext(mode, role.ToString());
         builder.UseCommon();

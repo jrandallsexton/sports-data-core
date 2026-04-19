@@ -60,6 +60,8 @@ stages:
             version: '10.0.x'
             includePreviewVersions: true
 
+        - template: /build/templates/nuget-tool-install.yml
+
         - task: NuGetCommand@2
           displayName: 'NuGet Restore'
           inputs:

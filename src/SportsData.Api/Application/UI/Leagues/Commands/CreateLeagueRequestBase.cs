@@ -42,9 +42,16 @@ public abstract class CreateLeagueRequestBase
     /// component), this property returns end-of-day so "inclusive end" behaves
     /// as documented. Values with an explicit time (e.g. the FE's
     /// <c>YYYY-MM-DDT23:59:59Z</c>) pass through unchanged.
+    /// <para>
+    /// The computed end-of-day is explicitly stamped with <see cref="DateTimeKind.Utc"/>
+    /// so Npgsql can write it to a <c>timestamp with time zone</c> column without
+    /// drifting when the caller supplied a <see cref="DateTimeKind.Unspecified"/> input.
+    /// Pass-through values are left alone per the project convention of trusting
+    /// inbound DateTime values as UTC.
+    /// </para>
     /// </summary>
     public DateTime? EffectiveEndsOn =>
         EndsOn is { TimeOfDay.Ticks: 0 } endsOn
-            ? endsOn.Date.AddDays(1).AddTicks(-1)
+            ? DateTime.SpecifyKind(endsOn.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc)
             : EndsOn;
 }

@@ -1,0 +1,11 @@
+# Shared NuGet toolchain pin for .NET pipelines.
+# Runs before NuGetCommand@2 so the subsequent restore uses a NuGet new enough
+# for net10.0 and the modern Azure Artifacts credential provider (NuGet 4.9.6
+# on the self-hosted agent does not understand net10.0).
+# Change the versionSpec here to update every .NET pipeline at once.
+steps:
+  - task: NuGetToolInstaller@1
+    displayName: 'Use NuGet 6.11.x'
+    inputs:
+      versionSpec: '6.11.x'
+      checkLatest: false

@@ -80,13 +80,26 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
         await FootballDataContext.SaveChangesAsync();
 
         var seasonWeekIdentity = generator.Generate(dto.Week.Ref);
-        
+
+        // Parse the event's date so the SeasonWeek window actually contains it.
+        // The processor now sanity-checks StartDate/EndDate against the event
+        // date and falls back to date-based inference when they disagree, so
+        // tests must set plausible dates or the ref-resolved path is skipped.
+        var eventDate = DateTime.TryParse(dto.Date,
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+            out var parsed)
+            ? parsed
+            : DateTime.UtcNow;
+
         // OPTIMIZATION: Direct instantiation
         var seasonWeek = new SeasonWeek
         {
             Id = seasonWeekIdentity.CanonicalId,
             SeasonPhaseId = seasonPhase.Id,
             Number = 1,
+            StartDate = eventDate.AddDays(-3),
+            EndDate = eventDate.AddDays(3),
             CreatedUtc = DateTime.UtcNow,
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<SeasonWeekExternalId>
@@ -563,6 +576,158 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
         // assert
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*Cannot determine SeasonWeek*");
+    }
+
+    [Fact]
+    public async Task WhenWeekRefResolvesToOutOfRangeSeasonWeek_ShouldFallBackToDateInference()
+    {
+        // Models ESPN's MLB early-season data: Event doc's week.$ref points at a
+        // SeasonTypeWeek URL whose StartDate/EndDate don't contain the event's
+        // date. Processor must ignore the bad ref and pick the SeasonWeek whose
+        // window actually covers the event.
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        Mocker.GetMock<IProvideProviders>()
+            .Setup(s => s.GetExternalDocument(It.IsAny<GetExternalDocumentQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => Fixture.Build<GetExternalDocumentResponse>()
+                .OmitAutoProperties()
+                .Create());
+
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<FootballEventDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEvent.json");
+        var dto = json.FromJson<EspnEventDto>();
+
+        // Venue
+        var venueUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/venues/6501";
+        var venueHash = venueUrl.UrlHash();
+        var venueId = Guid.NewGuid();
+        await FootballDataContext.Venues.AddAsync(new Venue
+        {
+            Id = venueId,
+            Name = "Tiger Stadium",
+            Slug = "tiger-stadium",
+            City = "Baton Rouge",
+            State = "LA",
+            PostalCode = "71077",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds =
+            [
+                new VenueExternalId
+                {
+                    Id = Guid.NewGuid(),
+                    VenueId = venueId,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrlHash = venueHash,
+                    Value = venueHash,
+                    SourceUrl = venueUrl
+                }
+            ]
+        });
+        await FootballDataContext.SaveChangesAsync();
+
+        // Season + phase
+        var seasonId = Guid.NewGuid();
+        var seasonTypeIdentity = generator.Generate(dto!.SeasonType.Ref);
+        await FootballDataContext.Seasons.AddAsync(new Season
+        {
+            Id = seasonId,
+            Name = "2024",
+            Year = 2024,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        var seasonPhase = new SeasonPhase
+        {
+            Id = seasonTypeIdentity.CanonicalId,
+            Name = "Regular Season",
+            Abbreviation = "reg",
+            Slug = "reg-season",
+            SeasonId = seasonId,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<SeasonPhaseExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    SeasonPhaseId = seasonTypeIdentity.CanonicalId,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = seasonTypeIdentity.CleanUrl,
+                    SourceUrlHash = seasonTypeIdentity.UrlHash,
+                    Value = seasonTypeIdentity.UrlHash
+                }
+            }
+        };
+        await FootballDataContext.SeasonPhases.AddAsync(seasonPhase);
+        await FootballDataContext.SaveChangesAsync();
+
+        // Event is 2024-09-01.
+        // "Bad" SeasonWeek: matches the ref hash but has a December window that
+        // doesn't contain the event date — simulating ESPN's MLB inconsistency.
+        var weekRefIdentity = generator.Generate(dto.Week.Ref);
+        var badSeasonWeek = new SeasonWeek
+        {
+            Id = weekRefIdentity.CanonicalId,
+            SeasonId = seasonId,
+            SeasonPhaseId = seasonPhase.Id,
+            Number = 99,
+            StartDate = new DateTime(2024, 12, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2024, 12, 7, 23, 59, 59, DateTimeKind.Utc),
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<SeasonWeekExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    SeasonWeekId = weekRefIdentity.CanonicalId,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = weekRefIdentity.CleanUrl,
+                    SourceUrlHash = weekRefIdentity.UrlHash,
+                    Value = weekRefIdentity.UrlHash
+                }
+            }
+        };
+        await FootballDataContext.SeasonWeeks.AddAsync(badSeasonWeek);
+
+        // "Good" SeasonWeek: unrelated Id, window covers the event date.
+        var expectedSeasonWeekId = Guid.NewGuid();
+        await FootballDataContext.SeasonWeeks.AddAsync(new SeasonWeek
+        {
+            Id = expectedSeasonWeekId,
+            SeasonId = seasonId,
+            SeasonPhaseId = seasonPhase.Id,
+            Number = 1,
+            StartDate = new DateTime(2024, 8, 29, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2024, 9, 4, 23, 59, 59, DateTimeKind.Utc),
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        await FootballDataContext.SaveChangesAsync();
+
+        await SetupFranchiseSeasonsAsync(generator, dto!);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Event)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .OmitAutoProperties()
+            .Create();
+
+        await sut.ProcessAsync(command);
+
+        var created = await FootballDataContext.Contests.FirstOrDefaultAsync();
+        created.Should().NotBeNull();
+        created!.SeasonWeekId.Should().Be(expectedSeasonWeekId,
+            "ref-resolved SeasonWeek's window doesn't contain event date — processor should fall back to date-based inference");
+
+        bus.Verify(x => x.Publish(It.IsAny<ContestCreated>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

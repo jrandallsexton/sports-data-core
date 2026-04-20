@@ -128,6 +128,13 @@ public abstract class EventDocumentProcessorBase<TDataContext> : DocumentProcess
         ProcessDocumentCommand command,
         EspnEventDto externalDto)
     {
+        DateTime? eventDateUtc = null;
+        if (DateTime.TryParse(externalDto.Date, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsedDate))
+        {
+            eventDateUtc = parsedDate;
+        }
+
         if (externalDto.Week is not null)
         {
             var seasonWeekIdentity = _externalRefIdentityGenerator.Generate(externalDto.Week.Ref);
@@ -136,26 +143,45 @@ public abstract class EventDocumentProcessorBase<TDataContext> : DocumentProcess
                 .AsNoTracking()
                 .FirstOrDefaultAsync(sw => sw.Id == seasonWeekIdentity.CanonicalId);
 
-            if (seasonWeek is not null)
+            if (seasonWeek is null)
+            {
+                await PublishDependencyRequest<string?>(
+                    command,
+                    externalDto.Week,
+                    parentId: null,
+                    DocumentType.SeasonTypeWeek);
+
+                throw new ExternalDocumentNotSourcedException(
+                    $"SeasonWeek not found for {externalDto.Week.Ref} (Id: {seasonWeekIdentity.CanonicalId})");
+            }
+
+            // ESPN's MLB event docs can reference a week URL whose resolved
+            // SeasonTypeWeek doc has StartDate/EndDate that don't contain the
+            // event's date (e.g. an April game refs .../weeks/16 which is July
+            // 8-15). When the ref and the event date disagree, trust the date
+            // and fall through to date-based inference below.
+            if (eventDateUtc.HasValue &&
+                (eventDateUtc.Value < seasonWeek.StartDate || eventDateUtc.Value > seasonWeek.EndDate))
+            {
+                _logger.LogWarning(
+                    "Week $ref resolved to SeasonWeek whose window does not contain the event date. " +
+                    "EventDate={EventDate}, ResolvedWeek={WeekNumber} [{Start}..{End}]. " +
+                    "Falling back to date-based inference. Ref={Ref}",
+                    eventDateUtc.Value, seasonWeek.Number, seasonWeek.StartDate, seasonWeek.EndDate,
+                    externalDto.Week.Ref);
+            }
+            else
+            {
                 return seasonWeek.Id;
-
-            await PublishDependencyRequest<string?>(
-                command,
-                externalDto.Week,
-                parentId: null,
-                DocumentType.SeasonTypeWeek);
-
-            throw new ExternalDocumentNotSourcedException(
-                $"SeasonWeek not found for {externalDto.Week.Ref} (Id: {seasonWeekIdentity.CanonicalId})");
+            }
         }
 
-        if (DateTime.TryParse(externalDto.Date, CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var eventDateUtc))
+        if (eventDateUtc.HasValue)
         {
             var inferredWeek = await _dataContext.SeasonWeeks
                 .AsNoTracking()
-                .Where(sw => sw.StartDate <= eventDateUtc &&
-                             sw.EndDate >= eventDateUtc)
+                .Where(sw => sw.StartDate <= eventDateUtc.Value &&
+                             sw.EndDate >= eventDateUtc.Value)
                 .OrderBy(sw => sw.Number)
                 .FirstOrDefaultAsync();
 
@@ -163,13 +189,13 @@ public abstract class EventDocumentProcessorBase<TDataContext> : DocumentProcess
             {
                 _logger.LogWarning(
                     "Inferred SeasonWeek from event date. EventDate={EventDate}, WeekNumber={WeekNumber}, SeasonWeekId={SeasonWeekId}",
-                    eventDateUtc, inferredWeek.Number, inferredWeek.Id);
+                    eventDateUtc.Value, inferredWeek.Number, inferredWeek.Id);
                 return inferredWeek.Id;
             }
 
             _logger.LogWarning(
                 "Could not infer SeasonWeek from event date. No week covers EventDate={EventDate}",
-                eventDateUtc);
+                eventDateUtc.Value);
         }
 
         if (command.Sport is Sport.FootballNcaa or Sport.FootballNfl)

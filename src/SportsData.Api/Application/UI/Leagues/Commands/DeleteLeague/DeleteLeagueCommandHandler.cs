@@ -56,44 +56,54 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
         // Serializable transaction: the has-picks check and the cascade delete run in one
         // unit so a pick inserted between the two operations can't sneak through. Without
         // this, a race (user submits a pick mid-delete) would let us delete a league that
-        // now has picks, silently destroying real scoring data — exactly the case the
-        // guard exists to prevent.
-        await using var transaction = await _dbContext.Database
-            .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        // now has picks, silently destroying real scoring data — the PickemGroupUserPick
+        // FK is OnDelete.Cascade, so FK constraints alone won't block the race.
+        //
+        // Wrap in the DbContext execution strategy: EnableRetryOnFailure is configured
+        // globally for Npgsql (see Core/DependencyInjection/ServiceRegistration.cs),
+        // and raw BeginTransactionAsync under a retry strategy throws at runtime unless
+        // the transaction body is scoped inside strategy.ExecuteAsync so the whole unit
+        // can retry atomically on serialization failures (SQLSTATE 40001).
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync<Result<Guid>>(async () =>
+        {
+            await using var transaction = await _dbContext.Database
+                .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
-        var hasPicks = await _dbContext.UserPicks
-            .AnyAsync(p => p.PickemGroupId == command.LeagueId, cancellationToken);
+            var hasPicks = await _dbContext.UserPicks
+                .AnyAsync(p => p.PickemGroupId == command.LeagueId, cancellationToken);
 
-        if (hasPicks)
-            return new Failure<Guid>(
-                default!,
-                ResultStatus.Validation,
-                [new ValidationFailure(nameof(command.LeagueId), "Cannot delete a league that already has user picks.")]);
+            if (hasPicks)
+                return new Failure<Guid>(
+                    default!,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(command.LeagueId), "Cannot delete a league that already has user picks.")]);
 
-        _logger.LogInformation(
-            "Deleting league {LeagueId} by commissioner {UserId}",
-            command.LeagueId,
-            command.UserId);
+            _logger.LogInformation(
+                "Deleting league {LeagueId} by commissioner {UserId}",
+                command.LeagueId,
+                command.UserId);
 
-        // Remove all members
-        _dbContext.PickemGroupMembers.RemoveRange(league.Members);
+            // Remove all members
+            _dbContext.PickemGroupMembers.RemoveRange(league.Members);
 
-        // Remove all picks
-        _dbContext.UserPicks.RemoveRange(
-            _dbContext.UserPicks.Where(p => p.PickemGroupId == command.LeagueId));
+            // Remove all picks
+            _dbContext.UserPicks.RemoveRange(
+                _dbContext.UserPicks.Where(p => p.PickemGroupId == command.LeagueId));
 
-        // Remove all matchups
-        _dbContext.PickemGroupMatchups.RemoveRange(
-            _dbContext.PickemGroupMatchups.Where(m => m.GroupId == command.LeagueId));
+            // Remove all matchups
+            _dbContext.PickemGroupMatchups.RemoveRange(
+                _dbContext.PickemGroupMatchups.Where(m => m.GroupId == command.LeagueId));
 
-        // Remove the league itself
-        _dbContext.PickemGroups.Remove(league);
+            // Remove the league itself
+            _dbContext.PickemGroups.Remove(league);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
-        _logger.LogInformation("Successfully deleted league {LeagueId}", command.LeagueId);
+            _logger.LogInformation("Successfully deleted league {LeagueId}", command.LeagueId);
 
-        return new Success<Guid>(command.LeagueId);
+            return new Success<Guid>(command.LeagueId);
+        });
     }
 }

@@ -31,6 +31,8 @@ function PicksPage() {
   const [matchups, setMatchups] = useState([]);
   const [pickType, setPickType] = useState(null);
   const [useConfidencePoints, setUseConfidencePoints] = useState(false);
+  const [leagueSport, setLeagueSport] = useState(null);
+  const [leagueSeasonYear, setLeagueSeasonYear] = useState(null);
   const [loadingMatchups, setLoadingMatchups] = useState(true);
 
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
@@ -134,6 +136,8 @@ function PicksPage() {
         setMatchups(response.data.matchups || []);
         setPickType(response.data.pickType);
         setUseConfidencePoints(response.data.useConfidencePoints);
+        setLeagueSport(response.data.sport);
+        setLeagueSeasonYear(response.data.seasonYear);
       } catch (error) {
         console.error("Failed to fetch matchups:", error);
       } finally {
@@ -304,17 +308,29 @@ function PicksPage() {
     }
   }
 
-  // Find the selected league's maxSeasonWeek
+  // Find the selected league's week list (ascending from /user/me)
   const selectedLeague = leagues.find((l) => l.id === selectedLeagueId) ?? null;
-  const maxSeasonWeek = selectedLeague?.maxSeasonWeek ?? null;
+  const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
+  // Default to the latest week the league has (last element of the ascending list).
+  // Custom-window leagues may only have a single entry; full-season leagues have many.
+  const latestSeasonWeek = seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
 
-  // When selectedLeagueId or maxSeasonWeek changes, default selectedWeek to maxSeasonWeek
+  // When selectedLeagueId or week list changes, snap selectedWeek to the latest
+  // week in the league. If the league has no weeks defined (latestSeasonWeek
+  // falsy), explicitly clear selectedWeek — otherwise a stale value from the
+  // previously-selected league would carry over and the matchups fetch would
+  // issue an invalid (leagueId, week) pair.
   useEffect(() => {
-    if (selectedLeagueId && maxSeasonWeek && selectedWeek !== maxSeasonWeek) {
-      setSelectedWeek(maxSeasonWeek);
+    if (!selectedLeagueId) return;
+    if (!latestSeasonWeek) {
+      if (selectedWeek !== null) setSelectedWeek(null);
+      return;
+    }
+    if (selectedWeek !== latestSeasonWeek) {
+      setSelectedWeek(latestSeasonWeek);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLeagueId, maxSeasonWeek, selectedLeague]);
+  }, [selectedLeagueId, latestSeasonWeek, selectedLeague]);
 
   if (userLoading) return <div>Loading user info...</div>;
 
@@ -352,7 +368,7 @@ function PicksPage() {
             setSelectedLeagueId={setSelectedLeagueId}
             selectedWeek={selectedWeek}
             setSelectedWeek={setSelectedWeek}
-            maxSeasonWeek={maxSeasonWeek}
+            seasonWeeks={seasonWeeks}
           />
           <div className="pick-status-toggle-row">
             <span className="pick-status">
@@ -389,6 +405,8 @@ function PicksPage() {
                 useConfidencePoints={useConfidencePoints}
                 usedConfidencePoints={usedConfidencePoints}
                 totalGames={enrichedMatchups.length}
+                leagueSport={leagueSport}
+                leagueSeasonYear={leagueSeasonYear}
               />
             ) : (
               <MatchupGrid

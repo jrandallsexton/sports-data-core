@@ -69,10 +69,29 @@ function GameMap() {
 
   const { getContestUpdate } = useContestUpdates();
 
-  // Find the selected league's maxSeasonWeek (same pattern as PicksPage)
+  // Selected league's week list (ascending). When no league is selected (allowAll=true),
+  // fall back to the union of all leagues' weeks so the selector still offers every week.
   const selectedLeague = leagues.find((l) => l.id === selectedLeagueId) ?? null;
-  const maxSeasonWeek = selectedLeague?.maxSeasonWeek ?? 
-    (leagues.length > 0 ? Math.max(...leagues.map(l => l.maxSeasonWeek || 1)) : null);
+  const seasonWeeks = selectedLeague?.seasonWeeks?.length
+    ? selectedLeague.seasonWeeks
+    : Array.from(
+        new Set(leagues.flatMap((l) => l.seasonWeeks ?? []))
+      ).sort((a, b) => a - b);
+
+  // Normalize selectedWeek against the current league's valid weeks. selectedWeek=null
+  // is "All Weeks" (valid when allowAll=true), so leave it alone. If a specific week is
+  // set but no longer present in seasonWeeks (e.g. user switched from a full-season
+  // NCAAFB league at week 17 to an MLB current-week-only league with [4]), snap to the
+  // first available week — or null if the list is empty. Prevents Maps.getMap(leagueId,
+  // staleWeek) from running with a pairing that can't exist on the backend.
+  const seasonWeeksKey = seasonWeeks.join(",");
+  useEffect(() => {
+    if (selectedWeek == null) return;
+    if (!seasonWeeks.includes(selectedWeek)) {
+      setSelectedWeek(seasonWeeks[0] ?? null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeagueId, seasonWeeksKey]);
 
   // Fetch map data from API - on mount and when league/week changes
   useEffect(() => {
@@ -311,7 +330,7 @@ function GameMap() {
             setSelectedLeagueId={setSelectedLeagueId}
             selectedWeek={selectedWeek}
             setSelectedWeek={setSelectedWeek}
-            maxSeasonWeek={maxSeasonWeek}
+            seasonWeeks={seasonWeeks}
             allowAll={true}
           />
         )}

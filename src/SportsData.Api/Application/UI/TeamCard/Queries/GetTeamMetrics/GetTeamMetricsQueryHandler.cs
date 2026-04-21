@@ -45,29 +45,38 @@ public class GetTeamMetricsQueryHandler : IGetTeamMetricsQueryHandler
 
             if (dto == null)
             {
+                // Metrics simply haven't been generated yet for this team/season.
+                // Treat as a normal empty-data case: log a warning for ops visibility
+                // and return an empty DTO so the UI can render "no metrics yet"
+                // without presenting the user an error.
                 _logger.LogWarning(
-                    "No metrics found for franchise season {FranchiseSeasonId}",
+                    "No metrics found for franchise season {FranchiseSeasonId}. Returning empty DTO.",
                     query.FranchiseSeasonId);
 
-                return new Failure<FranchiseSeasonMetricsDto>(
-                    default!,
-                    ResultStatus.NotFound,
-                    [new ValidationFailure(nameof(query.FranchiseSeasonId), "Metrics not found for this franchise season")]);
+                return new Success<FranchiseSeasonMetricsDto>(new FranchiseSeasonMetricsDto());
             }
 
             return new Success<FranchiseSeasonMetricsDto>(dto);
         }
+        catch (OperationCanceledException)
+        {
+            // Cancellation must propagate so upstream request abort / shutdown
+            // semantics behave correctly. Never swallow it as "empty metrics."
+            throw;
+        }
         catch (Exception ex)
         {
+            // Metrics are a non-blocking enrichment surface — a backend failure here
+            // (network blip, sport-specific client not wired up, Producer 404, etc.)
+            // should never present the user with a hard error. Log at Error level so
+            // ops still catches real regressions, but return an empty DTO so the UI
+            // renders a friendly empty state instead of a 500.
             _logger.LogError(
                 ex,
-                "Error retrieving metrics for franchise season {FranchiseSeasonId}",
+                "Error retrieving metrics for franchise season {FranchiseSeasonId}. Returning empty DTO.",
                 query.FranchiseSeasonId);
 
-            return new Failure<FranchiseSeasonMetricsDto>(
-                default!,
-                ResultStatus.Error,
-                [new ValidationFailure(nameof(query.FranchiseSeasonId), "Error retrieving metrics. Please try again later.")]);
+            return new Success<FranchiseSeasonMetricsDto>(new FranchiseSeasonMetricsDto());
         }
     }
 }

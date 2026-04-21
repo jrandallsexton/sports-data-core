@@ -54,6 +54,8 @@ public class GetLeagueByIdQueryHandler : IGetLeagueByIdQueryHandler
             RankingFilter = league.RankingFilter.ToString(),
             ConferenceSlugs = league.Conferences?.Select(c => c.ConferenceSlug).ToList() ?? new(),
             IsPublic = league.IsPublic,
+            StartsOn = league.StartsOn,
+            EndsOn = league.EndsOn,
             Members = league.Members.Select(m => new LeagueDetailDto.LeagueMemberDto
             {
                 UserId = m.UserId,

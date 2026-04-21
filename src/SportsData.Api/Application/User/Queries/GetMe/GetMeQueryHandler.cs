@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -39,6 +41,7 @@ public class GetMeQueryHandler : IGetMeQueryHandler
 
         var userDto = await _db.Users
             .AsNoTracking()
+            .AsSplitQuery()
             .Where(x => x.Id == query.UserId)
             .Select(user => new UserDto
             {
@@ -54,8 +57,15 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                     {
                         Id = m.Group.Id,
                         Name = m.Group.Name,
-                        MaxSeasonWeek = m.Group.Weeks
-                            .Max(w => (int?)w.SeasonWeek)
+                        // Dedupe: some leagues have multiple PickemGroupWeek rows with
+                        // the same SeasonWeek number (e.g. a preseason Week 1 alongside a
+                        // regular-season Week 1, or rows carried over across SeasonYears).
+                        // UI wants the unique set of week numbers, ascending.
+                        SeasonWeeks = m.Group.Weeks
+                            .Select(w => w.SeasonWeek)
+                            .Distinct()
+                            .OrderBy(w => w)
+                            .ToList()
                     })
                     .ToList()
             })
@@ -68,6 +78,17 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                 default!,
                 ResultStatus.NotFound,
                 [new FluentValidation.Results.ValidationFailure("UserId", $"User with ID {query.UserId} not found.")]);
+        }
+
+        // Defensive invariant check. SeasonWeeks is contractually ascending + distinct
+        // (see UserDto.UserLeagueMembership.SeasonWeeks <remarks>). The EF projection
+        // above enforces it via .Distinct().OrderBy(); this assert guards against a
+        // future change to that projection silently breaking the contract.
+        foreach (var league in userDto.Leagues)
+        {
+            Debug.Assert(
+                league.SeasonWeeks.SequenceEqual(league.SeasonWeeks.Distinct().OrderBy(w => w)),
+                $"SeasonWeeks for league {league.Id} is not ascending+distinct.");
         }
 
         _logger.LogInformation("User retrieved successfully. UserId={UserId}", query.UserId);

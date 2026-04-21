@@ -1,3 +1,5 @@
+using System.Data;
+
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
@@ -37,39 +39,71 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
 
         if (league is null)
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(command.LeagueId), $"League with ID {command.LeagueId} not found.")]);
 
         if (league.CommissionerUserId != command.UserId)
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.Unauthorized,
                 [new ValidationFailure(nameof(command.UserId), $"User {command.UserId} is not the commissioner of league {command.LeagueId}.")]);
 
-        _logger.LogInformation(
-            "Deleting league {LeagueId} by commissioner {UserId}",
-            command.LeagueId,
-            command.UserId);
+        // Don't let a commissioner nuke a league that members have already started picking
+        // for — too easy to destroy real scoring data during testing. Empty leagues (no
+        // picks yet) are fair game to delete.
+        //
+        // Serializable transaction: the has-picks check and the cascade delete run in one
+        // unit so a pick inserted between the two operations can't sneak through. Without
+        // this, a race (user submits a pick mid-delete) would let us delete a league that
+        // now has picks, silently destroying real scoring data — the PickemGroupUserPick
+        // FK is OnDelete.Cascade, so FK constraints alone won't block the race.
+        //
+        // Wrap in the DbContext execution strategy: EnableRetryOnFailure is configured
+        // globally for Npgsql (see Core/DependencyInjection/ServiceRegistration.cs),
+        // and raw BeginTransactionAsync under a retry strategy throws at runtime unless
+        // the transaction body is scoped inside strategy.ExecuteAsync so the whole unit
+        // can retry atomically on serialization failures (SQLSTATE 40001).
+        var strategy = _dbContext.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync<Result<Guid>>(async () =>
+        {
+            await using var transaction = await _dbContext.Database
+                .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
-        // Remove all members
-        _dbContext.PickemGroupMembers.RemoveRange(league.Members);
+            var hasPicks = await _dbContext.UserPicks
+                .AnyAsync(p => p.PickemGroupId == command.LeagueId, cancellationToken);
 
-        // Remove all picks
-        _dbContext.UserPicks.RemoveRange(
-            _dbContext.UserPicks.Where(p => p.PickemGroupId == command.LeagueId));
+            if (hasPicks)
+                return new Failure<Guid>(
+                    default!,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(command.LeagueId), "Cannot delete a league that already has user picks.")]);
 
-        // Remove all matchups
-        _dbContext.PickemGroupMatchups.RemoveRange(
-            _dbContext.PickemGroupMatchups.Where(m => m.GroupId == command.LeagueId));
+            _logger.LogInformation(
+                "Deleting league {LeagueId} by commissioner {UserId}",
+                command.LeagueId,
+                command.UserId);
 
-        // Remove the league itself
-        _dbContext.PickemGroups.Remove(league);
+            // Remove all members
+            _dbContext.PickemGroupMembers.RemoveRange(league.Members);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+            // Remove all picks
+            _dbContext.UserPicks.RemoveRange(
+                _dbContext.UserPicks.Where(p => p.PickemGroupId == command.LeagueId));
 
-        _logger.LogInformation("Successfully deleted league {LeagueId}", command.LeagueId);
+            // Remove all matchups
+            _dbContext.PickemGroupMatchups.RemoveRange(
+                _dbContext.PickemGroupMatchups.Where(m => m.GroupId == command.LeagueId));
 
-        return new Success<Guid>(command.LeagueId);
+            // Remove the league itself
+            _dbContext.PickemGroups.Remove(league);
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            _logger.LogInformation("Successfully deleted league {LeagueId}", command.LeagueId);
+
+            return new Success<Guid>(command.LeagueId);
+        });
     }
 }

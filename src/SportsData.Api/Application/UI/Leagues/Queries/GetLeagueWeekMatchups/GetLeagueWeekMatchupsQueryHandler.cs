@@ -24,15 +24,18 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
     private readonly ILogger<GetLeagueWeekMatchupsQueryHandler> _logger;
     private readonly AppDataContext _dbContext;
     private readonly IContestClientFactory _contestClientFactory;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetLeagueWeekMatchupsQueryHandler(
         ILogger<GetLeagueWeekMatchupsQueryHandler> logger,
         AppDataContext dbContext,
-        IContestClientFactory contestClientFactory)
+        IContestClientFactory contestClientFactory,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contestClientFactory = contestClientFactory;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<LeagueWeekMatchupsDto>> ExecuteAsync(
@@ -80,8 +83,21 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.LeagueId,
                 query.Week);
 
-            var matchups = await _dbContext.PickemGroupMatchups
+            var groupMatchups = await _dbContext.PickemGroupMatchups
+                .AsNoTracking()
                 .Where(x => x.GroupId == query.LeagueId && x.SeasonWeek == query.Week)
+                .Select(x => new
+                {
+                    x.StartDateUtc,
+                    x.ContestId,
+                    x.AwayRank,
+                    x.HomeRank,
+                    x.Headline,
+                    x.SeasonYear
+                })
+                .ToListAsync(cancellationToken);
+
+            var matchups = groupMatchups
                 .Select(x => new LeagueWeekMatchupsDto.MatchupForPickDto
                 {
                     StartDateUtc = x.StartDateUtc,
@@ -90,7 +106,13 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     HomeRank = x.HomeRank,
                     HeadLine = x.Headline
                 })
-                .ToListAsync(cancellationToken);
+                .ToList();
+
+            // Season year is authoritative on PickemGroupMatchup (set at generation
+            // time). Falls back to the current UTC year (via IDateTimeProvider for
+            // deterministic testing) only when a week returned zero matchups — which
+            // can't cleanly infer a year from the data itself.
+            var seasonYear = groupMatchups.FirstOrDefault()?.SeasonYear ?? _dateTimeProvider.UtcNow().Year;
 
             _logger.LogInformation(
                 "Retrieved {Count} matchups from database for leagueId={LeagueId}, week={Week}",
@@ -297,8 +319,9 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             {
                 PickType = league!.PickType,
                 UseConfidencePoints = league!.UseConfidencePoints,
-                SeasonYear = DateTime.UtcNow.Year, // Assuming current year for simplicity
+                SeasonYear = seasonYear,
                 WeekNumber = query.Week,
+                Sport = league.Sport.ToString(),
                 Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()
             };
 

@@ -113,8 +113,17 @@ const LeagueCreatePage = () => {
   }, [isNcaa]);
 
   // Slugs don't overlap across sports — reset group selection on switch.
+  // NFL and MLB have small, fixed division sets; pre-select all so the
+  // typical "include every team" case is one click instead of eight.
+  // NCAA starts empty — commissioners usually cherry-pick conferences.
   useEffect(() => {
-    setTeamFilter([]);
+    if (sport === SPORT_NFL) {
+      setTeamFilter(NFL_DIVISIONS.map((d) => d.slug));
+    } else if (sport === SPORT_MLB) {
+      setTeamFilter(MLB_DIVISIONS.map((d) => d.slug));
+    } else {
+      setTeamFilter([]);
+    }
     if (!isNcaa) {
       setRankingFilter("");
     }

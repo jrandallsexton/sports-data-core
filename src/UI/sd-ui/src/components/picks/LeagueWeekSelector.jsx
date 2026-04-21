@@ -7,9 +7,11 @@ function LeagueWeekSelector({
   setSelectedLeagueId,
   selectedWeek,
   setSelectedWeek,
-  maxSeasonWeek = 1,
+  seasonWeeks = [],
   allowAll = false, // New prop to enable "All" option
 }) {
+  const hasWeeks = Array.isArray(seasonWeeks) && seasonWeeks.length > 0;
+
   return (
     <div className="league-week-selector">
       {/* League Select */}
@@ -29,12 +31,12 @@ function LeagueWeekSelector({
           id="weekSelect"
           value={selectedWeek ?? ""}
           onChange={(e) => setSelectedWeek(e.target.value ? Number(e.target.value) : null)}
-          disabled={!maxSeasonWeek}
+          disabled={!hasWeeks}
         >
           {allowAll && <option value="">All Weeks</option>}
-          {maxSeasonWeek && Array.from({ length: maxSeasonWeek }, (_, i) => (
-            <option key={i + 1} value={i + 1}>
-              Week {i + 1}
+          {hasWeeks && seasonWeeks.map((week) => (
+            <option key={week} value={week}>
+              Week {week}
             </option>
           ))}
         </select>

@@ -15,7 +15,9 @@ function MatchupList({
   fadingOut = [],
   useConfidencePoints,
   usedConfidencePoints,
-  totalGames
+  totalGames,
+  leagueSport,
+  leagueSeasonYear
 }) {
   if (loading) {
     return (
@@ -43,6 +45,8 @@ function MatchupList({
           useConfidencePoints={useConfidencePoints}
           usedConfidencePoints={usedConfidencePoints}
           totalGames={totalGames}
+          leagueSport={leagueSport}
+          leagueSeasonYear={leagueSeasonYear}
         />
       ))}
     </div>

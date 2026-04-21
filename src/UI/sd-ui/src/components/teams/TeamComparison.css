@@ -292,10 +292,23 @@
   gap: 0.5rem;
 }
 
+/*
+ * Dialog-scoped logo sizing.
+ *
+ * The global `.team-logo` rule in TeamCard.css (width: 160px; height: 160px;
+ * flex: 0 0 160px;) is intended for the standalone team-card page but can leak
+ * into this dialog depending on CSS load order. Using !important here makes
+ * the dialog's 54x54 square sizing authoritative. `object-fit: contain` plus
+ * `object-position: center` keeps non-square source images (wordmarks, tall
+ * logos, etc.) centered within the square frame instead of stretching.
+ */
+.team-comparison-dialog .team-comparison-content .team-logo,
 .team-comparison-content .team-logo {
-  width: 54px;
-  height: 54px;
+  width: 54px !important;
+  height: 54px !important;
+  flex: 0 0 54px !important;
   object-fit: contain;
+  object-position: center;
   background: #fff;
   border-radius: 8px;
   border: 1px solid var(--border-strong);

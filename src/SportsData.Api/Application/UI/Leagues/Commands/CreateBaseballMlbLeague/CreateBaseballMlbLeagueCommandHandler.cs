@@ -131,15 +131,11 @@ public class CreateBaseballMlbLeagueCommandHandler : ICreateBaseballMlbLeagueCom
         }
 
         await _dbContext.PickemGroups.AddAsync(group, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation(
-            "Created {Sport} league {LeagueId} with name {LeagueName} by user {UserId}",
-            SportMode,
-            group.Id,
-            group.Name,
-            currentUserId);
-
+        // Publish BEFORE the commit: with the EF outbox, Publish enqueues the
+        // message into the DbContext tracker and only SaveChangesAsync persists
+        // both the aggregate and the outbox row atomically. Publishing AFTER
+        // SaveChangesAsync silently loses the event when the DI scope disposes.
         var evt = new PickemGroupCreated(
             group.Id,
             null,
@@ -147,9 +143,16 @@ public class CreateBaseballMlbLeagueCommandHandler : ICreateBaseballMlbLeagueCom
             seasonYear,
             Guid.NewGuid(),
             Guid.NewGuid());
-
-        _logger.LogInformation("Publishing PickemGroupCreated {@Evt}", evt);
         await _eventBus.Publish(evt, cancellationToken);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Created {Sport} league {LeagueId} with name {LeagueName} by user {UserId}; PickemGroupCreated enqueued to outbox",
+            SportMode,
+            group.Id,
+            group.Name,
+            currentUserId);
 
         return new Success<Guid>(group.Id);
     }

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { FaSearchPlus, FaSearchMinus } from "react-icons/fa";
-import { teamLink } from '../../utils/sportLinks';
+import { teamLink, resolveSportLeague } from '../../utils/sportLinks';
 import MiniSchedule from "./MiniSchedule";
 
 /**
@@ -31,12 +31,17 @@ function TeamRow({
   confWins,
   confLosses,
   seasonYear,
+  leagueSport,
   showSchedule,
   onToggleSchedule,
   schedule,
   loading,
   error
 }) {
+  // resolveSportLeague returns null for unknown/missing enums so unsupported
+  // sports don't silently render as an NCAA football route. Fall back to a
+  // non-linked team name in that case.
+  const sportLeague = resolveSportLeague(leagueSport);
   return (
     <>
       <div className="team-row">
@@ -53,12 +58,16 @@ function TeamRow({
               {rank && (
                 <span className="team-ranking">#{rank}</span>
               )}
-              <Link
-                to={teamLink(teamSlug, seasonYear)}
-                className="team-link"
-              >
-                {teamName}
-              </Link>
+              {sportLeague ? (
+                <Link
+                  to={teamLink(teamSlug, seasonYear, sportLeague.sport, sportLeague.league)}
+                  className="team-link"
+                >
+                  {teamName}
+                </Link>
+              ) : (
+                <span className="team-link">{teamName}</span>
+              )}
             </div>
             <div className="team-record-row">
               <div className="team-record">
@@ -88,7 +97,7 @@ function TeamRow({
         ) : error ? (
           <div style={{ padding: 4, color: 'red', fontSize: '0.95em' }}>{error}</div>
         ) : (
-          <MiniSchedule schedule={schedule} seasonYear={seasonYear} />
+          <MiniSchedule schedule={schedule} seasonYear={seasonYear} leagueSport={leagueSport} />
         )
       )}
     </>

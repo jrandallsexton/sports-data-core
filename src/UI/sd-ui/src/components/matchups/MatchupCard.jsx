@@ -26,10 +26,18 @@ function MatchupCard({
   isFadingOut = false,
   useConfidencePoints,
   usedConfidencePoints = [],
-  totalGames
+  totalGames,
+  leagueSport, // Backend Sport enum name (e.g. "BaseballMlb") — drives team-link routing
+  leagueSeasonYear // From LeagueWeekMatchupsDto.SeasonYear — canonical for all matchups in this response
 }) {
   const { userDto } = useUserDto();
-  const seasonYear = matchup.seasonYear ?? 2025;
+  // seasonYear is authoritative from leagueSeasonYear (set by the backend
+  // handler from PickemGroupMatchup.SeasonYear); fall through to the matchup
+  // itself only if the response shape ever changes. No hardcoded year fallback
+  // — downstream hooks and link builders handle an undefined value by skipping
+  // season-specific fetches / omitting the URL segment rather than silently
+  // rendering a stale year.
+  const seasonYear = leagueSeasonYear ?? matchup.seasonYear;
 
   const [showConfidencePicker, setShowConfidencePicker] = useState(false);
   const [pendingPickFranchiseId, setPendingPickFranchiseId] = useState(null);
@@ -41,7 +49,7 @@ function MatchupCard({
     comparisonData,
     handleOpenComparison,
     handleCloseComparison
-  } = useTeamComparison(matchup, seasonYear);
+  } = useTeamComparison(matchup, seasonYear, leagueSport);
 
   const { isLocked } = usePickLocking(matchup.startDateUtc, userDto?.isReadOnly);
 
@@ -56,7 +64,7 @@ function MatchupCard({
     homeLoading,
     awayError,
     homeError
-  } = useTeamSchedule(matchup.awaySlug, matchup.homeSlug, seasonYear);
+  } = useTeamSchedule(matchup.awaySlug, matchup.homeSlug, seasonYear, leagueSport);
 
   // Game details
   const gameTime = formatToEasternTime(matchup.startDateUtc);
@@ -147,6 +155,7 @@ function MatchupCard({
           confWins={matchup.awayConferenceWins}
           confLosses={matchup.awayConferenceLosses}
           seasonYear={seasonYear}
+          leagueSport={leagueSport}
           showSchedule={showAwayGames}
           onToggleSchedule={() => setShowAwayGames(v => !v)}
           schedule={awaySchedule}
@@ -165,6 +174,7 @@ function MatchupCard({
           confWins={matchup.homeConferenceWins}
           confLosses={matchup.homeConferenceLosses}
           seasonYear={seasonYear}
+          leagueSport={leagueSport}
           showSchedule={showHomeGames}
           onToggleSchedule={() => setShowHomeGames(v => !v)}
           schedule={homeSchedule}
@@ -269,15 +279,60 @@ function MatchupCard({
         </div>
       </div>
     {/* TeamComparison Dialog */}
-    {showComparison && (
-      comparisonLoading || !comparisonData || !comparisonData.teamA ||!comparisonData.teamB ||
-      !comparisonData.teamA.stats || !comparisonData.teamB.stats || !comparisonData.teamA.metrics || !comparisonData.teamB.metrics ? (
-        <div className="team-comparison-dialog-backdrop">
-          <div className="team-comparison-dialog" style={{textAlign: 'center', padding: '2rem'}}>
-            Loading team comparison...
+    {showComparison && (() => {
+      if (comparisonLoading || !comparisonData) {
+        return (
+          <div className="team-comparison-dialog-backdrop">
+            <div className="team-comparison-dialog" style={{ textAlign: 'center', padding: '2rem' }}>
+              Loading team comparison...
+            </div>
           </div>
-        </div>
-      ) : (
+        );
+      }
+
+      // If neither team has stats AND neither has metrics, show an explicit
+      // empty state instead of spinning forever. Happens early in a sport's
+      // season before stats/metrics have been generated.
+      //
+      // GetTeamMetricsQueryHandler returns Success(empty FranchiseSeasonMetricsDto)
+      // for the no-data case — an object that's truthy but has gamesPlayed=0 and
+      // empty strings for every text field. A naive `?.metrics` truthy check would
+      // treat that as "has data" and render TeamComparison with meaningless zeros.
+      // hasMeaningfulMetrics keys off gamesPlayed because a team can't have valid
+      // computed metrics with zero games played.
+      //
+      // Stats takes a different path (handler still returns Failure(NotFound) for
+      // null), so a truthy check on `?.stats` is sufficient there.
+      const hasMeaningfulMetrics = (m) => Boolean(m && m.gamesPlayed && m.gamesPlayed > 0);
+      const hasAnyData =
+        comparisonData.teamA?.stats || comparisonData.teamB?.stats ||
+        hasMeaningfulMetrics(comparisonData.teamA?.metrics) ||
+        hasMeaningfulMetrics(comparisonData.teamB?.metrics);
+
+      if (!hasAnyData) {
+        return (
+          <div className="team-comparison-dialog-backdrop" onClick={handleCloseComparison}>
+            <div
+              className="team-comparison-dialog"
+              style={{ textAlign: 'center', padding: '2rem' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p style={{ margin: 0 }}>No team stats or metrics available yet.</p>
+              <p style={{ marginTop: 8, fontSize: '0.9em', opacity: 0.75 }}>
+                Check back once the season has a few games in the books.
+              </p>
+              <button
+                onClick={handleCloseComparison}
+                style={{ marginTop: 16, padding: '6px 16px' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
         <TeamComparison
           open={showComparison}
           onClose={handleCloseComparison}
@@ -286,8 +341,8 @@ function MatchupCard({
           teamAColor={matchup.awayColor}
           teamBColor={matchup.homeColor}
         />
-      )
-    )}
+      );
+    })()}
     </div>
   );
 }

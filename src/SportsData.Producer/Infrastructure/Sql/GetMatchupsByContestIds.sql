@@ -6,13 +6,15 @@ SELECT
   STRING_AGG(cb."MediaName", ' | ') AS "Broadcasts",
   v."Name" AS "Venue", v."City" AS "VenueCity", v."State" AS "VenueState",
   fAway."DisplayName" AS "Away", fAway."Abbreviation" AS "AwayShort",
-  fsAway."Id" AS "AwayFranchiseSeasonId", flAway."Uri" AS "AwayLogoUri",
+  fsAway."Id" AS "AwayFranchiseSeasonId",
+  COALESCE(fslAway."Uri", flAway."Uri") AS "AwayLogoUri",
   fAway."Slug" AS "AwaySlug", fAway."ColorCodeHex" AS "AwayColor",
   fsrdAway."Current" AS "AwayRank", gsAway."Slug" AS "AwayConferenceSlug",
   fsAway."Wins" AS "AwayWins", fsAway."Losses" AS "AwayLosses",
   fsAway."ConferenceWins" AS "AwayConferenceWins", fsAway."ConferenceLosses" AS "AwayConferenceLosses",
   fHome."DisplayName" AS "Home", fHome."Abbreviation" AS "HomeShort",
-  fsHome."Id" AS "HomeFranchiseSeasonId", flHome."Uri" AS "HomeLogoUri",
+  fsHome."Id" AS "HomeFranchiseSeasonId",
+  COALESCE(fslHome."Uri", flHome."Uri") AS "HomeLogoUri",
   fHome."Slug" AS "HomeSlug", fHome."ColorCodeHex" AS "HomeColor",
   fsrdHome."Current" AS "HomeRank", gsHome."Slug" AS "HomeConferenceSlug",
   fsHome."Wins" AS "HomeWins", fsHome."Losses" AS "HomeLosses",
@@ -45,6 +47,13 @@ LEFT JOIN LATERAL (
   WHERE fl."FranchiseId" = fAway."Id"
   ORDER BY fl."CreatedUtc" ASC LIMIT 1
 ) flAway ON TRUE
+-- FranchiseSeason-level logo is preferred; Franchise-level acts as fallback
+-- (matches LogoSelectionService.SelectWithFallback convention: season -> franchise).
+LEFT JOIN LATERAL (
+  SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
+  WHERE fsl."FranchiseSeasonId" = fsAway."Id"
+  ORDER BY fsl."CreatedUtc" ASC LIMIT 1
+) fslAway ON TRUE
 INNER JOIN public."GroupSeason" gsAway ON gsAway."Id" = fsAway."GroupSeasonId"
 LEFT JOIN LATERAL (
   SELECT fsr.* FROM public."FranchiseSeasonRanking" fsr
@@ -62,6 +71,12 @@ LEFT JOIN LATERAL (
   WHERE fl."FranchiseId" = fHome."Id"
   ORDER BY fl."CreatedUtc" ASC LIMIT 1
 ) flHome ON TRUE
+-- FranchiseSeason-level preferred, Franchise fallback — see Away comment above.
+LEFT JOIN LATERAL (
+  SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
+  WHERE fsl."FranchiseSeasonId" = fsHome."Id"
+  ORDER BY fsl."CreatedUtc" ASC LIMIT 1
+) fslHome ON TRUE
 INNER JOIN public."GroupSeason" gsHome ON gsHome."Id" = fsHome."GroupSeasonId"
 LEFT JOIN LATERAL (
   SELECT fsr.* FROM public."FranchiseSeasonRanking" fsr
@@ -76,12 +91,14 @@ WHERE c."Id" = ANY(@ContestIds)
 GROUP BY
   c."SeasonWeekId", c."Id", c."StartDateUtc", cs."StatusDescription",
   v."Name", v."City", v."State",
-  fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id", flAway."Uri", fAway."Slug",
+  fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id",
+  flAway."Uri", fslAway."Uri", fAway."Slug",
   fsrdAway."Current", gsAway."Slug",
   fsAway."Wins", fsAway."Losses", fsAway."ConferenceWins", fsAway."ConferenceLosses",
   fAway."Abbreviation", fAway."ColorCodeHex",
   fHome."Abbreviation", fHome."ColorCodeHex",
-  fHome."DisplayName", fHome."DisplayNameShort", fsHome."Id", flHome."Uri", fHome."Slug",
+  fHome."DisplayName", fHome."DisplayNameShort", fsHome."Id",
+  flHome."Uri", fslHome."Uri", fHome."Slug",
   fsrdHome."Current", gsHome."Slug",
   fsHome."Wins", fsHome."Losses", fsHome."ConferenceWins", fsHome."ConferenceLosses",
   co."Details", co."Spread", co."OverUnder", co."OverOdds", co."UnderOdds",

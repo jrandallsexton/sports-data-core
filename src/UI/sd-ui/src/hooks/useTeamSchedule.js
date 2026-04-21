@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
 import apiWrapper from '../api/apiWrapper';
+import { resolveSportLeague } from '../utils/sportLinks';
 
 /**
  * Custom hook to fetch and manage schedule data for both teams in a matchup
  * @param {string} awaySlug - Away team slug identifier
  * @param {string} homeSlug - Home team slug identifier
  * @param {number} seasonYear - Season year
+ * @param {string} leagueSport - Backend Sport enum name (e.g. "BaseballMlb") used to
+ *   resolve the {sport, league} URL segments for the TeamCard API
  * @returns {object} Schedule state and handlers for both teams
  */
-export const useTeamSchedule = (awaySlug, homeSlug, seasonYear) => {
+export const useTeamSchedule = (awaySlug, homeSlug, seasonYear, leagueSport) => {
   const [showAwayGames, setShowAwayGames] = useState(false);
   const [showHomeGames, setShowHomeGames] = useState(false);
   const [awaySchedule, setAwaySchedule] = useState([]);
@@ -20,29 +23,35 @@ export const useTeamSchedule = (awaySlug, homeSlug, seasonYear) => {
 
   // Fetch away team schedule
   useEffect(() => {
-    if (!showAwayGames) return;
+    if (!showAwayGames || !seasonYear) return;
+    const sportLeague = resolveSportLeague(leagueSport);
+    if (!sportLeague) return; // unsupported/unknown sport — don't issue a wrong-sport fetch
     setAwayLoading(true);
     setAwayError(null);
-    apiWrapper.TeamCard.getBySlugAndSeason(awaySlug, seasonYear)
+    const { sport, league } = sportLeague;
+    apiWrapper.TeamCard.getBySlugAndSeason(sport, league, awaySlug, seasonYear)
       .then(res => {
         setAwaySchedule(Array.isArray(res.data?.schedule) ? res.data.schedule : []);
       })
       .catch(() => setAwayError("Failed to load schedule"))
       .finally(() => setAwayLoading(false));
-  }, [showAwayGames, awaySlug, seasonYear]);
+  }, [showAwayGames, awaySlug, seasonYear, leagueSport]);
 
   // Fetch home team schedule
   useEffect(() => {
-    if (!showHomeGames) return;
+    if (!showHomeGames || !seasonYear) return;
+    const sportLeague = resolveSportLeague(leagueSport);
+    if (!sportLeague) return; // unsupported/unknown sport — don't issue a wrong-sport fetch
     setHomeLoading(true);
     setHomeError(null);
-    apiWrapper.TeamCard.getBySlugAndSeason(homeSlug, seasonYear)
+    const { sport, league } = sportLeague;
+    apiWrapper.TeamCard.getBySlugAndSeason(sport, league, homeSlug, seasonYear)
       .then(res => {
         setHomeSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule : []);
       })
       .catch(() => setHomeError("Failed to load schedule"))
       .finally(() => setHomeLoading(false));
-  }, [showHomeGames, homeSlug, seasonYear]);
+  }, [showHomeGames, homeSlug, seasonYear, leagueSport]);
 
   return {
     showAwayGames,

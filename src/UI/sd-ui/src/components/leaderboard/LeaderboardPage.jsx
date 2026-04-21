@@ -53,16 +53,32 @@ function LeaderboardPage() {
     fetchLeaderboard();
   }, [selectedLeagueId]);
 
-  // Find the selected league and its maxSeasonWeek
+  // Find the selected league and its ascending week list
   const selectedLeague = leagues.find(l => l.id === selectedLeagueId);
-  const maxSeasonWeek = selectedLeague?.maxSeasonWeek || 1;
+  const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
+  const latestSeasonWeek = seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
 
-  // Set selectedWeek to maxSeasonWeek when league changes
+  // Reconcile selectedWeek with the currently-selected league.
+  //   (a) no league selected → nothing to reconcile; leave state alone.
+  //   (b) league has no weeks (latestSeasonWeek is null) → clear selectedWeek
+  //       explicitly, otherwise a stale value from the previous league would
+  //       carry over and getLeagueWeekOverview / the "By Week" select would
+  //       receive a week number the current league doesn't have.
+  //   (c) current selection is a week the league has → leave it alone
+  //       (don't clobber the user's explicit choice when new weeks append).
+  //   (d) current selection is missing or invalid → snap to the latest.
   useEffect(() => {
-    if (selectedLeagueId && maxSeasonWeek) {
-      setSelectedWeek(maxSeasonWeek);
+    if (!selectedLeagueId) return;
+    if (!latestSeasonWeek) {
+      if (selectedWeek !== null) setSelectedWeek(null);
+      return;
     }
-  }, [selectedLeagueId, maxSeasonWeek]);
+    const isCurrentValid = selectedWeek && seasonWeeks.includes(selectedWeek);
+    if (!isCurrentValid) {
+      setSelectedWeek(latestSeasonWeek);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeagueId, latestSeasonWeek]);
 
   // Add the API call for week overview using the selectedLeagueId from context
   // Only run when selectedWeek is properly set (not null)
@@ -96,8 +112,8 @@ function LeaderboardPage() {
     fetchWeeklyScores();
   }, [selectedLeagueId]);
 
-  // Generate week options based on maxSeasonWeek
-  const weekOptions = Array.from({ length: maxSeasonWeek }, (_, i) => i + 1);
+  // Week options = the league's actual week list (custom-window leagues may skip weeks)
+  const weekOptions = seasonWeeks;
 
   // Filter functions for synthetic users
   const filterLeaderboard = (data) => {

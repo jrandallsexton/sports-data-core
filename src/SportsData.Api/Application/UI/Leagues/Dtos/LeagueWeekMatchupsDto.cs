@@ -15,6 +15,10 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
 
         public bool UseConfidencePoints { get; set; }
 
+        // Sport enum name ("FootballNcaa", "FootballNfl", "BaseballMlb").
+        // UI splits this into url segments (sport/league) via resolveSportLeague().
+        public string Sport { get; set; } = default!;
+
         public List<MatchupForPickDto> Matchups { get; set; } = [];
 
         public class MatchupForPickDto

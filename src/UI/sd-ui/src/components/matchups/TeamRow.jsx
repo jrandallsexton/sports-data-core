@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { FaSearchPlus, FaSearchMinus } from "react-icons/fa";
-import { teamLink } from '../../utils/sportLinks';
+import { teamLink, resolveSportLeague } from '../../utils/sportLinks';
 import MiniSchedule from "./MiniSchedule";
 
 /**
@@ -31,12 +31,14 @@ function TeamRow({
   confWins,
   confLosses,
   seasonYear,
+  leagueSport,
   showSchedule,
   onToggleSchedule,
   schedule,
   loading,
   error
 }) {
+  const { sport, league } = resolveSportLeague(leagueSport);
   return (
     <>
       <div className="team-row">
@@ -54,7 +56,7 @@ function TeamRow({
                 <span className="team-ranking">#{rank}</span>
               )}
               <Link
-                to={teamLink(teamSlug, seasonYear)}
+                to={teamLink(teamSlug, seasonYear, sport, league)}
                 className="team-link"
               >
                 {teamName}
@@ -88,7 +90,7 @@ function TeamRow({
         ) : error ? (
           <div style={{ padding: 4, color: 'red', fontSize: '0.95em' }}>{error}</div>
         ) : (
-          <MiniSchedule schedule={schedule} seasonYear={seasonYear} />
+          <MiniSchedule schedule={schedule} seasonYear={seasonYear} leagueSport={leagueSport} />
         )
       )}
     </>

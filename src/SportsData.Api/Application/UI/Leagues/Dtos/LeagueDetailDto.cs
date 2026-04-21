@@ -24,6 +24,12 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
 
         public bool IsPublic { get; set; }
 
+        // League window — null on either side means "open-ended in that direction"
+        // (i.e. full-season or no upper bound). Both null = full season.
+        public DateTime? StartsOn { get; set; }
+
+        public DateTime? EndsOn { get; set; }
+
         public List<LeagueMemberDto> Members { get; set; } = [];
 
         public class LeagueMemberDto

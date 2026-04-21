@@ -31,6 +31,9 @@ public class UserDto
 
         public required string Name { get; set; }
 
-        public int? MaxSeasonWeek { get; set; }
+        // Ascending list of week numbers that exist for this league.
+        // Replaces MaxSeasonWeek — custom-window leagues (e.g. "current week only"
+        // or "weeks 5-8") need exact membership, not a 1..N upper bound.
+        public IList<int> SeasonWeeks { get; set; } = [];
     }
 }

@@ -3,7 +3,7 @@ import { FaSearchPlus, FaSearchMinus } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { formatToMonthDay } from "../../utils/timeUtils";
 import "./MiniSchedule.css";
-import { teamLink, contestLink } from '../../utils/sportLinks';
+import { teamLink, contestLink, resolveSportLeague } from '../../utils/sportLinks';
 import "./MiniScheduleDrilldown.css";
 
 function formatGameResult(game) {
@@ -18,7 +18,8 @@ function getResultClass(game) {
   return game.wasWinner ? "result-win" : "result-loss";
 }
 
-export default function MiniSchedule({ schedule = [], seasonYear }) {
+export default function MiniSchedule({ schedule = [], seasonYear, leagueSport }) {
+  const { sport, league } = resolveSportLeague(leagueSport);
   // TODO: create new endpoint that only returns completed games
   const games = schedule.slice(0, 13);
   // Drilldown state: which row is open, and its data
@@ -41,7 +42,8 @@ export default function MiniSchedule({ schedule = [], seasonYear }) {
     setDrillSchedule([]);
     try {
       // Use current seasonYear for opponent
-      const res = await import("../../api/apiWrapper").then(m => m.default.TeamCard.getBySlugAndSeason(opponentSlug, seasonYear));
+      const res = await import("../../api/apiWrapper").then(m =>
+        m.default.TeamCard.getBySlugAndSeason(sport, league, opponentSlug, seasonYear));
       setDrillSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule.slice(0, 13) : []);
     } catch (e) {
       setDrillError("Failed to load schedule");
@@ -66,7 +68,7 @@ export default function MiniSchedule({ schedule = [], seasonYear }) {
               <tr key={idx}>
                 <td>{formatToMonthDay(game.date)}</td>
                 <td style={{ display: 'flex', alignItems: 'center' }}>
-                  <Link to={teamLink(game.opponentSlug, seasonYear)} className="team-link">
+                  <Link to={teamLink(game.opponentSlug, seasonYear, sport, league)} className="team-link">
                     {game.locationType === 'Away' ? `@ ${game.opponentShortName ?? game.opponent ?? 'Opponent'}` : (game.opponentShortName ?? game.opponent ?? 'Opponent')}
                   </Link>
                   {game.opponentSlug && (
@@ -88,7 +90,7 @@ export default function MiniSchedule({ schedule = [], seasonYear }) {
                 <td>
                   {game.finalizedUtc && game.contestId ? (
                     <Link
-                      to={contestLink(game.contestId)}
+                      to={contestLink(game.contestId, sport, league)}
                       className={`result-link ${getResultClass(game)}`}
                     >
                       {formatGameResult(game)}
@@ -106,7 +108,7 @@ export default function MiniSchedule({ schedule = [], seasonYear }) {
                     ) : drillError ? (
                       <div style={{ padding: 6, color: 'red', fontSize: '0.95em' }}>{drillError}</div>
                     ) : (
-                      <MiniSchedule schedule={drillSchedule} seasonYear={seasonYear} />
+                      <MiniSchedule schedule={drillSchedule} seasonYear={seasonYear} leagueSport={leagueSport} />
                     )}
                   </td>
                 </tr>

@@ -34,6 +34,14 @@ x-common-env: &common-env
   AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET}
   AZURE_TENANT_ID: ${AZURE_TENANT_ID}
   CommonConfig__SqlBaseConnectionString: ${PG_CONNSTR}
+  # Seq runs on the host (port 5341 ingest, 8090 UI) — override AppConfig's
+  # localhost URI so containers send via the Docker bridge. Same pattern as
+  # the Postgres connection string above. Note: the code reads this from
+  # `CommonConfig:SeqUri`, not `CommonConfig:Logging:SeqUri` — see
+  # AppConfiguration.cs line 35.
+  CommonConfig__SeqUri: http://host.docker.internal:5341/
+  # RabbitMQ is also on the host (5672). Same bridge-hop override.
+  CommonConfig__Messaging__RabbitMq__Host: host.docker.internal
 
 # Readiness probe reused by every Producer service. Uses bash's /dev/tcp to
 # verify Kestrel is accepting connections on 8080 without needing curl or

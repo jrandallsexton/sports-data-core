@@ -39,6 +39,7 @@ public class GetMeQueryHandler : IGetMeQueryHandler
 
         var userDto = await _db.Users
             .AsNoTracking()
+            .AsSplitQuery()
             .Where(x => x.Id == query.UserId)
             .Select(user => new UserDto
             {
@@ -54,8 +55,15 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                     {
                         Id = m.Group.Id,
                         Name = m.Group.Name,
-                        MaxSeasonWeek = m.Group.Weeks
-                            .Max(w => (int?)w.SeasonWeek)
+                        // Dedupe: some leagues have multiple PickemGroupWeek rows with
+                        // the same SeasonWeek number (e.g. a preseason Week 1 alongside a
+                        // regular-season Week 1, or rows carried over across SeasonYears).
+                        // UI wants the unique set of week numbers, ascending.
+                        SeasonWeeks = m.Group.Weeks
+                            .Select(w => w.SeasonWeek)
+                            .Distinct()
+                            .OrderBy(w => w)
+                            .ToList()
                     })
                     .ToList()
             })

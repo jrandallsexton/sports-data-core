@@ -53,16 +53,17 @@ function LeaderboardPage() {
     fetchLeaderboard();
   }, [selectedLeagueId]);
 
-  // Find the selected league and its maxSeasonWeek
+  // Find the selected league and its ascending week list
   const selectedLeague = leagues.find(l => l.id === selectedLeagueId);
-  const maxSeasonWeek = selectedLeague?.maxSeasonWeek || 1;
+  const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
+  const latestSeasonWeek = seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
 
-  // Set selectedWeek to maxSeasonWeek when league changes
+  // Snap selectedWeek to the latest week the league has when league changes
   useEffect(() => {
-    if (selectedLeagueId && maxSeasonWeek) {
-      setSelectedWeek(maxSeasonWeek);
+    if (selectedLeagueId && latestSeasonWeek) {
+      setSelectedWeek(latestSeasonWeek);
     }
-  }, [selectedLeagueId, maxSeasonWeek]);
+  }, [selectedLeagueId, latestSeasonWeek]);
 
   // Add the API call for week overview using the selectedLeagueId from context
   // Only run when selectedWeek is properly set (not null)
@@ -96,8 +97,8 @@ function LeaderboardPage() {
     fetchWeeklyScores();
   }, [selectedLeagueId]);
 
-  // Generate week options based on maxSeasonWeek
-  const weekOptions = Array.from({ length: maxSeasonWeek }, (_, i) => i + 1);
+  // Week options = the league's actual week list (custom-window leagues may skip weeks)
+  const weekOptions = seasonWeeks;
 
   // Filter functions for synthetic users
   const filterLeaderboard = (data) => {

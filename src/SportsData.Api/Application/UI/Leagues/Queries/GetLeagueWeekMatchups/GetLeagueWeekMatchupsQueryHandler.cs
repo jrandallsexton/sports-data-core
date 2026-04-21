@@ -80,8 +80,20 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.LeagueId,
                 query.Week);
 
-            var matchups = await _dbContext.PickemGroupMatchups
+            var groupMatchups = await _dbContext.PickemGroupMatchups
                 .Where(x => x.GroupId == query.LeagueId && x.SeasonWeek == query.Week)
+                .Select(x => new
+                {
+                    x.StartDateUtc,
+                    x.ContestId,
+                    x.AwayRank,
+                    x.HomeRank,
+                    x.Headline,
+                    x.SeasonYear
+                })
+                .ToListAsync(cancellationToken);
+
+            var matchups = groupMatchups
                 .Select(x => new LeagueWeekMatchupsDto.MatchupForPickDto
                 {
                     StartDateUtc = x.StartDateUtc,
@@ -90,7 +102,12 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     HomeRank = x.HomeRank,
                     HeadLine = x.Headline
                 })
-                .ToListAsync(cancellationToken);
+                .ToList();
+
+            // Season year is authoritative on PickemGroupMatchup (set at generation
+            // time). DateTime.UtcNow.Year was wrong for football whenever bowl games
+            // / playoffs extend into January of the following calendar year.
+            var seasonYear = groupMatchups.FirstOrDefault()?.SeasonYear ?? DateTime.UtcNow.Year;
 
             _logger.LogInformation(
                 "Retrieved {Count} matchups from database for leagueId={LeagueId}, week={Week}",
@@ -297,8 +314,9 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             {
                 PickType = league!.PickType,
                 UseConfidencePoints = league!.UseConfidencePoints,
-                SeasonYear = DateTime.UtcNow.Year, // Assuming current year for simplicity
+                SeasonYear = seasonYear,
                 WeekNumber = query.Week,
+                Sport = league.Sport.ToString(),
                 Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()
             };
 

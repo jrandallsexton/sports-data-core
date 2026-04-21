@@ -29,6 +29,20 @@
   min-width: 0;
 }
 
+/* Span the full grid width so it sits above the primary/sidebar columns. */
+.back-to-leagues {
+  grid-column: 1 / -1;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  align-self: start;
+}
+
+.back-to-leagues:hover {
+  text-decoration: underline;
+}
+
 .league-info-card {
   background-color: var(--bg-modal);
   border: 2px solid var(--accent);

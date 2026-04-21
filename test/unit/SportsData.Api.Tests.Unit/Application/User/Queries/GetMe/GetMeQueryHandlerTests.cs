@@ -159,11 +159,11 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         result.Value.Leagues.Should().HaveCount(1);
         result.Value.Leagues.First().Id.Should().Be(groupId);
         result.Value.Leagues.First().Name.Should().Be("Test League");
-        result.Value.Leagues.First().MaxSeasonWeek.Should().Be(5);
+        result.Value.Leagues.First().SeasonWeeks.Should().Equal(5);
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldCalculateMaxSeasonWeek_WhenMultipleWeeksExist()
+    public async Task ExecuteAsync_ShouldReturnSeasonWeeksAscending_WhenMultipleWeeksExist()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -249,7 +249,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value.Leagues.Should().HaveCount(1);
-        result.Value.Leagues.First().MaxSeasonWeek.Should().Be(7);
+        result.Value.Leagues.First().SeasonWeeks.Should().Equal(3, 5, 7);
     }
 
     [Fact]

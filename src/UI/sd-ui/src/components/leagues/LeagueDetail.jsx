@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useUserDto } from "../../contexts/UserContext";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import leaguesApi from "../../api/leagues/leaguesApi";
 import "./LeagueDetail.css";
 import LeagueInvitation from "./LeagueInvitation";
@@ -54,8 +54,29 @@ const LeagueDetail = () => {
   const commissionerId = commissioner?.userId;
   const isCommissioner = userDto?.id === commissionerId;
 
+  // Render the league window as a human-readable date range, or "Full Season"
+  // when both bounds are null (the league was created without a custom window).
+  const formatWindowBound = (iso) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime())
+      ? null
+      : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  };
+  const startLabel = formatWindowBound(league.startsOn);
+  const endLabel = formatWindowBound(league.endsOn);
+  let windowLabel;
+  if (!startLabel && !endLabel) windowLabel = "Full Season";
+  else if (startLabel && endLabel) windowLabel = `${startLabel} – ${endLabel}`;
+  else if (startLabel) windowLabel = `From ${startLabel}`;
+  else windowLabel = `Through ${endLabel}`;
+
   return (
     <div className="league-detail-container">
+      <Link to="/app/league" className="back-to-leagues">
+        ← My Leagues
+      </Link>
+
       <div className="league-detail-primary">
         <div className="league-info-card">
           <h2>{league.name}</h2>
@@ -66,6 +87,7 @@ const LeagueDetail = () => {
             <li><strong>Tie Policy:</strong> {league.tiebreakerTiePolicy}</li>
             <li><strong>Confidence Points:</strong> {league.useConfidencePoints ? "Yes" : "No"}</li>
             <li><strong>Ranking Filter:</strong> {league.rankingFilter || "None"}</li>
+            <li><strong>League Window:</strong> {windowLabel}</li>
             <li><strong>Visibility:</strong> {league.isPublic ? "Public" : "Private"}</li>
             <li><strong>Conferences:</strong> {
               [...new Set(league.conferenceSlugs)]?.join(", ") || "None"

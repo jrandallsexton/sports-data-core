@@ -6,6 +6,34 @@
   box-sizing: border-box;
 }
 
+.leagues-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.leagues-header h1 {
+  margin: 0;
+}
+
+.create-league-button {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.create-league-button:hover {
+  background-color: var(--accent-hover);
+}
+
 .league-grid {
   display: flex;
   flex-direction: column;

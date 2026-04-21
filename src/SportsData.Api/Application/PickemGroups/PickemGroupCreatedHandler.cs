@@ -57,9 +57,10 @@ namespace SportsData.Api.Application.PickemGroups
                 throw new Exception("Group not found");
             }
 
-            // get the current week
-            // TODO: multi-sport — resolve sport from context instead of defaulting
-            var weekResult = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek();
+            // get the current week for the league's sport (NCAA, NFL, or MLB).
+            // ESPN provides native week boundaries for all three via SeasonType, so
+            // the Producer-side GetCurrentSeasonWeek endpoint works uniformly.
+            var weekResult = await _seasonClientFactory.Resolve(group.Sport).GetCurrentSeasonWeek();
             var currentWeek = weekResult.IsSuccess ? weekResult.Value : null;
 
             if (currentWeek is null)

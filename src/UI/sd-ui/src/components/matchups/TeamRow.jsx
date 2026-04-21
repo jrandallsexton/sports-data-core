@@ -38,7 +38,10 @@ function TeamRow({
   loading,
   error
 }) {
-  const { sport, league } = resolveSportLeague(leagueSport);
+  // resolveSportLeague returns null for unknown/missing enums so unsupported
+  // sports don't silently render as an NCAA football route. Fall back to a
+  // non-linked team name in that case.
+  const sportLeague = resolveSportLeague(leagueSport);
   return (
     <>
       <div className="team-row">
@@ -55,12 +58,16 @@ function TeamRow({
               {rank && (
                 <span className="team-ranking">#{rank}</span>
               )}
-              <Link
-                to={teamLink(teamSlug, seasonYear, sport, league)}
-                className="team-link"
-              >
-                {teamName}
-              </Link>
+              {sportLeague ? (
+                <Link
+                  to={teamLink(teamSlug, seasonYear, sportLeague.sport, sportLeague.league)}
+                  className="team-link"
+                >
+                  {teamName}
+                </Link>
+              ) : (
+                <span className="team-link">{teamName}</span>
+              )}
             </div>
             <div className="team-record-row">
               <div className="team-record">

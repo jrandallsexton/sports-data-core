@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -76,6 +78,17 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                 default!,
                 ResultStatus.NotFound,
                 [new FluentValidation.Results.ValidationFailure("UserId", $"User with ID {query.UserId} not found.")]);
+        }
+
+        // Defensive invariant check. SeasonWeeks is contractually ascending + distinct
+        // (see UserDto.UserLeagueMembership.SeasonWeeks <remarks>). The EF projection
+        // above enforces it via .Distinct().OrderBy(); this assert guards against a
+        // future change to that projection silently breaking the contract.
+        foreach (var league in userDto.Leagues)
+        {
+            Debug.Assert(
+                league.SeasonWeeks.SequenceEqual(league.SeasonWeeks.Distinct().OrderBy(w => w)),
+                $"SeasonWeeks for league {league.Id} is not ascending+distinct.");
         }
 
         _logger.LogInformation("User retrieved successfully. UserId={UserId}", query.UserId);

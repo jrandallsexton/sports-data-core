@@ -79,9 +79,11 @@ public class GetTeamMetricsQueryHandlerTests : UnitTestBase<GetTeamMetricsQueryH
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldReturnNotFound_WhenMetricsDoNotExist()
+    public async Task ExecuteAsync_ShouldReturnEmptyDto_WhenMetricsDoNotExist()
     {
-        // Arrange
+        // Metrics are a non-blocking enrichment surface — when the producer returns
+        // null we surface that as Success(empty DTO) so the UI renders a friendly
+        // empty state rather than a 500/NotFound.
         var franchiseSeasonId = Guid.NewGuid();
         var sport = Sport.FootballNcaa;
 
@@ -92,18 +94,21 @@ public class GetTeamMetricsQueryHandlerTests : UnitTestBase<GetTeamMetricsQueryH
         var handler = Mocker.CreateInstance<GetTeamMetricsQueryHandler>();
         var query = new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId, Sport = sport };
 
-        // Act
         var result = await handler.ExecuteAsync(query);
 
-        // Assert
-        result.IsSuccess.Should().BeFalse();
-        result.Status.Should().Be(ResultStatus.NotFound);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.FranchiseName.Should().BeNullOrEmpty();
+        result.Value.GamesPlayed.Should().Be(0);
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldReturnError_WhenExceptionThrown()
+    public async Task ExecuteAsync_ShouldReturnEmptyDto_WhenNonCancellationExceptionThrown()
     {
-        // Arrange
+        // A real producer-side error (network, missing sport client, etc.) also
+        // resolves to Success(empty DTO) rather than a hard failure so the UI
+        // stays graceful. The exception is logged at Error level elsewhere for
+        // ops visibility — we only validate the API contract here.
         var franchiseSeasonId = Guid.NewGuid();
         var sport = Sport.FootballNcaa;
 
@@ -114,11 +119,29 @@ public class GetTeamMetricsQueryHandlerTests : UnitTestBase<GetTeamMetricsQueryH
         var handler = Mocker.CreateInstance<GetTeamMetricsQueryHandler>();
         var query = new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId, Sport = sport };
 
-        // Act
         var result = await handler.ExecuteAsync(query);
 
-        // Assert
-        result.IsSuccess.Should().BeFalse();
-        result.Status.Should().Be(ResultStatus.Error);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.FranchiseName.Should().BeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldRethrow_WhenOperationCanceled()
+    {
+        // Cancellation must propagate — the graceful catch is for non-cancel errors.
+        var franchiseSeasonId = Guid.NewGuid();
+        var sport = Sport.FootballNcaa;
+
+        _franchiseClientMock
+            .Setup(x => x.GetFranchiseSeasonMetricsByFranchiseSeasonId(franchiseSeasonId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException());
+
+        var handler = Mocker.CreateInstance<GetTeamMetricsQueryHandler>();
+        var query = new GetTeamMetricsQuery { FranchiseSeasonId = franchiseSeasonId, Sport = sport };
+
+        var act = async () => await handler.ExecuteAsync(query);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
     }
 }

@@ -23,10 +23,12 @@ export const useTeamSchedule = (awaySlug, homeSlug, seasonYear, leagueSport) => 
 
   // Fetch away team schedule
   useEffect(() => {
-    if (!showAwayGames) return;
+    if (!showAwayGames || !seasonYear) return;
+    const sportLeague = resolveSportLeague(leagueSport);
+    if (!sportLeague) return; // unsupported/unknown sport — don't issue a wrong-sport fetch
     setAwayLoading(true);
     setAwayError(null);
-    const { sport, league } = resolveSportLeague(leagueSport);
+    const { sport, league } = sportLeague;
     apiWrapper.TeamCard.getBySlugAndSeason(sport, league, awaySlug, seasonYear)
       .then(res => {
         setAwaySchedule(Array.isArray(res.data?.schedule) ? res.data.schedule : []);
@@ -37,10 +39,12 @@ export const useTeamSchedule = (awaySlug, homeSlug, seasonYear, leagueSport) => 
 
   // Fetch home team schedule
   useEffect(() => {
-    if (!showHomeGames) return;
+    if (!showHomeGames || !seasonYear) return;
+    const sportLeague = resolveSportLeague(leagueSport);
+    if (!sportLeague) return; // unsupported/unknown sport — don't issue a wrong-sport fetch
     setHomeLoading(true);
     setHomeError(null);
-    const { sport, league } = resolveSportLeague(leagueSport);
+    const { sport, league } = sportLeague;
     apiWrapper.TeamCard.getBySlugAndSeason(sport, league, homeSlug, seasonYear)
       .then(res => {
         setHomeSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule : []);

@@ -58,6 +58,12 @@ public class GetTeamMetricsQueryHandler : IGetTeamMetricsQueryHandler
 
             return new Success<FranchiseSeasonMetricsDto>(dto);
         }
+        catch (OperationCanceledException)
+        {
+            // Cancellation must propagate so upstream request abort / shutdown
+            // semantics behave correctly. Never swallow it as "empty metrics."
+            throw;
+        }
         catch (Exception ex)
         {
             // Metrics are a non-blocking enrichment surface — a backend failure here

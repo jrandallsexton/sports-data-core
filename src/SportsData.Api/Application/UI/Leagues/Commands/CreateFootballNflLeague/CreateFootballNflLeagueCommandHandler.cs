@@ -148,7 +148,7 @@ public class CreateFootballNflLeagueCommandHandler : ICreateFootballNflLeagueCom
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Created {Sport} league {LeagueId} with name {LeagueName} by user {UserId}; published PickemGroupCreated",
+            "Created {Sport} league {LeagueId} with name {LeagueName} by user {UserId}; PickemGroupCreated enqueued to outbox",
             SportMode,
             group.Id,
             group.Name,

@@ -56,9 +56,21 @@ const LeagueDetail = () => {
 
   // Render the league window as a human-readable date range, or "Full Season"
   // when both bounds are null (the league was created without a custom window).
+  //
+  // Date-only UTC-midnight strings (e.g. "2026-04-19T00:00:00Z") describe a
+  // calendar day, not an instant — constructing new Date() against them would
+  // shift the displayed date to the previous day for users west of UTC. For
+  // that shape we build a Date from local components so the label reflects
+  // the intended calendar day regardless of viewer timezone. All other ISO
+  // forms (local-midnight-as-UTC produced by the league-create form, real
+  // end-of-day timestamps, etc.) fall through to the standard UTC-aware path.
+  const DATE_ONLY_UTC_MIDNIGHT = /^(\d{4})-(\d{2})-(\d{2})T00:00:00(?:\.0+)?Z$/;
   const formatWindowBound = (iso) => {
     if (!iso) return null;
-    const d = new Date(iso);
+    const dateOnlyMatch = DATE_ONLY_UTC_MIDNIGHT.exec(iso);
+    const d = dateOnlyMatch
+      ? new Date(Number(dateOnlyMatch[1]), Number(dateOnlyMatch[2]) - 1, Number(dateOnlyMatch[3]))
+      : new Date(iso);
     return Number.isNaN(d.getTime())
       ? null
       : d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
@@ -90,7 +102,11 @@ const LeagueDetail = () => {
             <li><strong>League Window:</strong> {windowLabel}</li>
             <li><strong>Visibility:</strong> {league.isPublic ? "Public" : "Private"}</li>
             <li><strong>Conferences:</strong> {
-              [...new Set(league.conferenceSlugs)]?.join(", ") || "None"
+              (() => {
+                const slugs = Array.isArray(league.conferenceSlugs) ? league.conferenceSlugs : [];
+                const deduped = [...new Set(slugs)];
+                return deduped.length > 0 ? deduped.join(", ") : "None";
+              })()
             }</li>
           </ul>
         </div>

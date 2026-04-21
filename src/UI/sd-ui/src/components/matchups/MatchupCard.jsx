@@ -31,7 +31,13 @@ function MatchupCard({
   leagueSeasonYear // From LeagueWeekMatchupsDto.SeasonYear — canonical for all matchups in this response
 }) {
   const { userDto } = useUserDto();
-  const seasonYear = leagueSeasonYear ?? matchup.seasonYear ?? 2025;
+  // seasonYear is authoritative from leagueSeasonYear (set by the backend
+  // handler from PickemGroupMatchup.SeasonYear); fall through to the matchup
+  // itself only if the response shape ever changes. No hardcoded year fallback
+  // — downstream hooks and link builders handle an undefined value by skipping
+  // season-specific fetches / omitting the URL segment rather than silently
+  // rendering a stale year.
+  const seasonYear = leagueSeasonYear ?? matchup.seasonYear;
 
   const [showConfidencePicker, setShowConfidencePicker] = useState(false);
   const [pendingPickFranchiseId, setPendingPickFranchiseId] = useState(null);

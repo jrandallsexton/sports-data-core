@@ -37,13 +37,13 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
 
         if (league is null)
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(command.LeagueId), $"League with ID {command.LeagueId} not found.")]);
 
         if (league.CommissionerUserId != command.UserId)
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.Unauthorized,
                 [new ValidationFailure(nameof(command.UserId), $"User {command.UserId} is not the commissioner of league {command.LeagueId}.")]);
 
@@ -55,7 +55,7 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
 
         if (hasPicks)
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.BadRequest,
                 [new ValidationFailure(nameof(command.LeagueId), "Cannot delete a league that already has user picks.")]);
 

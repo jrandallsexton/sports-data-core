@@ -58,11 +58,16 @@ function LeaderboardPage() {
   const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
   const latestSeasonWeek = seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
 
-  // Snap selectedWeek to the latest week the league has when league changes
+  // Snap selectedWeek only when (a) nothing is selected yet, or (b) the current
+  // selection isn't valid for the newly-selected league. Don't overwrite the
+  // user's explicit choice just because a later week became available.
   useEffect(() => {
-    if (selectedLeagueId && latestSeasonWeek) {
+    if (!selectedLeagueId || !latestSeasonWeek) return;
+    const isCurrentValid = selectedWeek && seasonWeeks.includes(selectedWeek);
+    if (!isCurrentValid) {
       setSelectedWeek(latestSeasonWeek);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeagueId, latestSeasonWeek]);
 
   // Add the API call for week overview using the selectedLeagueId from context

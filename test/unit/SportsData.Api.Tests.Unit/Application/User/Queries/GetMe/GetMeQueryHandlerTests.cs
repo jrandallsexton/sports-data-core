@@ -163,7 +163,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
     }
 
     [Fact]
-    public async Task ExecuteAsync_ShouldReturnSeasonWeeksAscending_WhenMultipleWeeksExist()
+    public async Task ExecuteAsync_ShouldReturnSeasonWeeksAscendingAndDistinct_WhenMultipleWeeksExist()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -219,6 +219,21 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
             Group = group
         };
 
+        // Duplicate SeasonWeek=5 row — distinct Id / SeasonWeekId but same week
+        // number. Mirrors the real-world case where a group can have multiple
+        // PickemGroupWeek rows for the same week (e.g. preseason and regular
+        // season both numbered 1, or rows carried forward across SeasonYears).
+        // Handler must dedupe; expected output remains [3, 5, 7].
+        var week4 = new PickemGroupWeek
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            SeasonYear = 2024,
+            SeasonWeek = 5,
+            SeasonWeekId = Guid.NewGuid(),
+            Group = group
+        };
+
         var membership = new PickemGroupMember
         {
             Id = Guid.NewGuid(),
@@ -231,11 +246,12 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         group.Weeks.Add(week1);
         group.Weeks.Add(week2);
         group.Weeks.Add(week3);
+        group.Weeks.Add(week4);
         user.GroupMemberships.Add(membership);
 
         await DataContext.Users.AddAsync(user);
         await DataContext.PickemGroups.AddAsync(group);
-        await DataContext.PickemGroupWeeks.AddRangeAsync([week1, week2, week3]);
+        await DataContext.PickemGroupWeeks.AddRangeAsync([week1, week2, week3, week4]);
         await DataContext.PickemGroupMembers.AddAsync(membership);
         await DataContext.SaveChangesAsync();
 
@@ -245,7 +261,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         // Act
         var result = await handler.ExecuteAsync(query);
 
-        // Assert
+        // Assert — 4 input rows [3, 7, 5, 5] → 3 output items, sorted + deduped.
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value.Leagues.Should().HaveCount(1);

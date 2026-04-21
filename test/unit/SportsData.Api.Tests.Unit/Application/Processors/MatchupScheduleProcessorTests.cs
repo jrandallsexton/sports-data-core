@@ -668,5 +668,189 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             savedGroupWeek!.Matchups.Should().ContainSingle()
                 .Which.StartDateUtc.Should().Be(new DateTime(2024, 9, 18, 19, 0, 0, DateTimeKind.Utc));
         }
+
+        /// <summary>
+        /// Open-ended upper bound: StartsOn is set, EndsOn is null. Matchups
+        /// before StartsOn are excluded; matchups on/after StartsOn are included
+        /// with no upper bound constraint. Mirrors a "starts next Saturday, runs
+        /// through the rest of the season" league.
+        /// </summary>
+        [Fact]
+        public async Task Process_LeagueWindow_StartsOnOnly_ExcludesContestsBeforeStart()
+        {
+            // Arrange
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+            var conferenceSlug = "sec";
+
+            var windowStart = new DateTime(2024, 9, 15, 0, 0, 0, DateTimeKind.Utc);
+
+            var group = Fixture.Build<PickemGroup>()
+                .With(x => x.Id, groupId)
+                .With(x => x.RankingFilter, () => TeamRankingFilter.AP_TOP_25)
+                .With(x => x.StartsOn, (DateTime?)windowStart)
+                .With(x => x.EndsOn, (DateTime?)null)
+                .With(x => x.Conferences, new List<PickemGroupConference>
+                {
+                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.Empty }
+                })
+                .Create();
+
+            await DataContext.PickemGroups.AddAsync(group);
+            await DataContext.SaveChangesAsync();
+
+            // Three SEC matchups: one a week before the window, one exactly on
+            // StartsOn (inclusive boundary), one well after. No EndsOn, so
+            // nothing trims from the top.
+            var allMatchups = new List<Matchup>
+            {
+                Fixture.Build<Matchup>()
+                    .With(x => x.AwayRank, (int?)null)
+                    .With(x => x.HomeRank, (int?)null)
+                    .With(x => x.AwayConferenceSlug, conferenceSlug)
+                    .With(x => x.HomeConferenceSlug, conferenceSlug)
+                    .With(x => x.StartDateUtc, new DateTime(2024, 9, 8, 19, 0, 0, DateTimeKind.Utc))
+                    .Create(),
+                Fixture.Build<Matchup>()
+                    .With(x => x.AwayRank, (int?)null)
+                    .With(x => x.HomeRank, (int?)null)
+                    .With(x => x.AwayConferenceSlug, conferenceSlug)
+                    .With(x => x.HomeConferenceSlug, conferenceSlug)
+                    .With(x => x.StartDateUtc, windowStart)
+                    .Create(),
+                Fixture.Build<Matchup>()
+                    .With(x => x.AwayRank, (int?)null)
+                    .With(x => x.HomeRank, (int?)null)
+                    .With(x => x.AwayConferenceSlug, conferenceSlug)
+                    .With(x => x.HomeConferenceSlug, conferenceSlug)
+                    .With(x => x.StartDateUtc, new DateTime(2024, 12, 1, 19, 0, 0, DateTimeKind.Utc))
+                    .Create(),
+            };
+
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
+
+            var command = new ScheduleGroupWeekMatchupsCommand(
+                groupId,
+                seasonWeekId,
+                2024,
+                1,
+                false,
+                Guid.NewGuid());
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert — matchup before window is excluded; boundary and later are included.
+            var savedGroupWeek = DataContext.PickemGroupWeeks
+                .Include(gw => gw.Matchups)
+                .FirstOrDefault(x => x.SeasonWeekId == seasonWeekId);
+
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.Matchups.Should().HaveCount(2);
+            savedGroupWeek.Matchups.Select(m => m.StartDateUtc).Should().BeEquivalentTo(new[]
+            {
+                windowStart,
+                new DateTime(2024, 12, 1, 19, 0, 0, DateTimeKind.Utc),
+            });
+        }
+
+        /// <summary>
+        /// Open-ended lower bound: StartsOn is null, EndsOn is set. Matchups
+        /// after EndsOn are excluded; matchups on/before EndsOn are included.
+        ///
+        /// Uses an end-of-day EndsOn (23:59:59 on 2024-09-21) to match what
+        /// production handlers produce via CreateLeagueRequestBase.EffectiveEndsOn
+        /// when a date-only EndsOn is submitted — so a same-day matchup at 19:00
+        /// is still inside the window.
+        /// </summary>
+        [Fact]
+        public async Task Process_LeagueWindow_EndsOnOnly_ExcludesContestsAfterEnd()
+        {
+            // Arrange
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+            var conferenceSlug = "sec";
+
+            // End-of-day normalization mirrors what EffectiveEndsOn produces
+            // for a date-only EndsOn of 2024-09-21.
+            var windowEnd = new DateTime(2024, 9, 21, 23, 59, 59, DateTimeKind.Utc);
+
+            var group = Fixture.Build<PickemGroup>()
+                .With(x => x.Id, groupId)
+                .With(x => x.RankingFilter, () => TeamRankingFilter.AP_TOP_25)
+                .With(x => x.StartsOn, (DateTime?)null)
+                .With(x => x.EndsOn, (DateTime?)windowEnd)
+                .With(x => x.Conferences, new List<PickemGroupConference>
+                {
+                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.Empty }
+                })
+                .Create();
+
+            await DataContext.PickemGroups.AddAsync(group);
+            await DataContext.SaveChangesAsync();
+
+            // Three SEC matchups: one well before, one same-day at 19:00 (inside
+            // the end-of-day window), one the following week. No StartsOn, so
+            // nothing trims from the bottom.
+            var sameDayEveningKickoff = new DateTime(2024, 9, 21, 19, 0, 0, DateTimeKind.Utc);
+            var allMatchups = new List<Matchup>
+            {
+                Fixture.Build<Matchup>()
+                    .With(x => x.AwayRank, (int?)null)
+                    .With(x => x.HomeRank, (int?)null)
+                    .With(x => x.AwayConferenceSlug, conferenceSlug)
+                    .With(x => x.HomeConferenceSlug, conferenceSlug)
+                    .With(x => x.StartDateUtc, new DateTime(2024, 9, 1, 19, 0, 0, DateTimeKind.Utc))
+                    .Create(),
+                Fixture.Build<Matchup>()
+                    .With(x => x.AwayRank, (int?)null)
+                    .With(x => x.HomeRank, (int?)null)
+                    .With(x => x.AwayConferenceSlug, conferenceSlug)
+                    .With(x => x.HomeConferenceSlug, conferenceSlug)
+                    .With(x => x.StartDateUtc, sameDayEveningKickoff)
+                    .Create(),
+                Fixture.Build<Matchup>()
+                    .With(x => x.AwayRank, (int?)null)
+                    .With(x => x.HomeRank, (int?)null)
+                    .With(x => x.AwayConferenceSlug, conferenceSlug)
+                    .With(x => x.HomeConferenceSlug, conferenceSlug)
+                    .With(x => x.StartDateUtc, new DateTime(2024, 9, 28, 19, 0, 0, DateTimeKind.Utc))
+                    .Create(),
+            };
+
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
+
+            var command = new ScheduleGroupWeekMatchupsCommand(
+                groupId,
+                seasonWeekId,
+                2024,
+                1,
+                false,
+                Guid.NewGuid());
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert — matchup after window is excluded; before and boundary-day are included.
+            var savedGroupWeek = DataContext.PickemGroupWeeks
+                .Include(gw => gw.Matchups)
+                .FirstOrDefault(x => x.SeasonWeekId == seasonWeekId);
+
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.Matchups.Should().HaveCount(2);
+            savedGroupWeek.Matchups.Select(m => m.StartDateUtc).Should().BeEquivalentTo(new[]
+            {
+                new DateTime(2024, 9, 1, 19, 0, 0, DateTimeKind.Utc),
+                sameDayEveningKickoff,
+            });
+        }
     }
 }

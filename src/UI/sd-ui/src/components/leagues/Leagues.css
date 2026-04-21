@@ -34,6 +34,15 @@
   background-color: var(--accent-hover);
 }
 
+/* Keyboard-only focus indicator. :focus-visible (not :focus) so mouse clicks
+   don't leave a lingering outline after press. Outline + offset renders
+   outside the button so it's visible regardless of the current background. */
+.create-league-button:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25);
+}
+
 .league-grid {
   display: flex;
   flex-direction: column;

@@ -81,6 +81,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.Week);
 
             var groupMatchups = await _dbContext.PickemGroupMatchups
+                .AsNoTracking()
                 .Where(x => x.GroupId == query.LeagueId && x.SeasonWeek == query.Week)
                 .Select(x => new
                 {

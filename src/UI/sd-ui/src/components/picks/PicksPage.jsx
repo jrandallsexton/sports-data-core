@@ -316,10 +316,17 @@ function PicksPage() {
   const latestSeasonWeek = seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
 
   // When selectedLeagueId or week list changes, snap selectedWeek to the latest
-  // week in the league (or clear if the league has no weeks defined).
+  // week in the league. If the league has no weeks defined (latestSeasonWeek
+  // falsy), explicitly clear selectedWeek — otherwise a stale value from the
+  // previously-selected league would carry over and the matchups fetch would
+  // issue an invalid (leagueId, week) pair.
   useEffect(() => {
     if (!selectedLeagueId) return;
-    if (latestSeasonWeek && selectedWeek !== latestSeasonWeek) {
+    if (!latestSeasonWeek) {
+      if (selectedWeek !== null) setSelectedWeek(null);
+      return;
+    }
+    if (selectedWeek !== latestSeasonWeek) {
       setSelectedWeek(latestSeasonWeek);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

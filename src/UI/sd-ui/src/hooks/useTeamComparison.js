@@ -19,8 +19,21 @@ export const useTeamComparison = (matchup, seasonYear, leagueSport) => {
     setComparisonLoading(true);
     setShowComparison(true);
 
+    const sportLeague = resolveSportLeague(leagueSport);
+    // Without a seasonYear OR a resolvable sport/league we can't build season-
+    // specific stats/metrics URLs. Show the dialog's empty-state card rather
+    // than issuing requests with an undefined year segment or a wrong sport.
+    if (!seasonYear || !sportLeague) {
+      setComparisonData({
+        teamA: { name: matchup.away, logoUri: matchup.awayLogoUri, stats: null, metrics: null },
+        teamB: { name: matchup.home, logoUri: matchup.homeLogoUri, stats: null, metrics: null }
+      });
+      setComparisonLoading(false);
+      return;
+    }
+
     try {
-      const { sport, league } = resolveSportLeague(leagueSport);
+      const { sport, league } = sportLeague;
 
       // allSettled so a missing/failed stat block for one team doesn't kill the
       // dialog — each slot independently resolves to its data or null.

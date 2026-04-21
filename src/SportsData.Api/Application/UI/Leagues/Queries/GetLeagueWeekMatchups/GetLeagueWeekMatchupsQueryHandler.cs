@@ -24,15 +24,18 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
     private readonly ILogger<GetLeagueWeekMatchupsQueryHandler> _logger;
     private readonly AppDataContext _dbContext;
     private readonly IContestClientFactory _contestClientFactory;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetLeagueWeekMatchupsQueryHandler(
         ILogger<GetLeagueWeekMatchupsQueryHandler> logger,
         AppDataContext dbContext,
-        IContestClientFactory contestClientFactory)
+        IContestClientFactory contestClientFactory,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contestClientFactory = contestClientFactory;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<LeagueWeekMatchupsDto>> ExecuteAsync(
@@ -106,9 +109,10 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 .ToList();
 
             // Season year is authoritative on PickemGroupMatchup (set at generation
-            // time). DateTime.UtcNow.Year was wrong for football whenever bowl games
-            // / playoffs extend into January of the following calendar year.
-            var seasonYear = groupMatchups.FirstOrDefault()?.SeasonYear ?? DateTime.UtcNow.Year;
+            // time). Falls back to the current UTC year (via IDateTimeProvider for
+            // deterministic testing) only when a week returned zero matchups — which
+            // can't cleanly infer a year from the data itself.
+            var seasonYear = groupMatchups.FirstOrDefault()?.SeasonYear ?? _dateTimeProvider.UtcNow().Year;
 
             _logger.LogInformation(
                 "Retrieved {Count} matchups from database for leagueId={LeagueId}, week={Week}",

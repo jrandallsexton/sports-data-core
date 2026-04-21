@@ -1,3 +1,5 @@
+using System.Data;
+
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
@@ -50,13 +52,22 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
         // Don't let a commissioner nuke a league that members have already started picking
         // for — too easy to destroy real scoring data during testing. Empty leagues (no
         // picks yet) are fair game to delete.
+        //
+        // Serializable transaction: the has-picks check and the cascade delete run in one
+        // unit so a pick inserted between the two operations can't sneak through. Without
+        // this, a race (user submits a pick mid-delete) would let us delete a league that
+        // now has picks, silently destroying real scoring data — exactly the case the
+        // guard exists to prevent.
+        await using var transaction = await _dbContext.Database
+            .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+
         var hasPicks = await _dbContext.UserPicks
             .AnyAsync(p => p.PickemGroupId == command.LeagueId, cancellationToken);
 
         if (hasPicks)
             return new Failure<Guid>(
                 default!,
-                ResultStatus.BadRequest,
+                ResultStatus.Validation,
                 [new ValidationFailure(nameof(command.LeagueId), "Cannot delete a league that already has user picks.")]);
 
         _logger.LogInformation(
@@ -79,6 +90,7 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
         _dbContext.PickemGroups.Remove(league);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         _logger.LogInformation("Successfully deleted league {LeagueId}", command.LeagueId);
 

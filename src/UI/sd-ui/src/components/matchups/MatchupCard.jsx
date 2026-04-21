@@ -293,9 +293,21 @@ function MatchupCard({
       // If neither team has stats AND neither has metrics, show an explicit
       // empty state instead of spinning forever. Happens early in a sport's
       // season before stats/metrics have been generated.
+      //
+      // GetTeamMetricsQueryHandler returns Success(empty FranchiseSeasonMetricsDto)
+      // for the no-data case — an object that's truthy but has gamesPlayed=0 and
+      // empty strings for every text field. A naive `?.metrics` truthy check would
+      // treat that as "has data" and render TeamComparison with meaningless zeros.
+      // hasMeaningfulMetrics keys off gamesPlayed because a team can't have valid
+      // computed metrics with zero games played.
+      //
+      // Stats takes a different path (handler still returns Failure(NotFound) for
+      // null), so a truthy check on `?.stats` is sufficient there.
+      const hasMeaningfulMetrics = (m) => Boolean(m && m.gamesPlayed && m.gamesPlayed > 0);
       const hasAnyData =
         comparisonData.teamA?.stats || comparisonData.teamB?.stats ||
-        comparisonData.teamA?.metrics || comparisonData.teamB?.metrics;
+        hasMeaningfulMetrics(comparisonData.teamA?.metrics) ||
+        hasMeaningfulMetrics(comparisonData.teamB?.metrics);
 
       if (!hasAnyData) {
         return (

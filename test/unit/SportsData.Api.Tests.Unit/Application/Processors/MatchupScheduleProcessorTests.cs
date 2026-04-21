@@ -22,11 +22,21 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
     {
         private readonly Mock<IProvideContests> _contestClientMock = new();
 
+        // Fixed "now" for every CreatedUtc in this file. Using IDateTimeProvider
+        // (via AutoMocker) instead of DateTime.UtcNow keeps test-seeded entities
+        // deterministic per CLAUDE.md guidance and matches the pattern used in
+        // ContestEnrichmentProcessorTests and AthleteSeasonDocumentProcessorTests.
+        private static readonly DateTime FixedUtcNow = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
         public MatchupScheduleProcessorTests()
         {
             Mocker.GetMock<IContestClientFactory>()
                 .Setup(x => x.Resolve(It.IsAny<Sport>()))
                 .Returns(_contestClientMock.Object);
+
+            Mocker.GetMock<IDateTimeProvider>()
+                .Setup(x => x.UtcNow())
+                .Returns(FixedUtcNow);
         }
         /// <summary>
         /// Validates that when a PickemGroup does not exist for the given GroupId,
@@ -74,7 +84,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 Sport = Core.Common.Sport.FootballNcaa,
                 League = League.NCAAF,
                 CommissionerUserId = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(),
                 CreatedBy = Guid.Empty
             };
 
@@ -90,7 +100,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 SeasonYear = 2024,
                 SeasonWeek = 1,
                 AreMatchupsGenerated = true,
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(),
                 CreatedBy = Guid.Empty
             };
 
@@ -135,7 +145,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .With(x => x.RankingFilter, () => TeamRankingFilter.AP_TOP_25)
                 .With(x => x.Conferences, new List<PickemGroupConference>
                 {
-                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.Empty }
+                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(), CreatedBy = Guid.Empty }
                 })
                 .Create();
 
@@ -607,7 +617,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .With(x => x.EndsOn, (DateTime?)windowEnd)
                 .With(x => x.Conferences, new List<PickemGroupConference>
                 {
-                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.Empty }
+                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(), CreatedBy = Guid.Empty }
                 })
                 .Create();
 
@@ -692,7 +702,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .With(x => x.EndsOn, (DateTime?)null)
                 .With(x => x.Conferences, new List<PickemGroupConference>
                 {
-                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.Empty }
+                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(), CreatedBy = Guid.Empty }
                 })
                 .Create();
 
@@ -786,7 +796,7 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 .With(x => x.EndsOn, (DateTime?)windowEnd)
                 .With(x => x.Conferences, new List<PickemGroupConference>
                 {
-                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = DateTime.UtcNow, CreatedBy = Guid.Empty }
+                    new() { Id = Guid.NewGuid(), ConferenceSlug = conferenceSlug, PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(), CreatedBy = Guid.Empty }
                 })
                 .Create();
 

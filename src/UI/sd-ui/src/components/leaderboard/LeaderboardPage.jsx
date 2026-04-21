@@ -58,11 +58,21 @@ function LeaderboardPage() {
   const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
   const latestSeasonWeek = seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
 
-  // Snap selectedWeek only when (a) nothing is selected yet, or (b) the current
-  // selection isn't valid for the newly-selected league. Don't overwrite the
-  // user's explicit choice just because a later week became available.
+  // Reconcile selectedWeek with the currently-selected league.
+  //   (a) no league selected → nothing to reconcile; leave state alone.
+  //   (b) league has no weeks (latestSeasonWeek is null) → clear selectedWeek
+  //       explicitly, otherwise a stale value from the previous league would
+  //       carry over and getLeagueWeekOverview / the "By Week" select would
+  //       receive a week number the current league doesn't have.
+  //   (c) current selection is a week the league has → leave it alone
+  //       (don't clobber the user's explicit choice when new weeks append).
+  //   (d) current selection is missing or invalid → snap to the latest.
   useEffect(() => {
-    if (!selectedLeagueId || !latestSeasonWeek) return;
+    if (!selectedLeagueId) return;
+    if (!latestSeasonWeek) {
+      if (selectedWeek !== null) setSelectedWeek(null);
+      return;
+    }
     const isCurrentValid = selectedWeek && seasonWeeks.includes(selectedWeek);
     if (!isCurrentValid) {
       setSelectedWeek(latestSeasonWeek);

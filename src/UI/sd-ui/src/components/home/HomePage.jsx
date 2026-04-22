@@ -1,122 +1,57 @@
-import { useState, useEffect } from "react";
-import PickAccuracyWidget from "../widgets/PickAccuracyWidget";
-import AiAccuracyWidget from "../widgets/AiAccuracyWidget";
-import FeaturedArticleCard from "./FeaturedArticleCard";
-
-import TipWeekWidget from "../widgets/TipWeekWidget";
-import NewsWidget from "../widgets/NewsWidget";
-import LeaderboardWidget from "../widgets/LeaderboardWidget";
-import PickRecordWidget from "../widgets/PickRecordWidget";
-import AiRecordWidget from "../widgets/AiRecordWidget";
 import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
-import apiWrapper from "../../api/apiWrapper.js";
-import SystemNews from "./SystemNews";
-import RankingsWidget from "../widgets/RankingsWidget";
-import LeagueMembership from "./LeagueMembership";
+import PrimarySlotNewUser from "./PrimarySlotNewUser";
+import PrimarySlotOffSeasonCountdown from "./PrimarySlotOffSeasonCountdown";
 
+/**
+ * Post-login landing — date-aware, segment-aware.
+ *
+ * Design reference: docs/post-login-landing-design.md
+ *
+ * Three tiers:
+ *   Tier 1 (primary) — the single "next action" for this user.
+ *   Tier 2 (context) — sport-specific context cards. Stubbed this session.
+ *   Tier 3 (secondary) — compact adjacent surfaces. Stubbed this session.
+ *
+ * Session 1 ships Tier 1 with two of the seven rules wired up:
+ *   - New user (no leagues)       → PrimarySlotNewUser
+ *   - Fallback (any other state)  → PrimarySlotOffSeasonCountdown
+ *
+ * Covers every real user today (April 2026: NCAAFB + NFL are off-season;
+ * MLB is dev-only, not product-facing). Remaining rules — pick deadline
+ * within 48h, new matchups available, standings delta, commissioner
+ * action pending, welcome-back fallback — land in session 2 once we
+ * have per-league deadline data plumbed through /user/me or a new
+ * dashboard endpoint.
+ */
 function HomePage() {
-  const [pickGroups, setPickGroups] = useState([]); // Array of league DTOs
-  const [syntheticDto, setSyntheticDto] = useState(null);
   const { userDto, loading: userLoading } = useUserDto();
-  const [loadingPickAccuracy, setLoadingPickAccuracy] = useState(true);
-
-  useEffect(() => {
-    async function fetchPickAccuracy() {
-      setLoadingPickAccuracy(true);
-      try {
-        const response = await apiWrapper.Picks.getAccuracyChartForUser();
-        setPickGroups(response.data || []);
-  // No need to set selectedGroup; selection is now handled in PickAccuracyWidget
-      } catch (e) {
-        setPickGroups([]);
-      } finally {
-        setLoadingPickAccuracy(false);
-      }
-    }
-    fetchPickAccuracy();
-  }, []);
-
-
-  useEffect(() => {
-    async function fetchSyntheticAccuracy() {
-      try {
-        const response = await apiWrapper.Picks.getAccuracyChartForSynthetic();
-        setSyntheticDto(response.data || null);
-      } catch (e) {
-        setSyntheticDto(null);
-      }
-    }
-    fetchSyntheticAccuracy();
-  }, []);
 
   if (userLoading) {
-    return <div>Loading your dashboard...</div>;
+    return <div className="home-page home-page--loading">Loading…</div>;
   }
 
-  console.log("userDto:", userDto);
+  const hasLeagues = Array.isArray(userDto?.leagues) && userDto.leagues.length > 0;
 
-  // Determine if user is new (no leagues joined yet)
-  const isNewUser = !userDto?.leagues || userDto.leagues.length === 0;
+  // Rule resolver for Tier 1. Add cases here as session 2 lands — pick
+  // deadlines, standings deltas, etc. — keeping the cascade top-down so
+  // the most-urgent state always wins.
+  const renderPrimary = () => {
+    if (!hasLeagues) return <PrimarySlotNewUser />;
+    return <PrimarySlotOffSeasonCountdown />;
+  };
 
   return (
     <div className="home-page">
-      <SystemNews />
-
-      {/* Show LeagueMembership at top for new users as CTA */}
-      {isNewUser && (
-        <section className="card-section">
-          <LeagueMembership />
-        </section>
-      )}
-
-      <section className="card-section">
-        <div className="card">
-          <NewsWidget />
-        </div>
+      <section className="home-tier home-tier--primary">
+        {renderPrimary()}
       </section>
 
-      <section className="card-section">
-        <div className="card">
-          <RankingsWidget />
-        </div>
-      </section>
-      {/* Leaderboard + Your Stats */}
-      <section className="card-section">
-        <LeaderboardWidget />
-        <PickRecordWidget />
-        <AiRecordWidget />
-      </section>
+      {/* Tier 2 — context cards. Stub; session 2. */}
+      <section className="home-tier home-tier--context home-tier--stub" aria-hidden="true" />
 
-      {/* Show LeagueMembership in original position for existing users */}
-      {!isNewUser && (
-        <section className="card-section">
-          <LeagueMembership />
-        </section>
-      )}
-
-      <section className="card-section">
-        {/* Tips */}
-        <div className="card">
-          <TipWeekWidget />
-        </div>
-      </section>
-
-      <section className="chart-section">
-
-        <div className="card">
-          <PickAccuracyWidget leagues={pickGroups} />
-          {loadingPickAccuracy && <div style={{color:'#ffc107',textAlign:'center'}}>Loading pick accuracy...</div>}
-        </div>
-
-        <div className="card">
-          <AiAccuracyWidget syntheticDto={syntheticDto} />
-        </div>
-      </section>
-
-      <div className="card">
-        <FeaturedArticleCard />
-      </div>
+      {/* Tier 3 — compact secondary row. Stub; session 3. */}
+      <section className="home-tier home-tier--secondary home-tier--stub" aria-hidden="true" />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import apiWrapper from "../../api/apiWrapper.js";
 import { useUserDto } from "../../contexts/UserContext";
 
@@ -70,9 +70,23 @@ const DURATION_FULL = "full";
 const DURATION_WEEKS = "weeks";
 const DURATION_DATES = "dates";
 
+// Backend Sport enum values accepted via the `?sport=` query param.
+// Anything not in this set falls back to the NCAA default.
+const VALID_SPORT_PARAMS = new Set([SPORT_NCAA, SPORT_NFL, SPORT_MLB]);
+
 const LeagueCreatePage = () => {
   const { userDto, refreshUserDto } = useUserDto();
-  const [sport, setSport] = useState(SPORT_NCAA);
+  const [searchParams] = useSearchParams();
+  // Preselect the sport tab when the landing page (or any other caller)
+  // deep-links here with ?sport=FootballNcaa / FootballNfl / BaseballMlb.
+  // MLB is currently admin-gated, but honoring it here is harmless — the
+  // segmented control below hides the MLB tab for non-admins and falls
+  // back to the default selection via the sport-change effect.
+  const initialSport = (() => {
+    const raw = searchParams.get("sport");
+    return raw && VALID_SPORT_PARAMS.has(raw) ? raw : SPORT_NCAA;
+  })();
+  const [sport, setSport] = useState(initialSport);
   const [leagueName, setLeagueName] = useState("");
   const [description, setDescription] = useState("");
   const [pickType, setPickType] = useState("");

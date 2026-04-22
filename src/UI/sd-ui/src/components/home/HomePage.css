@@ -246,3 +246,138 @@ h2 {
   margin-bottom: 20px;
   font-size: 1.8rem;
 }
+
+/* =====================================================================
+   Tier-based landing (docs/post-login-landing-design.md)
+   Session 1: primary tier + stubs. Layout uses three stacked sections.
+   ===================================================================== */
+
+.home-page--loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 40vh;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Push the first tier below the fixed navigation on mobile. .main-content's
+   margin-top (60px) equals the nav height, but its mobile padding drops to
+   1rem — leaving the centered hero flush enough that mobile browser chrome
+   (collapsing URL bar, etc.) can bleed it under the nav. Explicit padding
+   here gives unconditional clearance. */
+@media (max-width: 768px) {
+  .home-page {
+    padding-top: 1rem;
+  }
+}
+
+.home-tier {
+  margin-bottom: 1.5rem;
+}
+
+/* One countdown phrase per line in the headline — reads more like a
+   scoreboard than a comma-separated list, and keeps both sports visually
+   weighted equally. */
+.home-primary__headline-line {
+  display: block;
+}
+
+.home-tier--stub {
+  display: none; /* hidden until session 2/3 fill it */
+}
+
+.home-primary {
+  background-color: var(--bg-card);
+  border: 1px solid var(--accent-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  color: var(--text-primary);
+  max-width: 880px;
+  /* Small top bump separates the banner from the nav/top-of-page edge
+     on desktop, where .main-content's 2rem padding alone felt flush. */
+  margin: 5px auto 0 auto;
+}
+
+.home-primary__eyebrow {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.75rem;
+}
+
+.home-primary__headline {
+  color: var(--text-primary);
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem 0;
+  line-height: 1.2;
+}
+
+.home-primary__body {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 0 auto 1.5rem auto;
+  max-width: 600px;
+}
+
+.home-primary__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.home-primary__cta {
+  display: inline-block;
+  padding: 0.7rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.home-primary__cta--primary {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.home-primary__cta--primary:hover {
+  background-color: var(--accent-hover);
+}
+
+.home-primary__cta--secondary {
+  background-color: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+
+.home-primary__cta--secondary:hover {
+  background-color: var(--accent-subtle);
+}
+
+.home-primary__cta:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .home-primary {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .home-primary__headline {
+    font-size: 1.5rem;
+  }
+
+  .home-primary__body {
+    font-size: 0.95rem;
+  }
+}

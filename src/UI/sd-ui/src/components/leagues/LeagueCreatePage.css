@@ -29,9 +29,89 @@
 }
 
 @media (max-width: 600px) {
+  .league-create-container {
+    /* Give the container less horizontal padding so the card itself can
+       carry the breathing room instead — more consistent look than a
+       thick outer gap with content flush-left inside the card. */
+    padding: 12px;
+  }
+
   .league-create-container .card {
-    padding-left: 0;
-    padding-right: 0;
+    /* Keep horizontal padding on mobile (was 0, which left form labels
+       and inputs sitting flush against the card border). 1rem matches
+       typical mobile form padding and stays narrower than the desktop
+       2rem so the viewport isn't too cramped. */
+    padding: 1.25rem 1rem;
+  }
+
+  .league-form {
+    /* Tight stack: minimal gap between form-groups so the 8-ish fields
+       don't force excessive scrolling on a phone viewport. */
+    gap: 0.65rem;
+  }
+
+  .form-group label {
+    /* Pull label closer to its input — 0.5rem desktop value leaves an
+       obvious air gap that isn't worth the real estate on mobile. */
+    margin-bottom: 0.15rem;
+  }
+
+  /* Shrink input padding on mobile. 0.6rem top/bottom (~9.6px each side)
+     pays off on desktop where fields are generous; on a phone stack it's
+     an extra ~20px per field that adds up fast across 8+ fields. */
+  .league-create-container input[type="text"],
+  .league-create-container textarea,
+  .league-create-container select {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.95rem;
+  }
+
+  /* Description textarea defaults to min-height: 80px site-wide —
+     shorter here since it's an optional field and users rarely need
+     3 lines of description up front. Still resizable via the corner. */
+  .league-create-container textarea {
+    min-height: 56px;
+  }
+
+  /* Compact the page header so the form starts higher up the viewport. */
+  .league-create-container h1 {
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .league-create-container > p {
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Tighter card — less top/bottom padding, zero bottom margin since
+     the submit button lives inside the card and nothing follows. */
+  .league-create-container .card {
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Sport selector (NCAA/NFL/MLB tabs) — shrink the gap under it so
+     the first form field sits right below. */
+  .sport-selector {
+    margin-bottom: 0.75rem;
+  }
+
+  /* Reclaim more space in the form-group stack. */
+  .league-form {
+    gap: 0.5rem;
+  }
+
+  /* Checkbox section (Teams Included) has its own inner padding that
+     stacks on top of the card's padding — thin it out so the nested
+     card doesn't double up whitespace. */
+  .checkbox-section {
+    padding: 0.5rem 0.65rem;
+    gap: 0.5rem;
+  }
+
+  .checkbox-section h4 {
+    margin: 0 0 0.25rem 0;
   }
 }
 

@@ -2,7 +2,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   FaHome,
-  FaFootballBall,
+  FaClipboardCheck,
   FaTrophy,
   FaComments,
   FaCog,
@@ -40,7 +40,7 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
               <span>War Room</span>
             </NavLink>
             <NavLink to="/app/picks" className="nav-link" onClick={handleNavLinkClick}>
-              <FaFootballBall className="nav-icon" />
+              <FaClipboardCheck className="nav-icon" />
               <span>Picks</span>
             </NavLink>
             <NavLink to="/app/leaderboard" className="nav-link" onClick={handleNavLinkClick}>
@@ -109,7 +109,7 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
               </td>
               <td>
                 <NavLink to="/app/picks" className="nav-link">
-                  <FaFootballBall className="nav-icon" />
+                  <FaClipboardCheck className="nav-icon" />
                   <span>Picks</span>
                 </NavLink>
               </td>

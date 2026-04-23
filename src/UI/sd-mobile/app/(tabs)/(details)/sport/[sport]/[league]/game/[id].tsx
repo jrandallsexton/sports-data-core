@@ -9,7 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { useMatchups } from '@/src/hooks/useMatchups';
@@ -42,12 +42,16 @@ function TeamScoreRow({
   isWinner,
   theme,
   gameTitle,
+  sport,
+  league,
 }: {
   team: ContestOverviewDto['header']['homeTeam'];
   total: number;
   isWinner: boolean;
   theme: ReturnType<typeof getTheme>;
   gameTitle: string;
+  sport: string;
+  league: string;
 }) {
   const router = useRouter();
   return (
@@ -60,7 +64,19 @@ function TeamScoreRow({
       {team.slug ? (
         <TouchableOpacity
           style={styles.teamScoreNameWrapper}
-          onPress={() => router.push({ pathname: '/team/[slug]', params: { slug: team.slug!, backTitle: gameTitle } } as never)}
+          onPress={() =>
+            router.push(
+              {
+                pathname: '/sport/[sport]/[league]/team/[slug]',
+                params: {
+                  sport,
+                  league,
+                  slug: team.slug!,
+                  backTitle: gameTitle,
+                },
+              } as never,
+            )
+          }
           activeOpacity={0.7}
         >
           <Text
@@ -96,7 +112,14 @@ function TeamScoreRow({
   );
 }
 
-function BoxScoreCard({ homeTeam, awayTeam, quarterScores, gameTitle }: ContestOverviewDto['header'] & { gameTitle: string }) {
+function BoxScoreCard({
+  homeTeam,
+  awayTeam,
+  quarterScores,
+  gameTitle,
+  sport,
+  league,
+}: ContestOverviewDto['header'] & { gameTitle: string; sport: string; league: string }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const awayTotal = quarterScores.reduce((s, q) => s + q.awayScore, 0);
@@ -104,9 +127,9 @@ function BoxScoreCard({ homeTeam, awayTeam, quarterScores, gameTitle }: ContestO
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-      <TeamScoreRow team={awayTeam} total={awayTotal} isWinner={awayTotal > homeTotal} theme={theme} gameTitle={gameTitle} />
+      <TeamScoreRow team={awayTeam} total={awayTotal} isWinner={awayTotal > homeTotal} theme={theme} gameTitle={gameTitle} sport={sport} league={league} />
       <View style={[styles.rule, { backgroundColor: theme.separator }]} />
-      <TeamScoreRow team={homeTeam} total={homeTotal} isWinner={homeTotal >= awayTotal} theme={theme} gameTitle={gameTitle} />
+      <TeamScoreRow team={homeTeam} total={homeTotal} isWinner={homeTotal >= awayTotal} theme={theme} gameTitle={gameTitle} sport={sport} league={league} />
 
       {/* Quarter grid */}
       <View style={[styles.qsGrid, { borderTopColor: theme.border }]}>
@@ -356,7 +379,15 @@ function PickSelector({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function GameDetailScreen() {
-  const { id, leagueId, week: weekParam } = useLocalSearchParams<{
+  const {
+    sport,
+    league,
+    id,
+    leagueId,
+    week: weekParam,
+  } = useLocalSearchParams<{
+    sport: string;
+    league: string;
     id: string;
     leagueId?: string;
     week?: string;
@@ -438,6 +469,8 @@ export default function GameDetailScreen() {
               awayTeam={overview.header.awayTeam}
               quarterScores={overview.header.quarterScores}
               gameTitle={screenTitle}
+              sport={sport}
+              league={league}
             />
             {overview.leaders?.categories?.length ? (
               <LeadersCard

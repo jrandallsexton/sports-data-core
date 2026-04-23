@@ -1,4 +1,21 @@
-// ─── Brand palette ────────────────────────────────────────────────────────────
+// ─── Theme palette ────────────────────────────────────────────────────────────
+//
+// Values mirror the CSS custom properties in sd-ui/src/App.css so the mobile
+// app and web app feel like the same product in light and dark mode. Keep the
+// two in sync when either palette shifts — see docs/mobile/mobile-app-overview.md
+// under "Code Sharing" for why a shared-tokens package is the long-term fix.
+//
+// Notes:
+// - `tint` is the active accent (primary action, focused state, link color).
+//   It corresponds to web's `--accent`. Light uses `#0077cc`; dark uses
+//   `#61dafb` (the React cyan). This is what makes the theme recognizable.
+// - `brand.navy` / `brand.gold` are kept as static legacy tokens for team
+//   color fallbacks (InsightModal, MatchupCard, StatsComparisonModal) where
+//   the design intent is "a neutral pop color when the team color isn't
+//   available" — not a themed accent. Remove once those call sites migrate.
+
+/** @deprecated — use theme-aware tokens from `getTheme()` instead.
+ *  Retained for team-color fallbacks that shouldn't shift with theme. */
 export const brand = {
   navy: '#1B3A6B',
   navyLight: '#2A5298',
@@ -6,43 +23,131 @@ export const brand = {
   goldLight: '#F0D060',
 };
 
-// ─── Semantic tokens per color scheme ─────────────────────────────────────────
+// Shared status color semantics — per scheme values set below.
+export type ColorScheme = 'light' | 'dark';
+
+const light = {
+  // Backgrounds
+  background: '#f5f7fa',        // --bg-primary
+  backgroundSecondary: '#e9ecef',
+  card: '#ffffff',              // --bg-card
+  cardHover: '#f1f1f1',
+  elevated: '#ffffff',
+  modal: '#ffffff',
+  overlay: 'rgba(0, 0, 0, 0.5)',
+
+  // Text
+  text: '#1a1a1a',              // --text-primary
+  textSecondary: '#555',
+  textMuted: '#888',
+  textOnAccent: '#ffffff',
+  textLink: '#0077cc',
+
+  // Accent / brand (theme-aware)
+  tint: '#0077cc',              // --accent
+  tintHover: '#005fa3',
+  accentMuted: 'rgba(0, 119, 204, 0.15)',
+  accentSubtle: 'rgba(0, 119, 204, 0.06)',
+
+  // Borders
+  border: '#ddd',
+  borderSubtle: '#e9ecef',
+  borderStrong: '#ccc',
+
+  // Tabs / separators
+  tabIconDefault: '#888',
+  tabIconSelected: '#0077cc',
+  separator: '#e9ecef',
+
+  // Status
+  success: '#1b5e20',
+  successText: '#1b5e20',
+  successBg: 'rgba(40, 167, 69, 0.1)',
+  error: '#b71c1c',
+  errorText: '#b71c1c',
+  errorBg: 'rgba(220, 53, 69, 0.1)',
+  warning: '#ff8c00',
+  warningText: '#e65100',
+  info: '#0077cc',
+
+  // Domain
+  pickCorrect: '#1b5e20',
+  pickIncorrect: '#b71c1c',
+  spreadLine: '#e65100',
+
+  // Shadows
+  shadowColor: '#000',
+};
+
+/**
+ * Canonical palette shape, derived from the `light` scheme. `dark` is
+ * annotated with this type so any missing or extra key errors at compile
+ * time — prevents silent drift between the two schemes.
+ */
+export type Palette = typeof light;
+
+const dark: Palette = {
+  background: '#111',
+  backgroundSecondary: '#1a1a1a',
+  card: '#222',
+  cardHover: '#2a2d33',
+  elevated: '#282c34',
+  modal: '#1e2127',
+  overlay: 'rgba(0, 0, 0, 0.7)',
+
+  text: '#f8f9fa',
+  textSecondary: '#adb5bd',
+  textMuted: '#6c757d',
+  textOnAccent: '#111',
+  textLink: '#61dafb',
+
+  tint: '#61dafb',
+  tintHover: '#4ea0d9',
+  accentMuted: 'rgba(97, 218, 251, 0.2)',
+  accentSubtle: 'rgba(97, 218, 251, 0.08)',
+
+  border: '#333',
+  borderSubtle: '#2a2d33',
+  borderStrong: '#444',
+
+  tabIconDefault: '#6c757d',
+  tabIconSelected: '#61dafb',
+  separator: '#2a2d33',
+
+  success: '#28a745',
+  successText: '#51cf66',
+  successBg: 'rgba(40, 167, 69, 0.15)',
+  error: '#dc3545',
+  errorText: '#ff6b6b',
+  errorBg: 'rgba(220, 53, 69, 0.15)',
+  warning: '#ffc107',
+  warningText: '#ffd700',
+  info: '#0dcaf0',
+
+  pickCorrect: '#28a745',
+  pickIncorrect: '#dc3545',
+  spreadLine: '#ffc107',
+
+  shadowColor: '#000',
+};
+
 const Colors = {
   brand,
-  light: {
-    text: '#1A1A2E',
-    textMuted: '#6B7280',
-    background: '#F0F2F5',
-    card: '#FFFFFF',
-    tint: brand.navy,
-    tabIconDefault: '#9CA3AF',
-    tabIconSelected: brand.navy,
-    border: '#E5E7EB',
-    separator: '#F3F4F6',
-    success: '#16A34A',
-    error: '#DC2626',
-    warning: '#D97706',
-  },
-  dark: {
-    text: '#F1F5F9',
-    textMuted: '#94A3B8',
-    background: '#0F172A',
-    card: '#1E293B',
-    tint: brand.gold,
-    tabIconDefault: '#475569',
-    tabIconSelected: brand.gold,
-    border: '#334155',
-    separator: '#1E293B',
-    success: '#22C55E',
-    error: '#F87171',
-    warning: '#FBBF24',
-  },
-};
+  light,
+  dark,
+} as const;
 
 export default Colors;
 export { Colors };
 
-/** Type-safe theme accessor — handles null/undefined from useColorScheme */
-export function getTheme(scheme: string | null | undefined): typeof Colors['light'] {
+/**
+ * Resolve a theme palette from a color scheme. Null/undefined → light.
+ *
+ * Signature accepts `ColorScheme` (not `string`) so typos and the literal
+ * 'system' mode fail at compile time. `useThemeMode().resolvedScheme` and
+ * our `useColorScheme()` hook both resolve 'system' → 'light' | 'dark'
+ * before reaching this function.
+ */
+export function getTheme(scheme: ColorScheme | null | undefined): Palette {
   return scheme === 'dark' ? Colors.dark : Colors.light;
 }

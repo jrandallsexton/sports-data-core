@@ -7,7 +7,8 @@ import {
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
-import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
+import { getTheme } from '@/constants/Colors';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -35,13 +36,47 @@ export function Button({
   textStyle,
   fullWidth = false,
 }: ButtonProps) {
+  const scheme = useColorScheme();
+  const theme = getTheme(scheme);
   const isDisabled = disabled || loading;
+
+  // Primary/secondary variants lean on the theme accent so the button
+  // tracks light/dark mode the same way web does (--accent).
+  const variantBg: Record<Variant, string> = {
+    primary: theme.tint,
+    secondary: 'transparent',
+    ghost: 'transparent',
+    danger: theme.error,
+  };
+  const variantBorder: Record<Variant, string | undefined> = {
+    primary: undefined,
+    secondary: theme.tint,
+    ghost: undefined,
+    danger: undefined,
+  };
+  const variantText: Record<Variant, string> = {
+    primary: theme.textOnAccent,
+    secondary: theme.tint,
+    ghost: theme.tint,
+    // Hard-coded white; do NOT swap for theme.textOnAccent. The danger
+    // background is red (theme.error) regardless of mode, so the label needs
+    // a consistent light foreground. theme.textOnAccent flips to near-black
+    // in dark mode (it tracks theme.tint's accessibility pair), which would
+    // render illegible on red. If we ever add a dedicated theme.textOnDanger,
+    // switch to that.
+    danger: '#fff',
+  };
 
   return (
     <TouchableOpacity
       style={[
         styles.base,
-        styles[variant],
+        {
+          backgroundColor: variantBg[variant],
+          ...(variantBorder[variant]
+            ? { borderWidth: 2, borderColor: variantBorder[variant] }
+            : null),
+        },
         sizeStyles[size],
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
@@ -52,12 +87,14 @@ export function Button({
       activeOpacity={0.78}
     >
       {loading ? (
-        <ActivityIndicator
-          size="small"
-          color={variant === 'primary' || variant === 'danger' ? '#fff' : Colors.brand.navy}
-        />
+        // Spinner reuses the label's already-resolved color so loading and
+        // non-loading states are visually identical per variant. Previously
+        // re-derived by variant here and mismatched `danger` (label was
+        // hard-coded '#fff', spinner flipped to theme.textOnAccent = #111
+        // in dark mode).
+        <ActivityIndicator size="small" color={variantText[variant]} />
       ) : (
-        <Text style={[styles.text, textStyles[variant], sizeTextStyles[size], textStyle]}>
+        <Text style={[styles.text, { color: variantText[variant] }, sizeTextStyles[size], textStyle]}>
           {title}
         </Text>
       )}
@@ -70,20 +107,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  primary: {
-    backgroundColor: Colors.brand.navy,
-  },
-  secondary: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: Colors.brand.navy,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-  },
-  danger: {
-    backgroundColor: '#DC2626',
   },
   fullWidth: {
     width: '100%',
@@ -100,13 +123,6 @@ const sizeStyles: Record<Size, ViewStyle> = {
   sm: { paddingVertical: 8, paddingHorizontal: 14 },
   md: { paddingVertical: 13, paddingHorizontal: 20 },
   lg: { paddingVertical: 16, paddingHorizontal: 28 },
-};
-
-const textStyles: Record<Variant, TextStyle> = {
-  primary: { color: '#fff' },
-  secondary: { color: Colors.brand.navy },
-  ghost: { color: Colors.brand.navy },
-  danger: { color: '#fff' },
 };
 
 const sizeTextStyles: Record<Size, TextStyle> = {

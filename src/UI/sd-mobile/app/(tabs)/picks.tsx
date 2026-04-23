@@ -6,9 +6,9 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { MatchupCard } from '@/src/components/features/games/MatchupCard';
 import { LeagueWeekSelector } from '@/src/components/features/selectors/LeagueWeekSelector';
@@ -18,6 +18,7 @@ import { usePicks, useSubmitPick } from '@/src/hooks/useContest';
 import { useMatchups } from '@/src/hooks/useMatchups';
 import { useCurrentUser } from '@/src/hooks/useStandings';
 import { getLeagues } from '@/src/lib/leagues';
+import { resolveSportLeague } from '@/src/utils/sportLinks';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -30,24 +31,48 @@ export default function PicksScreen() {
   const { data: me, isLoading: meLoading } = useCurrentUser();
   const leagues = useMemo(() => getLeagues(me), [me]);
 
+  // Optional deep-link param: home "Your Leagues" card pushes
+  // /(tabs)/picks?leagueId=<id> so the screen opens on that league directly.
+  const { leagueId: leagueIdParam } = useLocalSearchParams<{ leagueId?: string }>();
+
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
 
+  // Latest week = last element of the ascending seasonWeeks list.
+  const latestWeek = (l: { seasonWeeks?: number[] } | null | undefined) =>
+    l?.seasonWeeks?.length ? l.seasonWeeks[l.seasonWeeks.length - 1] : null;
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps — intentionally excluding leagueId to only initialize once and avoid rerunning on user selection
   useEffect(() => {
-    if (!leagueId && leagues.length > 0) {
-      setLeagueId(leagues[0].id);
-      setSelectedWeek(leagues[0].maxSeasonWeek ?? 1);
+    if (leagues.length === 0) return;
+
+    // If a deep-link param targets a league the user actually belongs to,
+    // force-select it (overrides any prior in-session selection so tapping
+    // a different league from the home card always lands on that league).
+    const targeted = leagueIdParam
+      ? leagues.find((l) => l.id === leagueIdParam)
+      : null;
+    if (targeted) {
+      setLeagueId(targeted.id);
+      setSelectedWeek(latestWeek(targeted) ?? 1);
+      return;
     }
-  }, [leagues]);
+
+    // Otherwise initialize once to the first league in the list.
+    if (!leagueId) {
+      setLeagueId(leagues[0].id);
+      setSelectedWeek(latestWeek(leagues[0]) ?? 1);
+    }
+  }, [leagues, leagueIdParam]);
 
   const selectedLeague = leagues.find((l) => l.id === leagueId) ?? null;
-  const maxWeek = selectedLeague?.maxSeasonWeek ?? 18;
+  const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
 
   const handleLeagueChange = useCallback(
     (id: string) => {
       setLeagueId(id);
       const league = leagues.find((l) => l.id === id);
-      setSelectedWeek(league?.maxSeasonWeek ?? 1);
+      setSelectedWeek(latestWeek(league) ?? 1);
     },
     [leagues],
   );
@@ -65,6 +90,11 @@ export default function PicksScreen() {
   );
   const submitPick = useSubmitPick();
   const pickType = matchupsResponse?.pickType ?? 'StraightUp';
+  // Resolves LeagueWeekMatchupsDto.Sport ("FootballNcaa" | "FootballNfl" |
+  // "BaseballMlb") to {sport, league} URL segments. null when the response
+  // hasn't arrived yet or the sport enum isn't in the known map — in that
+  // case the game-detail navigation is simply disabled.
+  const sportLeague = resolveSportLeague(matchupsResponse?.sport);
 
   const isLoading = meLoading || picksLoading || matchupsLoading;
   const matchups = matchupsResponse?.matchups ?? [];
@@ -127,7 +157,7 @@ export default function PicksScreen() {
           selectedLeagueId={leagueId}
           onLeagueChange={handleLeagueChange}
           selectedWeek={selectedWeek}
-          maxWeek={maxWeek}
+          seasonWeeks={seasonWeeks}
           onWeekChange={setSelectedWeek}
         />
       )}
@@ -142,11 +172,38 @@ export default function PicksScreen() {
             <MatchupCard
               matchup={item.matchup}
               pick={item.pick}
-              onPress={() =>
+              onPress={() => {
+                if (!sportLeague) {
+                  // Sport hasn't resolved yet (matchups response still in flight)
+                  // OR the backend returned a sport enum we don't know how to map.
+                  // In practice the isLoading branch above covers the first case —
+                  // this log fires on the second (e.g., a new sport added BE-side
+                  // without a mobile-side sportLinks entry). Captures the raw value
+                  // so it's grep-able in logs / Seq instead of a silent no-op.
+                  console.warn(
+                    '[PicksScreen] Could not resolve sport for navigation; staying put. Raw sport value:',
+                    matchupsResponse?.sport ?? '(no matchups response)',
+                  );
+                  return;
+                }
                 router.push(
-                  { pathname: '/game/[id]', params: { id: item.matchup.contestId, leagueId: leagueId ?? '', week: String(selectedWeek ?? 1), backTitle: 'Games' } },
-                )
-              }
+                  {
+                    pathname: '/sport/[sport]/[league]/game/[id]',
+                    params: {
+                      sport: sportLeague.sport,
+                      league: sportLeague.league,
+                      id: item.matchup.contestId,
+                      leagueId: leagueId ?? '',
+                      week: String(selectedWeek ?? 1),
+                      backTitle: 'Games',
+                      // Force the back button to return to the Games tab rather
+                      // than popping into a previously-visited game in the
+                      // shared details stack.
+                      backHref: '/(tabs)/picks',
+                    },
+                  } as never,
+                );
+              }}
               onPick={(m, _choice, franchiseSeasonId) => {
                 if (!leagueId || !selectedWeek) return;
                 submitPick.mutate({

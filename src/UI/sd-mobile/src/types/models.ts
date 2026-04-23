@@ -12,7 +12,11 @@ export type PickChoice = 'home' | 'away';
 export interface League {
   id: string;
   name: string;
-  maxSeasonWeek?: number | null;
+  /**
+   * Ascending list of week numbers that exist in this league.
+   * Custom-window leagues may contain a subset (e.g. [4]) rather than 1..N.
+   */
+  seasonWeeks?: number[];
 }
 
 // ─── Matchup ─────────────────────────────────────────────────────────────────
@@ -96,6 +100,12 @@ export interface LeagueMatchupsResponse {
   matchups: Matchup[];
   pickType: PickType;
   useConfidencePoints: boolean;
+  /**
+   * Backend Sport enum name ("FootballNcaa" | "FootballNfl" | "BaseballMlb").
+   * Drives sport-aware team/game route segments. Resolve to URL-friendly
+   * {sport, league} tuple via utils/sportLinks.resolveSportLeague().
+   */
+  sport: string;
 }
 
 // ─── Picks ───────────────────────────────────────────────────────────────────

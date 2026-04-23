@@ -13,18 +13,23 @@ function BackButton() {
   // useLocalSearchParams won't work here because it reads the layout's own
   // params, not the child screen's. So we pull from the navigation state.
   //
+  // Two separate selectors returning primitives instead of one selector
+  // returning an object — React Navigation bails out of re-renders via
+  // referential equality on the selector result, so an object literal
+  // would force BackButton to re-render on every nav state change.
+  //
   // backHref is optional; when set, it wins over router.back(). We need this
   // because the details stack accumulates history within a session (Games →
   // GameA → back → GameB → back would pop to GameA, not the Games tab).
   // Screens that are the entry point from a tab set backHref to that tab's
   // route so the breadcrumb goes where the label implies.
-  const { backTitle, backHref } = useNavigationState((state) => {
+  const backTitle = useNavigationState((state) => {
     const currentRoute = state.routes[state.index];
-    const params = (currentRoute.params ?? {}) as {
-      backTitle?: string;
-      backHref?: string;
-    };
-    return { backTitle: params.backTitle, backHref: params.backHref };
+    return (currentRoute.params as { backTitle?: string } | undefined)?.backTitle;
+  });
+  const backHref = useNavigationState((state) => {
+    const currentRoute = state.routes[state.index];
+    return (currentRoute.params as { backHref?: string } | undefined)?.backHref;
   });
 
   const handlePress = () => {

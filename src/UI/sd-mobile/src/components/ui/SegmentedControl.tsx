@@ -47,7 +47,10 @@ export function SegmentedControl<T extends string>({
             <Text
               style={[
                 styles.label,
-                { color: active ? '#fff' : theme.text },
+                // Active tab's background is theme.tint, so the foreground
+                // must use the paired textOnAccent token. Hardcoded '#fff'
+                // was illegible on dark-mode's light-cyan tint.
+                { color: active ? theme.textOnAccent : theme.text },
               ]}
               numberOfLines={1}
             >

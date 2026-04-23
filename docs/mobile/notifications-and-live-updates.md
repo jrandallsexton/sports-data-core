@@ -34,13 +34,13 @@ Related existing docs — skim before reading further:
 | SignalR hub (`NotificationHub`) | **To be retired** in Phase 1 — currently a stub with only `Ping` / `SendMessageToUser`, no domain events wired | `SportsData.Api/Infrastructure/Notifications/NotificationHub.cs` |
 | Azure SignalR registration | **To be removed** in Phase 1 | `SportsData.Api/Program.cs` |
 | Live game ESPN polling → DB | **Done** (Producer) — `FootballCompetitionStreamer`, 5 workers per game, 5–60s cadence | `SportsData.Producer` |
-| Broadcast `ContestStatusChanged` to clients | **Missing** — event published to MassTransit, never forwarded to clients |
+| Broadcast `ContestStatusChanged` to clients | **Missing** — event published to MassTransit, never forwarded to clients | — |
 | SendGrid email | Done (template-based, used for league invitations) | `SportsData.Api/Infrastructure/Notifications/NotificationService.cs` |
-| Twilio SMS | **Stub** — code commented out |
-| `SportsData.Notification` service | **Empty shell** — no consumers, no controllers, no scheduled jobs |
-| Pick-deadline / reminder scheduling | **Missing** — no Hangfire recurring jobs, no MassTransit scheduler usage |
-| Device token table / API | **Missing** |
-| Runtime | **.NET 10** (first-class SSE support via `TypedResults.ServerSentEvents`) |
+| Twilio SMS | **Stub** — code commented out | `SportsData.Api/Infrastructure/Notifications/NotificationService.cs` |
+| `SportsData.Notification` service | **Empty shell** — no consumers, no controllers, no scheduled jobs | `SportsData.Notification/Program.cs` |
+| Pick-deadline / reminder scheduling | **Missing** — no Hangfire recurring jobs, no MassTransit scheduler usage | — |
+| Device token table / API | **Missing** | — |
+| Runtime | **.NET 10** (first-class SSE support via `TypedResults.ServerSentEvents`) | — |
 
 ### Web (`sd-ui`)
 
@@ -163,7 +163,14 @@ Rationale:
 
 1. **User device table**: new table `UserDevice` with `UserId`, `ExpoPushToken`, `Platform` (ios/android/web), `LastSeenUtc`, `NotificationsEnabled`. Index by `UserId`. Soft-delete on unregister.
 2. **Registration API**: `POST /user/devices` with `{ expoPushToken, platform }`. Upsert on `(UserId, ExpoPushToken)`. `DELETE /user/devices/{id}` for unregister.
-3. **Push-sender**: `IExpoPushSender` with `SendAsync(tokens, payload)`. Payload shape matches Expo's API (title, body, data, sound, badge). Batch up to 100 tokens per request. Use the `expo-server-sdk-dotnet` NuGet package — it handles batching, receipts, and invalid-token cleanup.
+3. **Push-sender**: `IExpoPushSender` with `SendAsync(tokens, payload)`. Payload shape matches Expo's API (title, body, data, sound, badge). Responsibilities behind the interface: batching up to 100 tokens per request, calling the `/send` endpoint, polling `/getReceipts` for delivery status, and flagging `DeviceNotRegistered` tokens for cleanup.
+
+   **Implementation — pick one, do not depend on `expo-server-sdk-dotnet` directly** (that package is essentially abandoned — last release v1.1.0, no .NET 8/9/10 updates):
+   - **(a) Direct HTTP against Expo's push API (recommended).** Expo's [push API](https://docs.expo.dev/push-notifications/sending-notifications/) is two HTTP endpoints — `POST /send` and `POST /getReceipts`. A typed `HttpClient` with named registration in DI, `System.Text.Json` payloads, and ~150 lines of batching + receipt-handling logic covers the whole surface. Zero third-party dependency. This is the default choice unless a strong reason pushes us elsewhere.
+   - **(b) Community fork.** If someone publishes a maintained .NET 10-compatible fork before we start, reconsider. Don't assume one exists.
+   - **(c) In-house client that mirrors the SDK surface.** Same as (a) but wrapped in a slightly more opinionated API surface (`ExpoPushClient.SendBatchAsync`, `ExpoPushClient.PollReceiptsAsync`). Only worth doing if consumers outside the `SportsData.Notification` service need to send pushes too. In practice they shouldn't — one service owns user-visible delivery (see §5).
+
+   Decision to lock in before Phase 2 kickoff. Default recommendation is (a).
 4. **Fan-out**: the `SportsData.Notification` service (same one from Pillar B) subscribes to the same events; when the target user has registered push tokens and `NotificationsEnabled=true`, it also sends an Expo push. One event → up to two delivery channels (in-app via SSE + push via Expo), decided per-event-type via a simple mapping table.
 5. **Scheduled notifications** (pick deadlines, kickoff reminders): Hangfire recurring job or MassTransit delayed publish. Initial target: 1 hour before pick deadline, 15 min before kickoff (configurable later).
 6. **Invalid token cleanup**: Expo returns `DeviceNotRegistered` receipts for uninstalled apps. A Hangfire job drains the receipts queue daily and marks tokens inactive.
@@ -307,5 +314,5 @@ By 2026 kickoff:
 - [ ] Confirm nginx ingress version supports per-path `proxy-buffering: off` annotation (or accept whole-Ingress scope).
 - [ ] Decide final notification category list.
 - [ ] Acquire APNS key + FCM server key for EAS credentials.
-- [ ] Validate `expo-server-sdk-dotnet` is still maintained (last checked April 2026).
+- [ ] Lock in the Expo push-sender implementation choice (§3 Pillar C #3): default is direct-HTTP against Expo's `/send` + `/getReceipts` endpoints. Do **not** add `expo-server-sdk-dotnet` as a NuGet reference — it's effectively abandoned. Revisit only if a maintained .NET 10-compatible fork has emerged by Phase 2 start.
 - [ ] Decide web SSE auth approach (`@microsoft/fetch-event-source` polyfill vs query-string token).

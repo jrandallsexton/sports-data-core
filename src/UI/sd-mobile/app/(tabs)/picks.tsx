@@ -42,6 +42,7 @@ export default function PicksScreen() {
   const latestWeek = (l: { seasonWeeks?: number[] } | null | undefined) =>
     l?.seasonWeeks?.length ? l.seasonWeeks[l.seasonWeeks.length - 1] : null;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps — intentionally excluding leagueId to only initialize once and avoid rerunning on user selection
   useEffect(() => {
     if (leagues.length === 0) return;
 
@@ -172,7 +173,19 @@ export default function PicksScreen() {
               matchup={item.matchup}
               pick={item.pick}
               onPress={() => {
-                if (!sportLeague) return; // sport not yet resolved — skip nav
+                if (!sportLeague) {
+                  // Sport hasn't resolved yet (matchups response still in flight)
+                  // OR the backend returned a sport enum we don't know how to map.
+                  // In practice the isLoading branch above covers the first case —
+                  // this log fires on the second (e.g., a new sport added BE-side
+                  // without a mobile-side sportLinks entry). Captures the raw value
+                  // so it's grep-able in logs / Seq instead of a silent no-op.
+                  console.warn(
+                    '[PicksScreen] Could not resolve sport for navigation; staying put. Raw sport value:',
+                    matchupsResponse?.sport ?? '(no matchups response)',
+                  );
+                  return;
+                }
                 router.push(
                   {
                     pathname: '/sport/[sport]/[league]/game/[id]',

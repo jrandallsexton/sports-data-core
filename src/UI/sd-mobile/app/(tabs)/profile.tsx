@@ -8,12 +8,11 @@ import {
   ScrollView,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
-import { useColorScheme } from '@/src/lib/theme/ThemeContext';
+import { useColorScheme, useThemeMode, type ThemeMode } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import { auth } from '@/src/lib/firebase';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useCurrentUser } from '@/src/hooks/useStandings';
-import { useThemeMode, type ThemeMode } from '@/src/lib/theme/ThemeContext';
 import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 
 // ─── Record card ──────────────────────────────────────────────────────────────

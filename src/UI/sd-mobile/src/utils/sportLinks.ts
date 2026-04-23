@@ -41,7 +41,10 @@ export function teamRoute(args: {
   slug: string;
   seasonYear?: number;
   backTitle?: string;
-}): { pathname: string; params: Record<string, string> } {
+}): {
+  pathname: '/sport/[sport]/[league]/team/[slug]';
+  params: Record<string, string>;
+} {
   const params: Record<string, string> = {
     sport: args.sport,
     league: args.league,
@@ -65,7 +68,10 @@ export function gameRoute(args: {
   leagueId?: string;
   week?: number;
   backTitle?: string;
-}): { pathname: string; params: Record<string, string> } {
+}): {
+  pathname: '/sport/[sport]/[league]/game/[id]';
+  params: Record<string, string>;
+} {
   const params: Record<string, string> = {
     sport: args.sport,
     league: args.league,

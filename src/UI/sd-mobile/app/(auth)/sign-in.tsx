@@ -16,7 +16,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/src/lib/firebase';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Button } from '@/src/components/ui/Button';
-import { Colors, getTheme } from '@/constants/Colors';
+import { getTheme } from '@/constants/Colors';
 
 // ─── Validation schema ────────────────────────────────────────────────────────
 

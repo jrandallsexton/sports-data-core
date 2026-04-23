@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -145,9 +145,20 @@ export default function CreateLeagueScreen() {
 
   const initialSport = useMemo<SportKey>(() => {
     const raw = params.sport;
-    if (raw && VALID_SPORT_PARAMS.has(raw as SportKey)) return raw as SportKey;
-    return 'FootballNcaa';
-  }, [params.sport]);
+    if (!raw || !VALID_SPORT_PARAMS.has(raw as SportKey)) return 'FootballNcaa';
+    // MLB is admin-gated (matches sportOptions below). Non-admins deep-linking
+    // ?sport=BaseballMlb fall back to NCAA so the form's default sport is
+    // always a value the segmented control actually renders.
+    //
+    // Caveat: /user/me is async, so on cold-launch `isAdmin` may still be
+    // false when this memo first runs. In practice the countdown CTAs
+    // (the main deep-link source) fire after /user/me has cached via the
+    // home screen, so the race rarely bites — but it's why `isAdmin` is a
+    // dep here: once it flips true, the memo recomputes (form defaults
+    // won't re-init, but at least component-level reads are correct).
+    if (raw === 'BaseballMlb' && !isAdmin) return 'FootballNcaa';
+    return raw as SportKey;
+  }, [params.sport, isAdmin]);
 
   const {
     control,
@@ -184,7 +195,20 @@ export default function CreateLeagueScreen() {
 
   // Reset division selection + ranking when sport changes. NCAA's ranking
   // filter doesn't apply to NFL/MLB, and slugs don't overlap across sports.
+  //
+  // Skip the mount run — defaultValues already set divisionSlugs correctly
+  // based on initialSport. Running this effect on mount would redundantly
+  // re-write the same values, and would clobber any future form-state
+  // restoration (e.g., if we ever hydrate a draft from storage).
+  const prevSportRef = useRef<SportKey | null>(null);
   useEffect(() => {
+    if (prevSportRef.current === null) {
+      prevSportRef.current = sport;
+      return;
+    }
+    if (prevSportRef.current === sport) return;
+    prevSportRef.current = sport;
+
     if (sport === 'FootballNfl') {
       setValue('divisionSlugs', NFL_DIVISIONS.map((d) => d.slug));
     } else if (sport === 'BaseballMlb') {

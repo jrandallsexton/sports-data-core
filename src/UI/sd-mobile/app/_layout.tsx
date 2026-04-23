@@ -8,7 +8,7 @@ import 'react-native-reanimated';
 
 import { queryClient } from '@/src/lib/queryClient';
 import { useAuthInit, useAuth } from '@/src/hooks/useAuth';
-import { ThemeProvider, useColorScheme } from '@/src/lib/theme/ThemeContext';
+import { ThemeProvider, useThemeMode } from '@/src/lib/theme/ThemeContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -56,10 +56,9 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
-  useEffect(() => {
-    if (loaded) SplashScreen.hideAsync();
-  }, [loaded]);
-
+  // Splash stays up until fonts load; the ThemeProvider's hydration state
+  // then takes over (see RootLayoutNav) so users never see a system-resolved
+  // flash before their persisted preference applies.
   if (!loaded) return null;
 
   return (
@@ -74,10 +73,17 @@ export default function RootLayout() {
 function RootLayoutNav() {
   // Feed the user-resolved scheme into React Navigation so native header
   // transitions and focus rings match the chosen theme.
-  const colorScheme = useColorScheme();
+  const { resolvedScheme, isHydrated } = useThemeMode();
+
+  // Second splash gate: fonts loaded + theme hydrated from AsyncStorage.
+  // Keeps the splash visible through the full startup path so the first
+  // painted pixels already reflect the user's stored preference.
+  useEffect(() => {
+    if (isHydrated) SplashScreen.hideAsync();
+  }, [isHydrated]);
 
   return (
-    <NavThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <NavThemeProvider value={resolvedScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

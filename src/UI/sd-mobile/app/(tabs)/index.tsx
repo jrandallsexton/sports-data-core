@@ -27,7 +27,12 @@ export default function HomeScreen() {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
-  const { data: me, isLoading: meLoading, refetch: refetchMe } = useCurrentUser();
+  const {
+    data: me,
+    isLoading: meLoading,
+    isRefetching: meRefetching,
+    refetch: refetchMe,
+  } = useCurrentUser();
   const leagues = useMemo(() => getLeagues(me), [me]);
 
   if (meLoading) {
@@ -42,7 +47,11 @@ export default function HomeScreen() {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={false} onRefresh={refetchMe} tintColor={theme.tint} />
+        <RefreshControl
+          refreshing={meRefetching}
+          onRefresh={refetchMe}
+          tintColor={theme.tint}
+        />
       }
     >
       {hasLeagues ? (

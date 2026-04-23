@@ -24,6 +24,14 @@ interface ThemeContextValue {
   mode: ThemeMode;
   setMode: (mode: ThemeMode) => void;
   resolvedScheme: ColorScheme;
+  /**
+   * False until the persisted theme preference has been read from AsyncStorage.
+   * Consumers that render theme-dependent pixels should wait on this before
+   * revealing UI — otherwise a user with a stored `light` preference sees a
+   * brief `system`-resolved flash before hydration completes. The splash
+   * screen controller in app/_layout.tsx uses this as its gate.
+   */
+  isHydrated: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -35,18 +43,30 @@ function isValidMode(value: unknown): value is ThemeMode {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useSystemColorScheme();
   const [mode, setModeState] = useState<ThemeMode>('system');
+  const [isHydrated, setIsHydrated] = useState(false);
 
   // Load persisted preference on mount. Any parse failure silently falls back
   // to `system` — we'd rather ship with OS defaults than crash on corrupt
-  // storage from a prior app version.
+  // storage from a prior app version. `isHydrated` flips true regardless of
+  // success/failure so the splash can un-gate. The `mounted` flag guards
+  // against setState-after-unmount (matters for fast teardown in tests or
+  // provider remounts during HMR).
   useEffect(() => {
+    let mounted = true;
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
+        if (!mounted) return;
         if (isValidMode(raw)) setModeState(raw);
       })
       .catch(() => {
         // ignore — keep default
+      })
+      .finally(() => {
+        if (mounted) setIsHydrated(true);
       });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const setMode = useCallback((next: ThemeMode) => {
@@ -65,8 +85,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [mode, systemScheme]);
 
   const value = useMemo<ThemeContextValue>(
-    () => ({ mode, setMode, resolvedScheme }),
-    [mode, setMode, resolvedScheme],
+    () => ({ mode, setMode, resolvedScheme, isHydrated }),
+    [mode, setMode, resolvedScheme, isHydrated],
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

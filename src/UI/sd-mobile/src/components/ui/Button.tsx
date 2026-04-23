@@ -58,6 +58,12 @@ export function Button({
     primary: theme.textOnAccent,
     secondary: theme.tint,
     ghost: theme.tint,
+    // Hard-coded white; do NOT swap for theme.textOnAccent. The danger
+    // background is red (theme.error) regardless of mode, so the label needs
+    // a consistent light foreground. theme.textOnAccent flips to near-black
+    // in dark mode (it tracks theme.tint's accessibility pair), which would
+    // render illegible on red. If we ever add a dedicated theme.textOnDanger,
+    // switch to that.
     danger: '#fff',
   };
 

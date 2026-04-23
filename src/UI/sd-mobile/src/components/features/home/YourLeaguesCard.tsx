@@ -66,7 +66,11 @@ export function YourLeaguesCard({ leagues }: Props) {
             </Text>
             <Text
               style={[styles.chevron, { color: theme.textMuted }]}
+              // accessibilityElementsHidden is iOS-only; importantForAccessibility
+              // covers Android TalkBack. Pass both so the "›" glyph never reaches
+              // a screen reader alongside the row's accessibilityLabel.
               accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
             >
               ›
             </Text>

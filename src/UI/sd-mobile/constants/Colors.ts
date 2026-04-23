@@ -79,7 +79,14 @@ const light = {
   shadowColor: '#000',
 };
 
-const dark = {
+/**
+ * Canonical palette shape, derived from the `light` scheme. `dark` is
+ * annotated with this type so any missing or extra key errors at compile
+ * time — prevents silent drift between the two schemes.
+ */
+export type Palette = typeof light;
+
+const dark: Palette = {
   background: '#111',
   backgroundSecondary: '#1a1a1a',
   card: '#222',
@@ -133,7 +140,14 @@ const Colors = {
 export default Colors;
 export { Colors };
 
-/** Resolve a theme palette from a color scheme string. Null/undefined → light. */
-export function getTheme(scheme: string | null | undefined): typeof Colors['light'] {
+/**
+ * Resolve a theme palette from a color scheme. Null/undefined → light.
+ *
+ * Signature accepts `ColorScheme` (not `string`) so typos and the literal
+ * 'system' mode fail at compile time. `useThemeMode().resolvedScheme` and
+ * our `useColorScheme()` hook both resolve 'system' → 'light' | 'dark'
+ * before reaching this function.
+ */
+export function getTheme(scheme: ColorScheme | null | undefined): Palette {
   return scheme === 'dark' ? Colors.dark : Colors.light;
 }

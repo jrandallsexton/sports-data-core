@@ -50,6 +50,15 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         /// </summary>
         public DateTime? EndsOn { get; set; }
 
+        /// <summary>
+        /// When set, the league is inactive: season-long leagues that have completed,
+        /// short-lived leagues whose window has passed, or leagues a commissioner closed
+        /// early. Null = active. Active-only queries (e.g. /user/me) filter on this.
+        /// Populated manually today; a background job will eventually stamp it once all
+        /// contests in the league have finalized.
+        /// </summary>
+        public DateTime? DeactivatedUtc { get; set; }
+
         public Guid CommissionerUserId { get; set; }
 
         public User CommissionerUser { get; set; } = default!;

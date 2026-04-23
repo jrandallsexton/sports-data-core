@@ -27,7 +27,11 @@ public class GetUserLeaguesQueryHandler : IGetUserLeaguesQueryHandler
         CancellationToken cancellationToken = default)
     {
         var leagues = await _dbContext.PickemGroupMembers
+            .AsNoTracking()
             .Where(m => m.UserId == query.UserId)
+            // Hide deactivated leagues — matches the filter on /user/me. A future
+            // "Past Seasons" endpoint will surface the excluded rows explicitly.
+            .Where(m => m.Group.DeactivatedUtc == null)
             .Include(m => m.Group)
             .Select(m => new LeagueSummaryDto
             {

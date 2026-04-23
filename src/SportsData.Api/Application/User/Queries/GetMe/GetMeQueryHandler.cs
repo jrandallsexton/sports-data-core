@@ -53,6 +53,12 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                 IsAdmin = user.IsAdmin || user.Id == _config.UserIdSystem,
                 IsReadOnly = user.IsReadOnly,
                 Leagues = user.GroupMemberships
+                    // Hide deactivated leagues (season-long leagues that ended,
+                    // short-lived leagues past their window, commissioner-closed
+                    // leagues). PickemGroup.DeactivatedUtc is stamped manually
+                    // today; a background job will automate it later. A future
+                    // "Past Seasons" endpoint can surface the excluded rows.
+                    .Where(m => m.Group.DeactivatedUtc == null)
                     .Select(m => new UserDto.UserLeagueMembership
                     {
                         Id = m.Group.Id,

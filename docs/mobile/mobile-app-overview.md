@@ -4,7 +4,7 @@
 
 The mobile app is the Year 2 priority for the platform. The web app (`sd-ui`) has been the primary UI, but the real engagement surface for a Pick'em product is mobile — nobody opens a browser on Saturday morning to make picks. The goal is to have a functional mobile app in people's pockets before the 2026 NCAAFB season kicks off (first weekend of September).
 
-**Timeline**: Target August 2026 for beta-ready. ~4.5 months from today (March 2026).
+**Timeline**: Target August 2026 for beta-ready. ~3.5 months from today (April 22, 2026). The web app has pulled ahead on multi-sport support — mobile needs to close that gap plus ship the must-haves below before beta.
 
 ## Technology Decisions
 
@@ -29,24 +29,29 @@ sd-mobile/
 │   ├── _layout.tsx               # Root: QueryClient + AuthGuard
 │   ├── (auth)/
 │   │   └── sign-in.tsx           # Login screen
+│   ├── create-league.tsx         # League creation (Phase 1 NCAA-only scaffold)
 │   └── (tabs)/
 │       ├── index.tsx             # Home (pick record + standings preview)
 │       ├── picks.tsx             # Matchup list with league/week selector
 │       ├── standings.tsx         # Leaderboard for selected league
 │       ├── profile.tsx           # User profile + sign-out
 │       └── (details)/
-│           ├── game/[id].tsx     # Contest overview
-│           └── team/[slug].tsx   # Team card with season selector
+│           └── sport/
+│               └── [sport]/
+│                   └── [league]/
+│                       ├── game/[id].tsx     # Contest overview (sport-aware)
+│                       └── team/[slug].tsx   # Team card (sport-aware)
 ├── src/
 │   ├── components/
-│   │   ├── ui/                   # Button, Card, LoadingSpinner, EmptyState
+│   │   ├── ui/                   # Button, Card, LoadingSpinner, EmptyState, SegmentedControl
 │   │   └── features/
 │   │       ├── games/            # MatchupCard, GameStatus, modals
 │   │       └── selectors/        # LeagueWeekSelector
 │   ├── hooks/                    # useAuth, useContest, useMatchups, useStandings, useTeamCard
-│   ├── services/api/             # Axios client + endpoint modules
+│   ├── services/api/             # Axios client + endpoint modules (client, picks, matchups, standings, contestOverview, teamCard, leagues)
 │   ├── stores/                   # Zustand auth store
 │   ├── types/                    # TypeScript interfaces
+│   ├── utils/                    # sportLinks (Sport enum → URL segment resolver, route builders)
 │   └── lib/                      # Firebase init, React Query client, utilities
 ├── constants/Colors.ts           # Theme (light/dark with navy/gold brand palette)
 └── __tests__/                    # Unit tests
@@ -68,6 +73,8 @@ sd-mobile/
 ### Partial
 - **Stats Comparison Modal**: Data fetching wired, modal UI referenced but may be incomplete
 - **AI Preview Modal**: Fully implemented — Claude-generated matchup analysis with Overview, Analysis, and Prediction sections. Includes straight-up and ATS picks with predicted scores, Vegas implied score calculations, and historical data priors. Admin approve/reject workflow with rejection feedback loop. Subscription gating stub in place (UI-only, no backend enforcement). Key product differentiator.
+- **League Creation**: Multi-sport create flow (`app/create-league.tsx`) supports NCAAFB, NFL, and MLB (MLB admin-gated via `UserDto.isAdmin`, matching web). NFL + MLB render a division-chip picker; NCAA has a rankings segmented control but no conference picker yet (web fetches conferences dynamically — a mobile Conferences API module is deferred). Date-window picker not yet exposed (full-season only). Endpoints: `leaguesApi.createFootballNcaa/Nfl/BaseballMlbLeague`. Join/discover flows still TODO.
+- **Sport-aware Routing**: Team and game screens now live under `(details)/sport/[sport]/[league]/` so cross-sport slug collisions (e.g. a future NBA team sharing a football slug) produce distinct routes. `src/utils/sportLinks.ts` mirrors the web resolver. Still TODO: picks tab surfaces the correct sport via `LeagueWeekMatchupsDto.Sport`; legacy default-arg fallbacks in `teamCardApi` and `useTeamCard` remain for callers that haven't migrated.
 - **Profile**: Career/season records hardcoded to 0 (awaiting backend data)
 - **Firebase Persistence**: AsyncStorage not yet wired; auth state lost on full restart
 
@@ -125,9 +132,11 @@ Both web and mobile implementations are **functionally complete**. The backend p
 | **Live game updates (SignalR)** | Done | Polling only | Medium |
 | **Push notifications (pick reminders)** | N/A | Not started | **Critical** |
 | **Confidence points** | Done | Not started | High |
-| **League create/join/manage** | Done | Not started | High |
+| **League create/join/manage** | Done (multi-sport) | Create: multi-sport (NCAA/NFL + MLB admin-gated); join/manage: Not started | High |
 | **League discovery** | Done | Not started | Medium |
 | **League invitations** | Done | Not started | Medium |
+| **Sport-aware routing** | Done (`/sport/{sport}/{league}/...`) | Done (team + game; picks tab wired) | - |
+| **Multi-sport home page (countdown)** | Done (PR #272) | Done (countdown + new-user slot; dashboard widgets still render below) | - |
 | **Message board** | Done | Not started | Low |
 | **Google/Facebook OAuth** | Done | Not started | High |
 | **Rankings/polls** | Done | Not started | Low |
@@ -162,6 +171,53 @@ The minimum viable mobile app for the 2026 season:
 10. Message board, rankings, venues, analytics, game map — these are engagement features that matter more in Year 3.
 11. Admin dashboard — stays web-only permanently.
 
+## Sport-Agnostic Architecture
+
+The mobile app follows the same sport-agnostic contract the web app established in PRs #271 and #272. Three rules to preserve:
+
+1. **Backend returns PascalCase Sport enum names** (`FootballNcaa`, `FootballNfl`, `BaseballMlb`). The `sport` field on `LeagueWeekMatchupsDto` is authoritative; clients don't guess.
+2. **URL segments are lowercase tuples** (`/sport/football/ncaa/...`, `/sport/baseball/mlb/...`). Conversion is centralized in `src/utils/sportLinks.ts`:
+   - `resolveSportLeague(sportEnum)` returns `{ sport, league }` or `null` for unknown/missing enums (callers must handle null — never silently default to football/ncaa).
+   - `teamRoute()` and `gameRoute()` build ready-to-push pathname+params objects so call sites don't hand-write route strings.
+3. **API modules accept sport + league explicitly.** `teamCardApi.getBySlugAndSeason(slug, year, sport, league)` and `useTeamCard(slug, year, sport, league)` both take the tuple. Default args remain `football/ncaa` for legacy callers during migration but new callers should pass the resolved values.
+
+Cross-sport slug collisions (a Boise State NCAAFB team vs. a hypothetical future sport with the same slug) are the primary motivation. Without sport in the URL, `/team/boise-state-broncos` is ambiguous. With it, routing is deterministic and the team-card API hits the right sport's database.
+
+When adding a new feature: if it navigates, fetches by slug, or surfaces team/game identity, it needs sport + league in the request. Prefer passing the tuple through props over re-resolving at each component.
+
+## Home Page Design Parity
+
+Web's post-login landing (PR #272, [docs/post-login-landing-design.md](../post-login-landing-design.md)) replaced a stale widget-soup home with a three-tier scaffold:
+- Tier 1 (primary slot) — the single "next action" for this user (dual-sport countdown to NCAAFB / NFL kickoff when both are off-season, new-user CTA when no leagues, etc.).
+- Tier 2 (context) — sport-specific context cards.
+- Tier 3 (secondary) — compact adjacent surfaces.
+
+Mobile's current home (`app/(tabs)/index.tsx`) still renders pick record + standings preview — both of which are empty/stale during off-season. Pending work: port the Tier 1 primary slot (countdown + new-user CTA) to mobile and keep pick record / standings as Tier 2-equivalent content below. No need to mirror web's three-tier CSS exactly; React Native's natural vertical stack is fine as long as the primary slot is unambiguous at the top.
+
+## Code Sharing Between Web and Mobile (future work)
+
+Today `sd-ui` (JS) and `sd-mobile` (TS) are sibling apps with zero shared code. Every DTO, URL builder, API client, and product constant is either duplicated or unilaterally typed on one side. That drift tax is small today but grows with every new sport, endpoint, or DTO field.
+
+**Not shareable** (different render targets):
+- JSX / components — React Native `<View>`/`<Text>` vs. DOM `<div>` + CSS.
+- Routing — Expo Router vs. React Router.
+- Auth transport — Firebase JWT interceptor in mobile, HttpOnly cookie flow on web.
+
+**Shareable (currently duplicated)**:
+- **TypeScript types / DTO interfaces** — highest ROI. `models.ts` in mobile is hand-maintained; web is `.js` with no types. Either convert `sd-ui/src/api/*` to TS or generate types from the backend via `openapi-typescript`. The latter also catches backend drift.
+- **Pure helpers**: `resolveSportLeague()`, `daysUntil()`, `sportPhrase()`, pick-type unions, `getLeagues(me)`.
+- **API URL builders and response parsers** — the `axios.get()` call is per-app (auth differs), but `buildTeamCardUrl(slug, year, sport, league)` and `parseTeamCardResponse(raw)` are not.
+- **Zod schemas** for request/response validation.
+- **Product copy constants** — kickoff dates, tier copy, CTA labels (so a messaging change lands both places).
+
+**Suggested path**:
+1. Convert `sd-ui/src/api/*` to TypeScript (or generate from OpenAPI).
+2. Set up pnpm/npm workspaces with `packages/shared-types` + `packages/shared-api-core` (URL builders, parsers, schemas, pure utils).
+3. Keep `apiClient.js` / `client.ts` per-app — they inject auth; they're the boundary.
+4. Leave React Query hooks per-app for now; once the shared core exists, the hook bodies shrink to one-liners.
+
+Estimated size: 1–2 focused days after web is typed. Defer until after NFL/MLB league creation ships on mobile — the sport-agnostic routing work is already a dry-run of this split. Revisit before the third sport lands; by then duplication cost will outweigh setup cost.
+
 ## API Surface
 
 The mobile app consumes the same `/ui/*` endpoints as the web app. No mobile-specific backend work is needed for existing features.
@@ -173,7 +229,7 @@ The mobile app consumes the same `/ui/*` endpoints as the web app. No mobile-spe
 | standingsApi | getByLeague, getMe | Implemented |
 | contestOverviewApi | getOverview | Implemented |
 | teamCardApi | getBySlugAndSeason, getStatistics, getMetrics | Implemented |
-| leaguesApi | - | Not started |
+| leaguesApi | createFootballNcaaLeague, createFootballNflLeague, createBaseballMlbLeague | Create done for all three sports; discover/join/manage TBD |
 | messageboardApi | - | Not started |
 | rankingsApi | - | Not started |
 | seasonApi | - | Not started |

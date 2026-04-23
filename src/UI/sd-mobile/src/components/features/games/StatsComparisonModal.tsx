@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  useColorScheme,
   ActivityIndicator,
 } from 'react-native';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import type { Matchup, TeamComparisonData, TeamStatEntry } from '@/src/types/models';
 

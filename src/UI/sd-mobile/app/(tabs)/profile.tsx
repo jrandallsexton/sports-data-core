@@ -8,11 +8,13 @@ import {
   ScrollView,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import { auth } from '@/src/lib/firebase';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useCurrentUser } from '@/src/hooks/useStandings';
+import { useThemeMode, type ThemeMode } from '@/src/lib/theme/ThemeContext';
+import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 
 // ─── Record card ──────────────────────────────────────────────────────────────
 
@@ -74,11 +76,18 @@ function SettingsRow({
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
+const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
+];
+
 export default function ProfileScreen() {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const { user } = useAuthStore();
   const { data: me } = useCurrentUser();
+  const { mode, setMode } = useThemeMode();
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -101,15 +110,17 @@ export default function ProfileScreen() {
       style={[styles.container, { backgroundColor: theme.background }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Avatar + name */}
-      <View style={[styles.hero, { backgroundColor: Colors.brand.navy }]}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarInitial}>
+      {/* Avatar + name — hero uses the theme tint so light/dark feel distinct. */}
+      <View style={[styles.hero, { backgroundColor: theme.tint }]}>
+        <View style={[styles.avatar, { backgroundColor: Colors.brand.gold }]}>
+          <Text style={[styles.avatarInitial, { color: theme.textOnAccent }]}>
             {(displayName[0] ?? '?').toUpperCase()}
           </Text>
         </View>
-        <Text style={styles.heroName}>{displayName}</Text>
-        <Text style={styles.heroEmail}>{user?.email}</Text>
+        <Text style={[styles.heroName, { color: theme.textOnAccent }]}>{displayName}</Text>
+        <Text style={[styles.heroEmail, { color: theme.textOnAccent, opacity: 0.7 }]}>
+          {user?.email}
+        </Text>
       </View>
 
       {/* Records */}
@@ -128,7 +139,23 @@ export default function ProfileScreen() {
         />
       </View>
 
-      {/* Settings */}
+      {/* Appearance */}
+      <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Appearance</Text>
+        <View style={styles.sectionBody}>
+          <SegmentedControl
+            value={mode}
+            options={THEME_OPTIONS}
+            onChange={setMode}
+            accessibilityLabel="Theme"
+          />
+          <Text style={[styles.sectionHint, { color: theme.textMuted }]}>
+            System follows your device's light/dark setting.
+          </Text>
+        </View>
+      </View>
+
+      {/* Account */}
       <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Account</Text>
         <SettingsRow label="Edit Profile" onPress={() => {}} />
@@ -155,22 +182,13 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: Colors.brand.gold,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
-  avatarInitial: { fontSize: 32, fontWeight: '800', color: Colors.brand.navy },
-  heroName: { fontSize: 22, fontWeight: '800', color: '#fff' },
-  heroEmail: { fontSize: 13, color: 'rgba(255,255,255,0.65)' },
-  rankBadge: {
-    marginTop: 6,
-    backgroundColor: Colors.brand.gold,
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  rankBadgeText: { fontSize: 12, fontWeight: '700', color: Colors.brand.navy },
+  avatarInitial: { fontSize: 32, fontWeight: '800' },
+  heroName: { fontSize: 22, fontWeight: '800' },
+  heroEmail: { fontSize: 13 },
   records: {
     flexDirection: 'row',
     gap: 12,
@@ -189,6 +207,7 @@ const styles = StyleSheet.create({
   recordPct: { fontSize: 18, fontWeight: '700' },
   section: {
     marginHorizontal: 14,
+    marginBottom: 14,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
@@ -201,6 +220,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 6,
+  },
+  sectionBody: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    gap: 10,
+  },
+  sectionHint: {
+    fontSize: 12,
   },
   settingsRow: {
     flexDirection: 'row',

@@ -1,0 +1,96 @@
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { Appearance, useColorScheme as useSystemColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { ColorScheme } from '@/constants/Colors';
+
+/**
+ * Theme mode the user has selected. `system` follows the OS-level light/dark
+ * setting; the other two pin the theme regardless of OS. Matches web parity
+ * where a user-explicit preference wins over the OS default.
+ */
+export type ThemeMode = 'light' | 'dark' | 'system';
+
+const STORAGE_KEY = 'theme-mode';
+const VALID_MODES: ThemeMode[] = ['light', 'dark', 'system'];
+
+interface ThemeContextValue {
+  mode: ThemeMode;
+  setMode: (mode: ThemeMode) => void;
+  resolvedScheme: ColorScheme;
+}
+
+const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+function isValidMode(value: unknown): value is ThemeMode {
+  return typeof value === 'string' && (VALID_MODES as string[]).includes(value);
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const systemScheme = useSystemColorScheme();
+  const [mode, setModeState] = useState<ThemeMode>('system');
+
+  // Load persisted preference on mount. Any parse failure silently falls back
+  // to `system` — we'd rather ship with OS defaults than crash on corrupt
+  // storage from a prior app version.
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (isValidMode(raw)) setModeState(raw);
+      })
+      .catch(() => {
+        // ignore — keep default
+      });
+  }, []);
+
+  const setMode = useCallback((next: ThemeMode) => {
+    setModeState(next);
+    AsyncStorage.setItem(STORAGE_KEY, next).catch(() => {
+      // persistence is best-effort; in-memory state is authoritative for the session
+    });
+  }, []);
+
+  // In `system` mode, resolve against the current OS setting. `Appearance`
+  // emits change events handled by `useSystemColorScheme`, so a toggle in
+  // iOS/Android settings is reflected without an app restart.
+  const resolvedScheme: ColorScheme = useMemo(() => {
+    if (mode === 'light' || mode === 'dark') return mode;
+    return (systemScheme as ColorScheme) ?? (Appearance.getColorScheme() as ColorScheme) ?? 'light';
+  }, [mode, systemScheme]);
+
+  const value = useMemo<ThemeContextValue>(
+    () => ({ mode, setMode, resolvedScheme }),
+    [mode, setMode, resolvedScheme],
+  );
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+}
+
+/** Expose mode + setter for the theme selector UI. */
+export function useThemeMode(): ThemeContextValue {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) {
+    throw new Error('useThemeMode must be used within a <ThemeProvider>');
+  }
+  return ctx;
+}
+
+/**
+ * Drop-in replacement for React Native's `useColorScheme`. Returns the
+ * resolved scheme respecting the user's explicit mode choice, not the raw
+ * OS setting. Components that already call `useColorScheme()` just swap
+ * the import path.
+ */
+export function useColorScheme(): ColorScheme {
+  const ctx = useContext(ThemeContext);
+  // Fallback to raw OS value if provider isn't mounted yet (e.g. in tests).
+  const systemScheme = useSystemColorScheme();
+  if (ctx) return ctx.resolvedScheme;
+  return (systemScheme as ColorScheme) ?? 'light';
+}

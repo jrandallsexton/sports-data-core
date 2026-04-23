@@ -8,7 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { useTeamCard } from '@/src/hooks/useTeamCard';
@@ -72,7 +72,19 @@ function SeasonSelector({
 
 // ─── Schedule Row ─────────────────────────────────────────────────────────────
 
-function ScheduleRow({ game, teamName, season }: { game: TeamCardScheduleGame; teamName: string; season: number }) {
+function ScheduleRow({
+  game,
+  teamName,
+  season,
+  sport,
+  league,
+}: {
+  game: TeamCardScheduleGame;
+  teamName: string;
+  season: number;
+  sport: string;
+  league: string;
+}) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const router = useRouter();
@@ -96,7 +108,20 @@ function ScheduleRow({ game, teamName, season }: { game: TeamCardScheduleGame; t
       <View style={styles.gameMiddle}>
         {game.opponentSlug ? (
           <TouchableOpacity
-            onPress={() => router.push({ pathname: '/team/[slug]', params: { slug: game.opponentSlug!, season: String(season), backTitle: teamName } } as never)}
+            onPress={() =>
+              router.push(
+                {
+                  pathname: '/sport/[sport]/[league]/team/[slug]',
+                  params: {
+                    sport,
+                    league,
+                    slug: game.opponentSlug!,
+                    season: String(season),
+                    backTitle: teamName,
+                  },
+                } as never,
+              )
+            }
             activeOpacity={0.7}
           >
             <Text style={[styles.gameOpponent, { color: theme.tint }]} numberOfLines={1}>
@@ -117,7 +142,19 @@ function ScheduleRow({ game, teamName, season }: { game: TeamCardScheduleGame; t
 
       {isFinalized && game.contestId ? (
         <TouchableOpacity
-          onPress={() => router.push({ pathname: '/game/[id]', params: { id: game.contestId!, backTitle: teamName } } as never)}
+          onPress={() =>
+            router.push(
+              {
+                pathname: '/sport/[sport]/[league]/game/[id]',
+                params: {
+                  sport,
+                  league,
+                  id: game.contestId!,
+                  backTitle: teamName,
+                },
+              } as never,
+            )
+          }
           activeOpacity={0.7}
           style={styles.gameResult}
         >
@@ -138,7 +175,14 @@ function ScheduleRow({ game, teamName, season }: { game: TeamCardScheduleGame; t
 const CURRENT_YEAR = 2025;
 
 export default function TeamCard() {
-  const { slug, season: seasonParam } = useLocalSearchParams<{
+  const {
+    sport,
+    league,
+    slug,
+    season: seasonParam,
+  } = useLocalSearchParams<{
+    sport: string;
+    league: string;
     slug: string;
     season?: string;
   }>();
@@ -148,7 +192,7 @@ export default function TeamCard() {
   const initialSeason = seasonParam ? parseInt(seasonParam, 10) : CURRENT_YEAR;
   const [selectedSeason, setSelectedSeason] = useState(initialSeason);
 
-  const { data: team, isLoading, error } = useTeamCard(slug, selectedSeason);
+  const { data: team, isLoading, error } = useTeamCard(slug, selectedSeason, sport, league);
 
   if (isLoading) {
     return (
@@ -227,7 +271,14 @@ export default function TeamCard() {
           </Text>
           {team.schedule?.length ? (
             team.schedule.map((game, idx) => (
-              <ScheduleRow key={game.contestId ?? idx} game={game} teamName={team.name} season={selectedSeason} />
+              <ScheduleRow
+                key={game.contestId ?? idx}
+                game={game}
+                teamName={team.name}
+                season={selectedSeason}
+                sport={sport}
+                league={league}
+              />
             ))
           ) : (
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>No games scheduled.</Text>

@@ -14,7 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/src/lib/firebase';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Button } from '@/src/components/ui/Button';
 import { Colors, getTheme } from '@/constants/Colors';
 
@@ -76,8 +76,8 @@ export default function SignInScreen() {
         {/* Brand header */}
         <View style={styles.header}>
           <Text style={styles.emoji}>🏈</Text>
-          <Text style={[styles.appName, { color: Colors.brand.navy }]}>SportDeets</Text>
-          <Text style={[styles.tagline, { color: theme.textMuted }]}>NCAAFB Pick'em</Text>
+          <Text style={[styles.appName, { color: theme.tint }]}>sportDeets</Text>
+          <Text style={[styles.tagline, { color: theme.textMuted }]}>NCAAFB & NFL Pick'em</Text>
         </View>
 
         {/* Card */}
@@ -177,7 +177,7 @@ export default function SignInScreen() {
           />
 
           <TouchableOpacity style={styles.forgotLink}>
-            <Text style={[styles.forgotText, { color: Colors.brand.navy }]}>
+            <Text style={[styles.forgotText, { color: theme.tint }]}>
               Forgot password?
             </Text>
           </TouchableOpacity>

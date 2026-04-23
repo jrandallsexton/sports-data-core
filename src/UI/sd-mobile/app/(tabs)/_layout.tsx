@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
-import { Colors, getTheme } from '@/constants/Colors';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
+import { getTheme } from '@/constants/Colors';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -36,7 +36,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          // Header title is the sportDeets wordmark (matches web's top-right
+          // brand link). Tab label stays "Home" — different surface, different
+          // job: the wordmark brands the app, the tab label identifies the tab.
+          // Override headerTitleStyle here so the wordmark picks up the accent
+          // color (web parity — brand link uses var(--accent)). Other tabs
+          // keep the default headerTintColor for their plain string titles.
+          title: 'sportDeets',
+          tabBarLabel: 'Home',
+          headerTitleStyle: { fontWeight: '800', fontSize: 20, color: theme.tint },
           tabBarIcon: ({ color }) => (
             <TabIcon name="home-outline" color={color} />
           ),
@@ -45,7 +53,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="picks"
         options={{
-          title: 'Games',
+          // Wordmark header (same treatment as the home tab) — the selected
+          // league name already appears in the week selector just below, so
+          // the header slot is free to reinforce brand. tabBarLabel keeps the
+          // bottom-tab label as "Games".
+          title: 'sportDeets',
+          tabBarLabel: 'Games',
+          headerTitleStyle: { fontWeight: '800', fontSize: 20, color: theme.tint },
           tabBarIcon: ({ color }) => (
             <TabIcon name="american-football-outline" color={color} />
           ),

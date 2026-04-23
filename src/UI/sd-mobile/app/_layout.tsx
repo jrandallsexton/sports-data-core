@@ -1,4 +1,4 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -6,9 +6,9 @@ import { useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import 'react-native-reanimated';
 
-import { useColorScheme } from 'react-native';
 import { queryClient } from '@/src/lib/queryClient';
 import { useAuthInit, useAuth } from '@/src/hooks/useAuth';
+import { ThemeProvider, useColorScheme } from '@/src/lib/theme/ThemeContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -62,22 +62,29 @@ export default function RootLayout() {
 
   if (!loaded) return null;
 
-  return <RootLayoutNav />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <RootLayoutNav />
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
 }
 
 function RootLayoutNav() {
+  // Feed the user-resolved scheme into React Navigation so native header
+  // transitions and focus rings match the chosen theme.
   const colorScheme = useColorScheme();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <AuthGuard />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <NavThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <Stack>
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="create-league" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      <AuthGuard />
+    </NavThemeProvider>
   );
 }

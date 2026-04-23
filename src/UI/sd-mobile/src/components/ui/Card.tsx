@@ -4,7 +4,7 @@ import {
   StyleSheet,
   type ViewStyle,
 } from 'react-native';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 
 interface CardProps {

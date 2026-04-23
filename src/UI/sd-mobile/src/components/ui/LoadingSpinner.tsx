@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { getTheme } from '@/constants/Colors';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 
 interface LoadingSpinnerProps {
   message?: string;

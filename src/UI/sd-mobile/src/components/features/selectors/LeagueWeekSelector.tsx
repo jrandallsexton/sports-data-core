@@ -9,7 +9,7 @@ import {
   Platform,
   UIManager,
 } from 'react-native';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import type { League } from '@/src/types/models';
 
@@ -23,7 +23,7 @@ interface LeagueWeekSelectorProps {
   selectedLeagueId: string | null;
   onLeagueChange: (leagueId: string) => void;
   selectedWeek: number | null;
-  maxWeek: number;
+  seasonWeeks: number[];
   onWeekChange: (week: number) => void;
 }
 
@@ -32,12 +32,12 @@ export function LeagueWeekSelector({
   selectedLeagueId,
   onLeagueChange,
   selectedWeek,
-  maxWeek,
+  seasonWeeks,
   onWeekChange,
 }: LeagueWeekSelectorProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
-  const weeks = Array.from({ length: maxWeek }, (_, i) => i + 1);
+  const weeks = seasonWeeks;
 
   // Start collapsed when both a league and week are already selected (e.g. returning to the tab)
   const [collapsed, setCollapsed] = useState(

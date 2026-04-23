@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useColorScheme } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import type { Matchup } from '@/src/types/models';
 
@@ -38,7 +37,6 @@ interface GameStatusProps {
 export function GameStatus({ matchup, onPressGameDetail }: GameStatusProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
-  const router = useRouter();
 
   const status = matchup.status.toLowerCase();
 
@@ -112,8 +110,9 @@ export function GameStatus({ matchup, onPressGameDetail }: GameStatusProps) {
     return (
       <TouchableOpacity
         style={styles.statusSection}
-        onPress={onPressGameDetail ?? (() => router.push(`/game/${matchup.contestId}` as never))}
-        activeOpacity={0.7}
+        onPress={onPressGameDetail}
+        activeOpacity={onPressGameDetail ? 0.7 : 1}
+        disabled={!onPressGameDetail}
       >
         <Text style={[styles.statusLabel, { color: theme.textMuted }]}>FINAL</Text>
         <Text style={[styles.scoreText, { color: theme.text }]}>

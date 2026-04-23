@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { useColorScheme } from 'react-native';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import type { Matchup, UserPick, PickChoice, PreviewResponse, TeamComparisonData } from '@/src/types/models';
 import { matchupsApi } from '@/src/services/api/matchupsApi';

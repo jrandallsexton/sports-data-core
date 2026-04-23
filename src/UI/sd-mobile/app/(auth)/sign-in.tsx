@@ -176,6 +176,12 @@ export default function SignInScreen() {
             style={{ marginTop: 8 }}
           />
 
+          {/* TODO: wire password-reset flow. TouchableOpacity has no onPress
+              today — visually a button, functionally a no-op. Two paths when
+              we pick this up: (a) call Firebase `sendPasswordResetEmail(auth,
+              email)` inline with a simple prompt for the address, or (b)
+              navigate to a dedicated reset screen. CodeRabbit flagged this on
+              PR #274; deferred pending product decision on the flow. */}
           <TouchableOpacity style={styles.forgotLink}>
             <Text style={[styles.forgotText, { color: theme.tint }]}>
               Forgot password?

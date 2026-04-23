@@ -87,10 +87,12 @@ export function Button({
       activeOpacity={0.78}
     >
       {loading ? (
-        <ActivityIndicator
-          size="small"
-          color={variant === 'primary' || variant === 'danger' ? theme.textOnAccent : theme.tint}
-        />
+        // Spinner reuses the label's already-resolved color so loading and
+        // non-loading states are visually identical per variant. Previously
+        // re-derived by variant here and mismatched `danger` (label was
+        // hard-coded '#fff', spinner flipped to theme.textOnAccent = #111
+        // in dark mode).
+        <ActivityIndicator size="small" color={variantText[variant]} />
       ) : (
         <Text style={[styles.text, { color: variantText[variant] }, sizeTextStyles[size], textStyle]}>
           {title}

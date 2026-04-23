@@ -143,22 +143,18 @@ export default function CreateLeagueScreen() {
   const { data: me } = useCurrentUser();
   const isAdmin = me?.isAdmin === true;
 
+  // Safe initial sport for useForm defaultValues (which are cached on first
+  // render and don't respond to later changes). MLB is admin-gated and
+  // /user/me is async, so we can't know at form-init time whether the user
+  // is allowed to land on MLB — we unconditionally defer MLB to a
+  // post-mount effect that promotes the form once isAdmin resolves.
+  // NCAA/NFL deep-links still preselect immediately.
   const initialSport = useMemo<SportKey>(() => {
     const raw = params.sport;
     if (!raw || !VALID_SPORT_PARAMS.has(raw as SportKey)) return 'FootballNcaa';
-    // MLB is admin-gated (matches sportOptions below). Non-admins deep-linking
-    // ?sport=BaseballMlb fall back to NCAA so the form's default sport is
-    // always a value the segmented control actually renders.
-    //
-    // Caveat: /user/me is async, so on cold-launch `isAdmin` may still be
-    // false when this memo first runs. In practice the countdown CTAs
-    // (the main deep-link source) fire after /user/me has cached via the
-    // home screen, so the race rarely bites — but it's why `isAdmin` is a
-    // dep here: once it flips true, the memo recomputes (form defaults
-    // won't re-init, but at least component-level reads are correct).
-    if (raw === 'BaseballMlb' && !isAdmin) return 'FootballNcaa';
+    if (raw === 'BaseballMlb') return 'FootballNcaa';
     return raw as SportKey;
-  }, [params.sport, isAdmin]);
+  }, [params.sport]);
 
   const {
     control,
@@ -220,6 +216,18 @@ export default function CreateLeagueScreen() {
       setValue('rankingFilter', '');
     }
   }, [sport, setValue]);
+
+  // Cold-launch admin deep-link: /user/me may still be loading when the form
+  // initializes, so initialSport deferred ?sport=BaseballMlb to here. Once
+  // isAdmin flips true, promote the form to MLB. The division-reset effect
+  // above then picks up the sport change and seeds divisionSlugs correctly.
+  // Non-admins never enter this branch (sportOptions also hides MLB for them).
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (params.sport !== 'BaseballMlb') return;
+    if (sport === 'BaseballMlb') return;
+    setValue('sport', 'BaseballMlb');
+  }, [isAdmin, params.sport, sport, setValue]);
 
   const sportOptions = useMemo<{ value: SportKey; label: string }[]>(() => {
     const base: { value: SportKey; label: string }[] = [
@@ -487,7 +495,11 @@ export default function CreateLeagueScreen() {
                       <Text
                         style={[
                           styles.divisionChipText,
-                          { color: selected ? '#fff' : theme.text },
+                          // Selected chip bg is theme.tint → foreground must be
+                          // its paired textOnAccent token (white in light,
+                          // near-black in dark). Hard-coded '#fff' was
+                          // illegible on dark-mode's light-cyan tint.
+                          { color: selected ? theme.textOnAccent : theme.text },
                         ]}
                       >
                         {div.shortName}

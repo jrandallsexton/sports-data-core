@@ -34,18 +34,27 @@ function nflKickoff(year: number): Date {
 }
 
 /**
- * Return the season year the countdown should track. Stays on the current
- * calendar year's kickoffs through winter (covers NFL playoffs + Super Bowl
- * in February), then rolls to year+1 starting ~6 months after NFL kickoff —
- * roughly March, which is the product-correct moment to start counting down
- * to the next season.
+ * Return the season year the countdown should track.
+ *
+ * Anchors on the *previous* calendar year's NFL kickoff so January/February
+ * stays on the in-progress season (playoffs + Super Bowl) instead of
+ * incorrectly advancing to the next year's off-season countdown. Rollover
+ * happens ≈6 months after that kickoff — roughly March of the current
+ * calendar year — which is the product-correct moment to start counting
+ * down to the new season.
+ *
+ * Examples:
+ *   - Nov 15, 2026 (regular season):       year=2026 ✓
+ *   - Jan 15, 2027 (2026 playoffs):        year=2026 ✓ ("underway" still)
+ *   - Apr 15, 2027 (off-season):           year=2027 ✓ (counting down)
+ *   - Sep 11, 2027 (2027 NCAAFB started):  year=2027 ✓
  */
 function targetSeasonYear(nowMs: number): number {
   const now = new Date(nowMs);
   const year = now.getUTCFullYear();
-  const rollover = new Date(nflKickoff(year));
+  const rollover = new Date(nflKickoff(year - 1));
   rollover.setUTCMonth(rollover.getUTCMonth() + 6);
-  return nowMs >= rollover.getTime() ? year + 1 : year;
+  return nowMs >= rollover.getTime() ? year : year - 1;
 }
 
 function daysUntil(targetUtc: Date, nowMs: number): number {

@@ -3,6 +3,7 @@ import {
   type CreateBaseballMlbLeagueRequest,
   type CreateFootballNcaaLeagueRequest,
   type CreateFootballNflLeagueRequest,
+  type CreateLeagueResponse,
 } from '@/src/services/api/leaguesApi';
 
 // Mock the shared axios instance — we only care that the right URL + body go out.
@@ -47,50 +48,59 @@ const mlbPayload: CreateBaseballMlbLeagueRequest = {
   divisionSlugs: [],
 };
 
-// Each row pairs a sport helper with its expected endpoint + payload.
-// The `method` is typed through `unknown` so the shared harness can invoke
-// all three despite their distinct payload signatures.
-const cases: Array<{
-  name: string;
-  endpoint: string;
-  method: (payload: unknown) => Promise<{ data: unknown }>;
-  payload: unknown;
-}> = [
-  {
-    name: 'createFootballNcaaLeague',
-    endpoint: '/ui/leagues/football/ncaa',
-    method: leaguesApi.createFootballNcaaLeague as (p: unknown) => Promise<{ data: unknown }>,
-    payload: ncaaPayload,
-  },
-  {
-    name: 'createFootballNflLeague',
-    endpoint: '/ui/leagues/football/nfl',
-    method: leaguesApi.createFootballNflLeague as (p: unknown) => Promise<{ data: unknown }>,
-    payload: nflPayload,
-  },
-  {
-    name: 'createBaseballMlbLeague',
-    endpoint: '/ui/leagues/baseball/mlb',
-    method: leaguesApi.createBaseballMlbLeague as (p: unknown) => Promise<{ data: unknown }>,
-    payload: mlbPayload,
-  },
-];
+/**
+ * Generic test harness: each sport helper is passed in with its real type so
+ * payload inference + return type flow through unchanged. If any helper's
+ * signature drifts (e.g. a caller starts returning `Promise<unknown>` instead
+ * of the real AxiosResponse), the call site here errors — which is the point
+ * the previous `as (p: unknown) => Promise<{ data: unknown }>` casts
+ * defeated. Structurally, `AxiosResponse<T>` satisfies `{ data: T }`, so
+ * narrowing to `{ data: CreateLeagueResponse }` in the return type is the
+ * minimum contract we actually assert.
+ */
+function testCreateLeague<T>(
+  name: string,
+  endpoint: string,
+  method: (payload: T) => Promise<{ data: CreateLeagueResponse }>,
+  payload: T,
+) {
+  describe(name, () => {
+    beforeEach(() => {
+      (apiClient.post as jest.Mock).mockReset();
+      (apiClient.post as jest.Mock).mockResolvedValue({ data: { id: 'league-1' } });
+    });
 
-describe.each(cases)('leaguesApi.$name', ({ method, endpoint, payload }) => {
-  beforeEach(() => {
-    (apiClient.post as jest.Mock).mockReset();
-    (apiClient.post as jest.Mock).mockResolvedValue({ data: { id: 'league-1' } });
+    it(`POSTs to ${endpoint} with the given payload`, async () => {
+      await method(payload);
+
+      expect(apiClient.post).toHaveBeenCalledTimes(1);
+      expect(apiClient.post).toHaveBeenCalledWith(endpoint, payload);
+    });
+
+    it('returns the server response body', async () => {
+      const response = await method(payload);
+      expect(response.data).toEqual({ id: 'league-1' });
+    });
   });
+}
 
-  it(`POSTs to ${endpoint} with the given payload`, async () => {
-    await method(payload);
+testCreateLeague(
+  'leaguesApi.createFootballNcaaLeague',
+  '/ui/leagues/football/ncaa',
+  leaguesApi.createFootballNcaaLeague,
+  ncaaPayload,
+);
 
-    expect(apiClient.post).toHaveBeenCalledTimes(1);
-    expect(apiClient.post).toHaveBeenCalledWith(endpoint, payload);
-  });
+testCreateLeague(
+  'leaguesApi.createFootballNflLeague',
+  '/ui/leagues/football/nfl',
+  leaguesApi.createFootballNflLeague,
+  nflPayload,
+);
 
-  it('returns the server response body', async () => {
-    const response = await method(payload);
-    expect(response.data).toEqual({ id: 'league-1' });
-  });
-});
+testCreateLeague(
+  'leaguesApi.createBaseballMlbLeague',
+  '/ui/leagues/baseball/mlb',
+  leaguesApi.createBaseballMlbLeague,
+  mlbPayload,
+);

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { useColorScheme, useThemeMode, type ThemeMode } from '@/src/lib/theme/ThemeContext';
-import { Colors, getTheme } from '@/constants/Colors';
+import { getTheme } from '@/constants/Colors';
 import { auth } from '@/src/lib/firebase';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useCurrentUser } from '@/src/hooks/useStandings';
@@ -109,10 +109,14 @@ export default function ProfileScreen() {
       style={[styles.container, { backgroundColor: theme.background }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Avatar + name — hero uses the theme tint so light/dark feel distinct. */}
+      {/* Avatar + name — hero uses the theme tint so light/dark feel distinct.
+          Avatar chip uses theme.card + theme.text as a contrasting "card on
+          tint" inset; those tokens are already designed to pair, so contrast
+          is correct in both modes without introducing a new accent-inverse
+          token or hard-coding a brand color. */}
       <View style={[styles.hero, { backgroundColor: theme.tint }]}>
-        <View style={[styles.avatar, { backgroundColor: Colors.brand.gold }]}>
-          <Text style={[styles.avatarInitial, { color: theme.textOnAccent }]}>
+        <View style={[styles.avatar, { backgroundColor: theme.card }]}>
+          <Text style={[styles.avatarInitial, { color: theme.text }]}>
             {(displayName[0] ?? '?').toUpperCase()}
           </Text>
         </View>

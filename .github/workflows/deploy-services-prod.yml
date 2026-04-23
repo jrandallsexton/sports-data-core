@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sports-data-config repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: jrandallsexton/sports-data-config
           token: ${{ secrets.GH_PAT }}
@@ -139,7 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sports-data repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4

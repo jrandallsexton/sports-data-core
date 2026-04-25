@@ -138,21 +138,6 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
         }
 
         var hadExisting = existing.Count > 0;
-        if (hadExisting)
-        {
-            _logger.LogInformation(
-                "Replacing MLB odds for Competition. CompetitionId={CompId}, ExistingCount={ExistingCount}",
-                competition.Id, existing.Count);
-
-            // Cascade delete on entity config removes Teams, Links, ExternalIds.
-            _dataContext.CompetitionOdds.RemoveRange(existing);
-        }
-        else
-        {
-            _logger.LogInformation(
-                "Creating MLB odds for Competition. CompetitionId={CompId}",
-                competition.Id);
-        }
 
         // --- Synthesize per-item identity + persist ---
         // Listing URL serves as the identity base; appending /provider/{id}
@@ -210,6 +195,30 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
                 awayFranchiseSeasonId: competition.Contest.AwayTeamFranchiseSeasonId,
                 correlationId: command.CorrelationId,
                 contentHash: wrapperContentHash);
+
+            // Defer the existing-row removal until we know at least one item
+            // is going to be staged. If every wrapper item is malformed (e.g.
+            // missing provider.id and the loop continues out), RemoveRange
+            // would still mark the prior rows Deleted in the change tracker
+            // and a downstream SaveChanges would wipe valid data with no
+            // replacement. Cascade delete on the entity config removes Teams,
+            // Links, and ExternalIds along with each odds row.
+            if (!addedAny)
+            {
+                if (hadExisting)
+                {
+                    _logger.LogInformation(
+                        "Replacing MLB odds for Competition. CompetitionId={CompId}, ExistingCount={ExistingCount}",
+                        competition.Id, existing.Count);
+                    _dataContext.CompetitionOdds.RemoveRange(existing);
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "Creating MLB odds for Competition. CompetitionId={CompId}",
+                        competition.Id);
+                }
+            }
 
             await _dataContext.CompetitionOdds.AddAsync(entity);
             addedAny = true;

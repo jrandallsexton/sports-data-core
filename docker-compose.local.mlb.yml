@@ -49,8 +49,19 @@ x-common-env: &common-env
   # User/Password come from App Config separately and don't need overriding.
   SportsData.Provider__ProviderDocDatabaseConfig__ConnectionString: host.docker.internal
 
-# Reused by every Producer + Provider service. /dev/tcp probe on 8080 — no
-# curl/wget in the aspnet:10.0-noble base image.
+# Reused by every Producer + Provider service.
+#
+# IMPORTANT: This probe relies on bash's `/dev/tcp` pseudo-device — bash MUST
+# be present in the base image. Today every service builds on
+# `mcr.microsoft.com/dotnet/aspnet:10.0-noble`, which ships bash; the probe
+# was chosen specifically because that image ships *neither* curl *nor*
+# wget. If the base image is ever swapped to a chiseled / alpine / distroless
+# variant (none of which ship bash), this probe must be replaced — options:
+#   - install curl in the Dockerfile and use `curl -fsS http://127.0.0.1:8080/api/health/live`
+#   - use the dotnet runtime's `/api/health/live` endpoint via a dedicated
+#     healthcheck binary copied into the image
+#   - revert to a longer `start_period` and let dependent services tolerate
+#     missing healthchecks
 x-service-healthcheck: &service-healthcheck
   test: ["CMD", "bash", "-c", "exec 6<>/dev/tcp/127.0.0.1/8080"]
   interval: 5s

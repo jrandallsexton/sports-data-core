@@ -167,6 +167,17 @@ namespace SportsData.Core.DependencyInjection
                     });
             });
 
+            // Re-add environment variables AFTER Azure App Config so env-var
+            // overrides win, restoring the conventional ASP.NET Core
+            // precedence (env > AppConfig > appsettings). The default
+            // WebApplicationBuilder adds env vars early in the chain; without
+            // this re-add, AddAzureAppConfiguration above silently overrides
+            // anything set via env vars (e.g. docker-compose's
+            // `CommonConfig__SqlBaseConnectionString` or
+            // `SportsData.Provider__ProviderDocDatabaseConfig__ConnectionString`
+            // overrides intended to swap localhost → host.docker.internal).
+            cfg.AddEnvironmentVariables();
+
             return cfg;
         }
 

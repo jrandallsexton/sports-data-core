@@ -398,4 +398,66 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         capturedCommands[1].InlineJson.Should().Contain("Kickoff");
         capturedCommands[2].InlineJson.Should().Contain("Rush");
     }
+
+    /// <summary>
+    /// MLB EventCompetitionOdds is now classified as a leaf (sport-aware
+    /// override in <see cref="EspnResourceIndexClassifier"/>) instead of a
+    /// resource index. Items in MLB's odds wrapper lack both <c>$ref</c> and
+    /// a top-level <c>id</c>, so the generic per-item extraction path in
+    /// <see cref="DocumentRequestedHandler.ProcessResourceIndex"/> has nothing
+    /// to work with. The leaf path enqueues the entire wrapper as a single
+    /// document; a sport-specific Producer-side processor will iterate items
+    /// and persist a CompetitionOdds row per provider.
+    ///
+    /// NCAAFB/NFL retain the original index behavior because their odds
+    /// wrapper items each have a real `$ref` the generic path can follow —
+    /// see the OddsEndpoint test in EspnResourceIndexClassifierTests.
+    /// </summary>
+    [Fact]
+    public async Task WhenMlbEventCompetitionOdds_TreatsAsLeaf_EnqueuesSingleDocument()
+    {
+        // arrange — the JSON is loaded purely so any sanity check against the
+        // mocked GetResource has realistic content; the leaf path doesn't fetch.
+        await LoadJsonTestData("EspnBaseballMlbEventCompetitionOdds.json");
+
+        var oddsListingUri = new Uri(
+            "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/odds?lang=en&region=us");
+
+        var capturedCommands = new List<ProcessResourceIndexItemCommand>();
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        background.Setup(x => x.Enqueue<IProcessResourceIndexItems>(It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
+            .Callback<Expression<Func<IProcessResourceIndexItems, Task>>>(expr =>
+            {
+                var func = expr.Compile();
+                var mockProcessor = new Mock<IProcessResourceIndexItems>();
+                mockProcessor.Setup(p => p.Process(It.IsAny<ProcessResourceIndexItemCommand>()))
+                    .Callback<ProcessResourceIndexItemCommand>(cmd => capturedCommands.Add(cmd))
+                    .Returns(Task.CompletedTask);
+                func(mockProcessor.Object).GetAwaiter().GetResult();
+            });
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = Fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, oddsListingUri)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.BaseballMlb)
+            .OmitAutoProperties()
+            .Create();
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert — exactly one ProcessResourceIndexItem command enqueued for
+        // the listing URL itself (the leaf path doesn't fetch upstream)
+        capturedCommands.Should().HaveCount(1);
+        capturedCommands[0].Uri.Should().Be(oddsListingUri);
+        capturedCommands[0].DocumentType.Should().Be(DocumentType.EventCompetitionOdds);
+        capturedCommands[0].Sport.Should().Be(Sport.BaseballMlb);
+        capturedCommands[0].InlineJson.Should().BeNull(
+            "leaf path defers fetch+persist to ProcessResourceIndexItem; no inline data is attached at this stage");
+    }
 }

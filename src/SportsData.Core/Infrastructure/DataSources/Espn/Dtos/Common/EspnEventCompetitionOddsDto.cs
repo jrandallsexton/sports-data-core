@@ -140,6 +140,31 @@ public class Outcome
     public string? Type { get; set; }
 }
 
+/// <summary>
+/// Wrapper shape returned by ESPN's MLB <c>.../odds</c> endpoint. Each item
+/// is a per-provider odds row that lacks its own <c>$ref</c>; the MLB-specific
+/// processor synthesizes one for identity purposes. NCAAFB/NFL never use this
+/// wrapper at the processor layer because their items each have a real
+/// <c>$ref</c> that DocumentRequestedHandler extracts upstream.
+/// </summary>
+public class EspnEventCompetitionOddsListDto
+{
+    [JsonPropertyName("count")]
+    public int? Count { get; set; }
+
+    [JsonPropertyName("pageIndex")]
+    public int? PageIndex { get; set; }
+
+    [JsonPropertyName("pageSize")]
+    public int? PageSize { get; set; }
+
+    [JsonPropertyName("pageCount")]
+    public int? PageCount { get; set; }
+
+    [JsonPropertyName("items")]
+    public List<EspnEventCompetitionOddsDto> Items { get; set; } = new();
+}
+
 public class EspnEventCompetitionOddsProvider
 {
     [JsonPropertyName("$ref")]

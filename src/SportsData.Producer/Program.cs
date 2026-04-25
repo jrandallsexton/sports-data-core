@@ -1,3 +1,6 @@
+using Hangfire;
+using Hangfire.Dashboard;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -68,10 +71,16 @@ public class Program
         services.AddClients(config);
 
         // Per-role connection pool sizing — configurable via Azure App Config.
-        // Keys: {appName}:ConnectionPool:Worker, :Api, :Ingest
-        // Defaults: Worker=22, Api=5, Ingest=5
+        // Keys: {appName}:ConnectionPool:All, :Worker, :Api, :Ingest
+        // Defaults: All=60, Worker=22, Api=5, Ingest=5
+        //
+        // The All arm covers the local-dev / docker-compose case where one
+        // process runs every role concurrently and starves the Worker-sized
+        // pool. In prod K8s each role is its own pod, so this branch never
+        // matches there — strictly additive.
         var (roleName, defaultPoolSize) = role switch
         {
+            _ when role == ProducerRole.All => ("All", 60),
             _ when role.HasFlag(ProducerRole.Api) && !role.HasFlag(ProducerRole.Worker) => ("Api", 5),
             _ when role.HasFlag(ProducerRole.Ingest) && !role.HasFlag(ProducerRole.Worker) => ("Ingest", 5),
             _ when role.HasFlag(ProducerRole.Worker) => ("Worker", 22),
@@ -230,6 +239,24 @@ public class Program
         {
             app.UseAuthorization();
             app.MapControllers();
+
+            // Hangfire dashboard for non-Production environments only.
+            // Prod cluster aggregates dashboards via SportsData.JobsDashboard
+            // at jobs.sportdeets.com behind basic auth; per-pod /dashboard
+            // would just be redundant surface area.
+            //
+            // For local dev (docker-compose / VS native), pass an empty
+            // authorization filter array — Hangfire's default
+            // LocalRequestsOnlyAuthorizationFilter rejects requests from
+            // outside the container, so an empty list opens it up to the
+            // host machine. Acceptable for local-only ports (7042 here).
+            if (!app.Environment.IsProduction())
+            {
+                app.UseHangfireDashboard("/dashboard", new DashboardOptions
+                {
+                    Authorization = Array.Empty<IDashboardAuthorizationFilter>()
+                });
+            }
         }
 
         // Map Prometheus metrics endpoint only if OpenTelemetry metrics are enabled

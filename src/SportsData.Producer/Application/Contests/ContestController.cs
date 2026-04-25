@@ -56,8 +56,18 @@ namespace SportsData.Producer.Application.Contests
         [Route("{contestId}/update")]
         public IActionResult UpdateContest([FromRoute] Guid contestId)
         {
-            var correlationId = ActivityExtensions.GetCorrelationId();
-            
+            // Prefer the inbound X-Correlation-Id from the calling service so
+            // the same CorrelationId is logged across API → Producer → Provider.
+            // Falls back to Activity.Current (TraceId) when the header is
+            // absent — covers direct-curl testing and any future caller that
+            // doesn't propagate the header. ClientBase.PostWithResultAsync
+            // stamps this header on every outbound POST.
+            var correlationId =
+                Request.Headers.TryGetValue("X-Correlation-Id", out var headerValue)
+                && Guid.TryParse(headerValue, out var inbound)
+                    ? inbound
+                    : ActivityExtensions.GetCorrelationId();
+
             _logger.LogInformation(
                 "UpdateContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
                 contestId,

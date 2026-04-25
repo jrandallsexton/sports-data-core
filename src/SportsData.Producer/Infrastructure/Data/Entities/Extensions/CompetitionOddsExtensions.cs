@@ -24,7 +24,11 @@ public static class CompetitionOddsExtensions
             Id = identity.CanonicalId, // stable per odds provider ref
             CompetitionId = competitionId,
 
-            ProviderRef = src.Provider.Ref,
+            // Fall back to the item's own ref when provider.ref is missing.
+            // MLB items don't carry a provider.ref in the wire payload — the
+            // sport-specific processor synthesizes src.Ref per provider, so
+            // it doubles as the identity URL for the provider here.
+            ProviderRef = src.Provider.Ref ?? src.Ref,
             ProviderId = src.Provider.Id,
             ProviderName = src.Provider.Name,
             ProviderPriority = src.Provider.Priority,

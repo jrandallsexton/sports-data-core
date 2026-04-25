@@ -1,7 +1,7 @@
 info:
   name: GolfPga - Athletes
   type: http
-  seq: 18
+  seq: 24
 
 http:
   method: GET

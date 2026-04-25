@@ -1,18 +1,16 @@
 info:
-  name: GolfPga - Venues
+  name: BaseballMlb - FranchiseSeason
   type: http
-  seq: 25
+  seq: 4
 
 http:
   method: GET
-  url: http://sports.core.api.espn.com/v2/sports/golf/leagues/pga/venues?lang=en&limit=999
+  url: http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/1?lang=en
   params:
     - name: lang
       value: en
       type: query
-    - name: limit
-      value: "999"
-      type: query
+  auth: inherit
 
 settings:
   encodeUrl: true

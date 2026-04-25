@@ -416,10 +416,10 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
     [Fact]
     public async Task WhenMlbEventCompetitionOdds_TreatsAsLeaf_EnqueuesSingleDocument()
     {
-        // arrange — the JSON is loaded purely so any sanity check against the
-        // mocked GetResource has realistic content; the leaf path doesn't fetch.
-        await LoadJsonTestData("EspnBaseballMlbEventCompetitionOdds.json");
-
+        // arrange — leaf path doesn't fetch from ESPN, so no JSON setup needed.
+        // The fixture file (EspnBaseballMlbEventCompetitionOdds.json) is used
+        // by the BaseballEventCompetitionOddsDocumentProcessorTests on the
+        // Producer side where the JSON is actually deserialized.
         var oddsListingUri = new Uri(
             "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/odds?lang=en&region=us");
 

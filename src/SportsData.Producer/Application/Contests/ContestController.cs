@@ -40,6 +40,24 @@ namespace SportsData.Producer.Application.Contests
             _appMode = appMode;
         }
 
+        /// <summary>
+        /// Resolves the correlation id for an inbound request. Prefers the
+        /// explicit <c>X-Correlation-Id</c> HTTP header from the calling
+        /// service so the same id is logged across API → Producer → Provider.
+        /// Falls back to deriving from <c>Activity.Current</c> (TraceId) when
+        /// the header is absent — covers direct-curl testing and any caller
+        /// that doesn't propagate the header.
+        /// <see cref="SportsData.Core.Infrastructure.Clients.ClientBase"/>
+        /// stamps this header on every outbound POST.
+        /// </summary>
+        private Guid GetCorrelationIdFromRequest()
+        {
+            return Request.Headers.TryGetValue("X-Correlation-Id", out var headerValue)
+                && Guid.TryParse(headerValue, out var inbound)
+                    ? inbound
+                    : ActivityExtensions.GetCorrelationId();
+        }
+
         [HttpGet("{contestId}")]
         public async Task<ActionResult<SeasonContestDto>> GetContestById(
             [FromServices] IGetContestByIdQueryHandler handler,
@@ -56,23 +74,13 @@ namespace SportsData.Producer.Application.Contests
         [Route("{contestId}/update")]
         public IActionResult UpdateContest([FromRoute] Guid contestId)
         {
-            // Prefer the inbound X-Correlation-Id from the calling service so
-            // the same CorrelationId is logged across API → Producer → Provider.
-            // Falls back to Activity.Current (TraceId) when the header is
-            // absent — covers direct-curl testing and any future caller that
-            // doesn't propagate the header. ClientBase.PostWithResultAsync
-            // stamps this header on every outbound POST.
-            var correlationId =
-                Request.Headers.TryGetValue("X-Correlation-Id", out var headerValue)
-                && Guid.TryParse(headerValue, out var inbound)
-                    ? inbound
-                    : ActivityExtensions.GetCorrelationId();
+            var correlationId = GetCorrelationIdFromRequest();
 
             _logger.LogInformation(
                 "UpdateContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
                 contestId,
                 correlationId);
-                
+
             var cmd = new UpdateContestCommand(
                 contestId,
                 SourceDataProvider.Espn,
@@ -88,7 +96,7 @@ namespace SportsData.Producer.Application.Contests
         [Route("{contestId}/enrich")]
         public IActionResult EnrichContest([FromRoute] Guid contestId)
         {
-            var correlationId = ActivityExtensions.GetCorrelationId();
+            var correlationId = GetCorrelationIdFromRequest();
 
             _logger.LogInformation(
                 "EnrichContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
@@ -109,8 +117,11 @@ namespace SportsData.Producer.Application.Contests
         public IActionResult FinalizeContestsBySeasonYear(
             [FromBody] FinalizeContestsBySeasonYearCommand command)
         {
+            // Body's CorrelationId wins when explicitly set (caller may want
+            // to thread through a known id from a saga); otherwise fall back
+            // to the request-level helper (header-or-Activity).
             var correlationId = command.CorrelationId == Guid.Empty
-                ? ActivityExtensions.GetCorrelationId()
+                ? GetCorrelationIdFromRequest()
                 : command.CorrelationId;
 
             _logger.LogInformation(
@@ -131,7 +142,7 @@ namespace SportsData.Producer.Application.Contests
         [Route("{contestId}/stream")]
         public async Task<IActionResult> StartStream([FromRoute] Guid contestId, CancellationToken cancellationToken)
         {
-            var correlationId = ActivityExtensions.GetCorrelationId();
+            var correlationId = GetCorrelationIdFromRequest();
 
             _logger.LogInformation(
                 "StartStream requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
@@ -185,7 +196,7 @@ namespace SportsData.Producer.Application.Contests
         [HttpPost("{id}/media/refresh")]
         public async Task<ActionResult<Guid>> RefreshContestMediaById([FromRoute] Guid id)
         {
-            var correlationId = ActivityExtensions.GetCorrelationId();
+            var correlationId = GetCorrelationIdFromRequest();
             
             _logger.LogInformation(
                 "RefreshContestMedia requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
@@ -223,7 +234,7 @@ namespace SportsData.Producer.Application.Contests
         [HttpPost("{id}/replay")]
         public IActionResult ReplayContestById([FromRoute] Guid id, CancellationToken cancellationToken)
         {
-            var correlationId = ActivityExtensions.GetCorrelationId();
+            var correlationId = GetCorrelationIdFromRequest();
             
             _logger.LogInformation(
                 "ReplayContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
@@ -242,8 +253,8 @@ namespace SportsData.Producer.Application.Contests
             [FromRoute] int seasonWeekNumber,
             CancellationToken cancellationToken)
         {
-            var correlationId = ActivityExtensions.GetCorrelationId();
-            
+            var correlationId = GetCorrelationIdFromRequest();
+
             _logger.LogInformation(
                 "ReplaySeasonWeek requested. SeasonYear={SeasonYear}, WeekNumber={WeekNumber}, CorrelationId={CorrelationId}",
                 seasonYear,

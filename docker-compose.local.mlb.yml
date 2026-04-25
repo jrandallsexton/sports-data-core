@@ -7,7 +7,8 @@
 #
 # Why -mode is required even though the flag defaults to Sport.All: the runtime
 # sport switches in Producer/Provider Program.cs throw ArgumentOutOfRangeException
-# when mode is Sport.All. Container exits 139 at startup if you omit the flag.
+# when mode is Sport.All. The unhandled managed exception terminates the process
+# with exit code 1 at startup if you omit the flag.
 # Role *can* be omitted — it defaults to All and activates every role branch
 # via HasFlag checks, giving us api+ingest+worker in a single container.
 #
@@ -107,6 +108,13 @@ services:
       CommonConfig__ProviderClientConfig__ApiUrl: http://provider-mlb:8080/api/
     command: ["dotnet", "SportsData.Producer.dll", "-mode", "BaseballMlb"]
     healthcheck: *service-healthcheck
+    # Producer's image-fetch path (ProviderClient.GetExternalImage) hits
+    # provider-mlb during startup-warmed Hangfire jobs. Wait for the Provider
+    # to pass its healthcheck before starting Producer so we don't pile up
+    # retries against a not-yet-ready Provider on cold compose-up.
+    depends_on:
+      provider-mlb:
+        condition: service_healthy
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

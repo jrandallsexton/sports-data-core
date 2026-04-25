@@ -286,10 +286,10 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
     /// Use this for POST operations that only need route parameters and proper error handling without exceptions.
     ///
     /// Always stamps an <c>X-Correlation-Id</c> header with the current
-    /// <see cref="Extensions.ActivityExtensions.GetCorrelationId"/> value so
-    /// downstream services can log the same id even when OpenTelemetry's
-    /// <c>traceparent</c> propagation isn't active (e.g. local dev with
-    /// instrumentation gated off in App Config).
+    /// <see cref="SportsData.Core.Extensions.ActivityExtensions.GetCorrelationId"/>
+    /// value so downstream services can log the same id even when
+    /// OpenTelemetry's <c>traceparent</c> propagation isn't active (e.g. local
+    /// dev with instrumentation gated off in App Config).
     /// </summary>
     protected async Task<Result<bool>> PostWithResultAsync(
         string url,

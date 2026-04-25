@@ -37,15 +37,9 @@ public class Program
         // Add services to the container.
         var config = builder.Configuration;
         config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName, mode);
-        // Re-add env vars *after* AppConfig so container-level overrides (e.g. the
-        // docker-compose `CommonConfig__SqlBaseConnectionString=host.docker.internal`)
-        // beat AppConfig's host-native `localhost` value. Gated off in Production
-        // so a stray pod env var can never silently shadow a deliberate AppConfig
-        // value — AppConfig is the source of truth in prod.
-        if (!builder.Environment.IsProduction())
-        {
-            config.AddEnvironmentVariables();
-        }
+        // Note: AddCommonConfiguration handles the post-AppConfig env-var
+        // re-add for non-Production environments (gated inside the helper),
+        // so Provider/Producer/Api all share the same precedence wiring.
 
         builder.WithLoggingContext(mode, role.ToString());
         builder.UseCommon();
@@ -240,17 +234,19 @@ public class Program
             app.UseAuthorization();
             app.MapControllers();
 
-            // Hangfire dashboard for non-Production environments only.
-            // Prod cluster aggregates dashboards via SportsData.JobsDashboard
-            // at jobs.sportdeets.com behind basic auth; per-pod /dashboard
-            // would just be redundant surface area.
+            // Hangfire dashboard for the Development environment only.
+            // Tightened from !IsProduction() so Staging/QA don't inadvertently
+            // expose the dashboard. Prod cluster aggregates dashboards via
+            // SportsData.JobsDashboard at jobs.sportdeets.com behind basic
+            // auth; per-pod /dashboard would just be redundant surface area.
             //
-            // For local dev (docker-compose / VS native), pass an empty
-            // authorization filter array — Hangfire's default
-            // LocalRequestsOnlyAuthorizationFilter rejects requests from
-            // outside the container, so an empty list opens it up to the
-            // host machine. Acceptable for local-only ports (7042 here).
-            if (!app.Environment.IsProduction())
+            // The empty authorization filter array is intentional — Hangfire's
+            // default LocalRequestsOnlyAuthorizationFilter rejects requests
+            // from outside the container, which blocks docker-compose access
+            // from the host machine (the container sees host requests as
+            // remote). Safe in Development because the container's port is
+            // only bound to localhost via docker-compose `ports:` mapping.
+            if (app.Environment.IsDevelopment())
             {
                 app.UseHangfireDashboard("/dashboard", new DashboardOptions
                 {

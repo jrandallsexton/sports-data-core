@@ -79,12 +79,17 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
             command,
             EspnUriMapper.CompetitionOddsRefToCompetitionRef);
 
+        // Contract violation, not a transient issue — the URI doesn't map to
+        // a Competition we can derive. Retrying won't help. Log + return so
+        // the message is acked and the DLQ stays clean.
         if (competitionId is null)
         {
             _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
             return;
         }
 
+        // Same — message envelope is missing a required field. Retrying the
+        // same malformed message produces the same result.
         if (!command.SeasonYear.HasValue)
         {
             _logger.LogError("Command missing SeasonYear.");
@@ -96,10 +101,16 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
             .Include(x => x.Contest)
             .FirstOrDefaultAsync(x => x.Id == competitionId.Value);
 
+        // Transient — the parent Competition document is likely still
+        // being processed upstream. Throw so Hangfire's AutomaticRetryAttribute
+        // re-runs us with backoff (eventual consistency). InvalidOperationException
+        // is a better fit than ArgumentException here: nothing about the
+        // arguments is invalid, the expected entity simply doesn't exist yet.
         if (competition is null)
         {
             _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionId.Value);
-            throw new ArgumentException("competition not found");
+            throw new InvalidOperationException(
+                $"Competition {competitionId.Value} not found; will retry.");
         }
 
         // --- Hash + skip-when-unchanged ---
@@ -144,10 +155,15 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
         }
 
         // --- Synthesize per-item identity + persist ---
-        // Listing URL serves as the identity base; the fragment makes each
-        // provider's identity unique and deterministic. ESPN never sees this
-        // synthesized URL — it only feeds the hash function.
-        var listingUriBase = command.SourceUri.ToString();
+        // Listing URL serves as the identity base; appending /provider/{id}
+        // to the *path* makes each provider's identity unique and stable.
+        // The provider id MUST live in the path (not query/fragment) because
+        // IGenerateExternalRefIdentities.Generate hashes against the
+        // ToCleanUrl normalization, which strips both — so query- or
+        // fragment-based synthesis would collapse every item onto the
+        // same canonical id and clobber rows on persist. ESPN never sees
+        // this synthesized URL; it's only fed to the hash function.
+        var listingUri = command.SourceUri;
 
         var addedAny = false;
         foreach (var item in wrapper.Items)
@@ -160,12 +176,32 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
                 continue;
             }
 
-            // If the listing URL already has a fragment (vanishingly unlikely
-            // but defensive), extend it with `&provider=...` rather than
-            // double-fragmenting.
-            var separator = listingUriBase.Contains('#') ? '&' : '#';
-            var syntheticRef = new Uri($"{listingUriBase}{separator}provider={item.Provider.Id}");
+            // UriBuilder preserves scheme/host/port/query; we extend the path
+            // with a /provider/{id} segment that's clearly synthetic (won't
+            // be mistaken for a fetchable ESPN URL during debugging).
+            var refBuilder = new UriBuilder(listingUri)
+            {
+                Path = listingUri.AbsolutePath.TrimEnd('/')
+                       + "/provider/"
+                       + Uri.EscapeDataString(item.Provider.Id)
+            };
+            var syntheticRef = refBuilder.Uri;
             item.Ref = syntheticRef;
+
+            // Defensive guard — Competition.Contest is loaded via .Include
+            // above and the FK should be non-nullable, but a missing parent
+            // would NRE on the franchise-season accessors below. Throw with
+            // context so the operator can investigate (data integrity issue,
+            // or a race where the Contest hasn't been persisted yet —
+            // Hangfire's retry policy will pick it up).
+            if (competition.Contest is null)
+            {
+                _logger.LogError(
+                    "Competition.Contest is null; cannot resolve franchise-season ids. CompetitionId={CompId}, CorrelationId={CorrelationId}",
+                    competition.Id, command.CorrelationId);
+                throw new InvalidOperationException(
+                    $"Competition {competition.Id} has no Contest loaded; cannot persist odds. CorrelationId={command.CorrelationId}");
+            }
 
             var entity = item.AsEntity(
                 externalRefIdentityGenerator: _externalRefIdentityGenerator,

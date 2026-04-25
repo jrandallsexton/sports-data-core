@@ -153,17 +153,21 @@ namespace SportsData.Provider
                 app.UseAuthorization();
                 app.MapControllers();
 
-                // Hangfire dashboard for non-Production environments only.
-                // Prod cluster aggregates dashboards via SportsData.JobsDashboard
-                // at jobs.sportdeets.com behind basic auth; per-pod /dashboard
-                // would just be redundant surface area.
+                // Hangfire dashboard for the Development environment only.
+                // Tightened from !IsProduction() so Staging/QA don't
+                // inadvertently expose the dashboard. Prod cluster aggregates
+                // dashboards via SportsData.JobsDashboard at jobs.sportdeets.com
+                // behind basic auth; per-pod /dashboard would just be redundant
+                // surface area.
                 //
-                // For local dev (docker-compose / VS native), pass an empty
-                // authorization filter array — Hangfire's default
-                // LocalRequestsOnlyAuthorizationFilter rejects requests from
-                // outside the container, so an empty list opens it up to the
-                // host machine. Acceptable for local-only ports (7050 here).
-                if (!app.Environment.IsProduction())
+                // The empty authorization filter array is intentional —
+                // Hangfire's default LocalRequestsOnlyAuthorizationFilter
+                // rejects requests from outside the container, which blocks
+                // docker-compose access from the host machine (the container
+                // sees host requests as remote). Safe in Development because
+                // the container's port is only bound to localhost via
+                // docker-compose `ports:` mapping.
+                if (app.Environment.IsDevelopment())
                 {
                     app.UseHangfireDashboard("/dashboard", new DashboardOptions
                     {

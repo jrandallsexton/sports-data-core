@@ -152,10 +152,13 @@ public class BaseballEventCompetitionOddsDocumentProcessorTests
         saved[0].ContentHash.Should().Be("content-hash-v1");
 
         // assert — synthetic ref uses the listing URL + #provider={id}
+        // The synthetic ref must place provider id in the PATH, not the
+        // query/fragment. UriExtensions.ToCleanUrl strips query+fragment,
+        // so any provider distinction outside the path collapses every
+        // item onto the same canonical id during identity generation.
         generatedUris.Should().NotBeEmpty();
         generatedUris.Should().Contain(u =>
-            u.OriginalString.StartsWith(listingUri.ToString()) &&
-            u.OriginalString.Contains("#provider=100"));
+            u.AbsolutePath.Contains("/odds/provider/100"));
 
         // assert — created event published (no prior odds existed)
         bus.Verify(x => x.Publish(It.IsAny<ContestOddsCreated>(), It.IsAny<CancellationToken>()), Times.Once);

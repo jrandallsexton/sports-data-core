@@ -1,5 +1,6 @@
 ﻿using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
@@ -49,6 +50,48 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                     }
                 }
             };
+        }
+
+        // Baseball-specific overload: layers HalfInning + PeriodPrefix +
+        // FeaturedAthletes on top of the shared mapping. Football never
+        // calls this path, so its rows leave the MLB columns null and the
+        // FeaturedAthletes collection empty.
+        public static CompetitionStatus AsEntity(
+            this EspnBaseballEventCompetitionStatusDto dto,
+            IGenerateExternalRefIdentities externalRefIdentityGenerator,
+            Guid competitionId,
+            Guid correlationId)
+        {
+            var entity = ((EspnEventCompetitionStatusDtoBase)dto).AsEntity(
+                externalRefIdentityGenerator,
+                competitionId,
+                correlationId);
+
+            entity.HalfInning = dto.HalfInning;
+            entity.PeriodPrefix = dto.PeriodPrefix;
+
+            if (dto.FeaturedAthletes is { Count: > 0 })
+            {
+                entity.FeaturedAthletes = dto.FeaturedAthletes
+                    .Select(a => new CompetitionStatusFeaturedAthlete
+                    {
+                        Id = Guid.NewGuid(),
+                        CreatedBy = correlationId,
+                        CreatedUtc = DateTime.UtcNow,
+
+                        PlayerId = a.PlayerId,
+                        Name = a.Name,
+                        DisplayName = a.DisplayName,
+                        ShortDisplayName = a.ShortDisplayName,
+                        Abbreviation = a.Abbreviation,
+                        AthleteRef = a.Athlete?.Ref,
+                        TeamRef = a.Team?.Ref,
+                        StatisticsRef = a.Statistics?.Ref
+                    })
+                    .ToList();
+            }
+
+            return entity;
         }
     }
 }

@@ -34,6 +34,21 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string StatusShortDetail { get; set; } = string.Empty;
 
+        // MLB-only: half-inning indicator (1 = top, 2 = bottom). Null for
+        // sports that don't carry it. The shared CompetitionStatus table
+        // hosts these baseball-specific fields rather than splitting the
+        // hierarchy — football rows simply leave them null.
+        public int? HalfInning { get; set; }
+
+        // MLB-only: period prefix (e.g., "Top", "Bot", "End"). Same rationale
+        // as HalfInning — nullable shared column, football leaves it null.
+        public string? PeriodPrefix { get; set; }
+
+        // MLB-only: featured at-bat athletes (current pitcher, batter, etc.)
+        // tied to this status snapshot. Hard-replaced on every status update
+        // by BaseballEventCompetitionStatusDocumentProcessor.
+        public ICollection<CompetitionStatusFeaturedAthlete> FeaturedAthletes { get; set; } = [];
+
         public ICollection<CompetitionStatusExternalId> ExternalIds { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
@@ -57,6 +72,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.StatusShortDetail).HasMaxLength(50);
 
                 builder.Property(x => x.IsCompleted).IsRequired();
+
+                builder.Property(x => x.PeriodPrefix).HasMaxLength(10);
+
+                builder.HasMany(x => x.FeaturedAthletes)
+                    .WithOne(x => x.CompetitionStatus)
+                    .HasForeignKey(x => x.CompetitionStatusId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 builder.HasOne(x => x.Competition)
                     .WithOne(x => x.Status)

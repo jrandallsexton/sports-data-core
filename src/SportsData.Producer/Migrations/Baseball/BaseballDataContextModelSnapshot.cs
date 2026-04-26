@@ -4689,6 +4689,9 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<int>("Ordinal")
+                        .HasColumnType("integer");
+
                     b.Property<int>("PlayerId")
                         .HasColumnType("integer");
 

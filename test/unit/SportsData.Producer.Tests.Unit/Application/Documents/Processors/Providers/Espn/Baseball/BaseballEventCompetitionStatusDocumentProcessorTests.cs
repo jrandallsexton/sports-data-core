@@ -38,14 +38,27 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 public class BaseballEventCompetitionStatusDocumentProcessorTests
     : ProducerTestBase<BaseballEventCompetitionStatusDocumentProcessor<FootballDataContext>>
 {
+    // Deterministic clock for the whole class. The mocked IDateTimeProvider
+    // is registered in the ctor so any seeded entity, the SUT, and any
+    // helper share the same value — keeps the test free of clock skew.
+    private static readonly DateTime FixedNow =
+        new DateTime(2026, 4, 26, 12, 0, 0, DateTimeKind.Utc);
+
+    public BaseballEventCompetitionStatusDocumentProcessorTests()
+    {
+        Mocker.GetMock<IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(FixedNow);
+    }
+
     private async Task<CompetitionBase> CreateTestCompetitionAsync(Guid competitionId)
     {
         var competition = new FootballCompetition
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
-            Date = DateTime.UtcNow,
-            CreatedUtc = DateTime.UtcNow,
+            Date = FixedNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         };
 
@@ -126,6 +139,12 @@ public class BaseballEventCompetitionStatusDocumentProcessorTests
         winning.TeamRef!.AbsoluteUri.Should().Contain("/teams/5");
         winning.StatisticsRef.Should().NotBeNull();
 
+        // assert — Ordinal preserves source order (winningPitcher [0],
+        // losingPitcher [1] from the fixture)
+        winning.Ordinal.Should().Be(0);
+        var losing = entity.FeaturedAthletes.Single(a => a.Name == "losingPitcher");
+        losing.Ordinal.Should().Be(1);
+
         // assert — initial create does not flip publishEvent (no prior status to compare to)
         bus.Verify(x => x.Publish(It.IsAny<CompetitionStatusChanged>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -148,7 +167,7 @@ public class BaseballEventCompetitionStatusDocumentProcessorTests
             Id = Guid.NewGuid(),
             CompetitionId = compId,
             StatusTypeName = "STATUS_FINAL",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.CompetitionStatuses.AddAsync(existingStatus);
@@ -208,7 +227,7 @@ public class BaseballEventCompetitionStatusDocumentProcessorTests
             Id = Guid.NewGuid(),
             CompetitionId = compId,
             StatusTypeName = "STATUS_IN_PROGRESS",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.CompetitionStatuses.AddAsync(existingStatus);

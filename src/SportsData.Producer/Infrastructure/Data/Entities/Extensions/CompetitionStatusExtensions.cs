@@ -56,11 +56,17 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
         // FeaturedAthletes on top of the shared mapping. Football never
         // calls this path, so its rows leave the MLB columns null and the
         // FeaturedAthletes collection empty.
+        //
+        // createdUtc is threaded in (rather than reading DateTime.UtcNow
+        // here) so the extension stays pure and unit-testable. Callers
+        // pass IDateTimeProvider.UtcNow() — the project's standing rule
+        // (see CLAUDE.md) for any production-side timestamping.
         public static CompetitionStatus AsEntity(
             this EspnBaseballEventCompetitionStatusDto dto,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid competitionId,
-            Guid correlationId)
+            Guid correlationId,
+            DateTime createdUtc)
         {
             var entity = ((EspnEventCompetitionStatusDtoBase)dto).AsEntity(
                 externalRefIdentityGenerator,
@@ -72,13 +78,17 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 
             if (dto.FeaturedAthletes is { Count: > 0 })
             {
+                // Index-based Ordinal preserves ESPN's source order
+                // (e.g. winningPitcher [0], losingPitcher [1]) so the
+                // sequence survives a save+reload round-trip.
                 entity.FeaturedAthletes = dto.FeaturedAthletes
-                    .Select(a => new CompetitionStatusFeaturedAthlete
+                    .Select((a, i) => new CompetitionStatusFeaturedAthlete
                     {
                         Id = Guid.NewGuid(),
                         CreatedBy = correlationId,
-                        CreatedUtc = DateTime.UtcNow,
+                        CreatedUtc = createdUtc,
 
+                        Ordinal = i,
                         PlayerId = a.PlayerId,
                         Name = a.Name,
                         DisplayName = a.DisplayName,

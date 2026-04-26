@@ -15,6 +15,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public CompetitionStatus CompetitionStatus { get; set; } = null!;
 
+        // Source-document ordinal (0-based). ESPN's featuredAthletes array
+        // is semantically ordered (e.g. winningPitcher then losingPitcher
+        // post-game; current batter then pitcher in-game). Required so
+        // consumers can reconstruct that order without depending on row
+        // insertion order.
+        public int Ordinal { get; set; }
+
         public int PlayerId { get; set; }
 
         public string? Name { get; set; }
@@ -41,6 +48,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.ToTable(nameof(CompetitionStatusFeaturedAthlete));
                 builder.HasKey(x => x.Id);
 
+                builder.Property(x => x.Ordinal).IsRequired();
                 builder.Property(x => x.PlayerId).IsRequired();
                 builder.Property(x => x.Name).HasMaxLength(100);
                 builder.Property(x => x.DisplayName).HasMaxLength(100);

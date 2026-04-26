@@ -31,14 +31,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Ba
 public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
     public BaseballEventCompetitionStatusDocumentProcessor(
         ILogger<BaseballEventCompetitionStatusDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refGenerator)
+        IGenerateResourceRefs refGenerator,
+        IDateTimeProvider dateTimeProvider)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator)
     {
+        _dateTimeProvider = dateTimeProvider;
     }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
@@ -59,6 +63,19 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
             return; // terminal failure — don't retry
         }
 
+        // The base extension is null-safe via dto.Type?.Name ?? string.Empty,
+        // but this processor dereferences dto.Type.Name directly in the
+        // existing-status comparison and several log lines. Guard up front
+        // so a malformed payload bails cleanly with a useful log instead
+        // of an NRE deep in the persistence path.
+        if (dto.Type is null || string.IsNullOrWhiteSpace(dto.Type.Name))
+        {
+            _logger.LogError(
+                "EspnBaseballEventCompetitionStatusDto Type is missing or has empty Name. Ref={Ref}",
+                dto.Ref);
+            return; // terminal failure — don't retry
+        }
+
         var competitionId = TryGetOrDeriveParentId(
             command,
             EspnUriMapper.CompetitionStatusRefToCompetitionRef);
@@ -74,7 +91,8 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
         var entity = dto.AsEntity(
             _externalRefIdentityGenerator,
             competitionIdValue,
-            command.CorrelationId);
+            command.CorrelationId,
+            _dateTimeProvider.UtcNow());
 
         var existing = await _dataContext.CompetitionStatuses
             .Include(x => x.ExternalIds)
@@ -94,17 +112,9 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
                 dto.Type.Name,
                 entity.FeaturedAthletes.Count);
 
-            // Remove only the ExternalIds for the ESPN provider to avoid
-            // unique key constraint violations when the new entity re-adds
-            // its own ESPN external id.
-            var espnExternalIds = existing.ExternalIds
-                .Where(x => x.Provider == SourceDataProvider.Espn)
-                .ToList();
-
-            _dataContext.CompetitionStatusExternalIds.RemoveRange(espnExternalIds);
-
-            // FeaturedAthletes cascade-delete with the parent — no explicit
-            // RemoveRange needed.
+            // ExternalIds and FeaturedAthletes cascade-delete with the
+            // parent (DeleteBehavior.Cascade in CompetitionStatus's entity
+            // configuration), so removing the parent is sufficient.
             _dataContext.CompetitionStatuses.Remove(existing);
         }
         else

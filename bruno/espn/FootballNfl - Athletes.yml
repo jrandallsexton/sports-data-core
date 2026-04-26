@@ -1,7 +1,7 @@
 info:
   name: FootballNfl - Athletes
   type: http
-  seq: 13
+  seq: 19
 
 http:
   method: GET

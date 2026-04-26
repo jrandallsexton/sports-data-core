@@ -1,0 +1,191 @@
+# Local dev compose tailored for MLB in-season testing.
+#
+# Difference from docker-compose.local.yml:
+#   - NCAAFB / NFL: API-only Producer containers (sport-scoped, no Ingest/Worker)
+#   - MLB:          ONE Producer container, -mode BaseballMlb, no -role flag
+#                   ONE Provider container, -mode BaseballMlb, no -role flag
+#
+# Why -mode is required even though the flag defaults to Sport.All: the runtime
+# sport switches in Producer/Provider Program.cs throw ArgumentOutOfRangeException
+# when mode is Sport.All. The unhandled managed exception terminates the process
+# with exit code 1 at startup if you omit the flag.
+# Role *can* be omitted — it defaults to All and activates every role branch
+# via HasFlag checks, giving us api+ingest+worker in a single container.
+#
+# Usage:
+#   docker compose -f docker-compose.local.mlb.yml up --build
+#
+# Prerequisites: same as docker-compose.local.yml (host PostgreSQL, RabbitMQ,
+# Seq, plus the .env file with APPCONFIG_CONNSTR / PG_CONNSTR / AZURE_*).
+#
+# Ports:
+#   API                http://localhost:5262
+#   Producer NCAA API  http://localhost:7040
+#   Producer NFL API   http://localhost:7041
+#   Producer MLB       http://localhost:7042 (api + ingest + worker, all sports)
+#   Provider MLB       http://localhost:7050 (all sports, all roles)
+
+x-common-env: &common-env
+  APPCONFIG_CONNSTR: ${APPCONFIG_CONNSTR}
+  APPCONFIG_LABEL: Local
+  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_HTTP_PORTS: "8080"
+  AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
+  AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET}
+  AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+  CommonConfig__SqlBaseConnectionString: ${PG_CONNSTR}
+  CommonConfig__SeqUri: http://host.docker.internal:5341/
+  CommonConfig__Messaging__RabbitMq__Host: host.docker.internal
+  CommonConfig__Messaging__RabbitMq__ManagementApiBaseUrl: http://host.docker.internal:15672
+  # MongoDB runs on the host (Bender, not in Docker). The Provider's
+  # ProviderDocDatabaseConfig.ConnectionString is read from Azure App Config's
+  # Local label and is bound as the *host only* — the value in KV is just
+  # `localhost` for native VS debug. Inside a container that resolves to the
+  # container itself, so we override via the bridge alias. Bare hostname,
+  # NO port: MongoDocumentService passes this to `new MongoServerAddress(host)`
+  # which treats the entire string as the host and defaults port to 27017
+  # internally; appending `:27017` produces the invalid endpoint
+  # `host.docker.internal:27017:27017`.
+  # User/Password come from App Config separately and don't need overriding.
+  SportsData.Provider__ProviderDocDatabaseConfig__ConnectionString: host.docker.internal
+
+# Reused by every Producer + Provider service.
+#
+# IMPORTANT: This probe relies on bash's `/dev/tcp` pseudo-device — bash MUST
+# be present in the base image. Today every service builds on
+# `mcr.microsoft.com/dotnet/aspnet:10.0-noble`, which ships bash; the probe
+# was chosen specifically because that image ships *neither* curl *nor*
+# wget. If the base image is ever swapped to a chiseled / alpine / distroless
+# variant (none of which ship bash), this probe must be replaced — options:
+#   - install curl in the Dockerfile and use `curl -fsS http://127.0.0.1:8080/api/health/live`
+#   - use the dotnet runtime's `/api/health/live` endpoint via a dedicated
+#     healthcheck binary copied into the image
+#   - revert to a longer `start_period` and let dependent services tolerate
+#     missing healthchecks
+x-service-healthcheck: &service-healthcheck
+  test: ["CMD", "bash", "-c", "exec 6<>/dev/tcp/127.0.0.1/8080"]
+  interval: 5s
+  timeout: 3s
+  retries: 12
+  start_period: 20s
+
+services:
+  # ─── NCAAFB Producer API (sport-scoped, single role) ────────────────────────
+  producer-ncaa-api:
+    build:
+      context: .
+      dockerfile: src/SportsData.Producer/Dockerfile
+    container_name: producer-ncaa-api
+    ports:
+      - "7040:8080"
+    environment:
+      <<: *common-env
+    command: ["dotnet", "SportsData.Producer.dll", "-mode", "FootballNcaa", "-role", "Api"]
+    healthcheck: *service-healthcheck
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── NFL Producer API (sport-scoped, single role) ───────────────────────────
+  producer-nfl-api:
+    build:
+      context: .
+      dockerfile: src/SportsData.Producer/Dockerfile
+    container_name: producer-nfl-api
+    ports:
+      - "7041:8080"
+    environment:
+      <<: *common-env
+    command: ["dotnet", "SportsData.Producer.dll", "-mode", "FootballNfl", "-role", "Api"]
+    healthcheck: *service-healthcheck
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── MLB Producer (-mode BaseballMlb, role defaults to All) ─────────────────
+  # Single container handles API + Ingest + Worker for MLB. -role omitted →
+  # ProducerRole.All → every HasFlag branch (Api, Ingest, Worker) activates.
+  producer-mlb:
+    build:
+      context: .
+      dockerfile: src/SportsData.Producer/Dockerfile
+    container_name: producer-mlb
+    ports:
+      - "7042:8080"
+    environment:
+      <<: *common-env
+      # Provider's local-dev URL in App Config is http://localhost:5205/api/.
+      # Inside this container localhost is the container itself, so calls to
+      # Provider (e.g. ProviderClient.GetExternalImage during image processing)
+      # would refuse-connect. Route to the Provider container via Docker DNS.
+      CommonConfig__ProviderClientConfig__ApiUrl: http://provider-mlb:8080/api/
+    command: ["dotnet", "SportsData.Producer.dll", "-mode", "BaseballMlb"]
+    healthcheck: *service-healthcheck
+    # Producer's image-fetch path (ProviderClient.GetExternalImage) hits
+    # provider-mlb during startup-warmed Hangfire jobs. Wait for the Provider
+    # to pass its healthcheck before starting Producer so we don't pile up
+    # retries against a not-yet-ready Provider on cold compose-up.
+    depends_on:
+      provider-mlb:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── MLB Provider (-mode BaseballMlb, role defaults to All) ─────────────────
+  # One container handles ESPN sourcing + DocumentRequested fan-out for MLB.
+  # The new sport-aware EspnResourceIndexClassifier carve-out is what makes
+  # MLB odds flow correctly through this Provider.
+  provider-mlb:
+    build:
+      context: .
+      dockerfile: src/SportsData.Provider/Dockerfile
+    container_name: provider-mlb
+    ports:
+      - "7050:8080"
+    environment:
+      <<: *common-env
+    command: ["dotnet", "SportsData.Provider.dll", "-mode", "BaseballMlb"]
+    healthcheck: *service-healthcheck
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── API (sport-keyed client URLs route per-sport requests) ─────────────────
+  api:
+    build:
+      context: .
+      dockerfile: src/SportsData.Api/Dockerfile
+    container_name: api-all
+    ports:
+      - "5262:8080"
+    environment:
+      <<: *common-env
+      CommonConfig__ContestClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__ContestClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__ContestClientConfig__BaseballMlb__ApiUrl: http://producer-mlb:8080/api/
+      CommonConfig__FranchiseClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__FranchiseClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__FranchiseClientConfig__BaseballMlb__ApiUrl: http://producer-mlb:8080/api/
+      CommonConfig__ProducerClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__ProducerClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__ProducerClientConfig__BaseballMlb__ApiUrl: http://producer-mlb:8080/api/
+      CommonConfig__SeasonClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__SeasonClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__SeasonClientConfig__BaseballMlb__ApiUrl: http://producer-mlb:8080/api/
+      CommonConfig__VenueClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__VenueClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__VenueClientConfig__BaseballMlb__ApiUrl: http://producer-mlb:8080/api/
+      CommonConfig__PlayerClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__PlayerClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__PlayerClientConfig__BaseballMlb__ApiUrl: http://producer-mlb:8080/api/
+      CommonConfig__NotificationClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
+      CommonConfig__NotificationClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
+      CommonConfig__NotificationClientConfig__BaseballMlb__ApiUrl: http://producer-mlb:8080/api/
+    depends_on:
+      producer-ncaa-api:
+        condition: service_healthy
+      producer-nfl-api:
+        condition: service_healthy
+      producer-mlb:
+        condition: service_healthy
+      provider-mlb:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

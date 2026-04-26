@@ -1,7 +1,7 @@
 info:
   name: FootballNcaa - Athlete
   type: http
-  seq: 4
+  seq: 10
 
 http:
   method: GET

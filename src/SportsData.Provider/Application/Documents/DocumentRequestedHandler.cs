@@ -92,7 +92,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     {
         var uri = evt.Uri;
 
-        if (EspnResourceIndexClassifier.IsResourceIndex(uri))
+        if (EspnResourceIndexClassifier.IsResourceIndex(uri, evt.Sport))
         {
             _logger.LogInformation(
                 "Treating as resource index. Uri={Uri}, CorrelationId={CorrelationId}",

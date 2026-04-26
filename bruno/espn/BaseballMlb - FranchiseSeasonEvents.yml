@@ -1,18 +1,19 @@
 info:
-  name: FootballNcaa - Franchises
+  name: BaseballMlb - FranchiseSeasonEvents
   type: http
-  seq: 12
+  seq: 5
 
 http:
   method: GET
-  url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises?lang=en&limit=999
+  url: http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/1/events?lang=en&limit=900
   params:
     - name: lang
       value: en
       type: query
     - name: limit
-      value: "999"
+      value: "900"
       type: query
+  auth: inherit
 
 settings:
   encodeUrl: true

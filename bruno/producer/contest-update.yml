@@ -1,0 +1,20 @@
+info:
+  name: contest-update
+  type: http
+  seq: 14
+
+http:
+  method: POST
+  url: "{{baseUrlProducer}}/api/contests/846fd5ea-e8bd-aaad-e8d6-5812921ca35f/update"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

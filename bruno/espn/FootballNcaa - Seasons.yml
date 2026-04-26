@@ -1,7 +1,7 @@
 info:
   name: FootballNcaa - Seasons
   type: http
-  seq: 8
+  seq: 14
 
 http:
   method: GET

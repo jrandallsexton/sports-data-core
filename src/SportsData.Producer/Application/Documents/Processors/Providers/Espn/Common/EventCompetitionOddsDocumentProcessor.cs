@@ -14,9 +14,12 @@ using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 
+// MLB intentionally absent here — its odds wire shape is a paged wrapper
+// that doesn't carry per-item $refs, so it's handled by
+// BaseballEventCompetitionOddsDocumentProcessor (sport-specific processor
+// under Application/Documents/Processors/Providers/Espn/Baseball/).
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionOdds)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.EventCompetitionOdds)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.EventCompetitionOdds)]
 public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
@@ -48,6 +51,9 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
             command,
             EspnUriMapper.CompetitionOddsRefToCompetitionRef);
 
+        // Contract violation, not a transient issue — the URI doesn't map to
+        // a Competition we can derive. Retrying won't help. Log + return so
+        // the message is acked and the DLQ stays clean.
         if (competitionId == null)
         {
             _logger.LogError("Unable to determine CompetitionId from ParentId or URI");
@@ -56,6 +62,8 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
 
         var competitionIdValue = competitionId.Value;
 
+        // Same — message envelope is missing a required field. Retrying the
+        // same malformed message produces the same result.
         if (!command.SeasonYear.HasValue)
         {
             _logger.LogError("Command missing SeasonYear.");
@@ -67,10 +75,14 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
             .Include(x => x.Contest)
             .FirstOrDefaultAsync(x => x.Id == competitionIdValue);
 
+        // Transient — the parent Competition document is likely still
+        // being processed upstream. Throw so Hangfire's AutomaticRetryAttribute
+        // re-runs us with backoff (eventual consistency).
         if (competition is null)
         {
             _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionIdValue);
-            throw new ArgumentException("competition not found");
+            throw new InvalidOperationException(
+                $"Competition {competitionIdValue} not found; will retry.");
         }
 
         // --- Identity + hash ---
@@ -103,6 +115,21 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
             _logger.LogInformation("No odds changes detected, skipping. CompetitionId={CompId}, Provider={Prov}",
                 competition.Id, dto.Provider.Id);
             return;
+        }
+
+        // Defensive guard — Competition.Contest is loaded via .Include above
+        // and the FK should be non-nullable, but a missing parent would NRE
+        // on the franchise-season accessors below. Throw with context so the
+        // operator can investigate (data integrity issue, or a race where
+        // the Contest hasn't been persisted yet — Hangfire's retry policy
+        // will pick it up).
+        if (competition.Contest is null)
+        {
+            _logger.LogError(
+                "Competition.Contest is null; cannot resolve franchise-season ids. CompetitionId={CompId}, CorrelationId={CorrelationId}",
+                competition.Id, command.CorrelationId);
+            throw new InvalidOperationException(
+                $"Competition {competition.Id} has no Contest loaded; cannot persist odds. CorrelationId={command.CorrelationId}");
         }
 
         // Build the authoritative incoming graph

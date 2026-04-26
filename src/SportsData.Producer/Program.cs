@@ -1,3 +1,6 @@
+using Hangfire;
+using Hangfire.Dashboard;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -34,15 +37,9 @@ public class Program
         // Add services to the container.
         var config = builder.Configuration;
         config.AddCommonConfiguration(builder.Environment.EnvironmentName, builder.Environment.ApplicationName, mode);
-        // Re-add env vars *after* AppConfig so container-level overrides (e.g. the
-        // docker-compose `CommonConfig__SqlBaseConnectionString=host.docker.internal`)
-        // beat AppConfig's host-native `localhost` value. Gated off in Production
-        // so a stray pod env var can never silently shadow a deliberate AppConfig
-        // value — AppConfig is the source of truth in prod.
-        if (!builder.Environment.IsProduction())
-        {
-            config.AddEnvironmentVariables();
-        }
+        // Note: AddCommonConfiguration handles the post-AppConfig env-var
+        // re-add for non-Production environments (gated inside the helper),
+        // so Provider/Producer/Api all share the same precedence wiring.
 
         builder.WithLoggingContext(mode, role.ToString());
         builder.UseCommon();
@@ -68,10 +65,16 @@ public class Program
         services.AddClients(config);
 
         // Per-role connection pool sizing — configurable via Azure App Config.
-        // Keys: {appName}:ConnectionPool:Worker, :Api, :Ingest
-        // Defaults: Worker=22, Api=5, Ingest=5
+        // Keys: {appName}:ConnectionPool:All, :Worker, :Api, :Ingest
+        // Defaults: All=60, Worker=22, Api=5, Ingest=5
+        //
+        // The All arm covers the local-dev / docker-compose case where one
+        // process runs every role concurrently and starves the Worker-sized
+        // pool. In prod K8s each role is its own pod, so this branch never
+        // matches there — strictly additive.
         var (roleName, defaultPoolSize) = role switch
         {
+            _ when role == ProducerRole.All => ("All", 60),
             _ when role.HasFlag(ProducerRole.Api) && !role.HasFlag(ProducerRole.Worker) => ("Api", 5),
             _ when role.HasFlag(ProducerRole.Ingest) && !role.HasFlag(ProducerRole.Worker) => ("Ingest", 5),
             _ when role.HasFlag(ProducerRole.Worker) => ("Worker", 22),
@@ -230,6 +233,26 @@ public class Program
         {
             app.UseAuthorization();
             app.MapControllers();
+
+            // Hangfire dashboard for the Development environment only.
+            // Tightened from !IsProduction() so Staging/QA don't inadvertently
+            // expose the dashboard. Prod cluster aggregates dashboards via
+            // SportsData.JobsDashboard at jobs.sportdeets.com behind basic
+            // auth; per-pod /dashboard would just be redundant surface area.
+            //
+            // The empty authorization filter array is intentional — Hangfire's
+            // default LocalRequestsOnlyAuthorizationFilter rejects requests
+            // from outside the container, which blocks docker-compose access
+            // from the host machine (the container sees host requests as
+            // remote). Safe in Development because the container's port is
+            // only bound to localhost via docker-compose `ports:` mapping.
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseHangfireDashboard("/dashboard", new DashboardOptions
+                {
+                    Authorization = Array.Empty<IDashboardAuthorizationFilter>()
+                });
+            }
         }
 
         // Map Prometheus metrics endpoint only if OpenTelemetry metrics are enabled

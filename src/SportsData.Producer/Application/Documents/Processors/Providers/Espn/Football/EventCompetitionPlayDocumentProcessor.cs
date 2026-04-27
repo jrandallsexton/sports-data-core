@@ -78,7 +78,6 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
         }
 
         var competition = await _dataContext.Competitions
-            .Include(c => c.Status)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == competitionIdValue);
 
@@ -87,6 +86,14 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
             _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionIdValue);
             throw new InvalidOperationException($"Competition with ID {competitionIdValue} does not exist.");
         }
+
+        // Status was lifted off CompetitionBase onto the sport-specific
+        // FootballCompetition in the abstract-status redesign. Loaded
+        // independently so the live/post-game branch below can still
+        // gate on IsCompleted.
+        var competitionStatus = await _dataContext.Set<FootballCompetitionStatus>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.CompetitionId == competitionIdValue);
 
         var startFranchiseSeasonId = await _dataContext.ResolveIdAsync<
             FranchiseSeason, FranchiseSeasonExternalId>(
@@ -117,6 +124,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
                 command,
                 externalDto,
                 competition,
+                competitionStatus,
                 competitionDriveId,
                 startFranchiseSeasonId,
                 endFranchiseSeasonId);
@@ -138,11 +146,12 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
         ProcessDocumentCommand command,
         EspnFootballEventCompetitionPlayDto externalDto,
         CompetitionBase competition,
+        FootballCompetitionStatus? competitionStatus,
         Guid? competitionDriveId,
         Guid? startFranchiseSeasonId,
         Guid? endFranchiseSeasonId)
     {
-        _logger.LogInformation("Creating new CompetitionPlay. CompetitionId={CompId}, DriveId={DriveId}, PlayType={PlayType}", 
+        _logger.LogInformation("Creating new CompetitionPlay. CompetitionId={CompId}, DriveId={DriveId}, PlayType={PlayType}",
             competition.Id,
             competitionDriveId,
             externalDto.Type?.Text);
@@ -157,7 +166,7 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
 
         // if the competition is underway,
         // broadcast a CompetitionPlayCompleted event
-        if (competition.Status is not null && !competition.Status.IsCompleted)
+        if (competitionStatus is not null && !competitionStatus.IsCompleted)
         {
             _logger.LogInformation("Competition in progress, publishing CompetitionPlayCompleted event. CompetitionId={CompId}, PlayId={PlayId}",
                 competition.Id,

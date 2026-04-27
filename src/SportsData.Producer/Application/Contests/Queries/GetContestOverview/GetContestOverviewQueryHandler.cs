@@ -71,7 +71,6 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
 
         var competition = await _dbContext.Competitions
             .AsNoTracking()
-            .Include(c => c.Status)
             .FirstOrDefaultAsync(c => c.ContestId == contest.Id, cancellationToken);
 
         if (competition is null)
@@ -141,8 +140,17 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
 
         var comp = await _dbContext.Competitions
             .AsNoTracking()
-            .Include(c => c.Status)
             .FirstOrDefaultAsync(c => c.ContestId == contestId, cancellationToken);
+
+        // Status was lifted off CompetitionBase onto the sport-specific
+        // subclasses; loaded separately here. EF returns the active
+        // per-sport context's concrete subtype but the shared fields
+        // satisfy DetermineContestStatus.
+        var compStatus = comp is null
+            ? null
+            : await _dbContext.CompetitionStatuses
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.CompetitionId == comp.Id, cancellationToken);
 
         var homeTeamSeason = await _dbContext.FranchiseSeasons
             .AsNoTracking()
@@ -174,7 +182,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         var header = new GameHeaderDto
         {
             ContestId = contest.Id,
-            Status = DetermineContestStatus(contest, comp?.Status),
+            Status = DetermineContestStatus(contest, compStatus),
             WeekLabel = contest.SeasonWeek?.Number.ToString(),
             SeasonWeekId = contest.SeasonWeek?.Id,
             SeasonYear = contest.SeasonYear,
@@ -225,7 +233,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
     /// Uses CompetitionStatus.StatusState and StatusTypeName as primary indicators,
     /// with fallback to Contest timestamps and current time.
     /// </summary>
-    private static ContestStatus DetermineContestStatus(ContestBase contest, CompetitionStatus? competitionStatus = null)
+    private static ContestStatus DetermineContestStatus(ContestBase contest, CompetitionStatusBase? competitionStatus = null)
     {
         var now = DateTime.UtcNow;
 

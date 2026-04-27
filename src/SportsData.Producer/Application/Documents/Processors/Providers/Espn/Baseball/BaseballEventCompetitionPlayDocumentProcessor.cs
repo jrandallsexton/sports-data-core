@@ -10,6 +10,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -65,7 +66,6 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
         var competitionIdValue = competitionId.Value;
 
         var competition = await _dataContext.Competitions
-            .Include(c => c.Status)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == competitionIdValue);
 
@@ -74,6 +74,14 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
             _logger.LogError("Competition not found. CompetitionId={CompetitionId}", competitionIdValue);
             throw new InvalidOperationException($"Competition with ID {competitionIdValue} does not exist.");
         }
+
+        // Status was lifted off CompetitionBase onto the sport-specific
+        // BaseballCompetition in the abstract-status redesign. Loaded
+        // independently so the in-progress branch can still gate on
+        // IsCompleted.
+        var competitionStatus = await _dataContext.Set<BaseballCompetitionStatus>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.CompetitionId == competitionIdValue);
 
         // Baseball plays have team but no start/end with team refs
         Guid? teamFranchiseSeasonId = null;
@@ -96,7 +104,7 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
 
         if (entity is null)
         {
-            await ProcessNew(command, externalDto, competition, teamFranchiseSeasonId);
+            await ProcessNew(command, externalDto, competition, competitionStatus, teamFranchiseSeasonId);
         }
         else
         {
@@ -108,6 +116,7 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
         ProcessDocumentCommand command,
         EspnBaseballEventCompetitionPlayDto externalDto,
         CompetitionBase competition,
+        BaseballCompetitionStatus? competitionStatus,
         Guid? teamFranchiseSeasonId)
     {
         _logger.LogInformation(
@@ -120,7 +129,7 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
             competition.Id,
             teamFranchiseSeasonId);
 
-        if (competition.Status is not null && !competition.Status.IsCompleted)
+        if (competitionStatus is not null && !competitionStatus.IsCompleted)
         {
             await _publishEndpoint.Publish(new CompetitionPlayCompleted(
                 CompetitionPlayId: play.Id,

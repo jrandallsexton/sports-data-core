@@ -1,18 +1,27 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Core.Infrastructure.Data.Entities;
-using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities
 {
-    public class CompetitionStatus : CanonicalEntityBase<Guid>, IHasExternalIds
+    // Abstract base for sport-specific status entities. Mirrors the
+    // CompetitionBase / FootballCompetition / BaseballCompetition split:
+    // shared fields stay here; sport-specific fields and child collections
+    // live on FootballCompetitionStatus / BaseballCompetitionStatus.
+    //
+    // Naming: matches the *Base convention used elsewhere in this
+    // codebase (CompetitionBase, ContestBase, CompetitionPlayBase,
+    // AthleteBase) so the abstract role is obvious at a glance.
+    //
+    // The Status nav was previously hung off CompetitionBase, which
+    // pushed sport-specific concerns into the shared contract. It now
+    // lives on each sport's Competition subclass typed to that sport's
+    // CompetitionStatus subclass; the FK config moves with it.
+    public abstract class CompetitionStatusBase : CanonicalEntityBase<Guid>, IHasExternalIds
     {
         public Guid CompetitionId { get; set; }
-
-        public CompetitionBase Competition { get; set; } = null!;
 
         public double Clock { get; set; }
 
@@ -38,11 +47,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-        public class EntityConfiguration : IEntityTypeConfiguration<CompetitionStatus>
+        public class EntityConfiguration : IEntityTypeConfiguration<CompetitionStatusBase>
         {
-            public void Configure(EntityTypeBuilder<CompetitionStatus> builder)
+            public void Configure(EntityTypeBuilder<CompetitionStatusBase> builder)
             {
-                builder.ToTable(nameof(CompetitionStatus));
+                // Literal table name (not nameof) preserves the existing
+                // "CompetitionStatus" schema across this rename — every
+                // prior migration references that string.
+                builder.ToTable("CompetitionStatus");
                 builder.HasKey(x => x.Id);
 
                 builder.Property(x => x.Clock).IsRequired();
@@ -58,10 +70,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
                 builder.Property(x => x.IsCompleted).IsRequired();
 
-                builder.HasOne(x => x.Competition)
-                    .WithOne(x => x.Status)
-                    .HasForeignKey<CompetitionStatus>(x => x.CompetitionId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                // Competition <-> Status FK is configured on each sport's
+                // FootballCompetition / BaseballCompetition EntityConfiguration
+                // so the relationship is typed to that sport's subclass.
 
                 builder.HasMany(x => x.ExternalIds)
                     .WithOne(x => x.CompetitionStatus)

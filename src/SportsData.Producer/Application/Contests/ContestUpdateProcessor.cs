@@ -87,7 +87,7 @@ namespace SportsData.Producer.Application.Contests
                 "Publishing DocumentRequested for Event. Uri={Uri}",
                 contestIdentity.CleanUrl);
 
-            await _bus.Publish(new DocumentRequested(
+            var evt = new DocumentRequested(
                 Id: contestIdentity.UrlHash,
                 ParentId: null,
                 Uri: new Uri(contestIdentity.CleanUrl),
@@ -98,7 +98,11 @@ namespace SportsData.Producer.Application.Contests
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.ContestUpdateProcessor
-            ));
+            );
+
+            _logger.LogInformation("Publishing with {@evt}", evt);
+
+            await _bus.Publish(evt);
 
             await _dataContext.SaveChangesAsync();
         }

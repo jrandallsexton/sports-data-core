@@ -11,12 +11,17 @@ using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 
+// MLB intentionally absent here — its status payload carries baseball-only
+// fields (halfInning, periodPrefix, featuredAthletes[]) that this
+// processor wouldn't model. Routed to
+// BaseballEventCompetitionStatusDocumentProcessor under Espn/Baseball/,
+// which constructs BaseballCompetitionStatus instead of FootballCompetitionStatus.
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionStatus)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.EventCompetitionStatus)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.EventCompetitionStatus)]
 public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
@@ -65,40 +70,41 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
             competitionIdValue,
             command.CorrelationId);
 
-        var existing = await _dataContext.CompetitionStatuses
+        // Status is queried via the typed Set so the result materializes
+        // as FootballCompetitionStatus (the only concrete subclass
+        // registered in FootballDataContext).
+        var existing = await _dataContext.Set<FootballCompetitionStatus>()
             .Include(x => x.ExternalIds)
-            .Include(x => x.Competition)
             .FirstOrDefaultAsync(x => x.CompetitionId == competitionIdValue);
 
         if (existing is not null)
         {
             publishEvent = existing.StatusTypeName != dto.Type.Name;
 
-            _logger.LogInformation("Updating CompetitionStatus (hard replace). CompetitionId={CompId}, OldStatus={OldStatus}, NewStatus={NewStatus}", 
+            _logger.LogInformation(
+                "Updating CompetitionStatus (hard replace). CompetitionId={CompId}, OldStatus={OldStatus}, NewStatus={NewStatus}",
                 competitionIdValue,
                 existing.StatusTypeName,
                 dto.Type.Name);
 
-            // Remove only the ExternalIds for the ESPN provider to avoid unique key constraint violations
-            var espnExternalIds = existing.ExternalIds
-                .Where(x => x.Provider == SourceDataProvider.Espn)
-                .ToList();
-
-            _dataContext.CompetitionStatusExternalIds.RemoveRange(espnExternalIds);
-
-            _dataContext.CompetitionStatuses.Remove(existing);
+            // ExternalIds cascade-delete with the parent (configured on
+            // CompetitionStatus.EntityConfiguration), so removing the
+            // parent is sufficient.
+            _dataContext.Set<FootballCompetitionStatus>().Remove(existing);
         }
         else
         {
-            _logger.LogInformation("Creating new CompetitionStatus. CompetitionId={CompId}, Status={Status}", 
-                competitionId,
+            _logger.LogInformation(
+                "Creating new CompetitionStatus. CompetitionId={CompId}, Status={Status}",
+                competitionIdValue,
                 dto.Type.Name);
         }
 
         if (publishEvent)
         {
-            _logger.LogInformation("Competition status changed, publishing event. CompetitionId={CompId}, NewStatus={Status}",
-                competitionId,
+            _logger.LogInformation(
+                "Competition status changed, publishing event. CompetitionId={CompId}, NewStatus={Status}",
+                competitionIdValue,
                 entity.StatusTypeName);
 
             await _publishEndpoint.Publish(new CompetitionStatusChanged(
@@ -112,11 +118,12 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
             ));
         }
 
-        await _dataContext.CompetitionStatuses.AddAsync(entity);
+        await _dataContext.Set<FootballCompetitionStatus>().AddAsync(entity);
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Persisted CompetitionStatus. CompetitionId={CompId}, Status={Status}", 
-            competitionId,
+        _logger.LogInformation(
+            "Persisted CompetitionStatus. CompetitionId={CompId}, Status={Status}",
+            competitionIdValue,
             entity.StatusTypeName);
     }
 }

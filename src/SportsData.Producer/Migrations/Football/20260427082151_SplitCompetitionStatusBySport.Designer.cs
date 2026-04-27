@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -12,9 +13,11 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations.Football
 {
     [DbContext(typeof(FootballDataContext))]
-    partial class FootballDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260427082151_SplitCompetitionStatusBySport")]
+    partial class SplitCompetitionStatusBySport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -4416,7 +4419,7 @@ namespace SportsData.Producer.Migrations.Football
                     b.ToTable("CompetitionSource");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatusBase", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatus", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -4490,7 +4493,7 @@ namespace SportsData.Producer.Migrations.Football
 
                     b.ToTable("CompetitionStatus", (string)null);
 
-                    b.HasDiscriminator<string>("Discriminator").HasValue("CompetitionStatusBase");
+                    b.HasDiscriminator<string>("Discriminator").HasValue("CompetitionStatus");
 
                     b.UseTphMappingStrategy();
                 });
@@ -7972,7 +7975,7 @@ namespace SportsData.Producer.Migrations.Football
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FootballCompetitionStatus", b =>
                 {
-                    b.HasBaseType("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatusBase");
+                    b.HasBaseType("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatus");
 
                     b.HasIndex("CompetitionId")
                         .IsUnique();
@@ -8884,7 +8887,7 @@ namespace SportsData.Producer.Migrations.Football
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatusExternalId", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatusBase", "CompetitionStatus")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatus", "CompetitionStatus")
                         .WithMany("ExternalIds")
                         .HasForeignKey("CompetitionStatusId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -9782,7 +9785,7 @@ namespace SportsData.Producer.Migrations.Football
                     b.Navigation("ExternalIds");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatusBase", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatus", b =>
                 {
                     b.Navigation("ExternalIds");
                 });

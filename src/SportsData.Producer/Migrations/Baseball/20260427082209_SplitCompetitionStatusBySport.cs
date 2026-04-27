@@ -11,13 +11,20 @@ namespace SportsData.Producer.Migrations.Baseball
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Default to the concrete baseball subtype so the column
+            // never carries an empty / unmapped TPH discriminator —
+            // existing rows in this DB were all written by the
+            // pre-split processor, which is now BaseballCompetitionStatus.
+            // The UPDATE backfill below is retained as a defensive
+            // idempotent step in case any row somehow predates the
+            // default being applied.
             migrationBuilder.AddColumn<string>(
                 name: "Discriminator",
                 table: "CompetitionStatus",
                 type: "character varying(34)",
                 maxLength: 34,
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "BaseballCompetitionStatus");
 
             migrationBuilder.AddColumn<int>(
                 name: "HalfInning",

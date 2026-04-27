@@ -10,19 +10,21 @@ namespace SportsData.Producer.Migrations.Football
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Default to the concrete football subtype so the column
+            // never carries an empty / unmapped TPH discriminator —
+            // existing rows in this DB were all written by the
+            // pre-split processor, which is now FootballCompetitionStatus.
+            // The UPDATE backfill below is retained as a defensive
+            // idempotent step in case any row somehow predates the
+            // default being applied.
             migrationBuilder.AddColumn<string>(
                 name: "Discriminator",
                 table: "CompetitionStatus",
                 type: "character varying(34)",
                 maxLength: 34,
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "FootballCompetitionStatus");
 
-            // Existing rows in the football DB are all the football
-            // subtype — backfill the discriminator so EF's typed
-            // queries (Set<FootballCompetitionStatus>) match them.
-            // Without this every pre-migration row reads as the empty
-            // default and is invisible to the new code path.
             migrationBuilder.Sql(
                 "UPDATE \"CompetitionStatus\" SET \"Discriminator\" = 'FootballCompetitionStatus' WHERE \"Discriminator\" = ''");
         }

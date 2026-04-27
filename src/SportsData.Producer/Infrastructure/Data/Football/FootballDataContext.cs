@@ -20,6 +20,10 @@ namespace SportsData.Producer.Infrastructure.Data.Football
 
         public new DbSet<FootballCompetitionPlay> CompetitionPlays { get; set; }
 
+        // Sport-specific status DbSet — typed entry point for the
+        // football side of the CompetitionStatus split.
+        public DbSet<FootballCompetitionStatus> FootballCompetitionStatuses { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -28,6 +32,7 @@ namespace SportsData.Producer.Infrastructure.Data.Football
             modelBuilder.ApplyConfiguration(new AthleteSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetition.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetitionPlay.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FootballCompetitionStatus.EntityConfiguration());
         }
     }
 }

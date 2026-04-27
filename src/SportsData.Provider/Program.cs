@@ -110,6 +110,7 @@ namespace SportsData.Provider
                 }
                 else
                 {
+                    Console.WriteLine("Message consumption is ACTIVE. DocumentRequestedHandler will be registered.");
                     consumers.Add(typeof(DocumentRequestedHandler));
                 }
 
@@ -120,6 +121,7 @@ namespace SportsData.Provider
             }
             else
             {
+                Console.WriteLine("Ingestion not enabled.");
                 // Non-ingest roles still need MassTransit bus for publishing events
                 services.AddMessaging(config, consumers: null);
             }

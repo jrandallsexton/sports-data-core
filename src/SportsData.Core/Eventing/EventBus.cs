@@ -84,14 +84,33 @@ namespace SportsData.Core.Eventing
         {
             var direct = _policy.Mode == DeliveryMode.Direct || !_outbox.IsActive;
 
+            // Auto-stamp X-Correlation-Id transport header from
+            // EventBase.CorrelationId. Belt-and-suspenders alongside the
+            // body field — the header survives even if a serializer
+            // change ever drops the body's positional record property.
+            // Consumers (e.g. DocumentRequestedHandler) prefer body
+            // first, header second.
+            Action<MassTransit.PublishContext<T>>? headerSetter = null;
+            if (message is EventBase eb && eb.CorrelationId != Guid.Empty)
+            {
+                var correlationIdString = eb.CorrelationId.ToString();
+                headerSetter = ctx => ctx.Headers.Set("X-Correlation-Id", correlationIdString);
+            }
+
             if (direct)
             {
                 await Task.Delay(TimeSpan.FromSeconds(1), ct); // 🚨 Dirty Hack: Give consumers time to commit
-                await _bus.Publish(message, ct);
+                if (headerSetter is null)
+                    await _bus.Publish(message, ct);
+                else
+                    await _bus.Publish(message, headerSetter, ct);
             }
             else
             {
-                await _publish.Publish(message, ct);
+                if (headerSetter is null)
+                    await _publish.Publish(message, ct);
+                else
+                    await _publish.Publish(message, headerSetter, ct);
             }
         }
 

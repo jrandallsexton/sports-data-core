@@ -512,7 +512,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
             Id = competitionId,
             ContestId = contestId,
             Contest = contest,
-            Status = new CompetitionStatus
+            Status = new FootballCompetitionStatus
             {
                 Id = Guid.NewGuid(),
                 CompetitionId = competitionId,

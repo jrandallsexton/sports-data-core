@@ -33,40 +33,55 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     {
         var evt = context.Message;
 
-        // ✅ Validate CorrelationId - generate new one if empty
-        if (evt.CorrelationId == Guid.Empty)
-        {
-            _logger.LogWarning(
-                "DocumentRequested received with empty CorrelationId. Generating new one. Uri={Uri}, DocumentType={DocumentType}",
-                evt.Uri,
-                evt.DocumentType);
-            
-            // Generate new correlation ID from current Activity (OpenTelemetry)
-            var newCorrelationId = ActivityExtensions.GetCorrelationId();
-            
-            // Create new event with valid CorrelationId
-            evt = new DocumentRequested(
-                evt.Id,
-                evt.ParentId,
-                evt.Uri,
-                evt.Ref,
-                evt.Sport,
-                evt.SeasonYear,
-                evt.DocumentType,
-                evt.SourceDataProvider,
-                newCorrelationId,  // ✅ Use new correlation ID
-                evt.CausationId,
-                evt.PropertyBag,
-                evt.IncludeLinkedDocumentTypes);
-        }
+        // Resolve the upstream correlation id with explicit fallbacks.
+        // The previous implementation regenerated silently on
+        // Guid.Empty, which made every dropped CorrelationId look like
+        // a fresh trace in Seq and broke cross-service Producer→Provider
+        // searches. Order:
+        //   1) Body field (DocumentRequested.CorrelationId) — preferred,
+        //      set by Producer's ContestUpdateProcessor / DocumentProcessorBase.
+        //   2) Transport header X-Correlation-Id — auto-stamped by
+        //      EventBusAdapter on every EventBase publish; survives a
+        //      body-deserialization drop.
+        //   3) MassTransit ConsumeContext.CorrelationId — set when the
+        //      publisher used MT's transport-level correlation.
+        //   4) Activity.Current.TraceId — final fallback, derived from
+        //      the W3C traceparent header MT propagates via OpenTelemetry.
+        //   5) NewGuid + ERROR log so the operator can find the drop.
+        var correlationId = ResolveCorrelationId(context, out var source);
+        var bodyWasMissing = context.Message.CorrelationId == Guid.Empty;
 
         using (_logger.BeginScope(new Dictionary<string, object>
                {
-                   ["CorrelationId"] = evt.CorrelationId,
+                   ["CorrelationId"] = correlationId,
                    ["DocumentType"] = evt.DocumentType,
-                   ["Uri"] = evt.Uri.ToString()
+                   ["Uri"] = evt.Uri.ToString(),
+                   ["CorrelationIdSource"] = source
                }))
         {
+            if (bodyWasMissing)
+            {
+                // ERROR (not Warning) so this is searchable in Seq —
+                // the operator needs to be able to find every dropped
+                // CorrelationId and trace it back to the publisher.
+                _logger.LogError(
+                    "DocumentRequested arrived with empty body CorrelationId. " +
+                    "Resolved={ResolvedCorrelationId} via {ResolvedSource}. " +
+                    "TransportHeaderXCorrelationId={HeaderXCorrelationId}, " +
+                    "MassTransitContextCorrelationId={ContextCorrelationId}, " +
+                    "Uri={Uri}",
+                    correlationId,
+                    source,
+                    context.Headers.Get<string>("X-Correlation-Id") ?? "<absent>",
+                    context.CorrelationId,
+                    evt.Uri);
+
+                // Replace the event so downstream code (and the
+                // outbound DocumentCreated publish) carries the
+                // resolved id forward.
+                evt = evt with { CorrelationId = correlationId };
+            }
+
             _logger.LogInformation(
                 "DocumentRequested received. Uri={Uri}, DocumentType={DocumentType}, Sport={Sport}, Provider={Provider}",
                 evt.Uri,
@@ -77,7 +92,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             try
             {
                 await ConsumeInternal(evt);
-                
+
                 _logger.LogInformation("DocumentRequested processed. Uri={Uri}", evt.Uri);
             }
             catch (Exception ex)
@@ -86,6 +101,40 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 throw;
             }
         }
+    }
+
+    private static Guid ResolveCorrelationId(ConsumeContext<DocumentRequested> context, out string source)
+    {
+        if (context.Message.CorrelationId != Guid.Empty)
+        {
+            source = "MessageBody";
+            return context.Message.CorrelationId;
+        }
+
+        var headerValue = context.Headers.Get<string>("X-Correlation-Id");
+        if (!string.IsNullOrWhiteSpace(headerValue)
+            && Guid.TryParse(headerValue, out var headerGuid)
+            && headerGuid != Guid.Empty)
+        {
+            source = "TransportHeader";
+            return headerGuid;
+        }
+
+        if (context.CorrelationId.HasValue && context.CorrelationId.Value != Guid.Empty)
+        {
+            source = "MassTransitContext";
+            return context.CorrelationId.Value;
+        }
+
+        var activityCorrelationId = ActivityExtensions.GetCorrelationId();
+        if (activityCorrelationId != Guid.Empty)
+        {
+            source = "ActivityTraceId";
+            return activityCorrelationId;
+        }
+
+        source = "NewGuid";
+        return Guid.NewGuid();
     }
 
     private async Task ConsumeInternal(DocumentRequested evt)

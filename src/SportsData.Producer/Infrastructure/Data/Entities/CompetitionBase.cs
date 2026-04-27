@@ -91,8 +91,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public CompetitionSource? StatsSource { get; set; }
 
-        public CompetitionStatus? Status { get; set; }
-
+        // Status nav lives on the sport-specific subclasses
+        // (FootballCompetition / BaseballCompetition) typed to each
+        // sport's CompetitionStatus subclass. Lifting it off the shared
+        // base keeps sport-specific concerns out of the abstract surface.
         public Venue? Venue { get; set; }
 
         public Guid? VenueId { get; set; } // FK to Venue
@@ -207,10 +209,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .HasForeignKey(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                builder.HasOne(x => x.Status)
-                    .WithOne(x => x.Competition)
-                    .HasForeignKey<CompetitionStatus>(x => x.CompetitionId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                // Status FK lives on FootballCompetition / BaseballCompetition
+                // EntityConfigurations so each sport binds its own
+                // CompetitionStatus subclass.
 
                 builder.HasMany(x => x.Media)
                     .WithOne()

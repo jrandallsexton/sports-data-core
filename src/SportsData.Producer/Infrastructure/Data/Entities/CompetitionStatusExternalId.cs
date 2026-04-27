@@ -10,7 +10,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid CompetitionStatusId { get; set; }
 
-        public CompetitionStatus CompetitionStatus { get; set; } = null!;
+        public CompetitionStatusBase CompetitionStatus { get; set; } = null!;
 
         public class EntityConfiguration : IEntityTypeConfiguration<CompetitionStatusExternalId>
         {

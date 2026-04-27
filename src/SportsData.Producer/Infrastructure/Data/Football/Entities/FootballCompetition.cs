@@ -11,6 +11,10 @@ namespace SportsData.Producer.Infrastructure.Data.Football.Entities
 
         public ICollection<CompetitionDrive> Drives { get; set; } = [];
 
+        // Sport-specific Status nav. Lifted off CompetitionBase so the
+        // shared entity surface stays free of sport-specific concerns.
+        public FootballCompetitionStatus? Status { get; set; }
+
         public new class EntityConfiguration : IEntityTypeConfiguration<FootballCompetition>
         {
             public void Configure(EntityTypeBuilder<FootballCompetition> builder)
@@ -28,6 +32,11 @@ namespace SportsData.Producer.Infrastructure.Data.Football.Entities
                 builder.HasMany(x => x.Drives)
                     .WithOne()
                     .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(x => x.Status)
+                    .WithOne()
+                    .HasForeignKey<FootballCompetitionStatus>(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
             }
         }

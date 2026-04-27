@@ -9,6 +9,11 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities
     {
         public ICollection<BaseballCompetitionPlay> Plays { get; set; } = [];
 
+        // Sport-specific Status nav typed to the MLB subclass so
+        // HalfInning / PeriodPrefix / FeaturedAthletes are reachable
+        // without an OfType cast.
+        public BaseballCompetitionStatus? Status { get; set; }
+
         public new class EntityConfiguration : IEntityTypeConfiguration<BaseballCompetition>
         {
             public void Configure(EntityTypeBuilder<BaseballCompetition> builder)
@@ -21,6 +26,11 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities
                 builder.HasMany(x => x.Plays)
                     .WithOne()
                     .HasForeignKey(x => x.CompetitionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(x => x.Status)
+                    .WithOne()
+                    .HasForeignKey<BaseballCompetitionStatus>(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
             }
         }

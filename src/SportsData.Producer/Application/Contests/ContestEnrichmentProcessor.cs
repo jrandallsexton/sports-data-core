@@ -47,7 +47,6 @@ namespace SportsData.Producer.Application.Contests
                     .Include(c => c.Odds)
                     .ThenInclude(o => o.Teams)
                     .Include(c => c.Contest)
-                    .Include(c => c.Status)
                     .Where(c => c.ContestId == command.ContestId)
                     .AsSplitQuery()
                     .FirstOrDefaultAsync();
@@ -69,12 +68,21 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
+                // Status was lifted off CompetitionBase onto the
+                // sport-specific Football/Baseball subclasses. Loaded
+                // independently via the abstract base set; EF
+                // materializes whichever concrete subtype is registered
+                // in the active per-sport context.
+                var status = await _dataContext.CompetitionStatuses
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.CompetitionId == competition.Id);
+
                 // If canonical status is not final, data isn't ready — return cleanly
-                if (competition.Status?.StatusTypeName != "STATUS_FINAL")
+                if (status?.StatusTypeName != "STATUS_FINAL")
                 {
                     _logger.LogInformation(
                         "Contest status is not yet final for {ContestName}. Current: {Status}. Skipping enrichment.",
-                        competition.Contest.Name, competition.Status?.StatusTypeName ?? "unknown");
+                        competition.Contest.Name, status?.StatusTypeName ?? "unknown");
                     return;
                 }
 

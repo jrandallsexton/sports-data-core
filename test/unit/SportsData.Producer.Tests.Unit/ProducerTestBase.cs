@@ -34,6 +34,7 @@ public abstract class ProducerTestBase<T> : UnitTestBase<T>
         Fixture.Customizations.Add(new TypeRelay(typeof(ContestBase), typeof(FootballContest)));
         Fixture.Customizations.Add(new TypeRelay(typeof(CompetitionBase), typeof(FootballCompetition)));
         Fixture.Customizations.Add(new TypeRelay(typeof(CompetitionPlayBase), typeof(FootballCompetitionPlay)));
+        Fixture.Customizations.Add(new TypeRelay(typeof(CompetitionStatusBase), typeof(FootballCompetitionStatus)));
 
         // Override mapper with Producer-specific mapping profile
         var mapperConfig = new MapperConfiguration(c =>

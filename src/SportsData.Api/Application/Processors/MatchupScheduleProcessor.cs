@@ -185,10 +185,12 @@ namespace SportsData.Api.Application.Processors
             // the captured message into the OutboxMessage table within the same transaction
             // as the entity write. If the save fails, the captured publish is rolled back
             // with it — same atomicity guarantee, correct outbox semantics.
-            // Check against groupMatchups (not allMatchups) since we only care about this group's matchups.
-            // Empty groupMatchups is treated as not completed (publish the event).
-            var isWeekCompleted = groupMatchups.Count > 0 && groupMatchups.All(m => ContestStatusValues.IsCompleted(m.Status));
-            if (!isWeekCompleted)
+            // Skip publish when groupMatchups is empty: PickemGroupWeekMatchupsGeneratedHandler
+            // throws on zero rows (treated as transient and retried), which would generate
+            // bogus retries and DLQ entries for a permanently-empty group week.
+            var hasMatchups = groupMatchups.Count > 0;
+            var isWeekCompleted = hasMatchups && groupMatchups.All(m => ContestStatusValues.IsCompleted(m.Status));
+            if (hasMatchups && !isWeekCompleted)
             {
                 await _eventBus.Publish(new PickemGroupWeekMatchupsGenerated(
                         group.Id,
@@ -199,6 +201,11 @@ namespace SportsData.Api.Application.Processors
                         command.CorrelationId,
                         Guid.NewGuid()),
                     CancellationToken.None);
+            }
+            else if (!hasMatchups)
+            {
+                _logger.LogInformation("Skipping PickemGroupWeekMatchupsGenerated event — no matchups for this group week. GroupId={GroupId}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}",
+                    group.Id, command.SeasonYear, command.SeasonWeek);
             }
             else
             {

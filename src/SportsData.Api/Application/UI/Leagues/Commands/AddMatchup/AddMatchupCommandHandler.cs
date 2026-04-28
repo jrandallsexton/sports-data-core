@@ -137,14 +137,13 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
         };
 
         await _dbContext.PickemGroupMatchups.AddAsync(newMatchup, cancellationToken);
-        await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation(
-            "Matchup added successfully. LeagueId={LeagueId}, ContestId={ContestId}, MatchupId={MatchupId}",
-            command.LeagueId, command.ContestId, newMatchup.Id);
-
-        // 6. Publish event for AI preview generation
-        if (!ContestStatusValues.IsCompleted(matchup.Status))
+        // 6. Publish event for AI preview generation.
+        // Publish BEFORE SaveChanges so MassTransit's bus-outbox interceptor flushes the
+        // captured message into the OutboxMessage table within the same transaction as
+        // the entity write. If the save fails, the captured publish is rolled back with it.
+        var publishEvent = !ContestStatusValues.IsCompleted(matchup.Status);
+        if (publishEvent)
         {
             await _eventBus.Publish(
                 new PickemGroupMatchupAdded(
@@ -156,7 +155,16 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
                     command.CorrelationId,
                     Guid.NewGuid()),
                 cancellationToken);
+        }
 
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Matchup added successfully. LeagueId={LeagueId}, ContestId={ContestId}, MatchupId={MatchupId}",
+            command.LeagueId, command.ContestId, newMatchup.Id);
+
+        if (publishEvent)
+        {
             _logger.LogInformation(
                 "Published PickemGroupMatchupAdded event. LeagueId={LeagueId}, ContestId={ContestId}, CorrelationId={CorrelationId}",
                 command.LeagueId, command.ContestId, command.CorrelationId);

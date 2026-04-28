@@ -13,16 +13,17 @@ namespace SportsData.Producer.Application.Contests
     /// Gets a list of contestIds for the current season week that need to be updated
     /// and enqueues jobs to update them.
     /// </summary>
-    public class ContestUpdateJob : IAmARecurringJob
+    public class ContestUpdateJob<TDataContext> : IAmARecurringJob
+        where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<ContestUpdateJob> _logger;
-        private readonly TeamSportDataContext _dataContext;
+        private readonly ILogger<ContestUpdateJob<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IAppMode _appMode;
 
         public ContestUpdateJob(
-            ILogger<ContestUpdateJob> logger,
-            TeamSportDataContext dataContext,
+            ILogger<ContestUpdateJob<TDataContext>> logger,
+            TDataContext dataContext,
             IProvideBackgroundJobs backgroundJobProvider,
             IAppMode appMode)
         {
@@ -40,7 +41,7 @@ namespace SportsData.Producer.Application.Contests
             using (_logger.BeginScope(new Dictionary<string, object>
                    {
                        ["CorrelationId"] = correlationId,
-                       ["JobName"] = nameof(ContestUpdateJob)
+                       ["JobName"] = "ContestUpdateJob"
                    }))
             {
                 _logger.LogInformation(

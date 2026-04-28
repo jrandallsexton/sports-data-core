@@ -181,11 +181,12 @@ namespace SportsData.Api.Application.Processors
 
             groupWeek.AreMatchupsGenerated = true;
 
-            await _dataContext.SaveChangesAsync();
-
-            // Only publish event after successful persistence and if the week is not completed
-            // Check against groupMatchups (not allMatchups) since we only care about this group's matchups
-            // Empty groupMatchups is treated as not completed (publish the event)
+            // Publish BEFORE SaveChanges so MassTransit's bus-outbox interceptor flushes
+            // the captured message into the OutboxMessage table within the same transaction
+            // as the entity write. If the save fails, the captured publish is rolled back
+            // with it — same atomicity guarantee, correct outbox semantics.
+            // Check against groupMatchups (not allMatchups) since we only care about this group's matchups.
+            // Empty groupMatchups is treated as not completed (publish the event).
             var isWeekCompleted = groupMatchups.Count > 0 && groupMatchups.All(m => ContestStatusValues.IsCompleted(m.Status));
             if (!isWeekCompleted)
             {
@@ -204,6 +205,8 @@ namespace SportsData.Api.Application.Processors
                 _logger.LogInformation("Skipping PickemGroupWeekMatchupsGenerated event for completed week. GroupId={GroupId}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}",
                     group.Id, command.SeasonYear, command.SeasonWeek);
             }
+
+            await _dataContext.SaveChangesAsync();
         }
     }
 }

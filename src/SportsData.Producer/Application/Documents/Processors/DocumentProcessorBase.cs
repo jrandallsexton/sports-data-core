@@ -297,9 +297,21 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             ["ParentId"] = parentId?.ToString()
         }))
         {
-            if (hasRef?.Ref is null)
+            if (hasRef is null)
             {
-                _logger.LogDebug("⏭️ SKIP_CHILD_DOCUMENT: No reference found.");
+                _logger.LogWarning(
+                    "⏭️ SKIP_CHILD_DOCUMENT: parent DTO link is null. ChildDocumentType={ChildDocumentType}, ParentId={ParentId}",
+                    documentType,
+                    parentId?.ToString());
+                return;
+            }
+
+            if (hasRef.Ref is null)
+            {
+                _logger.LogWarning(
+                    "⏭️ SKIP_CHILD_DOCUMENT: parent DTO link present but $ref is null. ChildDocumentType={ChildDocumentType}, ParentId={ParentId}",
+                    documentType,
+                    parentId?.ToString());
                 return;
             }
 

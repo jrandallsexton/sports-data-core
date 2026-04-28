@@ -76,10 +76,15 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
             throw new InvalidOperationException($"Contest with ID {contestId} not found.");
         }
 
+        // NOTE: Do NOT Include Competitors / Competitor ExternalIds here. Nothing in
+        // ProcessUpdate, ProcessChildDocuments, or ProcessCompetitors reads from the
+        // loaded entity's Competitors — they all use externalDto.Competitors. Loading
+        // those navigations into the change tracker triggers EF's optimistic concurrency
+        // check on rows this processor never modifies, causing false-positive
+        // DbUpdateConcurrencyExceptions when EventCompetitionCompetitorRecordDocumentProcessor
+        // (or any sibling) bumps a CompetitionCompetitor row in parallel — which in turn
+        // kills the child-document cascade (e.g. EventCompetitionPlay sourcing).
         var entity = await _dataContext.Competitions
-            .Include(c => c.Competitors)
-            .ThenInclude(c => c.ExternalIds)
-            .AsSplitQuery()
             .FirstOrDefaultAsync(x =>
                 x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
                                        z.Provider == command.SourceDataProvider));
@@ -208,10 +213,14 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
             competition.ModifiedUtc = DateTime.UtcNow;
             competition.ModifiedBy = command.CorrelationId;
 
-            await _dataContext.SaveChangesAsync();
-
+            // NOTE: SaveChanges is intentionally deferred. ProcessChildDocuments below
+            // calls SaveChangesAsync at its tail, which commits this entity update AND
+            // flushes the bus-outbox publishes captured by the child PublishChildDocumentRequest
+            // calls in a single transaction. Saving here would (a) duplicate the commit
+            // and (b) on concurrency conflict, throw before the cascade ever publishes —
+            // killing all downstream sourcing (e.g. EventCompetitionPlay).
             _logger.LogInformation(
-                "Competition updated. CompetitionId={CompetitionId}, PropertyCount={PropertyCount}",
+                "Competition update staged. CompetitionId={CompetitionId}, PropertyCount={PropertyCount}",
                 competition.Id,
                 changedProperties.Count);
         }

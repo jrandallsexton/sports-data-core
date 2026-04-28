@@ -14,16 +14,17 @@ namespace SportsData.Producer.Application.Contests
         Task Process(UpdateContestCommand command);
     }
 
-    public class ContestUpdateProcessor : IUpdateContests
+    public class ContestUpdateProcessor<TDataContext> : IUpdateContests
+        where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<ContestUpdateProcessor> _logger;
-        private readonly TeamSportDataContext _dataContext;
+        private readonly ILogger<ContestUpdateProcessor<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
         private readonly IEventBus _bus;
         private readonly IGenerateExternalRefIdentities _externalIdentityGenerator;
 
         public ContestUpdateProcessor(
-            ILogger<ContestUpdateProcessor> logger,
-            TeamSportDataContext dataContext,
+            ILogger<ContestUpdateProcessor<TDataContext>> logger,
+            TDataContext dataContext,
             IEventBus bus,
             IGenerateExternalRefIdentities externalIdentityGenerator)
         {

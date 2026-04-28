@@ -75,8 +75,6 @@ namespace SportsData.Producer.Application.Franchises.Commands
             franchiseSeason.ModifiedUtc = DateTime.UtcNow;
             franchiseSeason.ModifiedBy = CausationId.Producer.FranchiseSeasonEnrichmentProcessor;
 
-            await _dataContext.SaveChangesAsync();
-
             await _eventBus.Publish(new FranchiseSeasonEnrichmentCompleted(
                 command.FranchiseSeasonId,
                 null,
@@ -84,6 +82,8 @@ namespace SportsData.Producer.Application.Franchises.Commands
                 command.SeasonYear,
                 command.CorrelationId,
                 Guid.NewGuid()));
+
+            await _dataContext.SaveChangesAsync();
         }
 
         private async Task<List<ContestBase>> GetFinalizedContestsForFranchiseSeason(Guid franchiseSeasonId)

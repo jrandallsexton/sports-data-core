@@ -195,11 +195,14 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
 
+            // ContestEnrichment currently uses football-only sort fields on CompetitionPlay
+            // (ClockValue) — register only for football modes until MLB-aware enrichment lands.
+            // Hangfire resolves through IContestEnrichmentJob to avoid the closed-generic
+            // type-resolution issue that previously bit ContestUpdateJob.
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)
             {
-                // ContestEnrichmentProcessor depends on FootballDataContext.
                 services.AddScoped<IEnrichContests, ContestEnrichmentProcessor>();
-                services.AddScoped<ContestEnrichmentJob>();
+                services.AddScoped<IContestEnrichmentJob, ContestEnrichmentJob<FootballDataContext>>();
             }
 
             services.AddScoped<IEnrichFranchiseSeasons, EnrichFranchiseSeasonHandler<TeamSportDataContext>>();
@@ -341,10 +344,13 @@ namespace SportsData.Producer.DependencyInjection
             var recurringJobManager = serviceScope.ServiceProvider
                 .GetRequiredService<IRecurringJobManager>();
 
-            recurringJobManager.AddOrUpdate<ContestEnrichmentJob>(
-                nameof(ContestEnrichmentJob),
-                job => job.ExecuteAsync(),
-                Cron.Weekly);
+            if (mode is Sport.FootballNcaa or Sport.FootballNfl)
+            {
+                recurringJobManager.AddOrUpdate<IContestEnrichmentJob>(
+                    "ContestEnrichmentJob",
+                    job => job.ExecuteAsync(),
+                    Cron.Weekly);
+            }
 
             if (mode is Sport.FootballNcaa or Sport.FootballNfl or Sport.BaseballMlb)
             {

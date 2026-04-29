@@ -5,15 +5,23 @@ using SportsData.Core.Common.Jobs;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Contests
 {
+    // Hangfire stores the job type by name and resolves it via reflection on each
+    // recurring trigger. Closed-generic types like ContestUpdateJob`1[BaseballDataContext]
+    // do not always round-trip through that resolver. Register and resolve through this
+    // non-generic interface instead — DI binds it per-sport to the correct closed generic.
+    public interface IContestUpdateJob
+    {
+        Task ExecuteAsync();
+    }
+
     /// <summary>
     /// Gets a list of contestIds for the current season week that need to be updated
     /// and enqueues jobs to update them.
     /// </summary>
-    public class ContestUpdateJob<TDataContext> : IAmARecurringJob
+    public class ContestUpdateJob<TDataContext> : IContestUpdateJob, IAmARecurringJob
         where TDataContext : TeamSportDataContext
     {
         private readonly ILogger<ContestUpdateJob<TDataContext>> _logger;

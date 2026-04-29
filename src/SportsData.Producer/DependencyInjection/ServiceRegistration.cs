@@ -207,16 +207,18 @@ namespace SportsData.Producer.DependencyInjection
 
             // ContestUpdate is team-sport-only (uses SeasonWeeks/Contests on TeamSportDataContext).
             // Golf has no team-style contests, so no registration is provided for Sport.GolfPga.
+            // Register IContestUpdateJob (not the closed generic) so Hangfire can store and
+            // re-resolve the recurring job by a stable, non-generic type name.
             switch (mode)
             {
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
                     services.AddScoped<IUpdateContests, ContestUpdateProcessor<FootballDataContext>>();
-                    services.AddScoped<ContestUpdateJob<FootballDataContext>>();
+                    services.AddScoped<IContestUpdateJob, ContestUpdateJob<FootballDataContext>>();
                     break;
                 case Sport.BaseballMlb:
                     services.AddScoped<IUpdateContests, ContestUpdateProcessor<BaseballDataContext>>();
-                    services.AddScoped<ContestUpdateJob<BaseballDataContext>>();
+                    services.AddScoped<IContestUpdateJob, ContestUpdateJob<BaseballDataContext>>();
                     break;
             }
 
@@ -344,21 +346,12 @@ namespace SportsData.Producer.DependencyInjection
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 
-            switch (mode)
+            if (mode is Sport.FootballNcaa or Sport.FootballNfl or Sport.BaseballMlb)
             {
-                case Sport.FootballNcaa:
-                case Sport.FootballNfl:
-                    recurringJobManager.AddOrUpdate<ContestUpdateJob<FootballDataContext>>(
-                        "ContestUpdateJob",
-                        job => job.ExecuteAsync(),
-                        Cron.Daily);
-                    break;
-                case Sport.BaseballMlb:
-                    recurringJobManager.AddOrUpdate<ContestUpdateJob<BaseballDataContext>>(
-                        "ContestUpdateJob",
-                        job => job.ExecuteAsync(),
-                        Cron.Daily);
-                    break;
+                recurringJobManager.AddOrUpdate<IContestUpdateJob>(
+                    "ContestUpdateJob",
+                    job => job.ExecuteAsync(),
+                    Cron.Daily);
             }
 
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)

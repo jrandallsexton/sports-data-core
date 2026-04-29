@@ -1,6 +1,6 @@
-﻿using Hangfire;
+﻿using FluentValidation;
 
-using FluentValidation;
+using Hangfire;
 
 using SportsData.Core.Common;
 using SportsData.Core.Config;
@@ -26,22 +26,22 @@ using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupResult
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsByContestIds;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsForCurrentWeek;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsForSeasonWeek;
+using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 using SportsData.Producer.Application.Documents.Processors;
 using SportsData.Producer.Application.Franchises;
 using SportsData.Producer.Application.Franchises.Commands;
+using SportsData.Producer.Application.Franchises.Commands.UpdateLogoDarkBg;
 using SportsData.Producer.Application.Franchises.Queries.GetAllFranchises;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseById;
+using SportsData.Producer.Application.Franchises.Queries.GetFranchiseLogos;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseSeasons;
 using SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 using SportsData.Producer.Application.Franchises.Queries.GetTeamCard;
 using SportsData.Producer.Application.Franchises.Queries.GetTeamRoster;
-using SportsData.Producer.Application.Franchises.Queries.GetFranchiseLogos;
-using SportsData.Producer.Application.Franchises.Commands.UpdateLogoDarkBg;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetPollBySeasonWeekId;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetRankingsByPollByWeek;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
-using SportsData.Producer.Application.Documents.Commands.ReprocessDeadLetterQueue;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
@@ -52,7 +52,6 @@ using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeaso
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonStatistics;
 using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Application.GroupSeasons.Queries.GetConferenceIdsBySlugs;
-using SportsData.Producer.Application.GroupSeasons.Queries.GetConferenceNamesAndSlugs;
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.Seasons.Queries.GetCompletedSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentAndLastSeasonWeeks;
@@ -68,7 +67,6 @@ using SportsData.Producer.Config;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Baseball;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Golf;
 using SportsData.Producer.Infrastructure.Geo;

@@ -151,6 +151,18 @@ namespace SportsData.Producer.Application.Contests
                         command.CorrelationId,
                         Guid.NewGuid()));
                 await _dataContext.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Contest enrichment completed. ContestId={ContestId}, ContestName={ContestName}, " +
+                    "AwayScore={AwayScore}, HomeScore={HomeScore}, WinnerFranchiseSeasonId={WinnerFranchiseSeasonId}, " +
+                    "FinalizedUtc={FinalizedUtc}, OddsProvidersEnriched={OddsProvidersEnriched}",
+                    command.ContestId,
+                    contest.Name,
+                    contest.AwayScore,
+                    contest.HomeScore,
+                    contest.WinnerFranchiseId,
+                    contest.FinalizedUtc,
+                    competition.Odds?.Count(o => o.EnrichedUtc.HasValue) ?? 0);
             }
         }
 

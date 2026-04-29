@@ -72,7 +72,8 @@ namespace SportsData.Provider.Application.Processors
                 ["CorrelationId"] = command.CorrelationId,
                 ["CausationId"] = command.CausationId,
                 ["DocumentType"] = command.DocumentType,
-                ["SourceUrlHash"] = command.Id
+                ["SourceUrlHash"] = command.Id,
+                ["BypassCache"] = command.BypassCache
             }))
             {
                 _logger.LogInformation(

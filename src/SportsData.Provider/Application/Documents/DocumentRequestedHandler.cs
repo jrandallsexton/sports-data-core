@@ -1,7 +1,10 @@
 ﻿using MassTransit;
 
+using Microsoft.Extensions.Options;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Config;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
@@ -18,15 +21,18 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     private readonly IProvideEspnApiData _espnApi;
     private readonly ILogger<DocumentRequestedHandler> _logger;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
+    private readonly CommonConfig _commonConfig;
 
     public DocumentRequestedHandler(
         IProvideEspnApiData espnApi,
         ILogger<DocumentRequestedHandler> logger,
-        IProvideBackgroundJobs backgroundJobProvider)
+        IProvideBackgroundJobs backgroundJobProvider,
+        IOptions<CommonConfig> commonConfig)
     {
         _espnApi = espnApi;
         _logger = logger;
         _backgroundJobProvider = backgroundJobProvider;
+        _commonConfig = commonConfig.Value;
     }
 
     public async Task Consume(ConsumeContext<DocumentRequested> context)
@@ -103,6 +109,22 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         }
     }
 
+    /// <summary>
+    /// Mirrors <c>ResourceIndexJob.ShouldBypassCache</c>. Bypass the Mongo cache for
+    /// active/future seasons; serve historical seasons from cache.
+    /// Rules:
+    ///   currentSeason == 0  → feature disabled; always bypass (safe legacy fallback)
+    ///   seasonYear == null  → non-seasonal resource (Venue, Franchise, ...); always fetch
+    ///   seasonYear &lt; currentSeason → historical/immutable; serve from Mongo
+    ///   seasonYear &gt;= currentSeason → active/future season; bypass cache and fetch
+    /// </summary>
+    private bool ShouldBypassCache(int? seasonYear)
+    {
+        if (_commonConfig.CurrentSeason == 0) return true;   // feature disabled
+        if (!seasonYear.HasValue)             return true;   // non-seasonal resource
+        return seasonYear.Value >= _commonConfig.CurrentSeason;
+    }
+
     private static Guid ResolveCorrelationId(ConsumeContext<DocumentRequested> context, out string source)
     {
         if (context.Message.CorrelationId != Guid.Empty)
@@ -163,6 +185,15 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     {
         var urlHash = HashProvider.GenerateHashFromUri(uri);
 
+        // Cache policy mirrors ResourceIndexJob.ShouldBypassCache:
+        //   - Current/future season → bypass Mongo, fetch fresh from ESPN. ESPN payloads
+        //     for in-season resources evolve (e.g. EventCompetition gains a `details` $ref
+        //     once the game goes live; a snapshot taken pre-game lacks it permanently in
+        //     Mongo). Re-sourcing every refresh ensures Producer's downstream cascade
+        //     always sees the current shape.
+        //   - Historical season → serve from Mongo. Immutable; nothing to gain by hitting
+        //     ESPN. (Trade-off: in-season games that finish early in the year will still
+        //     re-source until the season flips. Acceptable for now.)
         var cmd = new ProcessResourceIndexItemCommand(
             CorrelationId: evt.CorrelationId,
             CausationId: evt.CausationId,
@@ -175,7 +206,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             DocumentType: evt.DocumentType,
             ParentId: evt.ParentId,
             SeasonYear: evt.SeasonYear,
-            BypassCache: false, // Check MongoDB first before calling ESPN (critical for historical sourcing)
+            BypassCache: ShouldBypassCache(evt.SeasonYear),
             IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes);
 
         _logger.LogInformation(

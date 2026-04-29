@@ -195,10 +195,11 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
 
-            // ContestEnrichment is team-sport-only. Register concrete generic per sport
-            // so DI binds the concrete TDataContext (with EF interceptors). Hangfire
-            // resolves through IContestEnrichmentJob to avoid the closed-generic
-            // type-resolution issue that previously bit ContestUpdateJob.
+            // ContestEnrichment is team-sport-only. Each sport has its own concrete
+            // processor — football uses the play-based primary path, baseball uses
+            // the canonical CompetitionCompetitorScore record. Hangfire resolves
+            // the recurring trigger through IContestEnrichmentJob to avoid the
+            // closed-generic type-resolution issue that previously bit ContestUpdateJob.
             switch (mode)
             {
                 case Sport.FootballNcaa:
@@ -207,7 +208,7 @@ namespace SportsData.Producer.DependencyInjection
                     services.AddScoped<IContestEnrichmentJob, ContestEnrichmentJob<FootballDataContext>>();
                     break;
                 case Sport.BaseballMlb:
-                    services.AddScoped<IEnrichContests, ContestEnrichmentProcessor<BaseballDataContext>>();
+                    services.AddScoped<IEnrichContests, BaseballContestEnrichmentProcessor>();
                     services.AddScoped<IContestEnrichmentJob, ContestEnrichmentJob<BaseballDataContext>>();
                     break;
             }

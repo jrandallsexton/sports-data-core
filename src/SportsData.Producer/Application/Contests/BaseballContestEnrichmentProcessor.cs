@@ -5,26 +5,20 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Extensions;
-using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Baseball;
 
 namespace SportsData.Producer.Application.Contests
 {
-    public interface IEnrichContests
+    public class BaseballContestEnrichmentProcessor : IEnrichContests
     {
-        Task Process(EnrichContestCommand command);
-    }
-
-    public class ContestEnrichmentProcessor<TDataContext> : IEnrichContests
-        where TDataContext : TeamSportDataContext
-    {
-        private readonly ILogger<ContestEnrichmentProcessor<TDataContext>> _logger;
-        protected readonly TDataContext _dataContext;
+        private readonly ILogger<BaseballContestEnrichmentProcessor> _logger;
+        private readonly BaseballDataContext _dataContext;
         private readonly IEventBus _bus;
         private readonly IDateTimeProvider _dateTimeProvider;
 
-        public ContestEnrichmentProcessor(
-            ILogger<ContestEnrichmentProcessor<TDataContext>> logger,
-            TDataContext dataContext,
+        public BaseballContestEnrichmentProcessor(
+            ILogger<BaseballContestEnrichmentProcessor> logger,
+            BaseballDataContext dataContext,
             IEventBus bus,
             IDateTimeProvider dateTimeProvider)
         {
@@ -69,16 +63,10 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                // Status was lifted off CompetitionBase onto the
-                // sport-specific Football/Baseball subclasses. Loaded
-                // independently via the abstract base set; EF
-                // materializes whichever concrete subtype is registered
-                // in the active per-sport context.
                 var status = await _dataContext.CompetitionStatuses
                     .AsNoTracking()
                     .FirstOrDefaultAsync(s => s.CompetitionId == competition.Id);
 
-                // If canonical status is not final, data isn't ready — return cleanly
                 if (status?.StatusTypeName != "STATUS_FINAL")
                 {
                     _logger.LogInformation(
@@ -89,19 +77,35 @@ namespace SportsData.Producer.Application.Contests
 
                 var contest = competition.Contest;
 
-                var (awayScore, homeScore) = await GetFinalScoresAsync(
-                    competition.Id, awayCompetitor.Id, homeCompetitor.Id);
+                // Baseball plays don't carry a clock for tiebreak ordering. Use the
+                // canonical CompetitionCompetitorScore record as the source of final
+                // score: prefer SourceDescription = "Final", otherwise the most recent.
+                var awayFinalScore = await _dataContext.CompetitionCompetitorScores
+                    .AsNoTracking()
+                    .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
+                    .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
+                    .ThenByDescending(s => s.CreatedUtc)
+                    .Select(s => (double?)s.Value)
+                    .FirstOrDefaultAsync();
 
-                if (awayScore is null || homeScore is null)
+                var homeFinalScore = await _dataContext.CompetitionCompetitorScores
+                    .AsNoTracking()
+                    .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
+                    .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
+                    .ThenByDescending(s => s.CreatedUtc)
+                    .Select(s => (double?)s.Value)
+                    .FirstOrDefaultAsync();
+
+                if (awayFinalScore is null || homeFinalScore is null)
                 {
                     _logger.LogInformation(
-                        "Final scores not available for {ContestName}. Data not ready for enrichment.",
+                        "No competitor scores available for {ContestName}. Data not ready for enrichment.",
                         contest.Name);
                     return;
                 }
 
-                contest.AwayScore = awayScore.Value;
-                contest.HomeScore = homeScore.Value;
+                contest.AwayScore = (int)awayFinalScore.Value;
+                contest.HomeScore = (int)homeFinalScore.Value;
 
                 var awayFranchiseSeasonId = awayCompetitor.FranchiseSeasonId;
                 var homeFranchiseSeasonId = homeCompetitor.FranchiseSeasonId;
@@ -118,7 +122,6 @@ namespace SportsData.Producer.Application.Contests
 
                 contest.FinalizedUtc = _dateTimeProvider.UtcNow();
 
-                // Enrich results for every odds provider
                 if (competition.Odds?.Any() == true)
                 {
                     EnrichOddsResults(
@@ -128,7 +131,6 @@ namespace SportsData.Producer.Application.Contests
                         contest.AwayScore!.Value,
                         contest.HomeScore!.Value);
 
-                    // Maintain Contest-level denormalized fields from the primary provider
                     var primaryOdds = competition.Odds
                         .FirstOrDefault(o => o.EnrichedUtc.HasValue && o.ProviderId == SportsBook.EspnBet.ToProviderId())
                         ?? competition.Odds.FirstOrDefault(o => o.EnrichedUtc.HasValue);
@@ -152,35 +154,6 @@ namespace SportsData.Producer.Application.Contests
             }
         }
 
-        // Sport-agnostic default: use the canonical CompetitionCompetitorScore record
-        // ("Final" if present, otherwise most recent). Football overrides with a
-        // play-based primary path because score records can lag the play stream.
-        protected virtual async Task<(int? Away, int? Home)> GetFinalScoresAsync(
-            Guid competitionId,
-            Guid awayCompetitorId,
-            Guid homeCompetitorId)
-        {
-            var awayFinalScore = await _dataContext.CompetitionCompetitorScores
-                .AsNoTracking()
-                .Where(s => s.CompetitionCompetitorId == awayCompetitorId)
-                .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
-                .ThenByDescending(s => s.CreatedUtc)
-                .Select(s => (double?)s.Value)
-                .FirstOrDefaultAsync();
-
-            var homeFinalScore = await _dataContext.CompetitionCompetitorScores
-                .AsNoTracking()
-                .Where(s => s.CompetitionCompetitorId == homeCompetitorId)
-                .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
-                .ThenByDescending(s => s.CreatedUtc)
-                .Select(s => (double?)s.Value)
-                .FirstOrDefaultAsync();
-
-            return (
-                awayFinalScore is null ? null : (int)awayFinalScore.Value,
-                homeFinalScore is null ? null : (int)homeFinalScore.Value);
-        }
-
         internal void EnrichOddsResults(
             ICollection<CompetitionOdds> allOdds,
             Guid awayFranchiseSeasonId,
@@ -190,12 +163,10 @@ namespace SportsData.Producer.Application.Contests
         {
             foreach (var odds in allOdds)
             {
-                // Reset prior results so reruns don't retain stale values
                 odds.WinnerFranchiseSeasonId = null;
                 odds.AtsWinnerFranchiseSeasonId = null;
                 odds.OverUnderResult = OverUnderResult.None;
 
-                // Straight-up winner
                 if (awayScore != homeScore)
                 {
                     odds.WinnerFranchiseSeasonId = homeScore > awayScore
@@ -203,13 +174,11 @@ namespace SportsData.Producer.Application.Contests
                         : awayFranchiseSeasonId;
                 }
 
-                // Over/Under result
                 if (odds.OverUnder.HasValue)
                 {
                     odds.OverUnderResult = GetOverUnderResult(awayScore, homeScore, odds.OverUnder.Value);
                 }
 
-                // ATS winner
                 if (odds.Spread.HasValue)
                 {
                     odds.AtsWinnerFranchiseSeasonId = GetSpreadWinnerFranchiseSeasonId(

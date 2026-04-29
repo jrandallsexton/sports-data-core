@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Extensions;
-using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Contests
 {
@@ -14,16 +14,17 @@ namespace SportsData.Producer.Application.Contests
         Task Process(EnrichContestCommand command);
     }
 
-    public class ContestEnrichmentProcessor : IEnrichContests
+    public class ContestEnrichmentProcessor<TDataContext> : IEnrichContests
+        where TDataContext : TeamSportDataContext
     {
-        private readonly ILogger<ContestEnrichmentProcessor> _logger;
-        private readonly FootballDataContext _dataContext;
+        private readonly ILogger<ContestEnrichmentProcessor<TDataContext>> _logger;
+        protected readonly TDataContext _dataContext;
         private readonly IEventBus _bus;
         private readonly IDateTimeProvider _dateTimeProvider;
 
         public ContestEnrichmentProcessor(
-            ILogger<ContestEnrichmentProcessor> logger,
-            FootballDataContext dataContext,
+            ILogger<ContestEnrichmentProcessor<TDataContext>> logger,
+            TDataContext dataContext,
             IEventBus bus,
             IDateTimeProvider dateTimeProvider)
         {
@@ -88,50 +89,19 @@ namespace SportsData.Producer.Application.Contests
 
                 var contest = competition.Contest;
 
-                // Query canonical plays to determine final score (project to DTO)
-                var lastScoringPlay = await _dataContext.CompetitionPlays
-                    .AsNoTracking()
-                    .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
-                    .OrderByDescending(p => p.PeriodNumber)
-                    .ThenBy(p => p.ClockValue)
-                    .Select(p => new { p.AwayScore, p.HomeScore })
-                    .FirstOrDefaultAsync();
+                var (awayScore, homeScore) = await GetFinalScoresAsync(
+                    competition.Id, awayCompetitor.Id, homeCompetitor.Id);
 
-                if (lastScoringPlay != null)
+                if (awayScore is null || homeScore is null)
                 {
-                    contest.AwayScore = lastScoringPlay.AwayScore;
-                    contest.HomeScore = lastScoringPlay.HomeScore;
+                    _logger.LogInformation(
+                        "Final scores not available for {ContestName}. Data not ready for enrichment.",
+                        contest.Name);
+                    return;
                 }
-                else
-                {
-                    // No scoring plays — check competitor scores (D2 fallback, project to score value only)
-                    var awayFinalScore = await _dataContext.CompetitionCompetitorScores
-                        .AsNoTracking()
-                        .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
-                        .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
-                        .ThenByDescending(s => s.CreatedUtc)
-                        .Select(s => (double?)s.Value)
-                        .FirstOrDefaultAsync();
 
-                    var homeFinalScore = await _dataContext.CompetitionCompetitorScores
-                        .AsNoTracking()
-                        .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
-                        .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
-                        .ThenByDescending(s => s.CreatedUtc)
-                        .Select(s => (double?)s.Value)
-                        .FirstOrDefaultAsync();
-
-                    if (awayFinalScore is null || homeFinalScore is null)
-                    {
-                        _logger.LogInformation(
-                            "No plays or competitor scores available for {ContestName}. Data not ready for enrichment.",
-                            contest.Name);
-                        return;
-                    }
-
-                    contest.AwayScore = (int)awayFinalScore.Value;
-                    contest.HomeScore = (int)homeFinalScore.Value;
-                }
+                contest.AwayScore = awayScore.Value;
+                contest.HomeScore = homeScore.Value;
 
                 var awayFranchiseSeasonId = awayCompetitor.FranchiseSeasonId;
                 var homeFranchiseSeasonId = homeCompetitor.FranchiseSeasonId;
@@ -180,6 +150,35 @@ namespace SportsData.Producer.Application.Contests
                         Guid.NewGuid()));
                 await _dataContext.SaveChangesAsync();
             }
+        }
+
+        // Sport-agnostic default: use the canonical CompetitionCompetitorScore record
+        // ("Final" if present, otherwise most recent). Football overrides with a
+        // play-based primary path because score records can lag the play stream.
+        protected virtual async Task<(int? Away, int? Home)> GetFinalScoresAsync(
+            Guid competitionId,
+            Guid awayCompetitorId,
+            Guid homeCompetitorId)
+        {
+            var awayFinalScore = await _dataContext.CompetitionCompetitorScores
+                .AsNoTracking()
+                .Where(s => s.CompetitionCompetitorId == awayCompetitorId)
+                .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
+                .ThenByDescending(s => s.CreatedUtc)
+                .Select(s => (double?)s.Value)
+                .FirstOrDefaultAsync();
+
+            var homeFinalScore = await _dataContext.CompetitionCompetitorScores
+                .AsNoTracking()
+                .Where(s => s.CompetitionCompetitorId == homeCompetitorId)
+                .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
+                .ThenByDescending(s => s.CreatedUtc)
+                .Select(s => (double?)s.Value)
+                .FirstOrDefaultAsync();
+
+            return (
+                awayFinalScore is null ? null : (int)awayFinalScore.Value,
+                homeFinalScore is null ? null : (int)homeFinalScore.Value);
         }
 
         internal void EnrichOddsResults(

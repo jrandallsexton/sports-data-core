@@ -195,14 +195,21 @@ namespace SportsData.Producer.DependencyInjection
 
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
 
-            // ContestEnrichment currently uses football-only sort fields on CompetitionPlay
-            // (ClockValue) — register only for football modes until MLB-aware enrichment lands.
-            // Hangfire resolves through IContestEnrichmentJob to avoid the closed-generic
+            // ContestEnrichment is team-sport-only. Register concrete generic per sport
+            // so DI binds the concrete TDataContext (with EF interceptors). Hangfire
+            // resolves through IContestEnrichmentJob to avoid the closed-generic
             // type-resolution issue that previously bit ContestUpdateJob.
-            if (mode is Sport.FootballNcaa or Sport.FootballNfl)
+            switch (mode)
             {
-                services.AddScoped<IEnrichContests, ContestEnrichmentProcessor>();
-                services.AddScoped<IContestEnrichmentJob, ContestEnrichmentJob<FootballDataContext>>();
+                case Sport.FootballNcaa:
+                case Sport.FootballNfl:
+                    services.AddScoped<IEnrichContests, FootballContestEnrichmentProcessor>();
+                    services.AddScoped<IContestEnrichmentJob, ContestEnrichmentJob<FootballDataContext>>();
+                    break;
+                case Sport.BaseballMlb:
+                    services.AddScoped<IEnrichContests, ContestEnrichmentProcessor<BaseballDataContext>>();
+                    services.AddScoped<IContestEnrichmentJob, ContestEnrichmentJob<BaseballDataContext>>();
+                    break;
             }
 
             services.AddScoped<IEnrichFranchiseSeasons, EnrichFranchiseSeasonHandler<TeamSportDataContext>>();
@@ -344,7 +351,7 @@ namespace SportsData.Producer.DependencyInjection
             var recurringJobManager = serviceScope.ServiceProvider
                 .GetRequiredService<IRecurringJobManager>();
 
-            if (mode is Sport.FootballNcaa or Sport.FootballNfl)
+            if (mode is Sport.FootballNcaa or Sport.FootballNfl or Sport.BaseballMlb)
             {
                 recurringJobManager.AddOrUpdate<IContestEnrichmentJob>(
                     "ContestEnrichmentJob",

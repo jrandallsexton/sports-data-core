@@ -16,9 +16,9 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Contests;
 
-public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmentProcessor>
+public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestEnrichmentProcessor>
 {
-    private readonly ContestEnrichmentProcessor _sut;
+    private readonly FootballContestEnrichmentProcessor _sut;
 
     private static readonly Guid AwayFranchiseSeasonId = Guid.NewGuid();
     private static readonly Guid HomeFranchiseSeasonId = Guid.NewGuid();
@@ -30,7 +30,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<ContestEnrichmen
             .Setup(x => x.UtcNow())
             .Returns(new DateTime(2026, 3, 10, 12, 0, 0, DateTimeKind.Utc));
 
-        _sut = Mocker.CreateInstance<ContestEnrichmentProcessor>();
+        _sut = Mocker.CreateInstance<FootballContestEnrichmentProcessor>();
     }
 
     #region Process — guard clauses

@@ -7,15 +7,23 @@ using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Contests
 {
-    public class ContestEnrichmentJob : IAmARecurringJob
+    // Same Hangfire reflection-resolve issue that bit ContestUpdateJob — register against
+    // this non-generic interface so the recurring-job entry stores a stable type name.
+    public interface IContestEnrichmentJob
     {
-        private readonly ILogger<ContestEnrichmentJob> _logger;
-        private readonly TeamSportDataContext _dataContext;
+        Task ExecuteAsync();
+    }
+
+    public class ContestEnrichmentJob<TDataContext> : IContestEnrichmentJob, IAmARecurringJob
+        where TDataContext : TeamSportDataContext
+    {
+        private readonly ILogger<ContestEnrichmentJob<TDataContext>> _logger;
+        private readonly TDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public ContestEnrichmentJob(
-            ILogger<ContestEnrichmentJob> logger,
-            TeamSportDataContext dataContext,
+            ILogger<ContestEnrichmentJob<TDataContext>> logger,
+            TDataContext dataContext,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;

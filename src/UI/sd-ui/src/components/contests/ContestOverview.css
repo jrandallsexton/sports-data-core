@@ -124,6 +124,15 @@
   padding: 0;
 }
 
+/* Sports with more than 4 periods (e.g. MLB 9 innings) need to grow past the
+   football-tuned default so the Total column doesn't collide with the home
+   team's score on the right. */
+.contest-boxscore-table-wrapper.compact.wide {
+  min-width: 0;
+  max-width: none;
+  width: auto;
+}
+
 .contest-boxscore-table {
   border-collapse: collapse;
   background: none;
@@ -140,6 +149,19 @@
 .contest-boxscore-table td {
   padding: 0 0.5rem;
   text-align: center;
+}
+
+.contest-boxscore-table.compact.wide {
+  font-size: 0.85rem;
+}
+
+.contest-boxscore-table.compact.wide th,
+.contest-boxscore-table.compact.wide td {
+  padding: 0 0.3rem;
+}
+
+.contest-boxscore-table.compact.wide .contest-boxscore-total {
+  padding-left: 0.55rem;
 }
 
 .contest-boxscore-team-short {
@@ -636,6 +658,13 @@
   flex-direction: column;
   align-items: center;
 }
+
+.contest-boxscore-table-wrapper.compact.wide {
+  min-width: 0;
+  max-width: none;
+  width: auto;
+}
+
 @media (max-width: 900px) {
   .contest-header-flex {
     flex-direction: column;

@@ -35,6 +35,8 @@ public interface IProvideContests : IProvideHealthChecks
 
     Task<Result<bool>> RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default);
 
+    Task<Result<bool>> FinalizeContestByContestId(Guid contestId, CancellationToken cancellationToken = default);
+
     // Matchup query endpoints (Phase 2)
     Task<Result<List<Matchup>>> GetMatchupsForCurrentWeek(CancellationToken ct = default);
     Task<Result<List<Matchup>>> GetMatchupsForSeasonWeek(int year, int week, CancellationToken ct = default);
@@ -158,6 +160,22 @@ public class ContestClient : ClientBase, IProvideContests
         return await PostWithResultAsync(
             $"contests/{contestId}/media/refresh",
             "RefreshContestMedia",
+            cancellationToken);
+    }
+
+    public async Task<Result<bool>> FinalizeContestByContestId(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
+
+        return await PostWithResultAsync(
+            $"contests/{contestId}/enrich",
+            "FinalizeContest",
             cancellationToken);
     }
 

@@ -30,6 +30,7 @@ using SportsData.Api.Application.Venues.Queries.GetVenues;
 using SportsData.Api.Application.Venues.Queries.GetVenueById;
 using SportsData.Api.Application.UI.Conferences.Queries.GetConferenceNamesAndSlugs;
 using SportsData.Api.Infrastructure.Refs;
+using SportsData.Api.Application.UI.Contest.Commands.FinalizeContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
@@ -156,6 +157,7 @@ namespace SportsData.Api.DependencyInjection
             // Contest Commands
             services.AddScoped<IRefreshContestCommandHandler, RefreshContestCommandHandler>();
             services.AddScoped<IRefreshContestMediaCommandHandler, RefreshContestMediaCommandHandler>();
+            services.AddScoped<IFinalizeContestCommandHandler, FinalizeContestCommandHandler>();
             services.AddScoped<ISubmitContestPredictionsCommandHandler, SubmitContestPredictionsCommandHandler>();
 
             // Contest Queries

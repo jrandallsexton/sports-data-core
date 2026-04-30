@@ -28,6 +28,10 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
   const normAwayBg = getMutedColor(awayTeamColor);
   const awayTotal = quarterScores.reduce((sum, q) => sum + q.awayScore, 0);
   const homeTotal = quarterScores.reduce((sum, q) => sum + q.homeScore, 0);
+  // Football has 4 quarters (or 5+ with OT); baseball has 9 innings. Anything
+  // past the football default needs a wider wrapper and tighter cell padding
+  // so the Total ("T") column doesn't collide with the home-team score.
+  const wideClass = quarterScores.length > 4 ? " wide" : "";
 
   return (
     <div className="contest-section">
@@ -44,9 +48,9 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
         </Link>
         <div className="contest-team-score contest-header-team-score-away">{awayTotal}</div>
         {/* Box Score Table */}
-        <div className="contest-boxscore-table-wrapper compact">
+        <div className={`contest-boxscore-table-wrapper compact${wideClass}`}>
           <div className="contest-boxscore-final">Final</div>
-          <table className="contest-boxscore-table compact">
+          <table className={`contest-boxscore-table compact${wideClass}`}>
             <thead>
               <tr>
                 <th></th>

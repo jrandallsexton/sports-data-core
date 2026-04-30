@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.UI.Contest.Commands.FinalizeContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
 using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
@@ -56,6 +57,21 @@ public class ContestController : ApiControllerBase
     {
         var mode = ModeMapper.ResolveMode(sport, league);
         var command = new RefreshContestMediaCommand { ContestId = id, Sport = mode };
+        var result = await handler.ExecuteAsync(command, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    [HttpPost("{id}/finalize")]
+    public async Task<ActionResult<Guid>> FinalizeContestById(
+        [FromRoute] Guid id,
+        [FromQuery] string sport = "football",
+        [FromQuery] string league = "ncaa",
+        [FromServices] IFinalizeContestCommandHandler handler = default!,
+        CancellationToken cancellationToken = default)
+    {
+        var mode = ModeMapper.ResolveMode(sport, league);
+        var command = new FinalizeContestCommand { ContestId = id, Sport = mode };
         var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();

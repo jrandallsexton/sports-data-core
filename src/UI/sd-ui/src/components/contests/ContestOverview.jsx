@@ -24,6 +24,8 @@ export default function ContestOverview() {
   const [refreshError, setRefreshError] = useState(null);
   const [refreshingMedia, setRefreshingMedia] = useState(false);
   const [refreshMediaError, setRefreshMediaError] = useState(null);
+  const [finalizing, setFinalizing] = useState(false);
+  const [finalizeError, setFinalizeError] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -74,6 +76,19 @@ export default function ContestOverview() {
     setRefreshingMedia(false);
   };
 
+  const handleFinalize = async () => {
+    setFinalizing(true);
+    setFinalizeError(null);
+    try {
+      await apiWrapper.Contest.finalize(contestId, sport, league);
+      toast.success("Finalize contest request submitted.");
+    } catch (err) {
+      setFinalizeError("Failed to finalize contest.");
+      toast.error("Failed to submit finalize request.");
+    }
+    setFinalizing(false);
+  };
+
   return (
     <div className="contest-overview-container">
       <ContestOverviewHeader homeTeam={homeTeam} awayTeam={awayTeam} quarterScores={quarterScores} seasonYear={header.seasonYear} sport={sport} league={league} />
@@ -112,6 +127,15 @@ export default function ContestOverview() {
             {refreshingMedia ? "Refreshing..." : "Refresh Media"}
           </button>
           {refreshMediaError && <div style={{ color: "#d32f2f", marginTop: 8 }}>{refreshMediaError}</div>}
+
+          <button
+            onClick={handleFinalize}
+            disabled={finalizing}
+            style={{ padding: "10px 24px", fontSize: 16, fontWeight: 600, borderRadius: 6, background: "#23272f", color: "#fff", border: "none", cursor: "pointer", marginTop: 16 }}
+          >
+            {finalizing ? "Finalizing..." : "Finalize Contest"}
+          </button>
+          {finalizeError && <div style={{ color: "#d32f2f", marginTop: 8 }}>{finalizeError}</div>}
         </div>
       )}
     </div>

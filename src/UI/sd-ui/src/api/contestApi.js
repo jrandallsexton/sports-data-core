@@ -13,6 +13,10 @@ const ContestApi = {
   refreshMedia: (contestId, sport, league) =>
     apiClient.post(`/ui/contest/${contestId}/media/refresh`, null, {
       params: { sport, league }
+    }),
+  finalize: (contestId, sport, league) =>
+    apiClient.post(`/ui/contest/${contestId}/finalize`, null, {
+      params: { sport, league }
     })
 };
 

@@ -24,6 +24,13 @@ namespace SportsData.Producer.Application.Contests
     public class ContestUpdateJob<TDataContext> : IContestUpdateJob, IAmARecurringJob
         where TDataContext : TeamSportDataContext
     {
+        // One-shot backfill: when true, ignore current-season-week scoping and enqueue
+        // updates for every non-finalized contest in the most recent season whose start
+        // time has passed. Used to catch MLB up after mid-season onboarding. Flip back
+        // to false before steady-state deploys — the default per-week path is what runs
+        // in production.
+        private static readonly bool BackfillCurrentSeason = true;
+
         private readonly ILogger<ContestUpdateJob<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
@@ -82,6 +89,12 @@ namespace SportsData.Producer.Application.Contests
 
         private async Task ExecuteInternal(Guid correlationId)
         {
+            if (BackfillCurrentSeason)
+            {
+                await ExecuteBackfillCurrentSeason(correlationId);
+                return;
+            }
+
             _logger.LogInformation(
                 "📅 QUERY_SEASON_WEEK: Querying for current season week. CurrentUtc={CurrentUtc}",
                 DateTime.UtcNow);
@@ -196,6 +209,101 @@ namespace SportsData.Producer.Application.Contests
                 enqueuedCount,
                 failedCount,
                 currentSeasonWeek.Id,
+                correlationId);
+        }
+
+        private async Task ExecuteBackfillCurrentSeason(Guid correlationId)
+        {
+            _logger.LogWarning(
+                "🛠️ BACKFILL_MODE: BackfillCurrentSeason flag is ON. Bypassing current-season-week scope. " +
+                "CurrentUtc={CurrentUtc}, CorrelationId={CorrelationId}",
+                DateTime.UtcNow,
+                correlationId);
+
+            var currentSeasonYear = await _dataContext.Seasons
+                .AsNoTracking()
+                .OrderByDescending(s => s.Year)
+                .Select(s => (int?)s.Year)
+                .FirstOrDefaultAsync();
+
+            if (currentSeasonYear is null)
+            {
+                _logger.LogError(
+                    "❌ SEASON_NOT_FOUND: No seasons found in database. Cannot run backfill. CorrelationId={CorrelationId}",
+                    correlationId);
+                return;
+            }
+
+            _logger.LogInformation(
+                "✅ BACKFILL_SEASON: Targeting season for backfill. SeasonYear={SeasonYear}, CorrelationId={CorrelationId}",
+                currentSeasonYear,
+                correlationId);
+
+            var contests = await _dataContext.Contests
+                .AsNoTracking()
+                .Where(c => c.SeasonYear == currentSeasonYear &&
+                            c.StartDateUtc < DateTime.UtcNow &&
+                            c.FinalizedUtc == null)
+                .OrderBy(c => c.StartDateUtc)
+                .ToListAsync();
+
+            _logger.LogInformation(
+                "✅ BACKFILL_CONTESTS_FOUND: Non-finalized started contests for season. Count={Count}, " +
+                "SeasonYear={SeasonYear}, CorrelationId={CorrelationId}",
+                contests.Count,
+                currentSeasonYear,
+                correlationId);
+
+            if (contests.Count == 0)
+            {
+                return;
+            }
+
+            var enqueuedCount = 0;
+            var failedCount = 0;
+
+            foreach (var contest in contests)
+            {
+                try
+                {
+                    var cmd = new UpdateContestCommand(
+                        contest.Id,
+                        SourceDataProvider.Espn,
+                        _appMode.CurrentSport,
+                        correlationId);
+
+                    var jobId = _backgroundJobProvider.Enqueue<IUpdateContests>(p => p.Process(cmd));
+
+                    enqueuedCount++;
+
+                    _logger.LogDebug(
+                        "✅ BACKFILL_CONTEST_ENQUEUED: ContestId={ContestId}, ShortName={ShortName}, " +
+                        "HangfireJobId={JobId}, StartDate={StartDate}",
+                        contest.Id,
+                        contest.ShortName,
+                        jobId,
+                        contest.StartDateUtc);
+                }
+                catch (Exception ex)
+                {
+                    failedCount++;
+
+                    _logger.LogError(
+                        ex,
+                        "❌ BACKFILL_CONTEST_ENQUEUE_FAILED: ContestId={ContestId}, ShortName={ShortName}, Error={ErrorMessage}",
+                        contest.Id,
+                        contest.ShortName,
+                        ex.Message);
+                }
+            }
+
+            _logger.LogInformation(
+                "📊 BACKFILL_ENQUEUE_SUMMARY: Total={Total}, Succeeded={Succeeded}, Failed={Failed}, " +
+                "SeasonYear={SeasonYear}, CorrelationId={CorrelationId}",
+                contests.Count,
+                enqueuedCount,
+                failedCount,
+                currentSeasonYear,
                 correlationId);
         }
     }

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMediaRefresh;
 using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMetricsCalculation;
@@ -28,9 +30,16 @@ public class CompetitionController : ControllerBase
     [HttpPost("metrics/generate/{seasonYear}")]
     public async Task<ActionResult<RefreshCompetitionMetricsResult>> RefreshCompetitionMetrics(
         [FromRoute] int seasonYear,
-        [FromServices] IRefreshCompetitionMetricsCommandHandler handler,
+        [FromServices] IAppMode appMode,
         CancellationToken cancellationToken)
     {
+        // Football-only handler. Resolved manually after the mode guard so
+        // non-football pods return a typed BadRequest instead of bubbling a
+        // DI resolution InvalidOperationException out of model binding.
+        if (appMode.CurrentSport is not (Sport.FootballNcaa or Sport.FootballNfl))
+            return BadRequest($"RefreshCompetitionMetrics is football-only. CurrentSport={appMode.CurrentSport}");
+
+        var handler = HttpContext.RequestServices.GetRequiredService<IRefreshCompetitionMetricsCommandHandler>();
         var command = new RefreshCompetitionMetricsCommand(seasonYear);
         var result = await handler.ExecuteAsync(command, cancellationToken);
 
@@ -40,9 +49,13 @@ public class CompetitionController : ControllerBase
     [HttpPost("{competitionId}/drives/refresh")]
     public async Task<ActionResult<Guid>> RefreshDrives(
         [FromRoute] Guid competitionId,
-        [FromServices] IRefreshCompetitionDrivesCommandHandler handler,
+        [FromServices] IAppMode appMode,
         CancellationToken cancellationToken)
     {
+        if (appMode.CurrentSport is not (Sport.FootballNcaa or Sport.FootballNfl))
+            return BadRequest($"RefreshDrives is football-only. CurrentSport={appMode.CurrentSport}");
+
+        var handler = HttpContext.RequestServices.GetRequiredService<IRefreshCompetitionDrivesCommandHandler>();
         var command = new RefreshCompetitionDrivesCommand(competitionId);
         var result = await handler.ExecuteAsync(command, cancellationToken);
 

@@ -6,7 +6,6 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
-using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;

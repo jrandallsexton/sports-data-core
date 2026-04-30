@@ -7,8 +7,8 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.DataSources.Espn;
-using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionDrives;
 
@@ -19,12 +19,12 @@ public interface IRefreshCompetitionDrivesCommandHandler
 
 public class RefreshCompetitionDrivesCommandHandler : IRefreshCompetitionDrivesCommandHandler
 {
-    private readonly TeamSportDataContext _dataContext;
+    private readonly FootballDataContext _dataContext;
     private readonly IEventBus _eventBus;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
 
     public RefreshCompetitionDrivesCommandHandler(
-        TeamSportDataContext dataContext,
+        FootballDataContext dataContext,
         IEventBus eventBus,
         IGenerateExternalRefIdentities externalRefIdentityGenerator)
     {

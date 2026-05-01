@@ -2,12 +2,20 @@
 
 This document outlines the integration events used within the SportsData system. The system follows an event-driven architecture where both the **Producer** and **API** services publish events to a message bus (MassTransit over RabbitMQ locally / Azure Service Bus in production). Some events are also forwarded to the frontend via **Azure SignalR**.
 
+> **Looking for the canonical map of who publishes/consumes what (with broken-chain flags)?** See [Event Surface Overview](event-surface-overview.md). This catalog lists event names; the overview adds wiring status, file:line references, and recommendations.
+
 ## Architecture Overview
 
 1.  **Producer**: Sources data from external providers, processes it, and publishes integration events.
 2.  **Message Bus**: Transports events between services.
 3.  **API**: Consumes events to update its read models or trigger other actions.
 4.  **SignalR**: The API forwards specific real-time events to connected clients (web frontend).
+
+## Event Flows (multi-hop chains)
+
+Some user-visible features traverse multiple events across multiple services and pod roles. These docs show the full chain end-to-end with sequence diagrams and per-hop narrative.
+
+*   [Competitor Score Update → Live UI Push](events/flows/competitor-score-flow.md) — `DocumentCreated` → `CompetitorScoreUpdated` → `ContestScoreChanged` → SignalR push to web clients. Three services, two pod roles, two Hangfire hops.
 
 ## Event Catalog
 

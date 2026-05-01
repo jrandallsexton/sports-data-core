@@ -7,6 +7,7 @@ using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
+using SportsData.Producer.Application.Consumers;
 using SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
 using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMediaRefresh;
 using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMetricsCalculation;
@@ -114,6 +115,7 @@ namespace SportsData.Producer.DependencyInjection
             services.AddDataPersistenceExternal();
 
             services.AddScoped<DocumentCreatedProcessor>();
+            services.AddScoped<ICompetitorScoreUpdatedConsumerHandler, CompetitorScoreUpdatedConsumerHandler>();
 
             services.AddSingleton<IDocumentProcessorRegistry, DocumentProcessorRegistry>();
             services.Scan(scan => scan

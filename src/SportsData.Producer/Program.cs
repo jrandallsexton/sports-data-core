@@ -120,6 +120,7 @@ public class Program
         {
             var consumers = new List<Type>
             {
+                typeof(CompetitorScoreUpdatedConsumer),
                 typeof(DocumentCreatedHandler),
                 // typeof(DocumentDeadLetterConsumer), // DISABLED: Allow messages to accumulate for later replay
                 typeof(LoadTestProducerEventConsumer),

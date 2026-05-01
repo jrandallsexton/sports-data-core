@@ -34,7 +34,7 @@ These are the items most worth attention. None of these is a code change request
 
 ### 2.1 ✅ RESOLVED 2026-05-01 — `CompetitorScoreUpdatedConsumer` was not registered
 
-Refactored to a thin Ingest shim that enqueues `CompetitorScoreUpdatedConsumerHandler` (new Hangfire job class on Worker). Consumer is now registered in `Program.cs:122`. The handler does the `Contest.HomeScore`/`AwayScore` update and publishes `ContestScoreChanged` — preserving the publish-before-save outbox order. See [Competitor Score Flow](events/flows/competitor-score-flow.md) for the end-to-end trace and [`feedback_ingest_consumer_thin_shim`](../../../Users/Randall/.claude/projects/C--Projects-sports-data/memory/feedback_ingest_consumer_thin_shim.md) memory for the rule that drove the shim shape.
+Refactored to a thin Ingest shim that enqueues `CompetitorScoreUpdatedConsumerHandler` (new Hangfire job class on Worker). Consumer is now registered in `Program.cs:122`. The handler does the `Contest.HomeScore`/`AwayScore` update and publishes `ContestScoreChanged` — preserving the publish-before-save outbox order. See [Competitor Score Flow](events/flows/competitor-score-flow.md) for the end-to-end trace. The shim shape is mandated by the project rule `feedback_ingest_consumer_thin_shim` (Ingest consumers must be thin Hangfire-spawn shims; no inline DB writes on Ingest pods).
 
 ### 2.2 ✅ RESOLVED 2026-05-01 — `ContestScoreChangedHandler` was not registered
 

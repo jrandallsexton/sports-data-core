@@ -235,11 +235,13 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IEnqueueSeasonWeekContestsUpdateCommandHandler, EnqueueSeasonWeekContestsUpdateCommandHandler>();
 
             // Competition Commands
-            services.AddScoped<IRefreshCompetitionDrivesCommandHandler, RefreshCompetitionDrivesCommandHandler>();
             services.AddScoped<IEnqueueCompetitionMetricsCalculationCommandHandler, EnqueueCompetitionMetricsCalculationCommandHandler>();
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)
             {
-                // Both depend on FootballDataContext.
+                // Drives are football-only and the handler depends on
+                // FootballDataContext (which is only registered on football
+                // pods). Same constraint as the metrics handlers below.
+                services.AddScoped<IRefreshCompetitionDrivesCommandHandler, RefreshCompetitionDrivesCommandHandler>();
                 services.AddScoped<ICalculateCompetitionMetricsCommandHandler, CalculateCompetitionMetricsCommandHandler>();
                 services.AddScoped<IRefreshCompetitionMetricsCommandHandler, RefreshCompetitionMetricsCommandHandler>();
             }

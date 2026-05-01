@@ -107,9 +107,6 @@ namespace SportsData.Producer.Infrastructure.Data.Common
         public DbSet<ContestBase> Contests { get; set; }
         public DbSet<ContestExternalId> ContestExternalIds { get; set; }
 
-        public DbSet<CompetitionDrive> Drives { get; set; }
-        public DbSet<CompetitionDriveExternalId> DriveExternalIds { get; set; }
-
         public DbSet<Franchise> Franchises { get; set; }
         public DbSet<FranchiseExternalId> FranchiseExternalIds { get; set; }
 
@@ -232,9 +229,6 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
             modelBuilder.ApplyConfiguration(new ContestBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new ContestExternalId.EntityConfiguration());
-
-            modelBuilder.ApplyConfiguration(new CompetitionDrive.EntityConfiguration());
-            modelBuilder.ApplyConfiguration(new CompetitionDriveExternalId.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new Draft.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new DraftRound.EntityConfiguration());

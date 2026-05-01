@@ -20,6 +20,15 @@ namespace SportsData.Producer.Infrastructure.Data.Football
 
         public new DbSet<FootballCompetitionPlay> CompetitionPlays { get; set; }
 
+        // Drives are football-only (a "drive" is a contiguous offensive
+        // possession terminating in a result). Lifted off TeamSportDataContext
+        // so EF doesn't discover FootballCompetitionPlay via the
+        // CompetitionDrive.Plays navigation when building per-sport models
+        // for non-football contexts (which used to pollute MLB's CompetitionPlay
+        // table with football-only TPH columns).
+        public DbSet<CompetitionDrive> Drives { get; set; }
+        public DbSet<CompetitionDriveExternalId> DriveExternalIds { get; set; }
+
         // Sport-specific status DbSet — typed entry point for the
         // football side of the CompetitionStatus split.
         public DbSet<FootballCompetitionStatus> FootballCompetitionStatuses { get; set; }
@@ -33,6 +42,8 @@ namespace SportsData.Producer.Infrastructure.Data.Football
             modelBuilder.ApplyConfiguration(new FootballCompetition.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetitionPlay.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetitionStatus.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionDrive.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionDriveExternalId.EntityConfiguration());
         }
     }
 }

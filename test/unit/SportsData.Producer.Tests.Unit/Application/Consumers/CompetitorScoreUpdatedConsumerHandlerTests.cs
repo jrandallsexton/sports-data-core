@@ -114,14 +114,16 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
         var correlationId = Guid.NewGuid();
         var evt = BuildEvent(contestId, franchiseSeasonId: HomeFranchiseSeasonId, score: 3, correlationId: correlationId);
 
-        var beforeUtc = DateTime.UtcNow.AddSeconds(-1);
+        var fixedUtc = new DateTime(2026, 5, 1, 14, 30, 0, DateTimeKind.Utc);
+        Mock.Get(Mocker.Get<IDateTimeProvider>())
+            .Setup(x => x.UtcNow())
+            .Returns(fixedUtc);
 
         await _sut.Process(evt);
 
         var saved = await FootballDataContext.Contests.AsNoTracking().FirstAsync(c => c.Id == contestId);
         saved.ModifiedBy.Should().Be(correlationId);
-        saved.ModifiedUtc.Should().NotBeNull();
-        saved.ModifiedUtc!.Value.Should().BeOnOrAfter(beforeUtc);
+        saved.ModifiedUtc.Should().Be(fixedUtc);
     }
 
     [Fact]

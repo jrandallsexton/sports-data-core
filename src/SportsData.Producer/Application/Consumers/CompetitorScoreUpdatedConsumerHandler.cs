@@ -25,15 +25,18 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
     private readonly ILogger<CompetitorScoreUpdatedConsumerHandler> _logger;
     private readonly TeamSportDataContext _dataContext;
     private readonly IEventBus _eventBus;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public CompetitorScoreUpdatedConsumerHandler(
         ILogger<CompetitorScoreUpdatedConsumerHandler> logger,
         TeamSportDataContext dataContext,
-        IEventBus eventBus)
+        IEventBus eventBus,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
         _eventBus = eventBus;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task Process(CompetitorScoreUpdated evt)
@@ -88,7 +91,7 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
         }
 
         contest.ModifiedBy = evt.CorrelationId;
-        contest.ModifiedUtc = DateTime.UtcNow;
+        contest.ModifiedUtc = _dateTimeProvider.UtcNow();
 
         // Publish integration event BEFORE SaveChangesAsync so the MassTransit
         // EF Core outbox interceptor flushes the publish in the same transaction

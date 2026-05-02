@@ -48,14 +48,20 @@ export function getStartLabel(sport) {
 }
 
 /**
- * Returns the abbreviation (e.g. "EDT", "CST", "GMT+9") for a given IANA zone
- * at the current moment. Used to label kickoff columns.
+ * Returns the abbreviation (e.g. "EDT", "CST", "GMT+9") for a given IANA zone.
+ * Pass `gameDateIso` for a per-game label so the abbreviation reflects the
+ * game's actual DST status (e.g. an October NCAAFB game viewed in May should
+ * read "EDT" if it falls before the Nov DST switch, "EST" otherwise) rather
+ * than today's. Falls back to "now" when no date is provided — appropriate
+ * for column headers spanning multiple games.
  */
-export function getZoneAbbreviation(timezone = DEFAULT_TIMEZONE) {
+export function getZoneAbbreviation(timezone = DEFAULT_TIMEZONE, gameDateIso) {
   const zone = timezone || DEFAULT_TIMEZONE;
-  const dt = DateTime.now().setZone(zone);
-  if (!dt.isValid) return "ET";
-  return dt.toFormat("ZZZZ");
+  const base = gameDateIso
+    ? DateTime.fromISO(gameDateIso, { zone: "utc" }).setZone(zone)
+    : DateTime.now().setZone(zone);
+  if (!base.isValid) return "ET";
+  return base.toFormat("ZZZZ");
 }
 
 /**

@@ -40,14 +40,14 @@ public class UpdateUserTimezoneCommandHandler : IUpdateUserTimezoneCommandHandle
         var validation = await _validator.ValidateAsync(command, cancellationToken);
         if (!validation.IsValid)
         {
-            return new Failure<Guid>(default, ResultStatus.BadRequest, validation.Errors);
+            return new Failure<Guid>(default!, ResultStatus.BadRequest, validation.Errors);
         }
 
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         if (user is null)
         {
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(userId), $"User with ID {userId} not found.")]);
         }
@@ -57,7 +57,11 @@ public class UpdateUserTimezoneCommandHandler : IUpdateUserTimezoneCommandHandle
 
         await _db.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Timezone updated. UserId={UserId}, Timezone={Timezone}", user.Id, normalized);
+        // Strip CRLF before logging to defeat log-forgery even though the
+        // validator's TimeZoneInfo.TryFindSystemTimeZoneById check already
+        // rejects any input containing newlines.
+        var safeForLog = normalized?.Replace("\r", string.Empty).Replace("\n", string.Empty);
+        _logger.LogInformation("Timezone updated. UserId={UserId}, Timezone={Timezone}", user.Id, safeForLog);
 
         return new Success<Guid>(user.Id);
     }

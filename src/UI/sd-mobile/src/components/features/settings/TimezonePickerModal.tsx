@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -67,16 +67,26 @@ export function TimezonePickerModal({
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
-  const [showAll, setShowAll] = useState(false);
-  const [filter, setFilter] = useState('');
-  const [saving, setSaving] = useState(false);
-
   const allZones = useMemo(() => getAllIanaZones(), []);
   const isCurated = CURATED_TIMEZONES.some((z) => z.value === currentTimezone);
 
   // Auto-flip to the full list when the user has a non-curated zone (e.g.
-  // Europe/London) so they can see and change it.
-  const expanded = showAll || (!isCurated && allZones.length > 0);
+  // Europe/London) so they can see and change it. Initial state covers the
+  // first mount (no first-frame flash); the effect below re-evaluates each
+  // time the modal becomes visible so closing + re-opening with a still-
+  // non-curated zone re-flips. Critically, expanded is just `showAll` so
+  // the footer's `setShowAll(false)` actually collapses the view.
+  const [showAll, setShowAll] = useState(() => !isCurated && allZones.length > 0);
+  const [filter, setFilter] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      setShowAll(!isCurated && allZones.length > 0);
+    }
+  }, [visible, isCurated, allZones.length]);
+
+  const expanded = showAll;
 
   const filteredZones = useMemo(() => {
     if (!expanded) return [];

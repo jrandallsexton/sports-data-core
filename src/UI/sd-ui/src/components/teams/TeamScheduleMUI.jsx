@@ -15,7 +15,7 @@ import {
   Chip,
 } from "@mui/material";
 
-export default function TeamScheduleMUI({ schedule = [], seasonYear, sport = 'football' }) {
+export default function TeamScheduleMUI({ schedule = [], seasonYear, sport = 'football', league = 'ncaa' }) {
   const hasRows = Array.isArray(schedule) && schedule.length > 0;
   const userTz = useUserTimeZone();
   const zoneAbbrev = getZoneAbbreviation(userTz);
@@ -73,7 +73,7 @@ export default function TeamScheduleMUI({ schedule = [], seasonYear, sport = 'fo
 
                   <TableCell>
                     <Link
-                      to={teamLink(game.opponentSlug, seasonYear)}
+                      to={teamLink(game.opponentSlug, seasonYear, sport, league)}
                       style={{
                         textDecoration: "underline",
                         fontWeight: 500,

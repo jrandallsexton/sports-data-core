@@ -147,6 +147,14 @@ function SettingsPage() {
                   }}
                   disabled={tzSaving}
                 >
+                  {/* Fallback option for a non-curated saved zone (e.g.
+                      Europe/London) when the host lacks Intl.supportedValuesOf —
+                      without this the <select> has no matching <option> and
+                      visually defaults to Eastern, hiding the user's real saved
+                      value. */}
+                  {!isCurated && (
+                    <option value={effectiveTimezone}>{effectiveTimezone}</option>
+                  )}
                   {CURATED_TIMEZONES.map((z) => (
                     <option key={z.value} value={z.value}>{z.label}</option>
                   ))}

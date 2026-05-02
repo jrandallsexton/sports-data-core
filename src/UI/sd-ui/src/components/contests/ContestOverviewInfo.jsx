@@ -7,7 +7,9 @@ import "./ContestOverview.css";
 
 export default function ContestOverviewInfo({ info }) {
   const userTz = useUserTimeZone();
-  const zoneAbbrev = getZoneAbbreviation(userTz);
+  // Pass the game's date so the abbreviation matches its DST window
+  // (e.g. "EST" for an October NCAAFB game even when viewed in May).
+  const zoneAbbrev = getZoneAbbreviation(userTz, info?.startDateUtc);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const handleOpenLightbox = () => setLightboxOpen(true);
   const handleCloseLightbox = () => setLightboxOpen(false);

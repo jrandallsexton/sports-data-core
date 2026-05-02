@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Webcam } from "lucide-react";
 import { contestLink } from '../../utils/sportLinks';
 
 /**
@@ -23,6 +24,10 @@ import { contestLink } from '../../utils/sportLinks';
  * @param {string} [props.sport] - URL sport segment (e.g. "baseball"); falls
  *   back to football/ncaa via contestLink defaults when omitted.
  * @param {string} [props.league] - URL league segment (e.g. "mlb").
+ * @param {string} [props.streamScheduledTimeUtc] - ISO UTC timestamp; non-null
+ *   when an actionable CompetitionStream row exists. Drives the "View" CTA
+ *   for upcoming games so users can confirm the live-stream is scheduled and
+ *   jump to the contest overview.
  */
 function GameStatus({
   status,
@@ -42,7 +47,8 @@ function GameStatus({
   isScoringPlay,
   contestId,
   sport,
-  league
+  league,
+  streamScheduledTimeUtc
 }) {
   if (status === 'Final') {
     const scoreContent = (
@@ -118,10 +124,25 @@ function GameStatus({
 
   // Scheduled or other status
   return (
-    <div className="game-time-location">
-      <div>{gameTime} | {broadcasts}</div>
-      <div>{venue} | {location}</div>
-    </div>
+    <>
+      <div className="game-time-location">
+        <div>{gameTime} | {broadcasts}</div>
+        <div>{venue} | {location}</div>
+      </div>
+      {streamScheduledTimeUtc && contestId && (
+        <div className="game-result game-result-stream">
+          <Link
+            to={contestLink(contestId, sport, league)}
+            className="final-score-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Webcam size={16} aria-hidden="true" />
+            <span style={{ marginLeft: 6 }}>View</span>
+          </Link>
+        </div>
+      )}
+    </>
   );
 }
 

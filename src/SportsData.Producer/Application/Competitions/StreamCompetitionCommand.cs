@@ -1,8 +1,8 @@
-﻿using SportsData.Core.Common;
+using SportsData.Core.Common;
 
 namespace SportsData.Producer.Application.Competitions;
 
-public class StreamFootballCompetitionCommand
+public class StreamCompetitionCommand
 {
     public Sport Sport { get; set; }
 

@@ -89,7 +89,7 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
         // Create test game data in the database
         var (contest, competition, stream) = await CreateTestGameAsync();
         
-        var command = new StreamFootballCompetitionCommand
+        var command = new StreamCompetitionCommand
         {
             CompetitionId = competition.Id,
             ContestId = contest.Id,

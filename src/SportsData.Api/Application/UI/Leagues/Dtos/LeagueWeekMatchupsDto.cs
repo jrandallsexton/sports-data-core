@@ -84,6 +84,11 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
             public Guid? SpreadWinnerFranchiseSeasonId { get; set; }
             public OverUnderPick? OverUnderResult { get; set; }
             public DateTime? CompletedUtc { get; set; }
+
+            // Streaming (live updates) — non-null when a CompetitionStream row
+            // exists in an actionable state (Scheduled / AwaitingStart / Active).
+            // Drives the "View" call-to-action on matchup cards.
+            public DateTime? StreamScheduledTimeUtc { get; set; }
         }
     }
 }

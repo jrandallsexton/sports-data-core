@@ -301,7 +301,14 @@ namespace SportsData.Producer.DependencyInjection
             {
                 // Both depend on FootballDataContext.
                 services.AddScoped<IContestReplayService, ContestReplayService>();
-                services.AddScoped<IFootballCompetitionBroadcastingJob, FootballCompetitionStreamer>();
+                services.AddScoped<ICompetitionBroadcastingJob, FootballCompetitionStreamer>();
+                services.AddScoped<CompetitionStreamScheduler>();
+            }
+
+            if (mode is Sport.BaseballMlb)
+            {
+                services.AddScoped<ICompetitionBroadcastingJob, BaseballCompetitionStreamer>();
+                services.AddScoped<CompetitionStreamScheduler>();
             }
 
             // Season Queries
@@ -377,10 +384,21 @@ namespace SportsData.Producer.DependencyInjection
                     job => job.ExecuteAsync(),
                     "0 7 * * 0"); // Sunday at 07:00 UTC
 
-                recurringJobManager.AddOrUpdate<FootballCompetitionStreamScheduler>(
-                    nameof(FootballCompetitionStreamScheduler),
+                recurringJobManager.AddOrUpdate<CompetitionStreamScheduler>(
+                    nameof(CompetitionStreamScheduler),
                     job => job.Execute(),
                     "0 7 * * 0"); // Sunday at 07:00 UTC
+            }
+
+            if (mode is Sport.BaseballMlb)
+            {
+                // MLB plays daily, so re-run the scheduler each morning to catch
+                // newly-rolled SeasonWeek windows. The scheduler is idempotent —
+                // already-scheduled streams are skipped via the existing CompetitionStream row.
+                recurringJobManager.AddOrUpdate<CompetitionStreamScheduler>(
+                    nameof(CompetitionStreamScheduler),
+                    job => job.Execute(),
+                    "0 7 * * *"); // Daily at 07:00 UTC
             }
 
             recurringJobManager.AddOrUpdate<FranchiseSeasonEnrichmentJob>(

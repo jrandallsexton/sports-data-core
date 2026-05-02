@@ -139,7 +139,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
     public async Task ExecuteAsync_ReturnsEarly_WhenCompetitionNotFound()
     {
         // Arrange
-        var command = new StreamFootballCompetitionCommand
+        var command = new StreamCompetitionCommand
         {
             CompetitionId = Guid.NewGuid(),
             ContestId = Guid.NewGuid(),
@@ -175,7 +175,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         
         FootballDataContext.ChangeTracker.Clear();
 
-        var command = new StreamFootballCompetitionCommand
+        var command = new StreamCompetitionCommand
         {
             CompetitionId = competition.Id,
             ContestId = contest.Id,
@@ -205,7 +205,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         // Arrange
         var (contest, competition, stream) = await CreateTestGameAsync(isFinal: true);
 
-        var command = new StreamFootballCompetitionCommand
+        var command = new StreamCompetitionCommand
         {
             CompetitionId = competition.Id,
             ContestId = contest.Id,
@@ -293,7 +293,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         
         Mocker.Use(factory.Object);
 
-        var command = new StreamFootballCompetitionCommand
+        var command = new StreamCompetitionCommand
         {
             CompetitionId = competition.Id,
             ContestId = contest.Id,
@@ -362,7 +362,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         );
         Mocker.Use(httpFactory.Object);
 
-        var command = new StreamFootballCompetitionCommand
+        var command = new StreamCompetitionCommand
         {
             CompetitionId = competition.Id,
             ContestId = contest.Id,
@@ -414,7 +414,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         );
         Mocker.Use(httpFactory.Object);
 
-        var command = new StreamFootballCompetitionCommand
+        var command = new StreamCompetitionCommand
         {
             CompetitionId = competition.Id,
             ContestId = contest.Id,
@@ -452,7 +452,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
 
         Mocker.Use(factory.Object);
 
-        var command = new StreamFootballCompetitionCommand
+        var command = new StreamCompetitionCommand
         {
             CompetitionId = competition.Id,
             ContestId = contest.Id,

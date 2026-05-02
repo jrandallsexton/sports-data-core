@@ -204,6 +204,30 @@ export default function PicksScreen() {
                   } as never,
                 );
               }}
+              onPressTeam={(side) => {
+                if (!sportLeague) {
+                  console.warn(
+                    '[PicksScreen] Could not resolve sport for team navigation. Raw sport value:',
+                    matchupsResponse?.sport ?? '(no matchups response)',
+                  );
+                  return;
+                }
+                const slug =
+                  side === 'home' ? item.matchup.homeSlug : item.matchup.awaySlug;
+                router.push(
+                  {
+                    pathname: '/sport/[sport]/[league]/team/[slug]',
+                    params: {
+                      sport: sportLeague.sport,
+                      league: sportLeague.league,
+                      slug,
+                      season: String(matchupsResponse?.seasonYear ?? ''),
+                      backTitle: 'Games',
+                      backHref: '/(tabs)/picks',
+                    },
+                  } as never,
+                );
+              }}
               onPick={(m, _choice, franchiseSeasonId) => {
                 if (!leagueId || !selectedWeek) return;
                 submitPick.mutate({

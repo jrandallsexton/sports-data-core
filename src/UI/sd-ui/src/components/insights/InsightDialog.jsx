@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "./InsightDialog.css";
 import { useUserDto } from "../../contexts/UserContext";
-import { formatToEasternTime } from "../../utils/timeUtils";
+import { formatToUserTime } from "../../utils/timeUtils";
+import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 
 function InsightDialog({
   isOpen,
@@ -14,6 +15,7 @@ function InsightDialog({
 
   const { userDto } = useUserDto();
   const { isAdmin } = userDto;
+  const userTz = useUserTimeZone();
 
   // Local state for rejection note
   const [rejectionNote, setRejectionNote] = useState("");
@@ -97,7 +99,7 @@ function InsightDialog({
                 </h3>
                 {matchup.generatedUtc && (
                   <div style={{ fontSize: '0.98em', color: '#adb5bd', marginBottom: 6 }}>
-                    <strong>Generated:</strong> {formatToEasternTime(matchup.generatedUtc)}
+                    <strong>Generated:</strong> {formatToUserTime(matchup.generatedUtc, userTz)}
                   </div>
                 )}
                 <p>{matchup.prediction || "Prediction not available."}</p>

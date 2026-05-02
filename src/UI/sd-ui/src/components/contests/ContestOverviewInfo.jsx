@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import Dialog from '@mui/material/Dialog';
 import { FaTimes } from 'react-icons/fa';
-import { formatToEasternTime } from "../../utils/timeUtils";
+import { formatToUserTime, getZoneAbbreviation } from "../../utils/timeUtils";
+import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 import "./ContestOverview.css";
 
 export default function ContestOverviewInfo({ info }) {
+  const userTz = useUserTimeZone();
+  // Pass the game's date so the abbreviation matches its DST window
+  // (e.g. "EST" for an October NCAAFB game even when viewed in May).
+  const zoneAbbrev = getZoneAbbreviation(userTz, info?.startDateUtc);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const handleOpenLightbox = () => setLightboxOpen(true);
   const handleCloseLightbox = () => setLightboxOpen(false);
@@ -36,8 +41,8 @@ export default function ContestOverviewInfo({ info }) {
           {/* Venue image will be shown after the list */}
           {info.startDateUtc && (
             <li className="contest-info-item">
-              <span className="contest-info-label">Start Time (ET):</span> {' '}
-              <span className="contest-info-value">{formatToEasternTime(info.startDateUtc)}</span>
+              <span className="contest-info-label">Start Time ({zoneAbbrev}):</span> {' '}
+              <span className="contest-info-value">{formatToUserTime(info.startDateUtc, userTz)}</span>
             </li>
           )}
           {info.attendance !== undefined && (

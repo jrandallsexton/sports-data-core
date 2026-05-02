@@ -1,6 +1,7 @@
 import "./MatchupCard.css";
 import { FaChartLine, FaLock, FaClipboardList } from "react-icons/fa";
-import { formatToEasternTime } from "../../utils/timeUtils";
+import { formatToUserTime } from "../../utils/timeUtils";
+import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 import { useState, useEffect } from "react";
 import TeamComparison from "../teams/TeamComparison";
 import { useUserDto } from "../../contexts/UserContext";
@@ -10,6 +11,7 @@ import { usePickLocking } from "../../hooks/usePickLocking";
 import { useTeamComparison } from "../../hooks/useTeamComparison";
 import TeamRow from "./TeamRow";
 import GameStatus from "./GameStatus";
+import { resolveSportLeague } from "../../utils/sportLinks";
 import PickButton from "./PickButton";
 import { SpreadAndOverUnderDisplay } from "./BettingDisplays";
 import DeetsMeter from "./DeetsMeter";
@@ -39,6 +41,13 @@ function MatchupCard({
   // rendering a stale year.
   const seasonYear = leagueSeasonYear ?? matchup.seasonYear;
 
+  // /picks routes don't carry sport in the URL — resolve it from the matchups
+  // DTO's leagueSport so contest links, etc. point at the right sport-aware
+  // page (e.g. /sport/baseball/mlb/contest/{id}). null when leagueSport is
+  // missing or unmapped; downstream link helpers fall back to football/ncaa
+  // defaults in that case.
+  const sportLeague = resolveSportLeague(leagueSport);
+
   const [showConfidencePicker, setShowConfidencePicker] = useState(false);
   const [pendingPickFranchiseId, setPendingPickFranchiseId] = useState(null);
 
@@ -66,8 +75,10 @@ function MatchupCard({
     homeError
   } = useTeamSchedule(matchup.awaySlug, matchup.homeSlug, seasonYear, leagueSport);
 
+  const userTz = useUserTimeZone();
+
   // Game details
-  const gameTime = formatToEasternTime(matchup.startDateUtc);
+  const gameTime = formatToUserTime(matchup.startDateUtc, userTz);
   const venue = matchup.venue ?? "TBD";
   const location = `${matchup.venueCity ?? ""}, ${matchup.venueState ?? ""}`;
 
@@ -208,6 +219,8 @@ function MatchupCard({
           possessionFranchiseSeasonId={matchup.possessionFranchiseSeasonId}
           isScoringPlay={matchup.isScoringPlay}
           contestId={matchup.contestId}
+          sport={sportLeague?.sport}
+          league={sportLeague?.league}
         />
 
         {/* DeetsMeter - AI Prediction Meters */}

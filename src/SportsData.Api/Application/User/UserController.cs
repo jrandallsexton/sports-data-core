@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.User.Commands.UpdateUserTimezone;
 using SportsData.Api.Application.User.Commands.UpsertUser;
 using SportsData.Api.Application.User.Dtos;
 using SportsData.Api.Application.User.Queries.GetMe;
@@ -48,6 +49,18 @@ public class UserController : ApiControllerBase
         var query = new GetMeQuery { UserId = userId };
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
+        return result.ToActionResult();
+    }
+
+    [HttpPatch("me/timezone")]
+    [Authorize]
+    public async Task<ActionResult<Guid>> UpdateTimezone(
+        [FromBody] UpdateUserTimezoneCommand command,
+        [FromServices] IUpdateUserTimezoneCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+        var result = await handler.ExecuteAsync(userId, command, cancellationToken);
         return result.ToActionResult();
     }
 }

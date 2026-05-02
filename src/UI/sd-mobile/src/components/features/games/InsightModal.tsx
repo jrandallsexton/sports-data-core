@@ -12,6 +12,8 @@ import {
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import type { Matchup, PreviewResponse } from '@/src/types/models';
+import { formatToUserTime } from '@/src/utils/timeUtils';
+import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -41,6 +43,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 export function InsightModal({ visible, onClose, matchup, preview, isLoading }: InsightModalProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
+  const userTz = useUserTimeZone();
 
   return (
     <Modal
@@ -160,9 +163,7 @@ export function InsightModal({ visible, onClose, matchup, preview, isLoading }: 
                 {/* Generated time */}
                 {!!preview.generatedUtc && (
                   <Text style={[styles.generatedText, { color: theme.textMuted }]}>
-                    Generated {new Date(preview.generatedUtc).toLocaleDateString(undefined, {
-                      month: 'short', day: 'numeric', year: 'numeric',
-                    })}
+                    Generated {formatToUserTime(preview.generatedUtc, userTz)}
                   </Text>
                 )}
               </Section>

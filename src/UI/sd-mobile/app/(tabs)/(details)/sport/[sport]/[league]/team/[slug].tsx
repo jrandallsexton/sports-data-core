@@ -13,19 +13,8 @@ import { getTheme } from '@/constants/Colors';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { useTeamCard } from '@/src/hooks/useTeamCard';
 import type { TeamCardScheduleGame } from '@/src/types/models';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatKickoff(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
+import { formatToUserTime } from '@/src/utils/timeUtils';
+import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 
 // ─── Season Selector ─────────────────────────────────────────────────────────
 
@@ -88,6 +77,7 @@ function ScheduleRow({
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const router = useRouter();
+  const userTz = useUserTimeZone();
 
   const isFinalized = !!game.finalizedUtc;
   const resultLabel = isFinalized
@@ -102,7 +92,7 @@ function ScheduleRow({
   return (
     <View style={[styles.gameRow, { borderBottomColor: theme.separator }]}>
       <Text style={[styles.gameDate, { color: theme.textMuted }]} numberOfLines={2}>
-        {formatKickoff(game.date)}
+        {formatToUserTime(game.date, userTz)}
       </Text>
 
       <View style={styles.gameMiddle}>

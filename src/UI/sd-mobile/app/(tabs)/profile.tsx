@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,16 @@ import {
   ScrollView,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { useColorScheme, useThemeMode, type ThemeMode } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { auth } from '@/src/lib/firebase';
 import { useAuthStore } from '@/src/stores/authStore';
-import { useCurrentUser } from '@/src/hooks/useStandings';
+import { useCurrentUser, standingsKeys } from '@/src/hooks/useStandings';
 import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
+import { usersApi } from '@/src/services/api/usersApi';
+import { DEFAULT_TIMEZONE } from '@/src/utils/timeUtils';
+import { TimezonePickerModal } from '@/src/components/features/settings/TimezonePickerModal';
 
 // ─── Record card ──────────────────────────────────────────────────────────────
 
@@ -81,12 +85,35 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'system', label: 'System' },
 ];
 
+// Device default — Hermes exposes Intl.DateTimeFormat().resolvedOptions().
+// We use this to pre-populate the picker when the user hasn't picked a tz
+// yet. We do NOT auto-save the device tz; the user must explicitly confirm.
+function detectDeviceTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_TIMEZONE;
+  } catch {
+    return DEFAULT_TIMEZONE;
+  }
+}
+
 export default function ProfileScreen() {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const { user } = useAuthStore();
   const { data: me } = useCurrentUser();
   const { mode, setMode } = useThemeMode();
+  const queryClient = useQueryClient();
+
+  const deviceTz = useMemo(() => detectDeviceTimezone(), []);
+  const [tzPickerOpen, setTzPickerOpen] = useState(false);
+  const [tzMessage, setTzMessage] = useState('');
+
+  // The zone the user has saved, or the device default if nothing saved yet.
+  // The picker uses this to highlight the current selection. The user-set
+  // value is what the API persists; the device value is purely a sensible
+  // pre-population so the picker isn't empty.
+  const effectiveTimezone = me?.timezone || deviceTz;
+  const isUserSet = !!me?.timezone;
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -97,6 +124,26 @@ export default function ProfileScreen() {
         onPress: () => signOut(auth),
       },
     ]);
+  };
+
+  const handleTimezoneSelect = async (newTz: string) => {
+    if (!newTz) return;
+    setTzMessage('');
+    try {
+      await usersApi.updateTimezone(newTz);
+      // Refresh /user/me so every consumer (useUserTimeZone, etc.) picks up
+      // the new value on its next render.
+      await queryClient.invalidateQueries({ queryKey: standingsKeys.me });
+      setTzMessage('Saved.');
+      // Auto-close after a brief moment so the user sees the confirmation.
+      setTimeout(() => {
+        setTzPickerOpen(false);
+        setTzMessage('');
+      }, 600);
+    } catch (err) {
+      console.warn('[ProfileScreen] timezone update failed', err);
+      setTzMessage('Could not save timezone. Try again?');
+    }
   };
 
   const displayName = me?.displayName ?? user?.displayName ?? user?.email ?? '—';
@@ -161,12 +208,28 @@ export default function ProfileScreen() {
       {/* Account */}
       <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Account</Text>
+        <SettingsRow
+          label="Timezone"
+          value={isUserSet ? effectiveTimezone : `${effectiveTimezone} (device)`}
+          onPress={() => setTzPickerOpen(true)}
+        />
         <SettingsRow label="Edit Profile" onPress={() => {}} />
         <SettingsRow label="Notifications" onPress={() => {}} />
         <SettingsRow label="Sign Out" onPress={handleSignOut} destructive />
       </View>
 
       <View style={{ height: 40 }} />
+
+      <TimezonePickerModal
+        visible={tzPickerOpen}
+        onClose={() => {
+          setTzPickerOpen(false);
+          setTzMessage('');
+        }}
+        currentTimezone={effectiveTimezone}
+        onSelect={handleTimezoneSelect}
+        message={tzMessage}
+      />
     </ScrollView>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FaSearchPlus, FaSearchMinus } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { formatToMonthDay } from "../../utils/timeUtils";
+import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 import "./MiniSchedule.css";
 import { teamLink, contestLink, resolveSportLeague } from '../../utils/sportLinks';
 import "./MiniScheduleDrilldown.css";
@@ -22,6 +23,7 @@ export default function MiniSchedule({ schedule = [], seasonYear, leagueSport })
   // Null when the backend sport enum is missing or unmapped — we then render
   // plain-text team names instead of risking a wrong-sport route.
   const sportLeague = resolveSportLeague(leagueSport);
+  const userTz = useUserTimeZone();
   // TODO: create new endpoint that only returns completed games
   const games = schedule.slice(0, 13);
   // Drilldown state: which row is open, and its data
@@ -73,7 +75,7 @@ export default function MiniSchedule({ schedule = [], seasonYear, leagueSport })
           {games.length ? (
             games.map((game, idx) => [
               <tr key={idx}>
-                <td>{formatToMonthDay(game.date)}</td>
+                <td>{formatToMonthDay(game.date, userTz)}</td>
                 <td style={{ display: 'flex', alignItems: 'center' }}>
                   {(() => {
                     const opponentLabel = game.opponentShortName ?? game.opponent ?? 'Opponent';

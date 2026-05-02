@@ -1,7 +1,8 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { teamLink } from '../../utils/sportLinks';
-import { formatToEasternTime } from "../../utils/timeUtils";
+import { formatToUserTime, getZoneAbbreviation, getStartLabel } from "../../utils/timeUtils";
+import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 import {
   Paper,
   Table,
@@ -14,8 +15,11 @@ import {
   Chip,
 } from "@mui/material";
 
-export default function TeamScheduleMUI({ schedule = [], seasonYear }) {
+export default function TeamScheduleMUI({ schedule = [], seasonYear, sport = 'football' }) {
   const hasRows = Array.isArray(schedule) && schedule.length > 0;
+  const userTz = useUserTimeZone();
+  const zoneAbbrev = getZoneAbbreviation(userTz);
+  const startLabel = getStartLabel(sport);
 
   return (
     <TableContainer component={Paper} elevation={3} sx={{ mt: 2 }}>
@@ -36,7 +40,7 @@ export default function TeamScheduleMUI({ schedule = [], seasonYear }) {
         <TableHead>
           <TableRow sx={{ bgcolor: "grey.900" }}>
             <TableCell sx={{ color: "grey.100", fontWeight: 600 }}>
-              Kickoff (ET)
+              {startLabel} ({zoneAbbrev})
             </TableCell>
             <TableCell sx={{ color: "grey.100", fontWeight: 600 }}>
               Opponent
@@ -64,7 +68,7 @@ export default function TeamScheduleMUI({ schedule = [], seasonYear }) {
                   }}
                 >
                   <TableCell sx={{ whiteSpace: "nowrap" }}>
-                    {formatToEasternTime(game.date)}
+                    {formatToUserTime(game.date, userTz)}
                   </TableCell>
 
                   <TableCell>

@@ -1,10 +1,14 @@
 // src/components/teams/TeamSchedule.jsx
 import { Link } from "react-router-dom";
-import { formatToEasternTime } from "../../utils/timeUtils";
+import { formatToUserTime, getZoneAbbreviation, getStartLabel } from "../../utils/timeUtils";
+import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 import { teamLink, contestLink } from '../../utils/sportLinks';
 import "./TeamSchedule.css";
 
 function TeamSchedule({ schedule, seasonYear, sport = 'football', league = 'ncaa' }) {
+  const userTz = useUserTimeZone();
+  const zoneAbbrev = getZoneAbbreviation(userTz);
+  const startLabel = getStartLabel(sport);
   // Helper function to format game result
   const formatGameResult = (game) => {
     if (game.status === "Final") {
@@ -29,7 +33,7 @@ function TeamSchedule({ schedule, seasonYear, sport = 'football', league = 'ncaa
       <table>
         <thead>
           <tr>
-            <th>Kickoff (ET)</th>
+            <th>{startLabel} ({zoneAbbrev})</th>
             <th>Opponent</th>
             <th>Location</th>
             <th>Result</th>
@@ -39,7 +43,7 @@ function TeamSchedule({ schedule, seasonYear, sport = 'football', league = 'ncaa
           {schedule?.length ? (
             schedule.map((game, idx) => (
               <tr key={idx}>
-                <td>{formatToEasternTime(game.date)}</td>
+                <td>{formatToUserTime(game.date, userTz)}</td>
                 <td>
                   <Link
                     to={teamLink(game.opponentSlug, seasonYear, sport, league)}

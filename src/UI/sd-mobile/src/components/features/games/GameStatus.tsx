@@ -3,19 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import type { Matchup } from '@/src/types/models';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
+import { formatToUserTime } from '@/src/utils/timeUtils';
+import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -37,6 +26,7 @@ interface GameStatusProps {
 export function GameStatus({ matchup, onPressGameDetail }: GameStatusProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
+  const userTz = useUserTimeZone();
 
   const status = matchup.status.toLowerCase();
 
@@ -45,7 +35,7 @@ export function GameStatus({ matchup, onPressGameDetail }: GameStatusProps) {
     return (
       <View style={styles.statusSection}>
         <Text style={[styles.statusTime, { color: theme.text }]}>
-          {formatTime(matchup.startDateUtc)}
+          {formatToUserTime(matchup.startDateUtc, userTz)}
         </Text>
         {matchup.broadcasts ? (
           <Text style={[styles.statusMeta, { color: theme.textMuted }]}>

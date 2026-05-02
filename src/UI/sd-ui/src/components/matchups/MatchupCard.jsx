@@ -1,6 +1,7 @@
 import "./MatchupCard.css";
 import { FaChartLine, FaLock, FaClipboardList } from "react-icons/fa";
-import { formatToEasternTime } from "../../utils/timeUtils";
+import { formatToUserTime } from "../../utils/timeUtils";
+import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 import { useState, useEffect } from "react";
 import TeamComparison from "../teams/TeamComparison";
 import { useUserDto } from "../../contexts/UserContext";
@@ -66,8 +67,10 @@ function MatchupCard({
     homeError
   } = useTeamSchedule(matchup.awaySlug, matchup.homeSlug, seasonYear, leagueSport);
 
+  const userTz = useUserTimeZone();
+
   // Game details
-  const gameTime = formatToEasternTime(matchup.startDateUtc);
+  const gameTime = formatToUserTime(matchup.startDateUtc, userTz);
   const venue = matchup.venue ?? "TBD";
   const location = `${matchup.venueCity ?? ""}, ${matchup.venueState ?? ""}`;
 

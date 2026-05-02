@@ -55,21 +55,28 @@ export function useSubmitPick() {
 // ─── Contest overview ─────────────────────────────────────────────────────────
 
 export const contestKeys = {
-  overview: (contestId: string) => ['contest', 'overview', contestId] as const,
+  // sport/league are part of the cache key because the API routes by them —
+  // the same contestId in two sports would collide otherwise.
+  overview: (contestId: string, sport: string, league: string) =>
+    ['contest', 'overview', sport, league, contestId] as const,
 };
 
 /** Fetches the full contest overview for a completed or in-progress game. */
-export function useContestOverview(contestId: string | null | undefined) {
+export function useContestOverview(
+  contestId: string | null | undefined,
+  sport: string | null | undefined,
+  league: string | null | undefined,
+) {
   return useQuery<ContestOverviewDto>({
-    queryKey: contestKeys.overview(contestId ?? ''),
+    queryKey: contestKeys.overview(contestId ?? '', sport ?? '', league ?? ''),
     queryFn: () =>
-      contestOverviewApi.getOverview(contestId!).then((r) => {
+      contestOverviewApi.getOverview(contestId!, sport!, league!).then((r) => {
         // API may wrap in { data: ContestOverviewDto } or return the DTO directly
         const body = r.data as unknown;
         const wrapped = body as { data?: ContestOverviewDto };
         return wrapped.data ?? (body as ContestOverviewDto);
       }),
-    enabled: !!contestId,
+    enabled: !!contestId && !!sport && !!league,
     staleTime: 1000 * 60 * 2, // 2 min — box score data refreshes moderately
     refetchInterval: 30_000, // poll every 30 s while mounted for live contest updates
   });

@@ -19,20 +19,12 @@ import type {
   ContestOverviewDto,
   ContestOverviewLeaderCategory,
 } from '@/src/types/models';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZoneName: 'short',
-  });
-}
+import {
+  formatToUserTime,
+  getStartLabel,
+  getZoneAbbreviation,
+} from '@/src/utils/timeUtils';
+import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 
 // ─── BoxScore ─────────────────────────────────────────────────────────────────
 
@@ -257,9 +249,16 @@ function LeadersCard({
 
 // ─── Game Info ────────────────────────────────────────────────────────────────
 
-function GameInfoCard({ info }: { info: ContestOverviewDto['info'] }) {
+function GameInfoCard({
+  info,
+  sport,
+}: {
+  info: ContestOverviewDto['info'];
+  sport: string | null | undefined;
+}) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
+  const userTz = useUserTimeZone();
 
   if (!info) return null;
 
@@ -270,7 +269,14 @@ function GameInfoCard({ info }: { info: ContestOverviewDto['info'] }) {
   if (info.attendance)
     rows.push({ label: 'Attendance', value: Number(info.attendance).toLocaleString('en-US') });
   if (info.broadcast) rows.push({ label: 'Broadcast', value: info.broadcast });
-  if (info.startDateUtc) rows.push({ label: 'Kickoff', value: formatTime(info.startDateUtc) });
+  if (info.startDateUtc) {
+    const startLabel = getStartLabel(sport);
+    const tzAbbr = getZoneAbbreviation(userTz);
+    rows.push({
+      label: `${startLabel} (${tzAbbr})`,
+      value: formatToUserTime(info.startDateUtc, userTz),
+    });
+  }
 
   if (!rows.length) return null;
 
@@ -397,7 +403,7 @@ export default function GameDetailScreen() {
 
   const weekNumber = weekParam ? parseInt(weekParam, 10) : null;
 
-  const { data: overview, isLoading: overviewLoading, error: overviewError } = useContestOverview(id);
+  const { data: overview, isLoading: overviewLoading, error: overviewError } = useContestOverview(id, sport, league);
 
   const { data: matchupsResponse } = useMatchups(leagueId, weekNumber);
   const { data: myPicks = [] } = usePicks(leagueId, weekNumber);
@@ -479,7 +485,7 @@ export default function GameDetailScreen() {
                 homeName={overview.header.homeTeam.displayName}
               />
             ) : null}
-            <GameInfoCard info={overview.info} />
+            <GameInfoCard info={overview.info} sport={sport} />
           </>
         )}
         {leagueId && matchup ? (
@@ -587,7 +593,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
-    width: 88,
+    width: 116,
     paddingTop: 1,
   },
   infoValue: { fontSize: 13, flex: 1, textAlign: 'right' },

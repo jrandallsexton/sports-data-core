@@ -11,17 +11,6 @@ import { GameStatus } from './GameStatus';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
 function spreadLabel(spread: number | null | undefined): string {
   if (spread == null || spread === 0) return 'PK';
   return spread > 0 ? `+${spread}` : `${spread}`;
@@ -371,13 +360,16 @@ function PickButtons({
 export interface MatchupCardProps {
   matchup: Matchup;
   pick?: UserPick | null;
+  /** Tap on the spread/result area → opens the contest overview. */
   onPress?: () => void;
+  /** Tap on a team row → opens that team's page. */
+  onPressTeam?: (side: 'home' | 'away') => void;
   onPick?: (matchup: Matchup, choice: PickChoice, franchiseSeasonId: string) => void;
   /** Season year used for team stats API calls. Defaults to the game start year. */
   seasonYear?: number;
 }
 
-export function MatchupCard({ matchup, pick, onPress, onPick, seasonYear }: MatchupCardProps) {
+export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seasonYear }: MatchupCardProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const status = matchup.status.toLowerCase();
@@ -467,16 +459,13 @@ export function MatchupCard({ matchup, pick, onPress, onPick, seasonYear }: Matc
 
   return (
     <>
-    <TouchableOpacity
+    <View
       style={[
         styles.card,
         { backgroundColor: theme.card, borderColor: cardBorderColor },
         isFinal && hasPick && isPickCorrect === true && styles.cardCorrect,
         isFinal && (isPickCorrect === false || !hasPick) && styles.cardIncorrect,
       ]}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.75 : 1}
-      disabled={!onPress}
     >
       {/* Headline banner */}
       {matchup.headLine != null && matchup.headLine !== '' && (
@@ -485,30 +474,49 @@ export function MatchupCard({ matchup, pick, onPress, onPick, seasonYear }: Matc
         </View>
       )}
 
-      {/* Away team */}
-      <TeamRow
-        matchup={matchup}
-        side="away"
-        isWinning={!homeIsWinning}
-        isPicked={pickedAway}
-        isPickCorrect={isPickCorrect}
-        isFinal={isFinal}
-      />
+      {/* Away team — taps go to the team page, not the contest overview. */}
+      <TouchableOpacity
+        onPress={onPressTeam ? () => onPressTeam('away') : undefined}
+        activeOpacity={onPressTeam ? 0.6 : 1}
+        disabled={!onPressTeam}
+      >
+        <TeamRow
+          matchup={matchup}
+          side="away"
+          isWinning={!homeIsWinning}
+          isPicked={pickedAway}
+          isPickCorrect={isPickCorrect}
+          isFinal={isFinal}
+        />
+      </TouchableOpacity>
 
       {/* Home team */}
-      <TeamRow
-        matchup={matchup}
-        side="home"
-        isWinning={homeIsWinning}
-        isPicked={pickedHome}
-        isPickCorrect={isPickCorrect}
-        isFinal={isFinal}
-      />
+      <TouchableOpacity
+        onPress={onPressTeam ? () => onPressTeam('home') : undefined}
+        activeOpacity={onPressTeam ? 0.6 : 1}
+        disabled={!onPressTeam}
+      >
+        <TeamRow
+          matchup={matchup}
+          side="home"
+          isWinning={homeIsWinning}
+          isPicked={pickedHome}
+          isPickCorrect={isPickCorrect}
+          isFinal={isFinal}
+        />
+      </TouchableOpacity>
 
-      {/* Spread & O/U */}
-      <OddsRow matchup={matchup} />
+      {/* Spread & O/U — tap goes to the contest overview. */}
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={onPress ? 0.75 : 1}
+        disabled={!onPress}
+      >
+        <OddsRow matchup={matchup} />
+      </TouchableOpacity>
 
-      {/* Game status — time/score/live, matches web layout order */}
+      {/* Game status — time/score/live; GameStatus owns its own touchable
+          and routes to the contest overview via onPressGameDetail. */}
       <GameStatus matchup={matchup} onPressGameDetail={onPress} />
 
       {/* Inline pick buttons */}
@@ -524,9 +532,9 @@ export function MatchupCard({ matchup, pick, onPress, onPick, seasonYear }: Matc
           onOpenPreview={handleOpenPreview}
         />
       )}
-    </TouchableOpacity>
+    </View>
 
-    {/* Modals — rendered outside TouchableOpacity so they overlay in full screen */}
+    {/* Modals — rendered outside the card so they overlay in full screen */}
     <StatsComparisonModal
       visible={showStats}
       onClose={() => setShowStats(false)}

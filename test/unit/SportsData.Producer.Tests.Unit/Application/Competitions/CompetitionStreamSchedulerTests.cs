@@ -31,17 +31,15 @@ public class CompetitionStreamSchedulerTests : ProducerTestBase<CompetitionStrea
 
     public CompetitionStreamSchedulerTests()
     {
-        Mocker.Use(typeof(IDateTimeProvider), new Mock<IDateTimeProvider>().Object);
-        Mock.Get(Mocker.Get<IDateTimeProvider>())
-            .Setup(x => x.UtcNow())
-            .Returns(FixedNow);
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow()).Returns(FixedNow);
+        Mocker.Use(dateTimeProvider.Object);
 
-        Mocker.Use(typeof(IAppMode), new Mock<IAppMode>().Object);
-        Mock.Get(Mocker.Get<IAppMode>())
-            .Setup(x => x.CurrentSport)
-            .Returns(Sport.FootballNcaa);
+        var appMode = new Mock<IAppMode>();
+        appMode.Setup(x => x.CurrentSport).Returns(Sport.FootballNcaa);
+        Mocker.Use(appMode.Object);
 
-        Mocker.Use(typeof(IProvideBackgroundJobs), new Mock<IProvideBackgroundJobs>().Object);
+        Mocker.Use(new Mock<IProvideBackgroundJobs>().Object);
 
         _sut = Mocker.CreateInstance<CompetitionStreamScheduler>();
     }

@@ -136,6 +136,7 @@ function GameStatus({
             className="final-score-link"
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`View live stream: ${awayShort ?? 'Away'} at ${homeShort ?? 'Home'}${gameTime ? `, ${gameTime}` : ''}`}
           >
             <Webcam size={16} aria-hidden="true" />
             <span style={{ marginLeft: 6 }}>View</span>

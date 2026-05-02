@@ -3,7 +3,7 @@ namespace SportsData.Producer.Application.Competitions;
 /// <summary>
 /// Sport-neutral marker for the live-competition broadcasting Hangfire job.
 /// One implementation per sport is registered in the per-mode DI container
-/// (e.g. football: FootballCompetitionStreamer; baseball: pending).
+/// (football: FootballCompetitionStreamer; baseball: BaseballCompetitionStreamer).
 /// </summary>
 public interface ICompetitionBroadcastingJob
 {

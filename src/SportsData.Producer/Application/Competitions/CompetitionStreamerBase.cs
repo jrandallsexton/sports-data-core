@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
@@ -27,7 +28,8 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     private readonly ILogger _logger;
     private readonly TeamSportDataContext _dataContext;
     private readonly HttpClient _httpClient;
-    private readonly IEventBus _publishEndpoint;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     private readonly List<Task> _activeWorkers = new();
     private CancellationTokenSource? _workerCts;
@@ -35,16 +37,42 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     private static readonly TimeSpan MaxStreamDuration = TimeSpan.FromHours(5);
     private const int MaxConsecutiveFailures = 10;
 
+    /// <summary>
+    /// Why WaitForKickoffAsync stopped. Drives whether ExecuteAsync proceeds
+    /// to spawn polling workers (KickoffDetected) or short-circuits to a
+    /// terminal state (AlreadyFinal, Timeout).
+    /// </summary>
+    protected enum KickoffOutcome
+    {
+        KickoffDetected = 0,
+        AlreadyFinal = 1,
+        Timeout = 2,
+    }
+
+    /// <summary>
+    /// Why PollWhileInProgressAsync stopped. Final = normal game end (mark
+    /// Completed); Timeout = stream exceeded MaxStreamDuration without seeing
+    /// STATUS_FINAL (mark Failed with reason — likely indicates an abandoned
+    /// stream or upstream data anomaly worth investigating).
+    /// </summary>
+    protected enum PollOutcome
+    {
+        Final = 0,
+        Timeout = 1,
+    }
+
     protected CompetitionStreamerBase(
         ILogger logger,
         TeamSportDataContext dataContext,
         IHttpClientFactory httpClientFactory,
-        IEventBus publishEndpoint)
+        IServiceScopeFactory scopeFactory,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
         _httpClient = httpClientFactory.CreateClient();
-        _publishEndpoint = publishEndpoint;
+        _scopeFactory = scopeFactory;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     /// <summary>
@@ -137,7 +165,28 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 {
                     case "STATUS_SCHEDULED":
                         _logger.LogInformation("Game is scheduled. Waiting for kickoff...");
-                        await WaitForKickoffAsync(statusUri, cancellationToken);
+                        var kickoffOutcome = await WaitForKickoffAsync(statusUri, cancellationToken);
+                        switch (kickoffOutcome)
+                        {
+                            case KickoffOutcome.KickoffDetected:
+                                break;
+
+                            case KickoffOutcome.AlreadyFinal:
+                                _logger.LogInformation("Game went final while waiting for kickoff. Skipping live polling.");
+                                if (stream != null)
+                                {
+                                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                                }
+                                return;
+
+                            case KickoffOutcome.Timeout:
+                                _logger.LogWarning("Kickoff was not detected within max stream duration. Aborting.");
+                                if (stream != null)
+                                {
+                                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Kickoff not detected within max stream duration");
+                                }
+                                return;
+                        }
                         break;
 
                     case "STATUS_IN_PROGRESS":
@@ -153,15 +202,21 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                         return;
 
                     default:
-                        _logger.LogWarning("Unknown status type: {StatusType}", status.Type.Name);
-                        break;
+                        // An unknown status string is anomalous data — bail rather than
+                        // optimistically spawning live workers against an unverified game state.
+                        _logger.LogWarning("Unknown status type: {StatusType}. Aborting stream.", status.Type.Name);
+                        if (stream != null)
+                        {
+                            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, $"Unknown status type: {status.Type.Name}");
+                        }
+                        return;
                 }
 
                 _logger.LogInformation("Starting polling workers for live game updates");
 
                 if (stream != null)
                 {
-                    stream.StreamStartedUtc = DateTime.UtcNow;
+                    stream.StreamStartedUtc = _dateTimeProvider.UtcNow();
                     await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Active, cancellationToken);
                 }
 
@@ -169,13 +224,22 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
                 StartPollingWorkers(competitionDto, command, _workerCts.Token);
 
-                await PollWhileInProgressAsync(statusUri, _workerCts.Token);
+                var pollOutcome = await PollWhileInProgressAsync(statusUri, _workerCts.Token);
 
-                _logger.LogInformation("Game has ended. Stopping workers gracefully.");
+                _logger.LogInformation("Polling loop exited with outcome {Outcome}. Stopping workers gracefully.", pollOutcome);
                 if (stream != null)
                 {
-                    stream.StreamEndedUtc = DateTime.UtcNow;
-                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                    stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
+                    switch (pollOutcome)
+                    {
+                        case PollOutcome.Final:
+                            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                            break;
+
+                        case PollOutcome.Timeout:
+                            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Stream exceeded max duration without STATUS_FINAL");
+                            break;
+                    }
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -244,19 +308,19 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
         }
     }
 
-    private async Task WaitForKickoffAsync(Uri statusUri, CancellationToken cancellationToken)
+    private async Task<KickoffOutcome> WaitForKickoffAsync(Uri statusUri, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Competition is scheduled. Polling for kickoff every 20 seconds...");
 
-        var startTime = DateTime.UtcNow;
+        var startTime = _dateTimeProvider.UtcNow();
         var consecutiveFailures = 0;
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            if (DateTime.UtcNow - startTime > MaxStreamDuration)
+            if (_dateTimeProvider.UtcNow() - startTime > MaxStreamDuration)
             {
                 _logger.LogWarning("Waiting for kickoff exceeded max duration ({Hours} hours). Stopping.", MaxStreamDuration.TotalHours);
-                break;
+                return KickoffOutcome.Timeout;
             }
 
             await Task.Delay(TimeSpan.FromSeconds(20), cancellationToken);
@@ -279,17 +343,23 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             if (status.Type.Name == "STATUS_IN_PROGRESS")
             {
                 _logger.LogInformation("Kickoff detected! Game is now in progress.");
-                return;
+                return KickoffOutcome.KickoffDetected;
             }
 
             if (status.Type.Name == "STATUS_FINAL")
             {
                 _logger.LogWarning("Game marked final before starting. Exiting.");
-                return;
+                return KickoffOutcome.AlreadyFinal;
             }
 
             _logger.LogDebug("Game still scheduled. Status: {Status}", status.Type.Name);
         }
+
+        // Cancellation observed by the while-condition (rather than via Task.Delay's
+        // throwing overload). Treat as timeout-equivalent — caller's outer catch handles
+        // the throwing case explicitly; reaching here means we exited cleanly without
+        // a kickoff signal, and we should not pretend kickoff happened.
+        return KickoffOutcome.Timeout;
     }
 
     private void StartPollingWorkers(
@@ -319,19 +389,19 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
         _logger.LogInformation("All workers spawned successfully. Active workers: {Count}", _activeWorkers.Count);
     }
 
-    private async Task PollWhileInProgressAsync(Uri statusUri, CancellationToken cancellationToken)
+    private async Task<PollOutcome> PollWhileInProgressAsync(Uri statusUri, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Monitoring game status every 30 seconds until completion...");
 
-        var startTime = DateTime.UtcNow;
+        var startTime = _dateTimeProvider.UtcNow();
         var consecutiveFailures = 0;
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            if (DateTime.UtcNow - startTime > MaxStreamDuration)
+            if (_dateTimeProvider.UtcNow() - startTime > MaxStreamDuration)
             {
                 _logger.LogWarning("Stream exceeded max duration ({Hours} hours). Stopping.", MaxStreamDuration.TotalHours);
-                break;
+                return PollOutcome.Timeout;
             }
 
             await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
@@ -356,12 +426,17 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             if (status.Type.Name == "STATUS_FINAL")
             {
                 _logger.LogInformation("Game status is FINAL. Ending stream.");
-                return;
+                return PollOutcome.Final;
             }
 
             _logger.LogDebug("Game still in progress. Status: {Status}, Clock: {Clock}",
                 status.Type.Name, status.DisplayClock);
         }
+
+        // Cancellation observed by the while-condition. Treat as timeout-equivalent
+        // (no STATUS_FINAL was observed). The throwing-cancellation path is handled
+        // by ExecuteAsync's outer OperationCanceledException catch.
+        return PollOutcome.Timeout;
     }
 
     private void SpawnPollingWorker(
@@ -467,7 +542,18 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
         _logger.LogDebug("Publishing {Type} document request for {Uri}", type, refUri);
 
-        await _publishEndpoint.Publish(new DocumentRequested(
+        // Workers run concurrently with each other and with the main thread that
+        // owns _dataContext. EF Core DbContext is not thread-safe, so each poll
+        // resolves its own scope (and therefore its own DbContext + IEventBus
+        // pair). The MassTransit EF outbox interceptor flushes pending publishes
+        // on SaveChangesAsync within this scope's DbContext — so resolving the
+        // bus from the same scope as the context is required for transactional
+        // outbox semantics.
+        using var scope = _scopeFactory.CreateScope();
+        var dataContext = scope.ServiceProvider.GetRequiredService<TeamSportDataContext>();
+        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IEventBus>();
+
+        await publishEndpoint.Publish(new DocumentRequested(
             Id: Guid.NewGuid().ToString(),
             ParentId: parentId,
             Uri: refUri,
@@ -480,7 +566,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             CausationId: command.CorrelationId
         ), cancellationToken);
 
-        await _dataContext.SaveChangesAsync(cancellationToken);
+        await dataContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task UpdateStreamStatusAsync(
@@ -498,7 +584,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 : failureReason;
         }
 
-        stream.ModifiedUtc = DateTime.UtcNow;
+        stream.ModifiedUtc = _dateTimeProvider.UtcNow();
         stream.ModifiedBy = Guid.Empty;
 
         await _dataContext.SaveChangesAsync(cancellationToken);

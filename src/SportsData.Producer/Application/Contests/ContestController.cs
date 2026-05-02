@@ -178,7 +178,7 @@ namespace SportsData.Producer.Application.Contests
             _backgroundJobProvider.Enqueue<ICompetitionBroadcastingJob>(job =>
                 job.ExecuteAsync(command, CancellationToken.None));
 
-            return Ok(new { Message = "Streamer started", Command = command });
+            return Accepted(new { Message = "Streamer started", Command = command });
         }
 
         [HttpGet("{id}/overview")]

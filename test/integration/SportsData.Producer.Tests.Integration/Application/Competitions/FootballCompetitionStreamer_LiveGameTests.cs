@@ -101,11 +101,14 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
         
         // Create the streamer with test dependencies
         var logger = _serviceProvider.GetRequiredService<ILogger<FootballCompetitionStreamer>>();
+        var scopeFactory = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
+        var dateTimeProvider = _serviceProvider.GetRequiredService<IDateTimeProvider>();
         var sut = new FootballCompetitionStreamer(
             logger,
             _dataContext,
             httpFactory,
-            eventBus);
+            scopeFactory,
+            dateTimeProvider);
         
         // Act - Run the complete game stream
         // With 18 status responses � ~30 second polling = ~9 minutes max

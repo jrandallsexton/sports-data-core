@@ -85,10 +85,15 @@ public class CompetitionStreamScheduler
         // Note: Contest.Competitions navigation only exists on sport-specific subtypes
         // (FootballContest, BaseballContest), not on ContestBase. Query Competitions
         // directly and pull SeasonYear from the included Contest.
+        // Filter on FinalizedUtc (the underlying column) rather than Contest.IsFinal,
+        // which is [NotMapped] and would not translate to SQL. Skipping final contests
+        // here avoids spawning a Hangfire job that would just no-op when the streamer
+        // sees IsFinal == true on entry.
         var competitions = await _dataContext.Competitions
             .Include(c => c.Contest)
             .Include(c => c.ExternalIds)
-            .Where(c => c.Contest.SeasonWeekId == seasonWeek.Id)
+            .Where(c => c.Contest.SeasonWeekId == seasonWeek.Id
+                     && c.Contest.FinalizedUtc == null)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 

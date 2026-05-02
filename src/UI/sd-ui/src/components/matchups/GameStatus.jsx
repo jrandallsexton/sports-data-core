@@ -20,6 +20,9 @@ import { contestLink } from '../../utils/sportLinks';
  * @param {string} props.possessionFranchiseSeasonId - Team with possession ID
  * @param {boolean} props.isScoringPlay - Whether this update is for a scoring play
  * @param {string} props.contestId - Contest ID for linking to contest overview
+ * @param {string} [props.sport] - URL sport segment (e.g. "baseball"); falls
+ *   back to football/ncaa via contestLink defaults when omitted.
+ * @param {string} [props.league] - URL league segment (e.g. "mlb").
  */
 function GameStatus({
   status,
@@ -37,7 +40,9 @@ function GameStatus({
   homeFranchiseSeasonId,
   possessionFranchiseSeasonId,
   isScoringPlay,
-  contestId
+  contestId,
+  sport,
+  league
 }) {
   if (status === 'Final') {
     const scoreContent = (
@@ -54,7 +59,7 @@ function GameStatus({
         <div className="final-score">
           {contestId ? (
             <Link
-              to={contestLink(contestId)}
+              to={contestLink(contestId, sport, league)}
               className="final-score-link"
               target="_blank"
               rel="noopener noreferrer"
@@ -96,7 +101,7 @@ function GameStatus({
         <div className="final-score">
           {contestId ? (
             <Link
-              to={contestLink(contestId)}
+              to={contestLink(contestId, sport, league)}
               className="final-score-link"
               target="_blank"
               rel="noopener noreferrer"

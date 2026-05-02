@@ -11,6 +11,7 @@ import { usePickLocking } from "../../hooks/usePickLocking";
 import { useTeamComparison } from "../../hooks/useTeamComparison";
 import TeamRow from "./TeamRow";
 import GameStatus from "./GameStatus";
+import { resolveSportLeague } from "../../utils/sportLinks";
 import PickButton from "./PickButton";
 import { SpreadAndOverUnderDisplay } from "./BettingDisplays";
 import DeetsMeter from "./DeetsMeter";
@@ -39,6 +40,13 @@ function MatchupCard({
   // season-specific fetches / omitting the URL segment rather than silently
   // rendering a stale year.
   const seasonYear = leagueSeasonYear ?? matchup.seasonYear;
+
+  // /picks routes don't carry sport in the URL — resolve it from the matchups
+  // DTO's leagueSport so contest links, etc. point at the right sport-aware
+  // page (e.g. /sport/baseball/mlb/contest/{id}). null when leagueSport is
+  // missing or unmapped; downstream link helpers fall back to football/ncaa
+  // defaults in that case.
+  const sportLeague = resolveSportLeague(leagueSport);
 
   const [showConfidencePicker, setShowConfidencePicker] = useState(false);
   const [pendingPickFranchiseId, setPendingPickFranchiseId] = useState(null);
@@ -211,6 +219,8 @@ function MatchupCard({
           possessionFranchiseSeasonId={matchup.possessionFranchiseSeasonId}
           isScoringPlay={matchup.isScoringPlay}
           contestId={matchup.contestId}
+          sport={sportLeague?.sport}
+          league={sportLeague?.league}
         />
 
         {/* DeetsMeter - AI Prediction Meters */}

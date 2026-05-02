@@ -514,6 +514,33 @@ else if (status.Type.Name == "STATUS_IN_PROGRESS" && !_areWorkersRunning)
 
 ---
 
+### Issue #8: No Metrics on Polling Intervals (Planned — revisit after MLB soak)
+
+**Severity:** 🟢 **LOW** (Optimization)
+
+**Problem:**
+Polling intervals were picked by gut feel — football at 5s/10s/15s/60s, baseball at 30s/30s/60s/60s. We have no production data to confirm whether we're polling more often than ESPN actually updates (wasted requests + rate-limit risk) or less often than we should (stale UI).
+
+**Solution sketch:**
+Add OpenTelemetry metrics inside `CompetitionStreamerBase` so we can chart actual fetch-vs-change rates per (sport, doc-type) pair. Minimum metric set:
+
+- Counter: `streamer.fetch.total{sport, doc_type}` — every poll attempt
+- Counter: `streamer.fetch.changed{sport, doc_type}` — polls where the document hash differed from the prior fetch (requires caching the last hash per worker)
+- Histogram: `streamer.fetch.latency{sport, doc_type}` — ESPN response time
+- Histogram: `streamer.duration{sport}` — total stream lifetime per game
+- Counters: `streamer.worker.spawn` / `streamer.worker.cancel` per (sport, doc_type)
+
+The headline ratio is `changed / total` — if it's <10% we're over-polling and the interval can grow; if it's hitting 90%+ we're probably missing transitions and the interval should shrink. Wiring goes via `IMeterFactory` (we already use OTel + Prometheus exporters; see `docs/OPENTELEMETRY_SETUP.md` and existing meter patterns elsewhere in Producer).
+
+**Open questions for the design pass:**
+- Do we instrument the downstream document processors too? Fetch-to-process latency would tell us if we're handling MLB pitches in real time or backing up.
+- Do we keep a single shared meter on `CompetitionStreamerBase`, or split by sport for lower cardinality?
+- Grafana dashboard layout — one panel per sport, or one panel per doc_type with a sport filter?
+
+**Don't start until** we've watched a few real MLB games run end-to-end (~1 week of MLB soak after the streamer goes live). Tuning intervals against zero data is no better than tuning them against gut feel.
+
+---
+
 ## Visualizations
 
 ### 1. Streaming Lifecycle Sequence

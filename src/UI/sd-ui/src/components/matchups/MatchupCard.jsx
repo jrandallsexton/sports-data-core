@@ -221,6 +221,7 @@ function MatchupCard({
           contestId={matchup.contestId}
           sport={sportLeague?.sport}
           league={sportLeague?.league}
+          streamScheduledTimeUtc={matchup.streamScheduledTimeUtc}
         />
 
         {/* DeetsMeter - AI Prediction Meters */}

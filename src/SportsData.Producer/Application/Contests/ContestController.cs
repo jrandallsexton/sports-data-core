@@ -165,7 +165,7 @@ namespace SportsData.Producer.Application.Contests
                 return NotFound($"Competition for contest {contestId} not found");
             }
 
-            var command = new StreamFootballCompetitionCommand
+            var command = new StreamCompetitionCommand
             {
                 Sport = contest.Sport,
                 SeasonYear = contest.SeasonYear,
@@ -175,10 +175,10 @@ namespace SportsData.Producer.Application.Contests
                 CorrelationId = correlationId
             };
 
-            _backgroundJobProvider.Enqueue<IFootballCompetitionBroadcastingJob>(job => 
+            _backgroundJobProvider.Enqueue<ICompetitionBroadcastingJob>(job =>
                 job.ExecuteAsync(command, CancellationToken.None));
 
-            return Ok(new { Message = "Streamer started", Command = command });
+            return Accepted(new { Message = "Streamer started", Command = command });
         }
 
         [HttpGet("{id}/overview")]

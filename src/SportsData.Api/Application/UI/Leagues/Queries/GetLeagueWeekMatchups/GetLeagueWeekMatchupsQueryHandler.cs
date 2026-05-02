@@ -262,6 +262,8 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     matchup.OverUnderResult = canonical.OverUnderResult.HasValue ? (OverUnderPick)canonical.OverUnderResult.Value : null;
                     matchup.CompletedUtc = canonical.CompletedUtc;
 
+                    matchup.StreamScheduledTimeUtc = canonical.StreamScheduledTimeUtc;
+
                     var preview = previews
                         .Where(x => x.ContestId == matchup.ContestId &&
                                     x.RejectedUtc == null)

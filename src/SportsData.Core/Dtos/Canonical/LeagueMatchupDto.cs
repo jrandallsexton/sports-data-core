@@ -58,4 +58,12 @@ public class LeagueMatchupDto
     public Guid? SpreadWinnerFranchiseSeasonId { get; set; }
     public int? OverUnderResult { get; set; }
     public DateTime? CompletedUtc { get; set; }
+
+    /// <summary>
+    /// Scheduled fire time of the live-streaming Hangfire job for this contest's
+    /// competition, when one exists in an actionable state (Scheduled,
+    /// AwaitingStart, Active). Null otherwise. Drives a "View" call-to-action in
+    /// the UI; future enhancements can render a countdown.
+    /// </summary>
+    public DateTime? StreamScheduledTimeUtc { get; set; }
 }

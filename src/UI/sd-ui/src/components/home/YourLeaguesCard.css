@@ -53,6 +53,11 @@
 }
 
 .your-leagues-card__name {
+  flex: 1;
+  /* Flex items default to min-width: auto, which prevents shrinking
+     below intrinsic content width — ellipsis never triggers without
+     this override. */
+  min-width: 0;
   font-size: 0.95rem;
   font-weight: 600;
   white-space: nowrap;

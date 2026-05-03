@@ -36,3 +36,5 @@ sequenceDiagram
 | `SeasonYear` | int? |
 | `CorrelationId` | Guid |
 | `CausationId` | Guid |
+| `MessageId` | Guid (inherited from `EventBase` — auto `Guid.NewGuid()`) |
+| `CreatedUtc` | DateTime (inherited from `EventBase` — UTC timestamp at construction) |

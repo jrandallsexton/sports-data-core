@@ -32,7 +32,14 @@ function HomePage() {
     return <div className="home-page home-page--loading">Loading…</div>;
   }
 
-  const hasLeagues = Array.isArray(userDto?.leagues) && userDto.leagues.length > 0;
+  // Normalize defensively — BE may serialize leagues as either an array
+  // or an id-keyed object. Same handling as MessageboardPage and
+  // YourLeaguesCard. Without this, an id-keyed payload would route a
+  // real user to PrimarySlotNewUser and skip the Tier 2 list.
+  const leagues = Array.isArray(userDto?.leagues)
+    ? userDto.leagues
+    : Object.values(userDto?.leagues || {});
+  const hasLeagues = leagues.length > 0;
 
   // Rule resolver for Tier 1. Add cases here as session 2 lands — pick
   // deadlines, standings deltas, etc. — keeping the cascade top-down so

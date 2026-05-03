@@ -1,5 +1,5 @@
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getAuth, signOut } from "firebase/auth";
 import { toast } from "react-hot-toast";
 import Navigation from "./components/layout/Navigation";
@@ -91,23 +91,36 @@ function MainApp() {
     handleBaseballStateUpdate,
   } = useContestUpdates();
 
+  // Memoize callbacks so useSignalRClient's effect (which lists each
+  // callback in its dependency array) doesn't tear down + reconnect the
+  // SignalR connection on every MainApp render. Context handlers are
+  // already useCallback-stable, so each memo only re-creates if its
+  // upstream handler identity changes.
+  const onPreviewCompleted = useCallback((data) => {
+    toast.success(data.message);
+    //refreshMatchups(); // or setState to trigger re-render
+  }, []);
+
+  const onContestStatusChanged = useCallback((data) => {
+    console.log('📡 Contest lifecycle update received:', data);
+    handleStatusUpdate(data);
+  }, [handleStatusUpdate]);
+
+  const onFootballContestStateChanged = useCallback((data) => {
+    console.log('🏈 Football state update received:', data);
+    handleFootballStateUpdate(data);
+  }, [handleFootballStateUpdate]);
+
+  const onBaseballContestStateChanged = useCallback((data) => {
+    console.log('⚾ Baseball state update received:', data);
+    handleBaseballStateUpdate(data);
+  }, [handleBaseballStateUpdate]);
+
   useSignalRClient({
-    onPreviewCompleted: (data) => {
-      toast.success(data.message);
-      //refreshMatchups(); // or setState to trigger re-render
-    },
-    onContestStatusChanged: (data) => {
-      console.log('📡 Contest lifecycle update received:', data);
-      handleStatusUpdate(data);
-    },
-    onFootballContestStateChanged: (data) => {
-      console.log('🏈 Football state update received:', data);
-      handleFootballStateUpdate(data);
-    },
-    onBaseballContestStateChanged: (data) => {
-      console.log('⚾ Baseball state update received:', data);
-      handleBaseballStateUpdate(data);
-    },
+    onPreviewCompleted,
+    onContestStatusChanged,
+    onFootballContestStateChanged,
+    onBaseballContestStateChanged,
   });
 
   return (

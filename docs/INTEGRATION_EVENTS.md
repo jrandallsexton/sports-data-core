@@ -31,18 +31,21 @@ Some user-visible features traverse multiple events across multiple services and
 *   [`ConferenceUpdated`](events/conferences/ConferenceUpdated.md)
 
 ### Contests
-*   [`CompetitionPlayCompleted`](events/contests/CompetitionPlayCompleted.md)
-*   [`CompetitionStatusChanged`](events/contests/CompetitionStatusChanged.md)
-*   [`CompetitionWinProbabilityChanged`](events/contests/CompetitionWinProbabilityChanged.md)
 *   [`ContestCreated`](events/contests/ContestCreated.md)
 *   [`ContestEnrichmentCompleted`](events/contests/ContestEnrichmentCompleted.md)
 *   [`ContestOddsCreated`](events/contests/ContestOddsCreated.md)
 *   [`ContestOddsUpdated`](events/contests/ContestOddsUpdated.md)
+*   [`ContestPlayCompleted`](events/contests/ContestPlayCompleted.md)
 *   [`ContestRecapArticlePublished`](events/contests/ContestRecapArticlePublished.md)
 *   [`ContestScoreChanged`](events/contests/ContestScoreChanged.md)
 *   [`ContestStartTimeUpdated`](events/contests/ContestStartTimeUpdated.md)
-*   [`ContestStatusChanged`](events/contests/ContestStatusChanged.md)
+*   [`ContestStatusChanged`](events/contests/ContestStatusChanged.md) — sport-neutral lifecycle (Scheduled → InProgress → Final)
+*   [`ContestWinProbabilityChanged`](events/contests/ContestWinProbabilityChanged.md)
 *   [`CompetitorScoreUpdated`](events/contests/CompetitorScoreUpdated.md)
+*   Football
+    *   [`FootballContestStateChanged`](events/contests/FootballContestStateChanged.md) — per-play scoreboard tick
+*   Baseball
+    *   [`BaseballContestStateChanged`](events/contests/BaseballContestStateChanged.md) — per-pitch / per-at-bat tick
 
 ### Core
 *   [`Heartbeat`](events/core/Heartbeat.md)

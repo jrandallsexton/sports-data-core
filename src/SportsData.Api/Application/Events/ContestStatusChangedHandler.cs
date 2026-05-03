@@ -1,4 +1,4 @@
-﻿using MassTransit;
+using MassTransit;
 
 using Microsoft.AspNetCore.SignalR;
 
@@ -7,6 +7,13 @@ using SportsData.Core.Eventing.Events.Contests;
 
 namespace SportsData.Api.Application.Events
 {
+    /// <summary>
+    /// Sport-neutral lifecycle fan-out. Forwards Producer's
+    /// <see cref="ContestStatusChanged"/> to all SignalR clients under the
+    /// same event name. Per-play scoreboard ticks are handled separately
+    /// by <see cref="FootballContestStateChangedHandler"/> /
+    /// <see cref="BaseballContestStateChangedHandler"/>.
+    /// </summary>
     public class ContestStatusChangedHandler : IConsumer<ContestStatusChanged>
     {
         private readonly IHubContext<NotificationHub> _hubContext;

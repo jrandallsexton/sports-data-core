@@ -1,10 +1,15 @@
-﻿using System;
+using System;
 using SportsData.Core.Common;
 
 namespace SportsData.Core.Eventing.Events.Contests
 {
-    public record CompetitionWinProbabilityChanged(
-        Guid CompetitionId,
+    /// <summary>
+    /// Win-probability tick. Producer publishes when ESPN's per-competition
+    /// probability snapshot moves. Sport-neutral — both football and
+    /// baseball carry the same home/away/tie percentages.
+    /// </summary>
+    public record ContestWinProbabilityChanged(
+        Guid ContestId,
         Guid? PlayId,
         double HomeWinPercentage,
         double AwayWinPercentage,

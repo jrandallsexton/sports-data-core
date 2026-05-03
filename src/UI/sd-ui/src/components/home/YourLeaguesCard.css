@@ -1,0 +1,68 @@
+/* YourLeaguesCard — Tier 2 list of the user's active leagues. Visual
+   parity with sd-mobile's YourLeaguesCard: eyebrow, full-bleed rows,
+   hairline separators, chevron affordance. */
+.your-leagues-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--accent-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  padding: 1rem 1.25rem;
+  max-width: 880px;
+  margin: 0 auto;
+  color: var(--text-primary);
+}
+
+.your-leagues-card__eyebrow {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.5rem;
+}
+
+.your-leagues-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.your-leagues-card__item + .your-leagues-card__item {
+  border-top: 1px solid var(--border-primary);
+}
+
+.your-leagues-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 0.25rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: background-color 0.12s ease;
+}
+
+.your-leagues-card__row:hover,
+.your-leagues-card__row:focus-visible {
+  background-color: var(--accent-subtle);
+}
+
+.your-leagues-card__row:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+.your-leagues-card__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.your-leagues-card__chevron {
+  font-size: 1.4rem;
+  color: var(--text-secondary);
+  margin-left: 0.5rem;
+  line-height: 1;
+}

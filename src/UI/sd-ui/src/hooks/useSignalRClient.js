@@ -7,14 +7,16 @@ export default function useSignalRClient({
   userId,
   leagueId,
   onPreviewCompleted,
-  onContestStatusUpdated,
+  onContestStatusChanged,
+  onFootballContestStateChanged,
+  onBaseballContestStateChanged,
 }) {
   const connectionRef = useRef(null);
 
   useEffect(() => {
     // Use separate SignalR URL if provided, otherwise fall back to API base URL
     const signalRUrl = process.env.REACT_APP_SIGNALR_URL || process.env.REACT_APP_API_BASE_URL || "http://localhost:5262";
-    
+
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${signalRUrl}/hubs/notifications`, {
         accessTokenFactory: async () => {
@@ -37,10 +39,19 @@ export default function useSignalRClient({
       .build();
 
     connection.on("PreviewGenerated", onPreviewCompleted);
-    
-    // Register handler for contest status updates (live game data)
-    if (onContestStatusUpdated) {
-      connection.on("ContestStatusChanged", onContestStatusUpdated);
+
+    // Lifecycle (Scheduled→InProgress→Final) — sport-neutral.
+    if (onContestStatusChanged) {
+      connection.on("ContestStatusChanged", onContestStatusChanged);
+    }
+
+    // Per-play scoreboard ticks — sport-specific shapes.
+    if (onFootballContestStateChanged) {
+      connection.on("FootballContestStateChanged", onFootballContestStateChanged);
+    }
+
+    if (onBaseballContestStateChanged) {
+      connection.on("BaseballContestStateChanged", onBaseballContestStateChanged);
     }
 
     connection
@@ -59,7 +70,14 @@ export default function useSignalRClient({
     return () => {
       connection.stop();
     };
-  }, [userId, leagueId, onPreviewCompleted, onContestStatusUpdated]);
+  }, [
+    userId,
+    leagueId,
+    onPreviewCompleted,
+    onContestStatusChanged,
+    onFootballContestStateChanged,
+    onBaseballContestStateChanged,
+  ]);
 
   return connectionRef.current;
 }

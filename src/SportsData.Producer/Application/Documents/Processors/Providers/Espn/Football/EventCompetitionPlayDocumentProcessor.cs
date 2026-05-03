@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Eventing.Events.Contests.Football;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
@@ -162,19 +163,36 @@ public class EventCompetitionPlayDocumentProcessor<TDataContext> : DocumentProce
             startFranchiseSeasonId,
             endFranchiseSeasonId);
 
-        // if the competition is underway,
-        // broadcast a CompetitionPlayCompleted event
+        // If the contest is underway, broadcast both the per-play log
+        // event (sport-neutral) and the football scoreboard tick. The
+        // tick carries the football shape (period, clock, possession,
+        // scoring flag) consumed by the SignalR live-game UI.
         if (competitionStatus is not null && !competitionStatus.IsCompleted)
         {
-            _logger.LogInformation("Competition in progress, publishing CompetitionPlayCompleted event. CompetitionId={CompId}, PlayId={PlayId}",
-                competition.Id,
+            _logger.LogInformation(
+                "Contest in progress, publishing ContestPlayCompleted + FootballContestStateChanged. ContestId={ContestId}, PlayId={PlayId}",
+                competition.ContestId,
                 play.Id);
 
-            await _publishEndpoint.Publish(new CompetitionPlayCompleted(
-                CompetitionPlayId: play.Id,
-                CompetitionId: competition.Id,
+            await _publishEndpoint.Publish(new ContestPlayCompleted(
                 ContestId: competition.ContestId,
+                CompetitionId: competition.Id,
+                PlayId: play.Id,
                 PlayDescription: play.Text,
+                Ref: null,
+                Sport: command.Sport,
+                SeasonYear: command.SeasonYear,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.EventCompetitionPlayDocumentProcessor));
+
+            await _publishEndpoint.Publish(new FootballContestStateChanged(
+                ContestId: competition.ContestId,
+                Period: $"Q{play.PeriodNumber}",
+                Clock: play.ClockDisplayValue ?? string.Empty,
+                AwayScore: play.AwayScore,
+                HomeScore: play.HomeScore,
+                PossessionFranchiseSeasonId: play.StartFranchiseSeasonId,
+                IsScoringPlay: play.ScoringPlay,
                 Ref: null,
                 Sport: command.Sport,
                 SeasonYear: command.SeasonYear,

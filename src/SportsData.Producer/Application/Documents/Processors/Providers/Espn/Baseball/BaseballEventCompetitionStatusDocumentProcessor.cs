@@ -136,13 +136,22 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
 
         if (publishEvent)
         {
+            // ContestId is what crosses the service boundary — Competition
+            // is a Producer-internal sub-aggregate. Projected read so we
+            // don't pull the full Competition row.
+            var contestId = await _dataContext.Competitions
+                .Where(c => c.Id == competitionIdValue)
+                .Select(c => c.ContestId)
+                .FirstAsync();
+
             _logger.LogInformation(
-                "MLB Competition status changed, publishing event. CompetitionId={CompId}, NewStatus={Status}",
+                "MLB Contest status changed, publishing event. ContestId={ContestId}, CompetitionId={CompId}, NewStatus={Status}",
+                contestId,
                 competitionIdValue,
                 entity.StatusTypeName);
 
-            await _publishEndpoint.Publish(new CompetitionStatusChanged(
-                competitionIdValue,
+            await _publishEndpoint.Publish(new ContestStatusChanged(
+                contestId,
                 entity.StatusTypeName,
                 _refGenerator.ForCompetition(competitionIdValue),
                 command.Sport,

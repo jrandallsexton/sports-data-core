@@ -78,18 +78,19 @@ Bucket → Event → Publisher(s) → Consumer(s) → Status. `file:line` refere
 
 | Event | Publisher(s) | Consumer(s) | Status |
 |---|---|---|---|
-| `CompetitionPlayCompleted` | `EventCompetitionPlayDocumentProcessor:175`, `BaseballEventCompetitionPlayDocumentProcessor:133` (Producer) | — | 📤 emit-only |
-| `CompetitionStatusChanged` | `EventCompetitionStatusDocumentProcessor:110`, `BaseballEventCompetitionStatusDocumentProcessor:144`, `ContestReplayService:67,84` (Producer) | — | 📤 emit-only |
-| `CompetitionWinProbabilityChanged` | `EventCompetitionProbabilityDocumentProcessor:126` (Producer) | — | 📤 emit-only |
+| `BaseballContestStateChanged` | — (consumer wired ahead of MLB live emitter) | `BaseballContestStateChangedHandler` (API) | 🟡 wired (SignalR broadcast); awaiting MLB live-state Producer emitter |
 | `CompetitorScoreUpdated` | `EventCompetitionCompetitorScoreDocumentProcessor:133,168` (Producer) | `CompetitorScoreUpdatedConsumer` (Producer Ingest, thin shim) → `CompetitorScoreUpdatedConsumerHandler` (Producer Worker, Hangfire job) | ✅ wired (updates `Contest.HomeScore/AwayScore`; publishes `ContestScoreChanged`) |
 | `ContestCreated` | `EventDocumentProcessorBase:114` (Producer) | — | 📤 emit-only |
 | `ContestEnrichmentCompleted` | `FootballContestEnrichmentProcessor:173`, `BaseballContestEnrichmentProcessor:146` (Producer) | — | 📤 emit-only |
 | `ContestOddsCreated` | `EventCompetitionOddsDocumentProcessor:163`, `BaseballEventCompetitionOddsDocumentProcessor:256` (Producer) | — | 📤 emit-only |
 | `ContestOddsUpdated` | `EventCompetitionOddsDocumentProcessor:173`, `BaseballEventCompetitionOddsDocumentProcessor:245` (Producer) | `ContestOddsUpdatedHandler` (API) | ✅ wired (SignalR broadcast) |
+| `ContestPlayCompleted` | `EventCompetitionPlayDocumentProcessor` (FB), `BaseballEventCompetitionPlayDocumentProcessor` (Producer) | — | 📤 emit-only |
 | `ContestRecapArticlePublished` | `ContestRecapProcessor:121` (API) | `ContestRecapArticlePublishedHandler` (API) | ✅ wired (SignalR broadcast) |
 | `ContestScoreChanged` | `CompetitorScoreUpdatedConsumerHandler` (Producer Worker) | `ContestScoreChangedHandler` (API Ingest) | ✅ wired (SignalR broadcast — see [flow doc](events/flows/competitor-score-flow.md)) |
 | `ContestStartTimeUpdated` | `EventCompetitionDocumentProcessorBase:202` (Producer) | `ContestStartTimeUpdatedHandler` (API) | ✅ wired (updates `PickemGroupMatchup.StartDateUtc`) |
-| `ContestStatusChanged` | `ContestUpdateProcessor:106` (Producer) | `ContestStatusChangedHandler` (API) | ✅ wired (SignalR broadcast) |
+| `ContestStatusChanged` | `EventCompetitionStatusDocumentProcessor` (FB), `BaseballEventCompetitionStatusDocumentProcessor` (MLB), `ContestReplayService` (Producer) | `ContestStatusChangedHandler` (API) | ✅ wired (SignalR broadcast — sport-neutral lifecycle only) |
+| `ContestWinProbabilityChanged` | `EventCompetitionProbabilityDocumentProcessor` (Producer) | — | 📤 emit-only |
+| `FootballContestStateChanged` | `EventCompetitionPlayDocumentProcessor` (FB), `ContestReplayService` (Producer) | `FootballContestStateChangedHandler` (API) | ✅ wired (SignalR broadcast — football per-play scoreboard tick) |
 
 ### Documents
 
@@ -219,7 +220,7 @@ Surfaced for discussion, not as a decided plan:
 1. **Decide the fate of §2.1 + §2.2 (live-score broadcast).** Either register the two consumers and turn on real-time score push to web clients, or delete the consumer classes and the `ContestScoreChanged` event so the catalog reflects reality. Half-states are misleading.
 2. **Decide the fate of §2.3 (`DocumentDeadLetterConsumer`).** If the manual-replay model from CLAUDE.md is the intent, delete the disabled consumer instead of leaving commented-out code. If alerts are wanted, register it (and route logs to Seq/alerting).
 3. **Delete the 17 dead-stub events** (Conference quartet, Position, AthletePosition pair, FranchiseUpdated/SeasonCreated/SeasonRecordCreated/SeasonEnrichmentCompleted, DocumentSourcingStarted, DocumentUpdated, Heartbeat, PickemGroupWeekContestsGenerated, the `Venue*` updates if not coming back). Or pick the ones that have an imminent consumer story and keep them. The current half-populated `Eventing/Events/` folder is hard to read because half the files are aspirational.
-4. **Consider whether the 14 emit-only events with no consumer are intentional.** Many of them (`AthleteCreated`, `FranchiseCreated`, `CompetitionPlayCompleted`, `ContestEnrichmentCompleted`, etc.) look like they were designed for a future feature (read-model projector? notification trigger?). If those features aren't on the roadmap soon, the events are pure overhead — every one is serialized to the outbox, transmitted via RabbitMQ/Service Bus, and discarded.
+4. **Consider whether the emit-only events with no consumer are intentional.** Many of them (`AthleteCreated`, `FranchiseCreated`, `ContestPlayCompleted`, `ContestEnrichmentCompleted`, etc.) look like they were designed for a future feature (read-model projector? notification trigger?). If those features aren't on the roadmap soon, the events are pure overhead — every one is serialized to the outbox, transmitted via RabbitMQ/Service Bus, and discarded.
 5. **Revisit the `ConferenceUpdated`/`ConferenceSeasonUpdated`/`Heartbeat` shape** if Conference events are revived. Bring them in line with the modern record + `EventBase` convention.
 
 ---

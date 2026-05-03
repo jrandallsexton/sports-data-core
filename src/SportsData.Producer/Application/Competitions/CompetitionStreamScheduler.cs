@@ -124,7 +124,7 @@ public class CompetitionStreamScheduler
 
             if (existingByCompetitionId.TryGetValue(competition.Id, out var existingStream))
             {
-                if (TryReschedule(existingStream, competition, contest, desiredScheduledTimeUtc, now))
+                if (await TryRescheduleAsync(existingStream, competition, contest, desiredScheduledTimeUtc, now, cancellationToken))
                 {
                     rescheduledCount++;
                 }
@@ -132,6 +132,10 @@ public class CompetitionStreamScheduler
                 continue;
             }
 
+            // Schedule-then-persist with compensation: if SaveChangesAsync fails,
+            // delete the orphan Hangfire job so we don't leak background jobs that
+            // would fire against a non-existent CompetitionStream row. Per-competition
+            // save isolates the failure to a single row instead of nuking the batch.
             var jobId = ScheduleStreamJob(competition, contest, desiredScheduledTimeUtc, now);
 
             _dataContext.CompetitionStreams.Add(new CompetitionStream
@@ -147,22 +151,43 @@ public class CompetitionStreamScheduler
                 Status = CompetitionStreamStatus.Scheduled,
             });
 
+            try
+            {
+                await _dataContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Failed to persist new CompetitionStream for CompetitionId {CompetitionId}. Compensating by deleting Hangfire job {JobId}.",
+                    competition.Id, jobId);
+                TryDeleteOrphanJob(jobId, competition.Id);
+                throw;
+            }
+
             _logger.LogInformation("Scheduled stream for CompetitionId {CompetitionId} at {ScheduledTimeUtc} with JobId {JobId}.",
                 competition.Id, desiredScheduledTimeUtc, jobId);
 
             scheduledCount++;
         }
 
-        if (scheduledCount > 0 || rescheduledCount > 0)
+        _logger.LogInformation(
+            "Stream scheduling complete for SeasonWeek {SeasonWeekNumber}. New: {ScheduledCount}, Rescheduled: {RescheduledCount}.",
+            seasonWeek.Number, scheduledCount, rescheduledCount);
+    }
+
+    private void TryDeleteOrphanJob(string jobId, Guid competitionId)
+    {
+        try
         {
-            await _dataContext.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation(
-                "Stream scheduling complete for SeasonWeek {SeasonWeekNumber}. New: {ScheduledCount}, Rescheduled: {RescheduledCount}.",
-                seasonWeek.Number, scheduledCount, rescheduledCount);
+            _backgroundJobProvider.Delete(jobId);
         }
-        else
+        catch (Exception ex)
         {
-            _logger.LogInformation("No new or rescheduled competition streams needed.");
+            // Best-effort compensation. If Hangfire itself is unhealthy, leak the
+            // orphan job rather than masking the original DB exception.
+            _logger.LogWarning(ex,
+                "Compensation failed: could not delete orphan Hangfire job {JobId} for CompetitionId {CompetitionId}.",
+                jobId, competitionId);
         }
     }
 
@@ -196,12 +221,13 @@ public class CompetitionStreamScheduler
             scheduledTimeUtc - now);
     }
 
-    private bool TryReschedule(
+    private async Task<bool> TryRescheduleAsync(
         CompetitionStream existing,
         Infrastructure.Data.Entities.CompetitionBase competition,
         Infrastructure.Data.Entities.ContestBase contest,
         DateTime desiredScheduledTimeUtc,
-        DateTime now)
+        DateTime now,
+        CancellationToken cancellationToken)
     {
         // Only Scheduled streams are reschedulable. AwaitingStart/Active streams
         // are already running (or about to run) on a Hangfire worker; the
@@ -237,18 +263,13 @@ public class CompetitionStreamScheduler
         var oldJobId = existing.BackgroundJobId;
         var oldScheduledTime = existing.ScheduledTimeUtc;
 
-        var deleted = _backgroundJobProvider.Delete(oldJobId);
-        if (!deleted)
-        {
-            // Hangfire refused the state transition — most commonly because the
-            // job has already moved to Processing/Succeeded/Deleted. Log and
-            // skip; the streamer (or a future scheduler pass) will reconcile.
-            _logger.LogWarning(
-                "Failed to delete existing Hangfire job {JobId} for CompetitionId {CompetitionId}. Skipping reschedule.",
-                oldJobId, competition.Id);
-            return false;
-        }
-
+        // Schedule the new job FIRST, then persist the row pointing at it, then
+        // delete the old job. Order matters for crash-safety:
+        //   1. If the DB save fails, only the new (orphan) job needs cleanup;
+        //      the old job is still intact and will fire on its original schedule.
+        //   2. If the old-job Delete fails after a successful save, the row already
+        //      points at newJobId — the old job becomes a benign duplicate that the
+        //      streamer's idempotent entry will detect and short-circuit.
         var newJobId = ScheduleStreamJob(competition, contest, desiredScheduledTimeUtc, now);
 
         existing.BackgroundJobId = newJobId;
@@ -257,6 +278,31 @@ public class CompetitionStreamScheduler
         existing.ModifiedBy = Guid.Empty;
         existing.Notes = TruncateNote(
             $"Rescheduled {now:O}: {oldScheduledTime:O} → {desiredScheduledTimeUtc:O} (old job {oldJobId})");
+
+        try
+        {
+            await _dataContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to persist rescheduled CompetitionStream for CompetitionId {CompetitionId}. Compensating by deleting orphan Hangfire job {NewJobId}; old job {OldJobId} left intact.",
+                competition.Id, newJobId, oldJobId);
+            TryDeleteOrphanJob(newJobId, competition.Id);
+            throw;
+        }
+
+        var deleted = _backgroundJobProvider.Delete(oldJobId);
+        if (!deleted)
+        {
+            // Hangfire refused the state transition — usually because the old job
+            // has already moved to Processing/Succeeded/Deleted. The DB now points
+            // at newJobId, so any duplicate fire from the old job will hit the
+            // streamer's idempotent entry and no-op. Log for visibility.
+            _logger.LogWarning(
+                "Persisted reschedule but could not delete old Hangfire job {OldJobId} for CompetitionId {CompetitionId}. Streamer will reconcile.",
+                oldJobId, competition.Id);
+        }
 
         _logger.LogInformation(
             "Rescheduled stream for CompetitionId {CompetitionId} from {OldTime} to {NewTime}. OldJobId={OldJobId}, NewJobId={NewJobId}.",

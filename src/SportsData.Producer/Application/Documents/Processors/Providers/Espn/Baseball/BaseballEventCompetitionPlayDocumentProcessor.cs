@@ -130,10 +130,10 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext> : Docum
 
         if (competitionStatus is not null && !competitionStatus.IsCompleted)
         {
-            await _publishEndpoint.Publish(new CompetitionPlayCompleted(
-                CompetitionPlayId: play.Id,
-                CompetitionId: competition.Id,
+            await _publishEndpoint.Publish(new ContestPlayCompleted(
                 ContestId: competition.ContestId,
+                CompetitionId: competition.Id,
+                PlayId: play.Id,
                 PlayDescription: play.Text,
                 Ref: null,
                 Sport: command.Sport,

@@ -11,12 +11,14 @@ export const ContestUpdatesProvider = ({ children }) => {
   const [contests, setContests] = useState({});
 
   /**
-   * Handle ContestStatusUpdated event from SignalR
-   * Updates game status, scores, period, clock, and possession
+   * Handle ContestStatusChanged (lifecycle) event from SignalR.
+   * Sport-neutral — only updates the lifecycle status field.
+   * Per-play scoreboard ticks come in via handleFootballStateUpdate /
+   * handleBaseballStateUpdate.
    */
   const handleStatusUpdate = useCallback((data) => {
     if (!data?.contestId) {
-      console.warn('ContestStatusUpdated event missing contestId', data);
+      console.warn('ContestStatusChanged event missing contestId', data);
       return;
     }
 
@@ -26,6 +28,28 @@ export const ContestUpdatesProvider = ({ children }) => {
         ...prev[data.contestId],
         contestId: data.contestId,
         status: data.status,
+        lastUpdated: Date.now()
+      }
+    }));
+  }, []);
+
+  /**
+   * Handle FootballContestStateChanged (per-play scoreboard tick) event.
+   * Updates period, clock, scores, possession, scoring-play flash. Does
+   * not touch the lifecycle status field — that's owned by
+   * ContestStatusChanged.
+   */
+  const handleFootballStateUpdate = useCallback((data) => {
+    if (!data?.contestId) {
+      console.warn('FootballContestStateChanged event missing contestId', data);
+      return;
+    }
+
+    setContests(prev => ({
+      ...prev,
+      [data.contestId]: {
+        ...prev[data.contestId],
+        contestId: data.contestId,
         period: data.period,
         clock: data.clock,
         awayScore: data.awayScore,
@@ -48,6 +72,39 @@ export const ContestUpdatesProvider = ({ children }) => {
         }));
       }, 2000); // Clear after 2 seconds
     }
+  }, []);
+
+  /**
+   * Handle BaseballContestStateChanged (per-pitch / per-at-bat tick).
+   * Mirrors handleFootballStateUpdate but with the baseball shape
+   * (inning, count, outs, base state, current at-bat).
+   */
+  const handleBaseballStateUpdate = useCallback((data) => {
+    if (!data?.contestId) {
+      console.warn('BaseballContestStateChanged event missing contestId', data);
+      return;
+    }
+
+    setContests(prev => ({
+      ...prev,
+      [data.contestId]: {
+        ...prev[data.contestId],
+        contestId: data.contestId,
+        inning: data.inning,
+        halfInning: data.halfInning,
+        awayScore: data.awayScore,
+        homeScore: data.homeScore,
+        balls: data.balls,
+        strikes: data.strikes,
+        outs: data.outs,
+        runnerOnFirst: data.runnerOnFirst,
+        runnerOnSecond: data.runnerOnSecond,
+        runnerOnThird: data.runnerOnThird,
+        atBatAthleteId: data.atBatAthleteId,
+        pitchingAthleteId: data.pitchingAthleteId,
+        lastUpdated: Date.now()
+      }
+    }));
   }, []);
 
   /**
@@ -89,6 +146,8 @@ export const ContestUpdatesProvider = ({ children }) => {
   const value = {
     contests,
     handleStatusUpdate,
+    handleFootballStateUpdate,
+    handleBaseballStateUpdate,
     getContestUpdate,
     hasLiveUpdate,
     clearContestUpdate,

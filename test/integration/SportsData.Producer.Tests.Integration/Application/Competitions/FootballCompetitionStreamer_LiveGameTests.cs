@@ -83,12 +83,17 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
         
         var httpFactory = new TestHttpClientFactory(httpClient);
         
-        // Setup event bus to track published events
+        // Setup event bus to track published events. Because CompetitionStreamerBase
+        // resolves IEventBus from a fresh DI scope (per-poll, for thread safety),
+        // a locally-instantiated TestEventBus would never see publishes — DI would
+        // hand out the fixture's NoOpBus instead. Wrap the fixture's scope factory
+        // so every scope it produces resolves IEventBus to this instance, while
+        // still resolving DbContext etc. from the real fixture.
         var eventBus = new TestEventBus();
-        
+
         // Create test game data in the database
         var (contest, competition, stream) = await CreateTestGameAsync();
-        
+
         var command = new StreamCompetitionCommand
         {
             CompetitionId = competition.Id,
@@ -98,10 +103,11 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
             DataProvider = SourceDataProvider.Espn,
             CorrelationId = Guid.NewGuid()
         };
-        
+
         // Create the streamer with test dependencies
         var logger = _serviceProvider.GetRequiredService<ILogger<FootballCompetitionStreamer>>();
-        var scopeFactory = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
+        var baseScopeFactory = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
+        var scopeFactory = new EventBusOverrideScopeFactory(baseScopeFactory, eventBus);
         var dateTimeProvider = _serviceProvider.GetRequiredService<IDateTimeProvider>();
         var sut = new FootballCompetitionStreamer(
             logger,
@@ -398,6 +404,57 @@ public class TestHttpClientFactory : IHttpClientFactory
     }
     
     public HttpClient CreateClient(string name) => _httpClient;
+}
+
+/// <summary>
+/// Wraps an existing IServiceScopeFactory so every scope it produces resolves
+/// IEventBus to a test-provided instance, while delegating all other service
+/// resolution to the underlying scope. This lets a test observe publishes that
+/// CompetitionStreamerBase performs from inside per-poll DI scopes — a local
+/// TestEventBus instance is otherwise invisible to scoped resolution.
+/// </summary>
+public sealed class EventBusOverrideScopeFactory : IServiceScopeFactory
+{
+    private readonly IServiceScopeFactory _inner;
+    private readonly IEventBus _eventBusOverride;
+
+    public EventBusOverrideScopeFactory(IServiceScopeFactory inner, IEventBus eventBusOverride)
+    {
+        _inner = inner;
+        _eventBusOverride = eventBusOverride;
+    }
+
+    public IServiceScope CreateScope() => new OverrideScope(_inner.CreateScope(), _eventBusOverride);
+
+    private sealed class OverrideScope : IServiceScope
+    {
+        private readonly IServiceScope _inner;
+
+        public OverrideScope(IServiceScope inner, IEventBus eventBusOverride)
+        {
+            _inner = inner;
+            ServiceProvider = new OverrideProvider(inner.ServiceProvider, eventBusOverride);
+        }
+
+        public IServiceProvider ServiceProvider { get; }
+
+        public void Dispose() => _inner.Dispose();
+    }
+
+    private sealed class OverrideProvider : IServiceProvider
+    {
+        private readonly IServiceProvider _inner;
+        private readonly IEventBus _eventBusOverride;
+
+        public OverrideProvider(IServiceProvider inner, IEventBus eventBusOverride)
+        {
+            _inner = inner;
+            _eventBusOverride = eventBusOverride;
+        }
+
+        public object? GetService(Type serviceType)
+            => serviceType == typeof(IEventBus) ? _eventBusOverride : _inner.GetService(serviceType);
+    }
 }
 
 /// <summary>

@@ -83,17 +83,30 @@ function MainApp() {
     setShowWelcome(false);
   };
 
-  // Get contest updates handler from context
-  const { handleStatusUpdate } = useContestUpdates();
+  // Get contest updates handlers from context — split per event:
+  // lifecycle vs. football tick vs. baseball tick.
+  const {
+    handleStatusUpdate,
+    handleFootballStateUpdate,
+    handleBaseballStateUpdate,
+  } = useContestUpdates();
 
   useSignalRClient({
     onPreviewCompleted: (data) => {
       toast.success(data.message);
       //refreshMatchups(); // or setState to trigger re-render
     },
-    onContestStatusUpdated: (data) => {
-      console.log('📡 Contest status update received:', data);
+    onContestStatusChanged: (data) => {
+      console.log('📡 Contest lifecycle update received:', data);
       handleStatusUpdate(data);
+    },
+    onFootballContestStateChanged: (data) => {
+      console.log('🏈 Football state update received:', data);
+      handleFootballStateUpdate(data);
+    },
+    onBaseballContestStateChanged: (data) => {
+      console.log('⚾ Baseball state update received:', data);
+      handleBaseballStateUpdate(data);
     },
   });
 

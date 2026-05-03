@@ -1,5 +1,5 @@
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getAuth, signOut } from "firebase/auth";
 import { toast } from "react-hot-toast";
 import Navigation from "./components/layout/Navigation";
@@ -83,18 +83,44 @@ function MainApp() {
     setShowWelcome(false);
   };
 
-  // Get contest updates handler from context
-  const { handleStatusUpdate } = useContestUpdates();
+  // Get contest updates handlers from context — split per event:
+  // lifecycle vs. football tick vs. baseball tick.
+  const {
+    handleStatusUpdate,
+    handleFootballStateUpdate,
+    handleBaseballStateUpdate,
+  } = useContestUpdates();
+
+  // Memoize callbacks so useSignalRClient's effect (which lists each
+  // callback in its dependency array) doesn't tear down + reconnect the
+  // SignalR connection on every MainApp render. Context handlers are
+  // already useCallback-stable, so each memo only re-creates if its
+  // upstream handler identity changes.
+  const onPreviewCompleted = useCallback((data) => {
+    toast.success(data.message);
+    //refreshMatchups(); // or setState to trigger re-render
+  }, []);
+
+  const onContestStatusChanged = useCallback((data) => {
+    console.log('📡 Contest lifecycle update received:', data);
+    handleStatusUpdate(data);
+  }, [handleStatusUpdate]);
+
+  const onFootballContestStateChanged = useCallback((data) => {
+    console.log('🏈 Football state update received:', data);
+    handleFootballStateUpdate(data);
+  }, [handleFootballStateUpdate]);
+
+  const onBaseballContestStateChanged = useCallback((data) => {
+    console.log('⚾ Baseball state update received:', data);
+    handleBaseballStateUpdate(data);
+  }, [handleBaseballStateUpdate]);
 
   useSignalRClient({
-    onPreviewCompleted: (data) => {
-      toast.success(data.message);
-      //refreshMatchups(); // or setState to trigger re-render
-    },
-    onContestStatusUpdated: (data) => {
-      console.log('📡 Contest status update received:', data);
-      handleStatusUpdate(data);
-    },
+    onPreviewCompleted,
+    onContestStatusChanged,
+    onFootballContestStateChanged,
+    onBaseballContestStateChanged,
   });
 
   return (

@@ -123,8 +123,16 @@ public class EventCompetitionProbabilityDocumentProcessor<TDataContext> : Docume
                 dto.LastModified, competitionId, dto.Ref);
         }
 
-        await _publishEndpoint.Publish(new CompetitionWinProbabilityChanged(
-            newEntity.CompetitionId,
+        // ContestId is what crosses the service boundary — Competition is a
+        // Producer-internal sub-aggregate. Projected read avoids pulling
+        // the full Competition row.
+        var contestId = await _dataContext.Competitions
+            .Where(c => c.Id == newEntity.CompetitionId)
+            .Select(c => c.ContestId)
+            .FirstAsync();
+
+        await _publishEndpoint.Publish(new ContestWinProbabilityChanged(
+            contestId,
             newEntity.PlayId,
             newEntity.HomeWinPercentage,
             newEntity.AwayWinPercentage,

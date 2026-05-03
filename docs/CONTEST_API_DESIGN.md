@@ -1,6 +1,6 @@
 # Contest API Design
 
-> **Status Note:** The Competition to Contest terminology migration is partially complete. Events like `ContestCreated`, `ContestScoreChanged`, and `ContestStatusChanged` use the new naming, but `CompetitionStatusChanged`, `CompetitionPlayCompleted`, and `CompetitionWinProbabilityChanged` still use the old naming.
+> **Status Note:** The Competition → Contest terminology migration on the integration-event surface is complete (2026-05-03). All cross-service events use the `Contest*` prefix; sport-specific scoreboard ticks live under `Football`/`Baseball` sub-namespaces (`FootballContestStateChanged`, `BaseballContestStateChanged`). `Competition` is now Producer-internal only.
 
 ## Problem Statement
 

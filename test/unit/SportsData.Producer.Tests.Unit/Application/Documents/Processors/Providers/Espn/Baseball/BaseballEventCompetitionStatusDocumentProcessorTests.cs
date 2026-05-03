@@ -172,12 +172,12 @@ public class BaseballEventCompetitionStatusDocumentProcessorTests
         // Initial create — no prior status to compare against, so the
         // status-changed branch must not fire.
         bus.Verify(
-            x => x.Publish(It.IsAny<CompetitionStatusChanged>(), It.IsAny<CancellationToken>()),
+            x => x.Publish(It.IsAny<ContestStatusChanged>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
     [Fact]
-    public async Task WhenStatusTypeNameChanges_HardReplacesRowAndPublishesCompetitionStatusChanged()
+    public async Task WhenStatusTypeNameChanges_HardReplacesRowAndPublishesContestStatusChanged()
     {
         // arrange — pre-seed a row with a DIFFERENT status name so the
         // comparison detects a change.
@@ -230,12 +230,18 @@ public class BaseballEventCompetitionStatusDocumentProcessorTests
         saved[0].Id.Should().NotBe(oldRowId);
         saved[0].StatusTypeName.Should().Be("STATUS_FINAL");
 
-        // assert — CompetitionStatusChanged published exactly once with
-        // the new status name.
+        // assert — ContestStatusChanged published exactly once with the
+        // new status name and the parent ContestId (Competition is a
+        // Producer-internal sub-aggregate; the contract uses ContestId).
+        var seededContestId = await _baseballDataContext.Competitions
+            .Where(c => c.Id == compId)
+            .Select(c => c.ContestId)
+            .FirstAsync();
+
         bus.Verify(
             x => x.Publish(
-                It.Is<CompetitionStatusChanged>(e =>
-                    e.CompetitionId == compId &&
+                It.Is<ContestStatusChanged>(e =>
+                    e.ContestId == seededContestId &&
                     e.Status == "STATUS_FINAL"),
                 It.IsAny<CancellationToken>()),
             Times.Once);

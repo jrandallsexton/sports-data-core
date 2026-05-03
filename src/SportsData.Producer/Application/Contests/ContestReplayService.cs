@@ -3,6 +3,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Eventing.Events.Contests.Football;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Contests
@@ -64,10 +65,10 @@ namespace SportsData.Producer.Application.Contests
 
                 await _dataContext.SaveChangesAsync(ct);
 
+                // Lifecycle bookend — Scheduled→InProgress. Sport-neutral.
                 await _eventBus.Publish(new ContestStatusChanged(
                     contestId,
                     nameof(ContestStatus.InProgress),
-                    "0", "15:00", 0, 0, contest.AwayTeamFranchiseSeasonId, false,
                     null,
                     contest.Sport,
                     contest.SeasonYear,
@@ -81,9 +82,10 @@ namespace SportsData.Producer.Application.Contests
 
                 foreach (var play in plays)
                 {
-                    await _eventBus.Publish(new ContestStatusChanged(
+                    // Per-play scoreboard tick. Football-shaped — replay
+                    // is football-only today (FootballDataContext).
+                    await _eventBus.Publish(new FootballContestStateChanged(
                         contestId,
-                        nameof(ContestStatus.InProgress),
                         $"Q{play.PeriodNumber}",
                         play.ClockDisplayValue ?? "UNK",
                         play.AwayScore,

@@ -115,25 +115,45 @@ The following processors handle live updates when documents arrive:
 
 #### 5. **Event Publishing**
 
-**`ContestStatusChanged` Event**
+**Lifecycle vs. scoreboard split (2026-05-03)**
+
+`ContestStatusChanged` was narrowed to a sport-neutral lifecycle event;
+the football scoreboard fields it used to carry moved to a sport-
+specific tick event. See [INTEGRATION_EVENTS.md](INTEGRATION_EVENTS.md).
+
 ```csharp
+// Sport-neutral lifecycle (Scheduled → InProgress → Final)
 public record ContestStatusChanged(
     Guid ContestId,
     string Status,
+    Uri? Ref,
+    Sport Sport,
+    int? SeasonYear,
+    Guid CorrelationId,
+    Guid CausationId);
+
+// Football per-play scoreboard tick
+public record FootballContestStateChanged(
+    Guid ContestId,
     string Period,
     string Clock,
     int AwayScore,
     int HomeScore,
     Guid? PossessionFranchiseSeasonId,
     bool IsScoringPlay,
+    Uri? Ref,
+    Sport Sport,
+    int? SeasonYear,
     Guid CorrelationId,
-    string CausationId
-);
+    Guid CausationId);
 ```
 
-**Proof it Works:**
-- `ContestReplayService` uses this event structure successfully
-- Simulates live game by replaying plays from database
+**Proof it works:**
+- `EventCompetitionPlayDocumentProcessor` (FB) emits both
+  `ContestPlayCompleted` (log) and `FootballContestStateChanged`
+  (scoreboard) when a play lands on a live contest.
+- `ContestReplayService` emits the lifecycle once and a state-changed
+  event per play; matches the live-flow shape exactly.
 
 ---
 

@@ -23,13 +23,13 @@ This document outlines the design for a centralized resource reference (URI) gen
 ## Problem Statement
 
 We want to include absolute URIs (refs) on:
-- **Integration Events**: When Producer publishes `CompetitionStatusChanged`, consumers should be able to fetch full competition data via the ref
+- **Integration Events**: When Producer publishes `ContestStatusChanged`, consumers should be able to fetch full competition data via the ref
 - **API DTOs**: API responses should include HATEOAS links to related resources
 
 ### Example Event with Ref
 ```csharp
 // Current state (line 121 in EventCompetitionStatusDocumentProcessor)
-await _publishEndpoint.Publish(new CompetitionStatusChanged(
+await _publishEndpoint.Publish(new ContestStatusChanged(
     competitionId,
     null, // ← Ref is currently null
     command.Sport,
@@ -40,7 +40,7 @@ await _publishEndpoint.Publish(new CompetitionStatusChanged(
 ));
 
 // Desired state
-await _publishEndpoint.Publish(new CompetitionStatusChanged(
+await _publishEndpoint.Publish(new ContestStatusChanged(
     competitionId,
     _refGenerator.ForCompetition(competitionId), // ← Generate ref
     command.Sport,
@@ -280,7 +280,7 @@ Use in event publishing:
 
 ```csharp
 // In EventCompetitionStatusDocumentProcessor.cs line 121
-await _publishEndpoint.Publish(new CompetitionStatusChanged(
+await _publishEndpoint.Publish(new ContestStatusChanged(
     competitionId,
     _refGenerator.ForCompetition(competitionId), // ← Use ref generator
     command.Sport,
@@ -328,12 +328,12 @@ public ContestDto MapToDto(Contest contest)
 ### In Event Consumers
 
 ```csharp
-public class CompetitionStatusChangedConsumer : IConsumer<CompetitionStatusChanged>
+public class ContestStatusChangedConsumer : IConsumer<ContestStatusChanged>
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<CompetitionStatusChangedConsumer> _logger;
+    private readonly ILogger<ContestStatusChangedConsumer> _logger;
 
-    public async Task Consume(ConsumeContext<CompetitionStatusChanged> context)
+    public async Task Consume(ConsumeContext<ContestStatusChanged> context)
     {
         var evt = context.Message;
         
@@ -447,12 +447,12 @@ public abstract record EventBase(Uri? Ref, Sport Sport, int? SeasonYear, Guid Co
 Once implemented, can make `Ref` non-nullable.
 
 ### 6. Additional Events to Update
-Beyond `CompetitionStatusChanged`, consider adding refs to:
+Beyond `ContestStatusChanged`, consider adding refs to:
 - `ContestCreated`
 - `ContestStartTimeUpdated`
 - `ContestOddsUpdated`
-- `CompetitionPlayCompleted`
-- `CompetitionWinProbabilityChanged`
+- `ContestPlayCompleted`
+- `ContestWinProbabilityChanged`
 
 ### 7. HATEOAS Link Collections
 For richer HATEOAS support, consider link collections:

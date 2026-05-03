@@ -235,10 +235,14 @@ public class CompetitionStreamSchedulerTests : ProducerTestBase<CompetitionStrea
     }
 
     [Fact]
-    public async Task Execute_DeleteReturnsFalse_KeepsExistingRowUnchanged()
+    public async Task Execute_OldJobDeleteFailsAfterRescheduleSaved_PersistsNewJobAndLogsWarning()
     {
-        // Hangfire refused the state transition (job already Processing/Succeeded/Deleted).
-        // Scheduler must not blindly schedule a new job in that case — the row stays intact.
+        // Reschedule order is: schedule new → save row → delete old. If the old-job
+        // Delete fails (Hangfire state machine refused, job already Processing/etc.),
+        // the row already reflects the new jobId. The orphan old job is benign —
+        // the streamer's idempotent entry detects the duplicate and short-circuits.
+        // This is the safer failure mode: a leaked old job vs. a row pointing at a
+        // deleted job (which would mean the game silently never streams).
 
         await SeedSeasonWeekAsync();
         var competitionId = await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(5));
@@ -248,18 +252,16 @@ public class CompetitionStreamSchedulerTests : ProducerTestBase<CompetitionStrea
         Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
             .Setup(x => x.Delete("hf-locked"))
             .Returns(false);
+        SetupScheduleReturns("hf-new-after-failed-delete");
 
         await _sut.ExecuteAsync(CancellationToken.None);
 
         var stream = FootballDataContext.CompetitionStreams.Single();
-        stream.BackgroundJobId.Should().Be("hf-locked");
-        stream.ScheduledTimeUtc.Should().Be(oldScheduledTime);
+        stream.BackgroundJobId.Should().Be("hf-new-after-failed-delete");
+        stream.ScheduledTimeUtc.Should().Be(FixedNow.AddHours(5) - TimeSpan.FromMinutes(10));
 
         Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
-            .Verify(x => x.Schedule<ICompetitionBroadcastingJob>(
-                It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
-                It.IsAny<TimeSpan>()),
-                Times.Never);
+            .Verify(x => x.Delete("hf-locked"), Times.Once);
     }
 
     private async Task SeedSeasonWeekAsync()

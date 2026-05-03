@@ -175,6 +175,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                                 _logger.LogInformation("Game went final while waiting for kickoff. Skipping live polling.");
                                 if (stream != null)
                                 {
+                                    stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
                                     await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
                                 }
                                 return;
@@ -197,6 +198,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                         _logger.LogInformation("Game already final. Skipping streaming.");
                         if (stream != null)
                         {
+                            stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
                             await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
                         }
                         return;
@@ -247,6 +249,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 _logger.LogWarning("Streaming cancelled by external request");
                 if (stream != null)
                 {
+                    stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
                     await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, CancellationToken.None, "Cancelled by external request");
                 }
             }
@@ -255,6 +258,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 _logger.LogError(ex, "Unexpected error during streaming");
                 if (stream != null)
                 {
+                    stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
                     await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, CancellationToken.None, ex.Message);
                 }
                 throw;

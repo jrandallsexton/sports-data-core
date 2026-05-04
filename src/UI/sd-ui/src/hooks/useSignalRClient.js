@@ -10,6 +10,7 @@ export default function useSignalRClient({
   onContestStatusChanged,
   onFootballContestStateChanged,
   onBaseballContestStateChanged,
+  onContestPlayCompleted,
 }) {
   const connectionRef = useRef(null);
 
@@ -54,6 +55,12 @@ export default function useSignalRClient({
       connection.on("BaseballContestStateChanged", onBaseballContestStateChanged);
     }
 
+    // Sport-neutral per-play log event — fires alongside the
+    // sport-specific scoreboard tick when a new play lands.
+    if (onContestPlayCompleted) {
+      connection.on("ContestPlayCompleted", onContestPlayCompleted);
+    }
+
     connection
       .start()
       .then(() => {
@@ -77,6 +84,7 @@ export default function useSignalRClient({
     onContestStatusChanged,
     onFootballContestStateChanged,
     onBaseballContestStateChanged,
+    onContestPlayCompleted,
   ]);
 
   return connectionRef.current;

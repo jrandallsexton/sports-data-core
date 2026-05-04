@@ -29,7 +29,7 @@ namespace SportsData.Api.Application.Events
 
             await _hubContext.Clients
                 .All // ← simple, global broadcast for now
-                .SendAsync("ContestStatusChanged", msg);
+                .SendAsync("ContestStatusChanged", msg, context.CancellationToken);
         }
     }
 }

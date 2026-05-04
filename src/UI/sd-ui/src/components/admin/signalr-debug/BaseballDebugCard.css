@@ -1,0 +1,215 @@
+.baseball-debug-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--accent-subtle);
+  border-radius: 12px;
+  padding: 1.25rem;
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.baseball-debug-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.baseball-debug-card__field {
+  display: flex;
+  justify-content: center;
+  background-color: var(--bg-elevated);
+  border-radius: 8px;
+  padding: 0.5rem;
+}
+
+.baseball-diamond {
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+}
+
+.baseball-base {
+  fill: #ffffff;
+  stroke: #1a1a1a;
+  stroke-width: 1;
+  transition: fill 0.15s ease;
+}
+
+.baseball-base--occupied {
+  fill: gold;
+  filter: drop-shadow(0 0 6px gold);
+}
+
+.baseball-debug-card__scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background-color: var(--bg-elevated);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.baseball-debug-card__team {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.baseball-debug-card__team:last-child {
+  justify-content: flex-end;
+}
+
+.baseball-debug-card__teamlabel {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+}
+
+.baseball-debug-card__teamscore {
+  font-size: 1.6rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.baseball-debug-card__centerinfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 110px;
+}
+
+.baseball-debug-card__inning {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.baseball-debug-card__count {
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.baseball-debug-card__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.baseball-debug-card__presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.baseball-debug-card__presets button {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.baseball-debug-card__presets button:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+
+.baseball-debug-card__presets button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.baseball-debug-card__form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.5rem 0.75rem;
+  align-items: end;
+  border-top: 1px solid var(--border-primary);
+  padding-top: 0.75rem;
+}
+
+.baseball-debug-card__form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  gap: 0.2rem;
+}
+
+.baseball-debug-card__form input,
+.baseball-debug-card__form select {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  padding: 0.3rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.baseball-debug-card__inline {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.4rem !important;
+}
+
+.baseball-debug-card__submit {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  grid-column: 1 / -1;
+}
+
+.baseball-debug-card__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.baseball-debug-card__lastplay {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  background-color: var(--bg-elevated);
+  border-radius: 6px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.baseball-debug-card__lastplaylabel {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.7rem;
+}
+
+.baseball-debug-card__lastplaytext {
+  color: var(--text-primary);
+}
+
+.baseball-debug-card__rawpayload {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.baseball-debug-card__rawpayload pre {
+  background-color: var(--bg-elevated);
+  padding: 0.5rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.75rem;
+}

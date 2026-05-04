@@ -56,6 +56,7 @@ export const ContestUpdatesProvider = ({ children }) => {
         homeScore: data.homeScore,
         possessionFranchiseSeasonId: data.possessionFranchiseSeasonId,
         isScoringPlay: data.isScoringPlay || false,
+        ballOnYardLine: data.ballOnYardLine,
         lastUpdated: Date.now()
       }
     }));
@@ -108,8 +109,33 @@ export const ContestUpdatesProvider = ({ children }) => {
   }, []);
 
   /**
+   * Handle ContestPlayCompleted (sport-neutral per-play log) event.
+   * Stores the latest play description on the contest record so the
+   * UI can render a play-by-play feed without needing the full play
+   * object. PlayId lets the consumer dedupe if it cares.
+   */
+  const handlePlayCompleted = useCallback((data) => {
+    if (!data?.contestId) {
+      console.warn('ContestPlayCompleted event missing contestId', data);
+      return;
+    }
+
+    setContests(prev => ({
+      ...prev,
+      [data.contestId]: {
+        ...prev[data.contestId],
+        contestId: data.contestId,
+        lastPlayId: data.playId,
+        lastPlayDescription: data.playDescription,
+        lastPlayAt: Date.now(),
+        lastUpdated: Date.now()
+      }
+    }));
+  }, []);
+
+  /**
    * Get live update data for a specific contest
-   * @param {string} contestId 
+   * @param {string} contestId
    * @returns {object|null} Live update data or null if no updates available
    */
   const getContestUpdate = useCallback((contestId) => {
@@ -148,6 +174,7 @@ export const ContestUpdatesProvider = ({ children }) => {
     handleStatusUpdate,
     handleFootballStateUpdate,
     handleBaseballStateUpdate,
+    handlePlayCompleted,
     getContestUpdate,
     hasLiveUpdate,
     clearContestUpdate,

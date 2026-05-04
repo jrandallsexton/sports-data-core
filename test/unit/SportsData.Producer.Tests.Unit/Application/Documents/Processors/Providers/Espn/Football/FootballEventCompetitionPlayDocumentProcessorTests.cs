@@ -6,6 +6,8 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Moq;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
@@ -22,13 +24,47 @@ using Xunit;
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
 /// <summary>
-/// Tests for EventCompetitionPlayDocumentProcessor.
+/// Tests for FootballEventCompetitionPlayDocumentProcessor.
 /// Optimized to eliminate AutoFixture overhead.
 /// </summary>
 [Collection("Sequential")]
-public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<FootballDataContext>
+public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private const string PlayUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays/401628334123";
+
+    // Fixed "now" for every CreatedUtc in this file. Per CLAUDE.md, tests
+    // route timestamps through IDateTimeProvider so seeded entities are
+    // deterministic. Matches the pattern in MatchupScheduleProcessorTests.
+    private static readonly DateTime FixedUtcNow = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    public FootballEventCompetitionPlayDocumentProcessorTests()
+    {
+        Mocker.GetMock<IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(FixedUtcNow);
+    }
+
+    private DateTime UtcNow() => Mocker.Get<IDateTimeProvider>().UtcNow();
+
+    /// <summary>
+    /// Seed an in-progress FootballCompetitionStatus row for the given
+    /// competition. The play processor's base now throws when no status
+    /// row exists (treats it as a transient race with the status
+    /// processor and lets MassTransit retry); these tests aren't
+    /// exercising that path, so they need a status row to proceed.
+    /// </summary>
+    private async Task SeedInProgressStatusAsync(Guid competitionId)
+    {
+        await FootballDataContext.Set<FootballCompetitionStatus>().AddAsync(new FootballCompetitionStatus
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            IsCompleted = false,
+            CreatedUtc = UtcNow(),
+            CreatedBy = Guid.NewGuid()
+        });
+        await FootballDataContext.SaveChangesAsync();
+    }
 
     private ProcessDocumentCommand CreateCommand(string jsonFile, string? parentId = null)
     {
@@ -87,12 +123,14 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
-            Date = DateTime.UtcNow,
-            CreatedUtc = DateTime.UtcNow,
+            Date = UtcNow(),
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.Competitions.AddAsync(competition);
         await FootballDataContext.SaveChangesAsync();
+
+        await SeedInProgressStatusAsync(competitionId);
 
         // Setup team franchise seasons for both teams
         var startTeamId = Guid.NewGuid();
@@ -111,7 +149,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
             Name = "Team 1",
             Slug = "team-1",
             ColorCodeHex = "#FFFFFF",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<FranchiseSeasonExternalId>
             {
@@ -147,7 +185,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
             Name = "Team 2",
             Slug = "team-2",
             ColorCodeHex = "#FFFFFF",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<FranchiseSeasonExternalId>
             {
@@ -167,7 +205,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         await FootballDataContext.FranchiseSeasons.AddAsync(returnTeam);
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json, competitionId.ToString());
@@ -208,11 +246,14 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
-            Date = DateTime.UtcNow,
-            CreatedUtc = DateTime.UtcNow,
+            Date = UtcNow(),
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.Competitions.AddAsync(competition);
+        await FootballDataContext.SaveChangesAsync();
+
+        await SeedInProgressStatusAsync(competitionId);
 
         var startTeamId = Guid.NewGuid();
         var startTeamUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30";
@@ -230,7 +271,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
             Name = "Team",
             Slug = "team",
             ColorCodeHex = "#FFFFFF",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
@@ -265,7 +306,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
             Name = "Main Team",
             Slug = "main-team",
             ColorCodeHex = "#FFFFFF",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<FranchiseSeasonExternalId>
             {
@@ -285,7 +326,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
 
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json, competitionId.ToString());
@@ -337,7 +378,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
 
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json, competitionId.ToString());
@@ -359,7 +400,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     public async Task WhenSeasonMissing_ThrowsException()
     {
         // arrange
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json);
@@ -383,7 +424,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     public async Task WhenParentIdInvalid_ThrowsException()
     {
         // arrange
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json);
@@ -407,7 +448,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     public async Task WhenParentIdMissing_ThrowsException()
     {
         // arrange
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json);

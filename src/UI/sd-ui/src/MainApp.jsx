@@ -89,6 +89,7 @@ function MainApp() {
     handleStatusUpdate,
     handleFootballStateUpdate,
     handleBaseballStateUpdate,
+    handlePlayCompleted,
   } = useContestUpdates();
 
   // Memoize callbacks so useSignalRClient's effect (which lists each
@@ -116,11 +117,17 @@ function MainApp() {
     handleBaseballStateUpdate(data);
   }, [handleBaseballStateUpdate]);
 
+  const onContestPlayCompleted = useCallback((data) => {
+    console.log('📝 Play completed received:', data);
+    handlePlayCompleted(data);
+  }, [handlePlayCompleted]);
+
   useSignalRClient({
     onPreviewCompleted,
     onContestStatusChanged,
     onFootballContestStateChanged,
     onBaseballContestStateChanged,
+    onContestPlayCompleted,
   });
 
   return (

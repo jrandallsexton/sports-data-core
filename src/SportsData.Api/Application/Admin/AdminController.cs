@@ -359,9 +359,10 @@ namespace SportsData.Api.Application.Admin
                 ), cancellationToken);
             }
 
+            var sanitizedPeriodForLog = request.Period?.ToString()?.Replace("\r", "").Replace("\n", "");
             _logger.LogInformation(
                 "SignalRDebug: published FootballContestStateChanged. ContestId={ContestId}, Period={Period}, Clock={Clock}, Score={Away}-{Home}, Yard={Yard}, Scoring={Scoring}, CorrelationId={CorrelationId}",
-                contestId, request.Period, request.Clock, request.AwayScore, request.HomeScore, request.BallOnYardLine, request.IsScoringPlay, correlationId);
+                contestId, sanitizedPeriodForLog, request.Clock, request.AwayScore, request.HomeScore, request.BallOnYardLine, request.IsScoringPlay, correlationId);
 
             return Accepted(new { contestId, correlationId });
         }

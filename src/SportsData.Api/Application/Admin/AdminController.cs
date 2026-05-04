@@ -311,9 +311,13 @@ namespace SportsData.Api.Application.Admin
                 ), cancellationToken);
             }
 
+            var safeStatus = request.Status?
+                .Replace("\r", string.Empty)
+                .Replace("\n", string.Empty);
+
             _logger.LogInformation(
                 "SignalRDebug: published ContestStatusChanged. ContestId={ContestId}, Sport={Sport}, Status={Status}, CorrelationId={CorrelationId}",
-                contestId, sport, request.Status, correlationId);
+                contestId, sport, safeStatus, correlationId);
 
             return Accepted(new { contestId, correlationId });
         }

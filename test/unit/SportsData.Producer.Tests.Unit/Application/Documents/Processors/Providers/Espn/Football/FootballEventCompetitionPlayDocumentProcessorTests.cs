@@ -22,11 +22,11 @@ using Xunit;
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football;
 
 /// <summary>
-/// Tests for EventCompetitionPlayDocumentProcessor.
+/// Tests for FootballEventCompetitionPlayDocumentProcessor.
 /// Optimized to eliminate AutoFixture overhead.
 /// </summary>
 [Collection("Sequential")]
-public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<FootballDataContext>
+public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private const string PlayUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays/401628334123";
 
@@ -167,7 +167,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
         await FootballDataContext.FranchiseSeasons.AddAsync(returnTeam);
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json, competitionId.ToString());
@@ -285,7 +285,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
 
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json, competitionId.ToString());
@@ -337,7 +337,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
 
         await FootballDataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json, competitionId.ToString());
@@ -359,7 +359,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     public async Task WhenSeasonMissing_ThrowsException()
     {
         // arrange
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json);
@@ -383,7 +383,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     public async Task WhenParentIdInvalid_ThrowsException()
     {
         // arrange
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json);
@@ -407,7 +407,7 @@ public class EventCompetitionPlayDocumentProcessorTests : ProducerTestBase<Footb
     public async Task WhenParentIdMissing_ThrowsException()
     {
         // arrange
-        var sut = Mocker.CreateInstance<EventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
         var command = CreateCommand(json);

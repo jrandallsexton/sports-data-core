@@ -228,6 +228,7 @@ namespace SportsData.Api
                 [
                     typeof(BaseballContestStateChangedHandler),
                     typeof(ContestOddsUpdatedHandler),
+                    typeof(ContestPlayCompletedHandler),
                     typeof(ContestRecapArticlePublishedHandler),
                     typeof(ContestScoreChangedHandler),
                     typeof(ContestStartTimeUpdatedHandler),
@@ -247,6 +248,16 @@ namespace SportsData.Api
                         options.KeepAliveInterval = TimeSpan.FromSeconds(15);
                         options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
                         options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+                    })
+                    .AddJsonProtocol(opts =>
+                    {
+                        // Match the MVC controller convention (line ~174):
+                        // wire payload is camelCase + enums-as-strings. Without
+                        // this, SignalR defaults to PascalCase and every web
+                        // handler that reads `data.contestId` etc. silently
+                        // gets undefined.
+                        opts.PayloadSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+                        opts.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
                     })
                     .AddAzureSignalR(options =>
                     {

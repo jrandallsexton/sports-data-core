@@ -92,6 +92,7 @@ namespace SportsData.Producer.Application.Contests
                         play.HomeScore,
                         play.StartFranchiseSeasonId,
                         play.ScoringPlay,
+                        play.EndYardLine ?? play.StartYardLine,
                         null,
                         contest.Sport,
                         contest.SeasonYear,

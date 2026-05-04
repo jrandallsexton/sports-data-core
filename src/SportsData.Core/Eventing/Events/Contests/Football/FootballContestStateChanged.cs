@@ -19,6 +19,10 @@ namespace SportsData.Core.Eventing.Events.Contests.Football
         int HomeScore,
         Guid? PossessionFranchiseSeasonId,
         bool IsScoringPlay,
+        // Ball position on the field, expressed as 0–100 yards from the
+        // away (visitor) goal line. Matches ESPN's YardLine convention.
+        // Null means unknown (e.g. pre-snap, halftime, post-game).
+        int? BallOnYardLine,
         Uri? Ref,
         Sport Sport,
         int? SeasonYear,

@@ -91,7 +91,7 @@
    Two cards side-by-side on wide screens, stacked on narrow. */
 .admin-signalr-debug {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
   margin: 1rem 0 1.5rem;
 }

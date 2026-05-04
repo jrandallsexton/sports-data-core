@@ -81,7 +81,19 @@ public abstract class EventCompetitionPlayDocumentProcessorBase<TDataContext, TD
             throw new InvalidOperationException($"Competition with ID {competitionIdValue} does not exist.");
         }
 
+        // Tri-state: null means the sport-specific status row hasn't
+        // been sourced yet — treat as transient (status processor races
+        // play processor on first sourcing) and let MassTransit retry
+        // rather than silently skipping the live broadcast.
         var inProgress = await IsCompetitionInProgressAsync(competitionIdValue);
+        if (inProgress is null)
+        {
+            _logger.LogWarning(
+                "Competition status not yet sourced for CompetitionId={CompetitionId}; throwing for retry.",
+                competitionIdValue);
+            throw new InvalidOperationException(
+                $"Competition status not yet sourced for CompetitionId={competitionIdValue}; cannot determine in-progress state for play broadcast.");
+        }
 
         var playIdentity = _externalRefIdentityGenerator.Generate(externalDto.Ref);
 
@@ -95,7 +107,7 @@ public abstract class EventCompetitionPlayDocumentProcessorBase<TDataContext, TD
 
             var play = await BuildNewPlayAsync(command, externalDto, competition);
 
-            if (inProgress)
+            if (inProgress.Value)
             {
                 _logger.LogInformation(
                     "Contest in progress, publishing ContestPlayCompleted. ContestId={ContestId}, PlayId={PlayId}",
@@ -136,11 +148,14 @@ public abstract class EventCompetitionPlayDocumentProcessorBase<TDataContext, TD
     }
 
     /// <summary>
-    /// Returns true when the competition's status indicates it is mid-game.
-    /// Subclasses load the sport-specific *CompetitionStatus subtype and
-    /// inspect its IsCompleted flag.
+    /// Returns true when the competition's status indicates it is mid-game,
+    /// false when the status row exists and is completed, or null when no
+    /// status row exists yet (status processor hasn't caught up to this
+    /// play). The base treats null as transient and throws so MassTransit
+    /// retries — preferable to silently swallowing the live broadcast.
+    /// Subclasses load the sport-specific *CompetitionStatus subtype.
     /// </summary>
-    protected abstract Task<bool> IsCompetitionInProgressAsync(Guid competitionId);
+    protected abstract Task<bool?> IsCompetitionInProgressAsync(Guid competitionId);
 
     /// <summary>
     /// Materialize the sport-specific play entity from the wire DTO. Implementations

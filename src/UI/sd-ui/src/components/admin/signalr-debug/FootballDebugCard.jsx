@@ -181,7 +181,11 @@ export default function FootballDebugCard() {
   const lastTickRef = useRef(null);
   useEffect(() => {
     if (!ballVisible) return;
-    const tickKey = `${liveBallYard}|${live.lastUpdated ?? ''}`;
+    // Dedupe key reflects only ball-specific state. Using
+    // live.lastUpdated would refire the trail on unrelated context
+    // bumps (e.g., ContestPlayCompleted) even when the ball didn't
+    // move.
+    const tickKey = `${liveBallYard}|${awayHasBall ? 'a' : 'h'}`;
     if (lastTickRef.current === tickKey) return;
     lastTickRef.current = tickKey;
 
@@ -190,7 +194,7 @@ export default function FootballDebugCard() {
       ? Math.max(0, liveBallYard - MOCK_PLAY_YARDS)
       : Math.min(100, liveBallYard + MOCK_PLAY_YARDS);
     setTrail({ start, end: liveBallYard });
-  }, [liveBallYard, live.lastUpdated, awayHasBall, ballVisible]);
+  }, [liveBallYard, awayHasBall, ballVisible]);
 
   return (
     <div className="football-debug-card">

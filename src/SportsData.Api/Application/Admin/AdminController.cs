@@ -275,9 +275,23 @@ namespace SportsData.Api.Application.Admin
             if (!Enum.TryParse<Sport>(request.Sport, ignoreCase: true, out var sport))
                 return BadRequest($"Unknown sport '{request.Sport}'.");
 
-            var contestId = sport == Sport.BaseballMlb
-                ? SignalRDebugContestIds.Baseball
-                : SignalRDebugContestIds.Football;
+            // Explicit whitelist — Sport enum includes values (e.g.
+            // BasketballNba) the debug harness has no sandbox ContestId
+            // for. TryParse alone would accept them and silently fall
+            // through to the Football branch.
+            Guid contestId;
+            switch (sport)
+            {
+                case Sport.BaseballMlb:
+                    contestId = SignalRDebugContestIds.Baseball;
+                    break;
+                case Sport.FootballNcaa:
+                case Sport.FootballNfl:
+                    contestId = SignalRDebugContestIds.Football;
+                    break;
+                default:
+                    return BadRequest($"Unsupported sport '{request.Sport}' for SignalR debug harness.");
+            }
 
             var correlationId = Guid.NewGuid();
 
@@ -312,6 +326,12 @@ namespace SportsData.Api.Application.Admin
         {
             if (!Enum.TryParse<Sport>(request.Sport, ignoreCase: true, out var sport))
                 return BadRequest($"Unknown sport '{request.Sport}'.");
+
+            // football-state is football-only by definition — reject
+            // any other sport (incl. BaseballMlb / BasketballNba) rather
+            // than publishing a FootballContestStateChanged for them.
+            if (sport is not (Sport.FootballNcaa or Sport.FootballNfl))
+                return BadRequest($"Unsupported sport '{request.Sport}' for football-state debug endpoint.");
 
             var contestId = SignalRDebugContestIds.Football;
             var correlationId = Guid.NewGuid();
@@ -351,9 +371,21 @@ namespace SportsData.Api.Application.Admin
             if (!Enum.TryParse<Sport>(request.Sport, ignoreCase: true, out var sport))
                 return BadRequest($"Unknown sport '{request.Sport}'.");
 
-            var contestId = sport == Sport.BaseballMlb
-                ? SignalRDebugContestIds.Baseball
-                : SignalRDebugContestIds.Football;
+            // Same whitelist as contest-status — reject sports the debug
+            // harness has no sandbox ContestId for.
+            Guid contestId;
+            switch (sport)
+            {
+                case Sport.BaseballMlb:
+                    contestId = SignalRDebugContestIds.Baseball;
+                    break;
+                case Sport.FootballNcaa:
+                case Sport.FootballNfl:
+                    contestId = SignalRDebugContestIds.Football;
+                    break;
+                default:
+                    return BadRequest($"Unsupported sport '{request.Sport}' for SignalR debug harness.");
+            }
 
             var correlationId = Guid.NewGuid();
 

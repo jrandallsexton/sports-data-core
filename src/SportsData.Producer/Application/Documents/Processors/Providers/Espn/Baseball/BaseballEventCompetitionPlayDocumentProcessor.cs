@@ -29,17 +29,19 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext>
     {
     }
 
-    protected override async Task<bool> IsCompetitionInProgressAsync(Guid competitionId)
+    protected override async Task<bool?> IsCompetitionInProgressAsync(Guid competitionId)
     {
         // Status was lifted off CompetitionBase onto the sport-specific
         // BaseballCompetition in the abstract-status redesign. Loaded
         // independently so the in-progress branch can still gate on
-        // IsCompleted.
+        // IsCompleted. Null return signals "not sourced yet" so the base
+        // can throw for a retry instead of silently skipping the live
+        // broadcast.
         var status = await _dataContext.Set<BaseballCompetitionStatus>()
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.CompetitionId == competitionId);
 
-        return status is not null && !status.IsCompleted;
+        return status is null ? null : !status.IsCompleted;
     }
 
     protected override async Task<CompetitionPlayBase> BuildNewPlayAsync(

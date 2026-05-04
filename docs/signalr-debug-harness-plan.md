@@ -7,17 +7,26 @@ doc — update as decisions land.
 
 ## Why we're building this
 
-In-game UI updates are the next major surface. Today we have:
+In-game UI updates are the next major surface. **Audit-time snapshot
+(2026-05-03)** — verify against the live code paths (Producer emitters,
+API SignalR rebroadcasters, web client listeners) before relying on any
+of these claims; the surface drifts as features land:
 
-- Producer publishes `ContestStatusChanged` (lifecycle) +
-  `FootballContestStateChanged` (per-play scoreboard tick).
-- API rebroadcasts both via SignalR.
-- `/picks` reflects football updates via `GameStatus`. `/map` shows a
-  marker glow.
-- Baseball is silent end-to-end (no Producer emitter; no UI surface).
-- Several SignalR events are broadcast by API but have no client
-  listener (`ContestScoreChanged`, `ContestOddsUpdated`,
+- As of the 2026-05-03 audit, Producer published `ContestStatusChanged`
+  (lifecycle) + `FootballContestStateChanged` (per-play scoreboard tick).
+- At audit time, the API rebroadcast both via SignalR.
+- At audit time, `/picks` reflected football updates via `GameStatus`
+  and `/map` showed a marker glow.
+- At audit time, baseball was silent end-to-end (no Producer emitter;
+  no UI surface).
+- At audit time, several SignalR events were broadcast by API but had
+  no client listener (`ContestScoreChanged`, `ContestOddsUpdated`,
   `ContestRecapArticlePublished`).
+
+Re-verify each bullet by inspecting the actual code (Producer document
+processors, API `Application/Events/*Handler.cs` consumers, web
+`useSignalRClient.js` `connection.on(...)` registrations) before
+treating any of the above as current.
 
 To iterate confidently on the live-game UX we need a way to inject
 known-shape events on demand and watch the chain react. Real games
@@ -48,7 +57,7 @@ panels:
 - **Football**: end-zones labeled `AWAY` / `HOME`, yard lines
   10-20-30-40-50-40-30-20-10. Header line "Home 1st and 10 at own 40".
   Score `Away 7 / Home 10`. Possession `🏈` arrow on the team with
-  the ball. Caption "Last Play: Smith 20 yard pass to Jones".
+  the ball. Caption "Last Play: Smith 20-yard pass to Jones".
 - **Baseball**: diamond with home plate at bottom, 1st/2nd/3rd as
   small squares; runners shown as filled squares. Header "Bottom 3rd,
   2 men on". Score `Away 0 / Home 2`. Caption "At Bat: T. Smith (1-2)
@@ -160,8 +169,8 @@ diamond with active bases lit up).
 
 ## Still open
 
-4. Event log panel in v1, or follow-up?
-5. Fix the existing admin "errors" panels (canonical-data connection
+1. Event log panel in v1, or follow-up?
+2. Fix the existing admin "errors" panels (canonical-data connection
    issue) in the same PR, or park?
 
 ## Adjacent gaps surfaced during the audit (not v1 scope)

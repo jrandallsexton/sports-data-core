@@ -28,7 +28,7 @@ namespace SportsData.Api.Application.Events
 
             await _hubContext.Clients
                 .All
-                .SendAsync("ContestPlayCompleted", msg);
+                .SendAsync("ContestPlayCompleted", msg, context.CancellationToken);
         }
     }
 }

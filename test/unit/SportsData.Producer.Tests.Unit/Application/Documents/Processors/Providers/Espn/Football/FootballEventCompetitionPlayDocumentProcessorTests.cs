@@ -30,6 +30,26 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
 {
     private const string PlayUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays/401628334123";
 
+    /// <summary>
+    /// Seed an in-progress FootballCompetitionStatus row for the given
+    /// competition. The play processor's base now throws when no status
+    /// row exists (treats it as a transient race with the status
+    /// processor and lets MassTransit retry); these tests aren't
+    /// exercising that path, so they need a status row to proceed.
+    /// </summary>
+    private async Task SeedInProgressStatusAsync(Guid competitionId)
+    {
+        await FootballDataContext.Set<FootballCompetitionStatus>().AddAsync(new FootballCompetitionStatus
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            IsCompleted = false,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        await FootballDataContext.SaveChangesAsync();
+    }
+
     private ProcessDocumentCommand CreateCommand(string jsonFile, string? parentId = null)
     {
         var generator = new ExternalRefIdentityGenerator();
@@ -93,6 +113,8 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         };
         await FootballDataContext.Competitions.AddAsync(competition);
         await FootballDataContext.SaveChangesAsync();
+
+        await SeedInProgressStatusAsync(competitionId);
 
         // Setup team franchise seasons for both teams
         var startTeamId = Guid.NewGuid();
@@ -213,6 +235,9 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.Competitions.AddAsync(competition);
+        await FootballDataContext.SaveChangesAsync();
+
+        await SeedInProgressStatusAsync(competitionId);
 
         var startTeamId = Guid.NewGuid();
         var startTeamUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30";

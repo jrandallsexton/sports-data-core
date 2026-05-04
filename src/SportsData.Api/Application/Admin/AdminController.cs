@@ -453,9 +453,13 @@ namespace SportsData.Api.Application.Admin
                 ), cancellationToken);
             }
 
+            var halfInningForLog = (request.HalfInning ?? string.Empty)
+                .Replace("\r", string.Empty)
+                .Replace("\n", string.Empty);
+
             _logger.LogInformation(
                 "SignalRDebug: published BaseballContestStateChanged. ContestId={ContestId}, Inning={Half} {Inning}, Score={Away}-{Home}, Count={Balls}-{Strikes}, Outs={Outs}, CorrelationId={CorrelationId}",
-                contestId, request.HalfInning, request.Inning, request.AwayScore, request.HomeScore, request.Balls, request.Strikes, request.Outs, correlationId);
+                contestId, halfInningForLog, request.Inning, request.AwayScore, request.HomeScore, request.Balls, request.Strikes, request.Outs, correlationId);
 
             return Accepted(new { contestId, correlationId });
         }

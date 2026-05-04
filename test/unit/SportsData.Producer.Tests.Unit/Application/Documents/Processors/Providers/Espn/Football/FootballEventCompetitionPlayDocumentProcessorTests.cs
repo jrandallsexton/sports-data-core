@@ -6,6 +6,8 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Moq;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
@@ -30,6 +32,20 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
 {
     private const string PlayUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays/401628334123";
 
+    // Fixed "now" for every CreatedUtc in this file. Per CLAUDE.md, tests
+    // route timestamps through IDateTimeProvider so seeded entities are
+    // deterministic. Matches the pattern in MatchupScheduleProcessorTests.
+    private static readonly DateTime FixedUtcNow = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    public FootballEventCompetitionPlayDocumentProcessorTests()
+    {
+        Mocker.GetMock<IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(FixedUtcNow);
+    }
+
+    private DateTime UtcNow() => Mocker.Get<IDateTimeProvider>().UtcNow();
+
     /// <summary>
     /// Seed an in-progress FootballCompetitionStatus row for the given
     /// competition. The play processor's base now throws when no status
@@ -44,7 +60,7 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
             Id = Guid.NewGuid(),
             CompetitionId = competitionId,
             IsCompleted = false,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid()
         });
         await FootballDataContext.SaveChangesAsync();
@@ -107,8 +123,8 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
-            Date = DateTime.UtcNow,
-            CreatedUtc = DateTime.UtcNow,
+            Date = UtcNow(),
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.Competitions.AddAsync(competition);
@@ -133,7 +149,7 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
             Name = "Team 1",
             Slug = "team-1",
             ColorCodeHex = "#FFFFFF",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<FranchiseSeasonExternalId>
             {
@@ -169,7 +185,7 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
             Name = "Team 2",
             Slug = "team-2",
             ColorCodeHex = "#FFFFFF",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<FranchiseSeasonExternalId>
             {
@@ -230,8 +246,8 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
-            Date = DateTime.UtcNow,
-            CreatedUtc = DateTime.UtcNow,
+            Date = UtcNow(),
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.Competitions.AddAsync(competition);
@@ -255,7 +271,7 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
             Name = "Team",
             Slug = "team",
             ColorCodeHex = "#FFFFFF",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
@@ -290,7 +306,7 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
             Name = "Main Team",
             Slug = "main-team",
             ColorCodeHex = "#FFFFFF",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = UtcNow(),
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<FranchiseSeasonExternalId>
             {

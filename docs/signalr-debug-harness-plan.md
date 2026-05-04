@@ -125,6 +125,19 @@ Per-sport list, with default-payload presets so the user can click
 - Scheduled → InProgress
 - InProgress → Final
 
+**Per-play log (`ContestPlayCompleted`)** — sport-neutral:
+
+- "Fire play log" preset on both football and baseball debug widgets
+  publishes `ContestPlayCompleted` with a synthesized `PlayDescription`
+  (e.g. `Mock play @ HH:MM:SS`).
+- API's `ContestPlayCompletedHandler` fans out as
+  `"ContestPlayCompleted"` over SignalR.
+- `useSignalRClient` → `MainApp.onContestPlayCompleted` →
+  `ContestUpdatesContext.handlePlayCompleted` → both widgets pick it up
+  via `live.lastPlayDescription` and render the "Last play" line below
+  their scoreboard. Confirms the sport-neutral consumer path runs
+  alongside the per-sport scoreboard tick.
+
 The debug widget itself should render whatever is in the context for
 the debug ContestId, regardless of which event drove it there.
 
@@ -137,6 +150,11 @@ the debug ContestId, regardless of which event drove it there.
      `BaseballContestStateChanged`.
    - `POST /admin/signalr-debug/contest-status` — body
      `ContestStatusChanged`.
+   - `POST /admin/signalr-debug/play-completed` — body
+     `DebugContestPlayCompletedRequest { Sport, PlayDescription }`,
+     publishes sport-neutral `ContestPlayCompleted`. Server picks the
+     sandbox `ContestId` based on `Sport` (whitelist:
+     `BaseballMlb`, `FootballNcaa`, `FootballNfl`).
    - All publish via `_publishEndpoint.Publish(...)`.
 2. **Web admin page rework**: add a "SignalR Debug" tab/section on
    `/app/admin`.

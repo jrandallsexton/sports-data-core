@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests.Football;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Contracts;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -30,6 +31,20 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
     }
+
+    /// <summary>
+    /// Resolve a FranchiseSeason canonical id from a team ref. Football
+    /// plays carry both `Start.Team` and `End.Team` and the create+update
+    /// branches both need to look both up — this helper keeps the four
+    /// call sites identical so the lookup contract can't drift.
+    /// </summary>
+    private Task<Guid?> ResolveFranchiseSeasonIdAsync(IHasRef teamRef, SourceDataProvider provider)
+        => _dataContext.ResolveIdAsync<FranchiseSeason, FranchiseSeasonExternalId>(
+            teamRef,
+            provider,
+            () => _dataContext.FranchiseSeasons,
+            externalIdsNav: "ExternalIds",
+            key: fs => fs.Id);
 
     protected override async Task<bool?> IsCompetitionInProgressAsync(Guid competitionId)
     {
@@ -59,21 +74,11 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
             competitionDriveId = driveId;
         }
 
-        var startFranchiseSeasonId = await _dataContext.ResolveIdAsync<
-            FranchiseSeason, FranchiseSeasonExternalId>(
-            externalDto.Start.Team,
-            command.SourceDataProvider,
-            () => _dataContext.FranchiseSeasons,
-            externalIdsNav: "ExternalIds",
-            key: fs => fs.Id);
+        var startFranchiseSeasonId = await ResolveFranchiseSeasonIdAsync(
+            externalDto.Start.Team, command.SourceDataProvider);
 
-        var endFranchiseSeasonId = await _dataContext.ResolveIdAsync<
-            FranchiseSeason, FranchiseSeasonExternalId>(
-            externalDto.End.Team,
-            command.SourceDataProvider,
-            () => _dataContext.FranchiseSeasons,
-            externalIdsNav: "ExternalIds",
-            key: fs => fs.Id);
+        var endFranchiseSeasonId = await ResolveFranchiseSeasonIdAsync(
+            externalDto.End.Team, command.SourceDataProvider);
 
         _logger.LogInformation(
             "Creating new CompetitionPlay. CompetitionId={CompId}, DriveId={DriveId}, PlayType={PlayType}",
@@ -132,21 +137,11 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
             competitionDriveId = driveId;
         }
 
-        var startFranchiseSeasonId = await _dataContext.ResolveIdAsync<
-            FranchiseSeason, FranchiseSeasonExternalId>(
-            externalDto.Start.Team,
-            command.SourceDataProvider,
-            () => _dataContext.FranchiseSeasons,
-            externalIdsNav: "ExternalIds",
-            key: fs => fs.Id);
+        var startFranchiseSeasonId = await ResolveFranchiseSeasonIdAsync(
+            externalDto.Start.Team, command.SourceDataProvider);
 
-        var endFranchiseSeasonId = await _dataContext.ResolveIdAsync<
-            FranchiseSeason, FranchiseSeasonExternalId>(
-            externalDto.End.Team,
-            command.SourceDataProvider,
-            () => _dataContext.FranchiseSeasons,
-            externalIdsNav: "ExternalIds",
-            key: fs => fs.Id);
+        var endFranchiseSeasonId = await ResolveFranchiseSeasonIdAsync(
+            externalDto.End.Team, command.SourceDataProvider);
 
         _logger.LogInformation(
             "Updating CompetitionPlay. PlayId={PlayId}, DriveId={DriveId}",

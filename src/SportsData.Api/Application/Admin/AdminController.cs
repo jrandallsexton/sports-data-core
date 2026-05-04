@@ -408,9 +408,13 @@ namespace SportsData.Api.Application.Admin
                     CausationId: CausationId.Api.SignalRDebugBroadcaster
                 ), cancellationToken);
             }
+            var safePlayDescriptionForLog = request.PlayDescription?
+                .Replace("\r", string.Empty)
+                .Replace("\n", string.Empty);
+
 
             _logger.LogInformation(
-                "SignalRDebug: published ContestPlayCompleted. ContestId={ContestId}, Sport={Sport}, Description={Description}, CorrelationId={CorrelationId}",
+                contestId, sport, safePlayDescriptionForLog, correlationId);
                 contestId, sport, request.PlayDescription, correlationId);
 
             return Accepted(new { contestId, correlationId });

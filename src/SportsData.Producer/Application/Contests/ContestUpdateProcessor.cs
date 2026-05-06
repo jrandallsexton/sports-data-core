@@ -5,7 +5,6 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Contests
 {
@@ -17,6 +16,31 @@ namespace SportsData.Producer.Application.Contests
     public class ContestUpdateProcessor<TDataContext> : IUpdateContests
         where TDataContext : TeamSportDataContext
     {
+        /// <summary>
+        /// Document types to source on a "Refresh Contest" request. Anything
+        /// outside this set is filtered out at every spawn site downstream
+        /// (via DocumentProcessorBase.ShouldSpawn). Excludes roster, per-team
+        /// statistics, and athlete-level docs — those are sourced once during
+        /// initial ingestion and don't change on a contest refresh.
+        ///
+        /// See docs/refresh-contest-cascade-narrowing.md for rationale.
+        /// </summary>
+        private static readonly List<DocumentType> ContestRefreshDocumentTypes = new()
+        {
+            DocumentType.Event,
+            DocumentType.EventCompetition,
+            DocumentType.EventCompetitionStatus,
+            DocumentType.EventCompetitionSituation,
+            DocumentType.EventCompetitionBroadcast,
+            DocumentType.EventCompetitionOdds,
+            DocumentType.EventCompetitionCompetitor,
+            DocumentType.EventCompetitionCompetitorScore,
+            DocumentType.EventCompetitionCompetitorLineScore,
+            DocumentType.EventCompetitionCompetitorRecord,
+            DocumentType.EventCompetitionPlay,
+            DocumentType.EventCompetitionDrive
+        };
+
         private readonly ILogger<ContestUpdateProcessor<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IEventBus _bus;
@@ -98,7 +122,8 @@ namespace SportsData.Producer.Application.Contests
                 DocumentType: DocumentType.Event,
                 SourceDataProvider: command.SourceDataProvider,
                 CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.ContestUpdateProcessor
+                CausationId: CausationId.Producer.ContestUpdateProcessor,
+                IncludeLinkedDocumentTypes: ContestRefreshDocumentTypes
             );
 
             _logger.LogInformation("Publishing with {@evt}", evt);

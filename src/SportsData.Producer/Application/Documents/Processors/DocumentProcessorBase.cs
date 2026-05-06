@@ -355,6 +355,12 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             return false;
         }
 
+        // Propagate the parent's IncludeLinkedDocumentTypes filter onto the
+        // child request. Without this, a narrow filter set at the seed (e.g.
+        // ContestUpdateProcessor's "Refresh Contest" set) would die at the
+        // first hop — the next processor in the cascade would see a null
+        // filter and ShouldSpawn would default to spawning everything.
+        // See docs/refresh-contest-cascade-narrowing.md.
         await _publishEndpoint.Publish(new DocumentRequested(
             Id: identity.CanonicalId.ToString(),
             ParentId: parentId?.ToString() ?? null,
@@ -365,7 +371,8 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             DocumentType: documentType,
             SourceDataProvider: command.SourceDataProvider,
             CorrelationId: command.CorrelationId,
-            CausationId: command.MessageId
+            CausationId: command.MessageId,
+            IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes?.ToList()
         ));
 
         _logger.LogInformation(

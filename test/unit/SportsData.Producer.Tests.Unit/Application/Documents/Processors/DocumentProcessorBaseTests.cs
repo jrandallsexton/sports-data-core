@@ -36,7 +36,8 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
     /// </summary>
     private static ProcessDocumentCommand CreateTestCommand(
         int attemptCount = 0,
-        DocumentType documentType = DocumentType.TeamSeason)
+        DocumentType documentType = DocumentType.TeamSeason,
+        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null)
     {
         return new ProcessDocumentCommand(
             sourceDataProvider: SourceDataProvider.Espn,
@@ -49,7 +50,8 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             parentId: null,
             sourceUri: new Uri("http://test.com"),
             urlHash: "test123",
-            attemptCount: attemptCount);
+            attemptCount: attemptCount,
+            includeLinkedDocumentTypes: includeLinkedDocumentTypes);
     }
 
     [Fact]
@@ -241,6 +243,65 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             It.IsAny<CancellationToken>()), Times.Never);
 
         command.RequestedDependencies.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task PublishDependencyRequest_Should_Propagate_IncludeLinkedDocumentTypes_To_Child_Request()
+    {
+        // Arrange
+        var busMock = Mocker.GetMock<IEventBus>();
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var filter = new List<DocumentType>
+        {
+            DocumentType.EventCompetition,
+            DocumentType.EventCompetitionStatus,
+            DocumentType.EventCompetitionCompetitor
+        };
+
+        var command = CreateTestCommand(
+            documentType: DocumentType.Event,
+            includeLinkedDocumentTypes: filter);
+
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401234567/competitions/401234567") };
+
+        // Act
+        await processor.PublishDependencyRequestPublic(command, hasRef, Guid.NewGuid(), DocumentType.EventCompetition);
+
+        // Assert — the published DocumentRequested must carry the same filter
+        // forward, otherwise downstream processors lose the narrowing intent.
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e =>
+                e.IncludeLinkedDocumentTypes != null &&
+                e.IncludeLinkedDocumentTypes.Count == filter.Count &&
+                e.IncludeLinkedDocumentTypes.SequenceEqual(filter)),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishDependencyRequest_Should_Publish_Null_Filter_When_Command_Has_No_Filter()
+    {
+        // Arrange — explicit guard that the default (null filter / spawn-all) path
+        // continues to work after the propagation change. A null filter must
+        // serialize as null on the published event, not as an empty list.
+        var busMock = Mocker.GetMock<IEventBus>();
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var command = CreateTestCommand(documentType: DocumentType.Event);
+
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401234567/competitions/401234567") };
+
+        // Act
+        await processor.PublishDependencyRequestPublic(command, hasRef, Guid.NewGuid(), DocumentType.EventCompetition);
+
+        // Assert
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e => e.IncludeLinkedDocumentTypes == null),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

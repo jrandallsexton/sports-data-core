@@ -87,7 +87,7 @@ External APIs (ESPN*) → Provider Service → Azure Blob Storage (raw JSON)
 | [venue](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.Venue) | Stadium and location data. Domain boundary via [`VenueClient`](https://github.com/jrandallsexton/sports-data-core/blob/main/src/SportsData.Core/Infrastructure/Clients/Venue/VenueClient.cs). |
 | [jobs-dashboard](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.JobsDashboard) | Hangfire dashboard for monitoring background job processing. |
 | [processor-gen](https://github.com/jrandallsexton/sports-data-core/tree/main/src/SportsData.ProcessorGen) | Source generator for DocumentProcessorBase implementations. |
-| [sd-ui](https://github.com/jrandallsexton/sports-data-core/tree/main/src/UI/sd-ui) | React web frontend (TypeScript). |
+| [sd-ui](https://github.com/jrandallsexton/sports-data-core/tree/main/src/UI/sd-ui) | React web frontend (JavaScript). |
 | [sd-mobile](https://github.com/jrandallsexton/sports-data-core/tree/main/src/UI/sd-mobile) | Expo/React Native mobile app (TypeScript). |
 
 ### Related Repositories

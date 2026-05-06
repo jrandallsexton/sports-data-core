@@ -22,6 +22,7 @@ public class LeagueMatchupDto
     public string AwayShort { get; set; } = default!;
     public Guid AwayFranchiseSeasonId { get; set; }
     public string? AwayLogoUri { get; set; }
+    public string? AwayLogoUriDark { get; set; }
     public string AwaySlug { get; set; } = default!;
     public string? AwayColor { get; set; }
     public int? AwayRank { get; set; }
@@ -35,6 +36,7 @@ public class LeagueMatchupDto
     public string HomeShort { get; set; } = default!;
     public Guid HomeFranchiseSeasonId { get; set; }
     public string? HomeLogoUri { get; set; }
+    public string? HomeLogoUriDark { get; set; }
     public string HomeSlug { get; set; } = default!;
     public string? HomeColor { get; set; }
     public int? HomeRank { get; set; }

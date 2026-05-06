@@ -210,6 +210,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     matchup.AwayShort = canonical.AwayShort ?? matchup.AwayShort;
                     matchup.AwayFranchiseSeasonId = canonical.AwayFranchiseSeasonId;
                     matchup.AwayLogoUri = canonical.AwayLogoUri ?? matchup.AwayLogoUri;
+                    matchup.AwayLogoUriDark = canonical.AwayLogoUriDark;
                     matchup.AwaySlug = canonical.AwaySlug ?? matchup.AwaySlug;
                     matchup.AwayColor = canonical.AwayColor ?? matchup.AwayColor;
                     matchup.AwayWins = canonical.AwayWins;
@@ -223,6 +224,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     matchup.HomeShort = canonical.HomeShort ?? matchup.HomeShort;
                     matchup.HomeFranchiseSeasonId = canonical.HomeFranchiseSeasonId;
                     matchup.HomeLogoUri = canonical.HomeLogoUri ?? matchup.HomeLogoUri;
+                    matchup.HomeLogoUriDark = canonical.HomeLogoUriDark;
                     matchup.HomeSlug = canonical.HomeSlug ?? matchup.HomeSlug;
                     matchup.HomeColor = canonical.HomeColor ?? matchup.HomeColor;
                     matchup.HomeWins = canonical.HomeWins;

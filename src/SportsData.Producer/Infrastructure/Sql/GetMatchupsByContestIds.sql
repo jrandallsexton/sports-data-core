@@ -8,6 +8,7 @@ SELECT
   fAway."DisplayName" AS "Away", fAway."Abbreviation" AS "AwayShort",
   fsAway."Id" AS "AwayFranchiseSeasonId",
   COALESCE(fslAway."Uri", flAway."Uri") AS "AwayLogoUri",
+  COALESCE(fslDarkAway."Uri", flDarkAway."Uri") AS "AwayLogoUriDark",
   fAway."Slug" AS "AwaySlug", fAway."ColorCodeHex" AS "AwayColor",
   fsrdAway."Current" AS "AwayRank", gsAway."Slug" AS "AwayConferenceSlug",
   fsAway."Wins" AS "AwayWins", fsAway."Losses" AS "AwayLosses",
@@ -15,6 +16,7 @@ SELECT
   fHome."DisplayName" AS "Home", fHome."Abbreviation" AS "HomeShort",
   fsHome."Id" AS "HomeFranchiseSeasonId",
   COALESCE(fslHome."Uri", flHome."Uri") AS "HomeLogoUri",
+  COALESCE(fslDarkHome."Uri", flDarkHome."Uri") AS "HomeLogoUriDark",
   fHome."Slug" AS "HomeSlug", fHome."ColorCodeHex" AS "HomeColor",
   fsrdHome."Current" AS "HomeRank", gsHome."Slug" AS "HomeConferenceSlug",
   fsHome."Wins" AS "HomeWins", fsHome."Losses" AS "HomeLosses",
@@ -54,6 +56,18 @@ LEFT JOIN LATERAL (
   WHERE fsl."FranchiseSeasonId" = fsAway."Id"
   ORDER BY fsl."CreatedUtc" ASC LIMIT 1
 ) fslAway ON TRUE
+-- Dark-bg variants for theme-aware UI rendering. Same season -> franchise
+-- fallback as the default lateral above, but filtered to IsForDarkBg = true.
+LEFT JOIN LATERAL (
+  SELECT fl.* FROM public."FranchiseLogo" fl
+  WHERE fl."FranchiseId" = fAway."Id" AND fl."IsForDarkBg" = TRUE
+  ORDER BY fl."CreatedUtc" ASC LIMIT 1
+) flDarkAway ON TRUE
+LEFT JOIN LATERAL (
+  SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
+  WHERE fsl."FranchiseSeasonId" = fsAway."Id" AND fsl."IsForDarkBg" = TRUE
+  ORDER BY fsl."CreatedUtc" ASC LIMIT 1
+) fslDarkAway ON TRUE
 INNER JOIN public."GroupSeason" gsAway ON gsAway."Id" = fsAway."GroupSeasonId"
 LEFT JOIN LATERAL (
   SELECT fsr.* FROM public."FranchiseSeasonRanking" fsr
@@ -77,6 +91,17 @@ LEFT JOIN LATERAL (
   WHERE fsl."FranchiseSeasonId" = fsHome."Id"
   ORDER BY fsl."CreatedUtc" ASC LIMIT 1
 ) fslHome ON TRUE
+-- Dark-bg variants — see Away comment above.
+LEFT JOIN LATERAL (
+  SELECT fl.* FROM public."FranchiseLogo" fl
+  WHERE fl."FranchiseId" = fHome."Id" AND fl."IsForDarkBg" = TRUE
+  ORDER BY fl."CreatedUtc" ASC LIMIT 1
+) flDarkHome ON TRUE
+LEFT JOIN LATERAL (
+  SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
+  WHERE fsl."FranchiseSeasonId" = fsHome."Id" AND fsl."IsForDarkBg" = TRUE
+  ORDER BY fsl."CreatedUtc" ASC LIMIT 1
+) fslDarkHome ON TRUE
 INNER JOIN public."GroupSeason" gsHome ON gsHome."Id" = fsHome."GroupSeasonId"
 LEFT JOIN LATERAL (
   SELECT fsr.* FROM public."FranchiseSeasonRanking" fsr
@@ -92,13 +117,13 @@ GROUP BY
   c."SeasonWeekId", c."Id", c."StartDateUtc", cs."StatusDescription",
   v."Name", v."City", v."State",
   fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id",
-  flAway."Uri", fslAway."Uri", fAway."Slug",
+  flAway."Uri", fslAway."Uri", flDarkAway."Uri", fslDarkAway."Uri", fAway."Slug",
   fsrdAway."Current", gsAway."Slug",
   fsAway."Wins", fsAway."Losses", fsAway."ConferenceWins", fsAway."ConferenceLosses",
   fAway."Abbreviation", fAway."ColorCodeHex",
   fHome."Abbreviation", fHome."ColorCodeHex",
   fHome."DisplayName", fHome."DisplayNameShort", fsHome."Id",
-  flHome."Uri", fslHome."Uri", fHome."Slug",
+  flHome."Uri", fslHome."Uri", flDarkHome."Uri", fslDarkHome."Uri", fHome."Slug",
   fsrdHome."Current", gsHome."Slug",
   fsHome."Wins", fsHome."Losses", fsHome."ConferenceWins", fsHome."ConferenceLosses",
   co."Details", co."Spread", co."OverUnder", co."OverOdds", co."UnderOdds",

@@ -89,11 +89,12 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             }
 
             _logger.LogInformation(
-                "DocumentRequested received. Uri={Uri}, DocumentType={DocumentType}, Sport={Sport}, Provider={Provider}",
+                "DocumentRequested received. Uri={Uri}, DocumentType={DocumentType}, Sport={Sport}, Provider={Provider}, SeasonYear={SeasonYear}",
                 evt.Uri,
                 evt.DocumentType,
                 evt.Sport,
-                evt.SourceDataProvider);
+                evt.SourceDataProvider,
+                evt.SeasonYear);
 
             try
             {
@@ -338,6 +339,11 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
                 var refHash = HashProvider.GenerateHashFromUri(refUri);
 
+                // Cache policy mirrors ProcessResourceIndexItem (and ResourceIndexJob).
+                // PR #282 fixed the leaf path; this fan-out path was missed and kept
+                // hardcoding BypassCache=true, forcing an ESPN call for every child of
+                // every resource index — defeating Mongo cache entirely for re-finalize
+                // and historical-sourcing runs.
                 var cmd = new ProcessResourceIndexItemCommand(
                     CorrelationId: evt.CorrelationId,
                     CausationId: evt.CausationId,
@@ -350,7 +356,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     DocumentType: evt.DocumentType,
                     ParentId: evt.ParentId,
                     SeasonYear: evt.SeasonYear,
-                    BypassCache: true,
+                    BypassCache: ShouldBypassCache(evt.SeasonYear),
                     IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes,
                     InlineJson: useInlineJson == true ? rawItemJsonList![i] : null);
 

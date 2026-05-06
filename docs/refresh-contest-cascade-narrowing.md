@@ -202,28 +202,52 @@ fires and the filter is bypassed for that sub-entity's children. This
 isn't a bug — it's the documented behavior — but it's worth knowing
 the filter isn't absolute.
 
-## Test coverage worth adding
+## Implemented behavior
 
-A unit test in `SportsData.Producer.Tests.Unit` asserting that
-`PublishChildDocumentRequest` puts `IncludeLinkedDocumentTypes` on the
-published `DocumentRequested`. Today there is none, which is how this
-gap shipped silently in the first place.
+As shipped:
 
-## Suggested rollout
+1. `DocumentProcessorBase.PublishDocumentRequestInternal` now sets
+   `IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes?.ToList()`
+   on the published `DocumentRequested`. Both `PublishDependencyRequest`
+   and `PublishChildDocumentRequest` route through this shared helper,
+   so the filter survives every cascade hop on both paths.
+2. `ContestUpdateProcessor` defines a private
+   `ContestRefreshDocumentTypes` static list and passes it via
+   `IncludeLinkedDocumentTypes` on the seed `DocumentRequested` it
+   publishes for `DocumentType.Event`. Membership: `Event`,
+   `EventCompetition`, `EventCompetitionStatus`,
+   `EventCompetitionSituation`, `EventCompetitionBroadcast`,
+   `EventCompetitionOdds`, `EventCompetitionCompetitor`,
+   `EventCompetitionCompetitorScore`,
+   `EventCompetitionCompetitorLineScore`,
+   `EventCompetitionCompetitorRecord`, `EventCompetitionPlay`,
+   `EventCompetitionDrive`.
 
-Standalone PR, after #294 lands. Three changes:
+## Test coverage
 
-1. Add `IncludeLinkedDocumentTypes` to the
-   `PublishDocumentRequestInternal` publish.
-2. Add `ContestRefreshDocumentTypes` constant and pass it from
-   `ContestUpdateProcessor`.
-3. Unit test confirming propagation.
+Verified by `DocumentProcessorBaseTests` in
+`test/unit/SportsData.Producer.Tests.Unit/Application/Documents/Processors/`:
 
-Validation: trigger Refresh Contest from the UI, then in Seq filter on
-the resulting CorrelationId. Expect to see exclusively the document
-types in `ContestRefreshDocumentTypes` (plus
-`DocumentRequested received` log lines that confirm the filter is on
-the wire). No `EventCompetitionCompetitorRoster` events. No `Athlete*`.
+- `PublishDependencyRequest_Should_Propagate_IncludeLinkedDocumentTypes_To_Child_Request`
+  — asserts a non-null filter on the parent command appears verbatim
+  on the published `DocumentRequested`.
+- `PublishDependencyRequest_Should_Publish_Null_Filter_When_Command_Has_No_Filter`
+  — guards the null-filter contract so a missing filter never
+  serializes as an empty list (which would flip `ShouldSpawn`'s
+  spawn-all default).
+
+Both tests exercise `PublishDocumentRequestInternal` through the
+exposed `PublishDependencyRequestPublic` test seam; since
+`PublishChildDocumentRequest` also routes through
+`PublishDocumentRequestInternal`, the same propagation contract is
+covered for the child path.
+
+## Production validation
+
+Trigger Refresh Contest from the UI, then in Seq filter on the
+resulting CorrelationId. Expect to see exclusively the document types
+in `ContestRefreshDocumentTypes`. No `EventCompetitionCompetitorRoster`
+events. No `Athlete*`.
 
 ## Related
 

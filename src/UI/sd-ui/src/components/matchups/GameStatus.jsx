@@ -126,7 +126,8 @@ function GameStatus({
   return (
     <>
       <div className="game-time-location">
-        <div>{gameTime} | {broadcasts}</div>
+        <div>{gameTime}</div>
+        {broadcasts && <div>{broadcasts}</div>}
         <div>{venue} | {location}</div>
       </div>
       {streamScheduledTimeUtc && contestId && (

@@ -12,6 +12,7 @@ import { useTeamComparison } from "../../hooks/useTeamComparison";
 import TeamRow from "./TeamRow";
 import GameStatus from "./GameStatus";
 import { resolveSportLeague } from "../../utils/sportLinks";
+import { useTheme } from "../../contexts/ThemeContext";
 import PickButton from "./PickButton";
 import { SpreadAndOverUnderDisplay } from "./BettingDisplays";
 import DeetsMeter from "./DeetsMeter";
@@ -47,6 +48,16 @@ function MatchupCard({
   // missing or unmapped; downstream link helpers fall back to football/ncaa
   // defaults in that case.
   const sportLeague = resolveSportLeague(leagueSport);
+
+  // Pick the dark-bg logo variant when the app theme is dark, falling
+  // back to the default when no dark variant exists for the team.
+  const { theme } = useTheme() ?? {};
+  const awayLogoSrc = theme === "dark"
+    ? (matchup.awayLogoUriDark ?? matchup.awayLogoUri)
+    : matchup.awayLogoUri;
+  const homeLogoSrc = theme === "dark"
+    ? (matchup.homeLogoUriDark ?? matchup.homeLogoUri)
+    : matchup.homeLogoUri;
 
   const [showConfidencePicker, setShowConfidencePicker] = useState(false);
   const [pendingPickFranchiseId, setPendingPickFranchiseId] = useState(null);
@@ -159,7 +170,7 @@ function MatchupCard({
         <TeamRow
           teamName={matchup.away}
           teamSlug={matchup.awaySlug}
-          logoUri={matchup.awayLogoUri}
+          logoUri={awayLogoSrc}
           rank={matchup.awayRank}
           wins={matchup.awayWins}
           losses={matchup.awayLosses}
@@ -178,7 +189,7 @@ function MatchupCard({
         <TeamRow
           teamName={matchup.home}
           teamSlug={matchup.homeSlug}
-          logoUri={matchup.homeLogoUri}
+          logoUri={homeLogoSrc}
           rank={matchup.homeRank}
           wins={matchup.homeWins}
           losses={matchup.homeLosses}

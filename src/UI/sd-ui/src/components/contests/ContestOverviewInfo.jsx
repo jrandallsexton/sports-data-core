@@ -1,15 +1,12 @@
 import React, { useState } from "react";
 import Dialog from '@mui/material/Dialog';
 import { FaTimes } from 'react-icons/fa';
-import { formatToUserTime, getZoneAbbreviation } from "../../utils/timeUtils";
+import { formatToUserTime } from "../../utils/timeUtils";
 import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 import "./ContestOverview.css";
 
 export default function ContestOverviewInfo({ info }) {
   const userTz = useUserTimeZone();
-  // Pass the game's date so the abbreviation matches its DST window
-  // (e.g. "EST" for an October NCAAFB game even when viewed in May).
-  const zoneAbbrev = getZoneAbbreviation(userTz, info?.startDateUtc);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const handleOpenLightbox = () => setLightboxOpen(true);
   const handleCloseLightbox = () => setLightboxOpen(false);
@@ -30,18 +27,18 @@ export default function ContestOverviewInfo({ info }) {
       <div className="contest-info-section">
         <ul className="contest-info-list">
           {info.venue && (
-            <li className="contest-info-item"><span className="contest-info-label">Venue:</span> {' '}<span className="contest-info-value">{info.venue}</span></li>
+            <li className="contest-info-item"><span className="contest-info-value">{info.venue}</span></li>
           )}
-          {info.venueCity && (
-            <li className="contest-info-item"><span className="contest-info-label">City:</span> {' '}<span className="contest-info-value">{info.venueCity}</span></li>
-          )}
-          {info.venueState && (
-            <li className="contest-info-item"><span className="contest-info-label">State:</span> {' '}<span className="contest-info-value">{info.venueState}</span></li>
+          {(info.venueCity || info.venueState) && (
+            <li className="contest-info-item">
+              <span className="contest-info-value">
+                {[info.venueCity, info.venueState].filter(Boolean).join(", ")}
+              </span>
+            </li>
           )}
           {/* Venue image will be shown after the list */}
           {info.startDateUtc && (
             <li className="contest-info-item">
-              <span className="contest-info-label">Start Time ({zoneAbbrev}):</span> {' '}
               <span className="contest-info-value">{formatToUserTime(info.startDateUtc, userTz)}</span>
             </li>
           )}

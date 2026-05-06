@@ -229,7 +229,7 @@ namespace SportsData.Provider.Application.Processors
                             "HIT", command.DocumentType, urlHash);
 
                         // Publish DocumentCreated with cached data (NO ESPN call!)
-                        await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data, command.NotifyOnCompletion);
+                        await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data, command.NotifyOnCompletion, PublishSource.Cache);
 
                         // Record the content hash so subsequent requests for this document are suppressed
                         await UpdateLastPublishedStateAsync(command.DocumentType.ToString(), urlHash, dbItem.Data);
@@ -309,7 +309,7 @@ namespace SportsData.Provider.Application.Processors
                         "UrlHash={UrlHash}, DocumentType={DocumentType}, BypassCache={BypassCache}",
                         urlHash, command.DocumentType, command.BypassCache);
 
-                    await PublishDocumentCreatedAsync(command, urlHash, correlationId, itemJson, command.NotifyOnCompletion);
+                    await PublishDocumentCreatedAsync(command, urlHash, correlationId, itemJson, command.NotifyOnCompletion, PublishSource.EspnUnchanged);
                     await UpdateLastPublishedStateAsync(collectionName, urlHash, itemJson);
                 }
             }
@@ -433,7 +433,8 @@ namespace SportsData.Provider.Application.Processors
             string urlHash,
             Guid correlationId,
             string jsonFromCache,
-            bool notifyOnCompletion)
+            bool notifyOnCompletion,
+            PublishSource source)
         {
             // TODO: pull this from CommonConfig and make it available within the class root
             var baseUrl = _commonConfig["CommonConfig:ProviderClientConfig:ApiUrl"];
@@ -463,7 +464,12 @@ namespace SportsData.Provider.Application.Processors
 
             await _publisher.Publish(evt);
 
-            _logger.LogInformation("DocumentCreated event published (from cache). UrlHash={UrlHash}, DocumentType={DocumentType}",
+            // Source disambiguates which path we took: a real Mongo cache hit (no ESPN
+            // call), or an ESPN fetch that returned identical content (we still hit
+            // ESPN, just skipped the Mongo replace). Without this, the old "(from cache)"
+            // log misled investigators into thinking espn.cache.hit was wired wrong.
+            _logger.LogInformation("DocumentCreated event published ({PublishSource}). UrlHash={UrlHash}, DocumentType={DocumentType}",
+                source,
                 urlHash,
                 command.DocumentType);
         }
@@ -524,6 +530,18 @@ namespace SportsData.Provider.Application.Processors
             }
         }
 
+    }
+
+    /// <summary>
+    /// Disambiguates which code path triggered a DocumentCreated publish so the
+    /// log line is honest. Cache = served from Mongo, ESPN never called.
+    /// EspnUnchanged = ESPN was called and returned identical content, so the
+    /// Mongo replace was skipped — but espn.live.fetch already incremented.
+    /// </summary>
+    public enum PublishSource
+    {
+        Cache,
+        EspnUnchanged
     }
 
     public record ProcessResourceIndexItemCommand(

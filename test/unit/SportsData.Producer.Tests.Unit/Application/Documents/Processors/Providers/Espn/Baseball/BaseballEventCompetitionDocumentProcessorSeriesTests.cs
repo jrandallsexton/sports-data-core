@@ -6,6 +6,8 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Moq;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
@@ -45,6 +47,7 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
         "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/5?lang=en&region=us");
     private static readonly Uri Team7Ref = new(
         "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/7?lang=en&region=us");
+    private static readonly DateTime FixedNow = new(2026, 5, 4, 12, 0, 0, DateTimeKind.Utc);
 
     public BaseballEventCompetitionDocumentProcessorSeriesTests()
     {
@@ -53,6 +56,10 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
                 .UseInMemoryDatabase(Guid.NewGuid().ToString()[..8])
                 .Options);
         Mocker.Use(_baseballDataContext);
+
+        var dateTimeProvider = new Mock<IDateTimeProvider>();
+        dateTimeProvider.Setup(x => x.UtcNow()).Returns(FixedNow);
+        Mocker.Use(dateTimeProvider.Object);
     }
 
     [Fact]
@@ -104,7 +111,7 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
             Value = "401814844",
             SourceUrl = competitionRef.AbsoluteUri,
             SourceUrlHash = competitionUrlHash,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         });
         await _baseballDataContext.SaveChangesAsync();
@@ -188,7 +195,7 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
             Value = "401814844",
             SourceUrl = competitionRef.AbsoluteUri,
             SourceUrlHash = competitionUrlHash,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         });
         await _baseballDataContext.SaveChangesAsync();
@@ -218,6 +225,77 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
         (await _baseballDataContext.SeasonSeriesCompetitors.CountAsync()).Should().Be(2);
     }
 
+    [Fact]
+    public async Task WhenSeriesArrayMissing_ClearsStaleSeriesFKs()
+    {
+        // arrange — seed a competition that already has both FKs populated,
+        // then re-process with a payload whose Series array is empty.
+        var idGen = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(idGen);
+
+        var competitionRef = new Uri(
+            "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844?lang=en&region=us");
+        var competitionUrlHash = HashProvider.GenerateHashFromUri(competitionRef);
+        var competitionId = idGen.Generate(competitionRef).CanonicalId;
+
+        var contestId = await SeedContestAndCompetition(competitionId);
+        await SeedFranchiseSeasons();
+
+        // Seed pre-existing FK state on the competition.
+        var staleSeriesId = Guid.NewGuid();
+        var staleSeasonSeriesId = Guid.NewGuid();
+        var seeded = await _baseballDataContext.Competitions
+            .OfType<BaseballCompetition>()
+            .FirstAsync(x => x.Id == competitionId);
+        seeded.CurrentSeriesId = staleSeriesId;
+        seeded.SeasonSeriesId = staleSeasonSeriesId;
+        await _baseballDataContext.SaveChangesAsync();
+
+        _baseballDataContext.Set<CompetitionExternalId>().Add(new CompetitionExternalId
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            Provider = SourceDataProvider.Espn,
+            Value = "401814844",
+            SourceUrl = competitionRef.AbsoluteUri,
+            SourceUrlHash = competitionUrlHash,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        await _baseballDataContext.SaveChangesAsync();
+
+        // Load the real fixture and rewrite "series" to an empty array.
+        var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetition.json");
+        var dto = json.FromJson<EspnBaseballEventCompetitionDto>()!;
+        dto.Series = new List<EspnBaseballSeriesDto>();
+        dto.SeriesId = null;
+        var emptySeriesJson = dto.ToJson();
+
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionDocumentProcessor<BaseballDataContext>>();
+
+        var cmd = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.ParentId, contestId.ToString())
+            .With(x => x.SeasonYear, 2026)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.BaseballMlb)
+            .With(x => x.DocumentType, DocumentType.EventCompetition)
+            .With(x => x.Document, emptySeriesJson)
+            .With(x => x.UrlHash, competitionUrlHash)
+            .With(x => x.IncludeLinkedDocumentTypes, (IReadOnlyCollection<DocumentType>?)null)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        await sut.ProcessAsync(cmd);
+
+        // assert — both FKs cleared
+        var refreshed = await _baseballDataContext.Competitions
+            .OfType<BaseballCompetition>()
+            .FirstAsync(x => x.Id == competitionId);
+        refreshed.CurrentSeriesId.Should().BeNull();
+        refreshed.SeasonSeriesId.Should().BeNull();
+    }
+
     private async Task<Guid> SeedContestAndCompetition(Guid competitionId)
     {
         var contestId = Guid.NewGuid();
@@ -229,10 +307,10 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
             ShortName = "Test",
             SeasonYear = 2026,
             Sport = Sport.BaseballMlb,
-            StartDateUtc = DateTime.UtcNow,
+            StartDateUtc = FixedNow,
             HomeTeamFranchiseSeasonId = Guid.NewGuid(),
             AwayTeamFranchiseSeasonId = Guid.NewGuid(),
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         };
 
@@ -240,8 +318,8 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
         {
             Id = competitionId,
             ContestId = contestId,
-            Date = DateTime.UtcNow,
-            CreatedUtc = DateTime.UtcNow,
+            Date = FixedNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         };
 
@@ -269,7 +347,7 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
             Location = "Test City",
             Abbreviation = "T5",
             ColorCodeHex = "#000000",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid(),
             ExternalIds =
             [
@@ -281,7 +359,7 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
                     Value = "5",
                     SourceUrl = Team5Ref.AbsoluteUri,
                     SourceUrlHash = HashProvider.GenerateHashFromUri(Team5Ref),
-                    CreatedUtc = DateTime.UtcNow,
+                    CreatedUtc = FixedNow,
                     CreatedBy = Guid.NewGuid()
                 }
             ]
@@ -299,7 +377,7 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
             Location = "Test City",
             Abbreviation = "T7",
             ColorCodeHex = "#000000",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid(),
             ExternalIds =
             [
@@ -311,7 +389,7 @@ public class BaseballEventCompetitionDocumentProcessorSeriesTests
                     Value = "7",
                     SourceUrl = Team7Ref.AbsoluteUri,
                     SourceUrlHash = HashProvider.GenerateHashFromUri(Team7Ref),
-                    CreatedUtc = DateTime.UtcNow,
+                    CreatedUtc = FixedNow,
                     CreatedBy = Guid.NewGuid()
                 }
             ]

@@ -1,10 +1,16 @@
-# MLB Series ingestion — planning
+# MLB Series ingestion — as built
 
-Captured 2026-05-07. ESPN's MLB EventCompetition documents now carry
-two flavors of series context that we don't currently capture. This
-doc lays out the shape, the modeling questions, and the open
-decisions before any code lands. Tasks are deferred until the
-direction is settled.
+Captured 2026-05-07; implemented in commit f1e74576 ("feat(producer):
+MLB series + season-series ingestion") on branch
+`feat/mlb-series-ingestion`. ESPN's MLB EventCompetition documents
+carry two flavors of series context — a current multi-game series
+and a season-long head-to-head — that we now capture as canonical
+entities. This doc records the shape, the decisions taken, and the
+delivered implementation. Sections that read as deliberation
+("modeling options", "what I'd lean toward", "open question") are
+preserved as historical context for the choice; the locked outcome
+is in **Decisions (locked 2026-05-07)** and the delivered shape is
+in **Implementation (as built)**.
 
 ## What ESPN sends
 
@@ -73,10 +79,11 @@ Two kinds:
 Both entries share the same per-team `competitors` shape: id,
 wins, ties, and a team `$ref` (FranchiseSeason).
 
-## Why this matters (UI hooks — not yet committed)
+## Why this matters (UI hooks — historical, not in this PR)
 
-Per the [top-down feedback](#) we should fix the UI shape before
-locking the data model. Likely surfaces:
+Per the top-down feedback memory
+(`memory/feedback_top_down_ui_first.md`) we should fix the UI shape
+before locking the data model. Likely surfaces:
 
 - **Contest Overview page** — "NYM lead series 1-0" prominent on the
   matchup header; "COL leads season series 3-1" as secondary stat.
@@ -90,11 +97,13 @@ locking the data model. Likely surfaces:
 Just a "summary" string per type? Or the full per-team wins/ties +
 the events strip? The data model should follow the answer.
 
-## Modeling options
+## Modeling options (historical — Option C selected)
 
-Three options, with trade-offs. None is obviously right; the choice
-turns on (a) how much of the series view we want to render in the UI,
-and (b) how we feel about persisting derived data.
+Three options were considered, with trade-offs. The choice turned
+on (a) how much of the series view we wanted to render in the UI,
+and (b) how we felt about persisting derived data. The locked
+outcome (Option C, with both kinds persisted) is captured in
+**Decisions (locked 2026-05-07)** below.
 
 ### Option A — Two persisted entities, one new DocumentType
 
@@ -268,9 +277,9 @@ fields.
   concept). Refactor when NBA arrives with real data — interface or
   shared base, decided then.
 
-## Implementation plan
+## Implementation (as built)
 
-### Already in place
+### DTOs (already in place at the time of this plan)
 
 `EspnSeriesDto`, `EspnSeriesCompetitorDto`, and the
 `SeriesId` / `Series` properties on `EspnBaseballEventCompetitionDto`
@@ -278,7 +287,7 @@ are already present at
 `src/SportsData.Core/Infrastructure/DataSources/Espn/Dtos/Baseball/EspnBaseballEventCompetitionDto.cs:23–91`.
 DTO work is done; only entity/processor/migration/test work remains.
 
-### New entities (all in `src/SportsData.Producer/Infrastructure/Data/Baseball/Entities/`)
+### New entities (delivered in `src/SportsData.Producer/Infrastructure/Data/Baseball/Entities/`)
 
 Class names are unprefixed — the `Baseball/Entities/` namespace
 already conveys sport scope, and there is no `*Base` parent the
@@ -343,20 +352,21 @@ Unique index: `(SeasonYear, FranchiseSeasonALowId, FranchiseSeasonBHighId)`.
 `EspnSeriesId` as a column, and `SeasonSeries` has no
 external identity at all.
 
-### Schema delta on existing entities
+### Schema delta on existing entities (delivered)
 
-`BaseballCompetition` gets two new nullable FK columns:
+`BaseballCompetition` got two new nullable FK columns:
 
 - `CurrentSeriesId` → `Series.Id`
 - `SeasonSeriesId` → `SeasonSeries.Id`
 
-Both nullable because (a) historical games predate this work, and
-(b) ESPN occasionally omits series for postponed/preseason games.
+Both are nullable because (a) historical games predate this work,
+and (b) ESPN occasionally omits series for postponed/preseason
+games.
 
-### Processor delta
+### Processor delta (delivered)
 
-`EventCompetitionDocumentProcessorBase` gets a new virtual hook,
-defaulted to no-op:
+`EventCompetitionDocumentProcessorBase` received a new virtual
+hook, defaulted to no-op:
 
 ```csharp
 protected virtual Task ProcessSportSpecificCompetitionData(
@@ -366,12 +376,13 @@ protected virtual Task ProcessSportSpecificCompetitionData(
     bool isNew) => Task.CompletedTask;
 ```
 
-Called from the base after the competition entity is persisted but
-before the existing child-document spawning loop (so series-related
-data is in place when the cascade fires, even though no child doc
-depends on it today).
+It is called from the base after the competition entity is
+persisted but before the existing child-document spawning loop (so
+series-related data is in place when the cascade fires, even though
+no child doc depends on it today).
 
-`BaseballEventCompetitionDocumentProcessor` overrides this hook:
+`BaseballEventCompetitionDocumentProcessor` overrides this hook
+(see `BaseballEventCompetitionDocumentProcessor.cs:54`):
 
 ```csharp
 protected override async Task ProcessSportSpecificCompetitionData(
@@ -410,21 +421,23 @@ Idempotency: the operation is "upsert by id, replace counter columns"
 — last-write-wins is safe because every competition in the series
 carries the same payload.
 
-### EF migration
+### EF migration (delivered)
 
-One migration on `BaseballDataContext`. Tables:
-`Series`, `SeriesCompetitor`, `SeasonSeries`,
-`SeasonSeriesCompetitor`. Alter `BaseballCompetition` to add
+One migration on `BaseballDataContext`:
+`Migrations/Baseball/20260507145154_AddSeriesAndSeasonSeries.cs`.
+Adds tables `Series`, `SeriesCompetitor`, `SeasonSeries`,
+`SeasonSeriesCompetitor`, and alters `BaseballCompetition` to add
 `CurrentSeriesId` and `SeasonSeriesId` nullable FKs.
 
 Per [feedback_test_migrations_locally](memory), validate the
 migration locally against a copy of prod before pushing.
 
-### Tests
+### Tests (delivered)
 
-Unit tests for `BaseballEventCompetitionDocumentProcessor` using the
-existing `EventCompetition.json` fixture (already carries `seriesId`
-and `series[]`):
+Unit tests for `BaseballEventCompetitionDocumentProcessor` live in
+`test/unit/SportsData.Producer.Tests.Unit/Application/Documents/Processors/Providers/Espn/Baseball/BaseballEventCompetitionDocumentProcessorSeriesTests.cs`,
+using the `EventCompetition.json` fixture (carries `seriesId` and
+`series[]`). Coverage:
 
 - New current-series creates `Series` + 2 `Competitor` rows.
 - Re-processing same competition is idempotent (no row count growth,
@@ -434,7 +447,8 @@ and `series[]`):
 - Two competitions in the same season-pair (one earlier in the year,
   one later) produce a single `SeasonSeries` row with the
   later wins/ties/summary.
-- `BaseballCompetition.CurrentSeriesId` and `SeasonSeriesId` are set.
+- `BaseballCompetition.CurrentSeriesId` and `SeasonSeriesId` are
+  set.
 - Unknown `series[].type` is logged and ignored, processing
   continues.
 
@@ -453,22 +467,27 @@ flows whenever an EventCompetition refresh happens.
   for past seasons; would require a re-fetch of all historical
   EventCompetition docs and that's a separate ESPN-volume question).
 
-## Tasks (to be created on go-ahead)
+## Implementation tasks (completed)
 
-1. Branch.
-2. Add four entity classes + EntityConfigurations.
-3. Wire up `BaseballDataContext` `DbSet`s and `OnModelCreating`.
-4. Add `CurrentSeriesId` / `SeasonSeriesId` to `BaseballCompetition`
-   + entity configuration.
-5. EF migration. Local validation.
-6. Add virtual `ProcessSportSpecificCompetitionData` hook to
+All steps below shipped in commit f1e74576 on branch
+`feat/mlb-series-ingestion`.
+
+1. ✅ Branch.
+2. ✅ Added four entity classes + EntityConfigurations.
+3. ✅ Wired up `BaseballDataContext` `DbSet`s and `OnModelCreating`.
+4. ✅ Added `CurrentSeriesId` / `SeasonSeriesId` to
+   `BaseballCompetition` + entity configuration.
+5. ✅ EF migration `20260507145154_AddSeriesAndSeasonSeries`. Local
+   validation done.
+6. ✅ Added virtual `ProcessSportSpecificCompetitionData` hook to
    `EventCompetitionDocumentProcessorBase`.
-7. Override hook in `BaseballEventCompetitionDocumentProcessor`.
-   Implement upsert helpers using the
-   `IsUniqueConstraintViolation` retry pattern.
-8. Unit tests against the existing `EventCompetition.json` fixture.
-9. Build + test.
-10. Stage own files only, commit, push, open PR.
+7. ✅ Override implemented in
+   `BaseballEventCompetitionDocumentProcessor` with upsert helpers
+   using the `IsUniqueConstraintViolation` retry pattern.
+8. ✅ Unit tests against the existing `EventCompetition.json`
+   fixture.
+9. ✅ Build + test.
+10. ✅ Staged, committed, pushed, PR opened.
 
 ## Related
 

@@ -22,13 +22,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Ba
 public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventCompetitionDocumentProcessorBase<TDataContext>
     where TDataContext : BaseballDataContext
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
     public BaseballEventCompetitionDocumentProcessor(
         ILogger<BaseballEventCompetitionDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
+        IGenerateResourceRefs refs,
+        IDateTimeProvider dateTimeProvider)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
+    {
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     protected override EspnEventCompetitionDtoBase? DeserializeDto(string document)
         => document.FromJson<EspnBaseballEventCompetitionDto>();
@@ -65,25 +71,33 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
 
         if (baseballDto.Series is null || baseballDto.Series.Count == 0)
         {
+            // Payload no longer carries series state — clear any stale FKs.
+            baseballCompetition.CurrentSeriesId = null;
+            baseballCompetition.SeasonSeriesId = null;
             return;
         }
 
         if (!command.SeasonYear.HasValue)
         {
-            _logger.LogWarning(
+            _logger.LogError(
                 "Skipping series ingestion: command missing SeasonYear. CompetitionId={CompId}",
                 baseballCompetition.Id);
             return;
         }
+
+        var sawCurrent = false;
+        var sawSeason = false;
 
         foreach (var entry in baseballDto.Series)
         {
             switch (entry.Type)
             {
                 case "current":
+                    sawCurrent = true;
                     await ProcessCurrentSeries(command, entry, baseballDto, baseballCompetition);
                     break;
                 case "season":
+                    sawSeason = true;
                     await ProcessSeasonSeries(command, entry, baseballCompetition, command.SeasonYear.Value);
                     break;
                 case null:
@@ -97,6 +111,18 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
                         entry.Type, baseballCompetition.Id);
                     break;
             }
+        }
+
+        // Clear any FK whose corresponding entry wasn't in the payload, so a
+        // dropped current/season entry doesn't leave a stale link.
+        if (!sawCurrent)
+        {
+            baseballCompetition.CurrentSeriesId = null;
+        }
+
+        if (!sawSeason)
+        {
+            baseballCompetition.SeasonSeriesId = null;
         }
     }
 
@@ -132,7 +158,7 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
         }
         else
         {
-            existing.ModifiedUtc = DateTime.UtcNow;
+            existing.ModifiedUtc = _dateTimeProvider.UtcNow();
             existing.ModifiedBy = command.CorrelationId;
         }
 
@@ -195,6 +221,18 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
             resolved.Add((fsId.Value, c));
         }
 
+        // Reject self-series: both competitor refs collapsing to the same
+        // FranchiseSeasonId would produce a (low == high) pair identity and
+        // a junk SeasonSeries row.
+        var distinctIds = resolved.Select(r => r.FranchiseSeasonId).Distinct().ToList();
+        if (distinctIds.Count != 2)
+        {
+            _logger.LogWarning(
+                "Season series competitors resolved to the same FranchiseSeasonId={FsId}. Skipping. CompetitionId={CompId}",
+                resolved[0].FranchiseSeasonId, competition.Id);
+            return;
+        }
+
         // Sort by Guid value so the pair identity is canonical regardless of
         // which team is listed first in any given competition's payload.
         var sorted = resolved.OrderBy(x => x.FranchiseSeasonId).ToList();
@@ -225,7 +263,7 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
         }
         else
         {
-            existing.ModifiedUtc = DateTime.UtcNow;
+            existing.ModifiedUtc = _dateTimeProvider.UtcNow();
             existing.ModifiedBy = command.CorrelationId;
         }
 
@@ -282,7 +320,7 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
             }
             else
             {
-                competitor.ModifiedUtc = DateTime.UtcNow;
+                competitor.ModifiedUtc = _dateTimeProvider.UtcNow();
                 competitor.ModifiedBy = command.CorrelationId;
             }
 
@@ -313,7 +351,7 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
             }
             else
             {
-                competitor.ModifiedUtc = DateTime.UtcNow;
+                competitor.ModifiedUtc = _dateTimeProvider.UtcNow();
                 competitor.ModifiedBy = command.CorrelationId;
             }
 

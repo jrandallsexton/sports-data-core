@@ -64,11 +64,13 @@ Columns on `BaseballCompetition`:
 ### Adds (all on `BaseballCompetition`)
 
 Grouping key:
+
 | Column | Type | Notes |
 |---|---|---|
 | `EspnSeriesId` | `string?` | Raw ESPN series id ("600056007"). Indexed (non-unique). Enables "all games in series X" queries. |
 
 Current-series snapshot (state going into this game):
+
 | Column | Type |
 |---|---|
 | `CurrentSeriesSummary` | `string?` |
@@ -81,6 +83,7 @@ Current-series snapshot (state going into this game):
 | `CurrentSeriesAwayTies` | `int?` |
 
 Season-series snapshot (state going into this game):
+
 | Column | Type |
 |---|---|
 | `SeasonSeriesSummary` | `string?` |
@@ -111,6 +114,7 @@ section is treated as locked and never overwritten on subsequent
 processing.
 
 Per-section guard:
+
 ```csharp
 // Current series
 if (competition.CurrentSeriesSummary is null)
@@ -180,54 +184,92 @@ populate as games re-process via normal cascade traffic.
 ## Processor delta
 
 `BaseballEventCompetitionDocumentProcessor.ProcessSportSpecificCompetitionData`
-keeps its existing shape (foreach over `series[]`, switch on `Type`,
-clear-on-omitted logic, `IDateTimeProvider`, missing-SeasonYear
-LogError, distinct-id guard removed because it's unreachable in the
-flat model).
+is rewritten as a flat snapshot writer. The `foreach` over `series[]`
+and the `switch` on `entry.Type` (cases `"current"`, `"season"`, `null`,
+`default`) are retained from the prior shape — those still make sense.
+Everything else from the prior implementation is dropped.
 
-Two methods replaced:
+What's gone, vs. what was there before this PR:
 
-- `ProcessCurrentSeries` — now writes the eight `CurrentSeries*`
-  columns directly, guarded by `competition.CurrentSeriesSummary is
-  null`. No more `Series` / `SeriesCompetitor` upserts. Drops
-  `UpsertSeriesCompetitors` entirely.
-- `ProcessSeasonSeries` — now writes the seven `SeasonSeries*` columns
-  directly, guarded by `competition.SeasonSeriesSummary is null`. No
-  more synthesized identity, no more sorted-pair canonicalization, no
-  more FranchiseSeason resolution. Drops
-  `UpsertSeasonSeriesCompetitors` entirely.
+- **`IDateTimeProvider` ctor parameter and field** — removed. The
+  processor no longer writes `ModifiedUtc` on any sport-specific entity
+  (those entities don't exist anymore); the base class still handles
+  competition audit fields.
+- **Missing-`SeasonYear` `LogError` branch** — removed. With no
+  synthesized `(year, low, high)` season-series identity, `SeasonYear`
+  is no longer required for snapshot writes. The contract-violation
+  check is no longer applicable here.
+- **Clear-on-omitted FK logic** — removed. There are no
+  `CurrentSeriesId` / `SeasonSeriesId` FKs to clear, and the
+  lock-on-first-write rule means an empty payload should *not* blow
+  away a previously-locked snapshot anyway.
+- **Distinct-FranchiseSeasonId guard** — removed. The flat model has no
+  `(low, high)` pair identity, so the case it guarded against is
+  unreachable.
+- **`ProcessCurrentSeries` / `ProcessSeasonSeries` upsert helpers** —
+  replaced by `ApplyCurrentSeriesSnapshot` / `ApplySeasonSeriesSnapshot`,
+  both guarded by `competition.{Current,Season}SeriesSummary is null`.
+  No `Series` / `SeasonSeries` row upserts, no `SeriesCompetitor` /
+  `SeasonSeriesCompetitor` join writes, no `UpsertSeriesCompetitors` /
+  `UpsertSeasonSeriesCompetitors` helpers.
+- **`FranchiseSeason` resolution via `ResolveIdAsync`** — removed.
+  Home/away mapping is a pure DTO id-string match against
+  `EspnEventCompetitionDtoBase.Competitors[].HomeAway`, no DB lookup.
 
-The clear-stale-FK logic at the top of
-`ProcessSportSpecificCompetitionData` goes away — there are no FKs to
-clear, and the lock-on-first-write rule means we wouldn't want to clear
-columns anyway.
+What's added:
 
-The `EspnSeriesId` column on `BaseballCompetition` is set every time the
-processor sees `baseballDto.SeriesId`, regardless of lock state, since
-it's the grouping key (not historical state).
+- **`RestoreSnapshotFromOriginalValues(BaseballCompetition c)`** —
+  reads each snapshot column's `OriginalValue` from the EF change
+  tracker and restores it onto the entity before the lock check fires.
+  Necessary because the base class's
+  `_dataContext.Entry(competition).CurrentValues.SetValues(updatedEntity)`
+  blanks all snapshot columns on every reprocess (the entity returned
+  by `AsBaseballEntity` doesn't carry them). Without this restore, the
+  lock would be defeated on every update.
+- **`TryMapHomeAway(...)`** — small helper that pulls home/away ids
+  from the parent competitor list and matches them against the series
+  competitor list. Logs and returns `false` if any matching step fails.
+- **`EspnSeriesId` write** — set on every pass when
+  `baseballDto.SeriesId` is non-null, deliberately *outside* the lock
+  rule. It's the grouping key, not historical state.
 
 ## Test rewrites
 
 Existing test file:
 `test/unit/SportsData.Producer.Tests.Unit/Application/Documents/Processors/Providers/Espn/Baseball/BaseballEventCompetitionDocumentProcessorSeriesTests.cs`
 
-Rewrites:
-- `WhenSeriesPayloadProcessed_PersistsCurrent_SeasonSeries_AndLinksCompetition`
-  → asserts the 16 snapshot columns on `BaseballCompetition` are set
-  (not separate Series/SeasonSeries rows).
-- `WhenReprocessed_DoesNotDuplicateRows_AndUpdatesCounters`
-  → asserts re-processing doesn't overwrite locked snapshots even
-  when the payload's Wins/Ties have advanced.
-- `WhenSeriesArrayMissing_ClearsStaleSeriesFKs`
-  → deleted. No FKs to clear.
-- New: `WhenFirstWriteThenReprocess_LocksAtKickoffState` — process
-  twice with different Wins/Ties payloads, assert the snapshot reflects
-  the *first* payload, not the second.
-- New: `WhenFranchiseSeasonsMissing_StillPersistsSnapshot` — confirms
-  we no longer need FranchiseSeason resolution for season-series state.
+The four tests in the rewritten file (verified against
+`BaseballEventCompetitionDocumentProcessorSeriesTests.cs` on this branch):
 
-`SeedFranchiseSeasons` helper goes away (no longer needed). Test setup
-gets simpler.
+- `DTO_Deserializes_Series_Fields_From_Fixture` — sanity-check that
+  `EspnBaseballEventCompetitionDto` deserializes `seriesId` and the
+  `series[]` array from the fixture, including the unrecognized
+  `"preseason"` entry that the processor logs and skips.
+- `WhenSeriesPayloadProcessed_SnapshotColumnsAreSet` — processes the
+  fixture once and asserts the snapshot columns on
+  `BaseballCompetition` are populated (current and season summaries,
+  totals, completed flags, home/away wins and ties, plus
+  `EspnSeriesId`). Replaces the old "persists `Series` /
+  `SeasonSeries` rows" assertion shape from the entity-based design.
+- `WhenReprocessed_SnapshotIsLocked_AndDoesNotOverwrite` — processes
+  once, then mutates the fixture's `current` series wins/summary and
+  reprocesses. Asserts the second run's mutated values are *not*
+  reflected on the entity (lock-on-first-write held). This is the
+  load-bearing lock-semantics gate.
+- `WhenSeriesArrayMissing_DoesNotClearLockedSnapshot` — locks a
+  snapshot via a normal first pass, then reprocesses with `series:
+  []`. Asserts the locked columns survive the empty-payload
+  reprocess. Replaces the old "clears stale FKs" test, which was
+  inverted under the new semantics.
+
+Helpers: `SetupAndBuildCommand` (seeds Contest + Competition +
+CompetitionExternalId, builds the `ProcessDocumentCommand`) and
+`SeedContestAndCompetition`. The prior `SeedFranchiseSeasons` helper
+is gone — the flat model doesn't resolve `FranchiseSeason` for
+home/away mapping, so no FranchiseSeason seeding is needed.
+
+This list was validated against the test source on the
+`feat/mlb-series-snapshot` branch.
 
 ## Update to `mlb-series-ingestion-plan.md`
 

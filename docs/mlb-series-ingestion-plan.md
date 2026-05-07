@@ -1,14 +1,20 @@
 # MLB Series ingestion — as built
 
-> **Postscript (2026-05-07, same day):** the entity-based design
-> below was walked back to a flatter snapshot-on-Competition model the
-> same day it shipped. Two issues drove the redesign — historical
-> matchup pages would render current series state instead of
-> at-game-start state (time-travel hazard), and the entity tables
-> didn't carry information not derivable from per-competition data.
-> See `docs/series-snapshot-redesign.md` for the replacement design.
-> The text below is preserved as decision history; the live implementation
-> follows the redesign doc.
+---
+
+**SUPERSEDED — DO NOT IMPLEMENT FROM THIS DOC.**
+
+The entity-based design captured below was walked back the same day it
+shipped. The live implementation follows
+**[`docs/series-snapshot-redesign.md`](series-snapshot-redesign.md)**.
+
+The remainder of this file (~290 lines) is preserved as decision
+history only. Two issues drove the redesign: historical matchup pages
+would render current series state instead of at-game-start state
+(time-travel hazard), and the `Series` / `SeasonSeries` entity tables
+didn't carry information not derivable from per-competition data.
+
+---
 
 Captured 2026-05-07; implemented in commit f1e74576 ("feat(producer):
 MLB series + season-series ingestion") on branch
@@ -286,6 +292,14 @@ fields.
   shared base, no interface. NFL/NCAAFB out of scope (no series
   concept). Refactor when NBA arrives with real data — interface or
   shared base, decided then.
+
+---
+
+**HISTORICAL — DO NOT IMPLEMENT.** The shipped implementation differs
+from what's described below. See
+[`docs/series-snapshot-redesign.md`](series-snapshot-redesign.md).
+
+---
 
 ## Implementation (as built)
 

@@ -284,12 +284,14 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// <param name="hasRef">The ESPN link DTO containing the $ref to the child document</param>
     /// <param name="parentId">The parent entity ID (will be converted to string)</param>
     /// <param name="documentType">The type of child document being requested</param>
+    /// <param name="propertyBag">Optional property bag to attach to the published DocumentRequested. Use for cross-cutting context that doesn't fit a typed field (e.g., a parent foreign-key the consuming processor needs).</param>
     /// <returns>A task representing the asynchronous operation</returns>
     protected async Task PublishChildDocumentRequest<TParentId>(
         ProcessDocumentCommand command,
         IHasRef? hasRef,
         TParentId parentId,
-        DocumentType documentType)
+        DocumentType documentType,
+        Dictionary<string, string>? propertyBag = null)
     {
         using (_logger.BeginScope(new Dictionary<string, object?>
         {
@@ -315,7 +317,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
                 return;
             }
 
-            await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "CHILD", precomputedIdentity: null);
+            await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "CHILD", precomputedIdentity: null, propertyBag: propertyBag);
         }
     }
 
@@ -323,13 +325,15 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// Internal helper to publish DocumentRequested events. Shared by both dependency and child request methods.
     /// </summary>
     /// <param name="precomputedIdentity">Optional precomputed identity to avoid redundant Generate call (used by PublishDependencyRequest)</param>
+    /// <param name="propertyBag">Optional property bag to attach to the published DocumentRequested.</param>
     private async Task<bool> PublishDocumentRequestInternal<TParentId>(
         ProcessDocumentCommand command,
         IHasRef hasRef,
         TParentId parentId,
         DocumentType documentType,
         string requestType,
-        ExternalRefIdentity? precomputedIdentity = null)
+        ExternalRefIdentity? precomputedIdentity = null,
+        Dictionary<string, string>? propertyBag = null)
     {
         ExternalRefIdentity identity;
         Uri uri;
@@ -372,6 +376,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             SourceDataProvider: command.SourceDataProvider,
             CorrelationId: command.CorrelationId,
             CausationId: command.MessageId,
+            PropertyBag: propertyBag,
             IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes?.ToList()
         ));
 

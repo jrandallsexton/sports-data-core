@@ -166,19 +166,22 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : DocumentProc
             command,
             competitionId,
             externalDto,
-            entity);
+            entity,
+            isNew: true);
     }
 
     private async Task ProcessPlays(
         ProcessDocumentCommand command,
         Guid competitionId,
         EspnEventCompetitionDriveDto externalDto,
-        CompetitionDrive drive)
+        CompetitionDrive drive,
+        bool isNew)
     {
         if (externalDto.Plays?.Items != null)
         {
             var linkedCount = 0;
             var requestedCount = 0;
+            var skippedByFilterCount = 0;
 
             // TODO: we could optimize this by doing a batch query for all play identities instead of one at a time
             foreach (var play in externalDto.Plays.Items)
@@ -194,35 +197,39 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : DocumentProc
                     playEntity.DriveId = drive.Id;
                     linkedCount++;
                 }
+                else if (isNew || ShouldSpawn(DocumentType.EventCompetitionPlay, command))
+                {
+                    // Routes through PublishChildDocumentRequest so that
+                    // IncludeLinkedDocumentTypes propagation is honored. Prior
+                    // versions called _publishEndpoint.Publish directly, which
+                    // bypassed the filter at this hop.
+                    // See docs/processor-shouldspawn-audit.md.
+                    await PublishChildDocumentRequest(
+                        command,
+                        play,
+                        competitionId,
+                        DocumentType.EventCompetitionPlay,
+                        propertyBag: new Dictionary<string, string>
+                        {
+                            { "CompetitionDriveId", drive.Id.ToString() }
+                        });
+                    requestedCount++;
+                }
                 else
                 {
-                    await _publishEndpoint.Publish(new DocumentRequested(
-                        Id: playIdentity.UrlHash,
-                        ParentId: competitionId.ToString(),
-                        Uri: new Uri(playIdentity.CleanUrl),
-                        Ref: null,
-                        Sport: command.Sport,
-                        SeasonYear: command.SeasonYear!.Value,
-                        DocumentType: DocumentType.EventCompetitionPlay,
-                        SourceDataProvider: SourceDataProvider.Espn,
-                        CorrelationId: command.CorrelationId,
-                        CausationId: CausationId.Producer.EventCompetitionDriveDocumentProcessor,
-                        PropertyBag: new Dictionary<string, string>()
-                        {
-                            { "CompetitionDriveId", drive.Id.ToString()}
-                        }
-                    ));
-                    requestedCount++;
+                    skippedByFilterCount++;
                 }
 
                 await _dataContext.SaveChangesAsync();
             }
 
-            _logger.LogInformation("Processed plays for drive. DriveId={DriveId}, TotalPlays={Total}, Linked={Linked}, Requested={Requested}", 
+            _logger.LogInformation(
+                "Processed plays for drive. DriveId={DriveId}, TotalPlays={Total}, Linked={Linked}, Requested={Requested}, SkippedByFilter={SkippedByFilter}",
                 drive.Id,
                 externalDto.Plays.Items.Count,
                 linkedCount,
-                requestedCount);
+                requestedCount,
+                skippedByFilterCount);
         }
     }
 
@@ -238,6 +245,7 @@ public class EventCompetitionDriveDocumentProcessor<TDataContext> : DocumentProc
             command,
             competitionId,
             externalDto,
-            entity);
+            entity,
+            isNew: false);
     }
 }

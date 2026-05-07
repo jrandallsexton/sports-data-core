@@ -63,7 +63,7 @@ public class BaseballEventCompetitionSituationDocumentProcessor<TDataContext> : 
 
             if (lastPlay == null)
             {
-                await PublishChildDocumentRequest(
+                await PublishDependencyRequest(
                     command,
                     dto.LastPlay,
                     competitionIdValue,

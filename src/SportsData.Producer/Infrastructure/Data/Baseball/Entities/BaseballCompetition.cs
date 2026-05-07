@@ -14,6 +14,17 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities
         // without an OfType cast.
         public BaseballCompetitionStatus? Status { get; set; }
 
+        // Series links populated by BaseballEventCompetitionDocumentProcessor
+        // when ESPN's competition payload carries inline series data.
+        // Both nullable: historical games predate this work, and ESPN
+        // omits series for postponed/preseason competitions.
+        // See docs/mlb-series-ingestion-plan.md.
+        public Guid? CurrentSeriesId { get; set; }
+        public Series? CurrentSeries { get; set; }
+
+        public Guid? SeasonSeriesId { get; set; }
+        public SeasonSeries? SeasonSeries { get; set; }
+
         public new class EntityConfiguration : IEntityTypeConfiguration<BaseballCompetition>
         {
             public void Configure(EntityTypeBuilder<BaseballCompetition> builder)
@@ -32,6 +43,16 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities
                     .WithOne()
                     .HasForeignKey<BaseballCompetitionStatus>(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                builder.HasOne(x => x.CurrentSeries)
+                    .WithMany(x => x.Competitions)
+                    .HasForeignKey(x => x.CurrentSeriesId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                builder.HasOne(x => x.SeasonSeries)
+                    .WithMany(x => x.Competitions)
+                    .HasForeignKey(x => x.SeasonSeriesId)
+                    .OnDelete(DeleteBehavior.SetNull);
             }
         }
     }

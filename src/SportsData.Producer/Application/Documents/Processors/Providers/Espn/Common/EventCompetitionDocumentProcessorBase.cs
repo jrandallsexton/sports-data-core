@@ -240,6 +240,13 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
     {
         _logger.LogInformation("Processing child documents for Competition. CompetitionId={CompId}, IsNew={IsNew}", competition.Id, isNew);
 
+        // Sport-specific inline-data extraction (e.g. MLB series state). Runs
+        // before child-doc spawning so series writes share the tail
+        // SaveChangesAsync transaction with the competition update and any
+        // outbox publishes. Concerns are kept separate from
+        // ProcessSportSpecificChildDocuments, which spawns child documents.
+        await ProcessSportSpecificCompetitionData(command, dto, competition, isNew);
+
         if (isNew || ShouldSpawn(DocumentType.EventCompetitionOdds, command))
             await PublishChildDocumentRequest(command, dto.Odds, competition.Id, DocumentType.EventCompetitionOdds);
 
@@ -278,6 +285,19 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
     }
 
     protected virtual Task ProcessSportSpecificChildDocuments(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionDtoBase dto,
+        CompetitionBase competition,
+        bool isNew) => Task.CompletedTask;
+
+    /// <summary>
+    /// Sport-specific inline-data extraction hook. Override to read fields
+    /// that ESPN ships inline on the competition payload (no separate $ref)
+    /// and persist them as canonical state. Examples: MLB series, future
+    /// NBA/NHL series state. Called before child-document spawning so any
+    /// writes share the tail SaveChangesAsync transaction.
+    /// </summary>
+    protected virtual Task ProcessSportSpecificCompetitionData(
         ProcessDocumentCommand command,
         EspnEventCompetitionDtoBase dto,
         CompetitionBase competition,

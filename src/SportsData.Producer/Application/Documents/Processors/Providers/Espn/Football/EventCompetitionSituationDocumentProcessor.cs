@@ -67,7 +67,7 @@ public class EventCompetitionSituationDocumentProcessor<TDataContext> : Document
 
             if (lastPlay == null)
             {
-                await PublishChildDocumentRequest(
+                await PublishDependencyRequest(
                     command,
                     dto.LastPlay,
                     competitionIdValue,

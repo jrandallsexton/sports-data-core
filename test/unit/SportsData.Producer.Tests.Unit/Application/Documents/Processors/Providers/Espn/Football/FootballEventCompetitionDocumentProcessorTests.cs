@@ -22,11 +22,11 @@ using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
-namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Common
+namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football
 {
     [Collection("Sequential")]
-    public class EventCompetitionDocumentProcessorTests :
-        ProducerTestBase<EventCompetitionDocumentProcessor<FootballDataContext>>
+    public class FootballEventCompetitionDocumentProcessorTests :
+        ProducerTestBase<FootballEventCompetitionDocumentProcessor<FootballDataContext>>
     {
         [Fact]
         public async Task CanDeserializeCompetitionBroadcasts()
@@ -139,7 +139,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await base.FootballDataContext.Contests.AddAsync(contest);
             await base.FootballDataContext.SaveChangesAsync();
 
-            var sut = Mocker.CreateInstance<EventCompetitionDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionDocumentProcessor<FootballDataContext>>();
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .OmitAutoProperties()
@@ -275,7 +275,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await base.FootballDataContext.Competitions.AddAsync(existingCompetition);
             await base.FootballDataContext.SaveChangesAsync();
 
-            var sut = Mocker.CreateInstance<EventCompetitionDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionDocumentProcessor<FootballDataContext>>();
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .OmitAutoProperties()
@@ -408,7 +408,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await base.FootballDataContext.Competitions.AddAsync(existingCompetition);
             await base.FootballDataContext.SaveChangesAsync();
 
-            var sut = Mocker.CreateInstance<EventCompetitionDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionDocumentProcessor<FootballDataContext>>();
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .OmitAutoProperties()
@@ -448,7 +448,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-            var sut = Mocker.CreateInstance<EventCompetitionDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionDocumentProcessor<FootballDataContext>>();
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .OmitAutoProperties()
@@ -477,7 +477,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-            var sut = Mocker.CreateInstance<EventCompetitionDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionDocumentProcessor<FootballDataContext>>();
 
             var nonExistentContestId = Guid.NewGuid();
 
@@ -506,7 +506,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
-            var sut = Mocker.CreateInstance<EventCompetitionDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionDocumentProcessor<FootballDataContext>>();
 
             var contest = new FootballContest
             {
@@ -644,7 +644,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await base.FootballDataContext.Competitions.AddAsync(existingCompetition);
             await base.FootballDataContext.SaveChangesAsync();
 
-            var sut = Mocker.CreateInstance<EventCompetitionDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionDocumentProcessor<FootballDataContext>>();
 
             var command = Fixture.Build<ProcessDocumentCommand>()
                 .OmitAutoProperties()

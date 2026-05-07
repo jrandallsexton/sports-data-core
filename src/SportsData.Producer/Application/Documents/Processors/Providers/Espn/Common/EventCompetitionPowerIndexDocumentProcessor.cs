@@ -91,7 +91,7 @@ public class EventCompetitionPowerIndexDocumentProcessor<TDataContext> : Documen
 
             _logger.LogWarning("FranchiseSeason not found, publishing sourcing request. Hash={Hash}", teamHash);
 
-            await PublishChildDocumentRequest(
+            await PublishDependencyRequest(
                 command,
                 dto.Team,
                 parentId: string.Empty,

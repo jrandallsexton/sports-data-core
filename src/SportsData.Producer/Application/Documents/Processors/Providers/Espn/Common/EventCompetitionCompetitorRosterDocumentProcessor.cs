@@ -171,8 +171,12 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
                 entry.Jersey,
                 entry.DidNotPlay);
 
-            // Publish child document requests for athlete statistics (if available)
-            if (entry.Statistics?.Ref is not null)
+            // Publish child document requests for athlete statistics (if available).
+            // ShouldSpawn honors IncludeLinkedDocumentTypes filters from upstream
+            // (e.g. ContestUpdateProcessor's narrowed Refresh Contest set, which
+            // excludes per-athlete stats). See docs/processor-shouldspawn-audit.md.
+            if (entry.Statistics?.Ref is not null
+                && ShouldSpawn(DocumentType.EventCompetitionAthleteStatistics, command))
             {
                 _logger.LogDebug("Publishing child request for athlete statistics. Athlete={DisplayName}, StatRef={StatRef}",
                     entry.DisplayName,
@@ -183,7 +187,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
                     entry.Statistics,
                     null, // Stats document is self-contained with athlete and competition refs
                     DocumentType.EventCompetitionAthleteStatistics);
-                
+
                 publishedStatsCount++;
             }
         }

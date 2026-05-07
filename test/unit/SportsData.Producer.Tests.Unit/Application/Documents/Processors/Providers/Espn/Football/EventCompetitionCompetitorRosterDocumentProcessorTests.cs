@@ -1,3 +1,5 @@
+#nullable enable
+
 using AutoFixture;
 
 using FluentAssertions;
@@ -110,6 +112,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
             .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorRoster)
             .With(x => x.Document, json)
             .With(x => x.ParentId, competitorId.ToString())
+            .With(x => x.IncludeLinkedDocumentTypes, (IReadOnlyCollection<DocumentType>?)null)
             .Create();
 
         // act
@@ -119,7 +122,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         // (PublishChildDocumentRequest publishes DocumentRequested, not DocumentCreated)
         bus.Verify(x => x.Publish(
             It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.EventCompetitionAthleteStatistics),
-            It.IsAny<CancellationToken>()), 
+            It.IsAny<CancellationToken>()),
             Times.Exactly(39));
     }
 

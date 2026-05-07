@@ -14,16 +14,32 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities
         // without an OfType cast.
         public BaseballCompetitionStatus? Status { get; set; }
 
-        // Series links populated by BaseballEventCompetitionDocumentProcessor
-        // when ESPN's competition payload carries inline series data.
-        // Both nullable: historical games predate this work, and ESPN
-        // omits series for postponed/preseason competitions.
-        // See docs/mlb-series-ingestion-plan.md.
-        public Guid? CurrentSeriesId { get; set; }
-        public Series? CurrentSeries { get; set; }
+        // Series snapshot, populated by BaseballEventCompetitionDocumentProcessor
+        // from inline series data on the EventCompetition payload. The
+        // snapshot reflects state at-game-start and is locked on first
+        // non-null write — subsequent reprocessing does NOT overwrite. This
+        // lets historical matchup pages render the state that was true when
+        // the game was scheduled, even as ESPN's series state advances.
+        // EspnSeriesId is the grouping key (not historical state) and is
+        // refreshed every time. See docs/series-snapshot-redesign.md.
+        public string? EspnSeriesId { get; set; }
 
-        public Guid? SeasonSeriesId { get; set; }
-        public SeasonSeries? SeasonSeries { get; set; }
+        public string? CurrentSeriesSummary { get; set; }
+        public int? CurrentSeriesTotalCompetitions { get; set; }
+        public bool? CurrentSeriesCompleted { get; set; }
+        public DateTimeOffset? CurrentSeriesStartDate { get; set; }
+        public int? CurrentSeriesHomeWins { get; set; }
+        public int? CurrentSeriesHomeTies { get; set; }
+        public int? CurrentSeriesAwayWins { get; set; }
+        public int? CurrentSeriesAwayTies { get; set; }
+
+        public string? SeasonSeriesSummary { get; set; }
+        public int? SeasonSeriesTotalCompetitions { get; set; }
+        public bool? SeasonSeriesCompleted { get; set; }
+        public int? SeasonSeriesHomeWins { get; set; }
+        public int? SeasonSeriesHomeTies { get; set; }
+        public int? SeasonSeriesAwayWins { get; set; }
+        public int? SeasonSeriesAwayTies { get; set; }
 
         public new class EntityConfiguration : IEntityTypeConfiguration<BaseballCompetition>
         {
@@ -44,15 +60,7 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities
                     .HasForeignKey<BaseballCompetitionStatus>(x => x.CompetitionId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                builder.HasOne(x => x.CurrentSeries)
-                    .WithMany(x => x.Competitions)
-                    .HasForeignKey(x => x.CurrentSeriesId)
-                    .OnDelete(DeleteBehavior.SetNull);
-
-                builder.HasOne(x => x.SeasonSeries)
-                    .WithMany(x => x.Competitions)
-                    .HasForeignKey(x => x.SeasonSeriesId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                builder.HasIndex(x => x.EspnSeriesId);
             }
         }
     }

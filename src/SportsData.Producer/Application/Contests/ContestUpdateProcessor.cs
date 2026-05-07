@@ -38,7 +38,9 @@ namespace SportsData.Producer.Application.Contests
             DocumentType.EventCompetitionCompetitorLineScore,
             DocumentType.EventCompetitionCompetitorRecord,
             DocumentType.EventCompetitionPlay,
-            DocumentType.EventCompetitionDrive
+            DocumentType.EventCompetitionDrive,
+            DocumentType.EventCompetitionLeaders,
+            DocumentType.EventCompetitionProbability
         };
 
         private readonly ILogger<ContestUpdateProcessor<TDataContext>> _logger;

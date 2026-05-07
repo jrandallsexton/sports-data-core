@@ -15,11 +15,11 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Fo
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetition)]
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.EventCompetition)]
-public class EventCompetitionDocumentProcessor<TDataContext> : EventCompetitionDocumentProcessorBase<TDataContext>
+public class FootballEventCompetitionDocumentProcessor<TDataContext> : EventCompetitionDocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {
-    public EventCompetitionDocumentProcessor(
-        ILogger<EventCompetitionDocumentProcessor<TDataContext>> logger,
+    public FootballEventCompetitionDocumentProcessor(
+        ILogger<FootballEventCompetitionDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,

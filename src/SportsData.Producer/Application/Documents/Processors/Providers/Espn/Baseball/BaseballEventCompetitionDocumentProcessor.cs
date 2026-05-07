@@ -1,6 +1,7 @@
 using System.Globalization;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -22,19 +23,13 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Ba
 public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventCompetitionDocumentProcessorBase<TDataContext>
     where TDataContext : BaseballDataContext
 {
-    private readonly IDateTimeProvider _dateTimeProvider;
-
     public BaseballEventCompetitionDocumentProcessor(
         ILogger<BaseballEventCompetitionDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs,
-        IDateTimeProvider dateTimeProvider)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
-    {
-        _dateTimeProvider = dateTimeProvider;
-    }
+        IGenerateResourceRefs refs)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
 
     protected override EspnEventCompetitionDtoBase? DeserializeDto(string document)
         => document.FromJson<EspnBaseballEventCompetitionDto>();
@@ -48,16 +43,15 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
         return dto.AsBaseballEntity(identityGenerator, contestId, correlationId);
     }
 
-    // Inline series ingestion. ESPN ships current-series and season-series
-    // state inline on the competition payload (no $ref). Both are persisted
-    // as canonical entities; identity for current-series hashes ESPN's
-    // seriesId, identity for season-series synthesizes from
-    // (SeasonYear, sorted FranchiseSeasonId pair). Writes are staged on the
-    // change tracker; the base class's tail SaveChangesAsync commits them
-    // together with the competition update and any outbox publishes.
+    // Inline series snapshot. ESPN ships current-series and season-series
+    // state inline on the competition payload. We snapshot the relevant
+    // fields onto BaseballCompetition itself, locking them on first
+    // non-null write so historical matchup pages render at-game-start
+    // state instead of current rolled-up state. EspnSeriesId is the
+    // grouping key (not historical state) and refreshes every pass.
     //
-    // See docs/mlb-series-ingestion-plan.md.
-    protected override async Task ProcessSportSpecificCompetitionData(
+    // See docs/series-snapshot-redesign.md.
+    protected override Task ProcessSportSpecificCompetitionData(
         ProcessDocumentCommand command,
         EspnEventCompetitionDtoBase dto,
         CompetitionBase competition,
@@ -66,39 +60,35 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
         if (dto is not EspnBaseballEventCompetitionDto baseballDto
             || competition is not BaseballCompetition baseballCompetition)
         {
-            return;
+            return Task.CompletedTask;
+        }
+
+        // Restore previously-locked snapshot columns. The base class's
+        // SetValues(updatedEntity) blanks our snapshot columns on every
+        // reprocess (AsBaseballEntity doesn't carry them), which would
+        // defeat lock-on-first-write. Reading from the change tracker's
+        // OriginalValue recovers the DB-side values from before SetValues.
+        RestoreSnapshotFromOriginalValues(baseballCompetition);
+
+        if (!string.IsNullOrWhiteSpace(baseballDto.SeriesId))
+        {
+            baseballCompetition.EspnSeriesId = baseballDto.SeriesId;
         }
 
         if (baseballDto.Series is null || baseballDto.Series.Count == 0)
         {
-            // Payload no longer carries series state — clear any stale FKs.
-            baseballCompetition.CurrentSeriesId = null;
-            baseballCompetition.SeasonSeriesId = null;
-            return;
+            return Task.CompletedTask;
         }
-
-        if (!command.SeasonYear.HasValue)
-        {
-            _logger.LogError(
-                "Skipping series ingestion: command missing SeasonYear. CompetitionId={CompId}",
-                baseballCompetition.Id);
-            return;
-        }
-
-        var sawCurrent = false;
-        var sawSeason = false;
 
         foreach (var entry in baseballDto.Series)
         {
             switch (entry.Type)
             {
                 case "current":
-                    sawCurrent = true;
-                    await ProcessCurrentSeries(command, entry, baseballDto, baseballCompetition);
+                    ApplyCurrentSeriesSnapshot(baseballDto, entry, baseballCompetition);
                     break;
                 case "season":
-                    sawSeason = true;
-                    await ProcessSeasonSeries(command, entry, baseballCompetition, command.SeasonYear.Value);
+                    ApplySeasonSeriesSnapshot(baseballDto, entry, baseballCompetition);
                     break;
                 case null:
                     _logger.LogWarning(
@@ -113,252 +103,140 @@ public class BaseballEventCompetitionDocumentProcessor<TDataContext> : EventComp
             }
         }
 
-        // Clear any FK whose corresponding entry wasn't in the payload, so a
-        // dropped current/season entry doesn't leave a stale link.
-        if (!sawCurrent)
-        {
-            baseballCompetition.CurrentSeriesId = null;
-        }
-
-        if (!sawSeason)
-        {
-            baseballCompetition.SeasonSeriesId = null;
-        }
+        return Task.CompletedTask;
     }
 
-    private async Task ProcessCurrentSeries(
-        ProcessDocumentCommand command,
-        EspnBaseballSeriesDto entry,
+    private void ApplyCurrentSeriesSnapshot(
         EspnBaseballEventCompetitionDto baseballDto,
+        EspnBaseballSeriesDto entry,
         BaseballCompetition competition)
     {
-        if (string.IsNullOrWhiteSpace(baseballDto.SeriesId))
+        if (competition.CurrentSeriesSummary is not null)
         {
-            _logger.LogWarning(
-                "Current series entry has no parent SeriesId. Skipping. CompetitionId={CompId}",
-                competition.Id);
             return;
         }
 
-        var seriesId = DeterministicGuid.Combine("series", baseballDto.SeriesId);
-
-        var existing = await _dataContext.Series
-            .Include(x => x.Competitors)
-            .FirstOrDefaultAsync(x => x.Id == seriesId);
-
-        if (existing is null)
+        if (!TryMapHomeAway(baseballDto, entry, competition.Id, out var home, out var away))
         {
-            existing = new Series
-            {
-                Id = seriesId,
-                EspnSeriesId = baseballDto.SeriesId,
-                CreatedBy = command.CorrelationId
-            };
-            await _dataContext.Series.AddAsync(existing);
-        }
-        else
-        {
-            existing.ModifiedUtc = _dateTimeProvider.UtcNow();
-            existing.ModifiedBy = command.CorrelationId;
+            return;
         }
 
-        existing.Title = entry.Title;
-        existing.Description = entry.Description;
-        existing.Summary = entry.Summary;
-        existing.Completed = entry.Completed;
-        existing.TotalCompetitions = entry.TotalCompetitions;
-        existing.StartDate = ParseStartDate(entry.StartDate);
-
-        await UpsertSeriesCompetitors(command, existing, seriesId, entry.Competitors);
-
-        competition.CurrentSeriesId = seriesId;
+        competition.CurrentSeriesSummary = entry.Summary;
+        competition.CurrentSeriesTotalCompetitions = entry.TotalCompetitions;
+        competition.CurrentSeriesCompleted = entry.Completed;
+        competition.CurrentSeriesStartDate = ParseStartDate(entry.StartDate);
+        competition.CurrentSeriesHomeWins = home.Wins;
+        competition.CurrentSeriesHomeTies = home.Ties;
+        competition.CurrentSeriesAwayWins = away.Wins;
+        competition.CurrentSeriesAwayTies = away.Ties;
     }
 
-    private async Task ProcessSeasonSeries(
-        ProcessDocumentCommand command,
+    private void ApplySeasonSeriesSnapshot(
+        EspnBaseballEventCompetitionDto baseballDto,
         EspnBaseballSeriesDto entry,
-        BaseballCompetition competition,
-        int seasonYear)
+        BaseballCompetition competition)
     {
+        if (competition.SeasonSeriesSummary is not null)
+        {
+            return;
+        }
+
+        if (!TryMapHomeAway(baseballDto, entry, competition.Id, out var home, out var away))
+        {
+            return;
+        }
+
+        competition.SeasonSeriesSummary = entry.Summary;
+        competition.SeasonSeriesTotalCompetitions = entry.TotalCompetitions;
+        competition.SeasonSeriesCompleted = entry.Completed;
+        competition.SeasonSeriesHomeWins = home.Wins;
+        competition.SeasonSeriesHomeTies = home.Ties;
+        competition.SeasonSeriesAwayWins = away.Wins;
+        competition.SeasonSeriesAwayTies = away.Ties;
+    }
+
+    private bool TryMapHomeAway(
+        EspnBaseballEventCompetitionDto baseballDto,
+        EspnBaseballSeriesDto entry,
+        Guid competitionId,
+        out EspnBaseballSeriesCompetitorDto home,
+        out EspnBaseballSeriesCompetitorDto away)
+    {
+        home = null!;
+        away = null!;
+
         if (entry.Competitors is null || entry.Competitors.Count != 2)
         {
             _logger.LogWarning(
-                "Season series requires exactly 2 competitors; got {Count}. Skipping. CompetitionId={CompId}",
+                "Series entry needs exactly 2 competitors; got {Count}. Skipping. CompetitionId={CompId}",
                 entry.Competitors?.Count ?? 0,
-                competition.Id);
-            return;
+                competitionId);
+            return false;
         }
 
-        // Resolve both team refs to FranchiseSeasonIds. If either fails to
-        // resolve, skip — the season-series row depends on both being in
-        // hand to canonicalize the (low, high) pair identity.
-        var resolved = new List<(Guid FranchiseSeasonId, EspnBaseballSeriesCompetitorDto Dto)>();
-        foreach (var c in entry.Competitors)
-        {
-            if (c.Team?.Ref is null)
-            {
-                _logger.LogWarning(
-                    "Season series competitor missing team ref. Skipping. CompetitionId={CompId}",
-                    competition.Id);
-                return;
-            }
-
-            var fsId = await _dataContext.ResolveIdAsync<FranchiseSeason, FranchiseSeasonExternalId>(
-                c.Team,
-                command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons,
-                externalIdsNav: "ExternalIds",
-                key: fs => fs.Id);
-
-            if (fsId is null)
-            {
-                _logger.LogWarning(
-                    "Could not resolve FranchiseSeason for season-series competitor. TeamRef={Ref} CompetitionId={CompId}. Skipping.",
-                    c.Team.Ref, competition.Id);
-                return;
-            }
-
-            resolved.Add((fsId.Value, c));
-        }
-
-        // Reject self-series: both competitor refs collapsing to the same
-        // FranchiseSeasonId would produce a (low == high) pair identity and
-        // a junk SeasonSeries row.
-        var distinctIds = resolved.Select(r => r.FranchiseSeasonId).Distinct().ToList();
-        if (distinctIds.Count != 2)
+        if (baseballDto.Competitors is null)
         {
             _logger.LogWarning(
-                "Season series competitors resolved to the same FranchiseSeasonId={FsId}. Skipping. CompetitionId={CompId}",
-                resolved[0].FranchiseSeasonId, competition.Id);
+                "EventCompetition payload has no parent competitors collection. Cannot map home/away for series. CompetitionId={CompId}",
+                competitionId);
+            return false;
+        }
+
+        var homeId = baseballDto.Competitors.FirstOrDefault(c => c.HomeAway == "home")?.Id;
+        var awayId = baseballDto.Competitors.FirstOrDefault(c => c.HomeAway == "away")?.Id;
+
+        if (string.IsNullOrEmpty(homeId) || string.IsNullOrEmpty(awayId))
+        {
+            _logger.LogWarning(
+                "EventCompetition payload missing home or away competitor. Cannot map series. CompetitionId={CompId}",
+                competitionId);
+            return false;
+        }
+
+        var matchedHome = entry.Competitors.FirstOrDefault(c => c.Id == homeId);
+        var matchedAway = entry.Competitors.FirstOrDefault(c => c.Id == awayId);
+
+        if (matchedHome is null || matchedAway is null)
+        {
+            _logger.LogWarning(
+                "Series competitor ids did not match parent home/away ids. CompetitionId={CompId} HomeId={HomeId} AwayId={AwayId}",
+                competitionId, homeId, awayId);
+            return false;
+        }
+
+        home = matchedHome;
+        away = matchedAway;
+        return true;
+    }
+
+    private void RestoreSnapshotFromOriginalValues(BaseballCompetition c)
+    {
+        var entry = _dataContext.Entry(c);
+        if (entry.State == EntityState.Added || entry.State == EntityState.Detached)
+        {
             return;
         }
 
-        // Sort by Guid value so the pair identity is canonical regardless of
-        // which team is listed first in any given competition's payload.
-        var sorted = resolved.OrderBy(x => x.FranchiseSeasonId).ToList();
-        var lowId = sorted[0].FranchiseSeasonId;
-        var highId = sorted[1].FranchiseSeasonId;
+        c.CurrentSeriesSummary = Original<string?>(entry, nameof(BaseballCompetition.CurrentSeriesSummary));
+        c.CurrentSeriesTotalCompetitions = Original<int?>(entry, nameof(BaseballCompetition.CurrentSeriesTotalCompetitions));
+        c.CurrentSeriesCompleted = Original<bool?>(entry, nameof(BaseballCompetition.CurrentSeriesCompleted));
+        c.CurrentSeriesStartDate = Original<DateTimeOffset?>(entry, nameof(BaseballCompetition.CurrentSeriesStartDate));
+        c.CurrentSeriesHomeWins = Original<int?>(entry, nameof(BaseballCompetition.CurrentSeriesHomeWins));
+        c.CurrentSeriesHomeTies = Original<int?>(entry, nameof(BaseballCompetition.CurrentSeriesHomeTies));
+        c.CurrentSeriesAwayWins = Original<int?>(entry, nameof(BaseballCompetition.CurrentSeriesAwayWins));
+        c.CurrentSeriesAwayTies = Original<int?>(entry, nameof(BaseballCompetition.CurrentSeriesAwayTies));
 
-        var seasonSeriesId = DeterministicGuid.Combine(
-            "season-series",
-            seasonYear.ToString(CultureInfo.InvariantCulture),
-            lowId.ToString(),
-            highId.ToString());
-
-        var existing = await _dataContext.SeasonSeries
-            .Include(x => x.Competitors)
-            .FirstOrDefaultAsync(x => x.Id == seasonSeriesId);
-
-        if (existing is null)
-        {
-            existing = new SeasonSeries
-            {
-                Id = seasonSeriesId,
-                SeasonYear = seasonYear,
-                FranchiseSeasonALowId = lowId,
-                FranchiseSeasonBHighId = highId,
-                CreatedBy = command.CorrelationId
-            };
-            await _dataContext.SeasonSeries.AddAsync(existing);
-        }
-        else
-        {
-            existing.ModifiedUtc = _dateTimeProvider.UtcNow();
-            existing.ModifiedBy = command.CorrelationId;
-        }
-
-        existing.Title = entry.Title;
-        existing.Description = entry.Description;
-        existing.Summary = entry.Summary;
-        existing.Completed = entry.Completed;
-        existing.TotalCompetitions = entry.TotalCompetitions;
-        existing.StartDate = ParseStartDate(entry.StartDate);
-
-        UpsertSeasonSeriesCompetitors(command, existing, seasonSeriesId, resolved);
-
-        competition.SeasonSeriesId = seasonSeriesId;
+        c.SeasonSeriesSummary = Original<string?>(entry, nameof(BaseballCompetition.SeasonSeriesSummary));
+        c.SeasonSeriesTotalCompetitions = Original<int?>(entry, nameof(BaseballCompetition.SeasonSeriesTotalCompetitions));
+        c.SeasonSeriesCompleted = Original<bool?>(entry, nameof(BaseballCompetition.SeasonSeriesCompleted));
+        c.SeasonSeriesHomeWins = Original<int?>(entry, nameof(BaseballCompetition.SeasonSeriesHomeWins));
+        c.SeasonSeriesHomeTies = Original<int?>(entry, nameof(BaseballCompetition.SeasonSeriesHomeTies));
+        c.SeasonSeriesAwayWins = Original<int?>(entry, nameof(BaseballCompetition.SeasonSeriesAwayWins));
+        c.SeasonSeriesAwayTies = Original<int?>(entry, nameof(BaseballCompetition.SeasonSeriesAwayTies));
     }
 
-    private async Task UpsertSeriesCompetitors(
-        ProcessDocumentCommand command,
-        Series series,
-        Guid seriesId,
-        List<EspnBaseballSeriesCompetitorDto>? competitors)
-    {
-        if (competitors is null) return;
-
-        foreach (var c in competitors)
-        {
-            if (c.Team?.Ref is null) continue;
-
-            var fsId = await _dataContext.ResolveIdAsync<FranchiseSeason, FranchiseSeasonExternalId>(
-                c.Team,
-                command.SourceDataProvider,
-                () => _dataContext.FranchiseSeasons,
-                externalIdsNav: "ExternalIds",
-                key: fs => fs.Id);
-
-            if (fsId is null)
-            {
-                _logger.LogWarning(
-                    "Could not resolve FranchiseSeason for series competitor. TeamRef={Ref} SeriesId={SeriesId}. Skipping competitor row.",
-                    c.Team.Ref, seriesId);
-                continue;
-            }
-
-            var competitor = series.Competitors.FirstOrDefault(x => x.FranchiseSeasonId == fsId.Value);
-            if (competitor is null)
-            {
-                competitor = new SeriesCompetitor
-                {
-                    Id = DeterministicGuid.Combine("series-competitor", seriesId.ToString(), fsId.Value.ToString()),
-                    SeriesId = seriesId,
-                    FranchiseSeasonId = fsId.Value,
-                    CreatedBy = command.CorrelationId
-                };
-                series.Competitors.Add(competitor);
-            }
-            else
-            {
-                competitor.ModifiedUtc = _dateTimeProvider.UtcNow();
-                competitor.ModifiedBy = command.CorrelationId;
-            }
-
-            competitor.Wins = c.Wins;
-            competitor.Ties = c.Ties;
-        }
-    }
-
-    private void UpsertSeasonSeriesCompetitors(
-        ProcessDocumentCommand command,
-        SeasonSeries seasonSeries,
-        Guid seasonSeriesId,
-        List<(Guid FranchiseSeasonId, EspnBaseballSeriesCompetitorDto Dto)> resolved)
-    {
-        foreach (var (fsId, dto) in resolved)
-        {
-            var competitor = seasonSeries.Competitors.FirstOrDefault(x => x.FranchiseSeasonId == fsId);
-            if (competitor is null)
-            {
-                competitor = new SeasonSeriesCompetitor
-                {
-                    Id = DeterministicGuid.Combine("season-series-competitor", seasonSeriesId.ToString(), fsId.ToString()),
-                    SeasonSeriesId = seasonSeriesId,
-                    FranchiseSeasonId = fsId,
-                    CreatedBy = command.CorrelationId
-                };
-                seasonSeries.Competitors.Add(competitor);
-            }
-            else
-            {
-                competitor.ModifiedUtc = _dateTimeProvider.UtcNow();
-                competitor.ModifiedBy = command.CorrelationId;
-            }
-
-            competitor.Wins = dto.Wins;
-            competitor.Ties = dto.Ties;
-        }
-    }
+    private static T Original<T>(EntityEntry entry, string propertyName)
+        => (T)entry.Property(propertyName).OriginalValue!;
 
     private static DateTimeOffset? ParseStartDate(string? raw)
     {

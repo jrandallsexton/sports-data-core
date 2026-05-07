@@ -1,5 +1,21 @@
 # MLB Series ingestion — as built
 
+---
+
+**SUPERSEDED — DO NOT IMPLEMENT FROM THIS DOC.**
+
+The entity-based design captured below was walked back the same day it
+shipped. The live implementation follows
+**[`docs/series-snapshot-redesign.md`](series-snapshot-redesign.md)**.
+
+The remainder of this file (~290 lines) is preserved as decision
+history only. Two issues drove the redesign: historical matchup pages
+would render current series state instead of at-game-start state
+(time-travel hazard), and the `Series` / `SeasonSeries` entity tables
+didn't carry information not derivable from per-competition data.
+
+---
+
 Captured 2026-05-07; implemented in commit f1e74576 ("feat(producer):
 MLB series + season-series ingestion") on branch
 `feat/mlb-series-ingestion`. ESPN's MLB EventCompetition documents
@@ -276,6 +292,14 @@ fields.
   shared base, no interface. NFL/NCAAFB out of scope (no series
   concept). Refactor when NBA arrives with real data — interface or
   shared base, decided then.
+
+---
+
+**HISTORICAL — DO NOT IMPLEMENT.** The shipped implementation differs
+from what's described below. See
+[`docs/series-snapshot-redesign.md`](series-snapshot-redesign.md).
+
+---
 
 ## Implementation (as built)
 

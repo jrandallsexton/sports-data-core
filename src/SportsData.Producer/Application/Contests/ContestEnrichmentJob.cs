@@ -16,6 +16,13 @@ namespace SportsData.Producer.Application.Contests
     public class ContestEnrichmentJob<TDataContext> : IContestEnrichmentJob, IAmARecurringJob
         where TDataContext : TeamSportDataContext
     {
+        // One-shot backfill: when true, ignore current-season-week scoping and enqueue
+        // enrichment for every non-finalized contest in the most recent season whose start
+        // time has passed. Mirrors ContestUpdateJob.BackfillCurrentSeason — used to catch
+        // MLB up after mid-season onboarding. Flip back to false before steady-state
+        // deploys.
+        private static readonly bool BackfillCurrentSeason = true;
+
         private readonly ILogger<ContestEnrichmentJob<TDataContext>> _logger;
         private readonly TDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
@@ -42,6 +49,12 @@ namespace SportsData.Producer.Application.Contests
             _logger.LogInformation(
                 "ContestEnrichmentJob starting. JobRunId={JobRunId}, NowUtc={NowUtc}",
                 jobRunId, DateTime.UtcNow);
+
+            if (BackfillCurrentSeason)
+            {
+                await ExecuteBackfillCurrentSeason(jobRunId);
+                return;
+            }
 
             // get the current and previous season week
             var seasonWeeks = await _dataContext.SeasonWeeks
@@ -126,6 +139,82 @@ namespace SportsData.Producer.Application.Contests
                 "ContestEnrichmentJob completed. JobRunId={JobRunId}, SeasonWeeksProcessed={SeasonWeekCount}, " +
                 "TotalEnqueued={TotalEnqueued}, TotalSkipped={TotalSkipped}",
                 jobRunId, seasonWeeks.Count, totalEnqueued, totalSkipped);
+        }
+
+        private async Task ExecuteBackfillCurrentSeason(Guid jobRunId)
+        {
+            _logger.LogWarning(
+                "BACKFILL_MODE: BackfillCurrentSeason flag is ON. Bypassing current-season-week scope. " +
+                "NowUtc={NowUtc}, JobRunId={JobRunId}",
+                DateTime.UtcNow, jobRunId);
+
+            var currentSeasonYear = await _dataContext.Seasons
+                .AsNoTracking()
+                .OrderByDescending(s => s.Year)
+                .Select(s => (int?)s.Year)
+                .FirstOrDefaultAsync();
+
+            if (currentSeasonYear is null)
+            {
+                _logger.LogError(
+                    "No seasons found in database. Cannot run enrichment backfill. JobRunId={JobRunId}",
+                    jobRunId);
+                return;
+            }
+
+            _logger.LogInformation(
+                "Targeting season for enrichment backfill. SeasonYear={SeasonYear}, JobRunId={JobRunId}",
+                currentSeasonYear, jobRunId);
+
+            var contests = await _dataContext.Contests
+                .AsNoTracking()
+                .Where(c => c.SeasonYear == currentSeasonYear &&
+                            c.StartDateUtc < DateTime.UtcNow &&
+                            c.FinalizedUtc == null)
+                .OrderBy(c => c.StartDateUtc)
+                .ToListAsync();
+
+            _logger.LogInformation(
+                "Backfill: {ContestCount} non-finalized started contest(s) for season {SeasonYear}. JobRunId={JobRunId}",
+                contests.Count, currentSeasonYear, jobRunId);
+
+            if (contests.Count == 0)
+            {
+                return;
+            }
+
+            var totalEnqueued = 0;
+            var totalSkipped = 0;
+
+            foreach (var contest in contests)
+            {
+                try
+                {
+                    var cmd = new EnrichContestCommand(contest.Id, Guid.NewGuid());
+                    var hangfireJobId = _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));
+                    totalEnqueued++;
+
+                    _logger.LogInformation(
+                        "Backfill enqueued enrichment for ContestId={ContestId}, ContestName={ContestName}, " +
+                        "StartDateUtc={StartDateUtc}, HangfireJobId={HangfireJobId}, " +
+                        "EnrichCorrelationId={EnrichCorrelationId}, JobRunId={JobRunId}",
+                        contest.Id, contest.Name, contest.StartDateUtc,
+                        hangfireJobId, cmd.CorrelationId, jobRunId);
+                }
+                catch (Exception ex)
+                {
+                    totalSkipped++;
+                    _logger.LogError(
+                        ex,
+                        "Backfill failed to enqueue enrichment. ContestId={ContestId}, ContestName={ContestName}, JobRunId={JobRunId}",
+                        contest.Id, contest.Name, jobRunId);
+                }
+            }
+
+            _logger.LogInformation(
+                "ContestEnrichmentJob backfill completed. JobRunId={JobRunId}, SeasonYear={SeasonYear}, " +
+                "TotalEnqueued={TotalEnqueued}, TotalSkipped={TotalSkipped}",
+                jobRunId, currentSeasonYear, totalEnqueued, totalSkipped);
         }
     }
 }

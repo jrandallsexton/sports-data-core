@@ -21,13 +21,19 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Ba
 public class BaseballEventCompetitionCompetitorDocumentProcessor<TDataContext> : EventCompetitionCompetitorDocumentProcessorBase<TDataContext>
     where TDataContext : BaseballDataContext
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
     public BaseballEventCompetitionCompetitorDocumentProcessor(
         ILogger<BaseballEventCompetitionCompetitorDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
+        IGenerateResourceRefs refs,
+        IDateTimeProvider dateTimeProvider)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
+    {
+        _dateTimeProvider = dateTimeProvider;
+    }
 
     protected override EspnEventCompetitionCompetitorDto? DeserializeDto(string document)
         => document.FromJson<EspnBaseballEventCompetitionCompetitorDto>();
@@ -131,20 +137,22 @@ public class BaseballEventCompetitionCompetitorDocumentProcessor<TDataContext> :
                 CompetitionCompetitorId = competitorId,
                 AthleteSeasonId = athleteSeasonIdentity.CanonicalId,
                 EspnPlayerId = probableDto.PlayerId,
-                CreatedUtc = DateTime.UtcNow,
+                Name = probableDto.Name,
+                CreatedUtc = _dateTimeProvider.UtcNow(),
                 CreatedBy = command.CorrelationId
             };
             await _dataContext.CompetitionCompetitorProbables.AddAsync(existing);
         }
         else
         {
-            existing.ModifiedUtc = DateTime.UtcNow;
+            existing.ModifiedUtc = _dateTimeProvider.UtcNow();
             existing.ModifiedBy = command.CorrelationId;
         }
 
+        // Name is the natural-key component of the deterministic Id, so
+        // it never changes for a given row — no reassignment needed.
         existing.AthleteSeasonId = athleteSeasonIdentity.CanonicalId;
         existing.EspnPlayerId = probableDto.PlayerId;
-        existing.Name = probableDto.Name;
         existing.DisplayName = probableDto.DisplayName;
         existing.ShortDisplayName = probableDto.ShortDisplayName;
         existing.Abbreviation = probableDto.Abbreviation;

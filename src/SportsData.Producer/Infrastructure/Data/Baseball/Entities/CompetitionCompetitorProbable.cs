@@ -33,7 +33,10 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities
 
         public required int EspnPlayerId { get; set; }
 
-        public string? Name { get; set; }
+        // Required: the (CompetitionCompetitorId, Name) unique index is
+        // the natural key, and the processor skips persistence when Name
+        // is null/whitespace — so Name is never null at the DB.
+        public required string Name { get; set; }
 
         public string? DisplayName { get; set; }
 
@@ -52,7 +55,7 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities
                 builder.Property(x => x.AthleteSeasonId).IsRequired();
                 builder.Property(x => x.EspnPlayerId).IsRequired();
 
-                builder.Property(x => x.Name).HasMaxLength(50);
+                builder.Property(x => x.Name).IsRequired().HasMaxLength(50);
                 builder.Property(x => x.DisplayName).HasMaxLength(100);
                 builder.Property(x => x.ShortDisplayName).HasMaxLength(50);
                 builder.Property(x => x.Abbreviation).HasMaxLength(10);

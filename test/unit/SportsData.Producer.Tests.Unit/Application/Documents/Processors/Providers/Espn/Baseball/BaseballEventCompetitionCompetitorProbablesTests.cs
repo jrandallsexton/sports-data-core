@@ -107,6 +107,11 @@ public class BaseballEventCompetitionCompetitorProbablesTests
         probable.ShortDisplayName.Should().Be("Starter");
         probable.Abbreviation.Should().Be("SP");
         probable.CompetitionCompetitorId.Should().NotBeEmpty();
+        // Pin audit fields to the test harness's known values — these
+        // assertions fail loudly if someone reverts to DateTime.UtcNow
+        // or breaks correlation-id propagation.
+        probable.CreatedUtc.Should().Be(FixedNow);
+        probable.CreatedBy.Should().Be(cmd.CorrelationId);
     }
 
     [Fact]
@@ -173,8 +178,10 @@ public class BaseballEventCompetitionCompetitorProbablesTests
         second.Id.Should().Be(first.Id);
         second.AthleteSeasonId.Should().Be(athleteSeasonId);
         second.EspnPlayerId.Should().Be(first.EspnPlayerId);
-        second.ModifiedUtc.Should().NotBeNull();
-        second.ModifiedBy.Should().NotBeNull();
+        // Tighter than NotBeNull — pinned to harness values so the test
+        // fails if DateTime.UtcNow or a stray CreatedBy slips back in.
+        second.ModifiedUtc.Should().Be(FixedNow);
+        second.ModifiedBy.Should().Be(cmd.CorrelationId);
     }
 
     [Fact]
@@ -184,8 +191,7 @@ public class BaseballEventCompetitionCompetitorProbablesTests
         var (cmd, _) = await SetupHappyPath();
         var dto = cmd.Document.FromJson<EspnBaseballEventCompetitionCompetitorDto>()!;
         dto.Probables![0].Name = null;
-        var mutatedJson = dto.ToJson();
-        var mutatedCmd = RebuildCommand(cmd, mutatedJson);
+        var mutatedCmd = BuildCommand(dto.ToJson(), cmd.ParentId!, cmd.UrlHash);
 
         var sut = Mocker.CreateInstance<BaseballEventCompetitionCompetitorDocumentProcessor<BaseballDataContext>>();
 
@@ -206,8 +212,7 @@ public class BaseballEventCompetitionCompetitorProbablesTests
         var (cmd, _) = await SetupHappyPath();
         var dto = cmd.Document.FromJson<EspnBaseballEventCompetitionCompetitorDto>()!;
         dto.Probables![0].Athlete = null;
-        var mutatedJson = dto.ToJson();
-        var mutatedCmd = RebuildCommand(cmd, mutatedJson);
+        var mutatedCmd = BuildCommand(dto.ToJson(), cmd.ParentId!, cmd.UrlHash);
 
         var sut = Mocker.CreateInstance<BaseballEventCompetitionCompetitorDocumentProcessor<BaseballDataContext>>();
 
@@ -295,32 +300,25 @@ public class BaseballEventCompetitionCompetitorProbablesTests
 
         var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetitionCompetitor.json");
 
-        var cmd = Fixture.Build<ProcessDocumentCommand>()
-            .With(x => x.ParentId, competitionId.ToString())
-            .With(x => x.SeasonYear, 2026)
-            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
-            .With(x => x.Sport, Sport.BaseballMlb)
-            .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitor)
-            .With(x => x.Document, json)
-            .With(x => x.UrlHash, competitorIdentity.UrlHash)
-            .With(x => x.IncludeLinkedDocumentTypes, (IReadOnlyCollection<DocumentType>?)null)
-            .OmitAutoProperties()
-            .Create();
+        var cmd = BuildCommand(json, competitionId.ToString(), competitorIdentity.UrlHash);
 
         return (cmd, athleteSeasonIdentity.CanonicalId);
     }
 
-    private ProcessDocumentCommand RebuildCommand(ProcessDocumentCommand source, string newDocument)
+    // Single source of truth for ProcessDocumentCommand construction in
+    // this test class. Sport/year/document-type are baked since this
+    // suite only exercises the MLB EventCompetitionCompetitor pipeline.
+    private ProcessDocumentCommand BuildCommand(string document, string parentId, string urlHash)
     {
         return Fixture.Build<ProcessDocumentCommand>()
-            .With(x => x.ParentId, source.ParentId)
-            .With(x => x.SeasonYear, source.SeasonYear)
-            .With(x => x.SourceDataProvider, source.SourceDataProvider)
-            .With(x => x.Sport, source.Sport)
-            .With(x => x.DocumentType, source.DocumentType)
-            .With(x => x.Document, newDocument)
-            .With(x => x.UrlHash, source.UrlHash)
-            .With(x => x.IncludeLinkedDocumentTypes, source.IncludeLinkedDocumentTypes)
+            .With(x => x.ParentId, parentId)
+            .With(x => x.SeasonYear, 2026)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.BaseballMlb)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitor)
+            .With(x => x.Document, document)
+            .With(x => x.UrlHash, urlHash)
+            .With(x => x.IncludeLinkedDocumentTypes, (IReadOnlyCollection<DocumentType>?)null)
             .OmitAutoProperties()
             .Create();
     }

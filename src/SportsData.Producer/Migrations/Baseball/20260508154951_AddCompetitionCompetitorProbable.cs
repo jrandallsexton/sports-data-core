@@ -19,7 +19,7 @@ namespace SportsData.Producer.Migrations.Baseball
                     CompetitionCompetitorId = table.Column<Guid>(type: "uuid", nullable: false),
                     AthleteSeasonId = table.Column<Guid>(type: "uuid", nullable: false),
                     EspnPlayerId = table.Column<int>(type: "integer", nullable: false),
-                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     DisplayName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     ShortDisplayName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     Abbreviation = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),

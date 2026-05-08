@@ -17,7 +17,7 @@ public class AthleteCompetition : CanonicalEntityBase<Guid>
 
     public Guid CompetitionCompetitorId { get; set; }
 
-    public CompetitionCompetitor CompetitionCompetitor { get; set; } = null!;
+    public CompetitionCompetitorBase CompetitionCompetitor { get; set; } = null!;
 
     public Guid AthleteSeasonId { get; set; }
 

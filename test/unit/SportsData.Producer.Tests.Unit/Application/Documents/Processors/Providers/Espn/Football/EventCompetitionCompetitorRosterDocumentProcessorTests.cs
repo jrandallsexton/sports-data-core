@@ -72,7 +72,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         // Create CompetitionCompetitor in database (required for FK)
         var competitorId = Guid.NewGuid();
-        var competitor = new CompetitionCompetitor
+        var competitor = new FootballCompetitionCompetitor
         {
             Id = competitorId,
             CompetitionId = competition.Id,
@@ -152,7 +152,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         // Create CompetitionCompetitor in database (required for FK)
         var competitorId = Guid.NewGuid();
-        var competitor = new CompetitionCompetitor
+        var competitor = new FootballCompetitionCompetitor
         {
             Id = competitorId,
             CompetitionId = competition.Id,
@@ -239,7 +239,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         // Create CompetitionCompetitor in database (required for FK)
         var competitorId = Guid.NewGuid();
-        var competitor = new CompetitionCompetitor
+        var competitor = new FootballCompetitionCompetitor
         {
             Id = competitorId,
             CompetitionId = competition.Id,
@@ -326,7 +326,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         // Create CompetitionCompetitor in database (required for FK)
         var competitorId = Guid.NewGuid();
-        var competitor = new CompetitionCompetitor
+        var competitor = new FootballCompetitionCompetitor
         {
             Id = competitorId,
             CompetitionId = competition.Id,
@@ -403,7 +403,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
 
         // Create CompetitionCompetitor in database (required for FK)
         var competitorId = Guid.NewGuid();
-        var competitor = new CompetitionCompetitor
+        var competitor = new FootballCompetitionCompetitor
         {
             Id = competitorId,
             CompetitionId = competition.Id,

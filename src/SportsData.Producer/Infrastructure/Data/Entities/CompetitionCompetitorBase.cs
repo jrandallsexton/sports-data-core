@@ -8,7 +8,15 @@ using SportsData.Producer.Infrastructure.Data.Entities.Contracts;
 
 namespace SportsData.Producer.Infrastructure.Data.Entities;
 
-public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
+// Abstract base for the per-team competitor row attached to a Competition.
+// Sport-specific subclasses (BaseballCompetitionCompetitor,
+// FootballCompetitionCompetitor) carry sport-only fields and child collections.
+// Stored under TPH in the existing "CompetitionCompetitor" table; each sport
+// DB only ever stores one concrete type, so the Discriminator column is
+// cosmetic but required by EF.
+//
+// See docs/competition-competitor-split.md.
+public abstract class CompetitionCompetitorBase : CanonicalEntityBase<Guid>, IHasExternalIds
 {
     public required Guid CompetitionId { get; set; }
 
@@ -29,8 +37,6 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
 
     public bool Winner { get; set; }
 
-    public int? CuratedRankCurrent { get; set; }
-
     public ICollection<CompetitionCompetitorStatistic> Statistics { get; set; } = [];
 
     public ICollection<CompetitionCompetitorLineScore> LineScores { get; set; } = [];
@@ -43,11 +49,11 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
 
     public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 
-    public class EntityConfiguration : IEntityTypeConfiguration<CompetitionCompetitor>
+    public class EntityConfiguration : IEntityTypeConfiguration<CompetitionCompetitorBase>
     {
-        public void Configure(EntityTypeBuilder<CompetitionCompetitor> builder)
+        public void Configure(EntityTypeBuilder<CompetitionCompetitorBase> builder)
         {
-            builder.ToTable(nameof(CompetitionCompetitor));
+            builder.ToTable("CompetitionCompetitor");
             builder.HasKey(x => x.Id);
 
             builder.Property(x => x.Type)
@@ -57,7 +63,6 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
                 .IsRequired()
                 .HasMaxLength(10);
 
-            builder.Property(x => x.CuratedRankCurrent);
             builder.Property(x => x.Order).IsRequired();
             builder.Property(x => x.Winner).IsRequired();
             builder.Property(x => x.Points);
@@ -89,7 +94,7 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
                 .HasForeignKey(x => x.CompetitionCompetitorId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // NEW: Children: Statistics
+            // Children: Statistics
             builder.HasMany(x => x.Statistics)
                 .WithOne(x => x.CompetitionCompetitor)
                 .HasForeignKey(x => x.CompetitionCompetitorId)
@@ -121,5 +126,4 @@ public class CompetitionCompetitor : CanonicalEntityBase<Guid>, IHasExternalIds
                    .IsUnique();
         }
     }
-
 }

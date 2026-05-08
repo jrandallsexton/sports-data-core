@@ -11,23 +11,38 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
-using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.EventCompetitionCompetitor)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.EventCompetitionCompetitor)]
-[DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.EventCompetitionCompetitor)]
-public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+// Abstract base for the per-sport EventCompetitionCompetitor processors.
+// Shared work — competition existence guard, FranchiseSeason resolve,
+// existing-entity lookup, child-doc spawning, save — lives here. The
+// concrete-entity construction (CompetitionCompetitorBase subclass) is
+// deferred to CreateEntity, overridden by each sport-specific subclass.
+//
+// See docs/competition-competitor-split.md.
+public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    public EventCompetitionCompetitorDocumentProcessor(
-        ILogger<EventCompetitionCompetitorDocumentProcessor<TDataContext>> logger,
+    protected EventCompetitionCompetitorDocumentProcessorBase(
+        ILogger logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IGenerateResourceRefs refs)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs) { }
+
+    /// <summary>
+    /// Construct the sport-specific concrete CompetitionCompetitorBase
+    /// subclass from the DTO. Subclasses set their sport-only fields here
+    /// (e.g. FootballCompetitionCompetitor.CuratedRankCurrent) in addition
+    /// to the shared columns.
+    /// </summary>
+    protected abstract CompetitionCompetitorBase CreateEntity(
+        EspnEventCompetitionCompetitorDto dto,
+        Guid competitionId,
+        Guid franchiseSeasonId,
+        Guid correlationId);
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
@@ -142,11 +157,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
             franchiseSeasonId,
             dto.HomeAway);
 
-        var canonicalEntity = dto.AsEntity(
-            competitionId,
-            franchiseSeasonId,
-            _externalRefIdentityGenerator,
-            command.CorrelationId);
+        var canonicalEntity = CreateEntity(dto, competitionId, franchiseSeasonId, command.CorrelationId);
 
         await _dataContext.CompetitionCompetitors.AddAsync(canonicalEntity);
 
@@ -162,7 +173,7 @@ public class EventCompetitionCompetitorDocumentProcessor<TDataContext> : Documen
     private async Task ProcessUpdate(
         ProcessDocumentCommand command,
         EspnEventCompetitionCompetitorDto dto,
-        CompetitionCompetitor entity)
+        CompetitionCompetitorBase entity)
     {
         _logger.LogInformation(
             "🔄 UPDATE_COMPETITOR: Updating existing CompetitionCompetitor. " +

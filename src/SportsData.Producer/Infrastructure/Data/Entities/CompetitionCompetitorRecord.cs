@@ -11,7 +11,7 @@ public class CompetitionCompetitorRecord : CanonicalEntityBase<Guid>
 {
     public required Guid CompetitionCompetitorId { get; set; }
 
-    public CompetitionCompetitor CompetitionCompetitor { get; set; } = null!;
+    public CompetitionCompetitorBase CompetitionCompetitor { get; set; } = null!;
 
     public required string Type { get; set; }
 

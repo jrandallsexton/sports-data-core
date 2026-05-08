@@ -106,6 +106,10 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.SeasonYear)
                     .IsRequired();
 
+                // Backfill paths in ContestUpdateJob/ContestEnrichmentJob filter
+                // by SeasonYear; index avoids a full Contest scan during runs.
+                builder.HasIndex(x => x.SeasonYear);
+
                 builder.Property(x => x.SeasonPhaseId);
 
                 builder.Property(x => x.Week);

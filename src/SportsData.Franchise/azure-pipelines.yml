@@ -60,23 +60,17 @@ stages:
 
         - template: /build/templates/nuget-tool-install.yml
 
-        - task: NuGetCommand@2
-          displayName: 'NuGet Restore'
+        # Use .NET SDK restore so NuGetAudit runs and NU1903 vulnerability
+        # warnings escalate to errors (parity with local `dotnet build`).
+        # Classic NuGetCommand@2 + MSBuild /t:Restore did not trigger the
+        # audit, masking high-severity transitive vulnerabilities.
+        - task: DotNetCoreCLI@2
+          displayName: 'Restore (.NET SDK)'
           inputs:
             command: 'restore'
-            restoreSolution: '**/sports-data-franchise.sln'
+            projects: '**/sports-data-franchise.sln'
             feedsToUse: 'select'
             vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
-    
-        - task: MSBuild@1
-          displayName: 'Build sports-data-franchise solution'
-          inputs:
-            solution: '**\sports-data-franchise.sln'
-            msbuildArchitecture: 'x64'
-            clean: true
-            platform: '$(buildPlatform)'
-            configuration: '$(buildConfiguration)'
-            msbuildArguments: '/t:Restore'
 
         - task: DotNetCoreCLI@2
           displayName: 'Run Unit Tests'

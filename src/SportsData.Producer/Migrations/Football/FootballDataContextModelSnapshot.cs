@@ -4634,6 +4634,8 @@ namespace SportsData.Producer.Migrations.Football
 
                     b.HasIndex("SeasonWeekId");
 
+                    b.HasIndex("SeasonYear");
+
                     b.HasIndex("VenueId");
 
                     b.ToTable("Contest", (string)null);

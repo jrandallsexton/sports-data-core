@@ -18,7 +18,9 @@ namespace SportsData.Producer.Infrastructure.Data.Football.Entities
         {
             public void Configure(EntityTypeBuilder<FootballCompetitionCompetitor> builder)
             {
-                builder.Property(x => x.CuratedRankCurrent);
+                // CuratedRankCurrent (int?) is mapped by convention. No
+                // explicit overrides needed; this method exists as a hook
+                // for future football-only schema constraints.
             }
         }
     }

@@ -44,9 +44,33 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
         Guid franchiseSeasonId,
         Guid correlationId);
 
+    /// <summary>
+    /// DTO deserializer hook. Override in sports that ship inline
+    /// extras on the competitor payload (e.g. MLB Probables) so the
+    /// override returns the sport-specific subclass DTO. The base
+    /// pipeline then passes that instance through to ProcessSportSpecific*
+    /// hooks where the override can downcast and act on the extras.
+    /// </summary>
+    protected virtual EspnEventCompetitionCompetitorDto? DeserializeDto(string document)
+        => document.FromJson<EspnEventCompetitionCompetitorDto>();
+
+    /// <summary>
+    /// Sport-specific hook for inline-data ingestion that hangs off the
+    /// competitor entity (e.g. MLB Probables). Runs after the competitor
+    /// row is staged on the change tracker but before SaveChangesAsync,
+    /// so any rows added by the override commit in the same transaction.
+    /// Throwing ExternalDocumentNotSourcedException here is supported and
+    /// expected when a referenced dependency (e.g. AthleteSeason) isn't
+    /// in the DB yet — Hangfire will retry the document.
+    /// </summary>
+    protected virtual Task ProcessSportSpecificCompetitorData(
+        ProcessDocumentCommand command,
+        EspnEventCompetitionCompetitorDto dto,
+        CompetitionCompetitorBase entity) => Task.CompletedTask;
+
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var dto = command.Document.FromJson<EspnEventCompetitionCompetitorDto>();
+        var dto = DeserializeDto(command.Document);
 
         if (dto is null)
         {
@@ -167,6 +191,13 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
             canonicalEntity.Id,
             competitionId);
 
+        // Sport-specific inline-data ingestion (e.g. MLB Probables). Runs
+        // before child-doc spawning so any rows added share the tail
+        // SaveChangesAsync transaction. May throw
+        // ExternalDocumentNotSourcedException when a referenced
+        // dependency isn't in the DB yet — Hangfire retries the document.
+        await ProcessSportSpecificCompetitorData(command, dto, canonicalEntity);
+
         await ProcessChildDocuments(command, dto, canonicalEntity.Id, isNew: true);
     }
 
@@ -180,6 +211,11 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
             "CompetitorId={CompetitorId}, HomeAway={HomeAway}",
             entity.Id,
             dto.HomeAway);
+
+        // Sport-specific inline-data ingestion runs on update too — the
+        // payload's mutable extras (e.g. Probables) may have changed
+        // since the last fetch.
+        await ProcessSportSpecificCompetitorData(command, dto, entity);
 
         await ProcessChildDocuments(command, dto, entity.Id, isNew: false);
     }

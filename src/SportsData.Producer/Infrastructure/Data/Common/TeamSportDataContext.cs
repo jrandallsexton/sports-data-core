@@ -54,7 +54,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionBase> Competitions { get; set; }
 
-        public DbSet<CompetitionCompetitor> CompetitionCompetitors { get; set; }
+        public DbSet<CompetitionCompetitorBase> CompetitionCompetitors { get; set; }
 
         public DbSet<CompetitionCompetitorLineScore> CompetitionCompetitorLineScores { get; set; }
 
@@ -187,7 +187,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new CompetitionBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionExternalId.EntityConfiguration());
 
-            modelBuilder.ApplyConfiguration(new CompetitionCompetitor.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorBase.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorLineScore.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorLineScoreExternalId.EntityConfiguration());

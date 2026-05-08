@@ -12,7 +12,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     {
         public Guid CompetitionCompetitorId { get; set; }
 
-        public CompetitionCompetitor CompetitionCompetitor { get; set; } = null!;
+        public CompetitionCompetitorBase CompetitionCompetitor { get; set; } = null!;
 
         public double Value { get; set; }
 
@@ -56,7 +56,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(x => x.CompetitionCompetitorId)
                     .IsRequired();
 
-                builder.HasOne<CompetitionCompetitor>()
+                builder.HasOne<CompetitionCompetitorBase>()
                     .WithMany(x => x.Scores)
                     .HasForeignKey(x => x.CompetitionCompetitorId)
                     .OnDelete(DeleteBehavior.Cascade);

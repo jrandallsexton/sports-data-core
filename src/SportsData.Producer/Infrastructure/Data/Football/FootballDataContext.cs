@@ -40,6 +40,7 @@ namespace SportsData.Producer.Infrastructure.Data.Football
             modelBuilder.ApplyConfiguration(new AthleteBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetition.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FootballCompetitionCompetitor.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetitionPlay.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetitionStatus.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionDrive.EntityConfiguration());

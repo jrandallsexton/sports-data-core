@@ -99,7 +99,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public Guid? VenueId { get; set; } // FK to Venue
 
-        public ICollection<CompetitionCompetitor> Competitors { get; set; } = [];
+        public ICollection<CompetitionCompetitorBase> Competitors { get; set; } = [];
 
         public ICollection<CompetitionNote> Notes { get; set; } = [];
 

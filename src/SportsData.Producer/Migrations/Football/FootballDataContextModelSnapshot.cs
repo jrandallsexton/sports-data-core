@@ -2460,7 +2460,7 @@ namespace SportsData.Producer.Migrations.Football
                     b.ToTable("CompetitionBroadcast", (string)null);
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorBase", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -2475,8 +2475,10 @@ namespace SportsData.Producer.Migrations.Football
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("CuratedRankCurrent")
-                        .HasColumnType("integer");
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(34)
+                        .HasColumnType("character varying(34)");
 
                     b.Property<Guid>("FranchiseSeasonId")
                         .HasColumnType("uuid");
@@ -2518,6 +2520,10 @@ namespace SportsData.Producer.Migrations.Football
                         .IsUnique();
 
                     b.ToTable("CompetitionCompetitor", (string)null);
+
+                    b.HasDiscriminator<string>("Discriminator").HasValue("CompetitionCompetitorBase");
+
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorExternalId", b =>
@@ -7923,6 +7929,16 @@ namespace SportsData.Producer.Migrations.Football
                     b.HasDiscriminator().HasValue("FootballCompetition");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FootballCompetitionCompetitor", b =>
+                {
+                    b.HasBaseType("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorBase");
+
+                    b.Property<int?>("CuratedRankCurrent")
+                        .HasColumnType("integer");
+
+                    b.HasDiscriminator().HasValue("FootballCompetitionCompetitor");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FootballCompetitionPlay", b =>
                 {
                     b.HasBaseType("SportsData.Producer.Infrastructure.Data.Entities.CompetitionPlayBase");
@@ -8096,7 +8112,7 @@ namespace SportsData.Producer.Migrations.Football
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorBase", "CompetitionCompetitor")
                         .WithMany()
                         .HasForeignKey("CompetitionCompetitorId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -8463,7 +8479,7 @@ namespace SportsData.Producer.Migrations.Football
                     b.Navigation("Competition");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorBase", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionBase", "Competition")
                         .WithMany("Competitors")
@@ -8482,7 +8498,7 @@ namespace SportsData.Producer.Migrations.Football
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorExternalId", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorBase", "CompetitionCompetitor")
                         .WithMany("ExternalIds")
                         .HasForeignKey("CompetitionCompetitorId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -8493,7 +8509,7 @@ namespace SportsData.Producer.Migrations.Football
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorLineScore", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorBase", "CompetitionCompetitor")
                         .WithMany("LineScores")
                         .HasForeignKey("CompetitionCompetitorId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -8515,7 +8531,7 @@ namespace SportsData.Producer.Migrations.Football
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorRecord", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorBase", "CompetitionCompetitor")
                         .WithMany("Records")
                         .HasForeignKey("CompetitionCompetitorId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -8537,7 +8553,7 @@ namespace SportsData.Producer.Migrations.Football
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorScore", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorBase", "CompetitionCompetitor")
                         .WithMany("Scores")
                         .HasForeignKey("CompetitionCompetitorId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -8559,7 +8575,7 @@ namespace SportsData.Producer.Migrations.Football
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorStatistic", b =>
                 {
-                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", "CompetitionCompetitor")
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorBase", "CompetitionCompetitor")
                         .WithMany("Statistics")
                         .HasForeignKey("CompetitionCompetitorId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -9710,7 +9726,7 @@ namespace SportsData.Producer.Migrations.Football
                     b.Navigation("Situations");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitor", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionCompetitorBase", b =>
                 {
                     b.Navigation("ExternalIds");
 

@@ -402,7 +402,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                         Value = competitionIdentity.UrlHash
                     }
                 },
-                Competitors = new List<CompetitionCompetitor>()
+                Competitors = new List<CompetitionCompetitorBase>()
             };
 
             await base.FootballDataContext.Competitions.AddAsync(existingCompetition);
@@ -638,7 +638,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                         Value = competitionIdentity.UrlHash
                     }
                 },
-                Competitors = new List<CompetitionCompetitor>()
+                Competitors = new List<CompetitionCompetitorBase>()
             };
 
             await base.FootballDataContext.Competitions.AddAsync(existingCompetition);

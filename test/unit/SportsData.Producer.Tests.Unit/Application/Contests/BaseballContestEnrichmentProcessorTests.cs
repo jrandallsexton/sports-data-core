@@ -69,7 +69,7 @@ public class BaseballContestEnrichmentProcessorTests
             Id = Guid.NewGuid(),
             ContestId = contestId,
             Contest = contest,
-            Competitors = new List<CompetitionCompetitor>()
+            Competitors = new List<CompetitionCompetitorBase>()
         };
 
         _baseballDataContext.Contests.Add(contest);
@@ -109,7 +109,7 @@ public class BaseballContestEnrichmentProcessorTests
             ContestId = contestId,
             Contest = contest,
             Status = null,
-            Competitors = new List<CompetitionCompetitor>
+            Competitors = new List<CompetitionCompetitorBase>
             {
                 CreateCompetitor(competitionId, AwayFranchiseSeasonId, "away"),
                 CreateCompetitor(competitionId, HomeFranchiseSeasonId, "home")
@@ -412,7 +412,7 @@ public class BaseballContestEnrichmentProcessorTests
         SeasonYear = 2026
     };
 
-    private static CompetitionCompetitor CreateCompetitor(
+    private static BaseballCompetitionCompetitor CreateCompetitor(
         Guid competitionId, Guid franchiseSeasonId, string homeAway) => new()
     {
         Id = Guid.NewGuid(),
@@ -438,7 +438,7 @@ public class BaseballContestEnrichmentProcessorTests
                 CompetitionId = competitionId,
                 StatusTypeName = statusTypeName
             },
-            Competitors = new List<CompetitionCompetitor>
+            Competitors = new List<CompetitionCompetitorBase>
             {
                 CreateCompetitor(competitionId, AwayFranchiseSeasonId, "away"),
                 CreateCompetitor(competitionId, HomeFranchiseSeasonId, "home")

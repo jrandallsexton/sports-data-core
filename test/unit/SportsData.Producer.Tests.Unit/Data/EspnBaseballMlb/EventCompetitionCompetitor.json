@@ -1,0 +1,32 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815254/competitions/401815254/competitors/1?lang=en&region=us",
+  "id": "1",
+  "uid": "s:1~l:10~t:1",
+  "type": "team",
+  "order": 0,
+  "homeAway": "home",
+  "team": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/1?lang=en&region=us"
+  },
+  "score": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815254/competitions/401815254/competitors/1/score?lang=en&region=us"
+  },
+  "record": {
+    "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/teams/1/record?lang=en&region=us"
+  },
+  "probables": [
+    {
+      "name": "probableStartingPitcher",
+      "displayName": "Probable Starting Pitcher",
+      "shortDisplayName": "Starter",
+      "abbreviation": "SP",
+      "playerId": 4311625,
+      "athlete": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4311625?lang=en&region=us"
+      },
+      "statistics": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/types/2/athletes/4311625/statistics/0?lang=en&region=us"
+      }
+    }
+  ]
+}

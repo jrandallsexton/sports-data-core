@@ -80,7 +80,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
         await FootballDataContext.Competitions.AddAsync(competition);
         
         // OPTIMIZATION: Direct instantiation instead of AutoFixture (was taking 29 seconds!)
-        var competitor = new CompetitionCompetitor
+        var competitor = new FootballCompetitionCompetitor
         {
             Id = competitorId,
             CompetitionId = competitionId,

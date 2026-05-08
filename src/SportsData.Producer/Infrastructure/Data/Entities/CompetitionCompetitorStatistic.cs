@@ -8,7 +8,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
     public class CompetitionCompetitorStatistic : CanonicalEntityBase<Guid>
     {
         public Guid? CompetitionCompetitorId { get; set; }
-        public CompetitionCompetitor? CompetitionCompetitor { get; set; }
+        public CompetitionCompetitorBase? CompetitionCompetitor { get; set; }
 
         public Guid FranchiseSeasonId { get; set; }
         public FranchiseSeason FranchiseSeason { get; set; } = null!;

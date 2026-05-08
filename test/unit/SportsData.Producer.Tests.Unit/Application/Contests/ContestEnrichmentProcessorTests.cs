@@ -56,7 +56,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
             Id = Guid.NewGuid(),
             ContestId = contestId,
             Contest = contest,
-            Competitors = new List<CompetitionCompetitor>()
+            Competitors = new List<CompetitionCompetitorBase>()
         };
 
         FootballDataContext.Contests.Add(contest);
@@ -82,7 +82,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
             Id = competitionId,
             ContestId = contestId,
             Contest = contest,
-            Competitors = new List<CompetitionCompetitor>
+            Competitors = new List<CompetitionCompetitorBase>
             {
                 CreateCompetitor(competitionId, HomeFranchiseSeasonId, "home")
             }
@@ -111,7 +111,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
             Id = competitionId,
             ContestId = contestId,
             Contest = contest,
-            Competitors = new List<CompetitionCompetitor>
+            Competitors = new List<CompetitionCompetitorBase>
             {
                 CreateCompetitor(competitionId, AwayFranchiseSeasonId, "away")
             }
@@ -154,7 +154,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
             ContestId = contestId,
             Contest = contest,
             Status = null,
-            Competitors = new List<CompetitionCompetitor>
+            Competitors = new List<CompetitionCompetitorBase>
             {
                 CreateCompetitor(competitionId, AwayFranchiseSeasonId, "away"),
                 CreateCompetitor(competitionId, HomeFranchiseSeasonId, "home")
@@ -492,7 +492,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         SeasonYear = 2024
     };
 
-    private static CompetitionCompetitor CreateCompetitor(
+    private static FootballCompetitionCompetitor CreateCompetitor(
         Guid competitionId, Guid franchiseSeasonId, string homeAway) => new()
     {
         Id = Guid.NewGuid(),
@@ -518,7 +518,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
                 CompetitionId = competitionId,
                 StatusTypeName = statusTypeName
             },
-            Competitors = new List<CompetitionCompetitor>
+            Competitors = new List<CompetitionCompetitorBase>
             {
                 CreateCompetitor(competitionId, AwayFranchiseSeasonId, "away"),
                 CreateCompetitor(competitionId, HomeFranchiseSeasonId, "home")

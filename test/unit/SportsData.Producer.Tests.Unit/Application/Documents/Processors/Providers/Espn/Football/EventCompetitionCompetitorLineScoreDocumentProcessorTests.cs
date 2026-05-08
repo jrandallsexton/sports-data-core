@@ -11,6 +11,7 @@ using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -50,7 +51,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
         var competitorId = Guid.NewGuid();
         
         // OPTIMIZATION: Create minimal competitor without AutoFixture overhead
-        var competitor = new CompetitionCompetitor
+        var competitor = new FootballCompetitionCompetitor
         {
             Id = competitorId,
             CompetitionId = Guid.NewGuid(),
@@ -128,7 +129,7 @@ public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : Produce
         };
 
         // OPTIMIZATION: Create minimal competitor
-        var competitor = new CompetitionCompetitor
+        var competitor = new FootballCompetitionCompetitor
         {
             Id = competitorId,
             CompetitionId = Guid.NewGuid(),

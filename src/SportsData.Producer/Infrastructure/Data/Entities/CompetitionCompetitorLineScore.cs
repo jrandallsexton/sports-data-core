@@ -24,7 +24,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string? SourceState { get; set; }
 
-        public CompetitionCompetitor CompetitionCompetitor { get; set; } = null!;
+        public CompetitionCompetitorBase CompetitionCompetitor { get; set; } = null!;
 
         public ICollection<CompetitionCompetitorLineScoreExternalId> ExternalIds { get; set; } = [];
 

@@ -44,7 +44,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 CreatedBy = Guid.NewGuid()
             };
 
-            var competitionCompetitor = new CompetitionCompetitor
+            var competitionCompetitor = new FootballCompetitionCompetitor
             {
                 Id = Guid.NewGuid(),
                 CompetitionId = competition.Id,
@@ -126,7 +126,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 CreatedBy = Guid.NewGuid()
             };
 
-            var competitionCompetitor = new CompetitionCompetitor
+            var competitionCompetitor = new FootballCompetitionCompetitor
             {
                 Id = Guid.NewGuid(),
                 CompetitionId = competition.Id,
@@ -218,7 +218,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 CreatedBy = Guid.NewGuid()
             };
 
-            var competitionCompetitor = new CompetitionCompetitor
+            var competitionCompetitor = new FootballCompetitionCompetitor
             {
                 Id = Guid.NewGuid(),
                 CompetitionId = competition.Id,

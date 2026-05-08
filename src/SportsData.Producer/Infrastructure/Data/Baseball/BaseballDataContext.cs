@@ -32,6 +32,8 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
 
         public DbSet<AthleteSeasonHotZoneEntry> AthleteSeasonHotZoneEntries { get; set; }
 
+        public DbSet<CompetitionCompetitorProbable> CompetitionCompetitorProbables { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -41,6 +43,7 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
             modelBuilder.ApplyConfiguration(new AthleteSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballCompetition.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballCompetitionCompetitor.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionCompetitorProbable.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballCompetitionPlay.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballCompetitionStatus.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballCompetitionStatusFeaturedAthlete.EntityConfiguration());

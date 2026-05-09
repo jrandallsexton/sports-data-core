@@ -25,26 +25,27 @@ using Xunit;
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Baseball;
 
 /// <summary>
-/// Tests for the inline series snapshot in
-/// <see cref="BaseballEventCompetitionDocumentProcessor{TDataContext}.ProcessSportSpecificCompetitionData"/>.
+/// Tests for <see cref="BaseballEventCompetitionDocumentProcessor{TDataContext}"/>.
 ///
-/// ESPN ships current-series and season-series state inline on the
-/// EventCompetition payload. We snapshot it onto BaseballCompetition
-/// columns and lock on first non-null write. Subsequent reprocessing
-/// does not overwrite, so historical matchup pages render at-game-start
-/// state instead of current rolled-up state. EspnSeriesId is the
-/// grouping key (not historical state) and refreshes every pass.
+/// Today the only sport-specific behavior on this processor is the
+/// inline series snapshot (current-series and season-series state ships
+/// on the EventCompetition payload), so the suite is currently
+/// dominated by series scenarios. Snapshot columns lock on first
+/// non-null write — subsequent reprocessing does not overwrite, so
+/// historical matchup pages render at-game-start state instead of
+/// current rolled-up state. EspnSeriesId is the grouping key (not
+/// historical state) and refreshes every pass.
 ///
 /// See docs/series-snapshot-redesign.md.
 /// </summary>
 [Collection("Sequential")]
-public class BaseballEventCompetitionDocumentProcessorSeriesTests
+public class BaseballEventCompetitionDocumentProcessorTests
     : ProducerTestBase<BaseballEventCompetitionDocumentProcessor<BaseballDataContext>>
 {
     private readonly BaseballDataContext _baseballDataContext;
     private static readonly DateTime FixedNow = new(2026, 5, 4, 12, 0, 0, DateTimeKind.Utc);
 
-    public BaseballEventCompetitionDocumentProcessorSeriesTests()
+    public BaseballEventCompetitionDocumentProcessorTests()
     {
         _baseballDataContext = new BaseballDataContext(
             new DbContextOptionsBuilder<BaseballDataContext>()

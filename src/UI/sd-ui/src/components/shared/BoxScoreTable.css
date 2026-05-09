@@ -1,0 +1,100 @@
+/* Period-by-period scoreboard widget styles. Extracted from
+   ContestOverview.css when BoxScoreTable was lifted out of
+   ContestOverviewHeader so MatchupCard / Command Center can reuse
+   the same widget. The historical contest- prefix was dropped since
+   the styles no longer belong to the contest overview page. */
+
+.boxscore-table-wrapper {
+  text-align: center;
+}
+
+/* The original CSS defined .compact twice (later wins by cascade);
+   these are the merged effective values that were rendering before
+   the move. Keep both blocks aware: the contest-overview-page-tuned
+   widths + flex layout are required to keep the wrapper centered
+   between the two team scores in that page's header. */
+.boxscore-table-wrapper.compact {
+  min-width: 180px;
+  max-width: 260px;
+  margin: 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Sports with more than 4 periods (e.g. MLB 9 innings) need to grow past
+   the football-tuned default so the Total column doesn't collide with
+   the home team's score on the right. */
+.boxscore-table-wrapper.compact.wide {
+  min-width: 0;
+  max-width: none;
+  width: auto;
+}
+
+.boxscore-table {
+  border-collapse: collapse;
+  background: none;
+  color: var(--text-primary);
+  font-size: 1rem;
+  margin: 0 auto;
+}
+
+.boxscore-table.compact {
+  font-size: 0.98rem;
+}
+
+.boxscore-table th,
+.boxscore-table td {
+  padding: 0 0.5rem;
+  text-align: center;
+}
+
+.boxscore-table.compact.wide {
+  font-size: 0.85rem;
+}
+
+.boxscore-table.compact.wide th,
+.boxscore-table.compact.wide td {
+  padding: 0 0.3rem;
+}
+
+.boxscore-table.compact.wide .boxscore-total {
+  padding-left: 0.55rem;
+}
+
+.boxscore-team-short {
+  font-weight: 600;
+}
+
+.boxscore-total {
+  font-weight: 700;
+}
+
+/* Themed overrides — the original ContestOverview.css defined these
+   with !important to override default cell colors when the table is
+   embedded in a themed contest section. Preserving the same shape
+   here so any themed wrapper still wins. */
+.boxscore-team-short,
+.boxscore-total {
+  color: var(--accent) !important;
+  font-weight: 700;
+  background: var(--bg-input) !important;
+}
+
+.boxscore-status {
+  color: var(--warning);
+  font-weight: 700;
+  background: var(--badge-bg);
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 900px) {
+  .boxscore-table-wrapper.compact {
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+  }
+}

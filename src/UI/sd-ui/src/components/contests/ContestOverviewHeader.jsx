@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { teamLink } from '../../utils/sportLinks';
+import BoxScoreTable from "../shared/BoxScoreTable";
 import "./ContestOverview.css";
 
 export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScores, homeTeamColor, awayTeamColor, seasonYear, sport, league }) {
@@ -28,10 +29,6 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
   const normAwayBg = getMutedColor(awayTeamColor);
   const awayTotal = quarterScores.reduce((sum, q) => sum + q.awayScore, 0);
   const homeTotal = quarterScores.reduce((sum, q) => sum + q.homeScore, 0);
-  // Football has 4 quarters (or 5+ with OT); baseball has 9 innings. Anything
-  // past the football default needs a wider wrapper and tighter cell padding
-  // so the Total ("T") column doesn't collide with the home-team score.
-  const wideClass = quarterScores.length > 4 ? " wide" : "";
 
   return (
     <div className="contest-section">
@@ -40,44 +37,19 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
         <div className="contest-team-logo-wrap" style={awayTeamColor ? { background: normAwayBg, borderColor: 'rgba(255,255,255,0.06)' } : {}}>
           <img src={awayTeam.logoUrl} alt={awayTeam.displayName} className="contest-team-logo" />
         </div>
-        <Link 
+        <Link
           to={teamLink(awayTeam.slug, seasonYear, sport, league)}
           className="contest-team-name contest-header-team-name contest-team-link"
         >
           {awayTeam.displayName}
         </Link>
         <div className="contest-team-score contest-header-team-score-away">{awayTotal}</div>
-        {/* Box Score Table */}
-        <div className={`contest-boxscore-table-wrapper compact${wideClass}`}>
-          <div className="contest-boxscore-final">Final</div>
-          <table className={`contest-boxscore-table compact${wideClass}`}>
-            <thead>
-              <tr>
-                <th></th>
-                {quarterScores.map(q => (
-                  <th key={q.quarter}>{q.quarter}</th>
-                ))}
-                <th>T</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="contest-boxscore-team-short">{awayTeam.displayName.split(' ')[0].toUpperCase()}</td>
-                {quarterScores.map(q => (
-                  <td key={q.quarter}>{q.awayScore}</td>
-                ))}
-                <td className="contest-boxscore-total">{awayTotal}</td>
-              </tr>
-              <tr>
-                <td className="contest-boxscore-team-short">{homeTeam.displayName.split(' ')[0].toUpperCase()}</td>
-                {quarterScores.map(q => (
-                  <td key={q.quarter}>{q.homeScore}</td>
-                ))}
-                <td className="contest-boxscore-total">{homeTotal}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <BoxScoreTable
+          periodScores={quarterScores}
+          awayLabel={awayTeam.displayName.split(' ')[0].toUpperCase()}
+          homeLabel={homeTeam.displayName.split(' ')[0].toUpperCase()}
+          statusLabel="Final"
+        />
         {/* Home Side */}
         <div className="contest-team-score contest-header-team-score-home">{homeTotal}</div>
         <Link 

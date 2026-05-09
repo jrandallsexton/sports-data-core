@@ -113,64 +113,9 @@
   color: var(--text-muted);
 }
 
-.contest-boxscore-table-wrapper {
-  text-align: center;
-}
-
-.contest-boxscore-table-wrapper.compact {
-  min-width: 220px;
-  max-width: 320px;
-  margin: 0 12px;
-  padding: 0;
-}
-
-/* Sports with more than 4 periods (e.g. MLB 9 innings) need to grow past the
-   football-tuned default so the Total column doesn't collide with the home
-   team's score on the right. */
-.contest-boxscore-table-wrapper.compact.wide {
-  min-width: 0;
-  max-width: none;
-  width: auto;
-}
-
-.contest-boxscore-table {
-  border-collapse: collapse;
-  background: none;
-  color: var(--text-primary);
-  font-size: 1rem;
-  margin: 0 auto;
-}
-
-.contest-boxscore-table.compact {
-  font-size: 0.98rem;
-}
-
-.contest-boxscore-table th,
-.contest-boxscore-table td {
-  padding: 0 0.5rem;
-  text-align: center;
-}
-
-.contest-boxscore-table.compact.wide {
-  font-size: 0.85rem;
-}
-
-.contest-boxscore-table.compact.wide th,
-.contest-boxscore-table.compact.wide td {
-  padding: 0 0.3rem;
-}
-
-.contest-boxscore-table.compact.wide .contest-boxscore-total {
-  padding-left: 0.55rem;
-}
-
-.contest-boxscore-team-short {
-  font-weight: 600;
-}
-
-.contest-boxscore-total {
-  font-weight: 700;
-}
+/* Box-score-table styles (.boxscore-*) moved to
+   ../shared/BoxScoreTable.css when the table was lifted out of
+   ContestOverviewHeader. */
 
 .contest-meta {
   margin-bottom: 1rem;
@@ -556,20 +501,8 @@
 .contest-boxscore-section tr:last-child td {
   border-bottom: none;
 }
-.contest-boxscore-team-short,
-.contest-boxscore-total {
-  color: var(--accent) !important;
-  font-weight: 700;
-  background: var(--bg-input) !important;
-}
-.contest-boxscore-final {
-  color: var(--warning);
-  font-weight: 700;
-  background: var(--badge-bg);
-  border-radius: 6px;
-  padding: 4px 10px;
-  margin-bottom: 6px;
-}
+/* .contest-boxscore-team-short / .contest-boxscore-total / .contest-boxscore-final
+   moved to ../shared/BoxScoreTable.css and renamed without the contest- prefix. */
 .contest-winprob-section,
 .contest-winprob-item,
 .contest-winprob-final {
@@ -591,11 +524,6 @@
     flex-direction: column;
     gap: 18px;
     padding: 8px 0;
-  }
-  .contest-boxscore-table-wrapper.compact {
-    min-width: 0;
-    max-width: 100%;
-    margin: 0;
   }
 }
 
@@ -649,31 +577,10 @@
   padding: 4px;
   border: 1px solid var(--border-strong);
 }
-.contest-boxscore-table-wrapper.compact {
-  min-width: 180px;
-  max-width: 260px;
-  margin: 0 10px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.contest-boxscore-table-wrapper.compact.wide {
-  min-width: 0;
-  max-width: none;
-  width: auto;
-}
-
 @media (max-width: 900px) {
   .contest-header-flex {
     flex-direction: column;
     gap: 12px;
     padding: 8px 0;
-  }
-  .contest-boxscore-table-wrapper.compact {
-    min-width: 0;
-    max-width: 100%;
-    margin: 0;
   }
 }

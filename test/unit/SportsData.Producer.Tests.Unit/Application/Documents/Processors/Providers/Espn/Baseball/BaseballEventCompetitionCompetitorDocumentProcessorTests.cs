@@ -115,6 +115,36 @@ public class BaseballEventCompetitionCompetitorDocumentProcessorTests
     }
 
     [Fact]
+    public async Task WhenExistingProbable_AndCascadeFilterExcludesStats_DoesNotRequestStatistics()
+    {
+        // arrange — first pass creates the row (new path always fans out).
+        var (cmd, _) = await SetupHappyPath();
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionCompetitorDocumentProcessor<BaseballDataContext>>();
+
+        await sut.ProcessAsync(cmd);
+        bus.Invocations.Clear();
+
+        // Second pass with a narrow IncludeLinkedDocumentTypes that does
+        // NOT include AthleteSeasonStatistics — mirrors a Refresh Contest
+        // narrowing the cascade. Existing-row path must respect the filter.
+        var narrowedCmd = BuildCommand(
+            cmd.Document,
+            cmd.ParentId!,
+            cmd.UrlHash,
+            includeLinkedDocumentTypes: new[] { DocumentType.EventCompetitionCompetitorScore });
+
+        // act
+        await sut.ProcessAsync(narrowedCmd);
+
+        // assert — the stats fan-out is suppressed on the update path.
+        bus.Verify(x => x.Publish(
+                It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.AthleteSeasonStatistics),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task WhenProbableIsPersisted_RequestsAthleteSeasonStatistics()
     {
         // arrange — happy-path setup wires AthleteSeason; the probable's
@@ -337,7 +367,13 @@ public class BaseballEventCompetitionCompetitorDocumentProcessorTests
     // Single source of truth for ProcessDocumentCommand construction in
     // this test class. Sport/year/document-type are baked since this
     // suite only exercises the MLB EventCompetitionCompetitor pipeline.
-    private ProcessDocumentCommand BuildCommand(string document, string parentId, string urlHash)
+    // includeLinkedDocumentTypes lets a test pin the cascade-filter
+    // behavior (Refresh Contest narrowing).
+    private ProcessDocumentCommand BuildCommand(
+        string document,
+        string parentId,
+        string urlHash,
+        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null)
     {
         return Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.ParentId, parentId)
@@ -347,7 +383,7 @@ public class BaseballEventCompetitionCompetitorDocumentProcessorTests
             .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitor)
             .With(x => x.Document, document)
             .With(x => x.UrlHash, urlHash)
-            .With(x => x.IncludeLinkedDocumentTypes, (IReadOnlyCollection<DocumentType>?)null)
+            .With(x => x.IncludeLinkedDocumentTypes, includeLinkedDocumentTypes)
             .OmitAutoProperties()
             .Create();
     }

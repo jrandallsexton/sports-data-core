@@ -119,17 +119,6 @@ public class BaseballEventCompetitionCompetitorDocumentProcessor<TDataContext> :
                 $"Probable AthleteSeason {athleteSeasonIdentity.CleanUrl} not sourced. Requested. Will retry. CompetitorId={competitorId}");
         }
 
-        // Spawn the season-stats fetch for the probable's athlete so the
-        // matchup card has ERA / W-L / K available downstream. Idempotent
-        // by design — the AthleteSeasonStatistics processor upserts.
-        // Parent is the AthleteSeason, not the competitor, since that's
-        // the canonical owner of season-stat rows.
-        await PublishChildDocumentRequest(
-            command,
-            probableDto.Statistics,
-            athleteSeasonIdentity.CanonicalId,
-            DocumentType.AthleteSeasonStatistics);
-
         // Deterministic Id from (competitorId, role-name) so reprocessing
         // updates the same row instead of inserting duplicates.
         var probableId = DeterministicGuid.Combine(
@@ -140,7 +129,9 @@ public class BaseballEventCompetitionCompetitorDocumentProcessor<TDataContext> :
         var existing = await _dataContext.CompetitionCompetitorProbables
             .FirstOrDefaultAsync(x => x.Id == probableId);
 
-        if (existing is null)
+        var isNew = existing is null;
+
+        if (isNew)
         {
             existing = new CompetitionCompetitorProbable
             {
@@ -156,7 +147,7 @@ public class BaseballEventCompetitionCompetitorDocumentProcessor<TDataContext> :
         }
         else
         {
-            existing.ModifiedUtc = _dateTimeProvider.UtcNow();
+            existing!.ModifiedUtc = _dateTimeProvider.UtcNow();
             existing.ModifiedBy = command.CorrelationId;
         }
 
@@ -167,5 +158,22 @@ public class BaseballEventCompetitionCompetitorDocumentProcessor<TDataContext> :
         existing.DisplayName = probableDto.DisplayName;
         existing.ShortDisplayName = probableDto.ShortDisplayName;
         existing.Abbreviation = probableDto.Abbreviation;
+
+        // Spawn the season-stats fetch for the probable's athlete so the
+        // matchup card has ERA / W-L / K available downstream. Mirrors
+        // the isNew-or-ShouldSpawn pattern in
+        // EventCompetitionCompetitorDocumentProcessorBase.ProcessChildDocuments
+        // so a Refresh Contest with a narrow IncludeLinkedDocumentTypes
+        // can suppress the fan-out on update without dropping it for
+        // first-time inserts. Parent is the AthleteSeason (canonical
+        // owner of season-stat rows), not the competitor.
+        if (isNew || ShouldSpawn(DocumentType.AthleteSeasonStatistics, command))
+        {
+            await PublishChildDocumentRequest(
+                command,
+                probableDto.Statistics,
+                athleteSeasonIdentity.CanonicalId,
+                DocumentType.AthleteSeasonStatistics);
+        }
     }
 }

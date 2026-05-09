@@ -32,6 +32,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      GHSA-6c8g-7p36-r338 — moderate severity (CVSS 5.9) path-traversal in
+      SharpCompress.WriteToDirectory(). Pulled in transitively via
+      MongoDB.Driver 3.5.0 → MongoDB.EntityFrameworkCore. As of 2026-05-09
+      no patched SharpCompress release exists (all versions through 0.47.4
+      are affected per the advisory), so an upgrade override isn't an
+      option. Neither our code nor MongoDB.Driver's wire-protocol use of
+      SharpCompress goes through WriteToDirectory — we don't extract
+      untrusted archives. Suppression is therefore safe; revisit and
+      remove this entry when SharpCompress ships a fixed release.
+    -->
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-6c8g-7p36-r338" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Infrastructure\Providers\CBS\" />
     <Folder Include="Infrastructure\Providers\Yahoo\" />
     <Folder Include="Infrastructure\Providers\SportsDataIO\" />

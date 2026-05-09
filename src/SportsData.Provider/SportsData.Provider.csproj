@@ -27,23 +27,17 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="MongoDB.EntityFrameworkCore" Version="9.0.3" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <!--
+      Direct reference solely to override the transitive SharpCompress 0.30.1
+      pulled in via MongoDB.Driver 3.5.0 → MongoDB.EntityFrameworkCore, which
+      was flagged by GHSA-6c8g-7p36-r338 (path traversal in WriteToDirectory,
+      affects all versions through 0.47.4). 0.48.0 is the first patched
+      release. Once MongoDB.Driver bumps its minimum SharpCompress past 0.47.4,
+      drop this line.
+    -->
+    <PackageReference Include="SharpCompress" Version="0.48.0" />
     <PackageReference Include="Snappier" Version="1.3.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!--
-      GHSA-6c8g-7p36-r338 — moderate severity (CVSS 5.9) path-traversal in
-      SharpCompress.WriteToDirectory(). Pulled in transitively via
-      MongoDB.Driver 3.5.0 → MongoDB.EntityFrameworkCore. As of 2026-05-09
-      no patched SharpCompress release exists (all versions through 0.47.4
-      are affected per the advisory), so an upgrade override isn't an
-      option. Neither our code nor MongoDB.Driver's wire-protocol use of
-      SharpCompress goes through WriteToDirectory — we don't extract
-      untrusted archives. Suppression is therefore safe; revisit and
-      remove this entry when SharpCompress ships a fixed release.
-    -->
-    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-6c8g-7p36-r338" />
   </ItemGroup>
 
   <ItemGroup>

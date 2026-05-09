@@ -95,7 +95,8 @@ function TeamRow({
                 {probablePitcher.headshotUrl && (
                   <img
                     src={probablePitcher.headshotUrl}
-                    alt={probablePitcher.displayName}
+                    alt=""
+                    aria-hidden="true"
                     className="probable-pitcher-headshot"
                   />
                 )}

@@ -92,10 +92,18 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
 
         const string ProbableStartingPitcherRole = "probableStartingPitcher";
 
+        // Order by CompetitionCompetitorId for deterministic picking.
+        // The unique index (CompetitionCompetitorId, Name) guarantees one
+        // SP probable per CompetitionCompetitor — but a single Contest can
+        // host multiple Competitions (1:N), so a Contest could in theory
+        // surface multiple home/away SP rows. With this ordering combined
+        // with the "first wins" stitch below, the chosen row is stable
+        // across calls regardless of physical row order from Postgres.
         var rows = await baseballCtx.CompetitionCompetitorProbables
             .AsNoTracking()
             .Where(p => p.Name == ProbableStartingPitcherRole)
             .Where(p => contestIds.Contains(p.CompetitionCompetitor.Competition.ContestId))
+            .OrderBy(p => p.CompetitionCompetitorId)
             .Select(p => new
             {
                 ContestId = p.CompetitionCompetitor.Competition.ContestId,
@@ -115,18 +123,21 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
                 continue;
             }
 
+            dict.TryGetValue(r.ContestId, out var entry);
             var pitcher = new ProbablePitcherDto
             {
                 DisplayName = r.DisplayName!,
                 HeadshotUrl = r.HeadshotUrl
             };
 
-            dict.TryGetValue(r.ContestId, out var entry);
-            if (string.Equals(r.HomeAway, "home", StringComparison.OrdinalIgnoreCase))
+            // First match wins per side. Combined with the OrderBy above,
+            // this means the lowest CompetitionCompetitorId is the chosen
+            // pitcher when multiple Competitions share a Contest.
+            if (string.Equals(r.HomeAway, "home", StringComparison.OrdinalIgnoreCase) && entry.Home is null)
             {
                 entry = (pitcher, entry.Away);
             }
-            else if (string.Equals(r.HomeAway, "away", StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(r.HomeAway, "away", StringComparison.OrdinalIgnoreCase) && entry.Away is null)
             {
                 entry = (entry.Home, pitcher);
             }

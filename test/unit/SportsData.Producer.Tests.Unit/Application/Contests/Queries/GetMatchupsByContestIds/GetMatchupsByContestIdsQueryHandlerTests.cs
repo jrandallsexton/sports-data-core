@@ -110,6 +110,72 @@ public class GetMatchupsByContestIdsQueryHandlerTests
     }
 
     [Fact]
+    public async Task GetProbablePitchers_MultipleCompetitionsPerContest_PicksDeterministicallyByCompetitorId()
+    {
+        // arrange — single Contest with TWO Competitions (e.g. a stale
+        // reschedule artifact), each with its own home CompetitionCompetitor
+        // and SP probable. The unique index allows this — it's per
+        // CompetitionCompetitor, not per Contest. Without a stable OrderBy,
+        // the dict-stitch was overwriting on the last row Postgres
+        // happened to return.
+        var ctx = NewBaseballContext();
+        var contestId = Guid.NewGuid();
+        var competitionA = Guid.NewGuid();
+        var competitionB = Guid.NewGuid();
+
+        // Two Competitions hanging off the same Contest.
+        ctx.Contests.Add(new BaseballContest
+        {
+            Id = contestId,
+            Name = "Test",
+            ShortName = "TST",
+            SeasonYear = 2026,
+            Sport = SportsData.Core.Common.Sport.BaseballMlb,
+            StartDateUtc = FixedNow,
+            HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+            AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        ctx.Competitions.Add(new BaseballCompetition
+        {
+            Id = competitionA,
+            ContestId = contestId,
+            Date = FixedNow,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        ctx.Competitions.Add(new BaseballCompetition
+        {
+            Id = competitionB,
+            ContestId = contestId,
+            Date = FixedNow,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+
+        // Pin CompetitorIds so we can predict the deterministic winner
+        // (lowest CompetitorId by GUID compare).
+        var lowerCompetitorId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var higherCompetitorId = Guid.Parse("ffffffff-ffff-ffff-ffff-ffffffffffff");
+
+        SeedHomeCompetitorWithProbable(ctx, competitionA, lowerCompetitorId, "Lower Wins");
+        SeedHomeCompetitorWithProbable(ctx, competitionB, higherCompetitorId, "Higher Loses");
+
+        await ctx.SaveChangesAsync();
+
+        var sut = NewSut(ctx);
+
+        // act — call twice, assert same answer both times.
+        var first = await sut.GetProbablePitchersAsync(new[] { contestId }, CancellationToken.None);
+        var second = await sut.GetProbablePitchersAsync(new[] { contestId }, CancellationToken.None);
+
+        // assert
+        first[contestId].Home!.DisplayName.Should().Be("Lower Wins");
+        second[contestId].Home!.DisplayName.Should().Be(first[contestId].Home!.DisplayName);
+    }
+
+    [Fact]
     public async Task GetProbablePitchers_PicksEarliestHeadshotByCreatedUtc()
     {
         // arrange — seed an athlete with two images; expect the earliest one.
@@ -222,6 +288,58 @@ public class GetMatchupsByContestIdsQueryHandlerTests
             Id = competitionId,
             ContestId = contestId,
             Date = FixedNow,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+    }
+
+    // Variant that lets the test pin CompetitorId so the OrderBy in the
+    // production code is exercised against a known relative order.
+    private static void SeedHomeCompetitorWithProbable(
+        BaseballDataContext ctx,
+        Guid competitionId,
+        Guid competitorId,
+        string athleteName)
+    {
+        ctx.CompetitionCompetitors.Add(new BaseballCompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = competitionId,
+            HomeAway = "home",
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 0,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+
+        var athleteId = Guid.NewGuid();
+        var athleteSeasonId = Guid.NewGuid();
+        ctx.Set<BaseballAthlete>().Add(new BaseballAthlete
+        {
+            Id = athleteId,
+            FirstName = athleteName,
+            LastName = "Doe",
+            DisplayName = athleteName,
+            ShortName = athleteName,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        ctx.AthleteSeasons.Add(new BaseballAthleteSeason
+        {
+            Id = athleteSeasonId,
+            AthleteId = athleteId,
+            DisplayName = athleteName,
+            PositionId = Guid.NewGuid(),
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        ctx.CompetitionCompetitorProbables.Add(new CompetitionCompetitorProbable
+        {
+            Id = Guid.NewGuid(),
+            CompetitionCompetitorId = competitorId,
+            AthleteSeasonId = athleteSeasonId,
+            EspnPlayerId = athleteName.GetHashCode(),
+            Name = "probableStartingPitcher",
             CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         });

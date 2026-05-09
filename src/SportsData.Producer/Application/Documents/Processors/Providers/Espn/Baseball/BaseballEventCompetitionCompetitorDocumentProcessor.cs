@@ -119,6 +119,17 @@ public class BaseballEventCompetitionCompetitorDocumentProcessor<TDataContext> :
                 $"Probable AthleteSeason {athleteSeasonIdentity.CleanUrl} not sourced. Requested. Will retry. CompetitorId={competitorId}");
         }
 
+        // Spawn the season-stats fetch for the probable's athlete so the
+        // matchup card has ERA / W-L / K available downstream. Idempotent
+        // by design — the AthleteSeasonStatistics processor upserts.
+        // Parent is the AthleteSeason, not the competitor, since that's
+        // the canonical owner of season-stat rows.
+        await PublishChildDocumentRequest(
+            command,
+            probableDto.Statistics,
+            athleteSeasonIdentity.CanonicalId,
+            DocumentType.AthleteSeasonStatistics);
+
         // Deterministic Id from (competitorId, role-name) so reprocessing
         // updates the same row instead of inserting duplicates.
         var probableId = DeterministicGuid.Combine(

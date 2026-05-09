@@ -27,20 +27,20 @@ using Xunit;
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Baseball;
 
 /// <summary>
-/// Tests for inline MLB Probables ingestion driven by
-/// <see cref="BaseballEventCompetitionCompetitorDocumentProcessor{TDataContext}.ProcessSportSpecificCompetitorData"/>.
+/// Tests for <see cref="BaseballEventCompetitionCompetitorDocumentProcessor{TDataContext}"/>.
 ///
-/// ESPN ships probable starting pitchers inline on the
-/// EventCompetitionCompetitor payload. Each Probable carries a hard FK to
-/// AthleteSeason — when the athlete isn't in the DB yet, the processor
-/// publishes a dependency request and throws
-/// ExternalDocumentNotSourcedException so Hangfire retries. No partial
-/// rows; an empty Probable is worthless on the matchup card.
+/// Today the only sport-specific behavior on this processor is the MLB
+/// Probables ingestion path, so the suite is currently dominated by
+/// Probables scenarios. Each Probable carries a hard FK to AthleteSeason —
+/// when the athlete isn't in the DB yet, the processor publishes a
+/// dependency request and throws ExternalDocumentNotSourcedException so
+/// Hangfire retries. No partial rows; an empty Probable is worthless on
+/// the matchup card.
 ///
 /// See docs/competition-competitor-probables.md.
 /// </summary>
 [Collection("Sequential")]
-public class BaseballEventCompetitionCompetitorProbablesTests
+public class BaseballEventCompetitionCompetitorDocumentProcessorTests
     : ProducerTestBase<BaseballEventCompetitionCompetitorDocumentProcessor<BaseballDataContext>>
 {
     private readonly BaseballDataContext _baseballDataContext;
@@ -54,7 +54,7 @@ public class BaseballEventCompetitionCompetitorProbablesTests
     private static readonly Uri AthleteSeasonRef = new(
         "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4311625?lang=en&region=us");
 
-    public BaseballEventCompetitionCompetitorProbablesTests()
+    public BaseballEventCompetitionCompetitorDocumentProcessorTests()
     {
         _baseballDataContext = new BaseballDataContext(
             new DbContextOptionsBuilder<BaseballDataContext>()
@@ -115,6 +115,28 @@ public class BaseballEventCompetitionCompetitorProbablesTests
     }
 
     [Fact]
+    public async Task WhenProbableIsPersisted_RequestsAthleteSeasonStatistics()
+    {
+        // arrange — happy-path setup wires AthleteSeason; the probable's
+        // statistics.$ref should fan out as a child doc request so the
+        // matchup card has season stats downstream.
+        var (cmd, athleteSeasonId) = await SetupHappyPath();
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionCompetitorDocumentProcessor<BaseballDataContext>>();
+
+        // act
+        await sut.ProcessAsync(cmd);
+
+        // assert — child request fired with parent = AthleteSeasonId.
+        bus.Verify(x => x.Publish(
+                It.Is<DocumentRequested>(d =>
+                    d.DocumentType == DocumentType.AthleteSeasonStatistics &&
+                    d.ParentId == athleteSeasonId.ToString()),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task WhenAthleteSeasonMissing_PublishesDependencyAndRequestsRetry()
     {
         // arrange — competition + franchise season seeded, but NOT AthleteSeason.
@@ -142,6 +164,13 @@ public class BaseballEventCompetitionCompetitorProbablesTests
                 It.IsAny<IDictionary<string, object>>(),
                 It.IsAny<CancellationToken>()),
             Times.Once);
+
+        // The stats child fan-out is gated on AthleteSeason existing —
+        // the throw happens before the publish, so nothing fires.
+        bus.Verify(x => x.Publish(
+                It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.AthleteSeasonStatistics),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
 
         // No probable row should have been persisted (the throw happened
         // before any AddAsync on the probables DbSet).

@@ -183,6 +183,7 @@ function MatchupCard({
           schedule={awaySchedule}
           loading={awayLoading}
           error={awayError}
+          probablePitcher={matchup.awayProbablePitcher}
         />
 
         {/* Home Team Row */}
@@ -202,6 +203,7 @@ function MatchupCard({
           schedule={homeSchedule}
           loading={homeLoading}
           error={homeError}
+          probablePitcher={matchup.homeProbablePitcher}
         />
 
         {/* Spread and Over/Under */}

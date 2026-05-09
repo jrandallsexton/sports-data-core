@@ -266,6 +266,10 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
 
                     matchup.StreamScheduledTimeUtc = canonical.StreamScheduledTimeUtc;
 
+                    // MLB only — null for non-MLB leagues; UI conditionally renders.
+                    matchup.HomeProbablePitcher = canonical.HomeProbablePitcher;
+                    matchup.AwayProbablePitcher = canonical.AwayProbablePitcher;
+
                     var preview = previews
                         .Where(x => x.ContestId == matchup.ContestId &&
                                     x.RejectedUtc == null)

@@ -68,4 +68,10 @@ public class LeagueMatchupDto
     /// the UI; future enhancements can render a countdown.
     /// </summary>
     public DateTime? StreamScheduledTimeUtc { get; set; }
+
+    // MLB only — null on non-MLB matchups. Stitched onto the SQL result
+    // by GetMatchupsByContestIdsQueryHandler from the Probables ingestion
+    // landed in PR #302.
+    public ProbablePitcherDto? HomeProbablePitcher { get; set; }
+    public ProbablePitcherDto? AwayProbablePitcher { get; set; }
 }

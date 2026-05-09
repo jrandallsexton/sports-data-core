@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Enums;
+using SportsData.Producer.Infrastructure.Data.Baseball;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Sql;
 
@@ -56,12 +57,82 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
             .ToList();
 
         var streamTimes = await GetActiveStreamTimesAsync(query.ContestIds, cancellationToken);
+        var probables = await GetProbablePitchersAsync(query.ContestIds, cancellationToken);
         foreach (var matchup in matchups)
         {
             matchup.StreamScheduledTimeUtc = streamTimes.GetValueOrDefault(matchup.ContestId);
+
+            if (probables.TryGetValue(matchup.ContestId, out var pair))
+            {
+                matchup.HomeProbablePitcher = pair.Home;
+                matchup.AwayProbablePitcher = pair.Away;
+            }
         }
 
         return new Success<List<LeagueMatchupDto>>(matchups);
+    }
+
+    /// <summary>
+    /// Stitches MLB probable starting pitchers onto the matchup result.
+    /// Sport-gated: only runs when the underlying context is the Baseball
+    /// one. NFL/NCAAFB Producer instances no-op without a round-trip,
+    /// keeping the canonical matchups SQL sport-agnostic. Mirrors the
+    /// 2-phase pattern in GetContestOverviewQueryHandler for headshots.
+    /// </summary>
+    internal async Task<Dictionary<Guid, (ProbablePitcherDto? Home, ProbablePitcherDto? Away)>> GetProbablePitchersAsync(
+        Guid[] contestIds,
+        CancellationToken cancellationToken)
+    {
+        var empty = new Dictionary<Guid, (ProbablePitcherDto?, ProbablePitcherDto?)>();
+
+        if (_dbContext is not BaseballDataContext baseballCtx)
+        {
+            return empty;
+        }
+
+        const string ProbableStartingPitcherRole = "probableStartingPitcher";
+
+        var rows = await baseballCtx.CompetitionCompetitorProbables
+            .AsNoTracking()
+            .Where(p => p.Name == ProbableStartingPitcherRole)
+            .Where(p => contestIds.Contains(p.CompetitionCompetitor.Competition.ContestId))
+            .Select(p => new
+            {
+                ContestId = p.CompetitionCompetitor.Competition.ContestId,
+                p.CompetitionCompetitor.HomeAway,
+                p.AthleteSeason.DisplayName,
+                HeadshotUrl = p.AthleteSeason.Athlete != null && p.AthleteSeason.Athlete.Images.Any()
+                    ? p.AthleteSeason.Athlete.Images.OrderBy(i => i.CreatedUtc).First().Uri.ToString()
+                    : null
+            })
+            .ToListAsync(cancellationToken);
+
+        var dict = new Dictionary<Guid, (ProbablePitcherDto? Home, ProbablePitcherDto? Away)>();
+        foreach (var r in rows)
+        {
+            if (string.IsNullOrWhiteSpace(r.DisplayName))
+            {
+                continue;
+            }
+
+            var pitcher = new ProbablePitcherDto
+            {
+                DisplayName = r.DisplayName!,
+                HeadshotUrl = r.HeadshotUrl
+            };
+
+            dict.TryGetValue(r.ContestId, out var entry);
+            if (string.Equals(r.HomeAway, "home", StringComparison.OrdinalIgnoreCase))
+            {
+                entry = (pitcher, entry.Away);
+            }
+            else if (string.Equals(r.HomeAway, "away", StringComparison.OrdinalIgnoreCase))
+            {
+                entry = (entry.Home, pitcher);
+            }
+            dict[r.ContestId] = entry;
+        }
+        return dict;
     }
 
     /// <summary>

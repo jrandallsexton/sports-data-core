@@ -1,5 +1,6 @@
 using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 
 using SportsData.Api.Application.Common.Enums;
 
@@ -91,6 +92,10 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
             // exists in an actionable state (Scheduled / AwaitingStart / Active).
             // Drives the "View" call-to-action on matchup cards.
             public DateTime? StreamScheduledTimeUtc { get; set; }
+
+            // MLB only — null on non-MLB matchups.
+            public ProbablePitcherDto? HomeProbablePitcher { get; set; }
+            public ProbablePitcherDto? AwayProbablePitcher { get; set; }
         }
     }
 }

@@ -191,6 +191,30 @@
   color: var(--text-muted);
 }
 
+/* MLB probable starting pitcher row, rendered just below the team-record-row */
+.team-probable-pitcher {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.probable-pitcher-headshot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.probable-pitcher-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
 .team-spread {
   font-weight: bold;
   font-size: 1.2rem;

@@ -20,6 +20,7 @@ import MiniSchedule from "./MiniSchedule";
  * @param {array} props.schedule - Schedule data array
  * @param {boolean} props.loading - Schedule loading state
  * @param {string} props.error - Schedule error message
+ * @param {object} [props.probablePitcher] - MLB only; { displayName, headshotUrl }
  */
 function TeamRow({
   teamName,
@@ -36,7 +37,8 @@ function TeamRow({
   onToggleSchedule,
   schedule,
   loading,
-  error
+  error,
+  probablePitcher
 }) {
   // resolveSportLeague returns null for unknown/missing enums so unsupported
   // sports don't silently render as an NCAA football route. Fall back to a
@@ -88,6 +90,19 @@ function TeamRow({
                 </button>
               </div>
             </div>
+            {probablePitcher?.displayName && (
+              <div className="team-probable-pitcher">
+                {probablePitcher.headshotUrl && (
+                  <img
+                    src={probablePitcher.headshotUrl}
+                    alt=""
+                    aria-hidden="true"
+                    className="probable-pitcher-headshot"
+                  />
+                )}
+                <span className="probable-pitcher-name">{probablePitcher.displayName}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

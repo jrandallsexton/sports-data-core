@@ -33,7 +33,7 @@ public class GetMatchupForContestQueryHandler : IGetMatchupForContestQueryHandle
     {
         var matchupsResult = await _contestClientFactory
             .Resolve(query.Sport)
-            .GetMatchupsByContestIds(new List<Guid> { query.ContestId });
+            .GetMatchupsByContestIds(new List<Guid> { query.ContestId }, cancellationToken);
 
         if (!matchupsResult.IsSuccess)
         {

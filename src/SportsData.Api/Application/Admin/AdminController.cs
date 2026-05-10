@@ -11,12 +11,14 @@ using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutCompetitors
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutDrives;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
+using SportsData.Api.Application.Admin.Queries.GetMatchupForContest;
 using SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
 using SportsData.Api.Application.Admin.SignalRDebug;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
 using SportsData.Api.Application.UI.Contest.Dtos;
+using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
@@ -198,6 +200,25 @@ namespace SportsData.Api.Application.Admin
             CancellationToken cancellationToken)
         {
             var query = new GetCompetitionsWithoutMetricsQuery();
+            var result = await handler.ExecuteAsync(query, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Returns one canonical MLB matchup in the same shape as the picks page
+        /// (<see cref="LeagueWeekMatchupsDto.MatchupForPickDto"/>), without league
+        /// context. Backs the SignalR debug page so a real MatchupCard can be
+        /// rendered against a chosen contest. League-context fields (Predictions,
+        /// AiWinner, IsPreview*, HeadLine) are intentionally null/empty.
+        /// </summary>
+        [HttpGet]
+        [Route("baseball/contests/{contestId:guid}/matchup")]
+        public async Task<ActionResult<LeagueWeekMatchupsDto.MatchupForPickDto>> GetBaseballMatchupForContest(
+            [FromRoute] Guid contestId,
+            [FromServices] IGetMatchupForContestQueryHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var query = new GetMatchupForContestQuery(contestId, Sport.BaseballMlb);
             var result = await handler.ExecuteAsync(query, cancellationToken);
             return result.ToActionResult();
         }

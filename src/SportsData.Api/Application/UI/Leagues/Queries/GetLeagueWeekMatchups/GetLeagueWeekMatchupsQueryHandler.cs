@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Api.Application.UI.Leagues.Dtos;
+using SportsData.Api.Application.UI.Leagues.Mapping;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
@@ -202,73 +203,12 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             {
                 if (canonicalMap.TryGetValue(matchup.ContestId, out var canonical))
                 {
-                    matchup.Status = Enum.TryParse<ContestStatus>(canonical.Status, true, out var status) ? status : ContestStatus.Undefined;
-                    matchup.Broadcasts = canonical.Broadcasts;
-
-                    // Away team
-                    matchup.Away = canonical.Away ?? matchup.Away;
-                    matchup.AwayShort = canonical.AwayShort ?? matchup.AwayShort;
-                    matchup.AwayFranchiseSeasonId = canonical.AwayFranchiseSeasonId;
-                    matchup.AwayLogoUri = canonical.AwayLogoUri ?? matchup.AwayLogoUri;
-                    matchup.AwayLogoUriDark = canonical.AwayLogoUriDark;
-                    matchup.AwaySlug = canonical.AwaySlug ?? matchup.AwaySlug;
-                    matchup.AwayColor = canonical.AwayColor ?? matchup.AwayColor;
-                    matchup.AwayWins = canonical.AwayWins;
-                    matchup.AwayLosses = canonical.AwayLosses;
-                    matchup.AwayConferenceWins = canonical.AwayConferenceWins;
-                    matchup.AwayConferenceLosses = canonical.AwayConferenceLosses;
-                    matchup.AwayRank = canonical.AwayRank;
-
-                    // Home team
-                    matchup.Home = canonical.Home ?? matchup.Home;
-                    matchup.HomeShort = canonical.HomeShort ?? matchup.HomeShort;
-                    matchup.HomeFranchiseSeasonId = canonical.HomeFranchiseSeasonId;
-                    matchup.HomeLogoUri = canonical.HomeLogoUri ?? matchup.HomeLogoUri;
-                    matchup.HomeLogoUriDark = canonical.HomeLogoUriDark;
-                    matchup.HomeSlug = canonical.HomeSlug ?? matchup.HomeSlug;
-                    matchup.HomeColor = canonical.HomeColor ?? matchup.HomeColor;
-                    matchup.HomeWins = canonical.HomeWins;
-                    matchup.HomeLosses = canonical.HomeLosses;
-                    matchup.HomeConferenceWins = canonical.HomeConferenceWins;
-                    matchup.HomeConferenceLosses = canonical.HomeConferenceLosses;
-                    matchup.HomeRank = canonical.HomeRank;
-
-                    // Odds
-                    matchup.SpreadCurrent = canonical.SpreadCurrent.HasValue
-                        ? (decimal)Math.Round(canonical.SpreadCurrent.Value, 1, MidpointRounding.AwayFromZero)
-                        : null;
-
-                    matchup.SpreadOpen = canonical.SpreadOpen.HasValue
-                        ? (decimal)Math.Round(canonical.SpreadOpen.Value, 1, MidpointRounding.AwayFromZero)
-                        : null;
-
-                    matchup.OverUnderCurrent = canonical.OverUnderCurrent.HasValue
-                        ? (decimal)Math.Round(canonical.OverUnderCurrent.Value, 1, MidpointRounding.AwayFromZero)
-                        : null;
-
-                    matchup.OverUnderOpen = canonical.OverUnderOpen.HasValue
-                        ? (decimal)Math.Round(canonical.OverUnderOpen.Value, 1, MidpointRounding.AwayFromZero)
-                        : null;
-
-                    // Venue
-                    matchup.Venue = canonical.Venue ?? matchup.Venue;
-                    matchup.VenueCity = canonical.VenueCity ?? matchup.VenueCity;
-                    matchup.VenueState = canonical.VenueState ?? matchup.VenueState;
-
-                    // Result
-                    matchup.IsComplete = canonical.CompletedUtc.HasValue;
-                    matchup.AwayScore = canonical.AwayScore;
-                    matchup.HomeScore = canonical.HomeScore;
-                    matchup.WinnerFranchiseSeasonId = canonical.WinnerFranchiseSeasonId;
-                    matchup.SpreadWinnerFranchiseSeasonId = canonical.SpreadWinnerFranchiseSeasonId;
-                    matchup.OverUnderResult = canonical.OverUnderResult.HasValue ? (OverUnderPick)canonical.OverUnderResult.Value : null;
-                    matchup.CompletedUtc = canonical.CompletedUtc;
-
-                    matchup.StreamScheduledTimeUtc = canonical.StreamScheduledTimeUtc;
-
-                    // MLB only — null for non-MLB leagues; UI conditionally renders.
-                    matchup.HomeProbablePitcher = canonical.HomeProbablePitcher;
-                    matchup.AwayProbablePitcher = canonical.AwayProbablePitcher;
+                    // Canonical fields (teams, odds, scores, status, probables,
+                    // streaming, etc.) — extracted to MatchupForPickDtoMapper so
+                    // the admin debug endpoint can reuse the same shape without
+                    // a league context. League-context fields (HeadLine,
+                    // Predictions, AiWinner, IsPreview*) stay below.
+                    MatchupForPickDtoMapper.ApplyCanonical(matchup, canonical);
 
                     var preview = previews
                         .Where(x => x.ContestId == matchup.ContestId &&

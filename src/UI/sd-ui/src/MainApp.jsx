@@ -31,6 +31,8 @@ import AutoJoinRedirect from "./components/signup/AutoJoinRedirect";
 import LeagueDiscoverPage from "components/leagues/LeagueDiscoverPage";
 import ContestOverview from "./components/contests/ContestOverview";
 import AdminPage from "./components/admin/AdminPage";
+import AdminFootballPage from "./components/admin/AdminFootballPage";
+import AdminBaseballPage from "./components/admin/AdminBaseballPage";
 import AdminRoute from "./routes/AdminRoute";
 import SeasonOverview from "./components/season/SeasonOverview";
 
@@ -194,6 +196,22 @@ function MainApp() {
               element={
                 <AdminRoute>
                   <AdminPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/football"
+              element={
+                <AdminRoute>
+                  <AdminFootballPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/baseball"
+              element={
+                <AdminRoute>
+                  <AdminBaseballPage />
                 </AdminRoute>
               }
             />

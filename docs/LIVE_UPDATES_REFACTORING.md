@@ -561,6 +561,87 @@ The headline ratio is `changed / total` — if it's <10% we're over-polling and 
 
 ---
 
+### Issue #9: Collapse 4 contest events into 3 (Planned)
+
+**Severity:** **MEDIUM** (architectural cleanup, not a bug)
+
+**Problem:**
+
+The contest pipeline emits four events where three will do. The boundary between "what changed" (state) and "why it changed" (play description) was drawn one event too early — the result is two scoreboard-tick events with no description, and one play event with no scoreboard.
+
+| Event | Carries | Used? |
+|---|---|---|
+| `ContestStatusChanged` | sport-neutral lifecycle (Scheduled → InProgress → Final) | ✅ keep |
+| `ContestPlayCompleted` | `PlayId`, `PlayDescription` — sport-neutral, no state | 📤 emit-only, no consumer |
+| `FootballContestStateChanged` | `Period`, `Clock`, scores, possession, `IsScoringPlay` — no description | ✅ wired (SignalR) |
+| `BaseballContestStateChanged` | inning/half, scores, count, runners, atBat/pitcher — no description | 🟡 consumer wired, no producer emitter yet |
+
+A play and the resulting state are emitted from the same processor, in the same DB-write turn, with the same `CausationId`. Splitting them buys nothing: the UI needs both halves to render a play card, the backend never publishes one without the other, and the sport-neutral `ContestPlayCompleted` payload has no consumer because every consumer also wants the sport-specific state.
+
+**Impact:**
+
+- UI consumers reassemble the pair from two separate SignalR messages keyed by `CausationId`. The `ContestUpdatesContext` has more wiring than it needs.
+- The `*ContestStateChanged` name reads like a generic state delta when each instance is in fact a per-play tick. Future readers (and a future me adding `Soccer*StateChanged`) will guess wrong.
+- `BaseballEventCompetitionPlayDocumentProcessor` doesn't emit a sport-specific event today — it inherits the base class which fires `ContestPlayCompleted` (no state), so MLB live updates currently can't render scoreboard ticks. The taxonomy gap is blocking the MLB live-UI work.
+
+**Solution:**
+
+Three events. One per concern. Each sport-specific play processor emits its own merged event:
+
+```csharp
+// Sport-neutral lifecycle — unchanged.
+public record ContestStatusChanged(
+    Guid ContestId, string Status, Uri? Ref, Sport Sport,
+    int? SeasonYear, Guid CorrelationId, Guid CausationId);
+
+// Football per-play tick + description.
+public record FootballPlayCompleted(
+    Guid ContestId, Guid CompetitionId, Guid PlayId, string PlayDescription,
+    string Period, string Clock,
+    int AwayScore, int HomeScore,
+    Guid? PossessionFranchiseSeasonId, bool IsScoringPlay, string? BallOnYardLine,
+    Uri? Ref, Sport Sport, int? SeasonYear,
+    Guid CorrelationId, Guid CausationId);
+
+// Baseball per-play tick + description.
+public record BaseballPlayCompleted(
+    Guid ContestId, Guid CompetitionId, Guid PlayId, string PlayDescription,
+    int Inning, string HalfInning,
+    int AwayScore, int HomeScore,
+    int Balls, int Strikes, int Outs,
+    Guid? RunnerOnFirstAthleteId, Guid? RunnerOnSecondAthleteId, Guid? RunnerOnThirdAthleteId,
+    Guid? AtBatAthleteId, Guid? PitchingAthleteId,
+    Uri? Ref, Sport Sport, int? SeasonYear,
+    Guid CorrelationId, Guid CausationId);
+```
+
+**Migration order:**
+
+1. Add `FootballPlayCompleted` and `BaseballPlayCompleted` records (parallel to existing `*ContestStateChanged` — don't delete yet).
+2. `EventCompetitionPlayDocumentProcessor` (FB): switch its existing `FootballContestStateChanged` publish to `FootballPlayCompleted`, populating `PlayId` + `PlayDescription` from the play it just processed. Stop emitting `ContestPlayCompleted` from the base class for the FB sub-tree.
+3. `BaseballEventCompetitionPlayDocumentProcessor` (MLB): override the base method, publish `BaseballPlayCompleted` directly. This is the new emitter that closes the wiring gap noted above.
+4. Remove `ContestPlayCompleted` emission from `EventCompetitionPlayDocumentProcessorBase` once both sport processors override.
+5. API: rename `FootballContestStateChangedHandler` → `FootballPlayCompletedHandler`; rename `BaseballContestStateChangedHandler` → `BaseballPlayCompletedHandler`. SignalR method names follow.
+6. UI: update `ContestUpdatesContext` to subscribe to `FootballPlayCompleted` / `BaseballPlayCompleted` and merge play description + state in one handler. Remove the `CausationId`-keyed reassembly.
+7. Delete `ContestPlayCompleted`, `FootballContestStateChanged`, `BaseballContestStateChanged` event records.
+8. Update `docs/event-surface-overview.md` matrix to reflect the new shape.
+
+**Replay service rename + split:**
+
+`ContestReplayService` (Producer) is football-only despite the sport-neutral name — it emits `ContestStatusChanged` once and `FootballContestStateChanged` per play. As part of this work:
+
+- Rename `ContestReplayService` → `FootballContestReplayService`.
+- Create `BaseballContestReplayService` with the same shape, emitting `BaseballPlayCompleted` per play. The MLB admin debug page (`/admin/baseball`) calls into this for synthetic event playback against the matchup card.
+- Don't extract a shared `IContestReplayService` interface unless a real second caller appears — admin endpoints can resolve concrete services by sport.
+
+**Open questions:**
+
+- `ContestPlayCompleted` is currently emit-only with no consumer. Confirm nothing outside this repo subscribes before deleting; if yes, this is a coordinated breaking change.
+- Should `PlayDescription` always ride the message, or should the UI fetch on demand? Today it fits inline; rich-text/structured plays would force a revisit.
+- `BaseballPlayCompleted` carries 5 athlete IDs (runners + atBat + pitcher). At-bat changes inside an inning don't change runners — leave finer-grained `BaseballAtBatChanged` until a UI use case demands it.
+
+---
+
 ## Visualizations
 
 ### 1. Streaming Lifecycle Sequence

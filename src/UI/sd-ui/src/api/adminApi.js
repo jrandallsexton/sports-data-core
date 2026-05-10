@@ -13,6 +13,13 @@ const AdminApi = {
   resetPreview: (contestId) =>
     apiClient.post(`/admin/matchup/preview/${contestId}/reset`),
 
+  // Returns one MLB matchup in the same shape as the picks page so the
+  // baseball SignalR debug page can render a real <MatchupCard /> for a
+  // chosen contest. League-context fields (Predictions, AiWinner,
+  // IsPreview*, HeadLine) come back null/empty per the endpoint contract.
+  getBaseballMatchupForContest: (contestId) =>
+    apiClient.get(`/admin/baseball/contests/${contestId}/matchup`),
+
   // SignalR debug harness — see docs/signalr-debug-harness-plan.md.
   // Each call publishes a synthetic integration event through API's
   // MassTransit + own consumer + SignalR fan-out, exercising the same

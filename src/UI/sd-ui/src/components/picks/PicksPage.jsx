@@ -60,21 +60,37 @@ function PicksPage() {
       .filter(p => p !== null && p !== undefined);
   }, [userPicks]);
 
-  // Merge live updates with matchups
+  // Merge live updates with matchups. Live state arrives via
+  // ContestUpdatesContext from the merged *PlayCompleted SignalR
+  // events (FootballPlayCompleted / BaseballPlayCompleted). Football
+  // and baseball write their own field sets onto the same context
+  // record; the union is included here so MatchupCard / GameStatus
+  // can pick out whichever fields its sport branch needs.
   const enrichedMatchups = useMemo(() => {
     return matchups.map(matchup => {
       const liveUpdate = getContestUpdate(matchup.contestId);
       if (liveUpdate) {
-        // Merge live data, overriding static matchup data
         return {
           ...matchup,
           status: liveUpdate.status,
           awayScore: liveUpdate.awayScore,
           homeScore: liveUpdate.homeScore,
+          // Football-shaped
           period: liveUpdate.period,
           clock: liveUpdate.clock,
           possessionFranchiseSeasonId: liveUpdate.possessionFranchiseSeasonId,
-          isScoringPlay: liveUpdate.isScoringPlay
+          isScoringPlay: liveUpdate.isScoringPlay,
+          // Baseball-shaped
+          inning: liveUpdate.inning,
+          halfInning: liveUpdate.halfInning,
+          balls: liveUpdate.balls,
+          strikes: liveUpdate.strikes,
+          outs: liveUpdate.outs,
+          runnerOnFirst: liveUpdate.runnerOnFirst,
+          runnerOnSecond: liveUpdate.runnerOnSecond,
+          runnerOnThird: liveUpdate.runnerOnThird,
+          // Sport-neutral last-play (written by both *PlayCompleted handlers)
+          lastPlayDescription: liveUpdate.lastPlayDescription
         };
       }
       return matchup;

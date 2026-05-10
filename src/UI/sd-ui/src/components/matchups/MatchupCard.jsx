@@ -225,13 +225,28 @@ function MatchupCard({
           broadcasts={matchup.broadcasts}
           venue={venue}
           location={location}
+          // Football-shaped live fields
           period={matchup.period}
           clock={matchup.clock}
           awayFranchiseSeasonId={matchup.awayFranchiseSeasonId}
           homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
           possessionFranchiseSeasonId={matchup.possessionFranchiseSeasonId}
           isScoringPlay={matchup.isScoringPlay}
+          // Baseball-shaped live fields (populated by ContestUpdatesContext
+          // on BaseballPlayCompleted; ignored on the football branch)
+          inning={matchup.inning}
+          halfInning={matchup.halfInning}
+          balls={matchup.balls}
+          strikes={matchup.strikes}
+          outs={matchup.outs}
+          runnerOnFirst={matchup.runnerOnFirst}
+          runnerOnSecond={matchup.runnerOnSecond}
+          runnerOnThird={matchup.runnerOnThird}
+          lastPlayDescription={matchup.lastPlayDescription}
           contestId={matchup.contestId}
+          // leagueSport drives the in-progress sport dispatch inside
+          // GameStatus (e.g. "BaseballMlb" → BaseballGameStatusInProgress).
+          leagueSport={leagueSport}
           sport={sportLeague?.sport}
           league={sportLeague?.league}
           streamScheduledTimeUtc={matchup.streamScheduledTimeUtc}

@@ -7,9 +7,6 @@ import CompetitionsWithoutPlays from './CompetitionsWithoutPlays';
 import CompetitionsWithoutDrives from './CompetitionsWithoutDrives';
 import SystemHealth from './SystemHealth';
 import RecentErrors from './RecentErrors';
-import FootballDebugCard from './signalr-debug/FootballDebugCard';
-import BaseballDebugCard from './signalr-debug/BaseballDebugCard';
-
 export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -133,14 +130,7 @@ export default function AdminPage() {
     <div className="admin-page">
       <AdminHeader />
 
-      {/* SignalR debug harness — fires synthetic integration events
-          through API → MassTransit → SignalR → UI. Lets us verify the
-          live-game pipeline without needing a real game in progress.
-          See docs/signalr-debug-harness-plan.md. */}
-      <section className="admin-signalr-debug">
-        <FootballDebugCard />
-        <BaseballDebugCard />
-      </section>
+      {/* SignalR debug cards moved to /admin/football and /admin/baseball. */}
 
       <div className="admin-grid">
         <div className="admin-main">

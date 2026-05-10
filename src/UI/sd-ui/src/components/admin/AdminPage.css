@@ -95,3 +95,20 @@
   gap: 1rem;
   margin: 1rem 0 1.5rem;
 }
+
+/* /admin/baseball — left column hosts the matchup-card observer (driven by
+   the contest-id input), right column hosts the BaseballDebugCard control
+   panel that fires synthetic SignalR events. */
+.admin-baseball-debug-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 12px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .admin-baseball-debug-grid {
+    grid-template-columns: 1fr;
+  }
+}

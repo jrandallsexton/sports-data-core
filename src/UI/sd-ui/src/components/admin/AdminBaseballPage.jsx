@@ -33,10 +33,9 @@ export default function AdminBaseballPage() {
   const live = contestId ? getContestUpdate(contestId) : null;
 
   // Mirror the picks-page enrichment pattern (PicksPage.jsx) so the
-  // canonical MatchupCard re-renders with live status/score deltas as
-  // SignalR events land. Baseball-specific fields (inning, count,
-  // runners, last play) aren't surfaced on MatchupCard yet — see the
-  // separate live-state panel below this card.
+  // canonical MatchupCard re-renders as SignalR events land — including
+  // baseball-specific fields (inning, count, runners, last play) that
+  // BaseballGameStatusInProgress now renders inside MatchupCard.
   const enrichedMatchup = useMemo(() => {
     if (!matchup) return null;
     if (!live) return matchup;
@@ -45,6 +44,19 @@ export default function AdminBaseballPage() {
       status: live.status ?? matchup.status,
       awayScore: live.awayScore ?? matchup.awayScore,
       homeScore: live.homeScore ?? matchup.homeScore,
+      // Baseball-shaped live fields (handleBaseballPlayCompleted writes
+      // these onto the context record). Use nullish-fallback so a
+      // future partial-update handler that doesn't carry the full set
+      // can't silently undefine a previously-populated field.
+      inning: live.inning ?? matchup.inning,
+      halfInning: live.halfInning ?? matchup.halfInning,
+      balls: live.balls ?? matchup.balls,
+      strikes: live.strikes ?? matchup.strikes,
+      outs: live.outs ?? matchup.outs,
+      runnerOnFirst: live.runnerOnFirst ?? matchup.runnerOnFirst,
+      runnerOnSecond: live.runnerOnSecond ?? matchup.runnerOnSecond,
+      runnerOnThird: live.runnerOnThird ?? matchup.runnerOnThird,
+      lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
     };
   }, [matchup, live]);
 
@@ -169,11 +181,14 @@ export default function AdminBaseballPage() {
 
 /**
  * Debug-only readout of the per-contest live state arriving via SignalR.
- * MatchupCard doesn't render baseball scoreboard fields (inning, count,
- * runners, last play description) today — this panel exists so we can
- * confirm the merged BaseballPlayCompleted payload is landing in the
- * ContestUpdatesContext correctly. Once the picks-page MLB UI is built,
- * this panel can go away.
+ * MatchupCard now renders the same fields via BaseballGameStatusInProgress,
+ * but suppresses rows whose source values are at defaults — useful for the
+ * end-user, less so when debugging the pipeline. This panel renders every
+ * field with a `?? '—'` placeholder so you can distinguish "event arrived
+ * but field was default" from "no event at all," which matters while the
+ * canonical play data still emits empty HalfInning / 0 outs / all-false
+ * runners. Drop this panel once the AtBat sourcing pipeline populates
+ * those fields for real.
  */
 function BaseballLiveStatePanel({ live }) {
   const empty = !live;

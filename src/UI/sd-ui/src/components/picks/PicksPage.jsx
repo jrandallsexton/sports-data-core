@@ -60,21 +60,44 @@ function PicksPage() {
       .filter(p => p !== null && p !== undefined);
   }, [userPicks]);
 
-  // Merge live updates with matchups
+  // Merge live updates with matchups. Live state arrives via
+  // ContestUpdatesContext from the merged *PlayCompleted SignalR
+  // events (FootballPlayCompleted / BaseballPlayCompleted). Football
+  // and baseball write their own field sets onto the same context
+  // record; the union is included here so MatchupCard / GameStatus
+  // can pick out whichever fields its sport branch needs.
   const enrichedMatchups = useMemo(() => {
     return matchups.map(matchup => {
       const liveUpdate = getContestUpdate(matchup.contestId);
       if (liveUpdate) {
-        // Merge live data, overriding static matchup data
         return {
           ...matchup,
-          status: liveUpdate.status,
-          awayScore: liveUpdate.awayScore,
-          homeScore: liveUpdate.homeScore,
-          period: liveUpdate.period,
-          clock: liveUpdate.clock,
-          possessionFranchiseSeasonId: liveUpdate.possessionFranchiseSeasonId,
-          isScoringPlay: liveUpdate.isScoringPlay
+          // Nullish-fallback so a partial context state (e.g. a
+          // ContestStatusChanged that landed before any *PlayCompleted —
+          // ContestUpdatesContext's status handler writes only `status` /
+          // `lastUpdated`) can't undefine real canonical fields like
+          // awayScore / homeScore.
+          status: liveUpdate.status ?? matchup.status,
+          awayScore: liveUpdate.awayScore ?? matchup.awayScore,
+          homeScore: liveUpdate.homeScore ?? matchup.homeScore,
+          // Football-shaped
+          period: liveUpdate.period ?? matchup.period,
+          clock: liveUpdate.clock ?? matchup.clock,
+          possessionFranchiseSeasonId: liveUpdate.possessionFranchiseSeasonId ?? matchup.possessionFranchiseSeasonId,
+          isScoringPlay: liveUpdate.isScoringPlay ?? matchup.isScoringPlay,
+          // Baseball-shaped — nullish-fallback so a future partial-update
+          // handler that doesn't carry the full set can't silently undefine
+          // a previously-populated field (mirrors the score/status pattern).
+          inning: liveUpdate.inning ?? matchup.inning,
+          halfInning: liveUpdate.halfInning ?? matchup.halfInning,
+          balls: liveUpdate.balls ?? matchup.balls,
+          strikes: liveUpdate.strikes ?? matchup.strikes,
+          outs: liveUpdate.outs ?? matchup.outs,
+          runnerOnFirst: liveUpdate.runnerOnFirst ?? matchup.runnerOnFirst,
+          runnerOnSecond: liveUpdate.runnerOnSecond ?? matchup.runnerOnSecond,
+          runnerOnThird: liveUpdate.runnerOnThird ?? matchup.runnerOnThird,
+          // Sport-neutral last-play (written by both *PlayCompleted handlers)
+          lastPlayDescription: liveUpdate.lastPlayDescription ?? matchup.lastPlayDescription
         };
       }
       return matchup;

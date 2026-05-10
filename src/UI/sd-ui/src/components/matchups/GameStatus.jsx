@@ -1,33 +1,28 @@
 import { Link } from "react-router-dom";
 import { Webcam } from "lucide-react";
 import { contestLink } from '../../utils/sportLinks';
+import FootballGameStatusInProgress from './FootballGameStatusInProgress';
+import BaseballGameStatusInProgress from './BaseballGameStatusInProgress';
 
 /**
- * GameStatus component - displays game status (Final, Live, or Scheduled)
- * @param {object} props
- * @param {string} props.status - Game status ('Final', 'InProgress', 'Scheduled')
- * @param {string} props.awayShort - Away team short name
- * @param {string} props.homeShort - Home team short name
- * @param {number} props.awayScore - Away team score
- * @param {number} props.homeScore - Home team score
- * @param {string} props.gameTime - Formatted game time
- * @param {string} props.broadcasts - Broadcast information
- * @param {string} props.venue - Venue name
- * @param {string} props.location - Venue location
- * @param {string} props.period - Current period (Q1, Q2, Q3, Q4, OT, etc.)
- * @param {string} props.clock - Game clock time
- * @param {string} props.awayFranchiseSeasonId - Away team franchise season ID
- * @param {string} props.homeFranchiseSeasonId - Home team franchise season ID
- * @param {string} props.possessionFranchiseSeasonId - Team with possession ID
- * @param {boolean} props.isScoringPlay - Whether this update is for a scoring play
- * @param {string} props.contestId - Contest ID for linking to contest overview
- * @param {string} [props.sport] - URL sport segment (e.g. "baseball"); falls
- *   back to football/ncaa via contestLink defaults when omitted.
- * @param {string} [props.league] - URL league segment (e.g. "mlb").
- * @param {string} [props.streamScheduledTimeUtc] - ISO UTC timestamp; non-null
- *   when an actionable CompetitionStream row exists. Drives the "View" CTA
- *   for upcoming games so users can confirm the live-stream is scheduled and
- *   jump to the contest overview.
+ * GameStatus - top-level dispatcher for the status block on a matchup
+ * card. Branches on `status`:
+ *
+ *   - 'Final'      → shared score-line markup (sport-agnostic).
+ *   - 'InProgress' → dispatch to a per-sport child component
+ *                    (FootballGameStatusInProgress / BaseballGameStatusInProgress).
+ *                    The two sports diverge meaningfully here — football
+ *                    renders period, clock, score, and possession (with
+ *                    a scoring-play flash); baseball renders score plus
+ *                    inning+count+outs, runners, and a last-play line —
+ *                    so they own their own JSX rather than one component
+ *                    piling up sport-conditional branches.
+ *   - default      → Scheduled / unknown: shared time+venue markup.
+ *
+ * Sport routing is keyed off `leagueSport` (the backend Sport enum
+ * name, e.g. "BaseballMlb"). When omitted or unrecognized, falls back
+ * to football rendering — preserves prior behavior on routes that
+ * don't yet plumb the prop through.
  */
 function GameStatus({
   status,
@@ -45,10 +40,22 @@ function GameStatus({
   homeFranchiseSeasonId,
   possessionFranchiseSeasonId,
   isScoringPlay,
+  // Baseball-specific live fields (populated by ContestUpdatesContext
+  // on BaseballPlayCompleted). Ignored on the football branch.
+  inning,
+  halfInning,
+  balls,
+  strikes,
+  outs,
+  runnerOnFirst,
+  runnerOnSecond,
+  runnerOnThird,
+  lastPlayDescription,
   contestId,
+  leagueSport,
   sport,
   league,
-  streamScheduledTimeUtc
+  streamScheduledTimeUtc,
 }) {
   if (status === 'Final') {
     const scoreContent = (
@@ -81,44 +88,49 @@ function GameStatus({
   }
 
   if (status === 'InProgress') {
-    const awayHasPossession = possessionFranchiseSeasonId === awayFranchiseSeasonId;
-    const homeHasPossession = possessionFranchiseSeasonId === homeFranchiseSeasonId;
+    if (leagueSport === 'BaseballMlb') {
+      return (
+        <BaseballGameStatusInProgress
+          awayShort={awayShort}
+          homeShort={homeShort}
+          awayScore={awayScore}
+          homeScore={homeScore}
+          inning={inning}
+          halfInning={halfInning}
+          balls={balls}
+          strikes={strikes}
+          outs={outs}
+          runnerOnFirst={runnerOnFirst}
+          runnerOnSecond={runnerOnSecond}
+          runnerOnThird={runnerOnThird}
+          lastPlayDescription={lastPlayDescription}
+          isScoringPlay={isScoringPlay}
+          contestId={contestId}
+          sport={sport}
+          league={league}
+        />
+      );
+    }
 
-    const liveContent = (
-      <>
-        <span className="result-label live-indicator">LIVE</span>
-        {period && clock && (
-          <span className="game-clock">{period} - {clock}</span>
-        )}
-        <span className={`score-display ${isScoringPlay ? 'score-flash' : ''}`}>
-          {awayHasPossession && <span className="possession-indicator">🏈</span>}
-          {awayShort} {awayScore} - {homeScore} {homeShort}
-          {homeHasPossession && <span className="possession-indicator">🏈</span>}
-        </span>
-        {isScoringPlay && (
-          // TODO: Determine score type (TD, FG, etc.) for better indicator
-          <span className="touchdown-indicator">🎉 TOUCHDOWN!</span>
-        )}
-      </>
-    );
-
+    // Default: football rendering. Covers FootballNcaa / FootballNfl
+    // explicitly and any unrecognized leagueSport (so callers that
+    // don't yet thread the prop through don't regress).
     return (
-      <div className={`game-result ${isScoringPlay ? 'scoring-play' : ''}`}>
-        <div className="final-score">
-          {contestId ? (
-            <Link
-              to={contestLink(contestId, sport, league)}
-              className="final-score-link"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {liveContent}
-            </Link>
-          ) : (
-            liveContent
-          )}
-        </div>
-      </div>
+      <FootballGameStatusInProgress
+        awayShort={awayShort}
+        homeShort={homeShort}
+        awayScore={awayScore}
+        homeScore={homeScore}
+        period={period}
+        clock={clock}
+        awayFranchiseSeasonId={awayFranchiseSeasonId}
+        homeFranchiseSeasonId={homeFranchiseSeasonId}
+        possessionFranchiseSeasonId={possessionFranchiseSeasonId}
+        isScoringPlay={isScoringPlay}
+        contestId={contestId}
+        sport={sport}
+        league={league}
+      />
     );
   }
 

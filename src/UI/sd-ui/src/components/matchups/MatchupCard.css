@@ -661,3 +661,101 @@
   margin-right: 6px;
   vertical-align: middle;
 }
+
+/* ==========================================================================
+   Baseball in-progress live rows (BaseballGameStatusInProgress.jsx)
+   --------------------------------------------------------------------------
+   New status-neutral wrappers; the broader rename of football's
+   .game-result/.final-score classes is deferred (see docs/matchup-card.md).
+   These rules style the MLB-specific rows that stack below the score line:
+   inning+count+outs, runners, and last play description.
+   ========================================================================== */
+
+.game-status-block {
+  text-align: center;
+  padding: 8px;
+  background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-primary) 100%);
+  border-radius: 6px;
+  margin: 8px 0;
+}
+
+.game-status-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.game-status-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.2s ease;
+}
+
+.game-status-link:hover {
+  opacity: 0.8;
+}
+
+.game-status-link:hover .status-label,
+.game-status-link:hover .score-display {
+  color: var(--accent);
+}
+
+.status-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Reuse the existing .live-indicator pulse from the football block for
+   consistency; .status-label.live-indicator picks up the same animation. */
+
+.live-state-summary {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.live-state-runners {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-state-runner-base {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.live-state-lastplay {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+/* Scoring-play flash on the new wrapper (mirrors .game-result.scoring-play). */
+.game-status-block.is-scoring-play {
+  animation: score-pulse 2s ease-in-out;
+  background: linear-gradient(135deg, var(--ranking-gold) 0%, #ff8c00 100%);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}

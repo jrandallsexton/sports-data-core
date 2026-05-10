@@ -20,8 +20,9 @@ const PERIOD_OPTIONS = ['Q1', 'Q2', 'Q3', 'Q4', 'OT'];
  * SignalR debug widget for football. Renders a stylized field with
  * yard-line markers, score, possession indicator, period+clock, and
  * the most-recent payload received from SignalR. Includes preset
- * buttons + raw form for publishing FootballContestStateChanged
- * events through the API admin endpoint.
+ * buttons + raw form for publishing FootballPlayCompleted events
+ * (merged play description + scoreboard tick) through the API admin
+ * endpoint.
  *
  * See docs/signalr-debug-harness-plan.md.
  */
@@ -37,33 +38,20 @@ export default function FootballDebugCard() {
   const [possession, setPossession] = useState(FOOTBALL_DEBUG_AWAY_ID);
   const [isScoringPlay, setIsScoringPlay] = useState(false);
   // Ball position 0–100 yards from the away (visitor) goal line.
-  // Matches FootballContestStateChanged.BallOnYardLine on the wire.
+  // Matches FootballPlayCompleted.BallOnYardLine on the wire.
   const [ballOnYardLine, setBallOnYardLine] = useState(25);
   const [busy, setBusy] = useState(false);
 
   const broadcast = async (payload) => {
     setBusy(true);
     try {
-      await apiWrapper.Admin.broadcastFootballState({ sport, ...payload });
-      toast.success('Football state broadcast');
-    } catch (err) {
-      toast.error(`Broadcast failed: ${err.message || 'unknown'}`);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  // ContestPlayCompleted is sport-neutral — Producer publishes one
-  // alongside FootballContestStateChanged on every new play. Fire one
-  // here so the SignalR debug surface exercises that consumer path too.
-  const firePlayCompleted = async () => {
-    setBusy(true);
-    try {
-      await apiWrapper.Admin.broadcastContestPlayCompleted({
+      await apiWrapper.Admin.broadcastFootballPlay({
         sport,
-        playDescription: `Mock play @ ${new Date().toLocaleTimeString()}`,
+        playDescription: payload.playDescription
+          ?? `Mock play @ ${new Date().toLocaleTimeString()}`,
+        ...payload,
       });
-      toast.success('Play completed broadcast');
+      toast.success('Football play broadcast');
     } catch (err) {
       toast.error(`Broadcast failed: ${err.message || 'unknown'}`);
     } finally {
@@ -75,6 +63,7 @@ export default function FootballDebugCard() {
   // exactly what was sent, then broadcasts.
   const fireGameStart = () => {
     const p = {
+      playDescription: 'Kickoff returned to the 25-yard line.',
       period: 'Q1', clock: '15:00',
       awayScore: 0, homeScore: 0,
       possessionFranchiseSeasonId: FOOTBALL_DEBUG_AWAY_ID,
@@ -92,6 +81,7 @@ export default function FootballDebugCard() {
   const fireFieldGoal = () => {
     const home = possession === FOOTBALL_DEBUG_HOME_ID;
     const p = {
+      playDescription: 'Field goal is good.',
       period, clock,
       awayScore: home ? awayScore : awayScore + 3,
       homeScore: home ? homeScore + 3 : homeScore,
@@ -109,6 +99,7 @@ export default function FootballDebugCard() {
     // scored (drove toward home goal line), yard 0 if home scored.
     const endYard = home ? 0 : 100;
     const p = {
+      playDescription: 'Touchdown!',
       period, clock,
       awayScore: home ? awayScore : awayScore + 6,
       homeScore: home ? homeScore + 6 : homeScore,
@@ -124,6 +115,7 @@ export default function FootballDebugCard() {
   const fireExtraPoint = (points) => {
     const home = possession === FOOTBALL_DEBUG_HOME_ID;
     const p = {
+      playDescription: points === 1 ? 'PAT is good.' : 'Two-point conversion is good.',
       period, clock,
       awayScore: home ? awayScore : awayScore + points,
       homeScore: home ? homeScore + points : homeScore,
@@ -141,6 +133,7 @@ export default function FootballDebugCard() {
       : FOOTBALL_DEBUG_AWAY_ID;
     setPossession(next);
     broadcast({
+      playDescription: 'Change of possession.',
       period, clock, awayScore, homeScore,
       possessionFranchiseSeasonId: next,
       isScoringPlay: false,
@@ -175,7 +168,7 @@ export default function FootballDebugCard() {
   // backend doesn't yet send the prior yard line, so we synthesize one
   // 10 yards "behind" the current position relative to possession's
   // direction of attack (away drives toward yard 100, home toward yard 0).
-  // Replace once FootballContestStateChanged carries BallOnYardLineStart.
+  // Replace once FootballPlayCompleted carries BallOnYardLineStart.
   const MOCK_PLAY_YARDS = 10;
   const [trail, setTrail] = useState(null); // { start, end } in yard%
   const lastTickRef = useRef(null);
@@ -183,7 +176,7 @@ export default function FootballDebugCard() {
     if (!ballVisible) return;
     // Dedupe key reflects only ball-specific state. Using
     // live.lastUpdated would refire the trail on unrelated context
-    // bumps (e.g., ContestPlayCompleted) even when the ball didn't
+    // bumps (e.g., lifecycle status changes) even when the ball didn't
     // move.
     const tickKey = `${liveBallYard}|${awayHasBall ? 'a' : 'h'}`;
     if (lastTickRef.current === tickKey) return;
@@ -270,7 +263,6 @@ export default function FootballDebugCard() {
           <button type="button" disabled={busy} onClick={() => fireExtraPoint(1)}>XP (+1)</button>
           <button type="button" disabled={busy} onClick={() => fireExtraPoint(2)}>2-pt (+2)</button>
           <button type="button" disabled={busy} onClick={flipPossession}>Flip possession</button>
-          <button type="button" disabled={busy} onClick={firePlayCompleted}>Fire play log</button>
         </div>
 
         {live.lastPlayDescription && (

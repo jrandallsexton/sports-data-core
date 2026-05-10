@@ -10,9 +10,10 @@ namespace SportsData.Api.Application.Events
     /// <summary>
     /// Sport-neutral lifecycle fan-out. Forwards Producer's
     /// <see cref="ContestStatusChanged"/> to all SignalR clients under the
-    /// same event name. Per-play scoreboard ticks are handled separately
-    /// by <see cref="FootballContestStateChangedHandler"/> /
-    /// <see cref="BaseballContestStateChangedHandler"/>.
+    /// same event name. Per-play updates are handled separately by
+    /// <see cref="FootballPlayCompletedHandler"/> /
+    /// <see cref="BaseballPlayCompletedHandler"/>, which carry both the
+    /// play description and the sport-specific scoreboard tick.
     /// </summary>
     public class ContestStatusChangedHandler : IConsumer<ContestStatusChanged>
     {

@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import './AdminPage.css';
 import AdminHeader from './AdminHeader';
 import BaseballDebugCard from './signalr-debug/BaseballDebugCard';
 import MatchupCard from '../matchups/MatchupCard';
 import apiWrapper from '../../api/apiWrapper';
+import { useContestUpdates } from '../../contexts/ContestUpdatesContext';
 
 const CONTEST_ID_STORAGE_KEY = 'admin.baseball.debugContestId';
 
@@ -25,6 +27,26 @@ export default function AdminBaseballPage() {
   const [matchup, setMatchup] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [replaying, setReplaying] = useState(false);
+
+  const { getContestUpdate } = useContestUpdates();
+  const live = contestId ? getContestUpdate(contestId) : null;
+
+  // Mirror the picks-page enrichment pattern (PicksPage.jsx) so the
+  // canonical MatchupCard re-renders with live status/score deltas as
+  // SignalR events land. Baseball-specific fields (inning, count,
+  // runners, last play) aren't surfaced on MatchupCard yet — see the
+  // separate live-state panel below this card.
+  const enrichedMatchup = useMemo(() => {
+    if (!matchup) return null;
+    if (!live) return matchup;
+    return {
+      ...matchup,
+      status: live.status ?? matchup.status,
+      awayScore: live.awayScore ?? matchup.awayScore,
+      homeScore: live.homeScore ?? matchup.homeScore,
+    };
+  }, [matchup, live]);
 
   useEffect(() => {
     if (!contestId) {
@@ -65,6 +87,29 @@ export default function AdminBaseballPage() {
     }
   };
 
+  // Producer fires ContestStatusChanged once and a BaseballPlayCompleted
+  // per stored play ~1s apart. The matchup card on the left and the
+  // diamond on the right both react to the resulting SignalR fan-out.
+  const handleStartReplay = async () => {
+    if (!contestId) {
+      toast.error('Load a matchup first.');
+      return;
+    }
+    setReplaying(true);
+    try {
+      await apiWrapper.Admin.replayBaseballContest(contestId);
+      toast.success('Replay queued — events will start flowing.');
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.errors?.[0]?.errorMessage
+          ?? err.message
+          ?? 'Replay failed'
+      );
+    } finally {
+      setReplaying(false);
+    }
+  };
+
   const seasonYear = matchup?.startDateUtc
     ? new Date(matchup.startDateUtc).getUTCFullYear()
     : undefined;
@@ -89,16 +134,27 @@ export default function AdminBaseballPage() {
               style={{ flex: 1, padding: '6px 8px', minWidth: 0 }}
             />
             <button type="submit">Load matchup</button>
+            <button
+              type="button"
+              onClick={handleStartReplay}
+              disabled={replaying || !contestId}
+              title={contestId ? 'Replay this contest through the bus → SignalR pipeline' : 'Load a matchup first'}
+            >
+              {replaying ? 'Queuing…' : 'Start replay'}
+            </button>
           </form>
 
           {loading && <div>Loading matchup…</div>}
           {error && <div style={{ color: 'red' }}>{error}</div>}
-          {matchup && !loading && !error && (
-            <MatchupCard
-              matchup={matchup}
-              leagueSport="BaseballMlb"
-              leagueSeasonYear={seasonYear}
-            />
+          {enrichedMatchup && !loading && !error && (
+            <>
+              <MatchupCard
+                matchup={enrichedMatchup}
+                leagueSport="BaseballMlb"
+                leagueSeasonYear={seasonYear}
+              />
+              <BaseballLiveStatePanel live={live} />
+            </>
           )}
         </section>
 
@@ -107,6 +163,58 @@ export default function AdminBaseballPage() {
           <BaseballDebugCard />
         </section>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Debug-only readout of the per-contest live state arriving via SignalR.
+ * MatchupCard doesn't render baseball scoreboard fields (inning, count,
+ * runners, last play description) today — this panel exists so we can
+ * confirm the merged BaseballPlayCompleted payload is landing in the
+ * ContestUpdatesContext correctly. Once the picks-page MLB UI is built,
+ * this panel can go away.
+ */
+function BaseballLiveStatePanel({ live }) {
+  const empty = !live;
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        padding: 12,
+        border: '1px dashed var(--border-primary)',
+        borderRadius: 6,
+        background: 'var(--table-stripe)',
+        fontSize: '0.9rem',
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: 6 }}>
+        Live state (debug readout)
+      </div>
+      {empty && (
+        <div style={{ color: 'var(--text-secondary)' }}>
+          Waiting for the first SignalR event for this contest…
+        </div>
+      )}
+      {!empty && (
+        <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.5 }}>
+          <li>Status: <strong>{live.status ?? '—'}</strong></li>
+          <li>Score: away <strong>{live.awayScore ?? 0}</strong> · home <strong>{live.homeScore ?? 0}</strong></li>
+          <li>
+            Inning: <strong>{live.halfInning || '—'} {live.inning ?? '—'}</strong>
+            {' · '}Count: <strong>{live.balls ?? 0}-{live.strikes ?? 0}</strong>
+            {' · '}Outs: <strong>{live.outs ?? 0}</strong>
+          </li>
+          <li>
+            Runners: 1B <strong>{live.runnerOnFirst ? '✓' : '·'}</strong>
+            {' / '}2B <strong>{live.runnerOnSecond ? '✓' : '·'}</strong>
+            {' / '}3B <strong>{live.runnerOnThird ? '✓' : '·'}</strong>
+          </li>
+          {live.lastPlayDescription && (
+            <li>Last play: <em>{live.lastPlayDescription}</em></li>
+          )}
+        </ul>
+      )}
     </div>
   );
 }

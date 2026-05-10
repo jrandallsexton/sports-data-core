@@ -37,6 +37,15 @@ public interface IProvideContests : IProvideHealthChecks
 
     Task<Result<bool>> FinalizeContestByContestId(Guid contestId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Triggers a replay of a stored contest's plays through the bus →
+    /// SignalR pipeline. Producer enqueues the work and returns
+    /// 202 Accepted; the bus then emits <c>ContestStatusChanged</c> once
+    /// followed by a <c>FootballPlayCompleted</c> / <c>BaseballPlayCompleted</c>
+    /// per stored play (sport-keyed by the running Producer pod).
+    /// </summary>
+    Task<Result<bool>> ReplayContest(Guid contestId, CancellationToken cancellationToken = default);
+
     // Matchup query endpoints (Phase 2)
     Task<Result<List<Matchup>>> GetMatchupsForCurrentWeek(CancellationToken ct = default);
     Task<Result<List<Matchup>>> GetMatchupsForSeasonWeek(int year, int week, CancellationToken ct = default);
@@ -160,6 +169,22 @@ public class ContestClient : ClientBase, IProvideContests
         return await PostWithResultAsync(
             $"contests/{contestId}/media/refresh",
             "RefreshContestMedia",
+            cancellationToken);
+    }
+
+    public async Task<Result<bool>> ReplayContest(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<bool>(
+                false,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
+
+        return await PostWithResultAsync(
+            $"contests/{contestId}/replay",
+            "ReplayContest",
             cancellationToken);
     }
 

@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
-using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -18,9 +17,9 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 /// Shared base for sport-specific EventCompetitionPlay processors. Owns the
 /// orchestration that's identical across sports — DTO validation, parent
 /// derivation, competition load, identity lookup, the new-vs-update branch,
-/// and the sport-neutral <see cref="ContestPlayCompleted"/> publish gate.
-/// Sport-specific bits (status loading, entity creation, scoreboard tick,
-/// update mutation) are delegated to abstract hooks.
+/// and the in-progress gate that triggers the sport-specific play emission.
+/// Sport-specific bits (status loading, entity creation, the merged
+/// *PlayCompleted publish, update mutation) are delegated to abstract hooks.
 /// </summary>
 public abstract class EventCompetitionPlayDocumentProcessorBase<TDataContext, TDto>
     : DocumentProcessorBase<TDataContext>
@@ -110,22 +109,11 @@ public abstract class EventCompetitionPlayDocumentProcessorBase<TDataContext, TD
             if (inProgress.Value)
             {
                 _logger.LogInformation(
-                    "Contest in progress, publishing ContestPlayCompleted. ContestId={ContestId}, PlayId={PlayId}",
+                    "Contest in progress, publishing sport-specific *PlayCompleted. ContestId={ContestId}, PlayId={PlayId}",
                     competition.ContestId,
                     play.Id);
 
-                await _publishEndpoint.Publish(new ContestPlayCompleted(
-                    ContestId: competition.ContestId,
-                    CompetitionId: competition.Id,
-                    PlayId: play.Id,
-                    PlayDescription: play.Text,
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.SeasonYear,
-                    CorrelationId: command.CorrelationId,
-                    CausationId: CausationId.Producer.EventCompetitionPlayDocumentProcessor));
-
-                await PublishSportSpecificStateAsync(command, competition, play);
+                await PublishSportPlayCompletedAsync(command, competition, play);
             }
 
             await _dataContext.CompetitionPlays.AddAsync(play);
@@ -168,11 +156,13 @@ public abstract class EventCompetitionPlayDocumentProcessorBase<TDataContext, TD
         CompetitionBase competition);
 
     /// <summary>
-    /// Publish the sport-specific scoreboard tick (e.g. FootballContestStateChanged).
-    /// Default is a no-op for sports that don't yet have a tick event. Only invoked
-    /// when the contest is in progress.
+    /// Publish the sport-specific merged play event (e.g. FootballPlayCompleted /
+    /// BaseballPlayCompleted) carrying both the play description and the
+    /// scoreboard tick. Default is a no-op for sports that don't yet have an
+    /// event shape; both Football and Baseball processors override.
+    /// Only invoked when the contest is in progress.
     /// </summary>
-    protected virtual Task PublishSportSpecificStateAsync(
+    protected virtual Task PublishSportPlayCompletedAsync(
         ProcessDocumentCommand command,
         CompetitionBase competition,
         CompetitionPlayBase play) => Task.CompletedTask;

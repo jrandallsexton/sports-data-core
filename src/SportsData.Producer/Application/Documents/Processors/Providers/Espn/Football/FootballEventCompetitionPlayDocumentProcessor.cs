@@ -95,15 +95,18 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
             endFranchiseSeasonId);
     }
 
-    protected override Task PublishSportSpecificStateAsync(
+    protected override Task PublishSportPlayCompletedAsync(
         ProcessDocumentCommand command,
         CompetitionBase competition,
         CompetitionPlayBase play)
     {
         var footballPlay = (FootballCompetitionPlay)play;
 
-        return _publishEndpoint.Publish(new FootballContestStateChanged(
+        return _publishEndpoint.Publish(new FootballPlayCompleted(
             ContestId: competition.ContestId,
+            CompetitionId: competition.Id,
+            PlayId: footballPlay.Id,
+            PlayDescription: footballPlay.Text,
             Period: $"Q{footballPlay.PeriodNumber}",
             Clock: footballPlay.ClockDisplayValue ?? string.Empty,
             AwayScore: footballPlay.AwayScore,

@@ -4,15 +4,20 @@ using SportsData.Core.Common;
 namespace SportsData.Core.Eventing.Events.Contests.Football
 {
     /// <summary>
-    /// Football scoreboard tick. Published per play during a live game and
-    /// per-play during ContestReplayService replays. Carries the football
-    /// shape (period, game clock, possession, scoring-play flag).
+    /// Football per-play update. Published by the FB
+    /// EventCompetitionPlayDocumentProcessor for every new play during a
+    /// live game and per-play during FootballContestReplayService replays.
+    /// Carries the play description AND the football scoreboard tick in
+    /// one event so consumers don't have to reassemble them.
     ///
-    /// Lifecycle transitions (Scheduled→InProgress→Final) are separately
-    /// surfaced via <see cref="ContestStatusChanged"/>.
+    /// Lifecycle transitions (Scheduled→InProgress→Final) remain on
+    /// <see cref="ContestStatusChanged"/>.
     /// </summary>
-    public record FootballContestStateChanged(
+    public record FootballPlayCompleted(
         Guid ContestId,
+        Guid CompetitionId,
+        Guid PlayId,
+        string PlayDescription,
         string Period,
         string Clock,
         int AwayScore,

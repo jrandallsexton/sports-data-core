@@ -226,14 +226,13 @@ namespace SportsData.Api
 
                 services.AddMessaging<AppDataContext>(config,
                 [
-                    typeof(BaseballContestStateChangedHandler),
+                    typeof(BaseballPlayCompletedHandler),
                     typeof(ContestOddsUpdatedHandler),
-                    typeof(ContestPlayCompletedHandler),
                     typeof(ContestRecapArticlePublishedHandler),
                     typeof(ContestScoreChangedHandler),
                     typeof(ContestStartTimeUpdatedHandler),
                     typeof(ContestStatusChangedHandler),
-                    typeof(FootballContestStateChangedHandler),
+                    typeof(FootballPlayCompletedHandler),
                     typeof(PickemGroupCreatedHandler),
                     typeof(PickemGroupMatchupAddedHandler),
                     typeof(PickemGroupWeekMatchupsGeneratedHandler),

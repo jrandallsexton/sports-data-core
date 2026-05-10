@@ -11,7 +11,8 @@ const HALF_OPTIONS = ['Top', 'Bottom'];
  * SignalR debug widget for baseball. Renders a stylized diamond with
  * bases lit up by RunnerOnFirst/Second/Third, score, inning header,
  * and current at-bat with count. Includes preset buttons + raw form
- * for publishing BaseballContestStateChanged events.
+ * for publishing BaseballPlayCompleted events (merged play description
+ * + scoreboard tick).
  *
  * See docs/signalr-debug-harness-plan.md.
  */
@@ -34,25 +35,12 @@ export default function BaseballDebugCard() {
   const broadcast = async (payload) => {
     setBusy(true);
     try {
-      await apiWrapper.Admin.broadcastBaseballState(payload);
-      toast.success('Baseball state broadcast');
-    } catch (err) {
-      toast.error(`Broadcast failed: ${err.message || 'unknown'}`);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  // ContestPlayCompleted is sport-neutral — fire one to exercise the
-  // consumer path that lives outside the per-sport scoreboard tick.
-  const firePlayCompleted = async () => {
-    setBusy(true);
-    try {
-      await apiWrapper.Admin.broadcastContestPlayCompleted({
-        sport: 'BaseballMlb',
-        playDescription: `Mock pitch @ ${new Date().toLocaleTimeString()}`,
+      await apiWrapper.Admin.broadcastBaseballPlay({
+        playDescription: payload.playDescription
+          ?? `Mock pitch @ ${new Date().toLocaleTimeString()}`,
+        ...payload,
       });
-      toast.success('Play completed broadcast');
+      toast.success('Baseball play broadcast');
     } catch (err) {
       toast.error(`Broadcast failed: ${err.message || 'unknown'}`);
     } finally {
@@ -81,29 +69,44 @@ export default function BaseballDebugCard() {
     if (kind === 'ball' && next.balls === 4) {
       // Walk: clear count, runner advances simplistically (push to first).
       setBalls(0); setStrikes(0); setFirst(true);
-      broadcast(snapshot({ balls: 0, strikes: 0, runnerOnFirst: true }));
+      broadcast(snapshot({
+        playDescription: 'Walk — runner to first.',
+        balls: 0, strikes: 0, runnerOnFirst: true,
+      }));
       return;
     }
     if (kind === 'strike' && next.strikes === 3) {
       // Strikeout: increment outs, clear count.
       const newOuts = Math.min(outs + 1, 3);
       setOuts(newOuts); setBalls(0); setStrikes(0);
-      broadcast(snapshot({ outs: newOuts, balls: 0, strikes: 0 }));
+      broadcast(snapshot({
+        playDescription: 'Strikeout.',
+        outs: newOuts, balls: 0, strikes: 0,
+      }));
       return;
     }
     if (kind === 'ball') setBalls(next.balls); else setStrikes(next.strikes);
-    broadcast(snapshot(next));
+    broadcast(snapshot({
+      playDescription: kind === 'ball' ? 'Ball.' : 'Strike.',
+      ...next,
+    }));
   };
 
   const fireOut = () => {
     const newOuts = Math.min(outs + 1, 3);
     setOuts(newOuts); setBalls(0); setStrikes(0);
-    broadcast(snapshot({ outs: newOuts, balls: 0, strikes: 0 }));
+    broadcast(snapshot({
+      playDescription: 'Out recorded.',
+      outs: newOuts, balls: 0, strikes: 0,
+    }));
   };
 
   const fireSingle = () => {
     setFirst(true); setBalls(0); setStrikes(0);
-    broadcast(snapshot({ runnerOnFirst: true, balls: 0, strikes: 0 }));
+    broadcast(snapshot({
+      playDescription: 'Single — runner to first.',
+      runnerOnFirst: true, balls: 0, strikes: 0,
+    }));
   };
 
   const fireHomeRun = () => {
@@ -115,6 +118,7 @@ export default function BaseballDebugCard() {
     setFirst(false); setSecond(false); setThird(false);
     setBalls(0); setStrikes(0);
     broadcast(snapshot({
+      playDescription: `Home run — ${runs} run${runs === 1 ? '' : 's'} score.`,
       awayScore: newAway, homeScore: newHome,
       runnerOnFirst: false, runnerOnSecond: false, runnerOnThird: false,
       balls: 0, strikes: 0,
@@ -128,6 +132,7 @@ export default function BaseballDebugCard() {
     setBalls(0); setStrikes(0); setOuts(0);
     setFirst(false); setSecond(false); setThird(false);
     broadcast(snapshot({
+      playDescription: `${nextHalf} of inning ${nextInning}.`,
       halfInning: nextHalf, inning: nextInning,
       balls: 0, strikes: 0, outs: 0,
       runnerOnFirst: false, runnerOnSecond: false, runnerOnThird: false,
@@ -204,7 +209,6 @@ export default function BaseballDebugCard() {
           <button type="button" disabled={busy} onClick={fireSingle}>Single</button>
           <button type="button" disabled={busy} onClick={fireHomeRun}>Home run</button>
           <button type="button" disabled={busy} onClick={fireInningChange}>Inning change</button>
-          <button type="button" disabled={busy} onClick={firePlayCompleted}>Fire play log</button>
         </div>
 
         {live.lastPlayDescription && (

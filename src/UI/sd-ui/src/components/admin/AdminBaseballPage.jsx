@@ -45,16 +45,18 @@ export default function AdminBaseballPage() {
       awayScore: live.awayScore ?? matchup.awayScore,
       homeScore: live.homeScore ?? matchup.homeScore,
       // Baseball-shaped live fields (handleBaseballPlayCompleted writes
-      // these onto the context record).
-      inning: live.inning,
-      halfInning: live.halfInning,
-      balls: live.balls,
-      strikes: live.strikes,
-      outs: live.outs,
-      runnerOnFirst: live.runnerOnFirst,
-      runnerOnSecond: live.runnerOnSecond,
-      runnerOnThird: live.runnerOnThird,
-      lastPlayDescription: live.lastPlayDescription,
+      // these onto the context record). Use nullish-fallback so a
+      // future partial-update handler that doesn't carry the full set
+      // can't silently undefine a previously-populated field.
+      inning: live.inning ?? matchup.inning,
+      halfInning: live.halfInning ?? matchup.halfInning,
+      balls: live.balls ?? matchup.balls,
+      strikes: live.strikes ?? matchup.strikes,
+      outs: live.outs ?? matchup.outs,
+      runnerOnFirst: live.runnerOnFirst ?? matchup.runnerOnFirst,
+      runnerOnSecond: live.runnerOnSecond ?? matchup.runnerOnSecond,
+      runnerOnThird: live.runnerOnThird ?? matchup.runnerOnThird,
+      lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
     };
   }, [matchup, live]);
 

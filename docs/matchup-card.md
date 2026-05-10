@@ -5,8 +5,8 @@ as decisions land. Use as context in follow-up sessions.
 
 ## Status
 
-**MLB live rows landed** in `feat/matchup-card-mlb-enrichment` (PR
-forthcoming): score line picks up the live status, score, and a
+**MLB live rows landed** in PR #309 (`feat/matchup-card-mlb-enrichment`):
+score line picks up the live status, score, and a
 last-play description on every `BaseballPlayCompleted`. Inning/count/
 outs and runner rows render when populated; suppressed when the
 canonical play data emits defaults (which is most of the time today
@@ -20,7 +20,7 @@ FB, status-neutral class renames on the FB markup) live in
 
 ## Architecture as it landed
 
-```
+```text
 MatchupCard.jsx
   └─ GameStatus.jsx                       ← thin dispatcher
        ├─ Final / Scheduled branches      ← shared markup, unchanged
@@ -116,9 +116,12 @@ fields that aren't materialized on `BaseballCompetitionPlay`:
 Visible consequence on `MatchupCard`:
 - ⚾ batting-team indicator never appears (derived from `halfInning`
   — empty string fails the Top/Bottom check).
-- Inning row would render with bare `inning` value but is suppressed
-  whenever `halfInning` is also empty (current behavior — see
-  `hasInningRow` guard in `BaseballGameStatusInProgress.jsx`).
+- Inning row renders whenever `inning > 0` regardless of `halfInning`
+  — the `hasInningRow` guard in `BaseballGameStatusInProgress.jsx` is
+  `(inning > 0) || (halfInning non-empty)`, so a real-game replay with
+  `inning=5, halfInning=""` shows the row formatted as
+  `Inning 5 · 0-0 · 0 outs` (the count and outs placeholder values
+  also reflect the canonical-data gap above).
 - Runners row never appears (all three booleans false).
 
 The fix is sourcing-side: capture the missing fields onto

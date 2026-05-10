@@ -28,8 +28,16 @@ function FootballGameStatusInProgress({
   sport,
   league,
 }) {
-  const awayHasPossession = possessionFranchiseSeasonId === awayFranchiseSeasonId;
-  const homeHasPossession = possessionFranchiseSeasonId === homeFranchiseSeasonId;
+  // Guard against null/undefined possession — without the != null check,
+  // a missing possessionFranchiseSeasonId could match a missing
+  // awayFranchiseSeasonId / homeFranchiseSeasonId via `===` and falsely
+  // mark a team as having possession.
+  const awayHasPossession =
+    possessionFranchiseSeasonId != null
+    && possessionFranchiseSeasonId === awayFranchiseSeasonId;
+  const homeHasPossession =
+    possessionFranchiseSeasonId != null
+    && possessionFranchiseSeasonId === homeFranchiseSeasonId;
 
   const liveContent = (
     <>

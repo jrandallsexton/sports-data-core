@@ -12,10 +12,11 @@ import BaseballGameStatusInProgress from './BaseballGameStatusInProgress';
  *   - 'InProgress' → dispatch to a per-sport child component
  *                    (FootballGameStatusInProgress / BaseballGameStatusInProgress).
  *                    The two sports diverge meaningfully here — football
- *                    has period+clock+possession+yard line, baseball has
- *                    inning+count+outs+runners+last-play — so they own
- *                    their own JSX rather than one component piling up
- *                    sport-conditional branches.
+ *                    renders period, clock, score, and possession (with
+ *                    a scoring-play flash); baseball renders score plus
+ *                    inning+count+outs, runners, and a last-play line —
+ *                    so they own their own JSX rather than one component
+ *                    piling up sport-conditional branches.
  *   - default      → Scheduled / unknown: shared time+venue markup.
  *
  * Sport routing is keyed off `leagueSport` (the backend Sport enum

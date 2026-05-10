@@ -243,17 +243,20 @@ namespace SportsData.Producer.Application.Contests
                 correlationId);
 
             // Replay services are sport-specific (sport-keyed DataContext);
-            // resolve via the running pod's configured sport.
+            // resolve via the running pod's configured sport. Hangfire
+            // jobs run after the HTTP request completes, so we pass
+            // CancellationToken.None — the request token would already
+            // be tripped by the time the worker picks the job up.
             switch (_appMode.CurrentSport)
             {
                 case Sport.FootballNcaa:
                 case Sport.FootballNfl:
                     _backgroundJobProvider.Enqueue<IFootballContestReplayService>(
-                        p => p.ReplayContest(id, correlationId, cancellationToken));
+                        p => p.ReplayContest(id, correlationId, CancellationToken.None));
                     break;
                 case Sport.BaseballMlb:
                     _backgroundJobProvider.Enqueue<IBaseballContestReplayService>(
-                        p => p.ReplayContest(id, correlationId, cancellationToken));
+                        p => p.ReplayContest(id, correlationId, CancellationToken.None));
                     break;
                 default:
                     return BadRequest($"Replay not supported for sport '{_appMode.CurrentSport}'.");
@@ -295,7 +298,10 @@ namespace SportsData.Producer.Application.Contests
                 correlationId);
 
             // Replay services are sport-specific (sport-keyed DataContext);
-            // resolve via the running pod's configured sport.
+            // resolve via the running pod's configured sport. Hangfire
+            // jobs run after the HTTP request completes, so we pass
+            // CancellationToken.None — the request token would already
+            // be tripped by the time the worker picks the job up.
             switch (_appMode.CurrentSport)
             {
                 case Sport.FootballNcaa:
@@ -303,14 +309,14 @@ namespace SportsData.Producer.Application.Contests
                     foreach (var contestId in contestIds)
                     {
                         _backgroundJobProvider.Enqueue<IFootballContestReplayService>(
-                            p => p.ReplayContest(contestId, correlationId, cancellationToken));
+                            p => p.ReplayContest(contestId, correlationId, CancellationToken.None));
                     }
                     break;
                 case Sport.BaseballMlb:
                     foreach (var contestId in contestIds)
                     {
                         _backgroundJobProvider.Enqueue<IBaseballContestReplayService>(
-                            p => p.ReplayContest(contestId, correlationId, cancellationToken));
+                            p => p.ReplayContest(contestId, correlationId, CancellationToken.None));
                     }
                     break;
                 default:

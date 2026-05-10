@@ -110,11 +110,22 @@ namespace SportsData.Producer.Application.Contests
                 // back empty in practice (no Include + no lazy-loading
                 // proxies) even when stored plays exist. Same fix as
                 // BaseballContestReplayService.
-                var plays = await _dataContext.CompetitionPlays
+                //
+                // Sort is done in-memory after materialization: EF can't
+                // translate int.TryParse, and a hard int.Parse aborts
+                // the entire replay if ESPN ever emits a non-numeric
+                // SequenceNumber. Non-numeric values sort last via the
+                // int.MaxValue sentinel so a single bad row doesn't
+                // poison the rest of the stream.
+                var fetched = await _dataContext.CompetitionPlays
                     .OfType<FootballCompetitionPlay>()
                     .Where(p => p.CompetitionId == competition.Id)
-                    .OrderBy(p => int.Parse(p.SequenceNumber))
                     .ToListAsync(ct);
+
+                var plays = fetched
+                    .OrderBy(p => int.TryParse(p.SequenceNumber, out var n) ? n : int.MaxValue)
+                    .ThenBy(p => p.SequenceNumber, StringComparer.Ordinal)
+                    .ToList();
 
                 _logger.LogInformation(
                     "FootballReplay: enumerating plays. CompetitionId={CompetitionId}, FootballPlayCount={FootballPlayCount}, ContestId={ContestId}, CorrelationId={CorrelationId}",
@@ -167,9 +178,13 @@ namespace SportsData.Producer.Application.Contests
             }
             finally
             {
-                // Always restore FinalizedUtc, even if an exception occurred
+                // Always restore FinalizedUtc, even if an exception
+                // occurred or the incoming token was canceled — the
+                // restore must persist or the contest gets stuck in a
+                // mid-replay state. Use CancellationToken.None so a
+                // tripped ct can't skip the write.
                 contest.FinalizedUtc = finalizedPrev;
-                await _dataContext.SaveChangesAsync(ct);
+                await _dataContext.SaveChangesAsync(CancellationToken.None);
             }
         }
     }

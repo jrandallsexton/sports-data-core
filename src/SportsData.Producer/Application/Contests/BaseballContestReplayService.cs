@@ -173,8 +173,13 @@ namespace SportsData.Producer.Application.Contests
             }
             finally
             {
+                // Always restore FinalizedUtc, even if an exception
+                // occurred or the incoming token was canceled — the
+                // restore must persist or the contest gets stuck in a
+                // mid-replay state. Use CancellationToken.None so a
+                // tripped ct can't skip the write.
                 contest.FinalizedUtc = finalizedPrev;
-                await _dataContext.SaveChangesAsync(ct);
+                await _dataContext.SaveChangesAsync(CancellationToken.None);
             }
         }
     }

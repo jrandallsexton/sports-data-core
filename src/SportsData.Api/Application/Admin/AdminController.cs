@@ -28,6 +28,7 @@ using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Contests.Baseball;
 using SportsData.Core.Eventing.Events.Contests.Football;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Admin
@@ -223,6 +224,49 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Triggers a contest replay through the matching sport's Producer.
+        /// Producer enqueues the replay and the bus emits ContestStatusChanged
+        /// once + a sport-specific *PlayCompleted per stored play, exercising
+        /// the same SignalR fan-out path as a live game. Use the admin baseball
+        /// debug page to observe the resulting events on a real <MatchupCard />.
+        /// </summary>
+        [HttpPost]
+        [Route("baseball/contests/{contestId:guid}/replay")]
+        public async Task<ActionResult<bool>> ReplayBaseballContest(
+            [FromRoute] Guid contestId,
+            [FromServices] IContestClientFactory contestClientFactory,
+            CancellationToken cancellationToken)
+        {
+            var result = await contestClientFactory
+                .Resolve(Sport.BaseballMlb)
+                .ReplayContest(contestId, cancellationToken);
+
+            return result.ToActionResult();
+        }
+
+        [HttpPost]
+        [Route("football/contests/{contestId:guid}/replay")]
+        public async Task<ActionResult<bool>> ReplayFootballContest(
+            [FromRoute] Guid contestId,
+            [FromQuery] string? league,
+            [FromServices] IContestClientFactory contestClientFactory,
+            CancellationToken cancellationToken)
+        {
+            // Football has two leagues sharing the FootballDataContext (NCAA + NFL).
+            // The replay client routing is per-sport, so either NCAA or NFL resolves
+            // the same Producer pod; default to NCAA when caller doesn't specify.
+            var sport = string.Equals(league, "nfl", StringComparison.OrdinalIgnoreCase)
+                ? Sport.FootballNfl
+                : Sport.FootballNcaa;
+
+            var result = await contestClientFactory
+                .Resolve(sport)
+                .ReplayContest(contestId, cancellationToken);
+
+            return result.ToActionResult();
+        }
+
         [HttpPost]
         [Route("ai-predictions/{syntheticId}")]
         public async Task<IActionResult> PostBulkPicks(
@@ -344,27 +388,30 @@ namespace SportsData.Api.Application.Admin
         }
 
         [HttpPost]
-        [Route("signalr-debug/football-state")]
-        public async Task<IActionResult> BroadcastDebugFootballState(
-            [FromBody] DebugFootballStateRequest request,
+        [Route("signalr-debug/football-play")]
+        public async Task<IActionResult> BroadcastDebugFootballPlay(
+            [FromBody] DebugFootballPlayRequest request,
             CancellationToken cancellationToken)
         {
             if (!Enum.TryParse<Sport>(request.Sport, ignoreCase: true, out var sport))
                 return BadRequest($"Unknown sport '{request.Sport}'.");
 
-            // football-state is football-only by definition — reject
-            // any other sport (incl. BaseballMlb / BasketballNba) rather
-            // than publishing a FootballContestStateChanged for them.
+            // football-play is football-only by definition — reject
+            // any other sport rather than publishing a FootballPlayCompleted
+            // for them.
             if (sport is not (Sport.FootballNcaa or Sport.FootballNfl))
-                return BadRequest($"Unsupported sport '{request.Sport}' for football-state debug endpoint.");
+                return BadRequest($"Unsupported sport '{request.Sport}' for football-play debug endpoint.");
 
             var contestId = SignalRDebugContestIds.Football;
             var correlationId = Guid.NewGuid();
 
             using (_deliveryScope.Use(DeliveryMode.Direct))
             {
-                await _eventBus.Publish(new FootballContestStateChanged(
+                await _eventBus.Publish(new FootballPlayCompleted(
                     ContestId: contestId,
+                    CompetitionId: contestId, // sandbox: reuse contestId so consumers don't need a real competition row
+                    PlayId: Guid.NewGuid(),
+                    PlayDescription: request.PlayDescription,
                     Period: request.Period,
                     Clock: request.Clock,
                     AwayScore: request.AwayScore,
@@ -383,68 +430,16 @@ namespace SportsData.Api.Application.Admin
             var sanitizedPeriodForLog = request.Period?.ToString()?.Replace("\r", "").Replace("\n", "");
             var sanitizedClockForLog = request.Clock?.Replace("\r", "").Replace("\n", "");
             _logger.LogInformation(
-                "SignalRDebug: published FootballContestStateChanged. ContestId={ContestId}, Period={Period}, Clock={Clock}, Score={Away}-{Home}, Yard={Yard}, Scoring={Scoring}, CorrelationId={CorrelationId}",
+                "SignalRDebug: published FootballPlayCompleted. ContestId={ContestId}, Period={Period}, Clock={Clock}, Score={Away}-{Home}, Yard={Yard}, Scoring={Scoring}, CorrelationId={CorrelationId}",
                 contestId, sanitizedPeriodForLog, sanitizedClockForLog, request.AwayScore, request.HomeScore, request.BallOnYardLine, request.IsScoringPlay, correlationId);
 
             return Accepted(new { contestId, correlationId });
         }
 
         [HttpPost]
-        [Route("signalr-debug/play-completed")]
-        public async Task<IActionResult> BroadcastDebugContestPlayCompleted(
-            [FromBody] DebugContestPlayCompletedRequest request,
-            CancellationToken cancellationToken)
-        {
-            if (!Enum.TryParse<Sport>(request.Sport, ignoreCase: true, out var sport))
-                return BadRequest($"Unknown sport '{request.Sport}'.");
-
-            // Same whitelist as contest-status — reject sports the debug
-            // harness has no sandbox ContestId for.
-            Guid contestId;
-            switch (sport)
-            {
-                case Sport.BaseballMlb:
-                    contestId = SignalRDebugContestIds.Baseball;
-                    break;
-                case Sport.FootballNcaa:
-                case Sport.FootballNfl:
-                    contestId = SignalRDebugContestIds.Football;
-                    break;
-                default:
-                    return BadRequest($"Unsupported sport '{request.Sport}' for SignalR debug harness.");
-            }
-
-            var correlationId = Guid.NewGuid();
-
-            using (_deliveryScope.Use(DeliveryMode.Direct))
-            {
-                await _eventBus.Publish(new ContestPlayCompleted(
-                    ContestId: contestId,
-                    CompetitionId: contestId, // sandbox: reuse contestId so consumers don't need a real competition row
-                    PlayId: Guid.NewGuid(),
-                    PlayDescription: request.PlayDescription,
-                    Ref: null,
-                    Sport: sport,
-                    SeasonYear: null,
-                    CorrelationId: correlationId,
-                    CausationId: CausationId.Api.SignalRDebugBroadcaster
-                ), cancellationToken);
-            }
-            var safePlayDescriptionForLog = request.PlayDescription?
-                .Replace("\r", string.Empty)
-                .Replace("\n", string.Empty);
-
-            _logger.LogInformation(
-                "SignalRDebug: published ContestPlayCompleted. ContestId={ContestId}, Sport={Sport}, Description={Description}, CorrelationId={CorrelationId}",
-                contestId, sport, safePlayDescriptionForLog, correlationId);
-
-            return Accepted(new { contestId, correlationId });
-        }
-
-        [HttpPost]
-        [Route("signalr-debug/baseball-state")]
-        public async Task<IActionResult> BroadcastDebugBaseballState(
-            [FromBody] DebugBaseballStateRequest request,
+        [Route("signalr-debug/baseball-play")]
+        public async Task<IActionResult> BroadcastDebugBaseballPlay(
+            [FromBody] DebugBaseballPlayRequest request,
             CancellationToken cancellationToken)
         {
             var contestId = SignalRDebugContestIds.Baseball;
@@ -452,8 +447,11 @@ namespace SportsData.Api.Application.Admin
 
             using (_deliveryScope.Use(DeliveryMode.Direct))
             {
-                await _eventBus.Publish(new BaseballContestStateChanged(
+                await _eventBus.Publish(new BaseballPlayCompleted(
                     ContestId: contestId,
+                    CompetitionId: contestId, // sandbox: reuse contestId so consumers don't need a real competition row
+                    PlayId: Guid.NewGuid(),
+                    PlayDescription: request.PlayDescription,
                     Inning: request.Inning,
                     HalfInning: request.HalfInning,
                     AwayScore: request.AwayScore,
@@ -479,7 +477,7 @@ namespace SportsData.Api.Application.Admin
                 .Replace("\n", string.Empty);
 
             _logger.LogInformation(
-                "SignalRDebug: published BaseballContestStateChanged. ContestId={ContestId}, Inning={Half} {Inning}, Score={Away}-{Home}, Count={Balls}-{Strikes}, Outs={Outs}, CorrelationId={CorrelationId}",
+                "SignalRDebug: published BaseballPlayCompleted. ContestId={ContestId}, Inning={Half} {Inning}, Score={Away}-{Home}, Count={Balls}-{Strikes}, Outs={Outs}, CorrelationId={CorrelationId}",
                 contestId, halfInningForLog, request.Inning, request.AwayScore, request.HomeScore, request.Balls, request.Strikes, request.Outs, correlationId);
 
             return Accepted(new { contestId, correlationId });

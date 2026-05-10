@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 
 /**
- * Context for managing real-time contest updates from SignalR
- * Stores live game data including scores, status, possession, and clock
+ * Context for managing real-time contest updates from SignalR.
+ * Stores live game data including lifecycle status, play description,
+ * scores, possession (FB), inning/count/runners (MLB), and clock.
  */
 const ContestUpdatesContext = createContext(null);
 
@@ -13,8 +14,9 @@ export const ContestUpdatesProvider = ({ children }) => {
   /**
    * Handle ContestStatusChanged (lifecycle) event from SignalR.
    * Sport-neutral — only updates the lifecycle status field.
-   * Per-play scoreboard ticks come in via handleFootballStateUpdate /
-   * handleBaseballStateUpdate.
+   * Per-play updates land via handleFootballPlayCompleted /
+   * handleBaseballPlayCompleted, which carry both the play description
+   * and the sport-specific scoreboard tick in one event.
    */
   const handleStatusUpdate = useCallback((data) => {
     if (!data?.contestId) {
@@ -34,14 +36,15 @@ export const ContestUpdatesProvider = ({ children }) => {
   }, []);
 
   /**
-   * Handle FootballContestStateChanged (per-play scoreboard tick) event.
-   * Updates period, clock, scores, possession, scoring-play flash. Does
-   * not touch the lifecycle status field — that's owned by
-   * ContestStatusChanged.
+   * Handle FootballPlayCompleted — merged per-play event carrying both
+   * the play description and the football scoreboard tick (period,
+   * clock, score, possession, scoring flash, ball position). Replaces
+   * the prior split between FootballContestStateChanged and the
+   * sport-neutral ContestPlayCompleted.
    */
-  const handleFootballStateUpdate = useCallback((data) => {
+  const handleFootballPlayCompleted = useCallback((data) => {
     if (!data?.contestId) {
-      console.warn('FootballContestStateChanged event missing contestId', data);
+      console.warn('FootballPlayCompleted event missing contestId', data);
       return;
     }
 
@@ -57,6 +60,9 @@ export const ContestUpdatesProvider = ({ children }) => {
         possessionFranchiseSeasonId: data.possessionFranchiseSeasonId,
         isScoringPlay: data.isScoringPlay || false,
         ballOnYardLine: data.ballOnYardLine,
+        lastPlayId: data.playId,
+        lastPlayDescription: data.playDescription,
+        lastPlayAt: Date.now(),
         lastUpdated: Date.now()
       }
     }));
@@ -71,18 +77,20 @@ export const ContestUpdatesProvider = ({ children }) => {
             isScoringPlay: false
           }
         }));
-      }, 2000); // Clear after 2 seconds
+      }, 2000);
     }
   }, []);
 
   /**
-   * Handle BaseballContestStateChanged (per-pitch / per-at-bat tick).
-   * Mirrors handleFootballStateUpdate but with the baseball shape
-   * (inning, count, outs, base state, current at-bat).
+   * Handle BaseballPlayCompleted — merged per-play event carrying both
+   * the play description and the baseball scoreboard tick (inning,
+   * half-inning, count, outs, base state, current at-bat / pitcher).
+   * Replaces the prior split between BaseballContestStateChanged and
+   * the sport-neutral ContestPlayCompleted.
    */
-  const handleBaseballStateUpdate = useCallback((data) => {
+  const handleBaseballPlayCompleted = useCallback((data) => {
     if (!data?.contestId) {
-      console.warn('BaseballContestStateChanged event missing contestId', data);
+      console.warn('BaseballPlayCompleted event missing contestId', data);
       return;
     }
 
@@ -103,28 +111,6 @@ export const ContestUpdatesProvider = ({ children }) => {
         runnerOnThird: data.runnerOnThird,
         atBatAthleteId: data.atBatAthleteId,
         pitchingAthleteId: data.pitchingAthleteId,
-        lastUpdated: Date.now()
-      }
-    }));
-  }, []);
-
-  /**
-   * Handle ContestPlayCompleted (sport-neutral per-play log) event.
-   * Stores the latest play description on the contest record so the
-   * UI can render a play-by-play feed without needing the full play
-   * object. PlayId lets the consumer dedupe if it cares.
-   */
-  const handlePlayCompleted = useCallback((data) => {
-    if (!data?.contestId) {
-      console.warn('ContestPlayCompleted event missing contestId', data);
-      return;
-    }
-
-    setContests(prev => ({
-      ...prev,
-      [data.contestId]: {
-        ...prev[data.contestId],
-        contestId: data.contestId,
         lastPlayId: data.playId,
         lastPlayDescription: data.playDescription,
         lastPlayAt: Date.now(),
@@ -144,7 +130,7 @@ export const ContestUpdatesProvider = ({ children }) => {
 
   /**
    * Check if a contest has any live updates
-   * @param {string} contestId 
+   * @param {string} contestId
    * @returns {boolean}
    */
   const hasLiveUpdate = useCallback((contestId) => {
@@ -153,7 +139,7 @@ export const ContestUpdatesProvider = ({ children }) => {
 
   /**
    * Clear updates for a specific contest (e.g., when game ends)
-   * @param {string} contestId 
+   * @param {string} contestId
    */
   const clearContestUpdate = useCallback((contestId) => {
     setContests(prev => {
@@ -172,9 +158,8 @@ export const ContestUpdatesProvider = ({ children }) => {
   const value = {
     contests,
     handleStatusUpdate,
-    handleFootballStateUpdate,
-    handleBaseballStateUpdate,
-    handlePlayCompleted,
+    handleFootballPlayCompleted,
+    handleBaseballPlayCompleted,
     getContestUpdate,
     hasLiveUpdate,
     clearContestUpdate,

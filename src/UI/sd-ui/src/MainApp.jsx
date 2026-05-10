@@ -85,13 +85,13 @@ function MainApp() {
     setShowWelcome(false);
   };
 
-  // Get contest updates handlers from context — split per event:
-  // lifecycle vs. football tick vs. baseball tick.
+  // Get contest updates handlers from context — lifecycle is sport-
+  // neutral; per-play events are merged per sport (description + state
+  // in one message).
   const {
     handleStatusUpdate,
-    handleFootballStateUpdate,
-    handleBaseballStateUpdate,
-    handlePlayCompleted,
+    handleFootballPlayCompleted,
+    handleBaseballPlayCompleted,
   } = useContestUpdates();
 
   // Memoize callbacks so useSignalRClient's effect (which lists each
@@ -109,27 +109,21 @@ function MainApp() {
     handleStatusUpdate(data);
   }, [handleStatusUpdate]);
 
-  const onFootballContestStateChanged = useCallback((data) => {
-    console.log('🏈 Football state update received:', data);
-    handleFootballStateUpdate(data);
-  }, [handleFootballStateUpdate]);
+  const onFootballPlayCompleted = useCallback((data) => {
+    console.log('🏈 Football play completed received:', data);
+    handleFootballPlayCompleted(data);
+  }, [handleFootballPlayCompleted]);
 
-  const onBaseballContestStateChanged = useCallback((data) => {
-    console.log('⚾ Baseball state update received:', data);
-    handleBaseballStateUpdate(data);
-  }, [handleBaseballStateUpdate]);
-
-  const onContestPlayCompleted = useCallback((data) => {
-    console.log('📝 Play completed received:', data);
-    handlePlayCompleted(data);
-  }, [handlePlayCompleted]);
+  const onBaseballPlayCompleted = useCallback((data) => {
+    console.log('⚾ Baseball play completed received:', data);
+    handleBaseballPlayCompleted(data);
+  }, [handleBaseballPlayCompleted]);
 
   useSignalRClient({
     onPreviewCompleted,
     onContestStatusChanged,
-    onFootballContestStateChanged,
-    onBaseballContestStateChanged,
-    onContestPlayCompleted,
+    onFootballPlayCompleted,
+    onBaseballPlayCompleted,
   });
 
   return (

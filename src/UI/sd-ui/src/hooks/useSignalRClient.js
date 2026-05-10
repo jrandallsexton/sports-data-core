@@ -8,9 +8,8 @@ export default function useSignalRClient({
   leagueId,
   onPreviewCompleted,
   onContestStatusChanged,
-  onFootballContestStateChanged,
-  onBaseballContestStateChanged,
-  onContestPlayCompleted,
+  onFootballPlayCompleted,
+  onBaseballPlayCompleted,
 }) {
   const connectionRef = useRef(null);
 
@@ -46,19 +45,15 @@ export default function useSignalRClient({
       connection.on("ContestStatusChanged", onContestStatusChanged);
     }
 
-    // Per-play scoreboard ticks — sport-specific shapes.
-    if (onFootballContestStateChanged) {
-      connection.on("FootballContestStateChanged", onFootballContestStateChanged);
+    // Per-play merged events — sport-specific shapes carrying both the
+    // play description and the scoreboard tick (period/clock/possession
+    // for FB; inning/count/runners for MLB) in one message.
+    if (onFootballPlayCompleted) {
+      connection.on("FootballPlayCompleted", onFootballPlayCompleted);
     }
 
-    if (onBaseballContestStateChanged) {
-      connection.on("BaseballContestStateChanged", onBaseballContestStateChanged);
-    }
-
-    // Sport-neutral per-play log event — fires alongside the
-    // sport-specific scoreboard tick when a new play lands.
-    if (onContestPlayCompleted) {
-      connection.on("ContestPlayCompleted", onContestPlayCompleted);
+    if (onBaseballPlayCompleted) {
+      connection.on("BaseballPlayCompleted", onBaseballPlayCompleted);
     }
 
     connection
@@ -82,9 +77,8 @@ export default function useSignalRClient({
     leagueId,
     onPreviewCompleted,
     onContestStatusChanged,
-    onFootballContestStateChanged,
-    onBaseballContestStateChanged,
-    onContestPlayCompleted,
+    onFootballPlayCompleted,
+    onBaseballPlayCompleted,
   ]);
 
   return connectionRef.current;

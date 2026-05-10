@@ -20,19 +20,31 @@ const AdminApi = {
   getBaseballMatchupForContest: (contestId) =>
     apiClient.get(`/admin/baseball/contests/${contestId}/matchup`),
 
+  // Triggers a contest replay through the matching sport's Producer.
+  // Producer enqueues the work and the bus emits ContestStatusChanged
+  // once + a sport-specific *PlayCompleted per stored play. Use this
+  // alongside the matchup card observer / debug card to verify the
+  // SignalR pipeline end-to-end against a real game.
+  replayBaseballContest: (contestId) =>
+    apiClient.post(`/admin/baseball/contests/${contestId}/replay`),
+  replayFootballContest: (contestId, league) =>
+    apiClient.post(`/admin/football/contests/${contestId}/replay`, null, {
+      params: league ? { league } : undefined,
+    }),
+
   // SignalR debug harness — see docs/signalr-debug-harness-plan.md.
   // Each call publishes a synthetic integration event through API's
   // MassTransit + own consumer + SignalR fan-out, exercising the same
   // path a real Producer-originated event would. Server stamps the
   // ContestId so the client can't fan out for a real contest.
+  // *PlayCompleted carries play description + scoreboard tick in one
+  // event — there is no longer a separate play-completed broadcast.
   broadcastContestStatus: (payload) =>
     apiClient.post('/admin/signalr-debug/contest-status', payload),
-  broadcastFootballState: (payload) =>
-    apiClient.post('/admin/signalr-debug/football-state', payload),
-  broadcastBaseballState: (payload) =>
-    apiClient.post('/admin/signalr-debug/baseball-state', payload),
-  broadcastContestPlayCompleted: (payload) =>
-    apiClient.post('/admin/signalr-debug/play-completed', payload),
+  broadcastFootballPlay: (payload) =>
+    apiClient.post('/admin/signalr-debug/football-play', payload),
+  broadcastBaseballPlay: (payload) =>
+    apiClient.post('/admin/signalr-debug/baseball-play', payload),
 };
 
 export default AdminApi;

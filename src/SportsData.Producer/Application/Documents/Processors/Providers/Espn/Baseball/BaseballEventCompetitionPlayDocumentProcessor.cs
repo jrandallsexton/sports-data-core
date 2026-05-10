@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests.Baseball;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -71,6 +72,44 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext>
             command.CorrelationId,
             competition.Id,
             teamFranchiseSeasonId);
+    }
+
+    protected override Task PublishSportPlayCompletedAsync(
+        ProcessDocumentCommand command,
+        CompetitionBase competition,
+        CompetitionPlayBase play)
+    {
+        var baseballPlay = (BaseballCompetitionPlay)play;
+
+        // Live MLB plays don't carry half-inning, outs, base state, or
+        // athlete IDs at the play-entity level today — half-inning lives
+        // on the BaseballCompetitionStatus row, runners/outs need an
+        // AtBat sourcing pipeline, and athlete refs aren't materialized
+        // onto the play. Emit what we have plus safe defaults so the wire
+        // shape stays stable for the existing diamond renderer; richer
+        // fields fill in once the broader sourcing lands.
+        return _publishEndpoint.Publish(new BaseballPlayCompleted(
+            ContestId: competition.ContestId,
+            CompetitionId: competition.Id,
+            PlayId: baseballPlay.Id,
+            PlayDescription: baseballPlay.Text,
+            Inning: baseballPlay.PeriodNumber,
+            HalfInning: string.Empty,
+            AwayScore: baseballPlay.AwayScore,
+            HomeScore: baseballPlay.HomeScore,
+            Balls: baseballPlay.ResultCountBalls ?? 0,
+            Strikes: baseballPlay.ResultCountStrikes ?? 0,
+            Outs: 0,
+            RunnerOnFirst: false,
+            RunnerOnSecond: false,
+            RunnerOnThird: false,
+            AtBatAthleteId: null,
+            PitchingAthleteId: null,
+            Ref: null,
+            Sport: command.Sport,
+            SeasonYear: command.SeasonYear,
+            CorrelationId: command.CorrelationId,
+            CausationId: CausationId.Producer.EventCompetitionPlayDocumentProcessor));
     }
 
     protected override async Task ApplyUpdateAsync(

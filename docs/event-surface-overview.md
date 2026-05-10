@@ -78,19 +78,18 @@ Bucket → Event → Publisher(s) → Consumer(s) → Status. `file:line` refere
 
 | Event | Publisher(s) | Consumer(s) | Status |
 |---|---|---|---|
-| `BaseballContestStateChanged` | — (consumer wired ahead of MLB live emitter) | `BaseballContestStateChangedHandler` (API) | 🟡 wired (SignalR broadcast); awaiting MLB live-state Producer emitter |
+| `BaseballPlayCompleted` | `BaseballEventCompetitionPlayDocumentProcessor` (Producer), `BaseballContestReplayService` (Producer) | `BaseballPlayCompletedHandler` (API) | ✅ wired (SignalR broadcast — merged play description + baseball scoreboard tick) |
 | `CompetitorScoreUpdated` | `EventCompetitionCompetitorScoreDocumentProcessor:133,168` (Producer) | `CompetitorScoreUpdatedConsumer` (Producer Ingest, thin shim) → `CompetitorScoreUpdatedConsumerHandler` (Producer Worker, Hangfire job) | ✅ wired (updates `Contest.HomeScore/AwayScore`; publishes `ContestScoreChanged`) |
 | `ContestCreated` | `EventDocumentProcessorBase:114` (Producer) | — | 📤 emit-only |
 | `ContestEnrichmentCompleted` | `FootballContestEnrichmentProcessor:173`, `BaseballContestEnrichmentProcessor:146` (Producer) | — | 📤 emit-only |
 | `ContestOddsCreated` | `EventCompetitionOddsDocumentProcessor:163`, `BaseballEventCompetitionOddsDocumentProcessor:256` (Producer) | — | 📤 emit-only |
 | `ContestOddsUpdated` | `EventCompetitionOddsDocumentProcessor:173`, `BaseballEventCompetitionOddsDocumentProcessor:245` (Producer) | `ContestOddsUpdatedHandler` (API) | ✅ wired (SignalR broadcast) |
-| `ContestPlayCompleted` | `EventCompetitionPlayDocumentProcessor` (FB), `BaseballEventCompetitionPlayDocumentProcessor` (Producer) | — | 📤 emit-only |
 | `ContestRecapArticlePublished` | `ContestRecapProcessor:121` (API) | `ContestRecapArticlePublishedHandler` (API) | ✅ wired (SignalR broadcast) |
 | `ContestScoreChanged` | `CompetitorScoreUpdatedConsumerHandler` (Producer Worker) | `ContestScoreChangedHandler` (API Ingest) | ✅ wired (SignalR broadcast — see [flow doc](events/flows/competitor-score-flow.md)) |
 | `ContestStartTimeUpdated` | `EventCompetitionDocumentProcessorBase:202` (Producer) | `ContestStartTimeUpdatedHandler` (API) | ✅ wired (updates `PickemGroupMatchup.StartDateUtc`) |
-| `ContestStatusChanged` | `EventCompetitionStatusDocumentProcessor` (FB), `BaseballEventCompetitionStatusDocumentProcessor` (MLB), `ContestReplayService` (Producer) | `ContestStatusChangedHandler` (API) | ✅ wired (SignalR broadcast — sport-neutral lifecycle only) |
+| `ContestStatusChanged` | `EventCompetitionStatusDocumentProcessor` (FB), `BaseballEventCompetitionStatusDocumentProcessor` (MLB), `FootballContestReplayService` / `BaseballContestReplayService` (Producer) | `ContestStatusChangedHandler` (API) | ✅ wired (SignalR broadcast — sport-neutral lifecycle only) |
 | `ContestWinProbabilityChanged` | `EventCompetitionProbabilityDocumentProcessor` (Producer) | — | 📤 emit-only |
-| `FootballContestStateChanged` | `EventCompetitionPlayDocumentProcessor` (FB), `ContestReplayService` (Producer) | `FootballContestStateChangedHandler` (API) | ✅ wired (SignalR broadcast — football per-play scoreboard tick) |
+| `FootballPlayCompleted` | `FootballEventCompetitionPlayDocumentProcessor` (Producer), `FootballContestReplayService` (Producer) | `FootballPlayCompletedHandler` (API) | ✅ wired (SignalR broadcast — merged play description + football scoreboard tick) |
 
 ### Documents
 

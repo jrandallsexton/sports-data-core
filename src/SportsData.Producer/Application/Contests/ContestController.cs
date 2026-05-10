@@ -235,15 +235,33 @@ namespace SportsData.Producer.Application.Contests
         public IActionResult ReplayContestById([FromRoute] Guid id, CancellationToken cancellationToken)
         {
             var correlationId = GetCorrelationIdFromRequest();
-            
+
             _logger.LogInformation(
-                "ReplayContest requested. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                "ReplayContest requested. ContestId={ContestId}, Sport={Sport}, CorrelationId={CorrelationId}",
                 id,
+                _appMode.CurrentSport,
                 correlationId);
-                
-            _backgroundJobProvider.Enqueue<IContestReplayService>(
-                p => p.ReplayContest(id, correlationId, cancellationToken));
-                
+
+            // Replay services are sport-specific (sport-keyed DataContext);
+            // resolve via the running pod's configured sport. Hangfire
+            // jobs run after the HTTP request completes, so we pass
+            // CancellationToken.None — the request token would already
+            // be tripped by the time the worker picks the job up.
+            switch (_appMode.CurrentSport)
+            {
+                case Sport.FootballNcaa:
+                case Sport.FootballNfl:
+                    _backgroundJobProvider.Enqueue<IFootballContestReplayService>(
+                        p => p.ReplayContest(id, correlationId, CancellationToken.None));
+                    break;
+                case Sport.BaseballMlb:
+                    _backgroundJobProvider.Enqueue<IBaseballContestReplayService>(
+                        p => p.ReplayContest(id, correlationId, CancellationToken.None));
+                    break;
+                default:
+                    return BadRequest($"Replay not supported for sport '{_appMode.CurrentSport}'.");
+            }
+
             return Accepted(new { CorrelationId = correlationId, ContestId = id });
         }
 
@@ -279,10 +297,30 @@ namespace SportsData.Producer.Application.Contests
                 seasonWeekNumber,
                 correlationId);
 
-            foreach (var contestId in contestIds)
+            // Replay services are sport-specific (sport-keyed DataContext);
+            // resolve via the running pod's configured sport. Hangfire
+            // jobs run after the HTTP request completes, so we pass
+            // CancellationToken.None — the request token would already
+            // be tripped by the time the worker picks the job up.
+            switch (_appMode.CurrentSport)
             {
-                _backgroundJobProvider.Enqueue<IContestReplayService>(
-                    p => p.ReplayContest(contestId, correlationId, cancellationToken));
+                case Sport.FootballNcaa:
+                case Sport.FootballNfl:
+                    foreach (var contestId in contestIds)
+                    {
+                        _backgroundJobProvider.Enqueue<IFootballContestReplayService>(
+                            p => p.ReplayContest(contestId, correlationId, CancellationToken.None));
+                    }
+                    break;
+                case Sport.BaseballMlb:
+                    foreach (var contestId in contestIds)
+                    {
+                        _backgroundJobProvider.Enqueue<IBaseballContestReplayService>(
+                            p => p.ReplayContest(contestId, correlationId, CancellationToken.None));
+                    }
+                    break;
+                default:
+                    return BadRequest($"Replay not supported for sport '{_appMode.CurrentSport}'.");
             }
 
             return Accepted(new { CorrelationId = correlationId, ContestCount = contestIds.Count });

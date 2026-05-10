@@ -299,14 +299,16 @@ namespace SportsData.Producer.DependencyInjection
 
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)
             {
-                // Both depend on FootballDataContext.
-                services.AddScoped<IContestReplayService, ContestReplayService>();
+                // Depend on FootballDataContext.
+                services.AddScoped<IFootballContestReplayService, FootballContestReplayService>();
                 services.AddScoped<ICompetitionBroadcastingJob, FootballCompetitionStreamer>();
                 services.AddScoped<CompetitionStreamScheduler>();
             }
 
             if (mode is Sport.BaseballMlb)
             {
+                // Depend on BaseballDataContext.
+                services.AddScoped<IBaseballContestReplayService, BaseballContestReplayService>();
                 services.AddScoped<ICompetitionBroadcastingJob, BaseballCompetitionStreamer>();
                 services.AddScoped<CompetitionStreamScheduler>();
             }

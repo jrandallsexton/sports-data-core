@@ -21,10 +21,13 @@ public record DebugContestStatusRequest(
     string Status);  // "Scheduled" / "InProgress" / "Final"
 
 /// <summary>
-/// Request body for POST /admin/signalr-debug/football-state.
+/// Request body for POST /admin/signalr-debug/football-play. Drives a
+/// synthetic FootballPlayCompleted — merged play description + scoreboard
+/// tick — through the bus → SignalR pipeline.
 /// </summary>
-public record DebugFootballStateRequest(
+public record DebugFootballPlayRequest(
     string Sport,
+    string PlayDescription,
     string Period,
     string Clock,
     int AwayScore,
@@ -34,18 +37,12 @@ public record DebugFootballStateRequest(
     int? BallOnYardLine);
 
 /// <summary>
-/// Request body for POST /admin/signalr-debug/play-completed.
-/// Sport-neutral per-play log event — payload mirrors what Producer
-/// publishes when a new CompetitionPlay lands while the contest is live.
+/// Request body for POST /admin/signalr-debug/baseball-play. Drives a
+/// synthetic BaseballPlayCompleted — merged play description + scoreboard
+/// tick — through the bus → SignalR pipeline.
 /// </summary>
-public record DebugContestPlayCompletedRequest(
-    string Sport,             // "FootballNcaa" / "FootballNfl" / "BaseballMlb"
-    string PlayDescription);
-
-/// <summary>
-/// Request body for POST /admin/signalr-debug/baseball-state.
-/// </summary>
-public record DebugBaseballStateRequest(
+public record DebugBaseballPlayRequest(
+    string PlayDescription,
     int Inning,
     string HalfInning,
     int AwayScore,

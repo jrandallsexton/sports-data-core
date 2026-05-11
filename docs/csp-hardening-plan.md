@@ -8,8 +8,9 @@ is its own coordinated work. This doc captures the plans so future
 sessions don't have to rediscover the context.
 
 CSP source: `src/UI/sd-ui/security-headers.conf`. Served by nginx
-in front of the Vite-built React SPA. Same headers apply in every
-environment because nginx is the only HTTP-layer config we own.
+in front of the CRA-built React SPA (`react-scripts 5.0.1`). Same
+headers apply in every environment because nginx is the only
+HTTP-layer config we own.
 
 ---
 
@@ -67,10 +68,12 @@ complete (other auth-flow consumers may exist).
    nothing to point at and we'd just be shuffling the same literal.
 2. **Define a single env var name** — `FIREBASE_AUTH_DOMAIN` is the
    obvious one. Used everywhere downstream.
-3. **JS client**: Vite's build pipeline already supports
-   `VITE_FIREBASE_AUTH_DOMAIN`. Read it in `firebase.js` instead of
-   the hardcoded string. Set per-environment in the EAS build
-   config and the local `.env.local`.
+3. **JS client**: CRA's build pipeline picks up any `REACT_APP_*`
+   env var at `react-scripts build` time. Read
+   `REACT_APP_FIREBASE_AUTH_DOMAIN` in `firebase.js` instead of the
+   hardcoded string. Set per-environment in `.env.prod` / `.env.dev`
+   (already loaded via the `env-cmd` build scripts in `package.json`)
+   and the local `.env.local`.
 4. **Nginx CSP**: switch to `envsubst` at container entrypoint.
    Rename `security-headers.conf` → `security-headers.conf.template`,
    substitute `${FIREBASE_AUTH_DOMAIN}` at startup, write to the
@@ -89,8 +92,8 @@ complete (other auth-flow consumers may exist).
   suspenders: keep a default value in the template that falls back
   to the dev domain so a missing env var doesn't take down login
   in lower environments.
-- **Caching**: nginx CSP is per-response; no cache issue. Vite
-  bundles the auth domain into JS at build time, so build-time
+- **Caching**: nginx CSP is per-response; no cache issue. CRA
+  bundles `REACT_APP_*` env vars into JS at build time, so build-time
   injection is correct (no runtime fetch).
 
 ### Estimate

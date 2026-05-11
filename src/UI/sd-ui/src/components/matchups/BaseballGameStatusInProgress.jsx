@@ -4,18 +4,17 @@ import { contestLink } from '../../utils/sportLinks';
 /**
  * Baseball per-play live block. Renders LIVE label, score with ⚾ next
  * to the batting team (derived from halfInning: Top → away batting,
- * Bottom → home batting), then three optional rows:
+ * Bottom → home batting), then up to four optional rows:
  *
- *   1. Inning + count + outs    (.live-state-summary)
- *   2. Runners on base          (.live-state-runners)
- *   3. Last play description    (.live-state-lastplay)
+ *   1. At-bat header           (.live-state-atbat)         — batter + pitcher slots
+ *   2. Inning + count + outs   (.live-state-summary)
+ *   3. Runners on base         (.live-state-runners)
+ *   4. Last play description   (.live-state-lastplay)
  *
- * Each optional row is suppressed when its source fields are at
- * defaults — half-inning, outs, runners, athlete IDs aren't yet
- * materialized on BaseballCompetitionPlay (see PR #308 / Issue #9
- * notes), so live MLB events arrive with mostly-default values until
- * the AtBat sourcing pipeline lands. The card degrades gracefully
- * rather than rendering "Top — · 0-0 · 0 outs" placeholders.
+ * Each optional row suppresses when its source fields are absent.
+ * The at-bat header per-slot suppression handles the partial-resolution
+ * case (e.g., only the pitcher has been sourced yet). Team logo for
+ * each slot derives from halfInning + away/homeLogoUri.
  *
  * Uses status-neutral class names (`.game-status-block`, `.score-display`,
  * etc.) — the broader rename of football's `.game-result` / `.final-score`
@@ -35,6 +34,14 @@ function BaseballGameStatusInProgress({
   runnerOnSecond,
   runnerOnThird,
   lastPlayDescription,
+  atBatShortName,
+  atBatPositionAbbreviation,
+  atBatHeadshotUrl,
+  pitchingShortName,
+  pitchingPositionAbbreviation,
+  pitchingHeadshotUrl,
+  awayLogoUri,
+  homeLogoUri,
   isScoringPlay,
   contestId,
   sport,
@@ -57,6 +64,16 @@ function BaseballGameStatusInProgress({
   const hasLastPlayRow =
     typeof lastPlayDescription === 'string' && lastPlayDescription.length > 0;
 
+  // At-bat header: offense team bats, defense team pitches. Each slot
+  // is independently suppressed when its ShortName is missing so the
+  // row gracefully handles partial resolution (only the pitcher has
+  // been sourced yet, etc.). Whole row hides when both names are null.
+  const hasAtBatRow =
+    (typeof atBatShortName === 'string' && atBatShortName.length > 0) ||
+    (typeof pitchingShortName === 'string' && pitchingShortName.length > 0);
+  const batterLogoUri = awayIsBatting ? awayLogoUri : homeIsBatting ? homeLogoUri : null;
+  const pitcherLogoUri = awayIsBatting ? homeLogoUri : homeIsBatting ? awayLogoUri : null;
+
   const outsLabel = outs === 1 ? 'out' : 'outs';
   const formattedHalfInning = halfInning && inning
     ? `${halfInning} ${inning}`
@@ -70,6 +87,59 @@ function BaseballGameStatusInProgress({
         {awayShort} {awayScore} - {homeScore} {homeShort}
         {homeIsBatting && <span className="possession-indicator" aria-label="batting">⚾</span>}
       </span>
+
+      {hasAtBatRow && (
+        <span className="live-state-atbat">
+          {atBatShortName && (
+            <span className="live-state-atbat-slot">
+              {batterLogoUri && (
+                <img
+                  src={batterLogoUri}
+                  alt=""
+                  aria-hidden="true"
+                  className="live-state-atbat-logo"
+                />
+              )}
+              {atBatHeadshotUrl && (
+                <img
+                  src={atBatHeadshotUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="live-state-atbat-headshot"
+                />
+              )}
+              <span className="live-state-atbat-name">{atBatShortName}</span>
+              {atBatPositionAbbreviation && (
+                <span className="live-state-atbat-pos">{atBatPositionAbbreviation}</span>
+              )}
+            </span>
+          )}
+          {pitchingShortName && (
+            <span className="live-state-atbat-slot">
+              {pitcherLogoUri && (
+                <img
+                  src={pitcherLogoUri}
+                  alt=""
+                  aria-hidden="true"
+                  className="live-state-atbat-logo"
+                />
+              )}
+              {pitchingHeadshotUrl && (
+                <img
+                  src={pitchingHeadshotUrl}
+                  alt=""
+                  aria-hidden="true"
+                  className="live-state-atbat-headshot"
+                />
+              )}
+              <span className="live-state-atbat-name">{pitchingShortName}</span>
+              {pitchingPositionAbbreviation && (
+                <span className="live-state-atbat-pos">{pitchingPositionAbbreviation}</span>
+              )}
+            </span>
+          )}
+        </span>
+      )}
 
       {hasInningRow && (
         <span className="live-state-summary">

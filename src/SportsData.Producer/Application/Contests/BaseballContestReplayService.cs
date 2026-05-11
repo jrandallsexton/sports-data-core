@@ -24,10 +24,11 @@ namespace SportsData.Producer.Application.Contests
     /// the live UI through a known game without needing a real ESPN feed.
     /// Football has its own equivalent in <see cref="FootballContestReplayService"/>.
     ///
-    /// Some scoreboard fields (HalfInning, Outs, runners, AtBat /
-    /// PitchingAthleteId) aren't materialized onto BaseballCompetitionPlay
-    /// today and are emitted as defaults; consumers should treat them as
-    /// best-effort until the AtBat sourcing pipeline lands.
+    /// Runner state still emits as defaults — the
+    /// EventCompetitionSituation pipeline that backs it is deferred
+    /// (Phase 3 of docs/baseball-live-data-plan.md). HalfInning, Outs,
+    /// and the at-bat / pitcher display fields hydrate from the
+    /// captured entity + participants per PR #310 + PR #311.
     /// </summary>
     public class BaseballContestReplayService : IBaseballContestReplayService
     {
@@ -113,8 +114,13 @@ namespace SportsData.Producer.Application.Contests
                 // than the navigation collection — the navigation came
                 // back empty in practice (no Include + no lazy-loading
                 // proxies) even when stored plays exist.
+                // Include Participants so the payload builder can read
+                // PositionId off the in-memory entity graph (same shape
+                // as the live publish path, which sees them via the
+                // attached new-entity navigation collection).
                 var plays = await _dataContext.CompetitionPlays
                     .OfType<BaseballCompetitionPlay>()
+                    .Include(p => p.Participants)
                     .Where(p => p.CompetitionId == competition.Id)
                     .OrderBy(p => p.EspnId)
                     .ToListAsync(ct);
@@ -133,23 +139,50 @@ namespace SportsData.Producer.Application.Contests
                 var emittedCount = 0;
                 foreach (var play in plays)
                 {
+                    // Isolate hydration failures per play — replay is a
+                    // best-effort admin tool, so one bad row (transient DB
+                    // hiccup, unexpected join shape) shouldn't kill the
+                    // remaining 600+ plays. Fall back to Empty: the play
+                    // description, score, inning, and outs still emit
+                    // from the entity itself; just no batter/pitcher
+                    // display chrome for the affected play.
+                    BaseballAtBatDisplayPayload display;
+                    try
+                    {
+                        display = await BaseballPlayCompletedPayloadBuilder
+                            .HydrateAsync(_dataContext, play, ct);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        _logger.LogWarning(ex,
+                            "BaseballReplay: hydration failed for play, falling back to empty display. PlayId={PlayId}, EspnId={EspnId}, CompetitionId={CompetitionId}, ContestId={ContestId}, CorrelationId={CorrelationId}",
+                            play.Id, play.EspnId, competition.Id, contestId, correlationId);
+                        display = BaseballAtBatDisplayPayload.Empty;
+                    }
+
                     await _eventBus.Publish(new BaseballPlayCompleted(
                         ContestId: contestId,
                         CompetitionId: competition.Id,
                         PlayId: play.Id,
                         PlayDescription: play.Text,
                         Inning: play.PeriodNumber,
-                        HalfInning: string.Empty,
+                        HalfInning: play.HalfInning ?? string.Empty,
                         AwayScore: play.AwayScore,
                         HomeScore: play.HomeScore,
                         Balls: play.ResultCountBalls ?? 0,
                         Strikes: play.ResultCountStrikes ?? 0,
-                        Outs: 0,
+                        Outs: play.Outs ?? 0,
                         RunnerOnFirst: false,
                         RunnerOnSecond: false,
                         RunnerOnThird: false,
-                        AtBatAthleteId: null,
-                        PitchingAthleteId: null,
+                        AtBatAthleteSeasonId: play.AtBatAthleteSeasonId,
+                        AtBatShortName: display.AtBatShortName,
+                        AtBatPositionAbbreviation: display.AtBatPositionAbbreviation,
+                        AtBatHeadshotUrl: display.AtBatHeadshotUrl,
+                        PitchingAthleteSeasonId: play.PitchingAthleteSeasonId,
+                        PitchingShortName: display.PitchingShortName,
+                        PitchingPositionAbbreviation: display.PitchingPositionAbbreviation,
+                        PitchingHeadshotUrl: display.PitchingHeadshotUrl,
                         Ref: null,
                         Sport: contest.Sport,
                         SeasonYear: contest.SeasonYear,

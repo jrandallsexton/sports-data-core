@@ -13,11 +13,13 @@ namespace SportsData.Core.Eventing.Events.Contests.Baseball
     /// Lifecycle transitions (Scheduled→InProgress→Final) remain on
     /// <see cref="ContestStatusChanged"/>.
     ///
-    /// Some scoreboard fields (Outs, runners, AtBat/Pitching athlete
-    /// IDs) are not yet populated from the BaseballCompetitionPlay
-    /// entity — those will fill in once the AtBat / runner sourcing
-    /// pipeline lands. The wire shape is preserved so the existing UI
-    /// diamond renderer keeps working when those fields go non-null.
+    /// The athlete fields are season-scoped: ESPN's play
+    /// `participant.athlete.$ref` points at AthleteSeason (URL path is
+    /// `/seasons/{year}/athletes/{id}`), so the resolved canonical ID is
+    /// AthleteSeason.Id, not AthleteBase.Id. The display fields
+    /// (ShortName, PositionAbbreviation, HeadshotUrl) are hydrated on the
+    /// publish path so consumers can render the live at-bat header
+    /// without round-tripping back to the API for athlete data.
     /// </summary>
     public record BaseballPlayCompleted(
         Guid ContestId,
@@ -34,8 +36,14 @@ namespace SportsData.Core.Eventing.Events.Contests.Baseball
         bool RunnerOnFirst,
         bool RunnerOnSecond,
         bool RunnerOnThird,
-        Guid? AtBatAthleteId,
-        Guid? PitchingAthleteId,
+        Guid? AtBatAthleteSeasonId,
+        string? AtBatShortName,
+        string? AtBatPositionAbbreviation,
+        string? AtBatHeadshotUrl,
+        Guid? PitchingAthleteSeasonId,
+        string? PitchingShortName,
+        string? PitchingPositionAbbreviation,
+        string? PitchingHeadshotUrl,
         Uri? Ref,
         Sport Sport,
         int? SeasonYear,

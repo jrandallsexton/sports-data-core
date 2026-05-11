@@ -96,7 +96,7 @@ public class BaseballCompetitionPlay : CompetitionPlayBase
 
     // Full ESPN participants[] capture, one row per participant. Backed by
     // the shared `CompetitionPlayParticipant` TPH table; the convenience
-    // AtBatAthleteId / PitchingAthleteId columns above are denormalizations
+    // AtBatAthleteSeasonId / PitchingAthleteSeasonId columns above are denormalizations
     // of the primary pitcher/batter for cheap live-UI lookup.
     public ICollection<BaseballCompetitionPlayParticipant> Participants { get; set; }
         = new List<BaseballCompetitionPlayParticipant>();

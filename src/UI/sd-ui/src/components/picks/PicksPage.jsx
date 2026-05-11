@@ -96,6 +96,13 @@ function PicksPage() {
           runnerOnFirst: liveUpdate.runnerOnFirst ?? matchup.runnerOnFirst,
           runnerOnSecond: liveUpdate.runnerOnSecond ?? matchup.runnerOnSecond,
           runnerOnThird: liveUpdate.runnerOnThird ?? matchup.runnerOnThird,
+          // At-bat header display fields (baseball live)
+          atBatShortName: liveUpdate.atBatShortName ?? matchup.atBatShortName,
+          atBatPositionAbbreviation: liveUpdate.atBatPositionAbbreviation ?? matchup.atBatPositionAbbreviation,
+          atBatHeadshotUrl: liveUpdate.atBatHeadshotUrl ?? matchup.atBatHeadshotUrl,
+          pitchingShortName: liveUpdate.pitchingShortName ?? matchup.pitchingShortName,
+          pitchingPositionAbbreviation: liveUpdate.pitchingPositionAbbreviation ?? matchup.pitchingPositionAbbreviation,
+          pitchingHeadshotUrl: liveUpdate.pitchingHeadshotUrl ?? matchup.pitchingHeadshotUrl,
           // Sport-neutral last-play (written by both *PlayCompleted handlers)
           lastPlayDescription: liveUpdate.lastPlayDescription ?? matchup.lastPlayDescription
         };

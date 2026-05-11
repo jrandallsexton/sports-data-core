@@ -288,6 +288,20 @@ public class BaseballEventCompetitionPlayDocumentProcessorTests
         batterRow.AthleteSeasonId.Should().Be(batterAthleteSeasonId);
         batterRow.PositionId.Should().Be(batterPositionId);
         batterRow.Order.Should().Be(2);
+
+        // Display payload (ShortName / position abbreviation / headshot) is
+        // hydrated on the publish path so SignalR consumers don't round-trip
+        // for athlete data per play. Verify it lands on the emitted event.
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(
+                It.Is<BaseballPlayCompleted>(e =>
+                    e.AtBatAthleteSeasonId == batterAthleteSeasonId &&
+                    e.PitchingAthleteSeasonId == pitcherAthleteSeasonId &&
+                    e.AtBatShortName == "Test Athlete 2026" &&
+                    e.PitchingShortName == "Test Athlete 2026" &&
+                    e.AtBatPositionAbbreviation == "T" &&
+                    e.PitchingPositionAbbreviation == "T"),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

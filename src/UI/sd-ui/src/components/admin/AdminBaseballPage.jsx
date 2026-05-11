@@ -56,6 +56,12 @@ export default function AdminBaseballPage() {
       runnerOnFirst: live.runnerOnFirst ?? matchup.runnerOnFirst,
       runnerOnSecond: live.runnerOnSecond ?? matchup.runnerOnSecond,
       runnerOnThird: live.runnerOnThird ?? matchup.runnerOnThird,
+      atBatShortName: live.atBatShortName ?? matchup.atBatShortName,
+      atBatPositionAbbreviation: live.atBatPositionAbbreviation ?? matchup.atBatPositionAbbreviation,
+      atBatHeadshotUrl: live.atBatHeadshotUrl ?? matchup.atBatHeadshotUrl,
+      pitchingShortName: live.pitchingShortName ?? matchup.pitchingShortName,
+      pitchingPositionAbbreviation: live.pitchingPositionAbbreviation ?? matchup.pitchingPositionAbbreviation,
+      pitchingHeadshotUrl: live.pitchingHeadshotUrl ?? matchup.pitchingHeadshotUrl,
       lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
     };
   }, [matchup, live]);

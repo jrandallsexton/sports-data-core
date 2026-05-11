@@ -17,9 +17,16 @@ publish (and on replay), and renders an at-bat header row on the card.
 > of pre-game sourcing. Suppressed entirely when both athlete-season
 > IDs are null (start-inning, end-of-inning, end-batterpitcher).
 
-## Current state — what's wired
+## Pre-change baseline — the gap this PR closes
 
-### Event (`BaseballPlayCompleted`)
+> The shape below describes the state of the codebase **before this PR
+> merged**. Retained as the rationale for the work; refer to the
+> implementation files directly for current shape.
+
+### Event (`BaseballPlayCompleted`) — pre-PR
+
+Before this PR, the record declared the two athlete IDs with names
+that didn't match the entity columns renamed in PR #310:
 
 ```csharp
 public record BaseballPlayCompleted(
@@ -27,37 +34,38 @@ public record BaseballPlayCompleted(
     string PlayDescription, int Inning, string HalfInning,
     int AwayScore, int HomeScore, int Balls, int Strikes, int Outs,
     bool RunnerOnFirst, bool RunnerOnSecond, bool RunnerOnThird,
-    Guid? AtBatAthleteId,        // ← stale name; entity column was renamed
-    Guid? PitchingAthleteId,     // ← stale name; entity column was renamed
+    Guid? AtBatAthleteId,        // ← stale; entity column was AthleteSeasonId
+    Guid? PitchingAthleteId,     // ← stale; entity column was AthleteSeasonId
     Uri? Ref, Sport Sport, int? SeasonYear,
     Guid CorrelationId, Guid CausationId);
 ```
 
-`PublishSportPlayCompletedAsync` still hardcodes both athlete fields to
-`null` plus the outs/runner fields to 0/false. The entity now carries
-the real values; we just don't ship them yet.
+`PublishSportPlayCompletedAsync` hardcoded both athlete fields to
+`null` plus the outs/runner fields to `0`/`false`. The captured
+entity already carried real values for HalfInning, Outs, and the
+athlete-season IDs; the event simply didn't ship them.
 
-### Producer publish path
+### Producer publish path — pre-PR
 
 `BaseballEventCompetitionPlayDocumentProcessor.PublishSportPlayCompletedAsync`
-receives the resolved `BaseballCompetitionPlay` already (created or
-updated in the same processor pass). The new `AtBatAthleteSeasonId`
-and `PitchingAthleteSeasonId` columns are on the play; the
-`CompetitionPlayParticipant` rows hold the matching `PositionId`s.
-What's missing is the display shape — ShortName, AthletePosition
-abbreviation, headshot URI.
+already received the resolved `BaseballCompetitionPlay` (created or
+updated in the same processor pass), and the
+`CompetitionPlayParticipant` rows held the matching `PositionId`s
+in the attached navigation collection. What was missing was the
+display shape — ShortName, AthletePosition abbreviation, headshot
+URI — and the wire-up to actually emit any of it.
 
-### Replay service
+### Replay service — pre-PR
 
-`BaseballContestReplayService` reads the same entity and emits the
-same event shape, so it has the same gap.
+`BaseballContestReplayService` read from the same entity and emitted
+the same default-filled event shape, so it carried the same gap.
 
-### UI
+### UI — pre-PR
 
-`BaseballGameStatusInProgress.jsx` renders three optional rows
+`BaseballGameStatusInProgress.jsx` rendered three optional rows
 (inning+count+outs, runners, last-play) plus the score line. No
-athlete fields are read today even though they're in props —
-`atBatAthleteId` / `pitchingAthleteId` are forwarded through
+athlete fields were read even though they were in props —
+`atBatAthleteId` / `pitchingAthleteId` were forwarded through
 `ContestUpdatesContext` but used nowhere downstream.
 
 Probable-pitcher rendering on `TeamRow.jsx` is the visual reference
@@ -189,7 +197,7 @@ fallback to canonical matchup data (mirrors the established
 A new row above the existing inning+count+outs row. Two slots
 side-by-side:
 
-```
+```text
 ┌───────────────────────────────────────────────────────────────┐
 │ [logo] [hs] G. Henderson  SS  |  T. Rogers  RHP [hs] [logo]   │
 │                  Top 3 · 1-2 · 1 out                          │

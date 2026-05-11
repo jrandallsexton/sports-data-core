@@ -139,8 +139,26 @@ namespace SportsData.Producer.Application.Contests
                 var emittedCount = 0;
                 foreach (var play in plays)
                 {
-                    var display = await BaseballPlayCompletedPayloadBuilder
-                        .HydrateAsync(_dataContext, play, ct);
+                    // Isolate hydration failures per play — replay is a
+                    // best-effort admin tool, so one bad row (transient DB
+                    // hiccup, unexpected join shape) shouldn't kill the
+                    // remaining 600+ plays. Fall back to Empty: the play
+                    // description, score, inning, and outs still emit
+                    // from the entity itself; just no batter/pitcher
+                    // display chrome for the affected play.
+                    BaseballAtBatDisplayPayload display;
+                    try
+                    {
+                        display = await BaseballPlayCompletedPayloadBuilder
+                            .HydrateAsync(_dataContext, play, ct);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        _logger.LogWarning(ex,
+                            "BaseballReplay: hydration failed for play, falling back to empty display. PlayId={PlayId}, EspnId={EspnId}, CompetitionId={CompetitionId}, ContestId={ContestId}, CorrelationId={CorrelationId}",
+                            play.Id, play.EspnId, competition.Id, contestId, correlationId);
+                        display = BaseballAtBatDisplayPayload.Empty;
+                    }
 
                     await _eventBus.Publish(new BaseballPlayCompleted(
                         ContestId: contestId,

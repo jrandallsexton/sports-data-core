@@ -122,97 +122,94 @@ Replacing it with nonces or hashes restores the protection.
 
 ### Current state
 
-The SPA is built with Vite, served as static assets by nginx. After
-`vite build`, the output `index.html` contains:
+The SPA is built with **Create React App** (`react-scripts 5.0.1`),
+served as static assets by nginx. Build output lives under
+`src/UI/sd-ui/build/`.
 
-- A `<script type="module" crossorigin src="/assets/index-XXXX.js">`
-  tag — external, doesn't need nonce/hash.
-- Vite-injected inline module preload + runtime bootstrap blocks —
-  these are the actual reason `'unsafe-inline'` is currently in
-  place.
+Audit of the current production build (`build/index.html`) — **zero
+inline `<script>` tags**. Just two externals:
 
-Plus runtime concerns:
+```html
+<script defer src="https://analytics.sportdeets.com/script.js" ...></script>
+<script defer src="/static/js/main.5b1f5d35.js"></script>
+```
 
-- **Google Maps** (`https://maps.googleapis.com`) injects inline
-  scripts when loaded via the JS API. Already allowed via origin,
-  but worth verifying the injected scripts don't trip CSP.
-- **Firebase auth** opens its iframe with its own script tags
-  (frame-src handles those; not in scope here).
-- **Analytics** loads as an external script tag; no inline.
+The source template (`public/index.html`) also has no inline
+scripts. CRA 5 bundles the webpack runtime into `main.*.js` rather
+than emitting a separate inline runtime chunk, so the standard
+`INLINE_RUNTIME_CHUNK=false` escape hatch isn't even needed here.
 
-### Two approaches
+So **`'unsafe-inline'` is dead permission at the static-asset
+layer**. The remaining question is runtime — whether third-party
+scripts inject inline `<script>` children:
 
-**Approach A: externalize all inline scripts.** Configure Vite to
-emit zero inline scripts (`build.modulePreload.polyfill: false`,
-review the output for any remaining inline blocks). Drop
-`'unsafe-inline'`, add no replacement — `'self'` covers the
-externalized bundle.
+- **Google Maps** loads via `@react-google-maps/api`'s
+  `useLoadScript` hook, which appends a `<script src=…>` tag with
+  origin `https://maps.googleapis.com` (already allowlisted). Once
+  loaded, the Maps JS API *may* inject inline scripts internally.
+  Verify empirically.
+- **Firebase auth** uses an iframe (covered by `frame-src`). The
+  `firebase/*` SDK is bundled into `main.js`, no external load.
+- **Analytics** is the external `script.js` referenced above.
 
-- Pros: simple CSP, no runtime templating, nginx stays a pure
-  static-file server.
-- Cons: needs a build audit; some Vite features (HMR runtime,
-  module preload polyfill) emit inline by default. Some may
-  require switching to hash-based SRI instead of nonces.
+### Approach
 
-**Approach B: per-response nonce.** nginx generates a random nonce
-per request, substitutes it into both the CSP header and every
-inline `<script>` tag in the served `index.html` via
-`ngx_http_sub_module`.
+Because the build emits no inline scripts, no externalization work
+is needed. The plan is a **staged drop** of `'unsafe-inline'`:
 
-- Pros: handles arbitrary inline scripts without rebuilding.
-- Cons: nginx becomes a templating layer for HTML. `index.html`
-  must serve with `Cache-Control: no-store` (a cached nonce is
-  worthless and breaks subsequent loads). Adds attack surface
-  (sub-module misconfig). CDN behavior needs reckoning.
+1. Ship CSP Report-Only alongside the enforcing header — when both
+   are present, browsers enforce the existing header AND report
+   violations against the stricter one. Lets us see what (if
+   anything) trips without breaking prod.
+2. Watch for violations across one or two releases — exercise
+   login, map view, live game updates, every page that touches
+   third-party JS.
+3. If no violations, flip: drop `'unsafe-inline'` from the
+   enforcing header and remove the Report-Only header.
+4. If violations surface, decide per-case: add SHA-256 hash for a
+   known-safe inline, or document the third-party as requiring a
+   targeted exemption.
 
-**Recommendation: Approach A.** Cleaner long-term, fits the static-
-serving model, no per-response state. The audit is the real cost
-and pays back in simpler ops.
+### Plan
 
-### Plan (Approach A)
-
-1. **Audit**. Run `vite build` locally, grep
-   `dist/index.html` for `<script>` tags without `src`. Capture
-   each inline block — count, size, what it does.
-2. **Externalize**. For each inline block, decide:
-   - Module preload polyfill → disable via Vite config; modern
-     browsers handle native module preload.
-   - Vite legacy runtime (if present) → likely not needed for our
-     browser support matrix.
-   - Anything else → move to a separate file under `public/` or
-     `src/` and reference via `<script src="...">`.
-3. **Add SRI hashes** (`integrity` attribute) on the externalized
-   scripts so we can drop `'unsafe-inline'` and add
-   `'sha256-...'` hashes if any inline survives.
-4. **Drop `'unsafe-inline'`** from `script-src` in
-   `security-headers.conf`.
-5. **Test in Firefox + Chromium** — they enforce slightly
-   differently. Verify in CSP report-only mode first
-   (`Content-Security-Policy-Report-Only` for a release or two,
-   then flip to enforcing).
-6. **Verify third parties** still work: Google Maps script
-   injection, Firebase popup, analytics.
+1. **Add Report-Only header** to `security-headers.conf` mirroring
+   the enforcing CSP minus `'unsafe-inline'` from `script-src`. The
+   enforcing header stays unchanged in this step.
+2. **Deploy and watch** — exercise the app in Chromium + Firefox
+   (they enforce slightly differently). Check browser console for
+   `Content-Security-Policy-Report-Only` violations. No `report-uri`
+   endpoint exists today; console inspection is sufficient for a
+   solo-dev product. (Adding a reporting endpoint is a separate
+   follow-up if violations are too noisy to track manually.)
+3. **Verify third-party flows**: Google Maps render, Firebase login
+   popup, analytics script execution. Each should produce zero
+   Report-Only violations.
+4. **Cutover** — once the report-only header has been clean for a
+   release, drop `'unsafe-inline'` from the enforcing `script-src`
+   and remove the Report-Only header.
 
 ### Risks
 
-- **Vite emits more inline than we think.** The audit might find
-  something hard to externalize (HMR runtime in some dev configs,
-  but that's dev-only). Production builds should be cleaner.
-- **A stale CSP without `'unsafe-inline'` while production still
-  serves inline scripts** bricks the app. Use `Content-Security-
-  Policy-Report-Only` for at least one release to surface
-  violations before enforcing.
-- **Third-party scripts injecting inline children**. Google Maps
-  is the prime suspect — when the JS API loads, it can inject
-  `<script>` tags. The origin-allowlist (`https://maps.googleapis.com`)
-  should cover the src=… variant; inline children would need
-  `'unsafe-inline'` or a separate exemption. Verify empirically.
+- **Third-party scripts injecting inline children**. Google Maps is
+  the prime suspect — once loaded, internal modules can inject
+  inline `<script>` blocks. The origin allowlist covers external
+  `src=…` loads but not inline children. The Report-Only watch
+  period catches this before enforcing.
+- **Cached `index.html` after cutover**. Not a real risk here —
+  nginx serves the SPA shell and `index.html` isn't aggressively
+  cached. CSP headers come from the response itself, no
+  build-coupling.
+- **Future inline introductions**. Once enforcing, any future code
+  that does `dangerouslySetInnerHTML` with a `<script>`, or adds
+  inline analytics snippets, will break silently. Document the
+  enforcement in the file header so future contributors know to
+  externalize.
 
 ### Estimate
 
-~1-2 days, mostly audit + verification. Build/config change is
-small. The "release once with report-only, watch for violations,
-then enforce" cadence stretches calendar time across two deploys.
+Half a day for the report-only header + verification, then a
+calendar gap (a release or two) before the cutover. The cutover
+itself is a one-line edit.
 
 ### CodeRabbit reference
 

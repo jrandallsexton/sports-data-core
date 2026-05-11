@@ -20,6 +20,8 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
 
         public new DbSet<BaseballCompetitionPlay> CompetitionPlays { get; set; }
 
+        public DbSet<BaseballCompetitionPlayParticipant> CompetitionPlayParticipants { get; set; }
+
         // Sport-specific subclass set: the inherited DbSet<CompetitionStatus>
         // on TeamSportDataContext can still serve plain reads via the base
         // type, but eager-loading FeaturedAthletes / accessing HalfInning /
@@ -45,6 +47,8 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
             modelBuilder.ApplyConfiguration(new BaseballCompetitionCompetitor.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionCompetitorProbable.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballCompetitionPlay.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionPlayParticipantBase.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new BaseballCompetitionPlayParticipant.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballCompetitionStatus.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new BaseballCompetitionStatusFeaturedAthlete.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeasonHotZone.EntityConfiguration());

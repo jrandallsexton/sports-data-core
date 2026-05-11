@@ -52,7 +52,9 @@ public static class CompetitionPlayExtensions
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         Guid correlationId,
         Guid competitionId,
-        Guid? teamFranchiseSeasonId)
+        Guid? teamFranchiseSeasonId,
+        Guid? atBatAthleteSeasonId,
+        Guid? pitchingAthleteSeasonId)
     {
         var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
@@ -62,7 +64,42 @@ public static class CompetitionPlayExtensions
             EspnId = dto.Id,
             SequenceNumber = dto.SequenceNumber,
             Text = dto.Text ?? "UNK",
-            TypeId = dto.Type?.Id ?? "9999"
+            TypeId = dto.Type?.Id ?? "9999",
+            HalfInning = dto.Period?.Type,
+            Outs = dto.Outs,
+            Wallclock = dto.Wallclock == default ? null : dto.Wallclock,
+            IsValid = dto.Valid,
+            AtBatId = dto.AtBatId,
+            AtBatPitchNumber = dto.AtBatPitchNumber,
+            BatOrder = dto.BatOrder,
+            BatsType = dto.Bats?.Type,
+            BatsAbbreviation = dto.Bats?.Abbreviation,
+            PitchesType = dto.Pitches?.Type,
+            PitchesAbbreviation = dto.Pitches?.Abbreviation,
+            AtBatAthleteSeasonId = atBatAthleteSeasonId,
+            PitchingAthleteSeasonId = pitchingAthleteSeasonId,
+            PitchCoordinateX = dto.PitchCoordinate?.X,
+            PitchCoordinateY = dto.PitchCoordinate?.Y,
+            HitCoordinateX = dto.HitCoordinate?.X,
+            HitCoordinateY = dto.HitCoordinate?.Y,
+            PitchTypeId = dto.PitchType?.Id,
+            PitchTypeText = dto.PitchType?.Text,
+            PitchTypeAbbreviation = dto.PitchType?.Abbreviation,
+            PitchVelocity = dto.PitchVelocity,
+            PitchCountBalls = dto.PitchCount?.Balls,
+            PitchCountStrikes = dto.PitchCount?.Strikes,
+            ResultCountBalls = dto.ResultCount?.Balls,
+            ResultCountStrikes = dto.ResultCount?.Strikes,
+            Trajectory = dto.Trajectory,
+            StrikeType = dto.StrikeType,
+            SummaryType = dto.SummaryType,
+            AwayHits = dto.AwayHits,
+            HomeHits = dto.HomeHits,
+            AwayErrors = dto.AwayErrors,
+            HomeErrors = dto.HomeErrors,
+            RbiCount = dto.RbiCount,
+            IsDoublePlay = dto.DoublePlay,
+            IsTriplePlay = dto.TriplePlay
         };
 
         MapSharedProperties(dto, entity, identity, correlationId, competitionId, teamFranchiseSeasonId);

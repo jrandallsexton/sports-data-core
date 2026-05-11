@@ -1,0 +1,2290 @@
+{
+  "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays?lang=en&region=us",
+  "count": 639,
+  "pageIndex": 1,
+  "pageSize": 25,
+  "pageCount": 26,
+  "items": [
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680000000059?lang=en&region=us",
+      "id": "4018152680000000059",
+      "sequenceNumber": "1",
+      "type": {
+        "id": "59",
+        "text": "Start Inning",
+        "type": "start-inning"
+      },
+      "text": "Top of the 1st inning",
+      "shortText": "Top of the 1st inning",
+      "alternativeText": "Top of the 1st inning",
+      "shortAlternativeText": "Top of the 1st inning",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:13Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/3?lang=en&region=us"
+      },
+      "wallclock": "2026-05-09T19:08:04Z",
+      "atBatId": "4018152680001",
+      "summaryType": "I",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "resultCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 0,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680001010001?lang=en&region=us",
+      "id": "4018152680001010001",
+      "sequenceNumber": "1",
+      "type": {
+        "id": "1",
+        "text": "Start Batter/Pitcher",
+        "alternativeText": "Now at bat",
+        "type": "start-batterpitcher"
+      },
+      "text": "Trey Yesavage pitches to Zach Neto",
+      "shortText": "Trey Yesavage pitches to Zach Neto",
+      "alternativeText": "Trey Yesavage pitches to Zach Neto",
+      "shortAlternativeText": "Trey Yesavage pitches to Zach Neto",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:10Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/3?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/competitors/14/roster/4949041/statistics/0?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4666100?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/competitors/3/roster/4666100/statistics/0?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:08:04Z",
+      "atBatId": "4018152680001",
+      "batOrder": 1,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "summaryType": "A",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "resultCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 1,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680001020037?lang=en&region=us",
+      "id": "4018152680001020037",
+      "sequenceNumber": "2",
+      "type": {
+        "id": "37",
+        "text": "Strike Swinging",
+        "abbreviation": "SS",
+        "alternativeText": "Strikeout",
+        "type": "strike-swinging"
+      },
+      "text": "Pitch 1 : Strike 1 Swinging",
+      "shortText": "Pitch 1 : Strike 1 Swinging",
+      "alternativeText": "Pitch 1 : Strike 1 Swinging",
+      "shortAlternativeText": "Strike Swinging",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:10Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4666100?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:08:04Z",
+      "atBatId": "4018152680001",
+      "batOrder": 1,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 1,
+      "pitchCoordinate": {
+        "x": 118,
+        "y": 162
+      },
+      "pitchType": {
+        "id": "17",
+        "text": "Four-seam FB",
+        "abbreviation": "FF"
+      },
+      "pitchVelocity": 95,
+      "strikeType": "swinging",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "resultCount": {
+        "balls": 0,
+        "strikes": 1
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 1,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680001030021?lang=en&region=us",
+      "id": "4018152680001030021",
+      "sequenceNumber": "3",
+      "type": {
+        "id": "21",
+        "text": "Foul Ball",
+        "abbreviation": "F",
+        "type": "foul-ball"
+      },
+      "text": "Pitch 2 : Strike 2 Foul",
+      "shortText": "Pitch 2 : Strike 2 Foul",
+      "alternativeText": "Pitch 2 : Strike 2 Foul",
+      "shortAlternativeText": "Strike Foul",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:10Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4666100?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:08:13Z",
+      "atBatId": "4018152680001",
+      "batOrder": 1,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 2,
+      "pitchCoordinate": {
+        "x": 113,
+        "y": 186
+      },
+      "pitchType": {
+        "id": "17",
+        "text": "Four-seam FB",
+        "abbreviation": "FF"
+      },
+      "pitchVelocity": 95,
+      "strikeType": "foul",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 1
+      },
+      "resultCount": {
+        "balls": 0,
+        "strikes": 2
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 1,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680001040005?lang=en&region=us",
+      "id": "4018152680001040005",
+      "sequenceNumber": "4",
+      "type": {
+        "id": "5",
+        "text": "Ball",
+        "abbreviation": "B",
+        "alternativeText": "Walk",
+        "type": "ball"
+      },
+      "text": "Pitch 3 : Ball 1",
+      "shortText": "Pitch 3 : Ball 1",
+      "alternativeText": "Pitch 3 : Ball 1",
+      "shortAlternativeText": "Ball",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:10Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4666100?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:08:46Z",
+      "atBatId": "4018152680001",
+      "batOrder": 1,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 3,
+      "pitchCoordinate": {
+        "x": 103,
+        "y": 228
+      },
+      "pitchType": {
+        "id": "5",
+        "text": "Slider",
+        "abbreviation": "SL"
+      },
+      "pitchVelocity": 87,
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 2
+      },
+      "resultCount": {
+        "balls": 1,
+        "strikes": 2
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 1,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680001050005?lang=en&region=us",
+      "id": "4018152680001050005",
+      "sequenceNumber": "5",
+      "type": {
+        "id": "5",
+        "text": "Ball",
+        "abbreviation": "B",
+        "alternativeText": "Walk",
+        "type": "ball"
+      },
+      "text": "Pitch 4 : Ball 2",
+      "shortText": "Pitch 4 : Ball 2",
+      "alternativeText": "Pitch 4 : Ball 2",
+      "shortAlternativeText": "Ball",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:10Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4666100?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:09:09Z",
+      "atBatId": "4018152680001",
+      "batOrder": 1,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 4,
+      "pitchCoordinate": {
+        "x": 124,
+        "y": 92
+      },
+      "pitchType": {
+        "id": "17",
+        "text": "Four-seam FB",
+        "abbreviation": "FF"
+      },
+      "pitchVelocity": 94,
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 1,
+        "strikes": 2
+      },
+      "resultCount": {
+        "balls": 2,
+        "strikes": 2
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 1,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680001060021?lang=en&region=us",
+      "id": "4018152680001060021",
+      "sequenceNumber": "6",
+      "type": {
+        "id": "21",
+        "text": "Foul Ball",
+        "abbreviation": "F",
+        "type": "foul-ball"
+      },
+      "text": "Pitch 5 : Strike 2 Foul",
+      "shortText": "Pitch 5 : Strike 2 Foul",
+      "alternativeText": "Pitch 5 : Strike 2 Foul",
+      "shortAlternativeText": "Strike Foul",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:10Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4666100?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:09:27Z",
+      "atBatId": "4018152680001",
+      "batOrder": 1,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 5,
+      "pitchCoordinate": {
+        "x": 161,
+        "y": 149
+      },
+      "pitchType": {
+        "id": "8",
+        "text": "Splitter",
+        "abbreviation": "FS"
+      },
+      "pitchVelocity": 83,
+      "strikeType": "foul",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 2,
+        "strikes": 2
+      },
+      "resultCount": {
+        "balls": 2,
+        "strikes": 2
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 1,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680001070037?lang=en&region=us",
+      "id": "4018152680001070037",
+      "sequenceNumber": "7",
+      "type": {
+        "id": "37",
+        "text": "Strike Swinging",
+        "abbreviation": "SS",
+        "alternativeText": "Strikeout",
+        "type": "strike-swinging"
+      },
+      "text": "Pitch 6 : Strike 3 Swinging",
+      "shortText": "Pitch 6 : Strike 3 Swinging",
+      "alternativeText": "Pitch 6 : Strike 3 Swinging",
+      "shortAlternativeText": "Strike Swinging",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:10Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4666100?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:09:51Z",
+      "atBatId": "4018152680001",
+      "batOrder": 1,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 6,
+      "pitchCoordinate": {
+        "x": 136,
+        "y": 205
+      },
+      "pitchType": {
+        "id": "8",
+        "text": "Splitter",
+        "abbreviation": "FS"
+      },
+      "pitchVelocity": 83,
+      "strikeType": "swinging",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 2,
+        "strikes": 2
+      },
+      "resultCount": {
+        "balls": 2,
+        "strikes": 3
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 1,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680001990057?lang=en&region=us",
+      "id": "4018152680001990057",
+      "sequenceNumber": "8",
+      "type": {
+        "id": "57",
+        "text": "Play Result",
+        "type": "play-result"
+      },
+      "alternativeType": {
+        "id": "37",
+        "text": "Strike Swinging",
+        "abbreviation": "SS",
+        "alternativeText": "Strikeout",
+        "type": "strike-swinging"
+      },
+      "alternativePlay": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680001070037?lang=en&region=us"
+      },
+      "text": "Neto struck out swinging.",
+      "shortText": "Neto struck out swinging.",
+      "alternativeText": "Neto struck out swinging.",
+      "shortAlternativeText": "Zach Neto strikes out swinging",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:10Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/3?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4666100?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/probabilities/4018152680001990057?lang=en&region=us"
+      },
+      "wallclock": "2026-05-09T19:09:51Z",
+      "atBatId": "4018152680001",
+      "batOrder": 1,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 6,
+      "pitchCoordinate": {
+        "x": 136,
+        "y": 205
+      },
+      "summaryType": "N",
+      "pitchCount": {
+        "balls": 2,
+        "strikes": 3
+      },
+      "resultCount": {
+        "balls": 2,
+        "strikes": 3
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 1,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680001990099?lang=en&region=us",
+      "id": "4018152680001990099",
+      "sequenceNumber": "9",
+      "type": {
+        "id": "99",
+        "text": "End Batter/Pitcher",
+        "type": "end-batterpitcher"
+      },
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:10Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/3?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4666100?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/6?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:09:51Z",
+      "atBatId": "4018152680001",
+      "batOrder": 1,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 6,
+      "pitchCoordinate": {
+        "x": 136,
+        "y": 205
+      },
+      "pitchCount": {
+        "balls": 2,
+        "strikes": 3
+      },
+      "resultCount": {
+        "balls": 2,
+        "strikes": 3
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 1,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680002010001?lang=en&region=us",
+      "id": "4018152680002010001",
+      "sequenceNumber": "1",
+      "type": {
+        "id": "1",
+        "text": "Start Batter/Pitcher",
+        "alternativeText": "Now at bat",
+        "type": "start-batterpitcher"
+      },
+      "text": "Trey Yesavage pitches to Mike Trout",
+      "shortText": "Trey Yesavage pitches to Mike Trout",
+      "alternativeText": "Trey Yesavage pitches to Mike Trout",
+      "shortAlternativeText": "Trey Yesavage pitches to Mike Trout",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:11Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/3?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/30836?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/8?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/competitors/3/roster/30836/statistics/0?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:10:17Z",
+      "atBatId": "4018152680002",
+      "batOrder": 2,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "summaryType": "A",
+      "previousPlayText": "Zach Neto strikes out swinging.",
+      "shortPreviousPlayText": "Neto struck out swinging.",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "resultCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 2,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680002020036?lang=en&region=us",
+      "id": "4018152680002020036",
+      "sequenceNumber": "2",
+      "type": {
+        "id": "36",
+        "text": "Strike Looking",
+        "abbreviation": "SL",
+        "alternativeText": "Strikeout",
+        "type": "strike-looking"
+      },
+      "text": "Pitch 1 : Strike 1 Looking",
+      "shortText": "Pitch 1 : Strike 1 Looking",
+      "alternativeText": "Pitch 1 : Strike 1 Looking",
+      "shortAlternativeText": "Strike Looking",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:11Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/30836?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/8?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:10:17Z",
+      "atBatId": "4018152680002",
+      "batOrder": 2,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 1,
+      "pitchCoordinate": {
+        "x": 96,
+        "y": 174
+      },
+      "pitchType": {
+        "id": "5",
+        "text": "Slider",
+        "abbreviation": "SL"
+      },
+      "pitchVelocity": 89,
+      "strikeType": "called",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "resultCount": {
+        "balls": 0,
+        "strikes": 1
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 2,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680002030037?lang=en&region=us",
+      "id": "4018152680002030037",
+      "sequenceNumber": "3",
+      "type": {
+        "id": "37",
+        "text": "Strike Swinging",
+        "abbreviation": "SS",
+        "alternativeText": "Strikeout",
+        "type": "strike-swinging"
+      },
+      "text": "Pitch 2 : Strike 2 Swinging",
+      "shortText": "Pitch 2 : Strike 2 Swinging",
+      "alternativeText": "Pitch 2 : Strike 2 Swinging",
+      "shortAlternativeText": "Strike Swinging",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:11Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/30836?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/8?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:10:33Z",
+      "atBatId": "4018152680002",
+      "batOrder": 2,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 2,
+      "pitchCoordinate": {
+        "x": 80,
+        "y": 204
+      },
+      "pitchType": {
+        "id": "5",
+        "text": "Slider",
+        "abbreviation": "SL"
+      },
+      "pitchVelocity": 88,
+      "strikeType": "swinging",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 1
+      },
+      "resultCount": {
+        "balls": 0,
+        "strikes": 2
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 2,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680002040021?lang=en&region=us",
+      "id": "4018152680002040021",
+      "sequenceNumber": "4",
+      "type": {
+        "id": "21",
+        "text": "Foul Ball",
+        "abbreviation": "F",
+        "type": "foul-ball"
+      },
+      "text": "Pitch 3 : Strike 2 Foul",
+      "shortText": "Pitch 3 : Strike 2 Foul",
+      "alternativeText": "Pitch 3 : Strike 2 Foul",
+      "shortAlternativeText": "Strike Foul",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:11Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/30836?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/8?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:10:54Z",
+      "atBatId": "4018152680002",
+      "batOrder": 2,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 3,
+      "pitchCoordinate": {
+        "x": 104,
+        "y": 182
+      },
+      "pitchType": {
+        "id": "17",
+        "text": "Four-seam FB",
+        "abbreviation": "FF"
+      },
+      "pitchVelocity": 94,
+      "strikeType": "foul",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 2
+      },
+      "resultCount": {
+        "balls": 0,
+        "strikes": 2
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 2,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680002050005?lang=en&region=us",
+      "id": "4018152680002050005",
+      "sequenceNumber": "5",
+      "type": {
+        "id": "5",
+        "text": "Ball",
+        "abbreviation": "B",
+        "alternativeText": "Walk",
+        "type": "ball"
+      },
+      "text": "Pitch 4 : Ball 1",
+      "shortText": "Pitch 4 : Ball 1",
+      "alternativeText": "Pitch 4 : Ball 1",
+      "shortAlternativeText": "Ball",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:11Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/30836?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/8?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:11:11Z",
+      "atBatId": "4018152680002",
+      "batOrder": 2,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 4,
+      "pitchCoordinate": {
+        "x": 112,
+        "y": 122
+      },
+      "pitchType": {
+        "id": "17",
+        "text": "Four-seam FB",
+        "abbreviation": "FF"
+      },
+      "pitchVelocity": 95,
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 2
+      },
+      "resultCount": {
+        "balls": 1,
+        "strikes": 2
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 2,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680002060037?lang=en&region=us",
+      "id": "4018152680002060037",
+      "sequenceNumber": "6",
+      "type": {
+        "id": "37",
+        "text": "Strike Swinging",
+        "abbreviation": "SS",
+        "alternativeText": "Strikeout",
+        "type": "strike-swinging"
+      },
+      "text": "Pitch 5 : Strike 3 Swinging",
+      "shortText": "Pitch 5 : Strike 3 Swinging",
+      "alternativeText": "Pitch 5 : Strike 3 Swinging",
+      "shortAlternativeText": "Strike Swinging",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:11Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/30836?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/8?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:11:33Z",
+      "atBatId": "4018152680002",
+      "batOrder": 2,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 5,
+      "pitchCoordinate": {
+        "x": 164,
+        "y": 202
+      },
+      "pitchType": {
+        "id": "8",
+        "text": "Splitter",
+        "abbreviation": "FS"
+      },
+      "pitchVelocity": 83,
+      "strikeType": "swinging",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 1,
+        "strikes": 2
+      },
+      "resultCount": {
+        "balls": 1,
+        "strikes": 3
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 2,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680002990057?lang=en&region=us",
+      "id": "4018152680002990057",
+      "sequenceNumber": "7",
+      "type": {
+        "id": "57",
+        "text": "Play Result",
+        "type": "play-result"
+      },
+      "alternativeType": {
+        "id": "37",
+        "text": "Strike Swinging",
+        "abbreviation": "SS",
+        "alternativeText": "Strikeout",
+        "type": "strike-swinging"
+      },
+      "alternativePlay": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680002060037?lang=en&region=us"
+      },
+      "text": "Trout struck out swinging.",
+      "shortText": "Trout struck out swinging.",
+      "alternativeText": "Trout struck out swinging.",
+      "shortAlternativeText": "Mike Trout strikes out swinging",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:11Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/3?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/30836?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/8?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/probabilities/4018152680002990057?lang=en&region=us"
+      },
+      "wallclock": "2026-05-09T19:11:33Z",
+      "atBatId": "4018152680002",
+      "batOrder": 2,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 5,
+      "pitchCoordinate": {
+        "x": 164,
+        "y": 202
+      },
+      "summaryType": "N",
+      "pitchCount": {
+        "balls": 1,
+        "strikes": 3
+      },
+      "resultCount": {
+        "balls": 1,
+        "strikes": 3
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 2,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680002990099?lang=en&region=us",
+      "id": "4018152680002990099",
+      "sequenceNumber": "8",
+      "type": {
+        "id": "99",
+        "text": "End Batter/Pitcher",
+        "type": "end-batterpitcher"
+      },
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:11Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/3?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/30836?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/8?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:11:33Z",
+      "atBatId": "4018152680002",
+      "batOrder": 2,
+      "bats": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 5,
+      "pitchCoordinate": {
+        "x": 164,
+        "y": 202
+      },
+      "pitchCount": {
+        "balls": 1,
+        "strikes": 3
+      },
+      "resultCount": {
+        "balls": 1,
+        "strikes": 3
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 2,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680003010001?lang=en&region=us",
+      "id": "4018152680003010001",
+      "sequenceNumber": "1",
+      "type": {
+        "id": "1",
+        "text": "Start Batter/Pitcher",
+        "alternativeText": "Now at bat",
+        "type": "start-batterpitcher"
+      },
+      "text": "Trey Yesavage pitches to Nolan Schanuel",
+      "shortText": "Trey Yesavage pitches to Nolan Schanuel",
+      "alternativeText": "Trey Yesavage pitches to Nolan Schanuel",
+      "shortAlternativeText": "Trey Yesavage pitches to Nolan Schanuel",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:13Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/3?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4739755?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/3?lang=en&region=us"
+          },
+          "statistics": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/competitors/3/roster/4739755/statistics/0?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:11:54Z",
+      "atBatId": "4018152680003",
+      "batOrder": 3,
+      "bats": {
+        "type": "LEFT",
+        "abbreviation": "L",
+        "displayValue": "Left"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "summaryType": "A",
+      "previousPlayText": "Mike Trout strikes out swinging.",
+      "shortPreviousPlayText": "Trout struck out swinging.",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "resultCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 3,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680003020005?lang=en&region=us",
+      "id": "4018152680003020005",
+      "sequenceNumber": "2",
+      "type": {
+        "id": "5",
+        "text": "Ball",
+        "abbreviation": "B",
+        "alternativeText": "Walk",
+        "type": "ball"
+      },
+      "text": "Pitch 1 : Ball 1",
+      "shortText": "Pitch 1 : Ball 1",
+      "alternativeText": "Pitch 1 : Ball 1",
+      "shortAlternativeText": "Ball",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:13Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4739755?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/3?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:11:54Z",
+      "atBatId": "4018152680003",
+      "batOrder": 3,
+      "bats": {
+        "type": "LEFT",
+        "abbreviation": "L",
+        "displayValue": "Left"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 1,
+      "pitchCoordinate": {
+        "x": 64,
+        "y": 169
+      },
+      "pitchType": {
+        "id": "17",
+        "text": "Four-seam FB",
+        "abbreviation": "FF"
+      },
+      "pitchVelocity": 94,
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 0,
+        "strikes": 0
+      },
+      "resultCount": {
+        "balls": 1,
+        "strikes": 0
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 3,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680003030005?lang=en&region=us",
+      "id": "4018152680003030005",
+      "sequenceNumber": "3",
+      "type": {
+        "id": "5",
+        "text": "Ball",
+        "abbreviation": "B",
+        "alternativeText": "Walk",
+        "type": "ball"
+      },
+      "text": "Pitch 2 : Ball 2",
+      "shortText": "Pitch 2 : Ball 2",
+      "alternativeText": "Pitch 2 : Ball 2",
+      "shortAlternativeText": "Ball",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:13Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4739755?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/3?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:12:09Z",
+      "atBatId": "4018152680003",
+      "batOrder": 3,
+      "bats": {
+        "type": "LEFT",
+        "abbreviation": "L",
+        "displayValue": "Left"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 2,
+      "pitchCoordinate": {
+        "x": 90,
+        "y": 192
+      },
+      "pitchType": {
+        "id": "17",
+        "text": "Four-seam FB",
+        "abbreviation": "FF"
+      },
+      "pitchVelocity": 94,
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 1,
+        "strikes": 0
+      },
+      "resultCount": {
+        "balls": 2,
+        "strikes": 0
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 3,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680003040037?lang=en&region=us",
+      "id": "4018152680003040037",
+      "sequenceNumber": "4",
+      "type": {
+        "id": "37",
+        "text": "Strike Swinging",
+        "abbreviation": "SS",
+        "alternativeText": "Strikeout",
+        "type": "strike-swinging"
+      },
+      "text": "Pitch 3 : Strike 1 Swinging",
+      "shortText": "Pitch 3 : Strike 1 Swinging",
+      "alternativeText": "Pitch 3 : Strike 1 Swinging",
+      "shortAlternativeText": "Strike Swinging",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:13Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4739755?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/3?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:12:28Z",
+      "atBatId": "4018152680003",
+      "batOrder": 3,
+      "bats": {
+        "type": "LEFT",
+        "abbreviation": "L",
+        "displayValue": "Left"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 3,
+      "pitchCoordinate": {
+        "x": 117,
+        "y": 183
+      },
+      "pitchType": {
+        "id": "5",
+        "text": "Slider",
+        "abbreviation": "SL"
+      },
+      "pitchVelocity": 89,
+      "strikeType": "swinging",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 2,
+        "strikes": 0
+      },
+      "resultCount": {
+        "balls": 2,
+        "strikes": 1
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 3,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680003050037?lang=en&region=us",
+      "id": "4018152680003050037",
+      "sequenceNumber": "5",
+      "type": {
+        "id": "37",
+        "text": "Strike Swinging",
+        "abbreviation": "SS",
+        "alternativeText": "Strikeout",
+        "type": "strike-swinging"
+      },
+      "text": "Pitch 4 : Strike 2 Swinging",
+      "shortText": "Pitch 4 : Strike 2 Swinging",
+      "alternativeText": "Pitch 4 : Strike 2 Swinging",
+      "shortAlternativeText": "Strike Swinging",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:13Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4739755?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/3?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:12:45Z",
+      "atBatId": "4018152680003",
+      "batOrder": 3,
+      "bats": {
+        "type": "LEFT",
+        "abbreviation": "L",
+        "displayValue": "Left"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 4,
+      "pitchCoordinate": {
+        "x": 157,
+        "y": 195
+      },
+      "pitchType": {
+        "id": "8",
+        "text": "Splitter",
+        "abbreviation": "FS"
+      },
+      "pitchVelocity": 83,
+      "strikeType": "swinging",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 2,
+        "strikes": 1
+      },
+      "resultCount": {
+        "balls": 2,
+        "strikes": 2
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 3,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680003060037?lang=en&region=us",
+      "id": "4018152680003060037",
+      "sequenceNumber": "6",
+      "type": {
+        "id": "37",
+        "text": "Strike Swinging",
+        "abbreviation": "SS",
+        "alternativeText": "Strikeout",
+        "type": "strike-swinging"
+      },
+      "text": "Pitch 5 : Strike 3 Swinging",
+      "shortText": "Pitch 5 : Strike 3 Swinging",
+      "alternativeText": "Pitch 5 : Strike 3 Swinging",
+      "shortAlternativeText": "Strike Swinging",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:13Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/14?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4739755?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/3?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "wallclock": "2026-05-09T19:13:09Z",
+      "atBatId": "4018152680003",
+      "batOrder": 3,
+      "bats": {
+        "type": "LEFT",
+        "abbreviation": "L",
+        "displayValue": "Left"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 5,
+      "pitchCoordinate": {
+        "x": 149,
+        "y": 187
+      },
+      "pitchType": {
+        "id": "8",
+        "text": "Splitter",
+        "abbreviation": "FS"
+      },
+      "pitchVelocity": 84,
+      "strikeType": "swinging",
+      "summaryType": "P",
+      "pitchCount": {
+        "balls": 2,
+        "strikes": 2
+      },
+      "resultCount": {
+        "balls": 2,
+        "strikes": 3
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 3,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    },
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680003990057?lang=en&region=us",
+      "id": "4018152680003990057",
+      "sequenceNumber": "7",
+      "type": {
+        "id": "57",
+        "text": "Play Result",
+        "type": "play-result"
+      },
+      "alternativeType": {
+        "id": "37",
+        "text": "Strike Swinging",
+        "abbreviation": "SS",
+        "alternativeText": "Strikeout",
+        "type": "strike-swinging"
+      },
+      "alternativePlay": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/plays/4018152680003060037?lang=en&region=us"
+      },
+      "text": "Schanuel struck out swinging.",
+      "shortText": "Schanuel struck out swinging.",
+      "alternativeText": "Schanuel struck out swinging.",
+      "shortAlternativeText": "Nolan Schanuel strikes out swinging",
+      "awayScore": 0,
+      "homeScore": 0,
+      "period": {
+        "type": "Top",
+        "number": 1,
+        "displayValue": "1st Inning"
+      },
+      "valid": true,
+      "scoringPlay": false,
+      "priority": false,
+      "scoreValue": 0,
+      "modified": "2026-05-09T19:13Z",
+      "team": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/3?lang=en&region=us"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4949041?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/1?lang=en&region=us"
+          },
+          "order": 1,
+          "type": "pitcher"
+        },
+        {
+          "athlete": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/4739755?lang=en&region=us"
+          },
+          "position": {
+            "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/positions/3?lang=en&region=us"
+          },
+          "order": 2,
+          "type": "batter"
+        }
+      ],
+      "probability": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401815268/competitions/401815268/probabilities/4018152680003990057?lang=en&region=us"
+      },
+      "wallclock": "2026-05-09T19:13:09Z",
+      "atBatId": "4018152680003",
+      "batOrder": 3,
+      "bats": {
+        "type": "LEFT",
+        "abbreviation": "L",
+        "displayValue": "Left"
+      },
+      "pitches": {
+        "type": "RIGHT",
+        "abbreviation": "R",
+        "displayValue": "Right"
+      },
+      "atBatPitchNumber": 5,
+      "pitchCoordinate": {
+        "x": 149,
+        "y": 187
+      },
+      "summaryType": "N",
+      "pitchCount": {
+        "balls": 2,
+        "strikes": 3
+      },
+      "resultCount": {
+        "balls": 2,
+        "strikes": 3
+      },
+      "awayErrors": 0,
+      "awayHits": 0,
+      "homeErrors": 0,
+      "homeHits": 0,
+      "outs": 3,
+      "rbiCount": 0,
+      "doublePlay": false,
+      "triplePlay": false
+    }
+  ]
+}

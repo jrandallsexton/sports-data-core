@@ -45,6 +45,102 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext>
         return status is null ? null : !status.IsCompleted;
     }
 
+    /// <summary>
+    /// Build the full participants list for a baseball play, resolving each
+    /// athlete ref to a canonical AthleteSeason ID where possible. The JSON
+    /// calls the field "athlete" but the URL is season-scoped
+    /// (`/seasons/{year}/athletes/{id}`), so it resolves against
+    /// AthleteSeason, not the global AthleteBase. Position resolves the same
+    /// way. Per-play statistics refs are captured verbatim — those
+    /// pipelines don't materialize canonical entities yet.
+    ///
+    /// Unrecognized participant types are still persisted (we don't drop
+    /// data) but log a warning so Seq surfaces forward-compat work. Null
+    /// AthleteSeasonId is acceptable — the play update path re-resolves on
+    /// each re-ingest, so transient nulls heal naturally without a
+    /// throw-retry loop on every play of a freshly-sourced game.
+    /// </summary>
+    private async Task<List<BaseballCompetitionPlayParticipant>> BuildParticipantsAsync(
+        EspnBaseballEventCompetitionPlayDto dto,
+        SourceDataProvider provider)
+    {
+        var result = new List<BaseballCompetitionPlayParticipant>();
+        if (dto.Participants is null || dto.Participants.Count == 0) return result;
+
+        foreach (var participant in dto.Participants)
+        {
+            Guid? athleteSeasonId = null;
+            if (participant.Athlete?.Ref is not null)
+            {
+                athleteSeasonId = await _dataContext.ResolveIdAsync<AthleteSeason, AthleteSeasonExternalId>(
+                    participant.Athlete,
+                    provider,
+                    () => _dataContext.AthleteSeasons,
+                    externalIdsNav: "ExternalIds",
+                    key: a => a.Id);
+            }
+
+            Guid? positionId = null;
+            if (participant.Position?.Ref is not null)
+            {
+                positionId = await _dataContext.ResolveIdAsync<AthletePosition, AthletePositionExternalId>(
+                    participant.Position,
+                    provider,
+                    () => _dataContext.AthletePositions,
+                    externalIdsNav: "ExternalIds",
+                    key: p => p.Id);
+            }
+
+            var type = participant.Type;
+            var isPitcher = string.Equals(type, "pitcher", StringComparison.OrdinalIgnoreCase);
+            var isBatter = string.Equals(type, "batter", StringComparison.OrdinalIgnoreCase);
+
+            if (!isPitcher && !isBatter)
+            {
+                // Forward-compat watch: ESPN's play taxonomy can grow (substitution
+                // rows, runner refs, fielders on a play-result, etc.). Surface in
+                // Seq so we notice and can decide whether to add denormalized
+                // columns. The row is still persisted — we don't drop data.
+                _logger.LogWarning(
+                    "Unrecognized baseball participant type '{ParticipantType}' on PlayId={PlayId}, PlayText={PlayText}",
+                    string.IsNullOrEmpty(type) ? "(null)" : type,
+                    dto.Id,
+                    dto.Type?.Text);
+            }
+
+            result.Add(new BaseballCompetitionPlayParticipant
+            {
+                Order = participant.Order,
+                Type = type ?? string.Empty,
+                AthleteSeasonId = athleteSeasonId,
+                PositionId = positionId,
+                StatisticsRef = participant.Statistics?.Ref?.ToString()
+            });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Pull the primary pitcher/batter AthleteSeason IDs out of an
+    /// already-built participants list. Used to denormalize onto the play
+    /// row for cheap live-UI lookup without an extra join.
+    /// </summary>
+    private static (Guid? AtBatAthleteSeasonId, Guid? PitchingAthleteSeasonId) ExtractPrimaryAthletes(
+        List<BaseballCompetitionPlayParticipant> participants)
+    {
+        Guid? atBat = null;
+        Guid? pitching = null;
+        foreach (var p in participants)
+        {
+            if (atBat is null && string.Equals(p.Type, "batter", StringComparison.OrdinalIgnoreCase))
+                atBat = p.AthleteSeasonId;
+            else if (pitching is null && string.Equals(p.Type, "pitcher", StringComparison.OrdinalIgnoreCase))
+                pitching = p.AthleteSeasonId;
+        }
+        return (atBat, pitching);
+    }
+
     protected override async Task<CompetitionPlayBase> BuildNewPlayAsync(
         ProcessDocumentCommand command,
         EspnBaseballEventCompetitionPlayDto externalDto,
@@ -63,15 +159,27 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext>
                 key: fs => fs.Id);
         }
 
-        _logger.LogInformation(
-            "Creating baseball CompetitionPlay. CompetitionId={CompId}, PlayType={PlayType}",
-            competition.Id, externalDto.Type?.Text);
+        var participants = await BuildParticipantsAsync(externalDto, command.SourceDataProvider);
+        var (atBatAthleteSeasonId, pitchingAthleteSeasonId) = ExtractPrimaryAthletes(participants);
 
-        return externalDto.AsBaseballEntity(
+        _logger.LogInformation(
+            "Creating baseball CompetitionPlay. CompetitionId={CompId}, PlayType={PlayType}, ParticipantCount={Count}, AtBatAthleteSeasonId={AtBat}, PitchingAthleteSeasonId={Pitching}",
+            competition.Id, externalDto.Type?.Text, participants.Count, atBatAthleteSeasonId, pitchingAthleteSeasonId);
+
+        var play = externalDto.AsBaseballEntity(
             _externalRefIdentityGenerator,
             command.CorrelationId,
             competition.Id,
-            teamFranchiseSeasonId);
+            teamFranchiseSeasonId,
+            atBatAthleteSeasonId,
+            pitchingAthleteSeasonId);
+
+        foreach (var participant in participants)
+        {
+            play.Participants.Add(participant);
+        }
+
+        return play;
     }
 
     protected override Task PublishSportPlayCompletedAsync(
@@ -117,6 +225,12 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext>
         ProcessDocumentCommand command,
         EspnBaseballEventCompetitionPlayDto externalDto)
     {
+        if (entity is not BaseballCompetitionPlay baseballPlay)
+        {
+            throw new InvalidOperationException(
+                $"Expected BaseballCompetitionPlay but got {entity.GetType().Name}. PlayId={entity.Id}");
+        }
+
         Guid? teamFranchiseSeasonId = null;
         if (externalDto.Team?.Ref is not null)
         {
@@ -129,8 +243,66 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext>
                 key: fs => fs.Id);
         }
 
-        _logger.LogInformation("Updating baseball CompetitionPlay. PlayId={PlayId}", entity.Id);
+        var participants = await BuildParticipantsAsync(externalDto, command.SourceDataProvider);
+        var (atBatAthleteSeasonId, pitchingAthleteSeasonId) = ExtractPrimaryAthletes(participants);
 
-        entity.StartFranchiseSeasonId = teamFranchiseSeasonId;
+        // Replace the participants set wholesale: simpler than diffing per-row,
+        // and ESPN can re-order or swap participants on a play between fetches
+        // (e.g., a substitution row appearing on a later refresh).
+        var existingParticipants = await _dataContext.Set<BaseballCompetitionPlayParticipant>()
+            .Where(p => p.CompetitionPlayId == baseballPlay.Id)
+            .ToListAsync();
+
+        if (existingParticipants.Count > 0)
+        {
+            _dataContext.Set<BaseballCompetitionPlayParticipant>().RemoveRange(existingParticipants);
+        }
+
+        foreach (var participant in participants)
+        {
+            participant.CompetitionPlayId = baseballPlay.Id;
+            await _dataContext.Set<BaseballCompetitionPlayParticipant>().AddAsync(participant);
+        }
+
+        _logger.LogInformation(
+            "Updating baseball CompetitionPlay. PlayId={PlayId}, ParticipantCount={Count}, AtBatAthleteSeasonId={AtBat}, PitchingAthleteSeasonId={Pitching}",
+            entity.Id, participants.Count, atBatAthleteSeasonId, pitchingAthleteSeasonId);
+
+        baseballPlay.StartFranchiseSeasonId = teamFranchiseSeasonId;
+        baseballPlay.HalfInning = externalDto.Period?.Type;
+        baseballPlay.Outs = externalDto.Outs;
+        baseballPlay.Wallclock = externalDto.Wallclock == default ? null : externalDto.Wallclock;
+        baseballPlay.IsValid = externalDto.Valid;
+        baseballPlay.AtBatAthleteSeasonId = atBatAthleteSeasonId;
+        baseballPlay.PitchingAthleteSeasonId = pitchingAthleteSeasonId;
+        baseballPlay.AtBatId = externalDto.AtBatId;
+        baseballPlay.AtBatPitchNumber = externalDto.AtBatPitchNumber;
+        baseballPlay.BatOrder = externalDto.BatOrder;
+        baseballPlay.BatsType = externalDto.Bats?.Type;
+        baseballPlay.BatsAbbreviation = externalDto.Bats?.Abbreviation;
+        baseballPlay.PitchesType = externalDto.Pitches?.Type;
+        baseballPlay.PitchesAbbreviation = externalDto.Pitches?.Abbreviation;
+        baseballPlay.PitchCoordinateX = externalDto.PitchCoordinate?.X;
+        baseballPlay.PitchCoordinateY = externalDto.PitchCoordinate?.Y;
+        baseballPlay.HitCoordinateX = externalDto.HitCoordinate?.X;
+        baseballPlay.HitCoordinateY = externalDto.HitCoordinate?.Y;
+        baseballPlay.PitchTypeId = externalDto.PitchType?.Id;
+        baseballPlay.PitchTypeText = externalDto.PitchType?.Text;
+        baseballPlay.PitchTypeAbbreviation = externalDto.PitchType?.Abbreviation;
+        baseballPlay.PitchVelocity = externalDto.PitchVelocity;
+        baseballPlay.PitchCountBalls = externalDto.PitchCount?.Balls;
+        baseballPlay.PitchCountStrikes = externalDto.PitchCount?.Strikes;
+        baseballPlay.ResultCountBalls = externalDto.ResultCount?.Balls;
+        baseballPlay.ResultCountStrikes = externalDto.ResultCount?.Strikes;
+        baseballPlay.Trajectory = externalDto.Trajectory;
+        baseballPlay.StrikeType = externalDto.StrikeType;
+        baseballPlay.SummaryType = externalDto.SummaryType;
+        baseballPlay.AwayHits = externalDto.AwayHits;
+        baseballPlay.HomeHits = externalDto.HomeHits;
+        baseballPlay.AwayErrors = externalDto.AwayErrors;
+        baseballPlay.HomeErrors = externalDto.HomeErrors;
+        baseballPlay.RbiCount = externalDto.RbiCount;
+        baseballPlay.IsDoublePlay = externalDto.DoublePlay;
+        baseballPlay.IsTriplePlay = externalDto.TriplePlay;
     }
 }

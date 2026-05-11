@@ -35,15 +35,18 @@ namespace SportsData.Producer.Application.Contests
         private readonly ILogger<BaseballContestReplayService> _logger;
         private readonly BaseballDataContext _dataContext;
         private readonly IEventBus _eventBus;
+        private readonly IMessageDeliveryScope _deliveryScope;
 
         public BaseballContestReplayService(
             ILogger<BaseballContestReplayService> logger,
             BaseballDataContext dataContext,
-            IEventBus eventBus)
+            IEventBus eventBus,
+            IMessageDeliveryScope deliveryScope)
         {
             _logger = logger;
             _dataContext = dataContext;
             _eventBus = eventBus;
+            _deliveryScope = deliveryScope;
         }
 
         public async Task ReplayContest(
@@ -93,6 +96,16 @@ namespace SportsData.Producer.Application.Contests
 
                 await _dataContext.SaveChangesAsync(ct);
 
+                // Replay re-emits stored data through the same SignalR
+                // fan-out path as a live game. It is an admin tool, not a
+                // real-time ingestion pipeline, and does not need the EF
+                // outbox's at-least-once safety. Use DeliveryMode.Direct
+                // so messages go straight to the broker — bypassing a
+                // role-split outbox-dispatch issue in prod where Worker
+                // pod outbox rows were not being delivered to the API
+                // consumer (see PR #312 diagnostic logs).
+                using var _directDelivery = _deliveryScope.Use(DeliveryMode.Direct);
+
                 // Lifecycle bookend — Scheduled→InProgress. Sport-neutral.
                 await _eventBus.Publish(new ContestStatusChanged(
                     contestId,
@@ -103,8 +116,6 @@ namespace SportsData.Producer.Application.Contests
                     correlationId,
                     CausationId.Producer.EventCompetitionStatusDocumentProcessor
                 ), ct);
-
-                await _dataContext.SaveChangesAsync(ct);
 
                 _logger.LogInformation(
                     "BaseballReplay: published ContestStatusChanged=InProgress. ContestId={ContestId}, CorrelationId={CorrelationId}",
@@ -189,8 +200,6 @@ namespace SportsData.Producer.Application.Contests
                         CorrelationId: correlationId,
                         CausationId: CausationId.Producer.EventCompetitionStatusDocumentProcessor
                     ), ct);
-
-                    await _dataContext.SaveChangesAsync(ct);
 
                     emittedCount++;
                     _logger.LogInformation(

@@ -18,19 +18,31 @@ namespace SportsData.Api.Application.Events
     public class ContestStatusChangedHandler : IConsumer<ContestStatusChanged>
     {
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ILogger<ContestStatusChangedHandler> _logger;
 
-        public ContestStatusChangedHandler(IHubContext<NotificationHub> hubContext)
+        public ContestStatusChangedHandler(
+            IHubContext<NotificationHub> hubContext,
+            ILogger<ContestStatusChangedHandler> logger)
         {
             _hubContext = hubContext;
+            _logger = logger;
         }
 
         public async Task Consume(ConsumeContext<ContestStatusChanged> context)
         {
             var msg = context.Message;
 
+            _logger.LogInformation(
+                "ContestStatusChanged consume: received. ContestId={ContestId}, Status={Status}, Sport={Sport}, CausationId={CausationId}, CorrelationId={CorrelationId}, MessageId={MessageId}",
+                msg.ContestId, msg.Status, msg.Sport, msg.CausationId, msg.CorrelationId, context.MessageId);
+
             await _hubContext.Clients
                 .All // ← simple, global broadcast for now
                 .SendAsync("ContestStatusChanged", msg, context.CancellationToken);
+
+            _logger.LogInformation(
+                "ContestStatusChanged consume: SignalR Clients.All.SendAsync completed. ContestId={ContestId}, Status={Status}, CorrelationId={CorrelationId}, MessageId={MessageId}",
+                msg.ContestId, msg.Status, msg.CorrelationId, context.MessageId);
         }
     }
 }

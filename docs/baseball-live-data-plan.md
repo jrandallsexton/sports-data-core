@@ -246,18 +246,23 @@ above are convenience copies. Schema:
   Position has no canonical entity yet; per-play statistics are a
   future processor target.
 - Indexes: `(CompetitionPlayId, Type)` for "pitcher for play X"
-  lookups, `(AthleteId)` for "all plays involving athlete Y".
+  lookups, `(AthleteSeasonId)` for "all plays involving
+  athlete-season Y", `(PositionId)` for position-based queries.
 
 **Extension + processor changes:**
-- `AsBaseballEntity` now takes `(atBatAthleteId, pitchingAthleteId)`
-  alongside `teamFranchiseSeasonId`, and populates every baseball
-  column from the DTO.
+- `AsBaseballEntity` now takes
+  `(atBatAthleteSeasonId, pitchingAthleteSeasonId)` alongside
+  `teamFranchiseSeasonId`, and populates every baseball column from
+  the DTO.
 - `BaseballEventCompetitionPlayDocumentProcessor` has two helpers:
   - `BuildParticipantsAsync` walks `participants[]` and emits a
     `List<BaseballCompetitionPlayParticipant>`, resolving each
-    `athlete.$ref` via `ResolveIdAsync<AthleteBase, AthleteExternalId>`
-    where possible. Unrecognized `Type` logs a Seq warning but
-    persists the row anyway — we don't drop data.
+    `athlete.$ref` via
+    `ResolveIdAsync<AthleteSeason, AthleteSeasonExternalId>` (the ref
+    is season-scoped, not global) and each `position.$ref` via
+    `ResolveIdAsync<AthletePosition, AthletePositionExternalId>` where
+    possible. Unrecognized `Type` logs a Seq warning but persists the
+    row anyway — we don't drop data.
   - `ExtractPrimaryAthletes` pulls the first pitcher/batter out of
     that list for the denormalized columns.
 - `BuildNewPlayAsync` builds the participants, attaches them to
@@ -267,10 +272,10 @@ above are convenience copies. Schema:
   ESPN can re-order or swap participants on a play between
   fetches (e.g., a substitution row appearing on a later refresh).
 - Empty/null participants (e.g. `start-inning`,
-  `end-batterpitcher`) yield empty lists. Unresolved athletes
-  (race during first ingest) yield null `AthleteId` — the update
-  path re-resolves on each re-ingest, so transient nulls heal
-  naturally without a throw-retry storm.
+  `end-batterpitcher`) yield empty lists. Unresolved athlete-seasons
+  (race during first ingest) yield null `AthleteSeasonId` — the
+  update path re-resolves on each re-ingest, so transient nulls
+  heal naturally without a throw-retry storm.
 
 **Migration:** `AddBaseballPlayCanonicalCaptureFields`. Eight
 nullable columns on `CompetitionPlay` + `IsValid` non-nullable with
@@ -302,9 +307,14 @@ the replay service so the matchup card stops showing placeholders.
 **Event population (`PublishSportPlayCompletedAsync`):**
 - `HalfInning: baseballPlay.HalfInning ?? string.Empty`
 - `Outs: baseballPlay.Outs ?? 0`
-- `AtBatAthleteId: baseballPlay.AtBatAthleteId`
-- `PitchingAthleteId: baseballPlay.PitchingAthleteId`
+- `AtBatAthleteSeasonId: baseballPlay.AtBatAthleteSeasonId`
+- `PitchingAthleteSeasonId: baseballPlay.PitchingAthleteSeasonId`
 - (Balls/Strikes already wired off `ResultCount*`.)
+
+The existing `BaseballPlayCompleted` event fields are named
+`AtBatAthleteId` / `PitchingAthleteId`; Phase 2 also renames them
+to `*AthleteSeasonId` so the wire shape matches the entity columns
+and the season-scoped resolution is explicit on the consumer side.
 
 **Replay service mirror.** `BaseballContestReplayService` reads
 from the entity, so once Phase 2 lands it picks up the new columns

@@ -57,8 +57,14 @@ export default function BaseballDebugCard() {
     runnerOnFirst: first,
     runnerOnSecond: second,
     runnerOnThird: third,
-    atBatAthleteId: null,
-    pitchingAthleteId: null,
+    atBatAthleteSeasonId: null,
+    atBatShortName: null,
+    atBatPositionAbbreviation: null,
+    atBatHeadshotUrl: null,
+    pitchingAthleteSeasonId: null,
+    pitchingShortName: null,
+    pitchingPositionAbbreviation: null,
+    pitchingHeadshotUrl: null,
     ...overrides,
   });
 

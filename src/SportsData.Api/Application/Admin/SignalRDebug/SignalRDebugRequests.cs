@@ -53,5 +53,11 @@ public record DebugBaseballPlayRequest(
     bool RunnerOnFirst,
     bool RunnerOnSecond,
     bool RunnerOnThird,
-    Guid? AtBatAthleteId,
-    Guid? PitchingAthleteId);
+    Guid? AtBatAthleteSeasonId,
+    string? AtBatShortName,
+    string? AtBatPositionAbbreviation,
+    string? AtBatHeadshotUrl,
+    Guid? PitchingAthleteSeasonId,
+    string? PitchingShortName,
+    string? PitchingPositionAbbreviation,
+    string? PitchingHeadshotUrl);

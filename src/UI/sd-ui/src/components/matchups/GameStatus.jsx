@@ -51,6 +51,14 @@ function GameStatus({
   runnerOnSecond,
   runnerOnThird,
   lastPlayDescription,
+  atBatShortName,
+  atBatPositionAbbreviation,
+  atBatHeadshotUrl,
+  pitchingShortName,
+  pitchingPositionAbbreviation,
+  pitchingHeadshotUrl,
+  awayLogoUri,
+  homeLogoUri,
   contestId,
   leagueSport,
   sport,
@@ -104,6 +112,14 @@ function GameStatus({
           runnerOnSecond={runnerOnSecond}
           runnerOnThird={runnerOnThird}
           lastPlayDescription={lastPlayDescription}
+          atBatShortName={atBatShortName}
+          atBatPositionAbbreviation={atBatPositionAbbreviation}
+          atBatHeadshotUrl={atBatHeadshotUrl}
+          pitchingShortName={pitchingShortName}
+          pitchingPositionAbbreviation={pitchingPositionAbbreviation}
+          pitchingHeadshotUrl={pitchingHeadshotUrl}
+          awayLogoUri={awayLogoUri}
+          homeLogoUri={homeLogoUri}
           isScoringPlay={isScoringPlay}
           contestId={contestId}
           sport={sport}

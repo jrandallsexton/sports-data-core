@@ -6,6 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests.Baseball;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
@@ -182,37 +183,43 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext>
         return play;
     }
 
-    protected override Task PublishSportPlayCompletedAsync(
+    protected override async Task PublishSportPlayCompletedAsync(
         ProcessDocumentCommand command,
         CompetitionBase competition,
         CompetitionPlayBase play)
     {
         var baseballPlay = (BaseballCompetitionPlay)play;
 
-        // Live MLB plays don't carry half-inning, outs, base state, or
-        // athlete IDs at the play-entity level today — half-inning lives
-        // on the BaseballCompetitionStatus row, runners/outs need an
-        // AtBat sourcing pipeline, and athlete refs aren't materialized
-        // onto the play. Emit what we have plus safe defaults so the wire
-        // shape stays stable for the existing diamond renderer; richer
-        // fields fill in once the broader sourcing lands.
-        return _publishEndpoint.Publish(new BaseballPlayCompleted(
+        // Runner state still comes from the EventCompetitionSituation
+        // pipeline (deferred to Phase 3 of docs/baseball-live-data-plan.md)
+        // — emit safe defaults so the UI diamond renderer keeps rendering.
+        // The at-bat / pitcher display fields hydrate from the entity here.
+        var display = await BaseballPlayCompletedPayloadBuilder.HydrateAsync(
+            _dataContext, baseballPlay);
+
+        await _publishEndpoint.Publish(new BaseballPlayCompleted(
             ContestId: competition.ContestId,
             CompetitionId: competition.Id,
             PlayId: baseballPlay.Id,
             PlayDescription: baseballPlay.Text,
             Inning: baseballPlay.PeriodNumber,
-            HalfInning: string.Empty,
+            HalfInning: baseballPlay.HalfInning ?? string.Empty,
             AwayScore: baseballPlay.AwayScore,
             HomeScore: baseballPlay.HomeScore,
             Balls: baseballPlay.ResultCountBalls ?? 0,
             Strikes: baseballPlay.ResultCountStrikes ?? 0,
-            Outs: 0,
+            Outs: baseballPlay.Outs ?? 0,
             RunnerOnFirst: false,
             RunnerOnSecond: false,
             RunnerOnThird: false,
-            AtBatAthleteId: null,
-            PitchingAthleteId: null,
+            AtBatAthleteSeasonId: baseballPlay.AtBatAthleteSeasonId,
+            AtBatShortName: display.AtBatShortName,
+            AtBatPositionAbbreviation: display.AtBatPositionAbbreviation,
+            AtBatHeadshotUrl: display.AtBatHeadshotUrl,
+            PitchingAthleteSeasonId: baseballPlay.PitchingAthleteSeasonId,
+            PitchingShortName: display.PitchingShortName,
+            PitchingPositionAbbreviation: display.PitchingPositionAbbreviation,
+            PitchingHeadshotUrl: display.PitchingHeadshotUrl,
             Ref: null,
             Sport: command.Sport,
             SeasonYear: command.SeasonYear,

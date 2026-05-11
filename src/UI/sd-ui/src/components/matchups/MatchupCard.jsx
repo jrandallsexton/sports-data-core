@@ -243,6 +243,17 @@ function MatchupCard({
           runnerOnSecond={matchup.runnerOnSecond}
           runnerOnThird={matchup.runnerOnThird}
           lastPlayDescription={matchup.lastPlayDescription}
+          // At-bat header (baseball live): names, position abbrevs,
+          // headshots come off the BaseballPlayCompleted event; team
+          // logos derive locally from halfInning + the team logo URIs.
+          atBatShortName={matchup.atBatShortName}
+          atBatPositionAbbreviation={matchup.atBatPositionAbbreviation}
+          atBatHeadshotUrl={matchup.atBatHeadshotUrl}
+          pitchingShortName={matchup.pitchingShortName}
+          pitchingPositionAbbreviation={matchup.pitchingPositionAbbreviation}
+          pitchingHeadshotUrl={matchup.pitchingHeadshotUrl}
+          awayLogoUri={awayLogoSrc}
+          homeLogoUri={homeLogoSrc}
           contestId={matchup.contestId}
           // leagueSport drives the in-progress sport dispatch inside
           // GameStatus (e.g. "BaseballMlb" → BaseballGameStatusInProgress).

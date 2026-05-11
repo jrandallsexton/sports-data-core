@@ -716,6 +716,54 @@
 /* Reuse the existing .live-indicator pulse from the football block for
    consistency; .status-label.live-indicator picks up the same animation. */
 
+/* At-bat header — two side-by-side slots, batter on the left, pitcher
+   on the right. Wraps onto two rows on narrow screens via flex-wrap. */
+.live-state-atbat {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.live-state-atbat-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.live-state-atbat-logo {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.live-state-atbat-headshot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bg-input);
+}
+
+.live-state-atbat-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.live-state-atbat-pos {
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 .live-state-summary {
   font-size: 0.85rem;
   color: var(--text-muted);

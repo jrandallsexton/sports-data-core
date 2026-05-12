@@ -265,26 +265,23 @@ namespace SportsData.Core.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddHealthChecks<TDbContext, TPublisher>(
+        public static IServiceCollection AddHealthChecks<TDbContext>(
             this IServiceCollection services,
             string apiName,
             Sport mode)
-            where TDbContext : DbContext where TPublisher : class
+            where TDbContext : DbContext
         {
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>($"{apiName}-{mode}", tags: ["live", "ready"])
                 .AddCheck<LoggingHealthCheck>("logging", tags: ["ready"])
                 .AddCheck<DatabaseHealthCheck<TDbContext>>($"{apiName}-db", tags: ["ready"]);
 
-            services.AddHostedService<HeartbeatPublisher<TPublisher>>();
-
             return services;
         }
 
-        public static IServiceCollection AddHealthChecksMaster<TPublisher>(
+        public static IServiceCollection AddHealthChecksMaster(
             this IServiceCollection services,
             string apiName)
-            where TPublisher : class
         {
             services.AddHealthChecks()
                 .AddCheck<HealthCheck>(apiName, tags: ["live", "ready"])
@@ -298,8 +295,6 @@ namespace SportsData.Core.DependencyInjection
                 //.AddCheck<ClientHealthCheck<IProvideProviders>>(HttpClients.ProviderClient, tags: ["ready"]);
             //.AddCheck<ClientHealthCheck<IProvideSeasons>>(HttpClients.SeasonClient)
             //.AddCheck<ClientHealthCheck<IProvideVenues>>(HttpClients.VenueClient);
-
-            services.AddHostedService<HeartbeatPublisher<TPublisher>>();
 
             return services;
         }

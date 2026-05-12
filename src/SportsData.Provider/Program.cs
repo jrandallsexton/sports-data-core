@@ -131,7 +131,7 @@ namespace SportsData.Provider
             builder.Services.Configure<ProviderDocDatabaseConfig>(
                 builder.Configuration.GetSection($"{builder.Environment.ApplicationName}:ProviderDocDatabaseConfig"));
 
-            services.AddHealthChecks<AppDataContext, Program>(builder.Environment.ApplicationName, mode);
+            services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, mode);
             services.AddHealthChecks().AddCheck<DocumentDatabaseHealthCheck>(nameof(DocumentDatabaseHealthCheck));
 
             var docDbProviderValue = config["SportsData.Provider:ProviderDocDatabaseConfig:Provider"];

@@ -47,9 +47,9 @@ Now registered in API's `Program.cs` consumer list. SignalR `Clients.All.SendAsy
 - **What it would do:** log error-level observation when a document is dead-lettered after max retries.
 - **Note:** per CLAUDE.md, "DLQ is intentional" — documents land there when dependencies aren't sourced yet. This consumer was monitoring-only, not retrying. The disable may be deliberate (signal-to-noise) but means there is no automatic alert on dead-lettered documents; everything is manual replay via endpoint.
 
-### 2.4 Three events bypass the modern shape convention
+### 2.4 Two events bypass the modern shape convention
 
-- `ConferenceUpdated`, `ConferenceSeasonUpdated`, and `Heartbeat` are old-style `class` types with stringly-typed properties (`Id`, `Name`) instead of `record` inheritors of `EventBase` with `(payload, Ref, Sport, SeasonYear, CorrelationId, CausationId)`. None of the three is currently published, so this is dead code, but if Conference events ever come back to life they should be re-shaped to match the rest of the catalog.
+- `ConferenceUpdated` and `ConferenceSeasonUpdated` are old-style `class` types with stringly-typed properties (`Id`, `Name`) instead of `record` inheritors of `EventBase` with `(payload, Ref, Sport, SeasonYear, CorrelationId, CausationId)`. Neither is currently published, so this is dead code, but if Conference events ever come back to life they should be re-shaped to match the rest of the catalog.
 
 ---
 
@@ -152,7 +152,6 @@ Bucket → Event → Publisher(s) → Consumer(s) → Status. `file:line` refere
 
 | Event | Publisher(s) | Consumer(s) | Status |
 |---|---|---|---|
-| `Heartbeat` | — | — | 💀 dead stub (also old-shape) |
 | `OutboxTestEvent` | `OutboxTestController` (Producer/Provider — manual triggers) | `OutboxTestEventHandler` (Producer) | ✅ wired (logs only — outbox self-test) |
 | `LoadTestProducerEvent` | `OutboxTestController` (Producer manual trigger) | `LoadTestProducerEventConsumer` (Producer) | ✅ wired (KEDA autoscale validation; enqueues `ProcessLoadTestJob`) |
 | `LoadTestProviderEvent` | `OutboxTestController` (Provider manual trigger) | `LoadTestProviderEventConsumer` (Provider) | ✅ wired (KEDA autoscale validation; enqueues `ProcessLoadTestJob`) |
@@ -218,9 +217,9 @@ Surfaced for discussion, not as a decided plan:
 
 1. **Decide the fate of §2.1 + §2.2 (live-score broadcast).** Either register the two consumers and turn on real-time score push to web clients, or delete the consumer classes and the `ContestScoreChanged` event so the catalog reflects reality. Half-states are misleading.
 2. **Decide the fate of §2.3 (`DocumentDeadLetterConsumer`).** If the manual-replay model from CLAUDE.md is the intent, delete the disabled consumer instead of leaving commented-out code. If alerts are wanted, register it (and route logs to Seq/alerting).
-3. **Delete the 17 dead-stub events** (Conference quartet, Position, AthletePosition pair, FranchiseUpdated/SeasonCreated/SeasonRecordCreated/SeasonEnrichmentCompleted, DocumentSourcingStarted, DocumentUpdated, Heartbeat, PickemGroupWeekContestsGenerated, the `Venue*` updates if not coming back). Or pick the ones that have an imminent consumer story and keep them. The current half-populated `Eventing/Events/` folder is hard to read because half the files are aspirational.
+3. **Delete the 16 remaining dead-stub events** (Conference quartet, Position, AthletePosition pair, FranchiseUpdated/SeasonCreated/SeasonRecordCreated/SeasonEnrichmentCompleted, DocumentSourcingStarted, DocumentUpdated, PickemGroupWeekContestsGenerated, the `Venue*` updates if not coming back). Or pick the ones that have an imminent consumer story and keep them. The current half-populated `Eventing/Events/` folder is hard to read because half the files are aspirational. (`Heartbeat` was deleted in chore/kill-heartbeat.)
 4. **Consider whether the emit-only events with no consumer are intentional.** Many of them (`AthleteCreated`, `FranchiseCreated`, `ContestPlayCompleted`, `ContestEnrichmentCompleted`, etc.) look like they were designed for a future feature (read-model projector? notification trigger?). If those features aren't on the roadmap soon, the events are pure overhead — every one is serialized to the outbox, transmitted via RabbitMQ/Service Bus, and discarded.
-5. **Revisit the `ConferenceUpdated`/`ConferenceSeasonUpdated`/`Heartbeat` shape** if Conference events are revived. Bring them in line with the modern record + `EventBase` convention.
+5. **Revisit the `ConferenceUpdated`/`ConferenceSeasonUpdated` shape** if Conference events are revived. Bring them in line with the modern record + `EventBase` convention.
 
 ---
 

@@ -118,11 +118,13 @@ operator-generated credentials).
 
 ### `_common-variables.ps1` delta — Round 1
 
-In `/d/Dropbox/Code/sports-data-provision/_secrets/_common-variables.ps1`:
+In the sister `sports-data-provision` repo's `_secrets/_common-variables.ps1`
+(the `_secrets/` folder lives outside the main repo tree for backup/sync
+reasons — actual filesystem location is author-specific).
 
 | Variable today | Variable after Round 1 |
 |---|---|
-| `$rmqUsernameNcaaProd` / `$rmqPasswordNcaaProd` (today used by legacy base broker = NCAA + API) | Renamed conceptually but value unchanged — still tracks the legacy `rabbitmq` cluster's credentials, which post-Round-1 serve only NCAA. Rename to `$rmqUsernameLegacyBaseProd` / `$rmqPasswordLegacyBaseProd` (or keep `NcaaProd` since NCAA is the sole remaining tenant). |
+| `$rmqUsernameNcaaProd` / `$rmqPasswordNcaaProd` (today used by legacy base broker = NCAA + API) | Value unchanged — still tracks the legacy `rabbitmq` cluster's credentials, which post-Round-1 serve only NCAA. Optionally rename to `$rmqUsernameLegacyBaseProd` for clarity, or keep `NcaaProd` since NCAA is the sole remaining tenant. *Executed outcome: kept the existing `NcaaProd` name.* |
 | (none) | NEW: `$rmqUsernameApiProd` / `$rmqPasswordApiProd` for the new `rabbitmq-api` cluster |
 | (none) | NEW: `$rmqUsernameBaseballMlbProd` / `$rmqPasswordBaseballMlbProd` for the new `rabbitmq-baseball-mlb` cluster |
 | `$rmqUsernameMlbProd` / `$rmqPasswordMlbProd` | DELETE at end of Round 1 (old `rabbitmq-mlb` cluster is decommissioned) |
@@ -429,9 +431,9 @@ held vs. plan:
    `terminated` with reason `"needed a restart"`, broker logs report
    `NOT_FOUND - no exchange '<name>' in vhost '/'`. Fix: pre-declare
    the source exchanges via `rabbitmqadmin declare exchange` before
-   any shovel reconciles. Documented in
-   `memory/reference_shovel_exchange_predeclare.md`. **Round 2 plans
-   this declaration step into Phase 1** so the gotcha doesn't recur.
+   any shovel reconciles. **Round 2 plans this declaration step
+   into Phase 1** so the gotcha doesn't recur (see the
+   pre-declare script under [Phase 1](#phase-1--provision-new-clusters--pre-declare-source-exchanges)).
 2. **AMQP URI vhost suffix** — the operator-generated
    `connection_string` ends in `:5672/` which AMQP parses as the
    *empty* vhost. Shovels need `:5672/%2F` (default vhost `/`

@@ -48,7 +48,6 @@ Some user-visible features traverse multiple events across multiple services and
     *   [`BaseballContestStateChanged`](events/contests/BaseballContestStateChanged.md) — per-pitch / per-at-bat tick
 
 ### Core
-*   [`Heartbeat`](events/core/Heartbeat.md)
 *   [`OutboxTestEvent`](events/core/OutboxTestEvent.md)
 
 ### Documents

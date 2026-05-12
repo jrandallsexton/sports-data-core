@@ -176,14 +176,14 @@ public class Program
         switch (mode)
         {
             case Sport.GolfPga:
-                services.AddHealthChecks<GolfDataContext, Program>(builder.Environment.ApplicationName, mode);
+                services.AddHealthChecks<GolfDataContext>(builder.Environment.ApplicationName, mode);
                 break;
             case Sport.FootballNcaa:
             case Sport.FootballNfl:
-                services.AddHealthChecks<FootballDataContext, Program>(builder.Environment.ApplicationName, mode);
+                services.AddHealthChecks<FootballDataContext>(builder.Environment.ApplicationName, mode);
                 break;
             case Sport.BaseballMlb:
-                services.AddHealthChecks<BaseballDataContext, Program>(builder.Environment.ApplicationName, mode);
+                services.AddHealthChecks<BaseballDataContext>(builder.Environment.ApplicationName, mode);
                 break;
             case Sport.All:
             case Sport.BasketballNba:

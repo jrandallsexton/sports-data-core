@@ -288,7 +288,7 @@ namespace SportsData.Api
 
             builder.Services.AddOutputCache();
 
-            services.AddHealthChecksMaster<Program>(builder.Environment.ApplicationName);
+            services.AddHealthChecksMaster(builder.Environment.ApplicationName);
 
             services.AddLocalServices(Sport.All);
 

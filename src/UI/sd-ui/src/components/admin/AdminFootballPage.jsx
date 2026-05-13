@@ -145,9 +145,9 @@ export default function AdminFootballPage() {
   return (
     <div className="admin-page">
       <AdminHeader />
-      <a href="https://messaging-footballncaa.sportdeets.com/#/" target="_blank">Rabbit - NCAAFB</a>
+      <a href="https://messaging-footballncaa.sportdeets.com/#/" target="_blank" rel="noreferrer">Rabbit - NCAAFB</a>
       <br/>
-      <a href="https://messaging-footballnfl.sportdeets.com/#/" target="_blank">Rabbit - NFL</a>
+      <a href="https://messaging-footballnfl.sportdeets.com/#/" target="_blank" rel="noreferrer">Rabbit - NFL</a>
       <div className="admin-sport-debug-grid">
         {/* Left column — the observer: pick a contest, render its MatchupCard */}
         <section className="admin-football-matchup-debug">

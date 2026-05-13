@@ -27,9 +27,13 @@ const LEAGUE_OPTIONS = [
  * to localStorage so reloads keep the last values.
  */
 export default function AdminFootballPage() {
-  const [league, setLeague] = useState(
-    () => localStorage.getItem(LEAGUE_STORAGE_KEY) ?? 'ncaa'
-  );
+  const [league, setLeague] = useState(() => {
+    // Validate against LEAGUE_OPTIONS so a stale/unsupported value in
+    // localStorage (older app version, manual edit) can't reach the
+    // backend — ModeMapper.ResolveMode throws on unknown leagues.
+    const stored = localStorage.getItem(LEAGUE_STORAGE_KEY);
+    return LEAGUE_OPTIONS.some(o => o.value === stored) ? stored : 'ncaa';
+  });
   const [contestId, setContestId] = useState(
     () => localStorage.getItem(CONTEST_ID_STORAGE_KEY) ?? ''
   );
@@ -65,6 +69,7 @@ export default function AdminFootballPage() {
       possessionFranchiseSeasonId:
         live.possessionFranchiseSeasonId ?? matchup.possessionFranchiseSeasonId,
       isScoringPlay: live.isScoringPlay ?? matchup.isScoringPlay,
+      ballOnYardLine: live.ballOnYardLine ?? matchup.ballOnYardLine,
       lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
     };
   }, [matchup, live]);

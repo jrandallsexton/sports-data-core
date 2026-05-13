@@ -136,7 +136,7 @@ export default function AdminBaseballPage() {
     <div className="admin-page">
       <AdminHeader />
 
-      <div className="admin-baseball-debug-grid">
+      <div className="admin-sport-debug-grid">
         {/* Left column — the observer: pick a contest, render its MatchupCard */}
         <section className="admin-baseball-matchup-debug">
           <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>

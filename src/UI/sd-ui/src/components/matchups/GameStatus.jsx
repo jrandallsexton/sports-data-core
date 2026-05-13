@@ -143,6 +143,7 @@ function GameStatus({
         homeFranchiseSeasonId={homeFranchiseSeasonId}
         possessionFranchiseSeasonId={possessionFranchiseSeasonId}
         isScoringPlay={isScoringPlay}
+        lastPlayDescription={lastPlayDescription}
         contestId={contestId}
         sport={sport}
         league={league}

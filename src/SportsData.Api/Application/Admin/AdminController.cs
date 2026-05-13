@@ -245,6 +245,31 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Football twin of <see cref="GetBaseballMatchupForContest"/>. Returns one
+        /// canonical NCAA/NFL matchup in the same shape as the picks page so the
+        /// football SignalR debug page can render a real MatchupCard for a chosen
+        /// contest. League-context fields (Predictions, AiWinner, IsPreview*,
+        /// HeadLine) are intentionally null/empty.
+        /// </summary>
+        [HttpGet]
+        [Route("football/contests/{contestId:guid}/matchup")]
+        public async Task<ActionResult<LeagueWeekMatchupsDto.MatchupForPickDto>> GetFootballMatchupForContest(
+            [FromRoute] Guid contestId,
+            [FromQuery] string? league,
+            [FromServices] IGetMatchupForContestQueryHandler handler,
+            CancellationToken cancellationToken)
+        {
+            // Mirrors ReplayFootballContest's routing: NCAA default, NFL when league=nfl.
+            var sport = string.Equals(league, "nfl", StringComparison.OrdinalIgnoreCase)
+                ? Sport.FootballNfl
+                : Sport.FootballNcaa;
+
+            var query = new GetMatchupForContestQuery(contestId, sport);
+            var result = await handler.ExecuteAsync(query, cancellationToken);
+            return result.ToActionResult();
+        }
+
         [HttpPost]
         [Route("football/contests/{contestId:guid}/replay")]
         public async Task<ActionResult<bool>> ReplayFootballContest(

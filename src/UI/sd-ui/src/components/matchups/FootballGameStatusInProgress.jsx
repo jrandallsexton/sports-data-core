@@ -2,16 +2,13 @@ import { Link } from "react-router-dom";
 import { contestLink } from '../../utils/sportLinks';
 
 /**
- * Football per-play live block. Lifted verbatim from GameStatus.jsx so
- * the per-sport split (FB vs MLB) can land without disturbing the
- * existing football layout. Behavior is unchanged: LIVE label,
- * period+clock, score with 🏈 next to the team in possession, scoring
- * flash + 🎉 TOUCHDOWN! indicator.
+ * Football per-play live block. Renders LIVE label, period+clock, score
+ * with 🏈 next to the team in possession, scoring flash + 🎉 TOUCHDOWN!
+ * indicator, and a last-play description row (mirrors baseball).
  *
  * Class names are intentionally kept (`.game-result`, `.final-score`,
  * `.score-display`, etc.) — the broader status-neutral rename is a
- * separate effort tracked in docs/matchup-card.md and is out of scope
- * for the MLB-first enrichment PR.
+ * separate effort tracked in docs/matchup-card.md.
  */
 function FootballGameStatusInProgress({
   awayShort,
@@ -24,6 +21,7 @@ function FootballGameStatusInProgress({
   homeFranchiseSeasonId,
   possessionFranchiseSeasonId,
   isScoringPlay,
+  lastPlayDescription,
   contestId,
   sport,
   league,
@@ -39,6 +37,9 @@ function FootballGameStatusInProgress({
     possessionFranchiseSeasonId != null
     && possessionFranchiseSeasonId === homeFranchiseSeasonId;
 
+  const hasLastPlayRow =
+    typeof lastPlayDescription === 'string' && lastPlayDescription.length > 0;
+
   const liveContent = (
     <>
       <span className="result-label live-indicator">LIVE</span>
@@ -53,6 +54,11 @@ function FootballGameStatusInProgress({
       {isScoringPlay && (
         // TODO: Determine score type (TD, FG, etc.) for better indicator
         <span className="touchdown-indicator">🎉 TOUCHDOWN!</span>
+      )}
+      {hasLastPlayRow && (
+        <span className="live-state-lastplay" title={lastPlayDescription}>
+          {lastPlayDescription}
+        </span>
       )}
     </>
   );

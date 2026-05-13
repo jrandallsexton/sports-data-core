@@ -23,6 +23,7 @@ using SportsData.Api.Infrastructure.Data.Canonical.Models;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Common.Mapping;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Contests.Baseball;
@@ -245,20 +246,45 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Football twin of <see cref="GetBaseballMatchupForContest"/>. Returns one
+        /// canonical NCAA/NFL matchup in the same shape as the picks page so the
+        /// football SignalR debug page can render a real MatchupCard for a chosen
+        /// contest. League-context fields (Predictions, AiWinner, IsPreview*,
+        /// HeadLine) are intentionally null/empty.
+        /// </summary>
+        [HttpGet]
+        [Route("football/contests/{contestId:guid}/matchup")]
+        public async Task<ActionResult<LeagueWeekMatchupsDto.MatchupForPickDto>> GetFootballMatchupForContest(
+            [FromRoute] Guid contestId,
+            [FromQuery] string league = "ncaa",
+            [FromServices] IGetMatchupForContestQueryHandler handler = default!,
+            CancellationToken cancellationToken = default)
+        {
+            // API runs in Sport.All; route encodes the sport (football), the
+            // league query param distinguishes NCAA vs NFL. ModeMapper is the
+            // canonical place for sport+league → Sport resolution.
+            var sport = ModeMapper.ResolveMode("football", league);
+
+            var query = new GetMatchupForContestQuery(contestId, sport);
+            var result = await handler.ExecuteAsync(query, cancellationToken);
+            return result.ToActionResult();
+        }
+
         [HttpPost]
         [Route("football/contests/{contestId:guid}/replay")]
         public async Task<ActionResult<bool>> ReplayFootballContest(
             [FromRoute] Guid contestId,
-            [FromQuery] string? league,
-            [FromServices] IContestClientFactory contestClientFactory,
-            CancellationToken cancellationToken)
+            [FromQuery] string league = "ncaa",
+            [FromServices] IContestClientFactory contestClientFactory = default!,
+            CancellationToken cancellationToken = default)
         {
-            // Football has two leagues sharing the FootballDataContext (NCAA + NFL).
-            // The replay client routing is per-sport, so either NCAA or NFL resolves
-            // the same Producer pod; default to NCAA when caller doesn't specify.
-            var sport = string.Equals(league, "nfl", StringComparison.OrdinalIgnoreCase)
-                ? Sport.FootballNfl
-                : Sport.FootballNcaa;
+            // API runs in Sport.All; route encodes the sport (football), the
+            // league query param distinguishes NCAA vs NFL. Football's two
+            // leagues share the FootballDataContext so either resolves the
+            // same Producer pod, but we still need a concrete Sport enum to
+            // route the client factory.
+            var sport = ModeMapper.ResolveMode("football", league);
 
             var result = await contestClientFactory
                 .Resolve(sport)

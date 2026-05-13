@@ -19,6 +19,10 @@ const AdminApi = {
   // IsPreview*, HeadLine) come back null/empty per the endpoint contract.
   getBaseballMatchupForContest: (contestId) =>
     apiClient.get(`/admin/baseball/contests/${contestId}/matchup`),
+  getFootballMatchupForContest: (contestId, league) =>
+    apiClient.get(`/admin/football/contests/${contestId}/matchup`, {
+      params: league ? { league } : undefined,
+    }),
 
   // Triggers a contest replay through the matching sport's Producer.
   // Producer enqueues the work and the bus emits ContestStatusChanged

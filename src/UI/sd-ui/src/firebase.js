@@ -10,8 +10,8 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 
-// ✅ CRITICAL: Explicitly set persistence to LOCAL
-// This ensures auth state survives browser refreshes and tab suspensions
+// Persistence in IndexedDB so auth state survives refreshes and tab
+// suspensions, and so all tabs of the same origin share one session.
 setPersistence(auth, browserLocalPersistence)
   .then(() => {
     console.log('✅ Firebase persistence set to LOCAL');
@@ -21,26 +21,12 @@ setPersistence(auth, browserLocalPersistence)
     console.error('Auth sessions may not survive tab suspensions!');
   });
 
-// ✅ Add session recovery on visibility change (tab resume from suspension)
-if (typeof document !== 'undefined') {
-  document.addEventListener('visibilitychange', async () => {
-    if (!document.hidden && auth.currentUser) {
-      console.log('📱 Tab became visible, verifying auth state...');
-      try {
-        // Verify token is still valid after tab was suspended/backgrounded
-        await auth.currentUser.getIdToken(true);
-        console.log('✅ Auth state verified after tab resume');
-      } catch (error) {
-        console.error('❌ Auth state invalid after tab resume:', error);
-        console.warn('Session was lost during tab suspension - redirecting to login');
-        // Session was lost during suspension - gracefully sign out and redirect
-        await auth.signOut();
-        if (window.location.pathname !== '/') {
-          window.location.href = '/';
-        }
-      }
-    }
-  });
-}
+// No visibilitychange handler: token validity is enforced per-request
+// by apiClient (proactive refresh if <5min to expiry, force-refresh +
+// retry on 401). A handler that force-refreshed on every tab refocus
+// caused spurious logouts — two tabs racing the same forced refresh
+// (e.g. when opening a contest overview in a new tab and switching
+// back) would occasionally fail one refresh, hit the catch path, and
+// auth.signOut() broadcast the sign-out to every tab via IndexedDB.
 
 export { auth };

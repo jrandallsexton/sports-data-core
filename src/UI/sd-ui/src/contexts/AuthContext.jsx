@@ -37,12 +37,14 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  // NOTE: Interval-based token refresh removed - it doesn't work when tab is suspended.
-  // Instead, we now:
-  // 1. Check token expiration on each API request (apiClient.js request interceptor)
-  // 2. Refresh proactively if token expires in <5 minutes
-  // 3. Verify auth state when tab resumes from suspension (firebase.js visibility listener)
-  // This is more reliable than a timer that doesn't run during tab suspension.
+  // Token refresh is owned by apiClient (request interceptor): expiration
+  // is checked per-request and the token force-refreshes if <5min to
+  // expiry, with a force-refresh + retry on 401. A previous experiment
+  // also force-refreshed on every visibilitychange in firebase.js — that
+  // raced when two tabs refocused at once and would auth.signOut() on a
+  // single transient failure, broadcasting sign-out to all tabs. The
+  // per-request path handles long suspensions correctly the moment the
+  // user interacts.
 
   return (
     <AuthContext.Provider value={{ user, loading, handleSignOut }}>

@@ -42,9 +42,9 @@ export function AuthProvider({ children }) {
   // expiry, with a force-refresh + retry on 401. A previous experiment
   // also force-refreshed on every visibilitychange in firebase.js — that
   // raced when two tabs refocused at once and would auth.signOut() on a
-  // single transient failure, broadcasting sign-out to all tabs. The
-  // per-request path handles long suspensions correctly the moment the
-  // user interacts.
+  // single transient failure, which the localStorage storage event then
+  // broadcast to every tab. The per-request path handles long
+  // suspensions correctly the moment the user interacts.
 
   return (
     <AuthContext.Provider value={{ user, loading, handleSignOut }}>

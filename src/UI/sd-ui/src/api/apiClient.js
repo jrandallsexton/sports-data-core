@@ -53,8 +53,18 @@ apiClient.interceptors.request.use(async (config) => {
     }
   } else {
     // No authenticated user - reject request immediately
-    // This prevents "canceled" requests in dev tools
-    console.warn('⚠️ No authenticated user - rejecting API request');
+    // This prevents "canceled" requests in dev tools.
+    //
+    // Diagnostic logging for the spurious-logout investigation: which
+    // URL is being attempted when there's no user? An inactive tab
+    // making a background request after a cross-tab signOut would
+    // surface here, and the URL identifies the caller (SignalR keepalive,
+    // a hook firing on a timer, etc.). See docs/auth-spurious-logout-investigation.md.
+    console.warn('⚠️ No authenticated user - rejecting API request', {
+      url: config?.url,
+      method: config?.method,
+      visibilityState: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+    });
     return Promise.reject({
       message: 'No authenticated user',
       config,
@@ -122,15 +132,31 @@ apiClient.interceptors.response.use(
           return Promise.reject(error);
         }
       } catch (refreshError) {
-        console.error('❌ Token refresh failed after 401:', refreshError);
-        
+        // Diagnostic logging for the spurious-logout investigation
+        // (docs/auth-spurious-logout-investigation.md). We sign out on
+        // any refresh failure here, but we suspect transient errors
+        // (network blips, JWKS hiccups, two-tabs racing the same forced
+        // refresh) reach this branch and broadcast signOut to every
+        // tab via Firebase's cross-tab channel. Capture the error code
+        // and the failing URL so one production occurrence tells us
+        // whether the trigger is a real session-end (auth/user-token-expired,
+        // auth/invalid-refresh-token) or a transient failure
+        // (auth/network-request-failed, etc.) we shouldn't sign out on.
+        console.error('❌ Token refresh failed after 401 — about to signOut + redirect', {
+          errorCode: refreshError?.code,
+          errorMessage: refreshError?.message,
+          failingUrl: originalRequest?.url,
+          failingMethod: originalRequest?.method,
+          visibilityState: typeof document !== 'undefined' ? document.visibilityState : 'unknown',
+        });
+
         // Refresh failed - sign out and redirect
         const auth = getAuth();
         await auth.signOut();
         if (window.location.pathname !== '/') {
           window.location.href = '/';
         }
-        
+
         return Promise.reject(refreshError);
       }
     } else if (status === 401) {

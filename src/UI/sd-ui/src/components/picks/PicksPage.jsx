@@ -52,7 +52,7 @@ function PicksPage() {
   const leagues = Object.values(userDto?.leagues || {});
 
   // Get contest updates for live game data
-  const { getContestUpdate } = useContestUpdates();
+  const { getContestUpdate, _instanceId: contestCtxInstanceId } = useContestUpdates();
 
   const usedConfidencePoints = useMemo(() => {
     return Object.values(userPicks)
@@ -67,6 +67,12 @@ function PicksPage() {
   // record; the union is included here so MatchupCard / GameStatus
   // can pick out whichever fields its sport branch needs.
   const enrichedMatchups = useMemo(() => {
+    // DIAG (refresh-loses-updates investigation): how many matchups
+    // have a live update merged in, AND which ContestCtx instance
+    // we're reading from. If setContests fires on #1 but PicksPage
+    // reads from #2, withLive stays 0 — the cross-instance bug.
+    const withLive = matchups.filter(m => getContestUpdate(m.contestId)).length;
+    console.log(`[PicksPage] enrichedMatchups recompute (reading ContestCtx#${contestCtxInstanceId})`, { total: matchups.length, withLive });
     return matchups.map(matchup => {
       const liveUpdate = getContestUpdate(matchup.contestId);
       if (liveUpdate) {
@@ -109,6 +115,10 @@ function PicksPage() {
       }
       return matchup;
     });
+    // contestCtxInstanceId is intentionally NOT in deps — it's stable
+    // per Provider mount, and re-running the memo just to update the
+    // log tag is pointless. Tracked in console output.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchups, getContestUpdate]);
 
   // Select default league on load or when leagues change

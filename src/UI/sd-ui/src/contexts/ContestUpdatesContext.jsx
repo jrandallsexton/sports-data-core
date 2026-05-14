@@ -1,5 +1,12 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 
+// DIAG (refresh-loses-updates investigation): module-level counter so
+// each ContestUpdatesProvider mount gets a unique instance ID. If the
+// console shows logs tagged with different IDs (e.g. "#1" and "#2"),
+// the React tree has two Provider instances and SignalR callbacks may
+// be writing to one while consumers read from the other.
+let _ctxInstanceCounter = 0;
+
 /**
  * Context for managing real-time contest updates from SignalR.
  * Stores live game data including lifecycle status, play description,
@@ -8,8 +15,12 @@ import { createContext, useContext, useState, useCallback } from 'react';
 const ContestUpdatesContext = createContext(null);
 
 export const ContestUpdatesProvider = ({ children }) => {
+  // DIAG: stable instance ID for this Provider's lifetime (lazy init via useState).
+  const [instanceId] = useState(() => ++_ctxInstanceCounter);
   // Map of contestId -> live update data
   const [contests, setContests] = useState({});
+
+  console.log(`[ContestCtx#${instanceId}] render, contests size:`, Object.keys(contests).length, 'keys:', Object.keys(contests));
 
   /**
    * Handle ContestStatusChanged (lifecycle) event from SignalR.
@@ -24,6 +35,7 @@ export const ContestUpdatesProvider = ({ children }) => {
       return;
     }
 
+    console.log(`[ContestCtx#${instanceId}] setContests (status)`, { contestId: data.contestId, status: data.status });
     setContests(prev => ({
       ...prev,
       [data.contestId]: {
@@ -33,7 +45,7 @@ export const ContestUpdatesProvider = ({ children }) => {
         lastUpdated: Date.now()
       }
     }));
-  }, []);
+  }, [instanceId]);
 
   /**
    * Handle FootballPlayCompleted — merged per-play event carrying both
@@ -48,6 +60,7 @@ export const ContestUpdatesProvider = ({ children }) => {
       return;
     }
 
+    console.log(`[ContestCtx#${instanceId}] setContests (football play)`, { contestId: data.contestId, period: data.period, clock: data.clock });
     setContests(prev => ({
       ...prev,
       [data.contestId]: {
@@ -79,7 +92,7 @@ export const ContestUpdatesProvider = ({ children }) => {
         }));
       }, 2000);
     }
-  }, []);
+  }, [instanceId]);
 
   /**
    * Handle BaseballPlayCompleted — merged per-play event carrying both
@@ -94,6 +107,7 @@ export const ContestUpdatesProvider = ({ children }) => {
       return;
     }
 
+    console.log(`[ContestCtx#${instanceId}] setContests (baseball play)`, { contestId: data.contestId, inning: data.inning, half: data.halfInning });
     setContests(prev => ({
       ...prev,
       [data.contestId]: {
@@ -123,7 +137,7 @@ export const ContestUpdatesProvider = ({ children }) => {
         lastUpdated: Date.now()
       }
     }));
-  }, []);
+  }, [instanceId]);
 
   /**
    * Get live update data for a specific contest
@@ -162,6 +176,7 @@ export const ContestUpdatesProvider = ({ children }) => {
   }, []);
 
   const value = {
+    _instanceId: instanceId, // DIAG: lets consumers log which Provider they're reading from
     contests,
     handleStatusUpdate,
     handleFootballPlayCompleted,

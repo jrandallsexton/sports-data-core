@@ -66,6 +66,15 @@ export const ContestUpdatesProvider = ({ children }) => {
       [data.contestId]: {
         ...prev[data.contestId],
         contestId: data.contestId,
+        // Receiving a play is itself proof the contest is live, so
+        // promote status to InProgress here even if the prior
+        // ContestStatusChanged lifecycle event was missed (e.g. a
+        // refresh happened after the replay's one-shot lifecycle
+        // fan-out — SignalR has no buffer, so post-connect clients
+        // miss any event published before their handshake completed).
+        // Without this, GameStatus stays on the Final/Scheduled
+        // branch and never renders the merged live data.
+        status: 'InProgress',
         period: data.period,
         clock: data.clock,
         awayScore: data.awayScore,
@@ -113,6 +122,11 @@ export const ContestUpdatesProvider = ({ children }) => {
       [data.contestId]: {
         ...prev[data.contestId],
         contestId: data.contestId,
+        // Receiving a play is itself proof the contest is live — see
+        // matching comment in handleFootballPlayCompleted. Without
+        // this, refresh-after-replay-start leaves the card stuck on
+        // the Final layout despite plays flowing into context.
+        status: 'InProgress',
         inning: data.inning,
         halfInning: data.halfInning,
         awayScore: data.awayScore,

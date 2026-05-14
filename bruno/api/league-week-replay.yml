@@ -1,0 +1,21 @@
+info:
+  name: league-week-replay
+  type: http
+  seq: 18
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/leagues/8a209215-2f8e-42d0-93e3-f9e519543216/weeks/5/replay"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

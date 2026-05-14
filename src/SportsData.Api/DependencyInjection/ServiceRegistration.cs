@@ -134,6 +134,8 @@ namespace SportsData.Api.DependencyInjection
                 SportsData.Api.Application.Admin.Queries.GetMatchupPreview.GetMatchupPreviewQueryHandler>();
             services.AddScoped<SportsData.Api.Application.Admin.Queries.GetMatchupForContest.IGetMatchupForContestQueryHandler,
                 SportsData.Api.Application.Admin.Queries.GetMatchupForContest.GetMatchupForContestQueryHandler>();
+            services.AddScoped<SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests.IGetLeagueWeekContestsQueryHandler,
+                SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests.GetLeagueWeekContestsQueryHandler>();
 
             // Analytics Queries
             services.AddScoped<IGetFranchiseSeasonMetricsQueryHandler, GetFranchiseSeasonMetricsQueryHandler>();

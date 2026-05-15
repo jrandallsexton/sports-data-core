@@ -1,6 +1,6 @@
 # CompetitionStreamerBase — sport-neutralization plan
 
-**Status:** Part 1 implemented in PR [#323](https://github.com/jrandallsexton/sports-data-core/pull/323) on 2026-05-15; Part 2 pending
+**Status:** Part 1 implemented in PR [#323](https://github.com/jrandallsexton/sports-data-core/pull/323) on 2026-05-15. Part 2 implementation underway on branch `refactor/streamer-base-polling-target-flag` (audit revealed 2 latent flag bugs — see Verification section).
 **Scope:** `src/SportsData.Producer/Application/Competitions/CompetitionStreamerBase.cs`
 **Why:** This class is the sport-neutral live-streaming base (typed on `TCompetitionDto`,
 subclassed by `FootballCompetitionStreamer` and `BaseballCompetitionStreamer`), but its
@@ -100,21 +100,37 @@ Then `PublishDocumentRequestAsync` takes the bool through the call chain (or a s
 record per target) and drops the `type is …` ladder entirely. The base no longer
 references any sport-specific DocumentType.
 
-### Verification before merge
+### Verification done (2026-05-15 audit)
 
-- Audit each existing polling target's `RequiresParentId` value against the consumer side
-  (the relevant `DocumentProcessor` for each `DocumentType`). If a processor today reads
-  `ParentId` from `DocumentRequested`, the flag must be `true`. If not, `false` is fine
-  but worth a code comment.
-- Add a unit test per streamer that materializes `GetPollingTargets(dto)` and asserts the
-  shape (count, doc types, intervals, flags). This is the first test in the
-  `CompetitionStreamer*` family — they currently have zero coverage (see
-  `live-event-scheduling-testing.md` if it exists, or the parent investigation).
+Audited each polling target against its downstream processor (via `TryGetOrDeriveParentId`
+in `DocumentProcessorBase`). Result:
 
-### Risk
+| DocumentType | Previous ladder | Audited truth | Flag set to |
+|---|---|---|---|
+| `EventCompetitionProbability` | `true` | **false** — processor resolves parent via DTO's `Competition` ref; never reads `ParentId` | `false` |
+| `EventCompetitionDrive` | `true` | `true` — `EventCompetitionDriveDocumentProcessor.cs:105` | `true` |
+| `EventCompetitionPlay` | `true` | `true` — `EventCompetitionPlayDocumentProcessorBase.cs:61` | `true` |
+| `EventCompetitionSituation` | `true` | `true` — football and baseball both call `TryGetOrDeriveParentId` | `true` |
+| `EventCompetitionLeaders` | (not in ladder = `false`) | **true** — `EventCompetitionLeadersDocumentProcessor.cs:46` | `true` |
 
-Behavior-equivalent if the flag mapping is correct on day one. The risk is mis-mapping a
-flag during the migration — hence the unit test.
+**Two latent bugs surfaced.** Probability shipped `ParentId` that nothing read (harmless waste).
+Leaders shipped without `ParentId` and downstream code relied on URI-based fallback in
+`TryGetOrDeriveParentId` — works today but is fragile against ESPN URL-shape changes. Both
+are corrected by Part 2; the PR is therefore **not a pure behavior-preserving refactor** and
+the commit message + PR description should call that out for reviewers.
+
+### Tests added
+
+Tests live in `test/unit/SportsData.Producer.Tests.Unit/Application/Competitions/`:
+
+- `FootballCompetitionStreamerTests.cs` — `#region Polling Targets`: 5 facts asserting
+  count, `RequiresParentId` per type, intervals, ref-URI passthrough, and null-ref behavior.
+- `BaseballCompetitionStreamerTests.cs` (new file) — same 5 facts plus an explicit
+  `DoesNotIncludeDrive` test (Drive is football-only).
+
+Test pattern: nested `Testable*Streamer` subclass exposes the `protected GetPollingTargets`
+method; AutoMocker constructs it with `ProducerTestBase` deps. No mocking of the method
+itself — it's pure logic over a DTO.
 
 ## Recommended PR sequence
 

@@ -25,12 +25,15 @@ public class BaseballCompetitionStreamer : CompetitionStreamerBase<EspnBaseballE
     {
     }
 
-    protected override IEnumerable<(Uri? RefUri, DocumentType DocumentType, int IntervalSeconds)>
+    protected override IEnumerable<(Uri? RefUri, DocumentType DocumentType, int IntervalSeconds, bool RequiresParentId)>
         GetPollingTargets(EspnBaseballEventCompetitionDto competitionDto)
     {
-        yield return (competitionDto.Probabilities?.Ref, DocumentType.EventCompetitionProbability, 60);
-        yield return (competitionDto.Details?.Ref, DocumentType.EventCompetitionPlay, 30);
-        yield return (competitionDto.Situation?.Ref, DocumentType.EventCompetitionSituation, 30);
-        yield return (competitionDto.Leaders?.Ref, DocumentType.EventCompetitionLeaders, 60);
+        // RequiresParentId mirrors what the downstream processor actually reads
+        // (audited 2026-05-15). Probability resolves its parent via the DTO's
+        // Competition ref; the other three call TryGetOrDeriveParentId.
+        yield return (competitionDto.Probabilities?.Ref, DocumentType.EventCompetitionProbability, 60, RequiresParentId: false);
+        yield return (competitionDto.Details?.Ref,       DocumentType.EventCompetitionPlay,        30, RequiresParentId: true);
+        yield return (competitionDto.Situation?.Ref,     DocumentType.EventCompetitionSituation,   30, RequiresParentId: true);
+        yield return (competitionDto.Leaders?.Ref,       DocumentType.EventCompetitionLeaders,     60, RequiresParentId: true);
     }
 }

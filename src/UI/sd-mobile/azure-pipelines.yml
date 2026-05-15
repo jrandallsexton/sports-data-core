@@ -1,0 +1,58 @@
+# Mobile (Expo / React Native) pre-merge CI for ADO visibility, mirroring
+# the .NET services' and web app's pipeline pattern. Runs alongside the
+# existing GitHub Action at .github/workflows/ci-mobile.yml — both gate
+# the same checks. The GH Action provides a fallback if the self-hosted
+# Bender agent is offline; the ADO pipeline provides visibility in the
+# same dashboard as every other service.
+#
+# Mobile-specific scope: Jest only. No lint script exists in mobile
+# package.json today. No Dockerfile — production mobile builds happen via
+# EAS post-merge, not from this pipeline.
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/UI/sd-mobile/**'
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/UI/sd-mobile/**'
+
+pool:
+  name: Default
+  demands:
+    - Agent.Name -equals Bender
+
+resources:
+  repositories:
+    - repository: self
+      type: git
+
+stages:
+  - stage: Test
+    displayName: 'Test: sd-mobile'
+    jobs:
+      - job: JestTest
+        displayName: 'Jest test'
+        steps:
+          - task: NodeTool@0
+            displayName: 'Use Node.js 20'
+            inputs:
+              versionSpec: '20.x'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/UI/sd-mobile
+              npm ci --legacy-peer-deps
+            displayName: 'Install dependencies'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/UI/sd-mobile
+              npx jest --ci --coverage --forceExit
+            displayName: 'Run Jest'

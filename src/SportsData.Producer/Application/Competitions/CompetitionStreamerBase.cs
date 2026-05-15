@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
@@ -10,7 +9,6 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Competitions;
 
@@ -38,19 +36,19 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     private const int MaxConsecutiveFailures = 10;
 
     /// <summary>
-    /// Why WaitForKickoffAsync stopped. Drives whether ExecuteAsync proceeds
-    /// to spawn polling workers (KickoffDetected) or short-circuits to a
+    /// Why WaitForLiveStartAsync stopped. Drives whether ExecuteAsync proceeds
+    /// to spawn polling workers (StartDetected) or short-circuits to a
     /// terminal state (AlreadyFinal, Timeout).
     /// </summary>
-    protected enum KickoffOutcome
+    protected enum LiveStartOutcome
     {
-        KickoffDetected = 0,
+        StartDetected = 0,
         AlreadyFinal = 1,
         Timeout = 2,
     }
 
     /// <summary>
-    /// Why PollWhileInProgressAsync stopped. Final = normal game end (mark
+    /// Why PollWhileInProgressAsync stopped. Final = normal competition end (mark
     /// Completed); Timeout = stream exceeded MaxStreamDuration without seeing
     /// STATUS_FINAL (mark Failed with reason — likely indicates an abandoned
     /// stream or upstream data anomaly worth investigating).
@@ -77,7 +75,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
     /// <summary>
     /// Sport-specific polling targets. Each entry is (child-doc URI, doc type, polling interval seconds).
-    /// Returning a null URI signals that the parent doc lacks that child link for this game; the worker
+    /// Returning a null URI signals that the parent doc lacks that child link for this competition; the worker
     /// is silently skipped. Subclasses should keep the list short — every entry adds load to ESPN.
     /// </summary>
     protected abstract IEnumerable<(Uri? RefUri, DocumentType DocumentType, int IntervalSeconds)>
@@ -164,15 +162,15 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 switch (status.Type.Name)
                 {
                     case "STATUS_SCHEDULED":
-                        _logger.LogInformation("Game is scheduled. Waiting for kickoff...");
-                        var kickoffOutcome = await WaitForKickoffAsync(statusUri, cancellationToken);
-                        switch (kickoffOutcome)
+                        _logger.LogInformation("Competition is scheduled. Waiting for competition to start...");
+                        var startOutcome = await WaitForLiveStartAsync(statusUri, cancellationToken);
+                        switch (startOutcome)
                         {
-                            case KickoffOutcome.KickoffDetected:
+                            case LiveStartOutcome.StartDetected:
                                 break;
 
-                            case KickoffOutcome.AlreadyFinal:
-                                _logger.LogInformation("Game went final while waiting for kickoff. Skipping live polling.");
+                            case LiveStartOutcome.AlreadyFinal:
+                                _logger.LogInformation("Competition went final while waiting for start. Skipping live polling.");
                                 if (stream != null)
                                 {
                                     stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
@@ -180,22 +178,22 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                                 }
                                 return;
 
-                            case KickoffOutcome.Timeout:
-                                _logger.LogWarning("Kickoff was not detected within max stream duration. Aborting.");
+                            case LiveStartOutcome.Timeout:
+                                _logger.LogWarning("Live start was not detected within max stream duration. Aborting.");
                                 if (stream != null)
                                 {
-                                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Kickoff not detected within max stream duration");
+                                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Live start not detected within max stream duration");
                                 }
                                 return;
                         }
                         break;
 
                     case "STATUS_IN_PROGRESS":
-                        _logger.LogInformation("Game already in progress. Starting workers immediately.");
+                        _logger.LogInformation("Competition already in progress. Starting workers immediately.");
                         break;
 
                     case "STATUS_FINAL":
-                        _logger.LogInformation("Game already final. Skipping streaming.");
+                        _logger.LogInformation("Competition already final. Skipping streaming.");
                         if (stream != null)
                         {
                             stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
@@ -205,7 +203,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
                     default:
                         // An unknown status string is anomalous data — bail rather than
-                        // optimistically spawning live workers against an unverified game state.
+                        // optimistically spawning live workers against an unverified competition state.
                         _logger.LogWarning("Unknown status type: {StatusType}. Aborting stream.", status.Type.Name);
                         if (stream != null)
                         {
@@ -214,7 +212,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                         return;
                 }
 
-                _logger.LogInformation("Starting polling workers for live game updates");
+                _logger.LogInformation("Starting polling workers for live competition updates");
 
                 if (stream != null)
                 {
@@ -312,9 +310,9 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
         }
     }
 
-    private async Task<KickoffOutcome> WaitForKickoffAsync(Uri statusUri, CancellationToken cancellationToken)
+    private async Task<LiveStartOutcome> WaitForLiveStartAsync(Uri statusUri, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Competition is scheduled. Polling for kickoff every 20 seconds...");
+        _logger.LogInformation("Competition is scheduled. Polling for live start every 20 seconds...");
 
         var startTime = _dateTimeProvider.UtcNow();
         var consecutiveFailures = 0;
@@ -323,8 +321,8 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
         {
             if (_dateTimeProvider.UtcNow() - startTime > MaxStreamDuration)
             {
-                _logger.LogWarning("Waiting for kickoff exceeded max duration ({Hours} hours). Stopping.", MaxStreamDuration.TotalHours);
-                return KickoffOutcome.Timeout;
+                _logger.LogWarning("Waiting for live start exceeded max duration ({Hours} hours). Stopping.", MaxStreamDuration.TotalHours);
+                return LiveStartOutcome.Timeout;
             }
 
             await Task.Delay(TimeSpan.FromSeconds(20), cancellationToken);
@@ -346,24 +344,24 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
             if (status.Type.Name == "STATUS_IN_PROGRESS")
             {
-                _logger.LogInformation("Kickoff detected! Game is now in progress.");
-                return KickoffOutcome.KickoffDetected;
+                _logger.LogInformation("Live start detected. Competition is now in progress.");
+                return LiveStartOutcome.StartDetected;
             }
 
             if (status.Type.Name == "STATUS_FINAL")
             {
-                _logger.LogWarning("Game marked final before starting. Exiting.");
-                return KickoffOutcome.AlreadyFinal;
+                _logger.LogWarning("Competition marked final before starting. Exiting.");
+                return LiveStartOutcome.AlreadyFinal;
             }
 
-            _logger.LogDebug("Game still scheduled. Status: {Status}", status.Type.Name);
+            _logger.LogDebug("Competition still scheduled. Status: {Status}", status.Type.Name);
         }
 
         // Cancellation observed by the while-condition (rather than via Task.Delay's
         // throwing overload). Treat as timeout-equivalent — caller's outer catch handles
         // the throwing case explicitly; reaching here means we exited cleanly without
-        // a kickoff signal, and we should not pretend kickoff happened.
-        return KickoffOutcome.Timeout;
+        // a live-start signal, and we should not pretend the competition started.
+        return LiveStartOutcome.Timeout;
     }
 
     private void StartPollingWorkers(
@@ -395,7 +393,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
     private async Task<PollOutcome> PollWhileInProgressAsync(Uri statusUri, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Monitoring game status every 30 seconds until completion...");
+        _logger.LogInformation("Monitoring competition status every 30 seconds until completion...");
 
         var startTime = _dateTimeProvider.UtcNow();
         var consecutiveFailures = 0;
@@ -429,11 +427,11 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
             if (status.Type.Name == "STATUS_FINAL")
             {
-                _logger.LogInformation("Game status is FINAL. Ending stream.");
+                _logger.LogInformation("Competition status is FINAL. Ending stream.");
                 return PollOutcome.Final;
             }
 
-            _logger.LogDebug("Game still in progress. Status: {Status}, Clock: {Clock}",
+            _logger.LogDebug("Competition still in progress. Status: {Status}, Clock: {Clock}",
                 status.Type.Name, status.DisplayClock);
         }
 

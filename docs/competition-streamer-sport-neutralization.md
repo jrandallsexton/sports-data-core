@@ -1,6 +1,6 @@
 # CompetitionStreamerBase — sport-neutralization plan
 
-**Status:** Part 1 implemented in PR [#323](https://github.com/jrandallsexton/sports-data-core/pull/323) on 2026-05-15. Part 2 implementation underway on branch `refactor/streamer-base-polling-target-flag` (audit revealed 2 latent flag bugs — see Verification section).
+**Status:** Part 1 implemented in PR [#323](https://github.com/jrandallsexton/sports-data-core/pull/323) on 2026-05-15. Part 2 implemented in PR [#324](https://github.com/jrandallsexton/sports-data-core/pull/324) on 2026-05-15.
 **Scope:** `src/SportsData.Producer/Application/Competitions/CompetitionStreamerBase.cs`
 **Why:** This class is the sport-neutral live-streaming base (typed on `TCompetitionDto`,
 subclassed by `FootballCompetitionStreamer` and `BaseballCompetitionStreamer`), but its
@@ -86,11 +86,15 @@ protected abstract IEnumerable<(Uri? RefUri, DocumentType DocumentType, int Inte
 `FootballCompetitionStreamer.GetPollingTargets`:
 
 ```csharp
-yield return (competitionDto.Probabilities?.Ref, DocumentType.EventCompetitionProbability, 15, RequiresParentId: true);
+// Flag values shown here reflect the audited mapping (see Verification section
+// below) — NOT the pre-Part-2 hardcoded ladder. Probability is false because
+// its processor resolves the parent via the DTO's own Competition ref; the
+// other four call TryGetOrDeriveParentId downstream.
+yield return (competitionDto.Probabilities?.Ref, DocumentType.EventCompetitionProbability, 15, RequiresParentId: false);
 yield return (competitionDto.Drives?.Ref,        DocumentType.EventCompetitionDrive,       15, RequiresParentId: true);
 yield return (competitionDto.Details?.Ref,       DocumentType.EventCompetitionPlay,        10, RequiresParentId: true);
 yield return (competitionDto.Situation?.Ref,     DocumentType.EventCompetitionSituation,    5, RequiresParentId: true);
-yield return (competitionDto.Leaders?.Ref,       DocumentType.EventCompetitionLeaders,     60, RequiresParentId: false);
+yield return (competitionDto.Leaders?.Ref,       DocumentType.EventCompetitionLeaders,     60, RequiresParentId: true);
 ```
 
 `BaseballCompetitionStreamer.GetPollingTargets`: same shape, no Drives target, identical

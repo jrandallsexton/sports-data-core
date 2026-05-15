@@ -62,6 +62,15 @@ const initialState = {
   contests: {} as Record<string, ContestLiveRecord>,
 };
 
+/**
+ * Per-contest pending "clear isScoringPlay" timer. Kept outside Zustand
+ * because it's a side-effect bookkeeping concern, not state consumers
+ * should subscribe to. A second scoring play within the 2s flash window
+ * must clear the prior timer; otherwise the earlier timer fires first
+ * and ends the flash before the new window completes.
+ */
+const scoringFlashTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
   ...initialState,
 
@@ -110,9 +119,15 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
       },
     }));
 
-    // Auto-clear scoring flash after the UI's animation window.
+    // Auto-clear scoring flash after the UI's animation window. A
+    // second scoring play within 2s replaces the prior timer so the
+    // flash always runs the full window from the most recent play.
     if (data.isScoringPlay) {
-      setTimeout(() => {
+      const prior = scoringFlashTimers.get(data.contestId);
+      if (prior !== undefined) clearTimeout(prior);
+
+      const timer = setTimeout(() => {
+        scoringFlashTimers.delete(data.contestId);
         set((state) => {
           const existing = state.contests[data.contestId];
           if (!existing) return state;
@@ -124,6 +139,8 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
           };
         });
       }, 2000);
+
+      scoringFlashTimers.set(data.contestId, timer);
     }
   },
 
@@ -166,6 +183,11 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
   },
 
   clearContestUpdate: (contestId) => {
+    const pending = scoringFlashTimers.get(contestId);
+    if (pending !== undefined) {
+      clearTimeout(pending);
+      scoringFlashTimers.delete(contestId);
+    }
     set((state) => {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { [contestId]: _removed, ...rest } = state.contests;
@@ -173,7 +195,11 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
     });
   },
 
-  clearAllUpdates: () => set({ contests: {} }),
+  clearAllUpdates: () => {
+    scoringFlashTimers.forEach((t) => clearTimeout(t));
+    scoringFlashTimers.clear();
+    set({ contests: {} });
+  },
 }));
 
 /**

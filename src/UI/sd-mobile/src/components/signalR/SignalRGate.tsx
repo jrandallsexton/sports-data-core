@@ -16,7 +16,7 @@ function SignalRMount(): null {
   return null;
 }
 
-export function SignalRGate(): React.ReactElement | null {
+export function SignalRGate() {
   const { isAuthenticated, isInitialized } = useAuth();
   if (!isInitialized || !isAuthenticated) return null;
   return <SignalRMount />;

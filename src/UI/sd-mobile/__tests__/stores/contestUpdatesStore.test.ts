@@ -138,6 +138,30 @@ describe('contestUpdatesStore', () => {
       // No timer should be pending — jest will fail if pending fake timers run.
       expect(jest.getTimerCount()).toBe(0);
     });
+
+    it('debounces overlapping scoring plays — the flash window resets on the latest play', () => {
+      // Scoring play 1 at t=0
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(
+        footballPayload({ isScoringPlay: true }),
+      );
+      jest.advanceTimersByTime(1500);
+      expect(useContestUpdatesStore.getState().contests[CID].isScoringPlay).toBe(true);
+
+      // Scoring play 2 at t=1500ms — must reset the flash window. Without
+      // the debounce, the t=0 timer would still fire at t=2000ms and clear
+      // the flag prematurely.
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(
+        footballPayload({ isScoringPlay: true }),
+      );
+
+      // At t=2000ms (would-be-fire of play-1's timer if not cleared).
+      jest.advanceTimersByTime(500);
+      expect(useContestUpdatesStore.getState().contests[CID].isScoringPlay).toBe(true);
+
+      // At t=3500ms (2s after play 2). Flash clears.
+      jest.advanceTimersByTime(1500);
+      expect(useContestUpdatesStore.getState().contests[CID].isScoringPlay).toBe(false);
+    });
   });
 
   describe('handleBaseballPlayCompleted', () => {

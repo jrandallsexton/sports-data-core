@@ -39,20 +39,13 @@ const buildMockConnection = (): MockConnection => {
     on: jest.fn((name: string, handler: Handler) => {
       handlers.set(name, handler);
     }),
-    start: jest.fn(function (this: MockConnection) {
-      this.state = HubConnectionState.Connected;
-      return Promise.resolve();
-    }),
-    stop: jest.fn(function (this: MockConnection) {
-      this.state = HubConnectionState.Disconnected;
-      return Promise.resolve();
-    }),
     __invoke: (event: string, ...args: unknown[]) => {
       const h = handlers.get(event);
       if (h) h(...args);
     },
   };
-  // Bind `this` for start/stop so they mutate the same object.
+  // Arrow assignments (rather than `function(this: ...)`) so the closure
+  // mutates the same `conn` object that callers hold a reference to.
   conn.start = jest.fn(() => {
     conn.state = HubConnectionState.Connected;
     return Promise.resolve();

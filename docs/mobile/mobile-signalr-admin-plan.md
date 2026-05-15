@@ -1,6 +1,6 @@
 # Mobile SignalR Live Updates + Sport-Agnostic Admin Page — Plan
 
-**Status:** Draft — not yet scheduled
+**Status:** In Progress — Phase 1 in PR [#325](https://github.com/jrandallsexton/sports-data-core/pull/325) on 2026-05-15; Phases 2–3 pending
 **Author:** planning pass, 2026-05-15
 **Target:** sd-mobile (Expo SDK 55, RN 0.83.2)
 **Related docs:** `docs/mobile/notifications-and-live-updates.md` (future SSE migration), `docs/web-signalr-surface-audit.md`
@@ -25,6 +25,7 @@
 ## 3. Current state (verified findings)
 
 ### Mobile app
+
 - Expo SDK 55, React Native 0.83.2, React 19.2.0, `expo-router` (file-based routing, main = `expo-router/entry`). Confirmed in `src/UI/sd-mobile/package.json`.
 - State management is Zustand + TanStack Query. There is exactly one React Context in the app — `ThemeContext` (`src/lib/theme/`). Auth state, the most "global" mobile state, is a Zustand store (`src/stores/authStore.ts`).
 - Auth: Firebase 12.10.0. `onAuthStateChanged` is wired in `src/hooks/useAuth.ts` and pushed into the Zustand store. The axios client (`src/services/api/client.ts`) attaches `Bearer ${user.getIdToken()}` per request via an interceptor — the canonical pattern for "get a Firebase JWT now."
@@ -36,6 +37,7 @@
 - Expo Router structure: `(tabs)` is the authenticated home. Auth gate lives in root `_layout.tsx`'s `AuthGuard` component, which redirects to `/(auth)/sign-in` when no user.
 
 ### Web app reference (canonical, mirror these)
+
 - `src/UI/sd-ui/src/hooks/useSignalRClient.js` — builds a single `HubConnectionBuilder` against `${REACT_APP_SIGNALR_URL || REACT_APP_API_BASE_URL}/hubs/notifications`, attaches `accessTokenFactory` that calls `getAuth().currentUser.getIdToken()`, uses `withAutomaticReconnect()`, registers four `connection.on(...)` handlers, returns the connection ref.
 - `src/UI/sd-ui/src/contexts/ContestUpdatesContext.jsx` — single React Context holding `{ contests: { [contestId]: liveRecord } }`. Exposes `handleStatusUpdate`, `handleFootballPlayCompleted`, `handleBaseballPlayCompleted`, `getContestUpdate(contestId)`, `hasLiveUpdate(contestId)`, `clearContestUpdate(contestId)`, `clearAllUpdates()`. Critical detail — the PR #322 self-heal: receiving a `*PlayCompleted` event forces `status: 'InProgress'` because SignalR has no buffer and post-connect clients miss any earlier `ContestStatusChanged`. Mirror exactly.
 - `src/UI/sd-ui/src/MainApp.jsx` lines 88–127 — shows the wire-up: context handlers from `useContestUpdates()`, wrapped in `useCallback` so the SignalR effect doesn't tear down/reconnect on every render.
@@ -43,13 +45,14 @@
 - `src/UI/sd-ui/src/api/adminApi.js` — endpoints: `GET /admin/baseball/contests/{id}/matchup`, `GET /admin/football/contests/{id}/matchup?league=ncaa|nfl`, `POST /admin/baseball/contests/{id}/replay`, `POST /admin/football/contests/{id}/replay?league=ncaa|nfl`.
 
 ### Backend (verified)
+
 - Hub mapped at `/hubs/notifications` (`src/SportsData.Api/Program.cs:366`). Production URL is the API host.
 - Events emitted today by `IHubContext<NotificationHub>.Clients.All.SendAsync(...)`: `ContestStatusChanged`, `FootballPlayCompleted`, `BaseballPlayCompleted`, `ContestScoreChanged`, `ContestRecapArticlePublished`, `ContestOddsUpdated`, `PreviewGenerated`. The first three are what mobile needs for v1.
 - Firebase JWT auth on the hub — same scheme as REST.
 
 ## 4. Library choice
 
-`@microsoft/signalr@^9` (latest 9.x). Decision is forced — it is the only first-party JS client for SignalR negotiation, and our backend uses `MapHub` (not raw WebSocket). Alternatives:
+`@microsoft/signalr@^9.0.6` (latest 9.x at install time). Decision is forced — it is the only first-party JS client for SignalR negotiation, and our backend uses `MapHub` (not raw WebSocket). Alternatives:
 
 - Rolling our own WebSocket client. Rejected: re-implements negotiate/protocol/reconnect for zero benefit and forks us from web.
 - Switching to SSE first. Rejected: see §2.
@@ -62,7 +65,7 @@ Compatibility check items the implementation must verify on first install:
 
 ## 5. Architecture
 
-```
+```text
                  (auth user signs in)
                           │
                           ▼
@@ -70,12 +73,9 @@ Compatibility check items the implementation must verify on first install:
             │ app/_layout.tsx              │
             │  QueryClientProvider         │
             │   ThemeProvider              │
-            │    AuthGuard                 │
-            │    ┌──────────────────────┐  │
-            │    │ <ContestUpdatesGate> │  │  ◄── only mounts when isAuthenticated
-            │    │   <SignalRGate>      │  │
-            │    │     <Stack/>         │  │
-            │    └──────────────────────┘  │
+            │    <Stack/>                  │
+            │    <AuthGuard/>              │
+            │    <SignalRGate/>  ◄── only mounts useSignalRClient when isAuthenticated
             └──────────────────────────────┘
                           │
                           ▼
@@ -169,7 +169,7 @@ Token refresh story: a Firebase ID token lives 1 hour. `@microsoft/signalr` call
 
 ### Admin route placement
 
-```
+```text
 app/
   (auth)/
   (tabs)/
@@ -188,7 +188,8 @@ app/
 ### Debug panel design
 
 A `FlatList` (or simple `ScrollView` with `inverted`) showing the most recent 50 events:
-```
+
+```text
 12:04:31.847  FootballPlayCompleted  contest=abc…  per=Q3 clk=4:21  away=14 home=21
 12:04:30.214  FootballPlayCompleted  contest=abc…  per=Q3 clk=4:48  away=14 home=21
 12:04:21.012  ContestStatusChanged   contest=abc…  status=InProgress
@@ -213,7 +214,7 @@ Files created:
 - `src/UI/sd-mobile/__tests__/useSignalRClient.test.ts` — mocked-connection tests for handler dispatch.
 
 Files modified:
-- `src/UI/sd-mobile/package.json` — add `"@microsoft/signalr": "^9.0.0"`. Audit `transformIgnorePatterns` in the Jest config block — likely needs `@microsoft/signalr` added.
+- `src/UI/sd-mobile/package.json` — add `"@microsoft/signalr": "^9.0.6"`. Audit `transformIgnorePatterns` in the Jest config block — likely needs `@microsoft/signalr` added.
 - `src/UI/sd-mobile/app/_layout.tsx` — render a new `<SignalRGate>` inside the authenticated branch. Likely the simplest path: extract `<SignalRGate>` from `useAuth().isAuthenticated`.
 
 Env: introduce `EXPO_PUBLIC_SIGNALR_URL` (falls back to `EXPO_PUBLIC_API_BASE_URL`). Same precedence as the web's `REACT_APP_SIGNALR_URL` / `REACT_APP_API_BASE_URL`.
@@ -242,7 +243,8 @@ Files created:
 - `src/UI/sd-mobile/app/admin/_layout.tsx` — Stack + `AdminGuard` redirecting to `/(tabs)` when `!me.isAdmin`.
 - `src/UI/sd-mobile/app/admin/index.tsx` — the single sport-agnostic page. Sport segmented control, contestId TextInput, Load button, Trigger replay button, MatchupCard, collapsible debug log.
 - `src/UI/sd-mobile/src/services/api/adminApi.ts` — typed client for `/admin/{sport}/contests/{id}/matchup` (GET) and `/admin/{sport}/contests/{id}/replay` (POST). Endpoint shape:
-  ```
+
+  ```text
   sport=baseball       → /admin/baseball/contests/{id}/{matchup|replay}
   sport=football, league=ncaa|nfl → /admin/football/contests/{id}/{matchup|replay}?league={league}
   ```

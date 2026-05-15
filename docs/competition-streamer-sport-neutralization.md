@@ -1,6 +1,6 @@
 # CompetitionStreamerBase — sport-neutralization plan
 
-**Status:** drafted 2026-05-14 — pending implementation
+**Status:** Part 1 implemented in PR [#323](https://github.com/jrandallsexton/sports-data-core/pull/323) on 2026-05-15; Part 2 pending
 **Scope:** `src/SportsData.Producer/Application/Competitions/CompetitionStreamerBase.cs`
 **Why:** This class is the sport-neutral live-streaming base (typed on `TCompetitionDto`,
 subclassed by `FootballCompetitionStreamer` and `BaseballCompetitionStreamer`), but its
@@ -17,12 +17,13 @@ We want the base to read cleanly for any sport we add next (MLB is already a sub
   TeamSchedule.css label, mobile timeUtils, EF migrations seeded data) are legitimate
   football domain usage and out of scope.
 
-## Part 1 — Terminology (mechanical, no behavior change)
+## Part 1 — Terminology (mechanical, no behavior change) — implemented
 
-Pure rename + log-string edits. Line numbers below are as of commit `66e096c4`; verify
-before editing.
+Implemented in PR #323. Line numbers below were as of pre-rename commit `66e096c4`.
+The renames and log-string edits below are now present in `CompetitionStreamerBase.cs`
+(verifiable by greping for `LiveStartOutcome` and `WaitForLiveStartAsync`).
 
-| What | Where | Suggested rename |
+| What | Where (pre-rename) | Renamed to |
 |---|---|---|
 | `KickoffOutcome` enum | `:43` | `LiveStartOutcome` |
 | `KickoffOutcome.KickoffDetected` | `:45` | `LiveStartOutcome.StartDetected` |
@@ -35,17 +36,17 @@ before editing.
 | Log: "Game went final while waiting for kickoff." | `:173` | "Competition went final while waiting for start." |
 | Log: "Kickoff was not detected within max stream duration. Aborting." | `:182` | "Live start was not detected within max stream duration. Aborting." |
 | Failure-reason string: "Kickoff not detected within max stream duration" | `:185` | "Live start not detected within max stream duration" |
-| XML doc comment on `KickoffOutcome` (lines 38–42, 43, 45) | `:38-48` | Replace "WaitForKickoffAsync" / "KickoffDetected" prose |
+| XML doc comment on `KickoffOutcome` (lines 38–42, 43, 45) | `:38-48` | "WaitForKickoffAsync" / "KickoffDetected" prose replaced |
 
-### Also: normalize "Game" → "Competition" in log strings
+### Also: normalized "Game" → "Competition" in log strings
 
-The base alternates between **Game** (`:165, :192, :196, :347, :353, :430, :434`) and
-**Competition** (`:92, :109, :141, :278, :287, :315`). The canonical domain term in this
-code is *Competition* (`CompetitionStreamerBase`, `StreamCompetitionCommand`,
-`CompetitionStream`, etc.). Replace "Game" with "Competition" in all log strings for
-consistency. No code identifiers change.
+The base previously alternated between **Game** (`:165, :192, :196, :347, :353, :430,
+:434`) and **Competition** (`:92, :109, :141, :278, :287, :315`). The canonical domain
+term in this code is *Competition* (`CompetitionStreamerBase`, `StreamCompetitionCommand`,
+`CompetitionStream`, etc.). "Game" was replaced with "Competition" in all log strings for
+consistency. No code identifiers changed.
 
-### Out of scope for this PR
+### Out of scope for Part 1
 
 Log fields, EF entity names, sport-specific PlayType values, mobile / web UI strings — all
 fine where they are.

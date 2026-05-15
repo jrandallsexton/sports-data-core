@@ -74,11 +74,20 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     }
 
     /// <summary>
-    /// Sport-specific polling targets. Each entry is (child-doc URI, doc type, polling interval seconds).
-    /// Returning a null URI signals that the parent doc lacks that child link for this competition; the worker
-    /// is silently skipped. Subclasses should keep the list short — every entry adds load to ESPN.
+    /// Sport-specific polling targets. Each entry is (child-doc URI, doc type, polling interval
+    /// seconds, requires-parent-id flag). Returning a null URI signals that the parent doc lacks
+    /// that child link for this competition; the worker is silently skipped. Subclasses should
+    /// keep the list short — every entry adds load to ESPN.
+    ///
+    /// <para>
+    /// <c>RequiresParentId</c> controls whether the published <c>DocumentRequested</c> message
+    /// carries <c>ParentId = CompetitionId</c>. Set <c>true</c> when the eventual document
+    /// processor calls <c>TryGetOrDeriveParentId</c> (Drive, Play, Situation, Leaders); set
+    /// <c>false</c> when the processor resolves its parent through its own DTO link (Probability).
+    /// Declaring this per-target keeps sport-specific DocumentType knowledge out of the base.
+    /// </para>
     /// </summary>
-    protected abstract IEnumerable<(Uri? RefUri, DocumentType DocumentType, int IntervalSeconds)>
+    protected abstract IEnumerable<(Uri? RefUri, DocumentType DocumentType, int IntervalSeconds, bool RequiresParentId)>
         GetPollingTargets(TCompetitionDto competitionDto);
 
     public async Task ExecuteAsync(StreamCompetitionCommand command, CancellationToken cancellationToken)
@@ -373,7 +382,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
         _logger.LogInformation("Spawning {Count} polling workers", refs.Count);
 
-        foreach (var (refUri, docType, intervalSeconds) in refs)
+        foreach (var (refUri, docType, intervalSeconds, requiresParentId) in refs)
         {
             if (refUri == null)
             {
@@ -382,7 +391,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             }
 
             SpawnPollingWorker(
-                () => PublishDocumentRequestAsync(refUri, docType, command, cancellationToken),
+                () => PublishDocumentRequestAsync(refUri, docType, requiresParentId, command, cancellationToken),
                 intervalSeconds,
                 docType,
                 cancellationToken);
@@ -531,16 +540,11 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     private async Task PublishDocumentRequestAsync(
         Uri refUri,
         DocumentType type,
+        bool requiresParentId,
         StreamCompetitionCommand command,
         CancellationToken cancellationToken)
     {
-        var parentId = type is
-            DocumentType.EventCompetitionProbability or
-            DocumentType.EventCompetitionDrive or
-            DocumentType.EventCompetitionSituation or
-            DocumentType.EventCompetitionPlay
-            ? command.CompetitionId.ToString()
-            : null;
+        var parentId = requiresParentId ? command.CompetitionId.ToString() : null;
 
         _logger.LogDebug("Publishing {Type} document request for {Uri}", type, refUri);
 

@@ -3,11 +3,15 @@
 using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 using Moq;
 using Moq.Protected;
 
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data;
@@ -468,6 +472,122 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         // Act & Assert - should not throw
         var act = async () => await sut.ExecuteAsync(command, cts.Token);
         await act.Should().NotThrowAsync();
+    }
+
+    #endregion
+
+    #region Polling Targets
+
+    // Test-only subclass exposing the protected GetPollingTargets method.
+    // The base ctor requires non-null dependencies (httpClientFactory.CreateClient
+    // is invoked), so we route construction through AutoMocker which already wires
+    // those for ProducerTestBase.
+    private sealed class TestableFootballCompetitionStreamer : FootballCompetitionStreamer
+    {
+        public TestableFootballCompetitionStreamer(
+            ILogger<FootballCompetitionStreamer> logger,
+            FootballDataContext dataContext,
+            IHttpClientFactory httpClientFactory,
+            IServiceScopeFactory scopeFactory,
+            IDateTimeProvider dateTimeProvider)
+            : base(logger, dataContext, httpClientFactory, scopeFactory, dateTimeProvider)
+        {
+        }
+
+        public IEnumerable<(Uri? RefUri, DocumentType DocumentType, int IntervalSeconds, bool RequiresParentId)>
+            InvokeGetPollingTargets(EspnFootballEventCompetitionDto dto)
+            => GetPollingTargets(dto);
+    }
+
+    private static EspnFootballEventCompetitionDto BuildFullyLinkedDto() => new()
+    {
+        Probabilities = new EspnLinkDto { Ref = new Uri("http://test/probabilities") },
+        Drives        = new EspnLinkDto { Ref = new Uri("http://test/drives") },
+        Details       = new EspnLinkDto { Ref = new Uri("http://test/plays") },
+        Situation     = new EspnLinkDto { Ref = new Uri("http://test/situation") },
+        Leaders       = new EspnLinkDto { Ref = new Uri("http://test/leaders") },
+    };
+
+    [Fact]
+    public void GetPollingTargets_ReturnsFiveTargets_ForFootball()
+    {
+        var sut = Mocker.CreateInstance<TestableFootballCompetitionStreamer>();
+        var dto = BuildFullyLinkedDto();
+
+        var targets = sut.InvokeGetPollingTargets(dto).ToList();
+
+        targets.Should().HaveCount(5);
+        targets.Select(t => t.DocumentType).Should().BeEquivalentTo(new[]
+        {
+            DocumentType.EventCompetitionProbability,
+            DocumentType.EventCompetitionDrive,
+            DocumentType.EventCompetitionPlay,
+            DocumentType.EventCompetitionSituation,
+            DocumentType.EventCompetitionLeaders,
+        });
+    }
+
+    [Fact]
+    public void GetPollingTargets_FlagsParentIdPerProcessorAudit()
+    {
+        // Audit (2026-05-15): Probability resolves its parent via the DTO's
+        // Competition ref and does not call TryGetOrDeriveParentId. The other
+        // four processors do. The flag values below mirror that audit.
+        var sut = Mocker.CreateInstance<TestableFootballCompetitionStreamer>();
+        var dto = BuildFullyLinkedDto();
+
+        var byType = sut.InvokeGetPollingTargets(dto).ToDictionary(t => t.DocumentType);
+
+        byType[DocumentType.EventCompetitionProbability].RequiresParentId.Should().BeFalse();
+        byType[DocumentType.EventCompetitionDrive].RequiresParentId.Should().BeTrue();
+        byType[DocumentType.EventCompetitionPlay].RequiresParentId.Should().BeTrue();
+        byType[DocumentType.EventCompetitionSituation].RequiresParentId.Should().BeTrue();
+        byType[DocumentType.EventCompetitionLeaders].RequiresParentId.Should().BeTrue();
+    }
+
+    [Fact]
+    public void GetPollingTargets_ReturnsExpectedIntervalsForFootball()
+    {
+        var sut = Mocker.CreateInstance<TestableFootballCompetitionStreamer>();
+        var dto = BuildFullyLinkedDto();
+
+        var byType = sut.InvokeGetPollingTargets(dto).ToDictionary(t => t.DocumentType);
+
+        byType[DocumentType.EventCompetitionProbability].IntervalSeconds.Should().Be(15);
+        byType[DocumentType.EventCompetitionDrive].IntervalSeconds.Should().Be(15);
+        byType[DocumentType.EventCompetitionPlay].IntervalSeconds.Should().Be(10);
+        byType[DocumentType.EventCompetitionSituation].IntervalSeconds.Should().Be(5);
+        byType[DocumentType.EventCompetitionLeaders].IntervalSeconds.Should().Be(60);
+    }
+
+    [Fact]
+    public void GetPollingTargets_PassesThroughLinkRefUris()
+    {
+        var sut = Mocker.CreateInstance<TestableFootballCompetitionStreamer>();
+        var dto = BuildFullyLinkedDto();
+
+        var byType = sut.InvokeGetPollingTargets(dto).ToDictionary(t => t.DocumentType);
+
+        byType[DocumentType.EventCompetitionProbability].RefUri.Should().Be(new Uri("http://test/probabilities"));
+        byType[DocumentType.EventCompetitionDrive].RefUri.Should().Be(new Uri("http://test/drives"));
+        byType[DocumentType.EventCompetitionPlay].RefUri.Should().Be(new Uri("http://test/plays"));
+        byType[DocumentType.EventCompetitionSituation].RefUri.Should().Be(new Uri("http://test/situation"));
+        byType[DocumentType.EventCompetitionLeaders].RefUri.Should().Be(new Uri("http://test/leaders"));
+    }
+
+    [Fact]
+    public void GetPollingTargets_ReturnsNullRefUri_WhenLinkAbsent()
+    {
+        // Mirrors live behavior: ESPN sometimes omits the child link before a
+        // competition reaches certain states. The base's StartPollingWorkers
+        // silently skips workers with null RefUri.
+        var sut = Mocker.CreateInstance<TestableFootballCompetitionStreamer>();
+        var dto = new EspnFootballEventCompetitionDto(); // all links null
+
+        var targets = sut.InvokeGetPollingTargets(dto).ToList();
+
+        targets.Should().HaveCount(5, "shape is fixed; null links surface as null RefUri");
+        targets.Should().AllSatisfy(t => t.RefUri.Should().BeNull());
     }
 
     #endregion

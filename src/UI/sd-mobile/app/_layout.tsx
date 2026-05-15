@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { queryClient } from '@/src/lib/queryClient';
 import { useAuthInit, useAuth } from '@/src/hooks/useAuth';
 import { ThemeProvider, useThemeMode } from '@/src/lib/theme/ThemeContext';
+import { SignalRGate } from '@/src/components/signalR/SignalRGate';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -91,6 +92,7 @@ function RootLayoutNav() {
         <Stack.Screen name="+not-found" />
       </Stack>
       <AuthGuard />
+      <SignalRGate />
     </NavThemeProvider>
   );
 }

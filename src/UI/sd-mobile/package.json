@@ -12,7 +12,9 @@
   },
   "jest": {
     "preset": "jest-expo",
-    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
+    "setupFilesAfterEnv": [
+      "<rootDir>/jest.setup.js"
+    ],
     "transformIgnorePatterns": [
       "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|@tanstack/.*|zustand|firebase|@firebase/.*)"
     ],
@@ -21,12 +23,23 @@
     },
     "reporters": [
       "default",
-      ["jest-junit", { "outputDirectory": ".", "outputName": "junit.xml" }]
+      [
+        "jest-junit",
+        {
+          "outputDirectory": ".",
+          "outputName": "junit.xml"
+        }
+      ]
     ],
-    "coverageReporters": ["text", "cobertura", "lcov"]
+    "coverageReporters": [
+      "text",
+      "cobertura",
+      "lcov"
+    ]
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@microsoft/signalr": "^9.0.6",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/native": "^7.1.28",
     "@tanstack/react-query": "^5.90.21",

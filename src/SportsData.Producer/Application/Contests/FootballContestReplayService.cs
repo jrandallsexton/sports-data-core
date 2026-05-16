@@ -181,6 +181,26 @@ namespace SportsData.Producer.Application.Contests
                     await Task.Delay(1000, ct);
                 }
 
+                // Lifecycle bookend — InProgress→Final. Published after
+                // the last play so the UI transitions out of the live
+                // layout once the replay ends. The 1-sec inter-play pace
+                // above means there's already a beat between the final
+                // play and this transition. Mirrors the symmetric
+                // InProgress publish at the top of the try block.
+                await _eventBus.Publish(new ContestStatusChanged(
+                    contestId,
+                    nameof(ContestStatus.Final),
+                    null,
+                    contest.Sport,
+                    contest.SeasonYear,
+                    correlationId,
+                    CausationId.Producer.EventCompetitionStatusDocumentProcessor
+                ), ct);
+
+                _logger.LogInformation(
+                    "FootballReplay: published ContestStatusChanged=Final. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                    contestId, correlationId);
+
                 _logger.LogInformation(
                     "FootballReplay: completed. ContestId={ContestId}, EmittedPlays={EmittedPlays}, CorrelationId={CorrelationId}",
                     contestId, emittedCount, correlationId);

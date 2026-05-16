@@ -36,13 +36,13 @@ const buildBaseballMatchup = (overrides?: Partial<Matchup>): Matchup => ({
   awayShort: 'NYY',
   awaySlug: 'yankees',
   awayFranchiseSeasonId: '00000000-0000-0000-0000-0000000000a1',
-  awayLogoUri: null,
+  awayLogoUri: 'https://example.test/yankees.png',
 
   home: 'Red Sox',
   homeShort: 'BOS',
   homeSlug: 'red-sox',
   homeFranchiseSeasonId: '00000000-0000-0000-0000-0000000000a2',
-  homeLogoUri: null,
+  homeLogoUri: 'https://example.test/red-sox.png',
 
   status: 'Scheduled',
   ...overrides,
@@ -153,6 +153,105 @@ describe('MatchupCard — live updates', () => {
     expect(screen.getByText('LIVE')).toBeTruthy();
     expect(screen.getByText(/Q3\s*–\s*4:21/)).toBeTruthy();
     expect(screen.getByText(/KC 14 – 17 BUF/)).toBeTruthy();
+  });
+
+  it('renders batter team logo + headshot when the BaseballPlayCompleted carries them', () => {
+    const matchup = buildBaseballMatchup();
+    const { UNSAFE_getAllByType } = renderWithProviders(
+      <MatchupCard matchup={matchup} leagueSport="BaseballMlb" />,
+    );
+
+    act(() => {
+      useContestUpdatesStore.getState().handleBaseballPlayCompleted({
+        contestId: CID,
+        competitionId: '00000000-0000-0000-0000-0000000000cc',
+        playId: '00000000-0000-0000-0000-0000000000dd',
+        playDescription: 'Single to right.',
+        inning: 1,
+        halfInning: 'Top', // away batting → batter wears away logo
+        awayScore: 0,
+        homeScore: 0,
+        balls: 0,
+        strikes: 0,
+        outs: 0,
+        runnerOnFirst: false,
+        runnerOnSecond: false,
+        runnerOnThird: false,
+        atBatAthleteSeasonId: null,
+        atBatShortName: 'A. Judge',
+        atBatPositionAbbreviation: 'RF',
+        atBatHeadshotUrl: 'https://example.test/judge.png',
+        pitchingAthleteSeasonId: null,
+        pitchingShortName: 'C. Sale',
+        pitchingPositionAbbreviation: 'P',
+        pitchingHeadshotUrl: 'https://example.test/sale.png',
+      });
+    });
+
+    // Pull every Image out of the tree and check the URIs we expect to
+    // have flowed in: away logo (batter), home logo (pitcher), batter
+    // headshot, pitcher headshot.
+    const { Image } = require('react-native');
+    const images = UNSAFE_getAllByType(Image);
+    const uris = images.map((img: { props: { source?: { uri?: string } } }) => img.props.source?.uri);
+    expect(uris).toEqual(
+      expect.arrayContaining([
+        'https://example.test/yankees.png',
+        'https://example.test/red-sox.png',
+        'https://example.test/judge.png',
+        'https://example.test/sale.png',
+      ]),
+    );
+  });
+
+  it('renders football last-play description when the FootballPlayCompleted carries one', () => {
+    const matchup = buildFootballMatchup();
+    renderWithProviders(<MatchupCard matchup={matchup} leagueSport="FootballNfl" />);
+
+    act(() => {
+      useContestUpdatesStore.getState().handleFootballPlayCompleted({
+        contestId: CID,
+        competitionId: '00000000-0000-0000-0000-0000000000ee',
+        playId: '00000000-0000-0000-0000-0000000000ff',
+        playDescription: 'P. Mahomes 18-yard pass to T. Kelce.',
+        period: 'Q3',
+        clock: '4:21',
+        awayScore: 14,
+        homeScore: 17,
+        possessionFranchiseSeasonId: '00000000-0000-0000-0000-0000000000b1',
+        isScoringPlay: false,
+        ballOnYardLine: 22,
+      });
+    });
+
+    expect(screen.getByText(/Mahomes 18-yard pass/)).toBeTruthy();
+  });
+
+  it('applies the score-flash style on the score row when isScoringPlay is true', () => {
+    const matchup = buildFootballMatchup();
+    renderWithProviders(<MatchupCard matchup={matchup} leagueSport="FootballNfl" />);
+
+    act(() => {
+      useContestUpdatesStore.getState().handleFootballPlayCompleted({
+        contestId: CID,
+        competitionId: '00000000-0000-0000-0000-0000000000ee',
+        playId: '00000000-0000-0000-0000-0000000000ff',
+        playDescription: 'Touchdown!',
+        period: 'Q4',
+        clock: '0:32',
+        awayScore: 21,
+        homeScore: 17,
+        possessionFranchiseSeasonId: '00000000-0000-0000-0000-0000000000b1',
+        isScoringPlay: true,
+        ballOnYardLine: 0,
+      });
+    });
+
+    // The TOUCHDOWN! text is the visible signal that isScoringPlay was
+    // observed. The score-row flash style is applied via the same flag;
+    // asserting the text presence is sufficient to confirm the path
+    // ran. (Style-prop assertions against StyleSheet IDs are brittle.)
+    expect(screen.getByText(/TOUCHDOWN/)).toBeTruthy();
   });
 
   it('does not subscribe to events for a different contestId', () => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import type { Matchup } from '@/src/types/models';
@@ -110,6 +110,9 @@ function FootballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme
   const homeHasPossession =
     !!matchup.possessionFranchiseSeasonId &&
     matchup.possessionFranchiseSeasonId === matchup.homeFranchiseSeasonId;
+  const hasLastPlay =
+    typeof matchup.lastPlayDescription === 'string' &&
+    matchup.lastPlayDescription.length > 0;
 
   return (
     <View style={styles.statusSection}>
@@ -123,7 +126,7 @@ function FootballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme
         ) : null}
       </View>
 
-      <View style={styles.scoreRow}>
+      <View style={[styles.scoreRow, matchup.isScoringPlay ? styles.scoreRowFlash : null]}>
         {awayHasPossession ? <Text style={styles.possessionIcon}>🏈</Text> : null}
         <Text style={[styles.scoreText, { color: theme.text }]}>
           {matchup.awayShort} {awayScore} – {homeScore} {matchup.homeShort}
@@ -133,6 +136,15 @@ function FootballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme
 
       {matchup.isScoringPlay ? (
         <Text style={styles.scoringPlayText}>🎉 TOUCHDOWN!</Text>
+      ) : null}
+
+      {hasLastPlay ? (
+        <Text
+          style={[styles.lastPlayText, { color: theme.textMuted }]}
+          numberOfLines={2}
+        >
+          {matchup.lastPlayDescription}
+        </Text>
       ) : null}
     </View>
   );
@@ -145,6 +157,20 @@ function BaseballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme
   const half = (matchup.halfInning ?? '').toLowerCase();
   const awayIsBatting = half === 'top';
   const homeIsBatting = half === 'bottom';
+
+  // Per-slot team logo: batter wears the batting team's logo, pitcher
+  // wears the defensive team's. Either may be null when halfInning is
+  // missing or when the team has no logo URL — slot tolerates absence.
+  const batterLogoUri = awayIsBatting
+    ? matchup.awayLogoUri
+    : homeIsBatting
+      ? matchup.homeLogoUri
+      : null;
+  const pitcherLogoUri = awayIsBatting
+    ? matchup.homeLogoUri
+    : homeIsBatting
+      ? matchup.awayLogoUri
+      : null;
 
   const hasInningRow =
     (typeof matchup.inning === 'number' && matchup.inning > 0) ||
@@ -170,7 +196,7 @@ function BaseballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme
         <Text style={styles.liveText}>LIVE</Text>
       </View>
 
-      <View style={styles.scoreRow}>
+      <View style={[styles.scoreRow, matchup.isScoringPlay ? styles.scoreRowFlash : null]}>
         {awayIsBatting ? <Text style={styles.possessionIcon}>⚾</Text> : null}
         <Text style={[styles.scoreText, { color: theme.text }]}>
           {matchup.awayShort} {awayScore} – {homeScore} {matchup.homeShort}
@@ -181,20 +207,54 @@ function BaseballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme
       {hasAtBatRow ? (
         <View style={styles.baseballAtBatRow}>
           {matchup.atBatShortName ? (
-            <Text style={[styles.baseballAtBatText, { color: theme.text }]}>
-              AB: {matchup.atBatShortName}
-              {matchup.atBatPositionAbbreviation
-                ? ` (${matchup.atBatPositionAbbreviation})`
-                : ''}
-            </Text>
+            <View style={styles.baseballAtBatSlot}>
+              {batterLogoUri ? (
+                <Image
+                  source={{ uri: batterLogoUri }}
+                  style={styles.baseballAtBatLogo}
+                  resizeMode="contain"
+                  accessibilityIgnoresInvertColors
+                />
+              ) : null}
+              {matchup.atBatHeadshotUrl ? (
+                <Image
+                  source={{ uri: matchup.atBatHeadshotUrl }}
+                  style={styles.baseballAtBatHeadshot}
+                  accessibilityIgnoresInvertColors
+                />
+              ) : null}
+              <Text style={[styles.baseballAtBatText, { color: theme.text }]}>
+                AB: {matchup.atBatShortName}
+                {matchup.atBatPositionAbbreviation
+                  ? ` (${matchup.atBatPositionAbbreviation})`
+                  : ''}
+              </Text>
+            </View>
           ) : null}
           {matchup.pitchingShortName ? (
-            <Text style={[styles.baseballAtBatText, { color: theme.textMuted }]}>
-              P: {matchup.pitchingShortName}
-              {matchup.pitchingPositionAbbreviation
-                ? ` (${matchup.pitchingPositionAbbreviation})`
-                : ''}
-            </Text>
+            <View style={styles.baseballAtBatSlot}>
+              {pitcherLogoUri ? (
+                <Image
+                  source={{ uri: pitcherLogoUri }}
+                  style={styles.baseballAtBatLogo}
+                  resizeMode="contain"
+                  accessibilityIgnoresInvertColors
+                />
+              ) : null}
+              {matchup.pitchingHeadshotUrl ? (
+                <Image
+                  source={{ uri: matchup.pitchingHeadshotUrl }}
+                  style={styles.baseballAtBatHeadshot}
+                  accessibilityIgnoresInvertColors
+                />
+              ) : null}
+              <Text style={[styles.baseballAtBatText, { color: theme.textMuted }]}>
+                P: {matchup.pitchingShortName}
+                {matchup.pitchingPositionAbbreviation
+                  ? ` (${matchup.pitchingPositionAbbreviation})`
+                  : ''}
+              </Text>
+            </View>
           ) : null}
         </View>
       ) : null}
@@ -220,7 +280,7 @@ function BaseballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme
 
       {hasLastPlay ? (
         <Text
-          style={[styles.baseballLastPlay, { color: theme.textMuted }]}
+          style={[styles.lastPlayText, { color: theme.textMuted }]}
           numberOfLines={2}
         >
           {matchup.lastPlayDescription}
@@ -280,6 +340,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     marginTop: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  // Brief yellow highlight on the score row when isScoringPlay is true.
+  // The store auto-clears the flag after 2s (see contestUpdatesStore),
+  // so this style toggles off automatically without an Animated value.
+  scoreRowFlash: {
+    backgroundColor: 'rgba(250, 204, 21, 0.25)',
   },
   scoreText: {
     fontSize: 15,
@@ -294,13 +363,35 @@ const styles = StyleSheet.create({
     color: '#FACC15',
     marginTop: 2,
   },
+  // Sport-neutral last-play row — used by both football and baseball.
+  lastPlayText: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 2,
+  },
   // Baseball-specific InProgress rows
   baseballAtBatRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
     columnGap: 12,
+    rowGap: 4,
     marginTop: 2,
+  },
+  baseballAtBatSlot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  baseballAtBatLogo: {
+    width: 18,
+    height: 18,
+  },
+  baseballAtBatHeadshot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
   baseballAtBatText: {
     fontSize: 12,
@@ -314,11 +405,5 @@ const styles = StyleSheet.create({
   baseballRunners: {
     fontSize: 12,
     fontWeight: '500',
-  },
-  baseballLastPlay: {
-    fontSize: 11,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: 2,
   },
 });

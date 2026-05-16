@@ -763,11 +763,17 @@ const styles = StyleSheet.create({
   },
   pickBtn: {
     flex: 1,
+    // Row layout matches the web's PickButton: icon and team short sit
+    // side-by-side instead of stacking. Stacking was the source of the
+    // disproportionately-tall mobile pick buttons vs web parity.
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1.5,
     borderRadius: 10,
-    paddingVertical: 10,
-    alignItems: 'center',
-    gap: 2,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    gap: 4,
   },
   pickIcon: {
     fontSize: 13,

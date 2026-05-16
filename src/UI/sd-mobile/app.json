@@ -17,7 +17,8 @@
       "bundleIdentifier": "com.sportdeets.mobile",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "buildNumber": "2"
     },
     "android": {
       "package": "com.sportdeets.mobile",

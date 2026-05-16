@@ -14,7 +14,13 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.sportdeets.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.sportdeets.com",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBRkQwtEl3jeqoYKBN-hPv8VxTjUycNJgM",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "sportdeets-dev.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "sportdeets-dev",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "sportdeets-dev.appspot.com",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "your-sender-id",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "your-app-id"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -23,7 +29,13 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.sportdeets.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.sportdeets.com",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyBRkQwtEl3jeqoYKBN-hPv8VxTjUycNJgM",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "sportdeets-dev.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "sportdeets-dev",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "sportdeets-dev.appspot.com",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "your-sender-id",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "your-app-id"
       },
       "ios": {
         "resourceClass": "m-medium"

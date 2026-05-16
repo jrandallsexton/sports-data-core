@@ -57,11 +57,37 @@ export interface Matchup {
   status: string;               // "Scheduled" | "InProgress" | "Halftime" | "Final" | etc.
   isComplete?: boolean;
 
-  // Live game state (populated when status = InProgress / Halftime)
+  // Live game state — football (populated when status = InProgress / Halftime)
   period?: string | null;
   clock?: string | null;
   possessionFranchiseSeasonId?: string | null;
   isScoringPlay?: boolean | null;
+  /** 0–100 yards from the away (visitor) goal line. Null pre-snap / halftime / post-game. */
+  ballOnYardLine?: number | null;
+
+  // Live game state — baseball (populated by BaseballPlayCompleted via contestUpdatesStore)
+  inning?: number | null;
+  /** "Top" or "Bottom" (case-insensitive consumers welcome). */
+  halfInning?: string | null;
+  balls?: number | null;
+  strikes?: number | null;
+  outs?: number | null;
+  runnerOnFirst?: boolean | null;
+  runnerOnSecond?: boolean | null;
+  runnerOnThird?: boolean | null;
+  /** Season-scoped — resolves to AthleteSeason.Id, not AthleteBase.Id. */
+  atBatAthleteSeasonId?: string | null;
+  atBatShortName?: string | null;
+  atBatPositionAbbreviation?: string | null;
+  atBatHeadshotUrl?: string | null;
+  pitchingAthleteSeasonId?: string | null;
+  pitchingShortName?: string | null;
+  pitchingPositionAbbreviation?: string | null;
+  pitchingHeadshotUrl?: string | null;
+
+  // Sport-neutral last-play info (written by either *PlayCompleted handler)
+  lastPlayId?: string | null;
+  lastPlayDescription?: string | null;
 
   // Scores
   awayScore?: number | null;

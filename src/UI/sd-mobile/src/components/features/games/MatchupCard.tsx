@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import type { Matchup, UserPick, PickChoice, PreviewResponse, TeamComparisonData } from '@/src/types/models';
 import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
+import { useContestUpdate } from '@/src/stores/contestUpdatesStore';
 import { InsightModal } from './InsightModal';
 import { StatsComparisonModal } from './StatsComparisonModal';
 import { GameStatus } from './GameStatus';
@@ -367,12 +368,66 @@ export interface MatchupCardProps {
   onPick?: (matchup: Matchup, choice: PickChoice, franchiseSeasonId: string) => void;
   /** Season year used for team stats API calls. Defaults to the game start year. */
   seasonYear?: number;
+  /**
+   * Backend Sport enum name ("FootballNcaa" | "FootballNfl" | "BaseballMlb").
+   * Threaded through to GameStatus for sport-aware InProgress rendering.
+   * Resolved from LeagueMatchupsResponse.sport at the screen level.
+   */
+  leagueSport?: string | null;
 }
 
-export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seasonYear }: MatchupCardProps) {
+export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seasonYear, leagueSport }: MatchupCardProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
-  const status = matchup.status.toLowerCase();
+
+  // Live-update subscription. Only re-renders this card when its own
+  // contestId's record changes — see contestUpdatesStore selector design.
+  const live = useContestUpdate(matchup.contestId);
+
+  // Merge live data over the static REST payload via nullish fallback so
+  // a partial future-update handler can't silently undefine a previously
+  // populated field. Mirrors the web pattern in AdminBaseballPage.jsx
+  // and AdminFootballPage.jsx.
+  const enrichedMatchup = useMemo<Matchup>(() => {
+    if (!live) return matchup;
+    return {
+      ...matchup,
+      status: live.status ?? matchup.status,
+      awayScore: live.awayScore ?? matchup.awayScore,
+      homeScore: live.homeScore ?? matchup.homeScore,
+      // Football live fields
+      period: live.period ?? matchup.period,
+      clock: live.clock ?? matchup.clock,
+      possessionFranchiseSeasonId:
+        live.possessionFranchiseSeasonId ?? matchup.possessionFranchiseSeasonId,
+      isScoringPlay: live.isScoringPlay ?? matchup.isScoringPlay,
+      ballOnYardLine: live.ballOnYardLine ?? matchup.ballOnYardLine,
+      // Baseball live fields
+      inning: live.inning ?? matchup.inning,
+      halfInning: live.halfInning ?? matchup.halfInning,
+      balls: live.balls ?? matchup.balls,
+      strikes: live.strikes ?? matchup.strikes,
+      outs: live.outs ?? matchup.outs,
+      runnerOnFirst: live.runnerOnFirst ?? matchup.runnerOnFirst,
+      runnerOnSecond: live.runnerOnSecond ?? matchup.runnerOnSecond,
+      runnerOnThird: live.runnerOnThird ?? matchup.runnerOnThird,
+      atBatAthleteSeasonId: live.atBatAthleteSeasonId ?? matchup.atBatAthleteSeasonId,
+      atBatShortName: live.atBatShortName ?? matchup.atBatShortName,
+      atBatPositionAbbreviation:
+        live.atBatPositionAbbreviation ?? matchup.atBatPositionAbbreviation,
+      atBatHeadshotUrl: live.atBatHeadshotUrl ?? matchup.atBatHeadshotUrl,
+      pitchingAthleteSeasonId:
+        live.pitchingAthleteSeasonId ?? matchup.pitchingAthleteSeasonId,
+      pitchingShortName: live.pitchingShortName ?? matchup.pitchingShortName,
+      pitchingPositionAbbreviation:
+        live.pitchingPositionAbbreviation ?? matchup.pitchingPositionAbbreviation,
+      pitchingHeadshotUrl: live.pitchingHeadshotUrl ?? matchup.pitchingHeadshotUrl,
+      lastPlayId: live.lastPlayId ?? matchup.lastPlayId,
+      lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
+    };
+  }, [matchup, live]);
+
+  const status = enrichedMatchup.status.toLowerCase();
   const isFinal = status === 'final' || status === 'completed';
 
   // Optimistic local pick — shows selection instantly before server confirms
@@ -427,9 +482,9 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   };
 
   const homeIsWinning =
-    matchup.homeScore != null &&
-    matchup.awayScore != null &&
-    matchup.homeScore >= matchup.awayScore;
+    enrichedMatchup.homeScore != null &&
+    enrichedMatchup.awayScore != null &&
+    enrichedMatchup.homeScore >= enrichedMatchup.awayScore;
 
   // Use server pick if available, otherwise optimistic
   const effectiveFranchiseId = pick?.franchiseId ?? optimisticFranchiseId;
@@ -441,7 +496,8 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   // Pick result
   const isPickCorrect = isFinal && hasPick ? (pick?.isCorrect ?? null) : null;
 
-  const locked = isPickLocked(matchup);
+  // Use enriched status — a live transition to InProgress must lock picks.
+  const locked = isPickLocked(enrichedMatchup);
 
   // Card border color based on pick result (matches web)
   let cardBorderColor = theme.border;
@@ -481,7 +537,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         disabled={!onPressTeam}
       >
         <TeamRow
-          matchup={matchup}
+          matchup={enrichedMatchup}
           side="away"
           isWinning={!homeIsWinning}
           isPicked={pickedAway}
@@ -497,7 +553,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         disabled={!onPressTeam}
       >
         <TeamRow
-          matchup={matchup}
+          matchup={enrichedMatchup}
           side="home"
           isWinning={homeIsWinning}
           isPicked={pickedHome}
@@ -512,12 +568,18 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         activeOpacity={onPress ? 0.75 : 1}
         disabled={!onPress}
       >
-        <OddsRow matchup={matchup} />
+        <OddsRow matchup={enrichedMatchup} />
       </TouchableOpacity>
 
       {/* Game status — time/score/live; GameStatus owns its own touchable
-          and routes to the contest overview via onPressGameDetail. */}
-      <GameStatus matchup={matchup} onPressGameDetail={onPress} />
+          and routes to the contest overview via onPressGameDetail.
+          enriched data drives all status branches; leagueSport dispatches
+          the InProgress UI between baseball and football. */}
+      <GameStatus
+        matchup={enrichedMatchup}
+        leagueSport={leagueSport}
+        onPressGameDetail={onPress}
+      />
 
       {/* Inline pick buttons */}
       {onPick && (

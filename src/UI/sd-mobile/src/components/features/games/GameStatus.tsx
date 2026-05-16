@@ -10,6 +10,14 @@ import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 
 interface GameStatusProps {
   matchup: Matchup;
+  /**
+   * Backend Sport enum name ("FootballNcaa" | "FootballNfl" | "BaseballMlb").
+   * Used to dispatch the InProgress UI; baseball renders inning + count +
+   * runners + at-bat / pitcher, football renders period + clock +
+   * possession. Defaults to football for unknown / missing values so
+   * callers that don't yet thread it through don't regress.
+   */
+  leagueSport?: string | null;
   /** If provided, called when the user taps on a FINAL/completed game row (preserves full nav context from caller). */
   onPressGameDetail?: () => void;
 }
@@ -19,11 +27,13 @@ interface GameStatusProps {
  *
  * States:
  *   Scheduled   – game time, broadcasts, venue
- *   InProgress  – pulsing LIVE dot + period/clock + possession 🏈 + score + 🎉 TOUCHDOWN!
+ *   InProgress  – dispatched by leagueSport:
+ *                   BaseballMlb → inning + count + outs + runners + at-bat
+ *                   default     → LIVE dot + period/clock + possession 🏈
  *   Final       – FINAL label + score (tappable → game detail)
  *   Other       – raw status string (postponed, cancelled, etc.)
  */
-export function GameStatus({ matchup, onPressGameDetail }: GameStatusProps) {
+export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStatusProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const userTz = useUserTimeZone();
@@ -53,43 +63,10 @@ export function GameStatus({ matchup, onPressGameDetail }: GameStatusProps) {
 
   // ── In Progress ────────────────────────────────────────────────────────────
   if (status === 'inprogress' || status === 'ongoing' || status === 'halftime') {
-    const awayScore = matchup.awayScore ?? 0;
-    const homeScore = matchup.homeScore ?? 0;
-    const awayHasPossession =
-      !!matchup.possessionFranchiseSeasonId &&
-      matchup.possessionFranchiseSeasonId === matchup.awayFranchiseSeasonId;
-    const homeHasPossession =
-      !!matchup.possessionFranchiseSeasonId &&
-      matchup.possessionFranchiseSeasonId === matchup.homeFranchiseSeasonId;
-
-    return (
-      <View style={styles.statusSection}>
-        {/* LIVE indicator + period/clock */}
-        <View style={styles.liveRow}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>LIVE</Text>
-          {matchup.period && matchup.clock ? (
-            <Text style={[styles.clockText, { color: theme.textMuted }]}>
-              {matchup.period} – {matchup.clock}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* Score with possession indicators */}
-        <View style={styles.scoreRow}>
-          {awayHasPossession ? <Text style={styles.possessionIcon}>🏈</Text> : null}
-          <Text style={[styles.scoreText, { color: theme.text }]}>
-            {matchup.awayShort} {awayScore} – {homeScore} {matchup.homeShort}
-          </Text>
-          {homeHasPossession ? <Text style={styles.possessionIcon}>🏈</Text> : null}
-        </View>
-
-        {/* Scoring play flash */}
-        {matchup.isScoringPlay ? (
-          <Text style={styles.scoringPlayText}>🎉 TOUCHDOWN!</Text>
-        ) : null}
-      </View>
-    );
+    if (leagueSport === 'BaseballMlb') {
+      return <BaseballInProgress matchup={matchup} theme={theme} />;
+    }
+    return <FootballInProgress matchup={matchup} theme={theme} />;
   }
 
   // ── Final ──────────────────────────────────────────────────────────────────
@@ -116,6 +93,139 @@ export function GameStatus({ matchup, onPressGameDetail }: GameStatusProps) {
   return (
     <View style={styles.statusSection}>
       <Text style={[styles.statusLabel, { color: theme.error }]}>{matchup.status}</Text>
+    </View>
+  );
+}
+
+// ─── InProgress sub-components ───────────────────────────────────────────────
+
+type Theme = ReturnType<typeof getTheme>;
+
+function FootballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme }) {
+  const awayScore = matchup.awayScore ?? 0;
+  const homeScore = matchup.homeScore ?? 0;
+  const awayHasPossession =
+    !!matchup.possessionFranchiseSeasonId &&
+    matchup.possessionFranchiseSeasonId === matchup.awayFranchiseSeasonId;
+  const homeHasPossession =
+    !!matchup.possessionFranchiseSeasonId &&
+    matchup.possessionFranchiseSeasonId === matchup.homeFranchiseSeasonId;
+
+  return (
+    <View style={styles.statusSection}>
+      <View style={styles.liveRow}>
+        <View style={styles.liveDot} />
+        <Text style={styles.liveText}>LIVE</Text>
+        {matchup.period && matchup.clock ? (
+          <Text style={[styles.clockText, { color: theme.textMuted }]}>
+            {matchup.period} – {matchup.clock}
+          </Text>
+        ) : null}
+      </View>
+
+      <View style={styles.scoreRow}>
+        {awayHasPossession ? <Text style={styles.possessionIcon}>🏈</Text> : null}
+        <Text style={[styles.scoreText, { color: theme.text }]}>
+          {matchup.awayShort} {awayScore} – {homeScore} {matchup.homeShort}
+        </Text>
+        {homeHasPossession ? <Text style={styles.possessionIcon}>🏈</Text> : null}
+      </View>
+
+      {matchup.isScoringPlay ? (
+        <Text style={styles.scoringPlayText}>🎉 TOUCHDOWN!</Text>
+      ) : null}
+    </View>
+  );
+}
+
+function BaseballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme }) {
+  const awayScore = matchup.awayScore ?? 0;
+  const homeScore = matchup.homeScore ?? 0;
+  // halfInning "Top" → away batting (gets the ⚾); "Bottom" → home batting.
+  const half = (matchup.halfInning ?? '').toLowerCase();
+  const awayIsBatting = half === 'top';
+  const homeIsBatting = half === 'bottom';
+
+  const hasInningRow =
+    (typeof matchup.inning === 'number' && matchup.inning > 0) ||
+    (typeof matchup.halfInning === 'string' && matchup.halfInning.length > 0);
+  const hasRunnersRow = !!(
+    matchup.runnerOnFirst || matchup.runnerOnSecond || matchup.runnerOnThird
+  );
+  const hasAtBatRow = !!(matchup.atBatShortName || matchup.pitchingShortName);
+  const hasLastPlay =
+    typeof matchup.lastPlayDescription === 'string' &&
+    matchup.lastPlayDescription.length > 0;
+
+  const outsLabel = matchup.outs === 1 ? 'out' : 'outs';
+  const formattedHalfInning =
+    matchup.halfInning && matchup.inning
+      ? `${matchup.halfInning} ${matchup.inning}`
+      : matchup.halfInning || (matchup.inning ? `Inning ${matchup.inning}` : '');
+
+  return (
+    <View style={styles.statusSection}>
+      <View style={styles.liveRow}>
+        <View style={styles.liveDot} />
+        <Text style={styles.liveText}>LIVE</Text>
+      </View>
+
+      <View style={styles.scoreRow}>
+        {awayIsBatting ? <Text style={styles.possessionIcon}>⚾</Text> : null}
+        <Text style={[styles.scoreText, { color: theme.text }]}>
+          {matchup.awayShort} {awayScore} – {homeScore} {matchup.homeShort}
+        </Text>
+        {homeIsBatting ? <Text style={styles.possessionIcon}>⚾</Text> : null}
+      </View>
+
+      {hasAtBatRow ? (
+        <View style={styles.baseballAtBatRow}>
+          {matchup.atBatShortName ? (
+            <Text style={[styles.baseballAtBatText, { color: theme.text }]}>
+              AB: {matchup.atBatShortName}
+              {matchup.atBatPositionAbbreviation
+                ? ` (${matchup.atBatPositionAbbreviation})`
+                : ''}
+            </Text>
+          ) : null}
+          {matchup.pitchingShortName ? (
+            <Text style={[styles.baseballAtBatText, { color: theme.textMuted }]}>
+              P: {matchup.pitchingShortName}
+              {matchup.pitchingPositionAbbreviation
+                ? ` (${matchup.pitchingPositionAbbreviation})`
+                : ''}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+
+      {hasInningRow ? (
+        <Text style={[styles.baseballSummary, { color: theme.textMuted }]}>
+          {formattedHalfInning}
+          {' · '}
+          {matchup.balls ?? 0}-{matchup.strikes ?? 0}
+          {' · '}
+          {matchup.outs ?? 0} {outsLabel}
+        </Text>
+      ) : null}
+
+      {hasRunnersRow ? (
+        <Text style={[styles.baseballRunners, { color: theme.textMuted }]}>
+          Runners:
+          {matchup.runnerOnFirst ? ' 1B' : ''}
+          {matchup.runnerOnSecond ? ' 2B' : ''}
+          {matchup.runnerOnThird ? ' 3B' : ''}
+        </Text>
+      ) : null}
+
+      {hasLastPlay ? (
+        <Text
+          style={[styles.baseballLastPlay, { color: theme.textMuted }]}
+          numberOfLines={2}
+        >
+          {matchup.lastPlayDescription}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -182,6 +292,33 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#FACC15',
+    marginTop: 2,
+  },
+  // Baseball-specific InProgress rows
+  baseballAtBatRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    columnGap: 12,
+    marginTop: 2,
+  },
+  baseballAtBatText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  baseballSummary: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  baseballRunners: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  baseballLastPlay: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    textAlign: 'center',
     marginTop: 2,
   },
 });

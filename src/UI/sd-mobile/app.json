@@ -18,7 +18,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "2"
+      "buildNumber": "4"
     },
     "android": {
       "package": "com.sportdeets.mobile",
@@ -36,7 +36,14 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "@sentry/react-native",
+        {
+          "organization": "randall-sexton",
+          "project": "sportdeets-mobile"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

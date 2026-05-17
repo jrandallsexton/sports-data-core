@@ -1,9 +1,15 @@
+// Sentry MUST initialize before any other module that could throw at
+// import time (Firebase, React Query, navigation). Side-effect import
+// kept on its own line, above all other imports, for that reason.
+import '@/src/lib/sentry';
+
 import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
+import * as Sentry from '@sentry/react-native';
 import 'react-native-reanimated';
 
 import { queryClient } from '@/src/lib/queryClient';
@@ -45,13 +51,25 @@ function AuthGuard() {
   return null;
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
   // Kick off Firebase auth listener immediately.
   useAuthInit();
+
+  // Tag every Sentry event with the signed-in user (or clear on sign-out).
+  // The store is the source of truth — useAuthInit already syncs Firebase
+  // auth state into it, so this just mirrors that state into Sentry.
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user) {
+      Sentry.setUser({ id: user.uid, email: user.email ?? undefined });
+    } else {
+      Sentry.setUser(null);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (error) throw error;
@@ -70,6 +88,10 @@ export default function RootLayout() {
     </QueryClientProvider>
   );
 }
+
+// Wrap with Sentry so navigation transitions become breadcrumbs and the
+// root error boundary forwards into the SDK.
+export default Sentry.wrap(RootLayout);
 
 function RootLayoutNav() {
   // Feed the user-resolved scheme into React Navigation so native header

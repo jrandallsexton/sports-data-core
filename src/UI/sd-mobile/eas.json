@@ -21,7 +21,8 @@
         "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "sportdeets-dev.appspot.com",
         "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "your-sender-id",
         "EXPO_PUBLIC_FIREBASE_APP_ID": "your-app-id",
-        "EXPO_PUBLIC_SENTRY_DSN": "https://3ff92120e166bebbe395faa904795362@o4511399352729600.ingest.us.sentry.io/4511405062225920"
+        "EXPO_PUBLIC_SENTRY_DSN": "https://3ff92120e166bebbe395faa904795362@o4511399352729600.ingest.us.sentry.io/4511405062225920",
+        "EXPO_PUBLIC_SENTRY_ENV": "preview"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -37,7 +38,8 @@
         "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "sportdeets-dev.appspot.com",
         "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "your-sender-id",
         "EXPO_PUBLIC_FIREBASE_APP_ID": "your-app-id",
-        "EXPO_PUBLIC_SENTRY_DSN": "https://3ff92120e166bebbe395faa904795362@o4511399352729600.ingest.us.sentry.io/4511405062225920"
+        "EXPO_PUBLIC_SENTRY_DSN": "https://3ff92120e166bebbe395faa904795362@o4511399352729600.ingest.us.sentry.io/4511405062225920",
+        "EXPO_PUBLIC_SENTRY_ENV": "production"
       },
       "ios": {
         "resourceClass": "m-medium"

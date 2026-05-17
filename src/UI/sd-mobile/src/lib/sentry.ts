@@ -21,13 +21,22 @@ import * as Sentry from '@sentry/react-native';
 
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 
+// Environment tag — drives filtering / alerting / release tracking in the
+// Sentry UI. Three distinct buckets so TestFlight (preview) crashes from
+// internal testers don't blend with real App Store (production) users:
+//   - dev:        Metro running locally
+//   - preview:    EAS preview profile (internal TestFlight builds)
+//   - production: EAS production profile (App Store releases)
+// EXPO_PUBLIC_SENTRY_ENV is set per profile in eas.json; the fallback
+// to 'production' is defensive in case a new profile forgets to set it.
+const environment = __DEV__
+  ? 'development'
+  : process.env.EXPO_PUBLIC_SENTRY_ENV || 'production';
+
 if (dsn) {
   Sentry.init({
     dsn,
-    // Tag every event with the runtime so dev noise can be filtered out
-    // in the Sentry UI without setting up separate projects (free-tier
-    // friendly).
-    environment: __DEV__ ? 'development' : 'production',
+    environment,
     // Perf tracing off for now — flip to a small sample (e.g. 0.1) when
     // we want span data on slow screen transitions. Keeps event volume
     // proportional to actual errors during early use.

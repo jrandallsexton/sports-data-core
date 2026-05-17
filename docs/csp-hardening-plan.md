@@ -108,7 +108,21 @@ PR #311 review thread on `src/UI/sd-ui/security-headers.conf` line 8.
 
 ---
 
-## Finding 2 — Remove `'unsafe-inline'` from `script-src`
+## Finding 2 — Remove `'unsafe-inline'` from `script-src` ✅ **Resolved 2026-05-17**
+
+Shipped via PR #333 (Report-Only + Sentry `report-uri` for telemetry) and
+PR #335 (cutover — dropped `'unsafe-inline'` from the enforcing header
+and removed Report-Only). The enforcing `script-src` now omits
+`'unsafe-inline'`; the Report-Only header has been removed; remaining
+violations route to Sentry via `report-uri` for ongoing monitoring.
+
+During the watch period Sentry recorded no app-origin CSP violations.
+The only Report-Only reports that landed came from Chrome extensions
+injecting content scripts on dev machines; those are now suppressed by
+the Sentry inbound filter for browser-extension errors.
+
+The original plan below is preserved as a historical record of the
+approach taken.
 
 ### Problem
 
@@ -222,16 +236,10 @@ PR #311 review thread on `src/UI/sd-ui/security-headers.conf` line 8.
 
 ## Sequencing
 
-Finding 1 and Finding 2 are independent. Suggested order:
-
-1. **Finding 1 first** — small, isolated, low rollback risk. Lands
-   alongside the prod Firebase project switch when that happens.
-2. **Finding 2 second** — requires its own report-only watch
-   period before enforcing. Larger calendar footprint but doesn't
-   block #1.
-
-Both should ship as their own PRs labeled `infra` / `security` so
-the rationale is preserved in commit history.
+Finding 2 shipped on 2026-05-17. Finding 1 remains open — it's
+gated on a dedicated prod Firebase project existing (today the
+mobile and web both authenticate against `sportdeets-dev`). The
+parameterization work lands alongside that migration.
 
 ## Reference
 

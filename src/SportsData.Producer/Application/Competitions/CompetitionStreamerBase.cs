@@ -94,6 +94,9 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     {
         using (_logger.BeginScope(new Dictionary<string, object>
         {
+            ["Sport"] = command.Sport,
+            ["SeasonYear"] = command.SeasonYear,
+            ["ContestId"] = command.ContestId,
             ["CorrelationId"] = command.CorrelationId,
             ["CompetitionId"] = command.CompetitionId
         }))
@@ -141,7 +144,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 }
                 else
                 {
-                    _logger.LogWarning("No CompetitionStream record found for CompetitionId {CompetitionId}. Status tracking will be skipped.", command.CompetitionId);
+                    _logger.LogWarning("No CompetitionStream record found for competition. Status tracking will be skipped.");
                 }
 
                 var competitionDto = await GetCompetitionAsync(new Uri(externalId.SourceUrl), cancellationToken);

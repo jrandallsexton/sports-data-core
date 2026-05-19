@@ -205,10 +205,34 @@ undefines a previously-populated field.
 
 ---
 
-## Known drift (audit findings, 2026-05-18)
+## Known drift
 
 Drift that this blueprint flags for correction. Each item should
 become its own follow-up — don't bundle these into one mega-PR.
+
+### Resolved in Round 1 (PR #337, 2026-05-19)
+
+- **Probable pitcher row** — mobile TeamRow now renders the row from
+  `matchup.{home,away}ProbablePitcher` on MLB matchups, matching web.
+- **Insight icon parity** — mobile now always shows 📈, dimmed +
+  disabled when no preview is available, matching web's effective
+  behavior (the `isInsightUnlocked` subscription path is dead code
+  hardcoded `true`).
+- **Contest Overview affordance** — replaces the prior hidden
+  tap-the-whole-status-block pattern with an explicit `OverviewLink`
+  component (chevron + state-specific label in `theme.tint`):
+  `Game Preview ›` (Scheduled), `Live Box Score ›` (InProgress),
+  `Box Score ›` (Final). Documented in `GameStatus.tsx` and used by
+  both `GameStatus` and mobile's `ScheduledMeta`.
+- **Compact 2-column Scheduled layout (mobile)** — new platform
+  expression, not a drift fix. Documented in the slot layout section
+  above.
+
+### Resolved in Round 2 (2026-05-19)
+
+- **`userDto.isReadOnly` in lock check** — mobile `MatchupCard` now
+  calls `useCurrentUser` and ORs `me?.isReadOnly` into the lock
+  computation. Read-only viewers can no longer tap pick buttons.
 
 ### Mobile is missing
 
@@ -219,33 +243,38 @@ become its own follow-up — don't bundle these into one mega-PR.
 3. **TeamRow expandable schedule** — web's TeamRow opens a per-team
    schedule on tap via `useTeamSchedule`; mobile's TeamRow has no
    equivalent.
-4. **`userDto.isReadOnly` in lock check** — web's `usePickLocking`
-   consults the user record; mobile's `isPickLocked` does not. A
-   read-only viewer on mobile can theoretically still tap pick
-   buttons.
-5. **Stream-scheduled "View" link in Scheduled state** — web shows a
-   Webcam icon link when `streamScheduledTimeUtc` is set; mobile has
-   no equivalent treatment.
-6. **Postponed/cancelled handling** — mobile shows the raw status
+4. **Postponed/cancelled handling** — mobile shows the raw status
    string in error color; web falls through to Scheduled markup.
    Either is defensible — pick one and apply on both.
 
 ### Cross-cutting
 
-7. **Icon library divergence** — web uses `react-icons` (FaChartLine,
+5. **Icon library divergence** — web uses `react-icons` (FaChartLine,
    FaLock, FaClipboardList); mobile uses emoji (📈, 🔒, 📋). Acceptable
    as long as we acknowledge it — the alternative (RN vector icons)
    is a bigger lift. Document the decision; don't churn it.
-8. **Dark-mode logo variants** — both platforms have access to
+6. **Dark-mode logo variants** — both platforms have access to
    `homeLogoUriDark`/`awayLogoUriDark`; web swaps via `useTheme()`;
    mobile uses the default URI in both schemes. Mobile gap.
 
 ### Server-side
 
-9. **Headline banner population** — `matchup.headLine` is the
+7. **Headline banner population** — `matchup.headLine` is the
    blueprint slot; we should confirm the server populates this
    consistently across all sports + states. (Today it appears only
    for some marquee games.)
+
+### Out of scope (won't fix)
+
+- **Stream-scheduled "View" link** — web's webcam icon link tied to
+  `streamScheduledTimeUtc` was originally a developer affordance for
+  verifying the competition broadcasting scheduler picked up a game.
+  Not a real end-user feature. The mobile-side equivalent (general
+  navigation to Contest Overview from Scheduled state) is now covered
+  by the new `Game Preview ›` link via `OverviewLink`. Web may
+  eventually consolidate by replacing the webcam-icon-only link with
+  the same `OverviewLink`-style affordance, but that's a web cleanup,
+  not blueprint drift.
 
 ---
 

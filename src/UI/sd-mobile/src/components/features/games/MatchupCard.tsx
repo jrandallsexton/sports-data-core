@@ -6,6 +6,7 @@ import type { Matchup, UserPick, PickChoice, PreviewResponse, TeamComparisonData
 import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
 import { useContestUpdate } from '@/src/stores/contestUpdatesStore';
+import { useCurrentUser } from '@/src/hooks/useStandings';
 import { formatToUserTime } from '@/src/utils/timeUtils';
 import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 import { InsightModal } from './InsightModal';
@@ -499,6 +500,12 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   // contestId's record changes — see contestUpdatesStore selector design.
   const live = useContestUpdate(matchup.contestId);
 
+  // Current user — only the isReadOnly flag is consumed here, to lock
+  // picks for read-only viewers regardless of matchup status. Shares a
+  // TanStack Query cache with the screen-level useCurrentUser call, so
+  // this doesn't trigger an extra network request per card.
+  const { data: me } = useCurrentUser();
+
   // Merge live data over the static REST payload via nullish fallback so
   // a partial future-update handler can't silently undefine a previously
   // populated field. Mirrors the web pattern in AdminBaseballPage.jsx
@@ -615,7 +622,10 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   const isPickCorrect = isFinal && hasPick ? (pick?.isCorrect ?? null) : null;
 
   // Use enriched status — a live transition to InProgress must lock picks.
-  const locked = isPickLocked(enrichedMatchup);
+  // Also lock for read-only viewers (e.g. shared link accounts) so they
+  // can't tap pick buttons regardless of game state. Mirrors the web
+  // `usePickLocking` hook's `userDto.isReadOnly` consultation.
+  const locked = isPickLocked(enrichedMatchup) || !!me?.isReadOnly;
 
   // Card border color based on pick result (matches web)
   let cardBorderColor = theme.border;

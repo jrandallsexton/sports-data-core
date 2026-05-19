@@ -64,9 +64,21 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
   // ── In Progress ────────────────────────────────────────────────────────────
   if (status === 'inprogress' || status === 'ongoing' || status === 'halftime') {
     if (leagueSport === 'BaseballMlb') {
-      return <BaseballInProgress matchup={matchup} theme={theme} />;
+      return (
+        <BaseballInProgress
+          matchup={matchup}
+          theme={theme}
+          onPressGameDetail={onPressGameDetail}
+        />
+      );
     }
-    return <FootballInProgress matchup={matchup} theme={theme} />;
+    return (
+      <FootballInProgress
+        matchup={matchup}
+        theme={theme}
+        onPressGameDetail={onPressGameDetail}
+      />
+    );
   }
 
   // ── Final ──────────────────────────────────────────────────────────────────
@@ -75,17 +87,13 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
     const homeScore = matchup.homeScore ?? 0;
 
     return (
-      <TouchableOpacity
-        style={styles.statusSection}
-        onPress={onPressGameDetail}
-        activeOpacity={onPressGameDetail ? 0.7 : 1}
-        disabled={!onPressGameDetail}
-      >
+      <View style={styles.statusSection}>
         <Text style={[styles.statusLabel, { color: theme.textMuted }]}>FINAL</Text>
         <Text style={[styles.scoreText, { color: theme.text }]}>
           {matchup.awayShort} {awayScore} – {homeScore} {matchup.homeShort}
         </Text>
-      </TouchableOpacity>
+        <OverviewLink label="Box Score" onPress={onPressGameDetail} theme={theme} />
+      </View>
     );
   }
 
@@ -97,11 +105,56 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
   );
 }
 
+// ─── Overview link ───────────────────────────────────────────────────────────
+//
+// Bottom-of-status-block affordance for "tap to open the Contest Overview".
+// Replaces the older pattern of wrapping the whole status block in a
+// TouchableOpacity (which gave no visual hint that it was tappable).
+//
+// Per-state labels live at the call sites:
+//   Scheduled  → "Game Preview"   (rendered by MatchupCard's ScheduledMeta)
+//   InProgress → "Live Box Score"
+//   Final      → "Box Score"
+
+export function OverviewLink({
+  label,
+  onPress,
+  theme,
+  align = 'center',
+}: {
+  label: string;
+  onPress?: () => void;
+  theme: Theme;
+  align?: 'center' | 'flex-start';
+}) {
+  if (!onPress) return null;
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={[styles.overviewLink, { alignSelf: align }]}
+      hitSlop={8}
+    >
+      <Text style={[styles.overviewLinkText, { color: theme.tint }]}>
+        {label} ›
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 // ─── InProgress sub-components ───────────────────────────────────────────────
 
 type Theme = ReturnType<typeof getTheme>;
 
-function FootballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme }) {
+function FootballInProgress({
+  matchup,
+  theme,
+  onPressGameDetail,
+}: {
+  matchup: Matchup;
+  theme: Theme;
+  onPressGameDetail?: () => void;
+}) {
   const awayScore = matchup.awayScore ?? 0;
   const homeScore = matchup.homeScore ?? 0;
   const awayHasPossession =
@@ -146,11 +199,21 @@ function FootballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme
           {matchup.lastPlayDescription}
         </Text>
       ) : null}
+
+      <OverviewLink label="Live Box Score" onPress={onPressGameDetail} theme={theme} />
     </View>
   );
 }
 
-function BaseballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme }) {
+function BaseballInProgress({
+  matchup,
+  theme,
+  onPressGameDetail,
+}: {
+  matchup: Matchup;
+  theme: Theme;
+  onPressGameDetail?: () => void;
+}) {
   const awayScore = matchup.awayScore ?? 0;
   const homeScore = matchup.homeScore ?? 0;
   // halfInning "Top" → away batting (gets the ⚾); "Bottom" → home batting.
@@ -286,6 +349,8 @@ function BaseballInProgress({ matchup, theme }: { matchup: Matchup; theme: Theme
           {matchup.lastPlayDescription}
         </Text>
       ) : null}
+
+      <OverviewLink label="Live Box Score" onPress={onPressGameDetail} theme={theme} />
     </View>
   );
 }
@@ -311,6 +376,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  // Overview link — shared affordance for "tap to open the Contest Overview",
+  // sized to be obviously a link without competing visually with the status
+  // info above it. Color comes from theme.tint at the call site.
+  overviewLink: {
+    marginTop: 4,
+  },
+  overviewLinkText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   // Live
   liveRow: {

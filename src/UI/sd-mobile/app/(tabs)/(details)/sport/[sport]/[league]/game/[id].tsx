@@ -308,6 +308,7 @@ function PickSelector({
   awayFranchiseSeasonId,
   existingPickFranchiseId,
   isLocked,
+  submitPending,
   onPick,
 }: {
   homeTeamName: string;

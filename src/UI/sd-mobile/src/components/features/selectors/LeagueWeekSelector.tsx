@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   TouchableOpacity,
   StyleSheet,
   LayoutAnimation,
@@ -98,11 +97,7 @@ export function LeagueWeekSelector({
         <View>
           {/* League selector — only shown when user belongs to 2+ leagues */}
           {leagues.length > 1 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.row}
-            >
+            <View style={styles.chipRow}>
               {leagues.map((league) => {
                 const active = league.id === selectedLeagueId;
                 return (
@@ -127,11 +122,11 @@ export function LeagueWeekSelector({
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
+            </View>
           )}
 
           {/* Week selector */}
-          <View style={styles.weekRow}>
+          <View style={styles.chipRow}>
             {weeks.map((w) => {
               const active = w === selectedWeek;
               return (
@@ -182,12 +177,7 @@ const styles = StyleSheet.create({
   chevron: {
     fontSize: 14,
   },
-  row: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  weekRow: {
+  chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 14,

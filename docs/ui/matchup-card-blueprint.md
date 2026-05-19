@@ -12,12 +12,12 @@ references but does not specify.
 
 ---
 
-## Slot layout (structurally invariant)
+## Slot layout (default structure)
 
-Every MatchupCard renders the same vertical stack in the same order,
-regardless of state. State changes the *content and presentation* of
-individual slots, never the order or presence of slots themselves
-(headline is the only optional slot).
+The slot model below is the **default** — what every MatchupCard
+renders at minimum, in the order shown. Most state transitions affect
+the *content and presentation* of individual slots rather than the
+structure.
 
 ```mermaid
 flowchart TB
@@ -39,10 +39,24 @@ flowchart TB
     PB -.overlays.-> M
 ```
 
-The headline banner is omitted when `matchup.headLine` is null/empty.
-Every other slot is always rendered (though individual sub-elements
-inside a slot may be conditional — e.g. the rank prefix on team rows
-only renders when `awayRank`/`homeRank` is non-null).
+Two ways the rendered structure can deviate from the default:
+
+1. **Headline banner is always optional** — rendered only when
+   `matchup.headLine` is present.
+2. **A platform may reorganize slots for a specific state** when it
+   suits the surface. Mobile's Scheduled state uses a 2-column compact
+   layout that fuses the OddsRow + the Scheduled-branch content of
+   GameStatus into a right-column `ScheduledMeta` block alongside the
+   team rows on the left (see the `isScheduled` branch in mobile's
+   `MatchupCard.tsx`). This is acceptable *platform expression* of the
+   same underlying contract: data and lifecycle are unchanged; only
+   the spatial arrangement adapts. When such a reorganization is
+   intentional, document it here; when it's drift between platforms,
+   file it in the "Known drift" section.
+
+Sub-elements inside a slot may also be conditional — e.g. the rank
+prefix on team rows only renders when `awayRank`/`homeRank` is
+non-null.
 
 ---
 
@@ -143,7 +157,7 @@ mirrored in `src/types/models` (mobile) and the props of `MatchupCard.jsx`
 
 Required for all states:
 
-```
+```text
 contestId, status, startDateUtc,
 home, homeShort, homeSlug, homeLogoUri, homeFranchiseSeasonId,
 away, awayShort, awaySlug, awayLogoUri, awayFranchiseSeasonId
@@ -151,7 +165,7 @@ away, awayShort, awaySlug, awayLogoUri, awayFranchiseSeasonId
 
 Required when present (state-conditional):
 
-```
+```text
 headLine                                            // headline banner
 homeRank, awayRank                                  // rank prefixes
 homeWins, homeLosses, awayWins, awayLosses          // records
@@ -167,7 +181,7 @@ homeLogoUriDark, awayLogoUriDark                    // dark-theme logo variants 
 
 InProgress football fields:
 
-```
+```text
 period, clock,
 possessionFranchiseSeasonId, isScoringPlay, ballOnYardLine,
 lastPlayDescription
@@ -175,7 +189,7 @@ lastPlayDescription
 
 InProgress baseball fields:
 
-```
+```text
 inning, halfInning,
 balls, strikes, outs,
 runnerOnFirst, runnerOnSecond, runnerOnThird,
@@ -205,35 +219,33 @@ become its own follow-up — don't bundle these into one mega-PR.
 3. **TeamRow expandable schedule** — web's TeamRow opens a per-team
    schedule on tap via `useTeamSchedule`; mobile's TeamRow has no
    equivalent.
-4. **Probable pitcher row** — web's baseball TeamRow surfaces
-   `probablePitcher`; mobile doesn't.
-5. **`userDto.isReadOnly` in lock check** — web's `usePickLocking`
+4. **`userDto.isReadOnly` in lock check** — web's `usePickLocking`
    consults the user record; mobile's `isPickLocked` does not. A
    read-only viewer on mobile can theoretically still tap pick
    buttons.
-6. **Stream-scheduled "View" link in Scheduled state** — web shows a
+5. **Stream-scheduled "View" link in Scheduled state** — web shows a
    Webcam icon link when `streamScheduledTimeUtc` is set; mobile has
    no equivalent treatment.
-7. **Postponed/cancelled handling** — mobile shows the raw status
+6. **Postponed/cancelled handling** — mobile shows the raw status
    string in error color; web falls through to Scheduled markup.
    Either is defensible — pick one and apply on both.
 
 ### Cross-cutting
 
-8. **Icon library divergence** — web uses `react-icons` (FaChartLine,
+7. **Icon library divergence** — web uses `react-icons` (FaChartLine,
    FaLock, FaClipboardList); mobile uses emoji (📈, 🔒, 📋). Acceptable
    as long as we acknowledge it — the alternative (RN vector icons)
    is a bigger lift. Document the decision; don't churn it.
-9. **Dark-mode logo variants** — both platforms have access to
+8. **Dark-mode logo variants** — both platforms have access to
    `homeLogoUriDark`/`awayLogoUriDark`; web swaps via `useTheme()`;
    mobile uses the default URI in both schemes. Mobile gap.
 
 ### Server-side
 
-10. **Headline banner population** — `matchup.headLine` is the
-    blueprint slot; we should confirm the server populates this
-    consistently across all sports + states. (Today it appears only
-    for some marquee games.)
+9. **Headline banner population** — `matchup.headLine` is the
+   blueprint slot; we should confirm the server populates this
+   consistently across all sports + states. (Today it appears only
+   for some marquee games.)
 
 ---
 

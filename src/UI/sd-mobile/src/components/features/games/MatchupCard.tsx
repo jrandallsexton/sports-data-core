@@ -683,14 +683,9 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
               />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.compactRight}
-            onPress={onPress}
-            activeOpacity={onPress ? 0.75 : 1}
-            disabled={!onPress}
-          >
+          <View style={styles.compactRight}>
             <ScheduledMeta matchup={enrichedMatchup} onPressGameDetail={onPress} />
-          </TouchableOpacity>
+          </View>
         </View>
       ) : (
         <>

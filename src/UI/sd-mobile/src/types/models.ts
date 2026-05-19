@@ -19,6 +19,14 @@ export interface League {
   seasonWeeks?: number[];
 }
 
+// ─── Probable Pitcher (MLB only) ─────────────────────────────────────────────
+
+/** Matches ProbablePitcherDto from the canonical layer. */
+export interface ProbablePitcher {
+  displayName: string;
+  headshotUrl?: string | null;
+}
+
 // ─── Matchup ─────────────────────────────────────────────────────────────────
 
 /** Matches MatchupForPickDto from GET /ui/leagues/{id}/matchups/{week} */
@@ -88,6 +96,10 @@ export interface Matchup {
   // Sport-neutral last-play info (written by either *PlayCompleted handler)
   lastPlayId?: string | null;
   lastPlayDescription?: string | null;
+
+  // MLB only — null on non-MLB matchups.
+  homeProbablePitcher?: ProbablePitcher | null;
+  awayProbablePitcher?: ProbablePitcher | null;
 
   // Scores
   awayScore?: number | null;

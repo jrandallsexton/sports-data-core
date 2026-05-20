@@ -5,6 +5,7 @@ import '@/src/lib/sentry';
 
 import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import { Poppins_400Regular, Poppins_700Bold_Italic } from '@expo-google-fonts/poppins';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -54,6 +55,8 @@ function AuthGuard() {
 function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Poppins_400Regular,
+    Poppins_700Bold_Italic,
   });
 
   // Kick off Firebase auth listener immediately.

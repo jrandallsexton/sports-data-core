@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
+import { Wordmark } from '@/src/components/brand/Wordmark';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -36,15 +37,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          // Header title is the sportDeets wordmark (matches web's top-right
-          // brand link). Tab label stays "Home" — different surface, different
-          // job: the wordmark brands the app, the tab label identifies the tab.
-          // Override headerTitleStyle here so the wordmark picks up the accent
-          // color (web parity — brand link uses var(--accent)). Other tabs
-          // keep the default headerTintColor for their plain string titles.
-          title: 'sportDeets',
+          // Header title is the sportDeets Wordmark lockup (icon + two-tone
+          // italic text). Tab label stays "Home" — the wordmark brands the
+          // app, the tab label identifies the tab. headerTitle renders the
+          // component directly; the inline headerTitleStyle from screenOptions
+          // doesn't apply to component titles, which is what we want.
+          headerTitle: () => <Wordmark size={20} />,
           tabBarLabel: 'Home',
-          headerTitleStyle: { fontWeight: '800', fontSize: 20, color: theme.tint },
           tabBarIcon: ({ color }) => (
             <TabIcon name="home-outline" color={color} />
           ),
@@ -57,9 +56,8 @@ export default function TabLayout() {
           // league name already appears in the week selector just below, so
           // the header slot is free to reinforce brand. tabBarLabel keeps the
           // bottom-tab label as "Games".
-          title: 'sportDeets',
+          headerTitle: () => <Wordmark size={20} />,
           tabBarLabel: 'Games',
-          headerTitleStyle: { fontWeight: '800', fontSize: 20, color: theme.tint },
           tabBarIcon: ({ color }) => (
             <TabIcon name="american-football-outline" color={color} />
           ),
@@ -68,7 +66,10 @@ export default function TabLayout() {
       <Tabs.Screen
         name="standings"
         options={{
-          title: 'Standings',
+          // Wordmark header on every tab for brand consistency; tabBarLabel
+          // identifies the section at the bottom.
+          headerTitle: () => <Wordmark size={20} />,
+          tabBarLabel: 'Standings',
           tabBarIcon: ({ color }) => (
             <TabIcon name="trophy-outline" color={color} />
           ),
@@ -77,7 +78,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          headerTitle: () => <Wordmark size={20} />,
+          tabBarLabel: 'Profile',
           tabBarIcon: ({ color }) => (
             <TabIcon name="person-circle-outline" color={color} />
           ),

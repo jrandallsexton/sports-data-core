@@ -1,0 +1,35 @@
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.wordmark__icon {
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+  /* Optical alignment: italic text leans, so geometric center looks too high.
+     ~3px at 1.5rem nav and ~4px at 1.8rem landing — keeps the offset
+     proportional to surrounding text. */
+  margin-top: 0.15em;
+  /* SVG already has a rounded-square clipPath baked in; no border-radius needed. */
+}
+
+.wordmark__text {
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.wordmark__accent {
+  color: var(--accent);
+}
+
+.wordmark__base {
+  color: var(--text-primary);
+}

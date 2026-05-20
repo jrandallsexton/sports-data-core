@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Core.Processing;
 
@@ -14,15 +16,21 @@ namespace SportsData.Api.Application.PickemGroups
         private readonly ILogger<PickemGroupWeekMatchupsGeneratedHandler> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IEventBus _eventBus;
+        private readonly IMessageDeliveryScope _deliveryScope;
 
         public PickemGroupWeekMatchupsGeneratedHandler(
             ILogger<PickemGroupWeekMatchupsGeneratedHandler> logger,
             AppDataContext dataContext,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IEventBus eventBus,
+            IMessageDeliveryScope deliveryScope)
         {
             _logger = logger;
             _dataContext = dataContext;
             _backgroundJobProvider = backgroundJobProvider;
+            _eventBus = eventBus;
+            _deliveryScope = deliveryScope;
         }
 
         public async Task Consume(ConsumeContext<PickemGroupWeekMatchupsGenerated> context)
@@ -36,16 +44,16 @@ namespace SportsData.Api.Application.PickemGroups
                    }))
             {
                 _logger.LogInformation("Processing AI Previews. {@Message}", context.Message);
-                await ConsumeInternal(context.Message);
+                await ConsumeInternal(context.Message, context.CancellationToken);
             }
         }
 
-        private async Task ConsumeInternal(PickemGroupWeekMatchupsGenerated @event)
+        private async Task ConsumeInternal(PickemGroupWeekMatchupsGenerated @event, CancellationToken ct)
         {
             // Implement logic to generate AI predictions for matchups in a pick'em group week (if not present)
             var groupWeekMatchups = await _dataContext.PickemGroupMatchups
                 .Where(x => x.GroupId == @event.GroupId && x.SeasonYear == @event.SeasonYear && x.SeasonWeek == @event.WeekNumber)
-                .ToListAsync();
+                .ToListAsync(ct);
 
             if (!groupWeekMatchups.Any())
             {
@@ -53,11 +61,40 @@ namespace SportsData.Api.Application.PickemGroups
                 throw new Exception("No matchups found for group week");
             }
 
-            var groupWeekMatchupsContestIds = groupWeekMatchups.Select(x => x.ContestId).ToList();
+            // Distinct(): defensive against duplicates that could arise if ESPN
+            // ever returns a contest twice for a week or MatchupScheduleProcessor
+            // is re-run without a unique constraint catching the row. Without
+            // this, ContestRefreshRequested would fire 2+ times for the same
+            // contest, and the preview-enqueue loop would queue duplicate jobs.
+            var groupWeekMatchupsContestIds = groupWeekMatchups
+                .Select(x => x.ContestId)
+                .Distinct()
+                .ToList();
+
+            // Request a refresh for every contest in the week. Contests may have
+            // been added to the group before their ESPN metadata (probable
+            // pitchers, opening spread, broadcasts) was fully populated; this
+            // fans out a per-contest refresh so the UI fills in quickly.
+            // Direct delivery — this consumer does no DbContext writes, so the
+            // outbox isn't involved.
+            using (_deliveryScope.Use(DeliveryMode.Direct))
+            {
+                foreach (var contestId in groupWeekMatchupsContestIds)
+                {
+                    await _eventBus.Publish(new ContestRefreshRequested(
+                        contestId,
+                        null,
+                        @event.Sport,
+                        @event.SeasonYear,
+                        @event.CorrelationId,
+                        Guid.NewGuid()),
+                        ct);
+                }
+            }
 
             var existingPreviews = await _dataContext.MatchupPreviews
                 .Where(p => groupWeekMatchupsContestIds.Contains(p.ContestId))
-                .ToListAsync();
+                .ToListAsync(ct);
 
             var existingPreviewsContestIds = existingPreviews.Select(x => x.ContestId).ToList();
 

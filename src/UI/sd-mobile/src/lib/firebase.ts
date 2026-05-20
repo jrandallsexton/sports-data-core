@@ -1,5 +1,15 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import {
+  getAuth,
+  initializeAuth,
+  // @ts-expect-error — getReactNativePersistence is in firebase/auth's RN
+  // runtime build (resolved by Metro via the "react-native" condition) but
+  // the umbrella package's TypeScript exports map only exposes the browser
+  // surface, so TS can't see it. Known Firebase issue; safe at runtime.
+  getReactNativePersistence,
+  type Auth,
+} from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Firebase config is loaded from EXPO_PUBLIC_ environment variables.
@@ -17,8 +27,20 @@ const firebaseConfig = {
 // Guard against double-initialization in Expo's Fast Refresh.
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// TODO: wire up AsyncStorage persistence once Firebase's React Native build is
-// correctly resolved by Metro. Currently uses in-memory persistence (auth state
-// lost on full app restart — acceptable for development).
-export const auth = getAuth(app);
+// initializeAuth wires AsyncStorage so the user's session survives cold
+// launch (iOS kills backgrounded apps under memory pressure — without
+// persistence the user re-signs-in every cold open). Must be called exactly
+// once per app instance; on Fast Refresh the app instance is reused, so
+// subsequent calls throw — fall back to getAuth, which returns the
+// already-initialized instance.
+let authInstance: Auth;
+try {
+  authInstance = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+} catch {
+  authInstance = getAuth(app);
+}
+
+export const auth = authInstance;
 export { app };

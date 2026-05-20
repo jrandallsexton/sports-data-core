@@ -39,24 +39,20 @@ flowchart TB
     PB -.overlays.-> M
 ```
 
-Two ways the rendered structure can deviate from the default:
+Ways the rendered structure can deviate from the default:
 
 1. **Headline banner is always optional** — rendered only when
    `matchup.headLine` is present.
-2. **A platform may reorganize slots for a specific state** when it
-   suits the surface. Mobile's Scheduled state uses a 2-column compact
-   layout that fuses the OddsRow + the Scheduled-branch content of
-   GameStatus into a right-column `ScheduledMeta` block alongside the
-   team rows on the left (see the `isScheduled` branch in mobile's
-   `MatchupCard.tsx`). This is acceptable *platform expression* of the
-   same underlying contract: data and lifecycle are unchanged; only
-   the spatial arrangement adapts. When such a reorganization is
-   intentional, document it here; when it's drift between platforms,
-   file it in the "Known drift" section.
+2. **Sub-elements inside a slot may be conditional** — e.g. the rank
+   prefix on team rows only renders when `awayRank`/`homeRank` is
+   non-null; the probable-pitcher row renders only on MLB matchups.
 
-Sub-elements inside a slot may also be conditional — e.g. the rank
-prefix on team rows only renders when `awayRank`/`homeRank` is
-non-null.
+A platform *may* reorganize slots for a specific state when it suits
+the surface, but the default is uniform slot order. If a reorganization
+is intentional, document it here; if it's drift, file it under "Known
+drift" instead. See Round 3 for the mobile 2-column Scheduled
+experiment that was tried and reverted — the slot stack proved more
+durable across screen widths than a width-fragile compact layout.
 
 ---
 
@@ -222,17 +218,31 @@ become its own follow-up — don't bundle these into one mega-PR.
   tap-the-whole-status-block pattern with an explicit `OverviewLink`
   component (chevron + state-specific label in `theme.tint`):
   `Game Preview ›` (Scheduled), `Live Box Score ›` (InProgress),
-  `Box Score ›` (Final). Documented in `GameStatus.tsx` and used by
-  both `GameStatus` and mobile's `ScheduledMeta`.
-- **Compact 2-column Scheduled layout (mobile)** — new platform
-  expression, not a drift fix. Documented in the slot layout section
-  above.
+  `Box Score ›` (Final). Defined in `GameStatus.tsx` and rendered by
+  each of its state branches.
 
 ### Resolved in Round 2 (2026-05-19)
 
 - **`userDto.isReadOnly` in lock check** — mobile `MatchupCard` now
   calls `useCurrentUser` and ORs `me?.isReadOnly` into the lock
   computation. Read-only viewers can no longer tap pick buttons.
+
+### Resolved in Round 3 (2026-05-20)
+
+- **Compact 2-column Scheduled layout reverted** — the Round 1
+  platform-expression experiment didn't survive at 390pt screen
+  widths (iPhone 14 / 12 / 13 / SE Plus class). Right column was
+  ~105pt of usable space, which forced multi-line wrapping on the
+  date, broadcasts, and venue strings at the small font sizes that
+  fit. Bumping fonts made it worse (more wrapping). Mobile Scheduled
+  now matches web's vertical stack: time → broadcasts → venue →
+  city/state → `Game Preview ›` link. Documented here so we don't
+  re-litigate.
+- **Meta text readability bumps (mobile)** — `statusTime` 13→14,
+  `statusMeta` 11→13, `recordText` 12→13, `probablePitcherName` 11→12.
+  Pure font-size changes against `theme.textMuted`; palette
+  unchanged. Driven by the same iPhone-14 readability complaint that
+  motivated the 2-col revert.
 
 ### Mobile is missing
 

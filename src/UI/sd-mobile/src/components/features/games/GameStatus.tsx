@@ -42,6 +42,7 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
 
   // ── Scheduled ──────────────────────────────────────────────────────────────
   if (status === 'scheduled') {
+    const cityState = [matchup.venueCity, matchup.venueState].filter(Boolean).join(', ');
     return (
       <View style={styles.statusSection}>
         <Text style={[styles.statusTime, { color: theme.text }]}>
@@ -54,9 +55,15 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
         ) : null}
         {matchup.venue ? (
           <Text style={[styles.statusMeta, { color: theme.textMuted }]} numberOfLines={1}>
-            {[matchup.venue, matchup.venueCity, matchup.venueState].filter(Boolean).join(', ')}
+            {matchup.venue}
           </Text>
         ) : null}
+        {cityState ? (
+          <Text style={[styles.statusMeta, { color: theme.textMuted }]} numberOfLines={1}>
+            {cityState}
+          </Text>
+        ) : null}
+        <OverviewLink label="Game Preview" onPress={onPressGameDetail} theme={theme} />
       </View>
     );
   }
@@ -112,7 +119,7 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
 // TouchableOpacity (which gave no visual hint that it was tappable).
 //
 // Per-state labels live at the call sites:
-//   Scheduled  → "Game Preview"   (rendered by MatchupCard's ScheduledMeta)
+//   Scheduled  → "Game Preview"
 //   InProgress → "Live Box Score"
 //   Final      → "Box Score"
 
@@ -365,11 +372,11 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   statusTime: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
   },
   statusMeta: {
-    fontSize: 11,
+    fontSize: 13,
   },
   statusLabel: {
     fontSize: 12,

@@ -16,6 +16,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/src/lib/firebase';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Button } from '@/src/components/ui/Button';
+import { Wordmark } from '@/src/components/brand/Wordmark';
 import { getTheme } from '@/constants/Colors';
 
 // ─── Validation schema ────────────────────────────────────────────────────────
@@ -75,8 +76,7 @@ export default function SignInScreen() {
       >
         {/* Brand header */}
         <View style={styles.header}>
-          <Text style={styles.emoji}>🏈</Text>
-          <Text style={[styles.appName, { color: theme.tint }]}>sportDeets</Text>
+          <Wordmark size={32} />
           <Text style={[styles.tagline, { color: theme.textMuted }]}>NCAAFB & NFL Pick'em</Text>
         </View>
 
@@ -198,9 +198,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   inner: { flexGrow: 1, justifyContent: 'center', padding: 20 },
-  header: { alignItems: 'center', marginBottom: 32 },
-  emoji: { fontSize: 52, marginBottom: 8 },
-  appName: { fontSize: 34, fontWeight: '800', letterSpacing: -0.5 },
+  header: { alignItems: 'center', marginBottom: 32, gap: 8 },
   tagline: {
     fontSize: 13,
     marginTop: 4,

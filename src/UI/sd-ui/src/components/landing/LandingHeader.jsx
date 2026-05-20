@@ -1,5 +1,6 @@
 //import { useState } from "react";
 //import { Link } from "react-router-dom";
+import Wordmark from "../brand/Wordmark";
 import "./LandingHeader.css";
 
 function LandingHeader() {
@@ -16,7 +17,8 @@ function LandingHeader() {
       <div className="landing-header-inner">
         <div className="logo">
           <a href="/" className="logo-link">
-            sportDeets<span className="tm-symbol">™</span>
+            <Wordmark />
+            <span className="tm-symbol">™</span>
           </a>
         </div>
 

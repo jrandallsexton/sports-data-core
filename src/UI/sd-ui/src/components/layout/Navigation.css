@@ -12,6 +12,9 @@
   height: 60px;
   z-index: 1000;
   padding: 0 20px;
+  /* Cascades Poppins family to all child text (nav links, sign-out button).
+     Wordmark sets its own family/weight/style and is unaffected. */
+  font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .top-nav {

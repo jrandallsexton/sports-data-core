@@ -32,6 +32,11 @@ export default function TabLayout() {
         headerShadowVisible: false,
         headerTintColor: theme.text,
         headerTitleStyle: { fontWeight: '700', fontSize: 18 },
+        // React Navigation defaults headerTitleAlign to 'center' on iOS
+        // (Apple HIG convention) and 'left' on Android. Force 'left' on
+        // both for parity with web — the Wordmark is the brand affordance
+        // and belongs in the top-left across all platforms.
+        headerTitleAlign: 'left',
       }}
     >
       <Tabs.Screen

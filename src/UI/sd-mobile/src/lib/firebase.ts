@@ -31,15 +31,23 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 // launch (iOS kills backgrounded apps under memory pressure — without
 // persistence the user re-signs-in every cold open). Must be called exactly
 // once per app instance; on Fast Refresh the app instance is reused, so
-// subsequent calls throw — fall back to getAuth, which returns the
-// already-initialized instance.
+// subsequent calls throw 'auth/already-initialized' — fall back to getAuth
+// for that case only. Any other error means our config is broken (e.g.
+// missing keys, AsyncStorage unavailable); rethrow so we don't silently
+// degrade back to in-memory persistence, which is the bug this file fixes.
 let authInstance: Auth;
 try {
   authInstance = initializeAuth(app, {
     persistence: getReactNativePersistence(AsyncStorage),
   });
-} catch {
-  authInstance = getAuth(app);
+} catch (err) {
+  const code = (err as { code?: string })?.code;
+  if (code === 'auth/already-initialized') {
+    authInstance = getAuth(app);
+  } else {
+    console.error('[firebase] initializeAuth failed unexpectedly', err);
+    throw err;
+  }
 }
 
 export const auth = authInstance;

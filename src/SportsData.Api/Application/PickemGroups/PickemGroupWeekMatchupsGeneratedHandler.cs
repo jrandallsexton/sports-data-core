@@ -61,7 +61,15 @@ namespace SportsData.Api.Application.PickemGroups
                 throw new Exception("No matchups found for group week");
             }
 
-            var groupWeekMatchupsContestIds = groupWeekMatchups.Select(x => x.ContestId).ToList();
+            // Distinct(): defensive against duplicates that could arise if ESPN
+            // ever returns a contest twice for a week or MatchupScheduleProcessor
+            // is re-run without a unique constraint catching the row. Without
+            // this, ContestRefreshRequested would fire 2+ times for the same
+            // contest, and the preview-enqueue loop would queue duplicate jobs.
+            var groupWeekMatchupsContestIds = groupWeekMatchups
+                .Select(x => x.ContestId)
+                .Distinct()
+                .ToList();
 
             // Request a refresh for every contest in the week. Contests may have
             // been added to the group before their ESPN metadata (probable

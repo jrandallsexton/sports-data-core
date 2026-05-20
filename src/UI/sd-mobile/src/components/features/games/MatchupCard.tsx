@@ -7,11 +7,9 @@ import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
 import { useContestUpdate } from '@/src/stores/contestUpdatesStore';
 import { useCurrentUser } from '@/src/hooks/useStandings';
-import { formatToUserTime } from '@/src/utils/timeUtils';
-import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 import { InsightModal } from './InsightModal';
 import { StatsComparisonModal } from './StatsComparisonModal';
-import { GameStatus, OverviewLink } from './GameStatus';
+import { GameStatus } from './GameStatus';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -244,96 +242,6 @@ function OddsRow({ matchup }: { matchup: Matchup }) {
 
 // StatusSection extracted → see GameStatus.tsx
 
-// ─── Scheduled meta (compact 2-column right side) ────────────────────────────
-//
-// Pre-game stack: spread (and O/U) above, then date/time, then broadcasts,
-// then venue. Mirrors what GameStatus renders for Scheduled but stacked
-// vertically in a narrow right column instead of centered full-width.
-
-function ScheduledMeta({
-  matchup,
-  onPressGameDetail,
-}: {
-  matchup: Matchup;
-  onPressGameDetail?: () => void;
-}) {
-  const scheme = useColorScheme();
-  const theme = getTheme(scheme);
-  const userTz = useUserTimeZone();
-
-  const spread = matchup.spreadCurrent;
-  const spreadOpen = matchup.spreadOpen ?? null;
-  const ou = matchup.overUnderCurrent;
-  const ouOpen = matchup.overUnderOpen ?? null;
-  const hasSpread = spread != null;
-  const hasOu = ou != null && ou !== 0;
-
-  const sArrow = spreadArrow(spread, spreadOpen);
-  const oArrow = ouArrow(ou, ouOpen);
-
-  const cityState = [matchup.venueCity, matchup.venueState]
-    .filter(Boolean)
-    .join(', ');
-
-  return (
-    <View style={styles.compactMeta}>
-      {(hasSpread || hasOu) && (
-        <View style={styles.compactOddsStack}>
-          {hasSpread && (
-            <View style={styles.compactOddsLine}>
-              <Text style={[styles.oddsLabel, { color: theme.textMuted }]}>SPREAD </Text>
-              {sArrow && (
-                <Text style={[styles.oddsArrow, { color: sArrow.color }]}>{sArrow.symbol}</Text>
-              )}
-              <Text style={[styles.oddsValue, { color: theme.tint }]}>
-                {spreadLabel(spread)}
-              </Text>
-            </View>
-          )}
-          {hasOu && (
-            <View style={styles.compactOddsLine}>
-              <Text style={[styles.oddsLabel, { color: theme.textMuted }]}>O/U </Text>
-              {oArrow && (
-                <Text style={[styles.oddsArrow, { color: oArrow.color }]}>{oArrow.symbol}</Text>
-              )}
-              <Text style={[styles.oddsValue, { color: theme.tint }]}>{ou}</Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      <Text style={[styles.compactTime, { color: theme.text }]}>
-        {formatToUserTime(matchup.startDateUtc, userTz)}
-      </Text>
-
-      {matchup.broadcasts ? (
-        <Text style={[styles.compactMetaText, { color: theme.textMuted }]} numberOfLines={3}>
-          {matchup.broadcasts}
-        </Text>
-      ) : null}
-
-      {matchup.venue ? (
-        <Text style={[styles.compactMetaText, { color: theme.textMuted }]} numberOfLines={1}>
-          {matchup.venue}
-        </Text>
-      ) : null}
-
-      {cityState ? (
-        <Text style={[styles.compactMetaText, { color: theme.textMuted }]} numberOfLines={1}>
-          {cityState}
-        </Text>
-      ) : null}
-
-      <OverviewLink
-        label="Game Preview"
-        onPress={onPressGameDetail}
-        theme={theme}
-        align="flex-start"
-      />
-    </View>
-  );
-}
-
 // ─── PickButton (mirrors web PickButton component) ───────────────────────────
 //
 // States (parallel to web CSS classes):
@@ -551,9 +459,6 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
 
   const status = enrichedMatchup.status.toLowerCase();
   const isFinal = status === 'final' || status === 'completed';
-  // Compact 2-column layout only applies pre-game — once the game starts,
-  // the score column reactivates and the single-column flow makes more sense.
-  const isScheduled = status === 'scheduled';
 
   // Optimistic local pick — shows selection instantly before server confirms
   const [optimisticFranchiseId, setOptimisticFranchiseId] = useState<string | null>(null);
@@ -658,99 +563,56 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         </View>
       )}
 
-      {isScheduled ? (
-        // ── Compact 2-column layout: team rows on the left, meta on the
-        // right. Active only pre-game; once the game starts, the score
-        // column reactivates and the standard single-column flow returns.
-        <View style={styles.compactRow}>
-          <View style={styles.compactLeft}>
-            <TouchableOpacity
-              onPress={onPressTeam ? () => onPressTeam('away') : undefined}
-              activeOpacity={onPressTeam ? 0.6 : 1}
-              disabled={!onPressTeam}
-            >
-              <TeamRow
-                matchup={enrichedMatchup}
-                side="away"
-                isWinning={!homeIsWinning}
-                isPicked={pickedAway}
-                isPickCorrect={isPickCorrect}
-                isFinal={isFinal}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={onPressTeam ? () => onPressTeam('home') : undefined}
-              activeOpacity={onPressTeam ? 0.6 : 1}
-              disabled={!onPressTeam}
-            >
-              <TeamRow
-                matchup={enrichedMatchup}
-                side="home"
-                isWinning={homeIsWinning}
-                isPicked={pickedHome}
-                isPickCorrect={isPickCorrect}
-                isFinal={isFinal}
-              />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.compactRight}>
-            <ScheduledMeta matchup={enrichedMatchup} onPressGameDetail={onPress} />
-          </View>
-        </View>
-      ) : (
-        <>
-          {/* Away team — taps go to the team page, not the contest overview. */}
-          <TouchableOpacity
-            onPress={onPressTeam ? () => onPressTeam('away') : undefined}
-            activeOpacity={onPressTeam ? 0.6 : 1}
-            disabled={!onPressTeam}
-          >
-            <TeamRow
-              matchup={enrichedMatchup}
-              side="away"
-              isWinning={!homeIsWinning}
-              isPicked={pickedAway}
-              isPickCorrect={isPickCorrect}
-              isFinal={isFinal}
-            />
-          </TouchableOpacity>
+      {/* Away team — taps go to the team page, not the contest overview. */}
+      <TouchableOpacity
+        onPress={onPressTeam ? () => onPressTeam('away') : undefined}
+        activeOpacity={onPressTeam ? 0.6 : 1}
+        disabled={!onPressTeam}
+      >
+        <TeamRow
+          matchup={enrichedMatchup}
+          side="away"
+          isWinning={!homeIsWinning}
+          isPicked={pickedAway}
+          isPickCorrect={isPickCorrect}
+          isFinal={isFinal}
+        />
+      </TouchableOpacity>
 
-          {/* Home team */}
-          <TouchableOpacity
-            onPress={onPressTeam ? () => onPressTeam('home') : undefined}
-            activeOpacity={onPressTeam ? 0.6 : 1}
-            disabled={!onPressTeam}
-          >
-            <TeamRow
-              matchup={enrichedMatchup}
-              side="home"
-              isWinning={homeIsWinning}
-              isPicked={pickedHome}
-              isPickCorrect={isPickCorrect}
-              isFinal={isFinal}
-            />
-          </TouchableOpacity>
+      {/* Home team */}
+      <TouchableOpacity
+        onPress={onPressTeam ? () => onPressTeam('home') : undefined}
+        activeOpacity={onPressTeam ? 0.6 : 1}
+        disabled={!onPressTeam}
+      >
+        <TeamRow
+          matchup={enrichedMatchup}
+          side="home"
+          isWinning={homeIsWinning}
+          isPicked={pickedHome}
+          isPickCorrect={isPickCorrect}
+          isFinal={isFinal}
+        />
+      </TouchableOpacity>
 
-          {/* Spread & O/U — tap goes to the contest overview. */}
-          <TouchableOpacity
-            onPress={onPress}
-            activeOpacity={onPress ? 0.75 : 1}
-            disabled={!onPress}
-          >
-            <OddsRow matchup={enrichedMatchup} />
-          </TouchableOpacity>
+      {/* Spread & O/U — tap goes to the contest overview. */}
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={onPress ? 0.75 : 1}
+        disabled={!onPress}
+      >
+        <OddsRow matchup={enrichedMatchup} />
+      </TouchableOpacity>
 
-          {/* Game status — time/score/live; GameStatus owns its own touchable
-              and routes to the contest overview via onPressGameDetail.
-              enriched data drives all status branches; leagueSport dispatches
-              the InProgress UI between baseball and football. */}
-          <GameStatus
-            matchup={enrichedMatchup}
-            leagueSport={leagueSport}
-            onPressGameDetail={onPress}
-          />
-        </>
-      )}
+      {/* Game status — time/score/live; GameStatus owns its own touchable
+          and routes to the contest overview via onPressGameDetail.
+          enriched data drives all status branches; leagueSport dispatches
+          the InProgress UI between baseball and football. */}
+      <GameStatus
+        matchup={enrichedMatchup}
+        leagueSport={leagueSport}
+        onPressGameDetail={onPress}
+      />
 
       {/* Inline pick buttons */}
       {onPick && (
@@ -808,41 +670,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
   },
 
-  // Compact 2-column scheduled layout
-  compactRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-  compactLeft: {
-    flex: 65,
-  },
-  compactRight: {
-    flex: 35,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    justifyContent: 'flex-start',
-  },
-  compactMeta: {
-    gap: 4,
-  },
-  compactOddsStack: {
-    gap: 2,
-    marginBottom: 4,
-  },
-  compactOddsLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compactTime: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  compactMetaText: {
-    fontSize: 11,
-    textAlign: 'center',
-  },
-
   // Headline
   headline: {
     backgroundColor: Colors.brand.navy,
@@ -895,7 +722,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   recordText: {
-    fontSize: 12,
+    fontSize: 13,
   },
   probablePitcherRow: {
     flexDirection: 'row',
@@ -909,7 +736,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   probablePitcherName: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     flexShrink: 1,
   },

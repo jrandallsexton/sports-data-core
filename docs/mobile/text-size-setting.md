@@ -1,10 +1,27 @@
 # Text size user setting
 
-Companion to `expo-deployment-model.md`. This doc captures the plan
-for a user-facing text-size preference (S | M | L) layered on top of
-the existing theme setting, before any code lands.
+Companion to `expo-deployment-model.md`. Captures the design for a
+user-facing text-size preference (S | M | L) layered on top of the
+existing theme setting.
 
-Status: **planning** as of 2026-05-21. Nothing wired up yet.
+Status: **implemented** as of 2026-05-21 (PR #346). Forward-looking
+sections below ("Current state", "Recommended sequence") preserve the
+original planning content for posterity — what actually shipped is
+summarized here:
+
+- `src/lib/textSize/TextSizeContext.tsx` — provider, `useTextSize`,
+  `useTextScale`, AsyncStorage persistence, `isHydrated` flag.
+- `src/components/ui/AppText.tsx` — drop-in `<Text>` wrapper that
+  multiplies `fontSize` by the current scale; `allowFontScaling={false}`.
+- `app/_layout.tsx` — `<TextSizeProvider>` wraps `<RootLayoutNav>`;
+  splash `hideAsync()` waits on theme AND text-size hydration.
+- `app/(tabs)/profile.tsx` — second `SegmentedControl` (S | M | L)
+  in the Appearance section with the hint "Affects all in-app text.
+  Header brand stays fixed."
+- 22 component / screen files migrated from
+  `import { Text } from 'react-native'` to
+  `import { Text } from '@/src/components/ui/AppText'`. `Wordmark.tsx`
+  is intentionally excluded.
 
 ---
 

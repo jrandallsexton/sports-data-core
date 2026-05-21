@@ -7,7 +7,7 @@ they get picked up.
 Order within each section reflects rough priority, but only the
 **In flight** section is binding; everything else is just on deck.
 
-Last updated: 2026-05-21
+Last updated: 2026-05-21 (post dark-logo cascade for Contest Overview + Team Card)
 
 ---
 
@@ -43,20 +43,11 @@ Last updated: 2026-05-21
 - **Postponed / cancelled status handling** — mobile shows the raw
   status string in error color; web falls through to Scheduled
   markup. Pick one and apply on both. See blueprint "Known drift".
-- **Dark-mode logo variants** — both platforms have access to
-  `homeLogoUriDark` / `awayLogoUriDark`; web swaps via `useTheme()`;
-  mobile uses the default URI in both schemes. *MatchupCard
-  addressed separately; see follow-ups below for the other
-  surfaces.*
-- **Dark-mode logos in Contest Overview** (follow-up) — the
-  `ContestOverviewDto` returned by `/ui/matchup/{contestId}/overview`
-  only carries `logoUrl`, no dark variant. Needs backend DTO
-  additions (server-side mapper + entity column lookup) before the
-  mobile contest-overview header can swap. Same backend pattern as
-  the existing MatchupForPickDto dark fields.
-- **Dark-mode logos in Team Card** (follow-up) — `TeamCardDto`
-  returned by `/ui/team/{slug}` only carries `logoUrl`. Same
-  backend treatment needed.
+- **Dark-mode logo variants** — MatchupCard, Contest Overview, and
+  Team Card all swap via `useColorScheme()` now. Web parity already
+  in place via `useTheme()`. Remaining surfaces (TeamRow expandable
+  schedule, headline banner, etc.) inherit the same fields when
+  added.
 - **TeamRow expandable schedule** — web's TeamRow opens a per-team
   schedule on tap via `useTeamSchedule`; mobile's TeamRow has no
   equivalent.

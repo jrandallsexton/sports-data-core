@@ -46,10 +46,18 @@ function TeamScoreRow({
   league: string;
 }) {
   const router = useRouter();
+  const scheme = useColorScheme();
+  // Prefer the explicit per-scheme variant; fall back to the default
+  // `logoUrl` when the backend hasn't supplied one (legacy data or
+  // teams without a curated light/dark asset).
+  const logoUrl =
+    scheme === 'dark'
+      ? team.logoUrlDark ?? team.logoUrl
+      : team.logoUrlLight ?? team.logoUrl;
   return (
     <View style={styles.teamScoreRow}>
-      {team.logoUrl ? (
-        <Image source={{ uri: team.logoUrl }} style={styles.logo} resizeMode="contain" />
+      {logoUrl ? (
+        <Image source={{ uri: logoUrl }} style={styles.logo} resizeMode="contain" />
       ) : (
         <View style={[styles.logoPlaceholder, { backgroundColor: theme.separator }]} />
       )}

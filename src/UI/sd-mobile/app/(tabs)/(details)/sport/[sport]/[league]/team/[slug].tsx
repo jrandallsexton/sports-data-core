@@ -206,6 +206,14 @@ export default function TeamCard() {
 
   const availableYears = team.seasonYears ?? [selectedSeason];
 
+  // Prefer the explicit per-scheme variant; fall back to the default
+  // `logoUrl` when the backend hasn't supplied one (legacy data or
+  // teams without a curated light/dark asset).
+  const headerLogoUrl =
+    scheme === 'dark'
+      ? team.logoUrlDark ?? team.logoUrl
+      : team.logoUrlLight ?? team.logoUrl;
+
   return (
     <>
       <Stack.Screen options={{ title: team.name }} />
@@ -216,8 +224,8 @@ export default function TeamCard() {
       >
         <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
           <View style={styles.headerRow}>
-            {team.logoUrl ? (
-              <Image source={{ uri: team.logoUrl }} style={styles.teamLogo} resizeMode="contain" />
+            {headerLogoUrl ? (
+              <Image source={{ uri: headerLogoUrl }} style={styles.teamLogo} resizeMode="contain" />
             ) : (
               <View style={[styles.teamLogoPlaceholder, { backgroundColor: theme.separator }]} />
             )}

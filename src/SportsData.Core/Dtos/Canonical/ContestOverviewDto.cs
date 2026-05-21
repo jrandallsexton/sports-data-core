@@ -100,6 +100,10 @@ namespace SportsData.Core.Dtos.Canonical
 
         public string? LogoUrl { get; set; }
 
+        public string? LogoUrlDark { get; set; }
+
+        public string? LogoUrlLight { get; set; }
+
         public string? ColorPrimary { get; set; }
 
         public int? FinalScore { get; set; } // Optional if in-progress

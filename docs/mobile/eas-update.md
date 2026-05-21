@@ -1,0 +1,364 @@
+# EAS Update — over-the-air JS delivery
+
+Companion to `expo-deployment-model.md`. That doc introduces EAS
+Update at a 30,000-ft level; this one is the rollout plan + steady-state
+playbook.
+
+Status: **configuration complete** as of 2026-05-20. `expo-updates`,
+`runtimeVersion`, `updates.url`, and per-profile `channel` are all
+wired up (steps 1–3 of the sequence below). The remaining work is
+the user-side EAS build per profile (step 4 onward) that gets the
+update-aware bundle onto TestFlight devices.
+
+---
+
+## Why now
+
+We're on Expo's free tier and every native build runs ~20–30 min in
+EAS's shared queue, plus another ~10 min of TestFlight processing
+before testers see it. Two of our last three mobile PRs were JS-only
+(#342 Firebase persistence, #343 tab header alignment) and each cost
+a full ~40-min build cycle to deliver something the device could have
+hot-loaded in under a minute.
+
+EAS Update fixes the asymmetry: JS bug fixes ship in seconds; native
+changes still get the slow path because they have to.
+
+---
+
+## What an OTA can and cannot deliver
+
+### Can ship via OTA
+
+- Any change to React Native / TypeScript code (components, hooks,
+  utilities, navigation, etc.)
+- JS-side assets loaded at runtime (`require('...')` PNGs, `expo-font`
+  TTFs, JSON payloads)
+- Anything driven by `EXPO_PUBLIC_*` env vars — they're inlined into
+  the JS bundle whenever the bundle is created (both during native
+  EAS builds AND when you publish with `eas update`), so a new OTA
+  picks up new env values without a native rebuild
+- Most of `app.json` does NOT cascade into the JS bundle, but a few
+  fields (e.g. `name`, `version`, `slug`) are exposed via Expo
+  Constants and would update — though changing these via OTA usually
+  signals you should be doing a native rebuild instead
+
+### Must rebuild natively
+
+- App icon (`icon`, `adaptiveIcon.foregroundImage`) — baked into the
+  native binary's asset catalog
+- Splash screen image — same reason
+- Any change to `app.json` that affects the native manifest:
+  `bundleIdentifier`, `package`, `version` (the user-visible string),
+  `ios.infoPlist`, `android.permissions`, `plugins`, `scheme`,
+  `userInterfaceStyle`, `orientation`
+- Any new native dependency added via `npx expo install <package>`
+  where that package ships a native module
+- `runtimeVersion` bumps (by definition — that's the trigger that
+  invalidates existing OTAs)
+- Notification entitlements, deep-link associations, or anything
+  Apple/Google sees at install time
+
+A useful rule: if you'd answer "yes" to "would I want to test this
+through TestFlight before users see it?" — that's probably a native
+build. If it's a typo fix or a copy change or a layout tweak, OTA.
+
+---
+
+## Mental model: runtime version, channels, branches
+
+Three concepts the docs throw at you up front; they're worth nailing
+down before any config is touched.
+
+### Runtime version
+
+A string baked into both the native binary and every OTA. The device
+will only apply an OTA whose `runtimeVersion` matches its own. This
+is what prevents an OTA written against new native code from landing
+on an old binary that can't run it.
+
+Expo supports three policies, set in `app.json`:
+
+| Policy | Behavior | Right for us? |
+| ------ | -------- | ------------- |
+| `"appVersion"` | `runtimeVersion = expo.version` (e.g. `"0.1.0"`) | **Yes — recommended.** Couples runtime to your release version; bumping `version` is the natural signal that OTAs against the old binary should stop |
+| `"sdkVersion"` | Tied to Expo SDK number | Too coarse — every JS fix between SDK upgrades shares the same runtime, fine until it isn't |
+| `"nativeVersion"` | Tied to `ios.buildNumber` / `android.versionCode` | Too fine — every TestFlight build needs a fresh OTA stream |
+
+We'll use **`appVersion`**. Bump `version` whenever native code or
+native assets change; OTAs against the old `version` will continue
+to work for users still on the old binary, OTAs against the new
+`version` flow to users who have the new binary.
+
+### Channel
+
+A string attached to each EAS build (via `eas.json` per-profile) and
+each `eas update` invocation. A build will only check for updates on
+its channel. We'll add channels matching our build profiles:
+
+- `development` builds → `development` channel
+- `preview` builds → `preview` channel
+- `production` builds → `production` channel
+
+### Branch
+
+A named stream of updates inside a channel. By default `eas update`
+creates a branch matching the channel name (so `--branch production`
+ships to the `production` channel by default). Branches give you
+finer control if you want multiple update streams per channel — we
+don't, so one branch per channel is fine.
+
+---
+
+## Current state
+
+After PR #344 (2026-05-20), the JS / config wiring is complete:
+
+- `expo-updates` is installed in `package.json` (sequence step 1).
+- `app.json` declares `runtimeVersion: { policy: "appVersion" }` and
+  `updates.url: https://u.expo.dev/<project-id>` (sequence step 2).
+- `eas.json` has `channel` set on each build profile —
+  `development` → `development`, `preview` → `preview`,
+  `production` → `production` (sequence step 2).
+
+Remaining work is user-side and per-profile:
+
+- A fresh EAS build on each profile so existing TestFlight installs
+  become update-aware (sequence steps 4–6). Until that happens,
+  devices running pre-#344 binaries won't pick up OTAs even though
+  `eas update` will accept the publish.
+
+---
+
+## Recommended sequence
+
+Numbered for execution order. Time estimates assume free-tier queue.
+
+| # | Step | Time | Outcome |
+| - | ---- | ---- | ------- |
+| 1 | `npx expo install expo-updates` | ~30 sec | Module added to JS deps |
+| 2 | `eas update:configure` | ~1 min | `app.json` gets `updates.url` + `runtimeVersion`; `eas.json` gets `channel` per profile |
+| 3 | Review the auto-generated config, adjust if needed | ~5 min | Sanity check `runtimeVersion.policy = "appVersion"`, channel names match profile names |
+| 4 | New EAS build → submit to TestFlight | ~30 min queue + processing | This is the **last slow build before OTAs start working** |
+| 5 | Install the new TestFlight build on device | ~2 min | Device is now update-aware |
+| 6 | Smoke test: `eas update --branch production --message "test"` | ~30 sec | Verify the update lands on the device |
+| 7 | Document the per-PR OTA decision in `expo-deployment-model.md` | ~10 min | "If JS-only, ship OTA; otherwise rebuild" |
+
+Step 4 is the gating cost. Everything after is incremental.
+
+---
+
+## Decisions to make before editing config
+
+### 1. Runtime version policy
+
+- **(a) `appVersion`** — couples OTA scope to `expo.version`
+- **(b) `nativeVersion`** — couples to `buildNumber` / `versionCode`
+- **(c) Manual string** — explicit `"runtimeVersion": "1.0.0"` you bump by hand
+
+Recommendation: **(a) `appVersion`**. Lowest cognitive overhead,
+matches the Expo "release" model. Manual is too easy to forget;
+`nativeVersion` is too fine for our cadence.
+
+### 2. Channel-to-branch mapping
+
+- **(a) One branch per channel** (default — `eas update --branch
+  production` ships to `production` channel)
+- **(b) Multiple branches per channel** for staging within a channel
+  (e.g. `production-canary` → `production` channel for a subset of users)
+
+Recommendation: **(a)** for now. We have no canary infra and no need
+for it at current scale. Revisit when there's enough user volume to
+justify gradual rollouts.
+
+### 3. Auto-update on launch vs explicit check
+
+`expo-updates` checks for updates on app launch by default. The new
+bundle downloads in the background; users see it on launch N+1.
+
+Alternative: force `Updates.checkForUpdateAsync()` + `reloadAsync()`
+on a specific event (e.g. pull-to-refresh, sign-in screen mount).
+
+Recommendation: **default behavior (background on launch)**. The
+one-launch lag is fine for non-critical fixes; for critical hotfixes
+we can override per release.
+
+---
+
+## What changes when we execute
+
+### `package.json`
+
+```jsonc
+{
+  "dependencies": {
+    "expo-updates": "<version pinned by expo install>"
+  }
+}
+```
+
+### `app.json` additions
+
+```jsonc
+{
+  "expo": {
+    // ... existing fields ...
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/<project-id>"
+    }
+  }
+}
+```
+
+The `url` is auto-generated by `eas update:configure` — don't hand-write it.
+
+### `eas.json` additions
+
+```jsonc
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      // ... existing ...
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      // ... existing ...
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      // ... existing ...
+    }
+  }
+}
+```
+
+---
+
+## Per-update workflow (steady state)
+
+After step 4 is shipped to TestFlight and installed on devices, the
+per-PR workflow becomes:
+
+### JS-only change (the common case)
+
+```bash
+# Make code changes, merge to main as usual.
+# Then, from src/UI/sd-mobile/:
+
+eas update --branch production --message "fix: <PR title>"
+# Output includes an update ID and a deep link.
+# Background download starts on next app launch; applies on launch after that.
+```
+
+### Native change (icon, splash, plugin, new module, app.json schema)
+
+```bash
+# Same as today — full native build:
+eas build --profile production --platform ios
+eas submit --profile production --platform ios
+# ~30-min cycle. New runtimeVersion gates OTAs against old binaries.
+```
+
+### Mixed change (e.g. new JS that depends on a new native module)
+
+Rebuild natively. The runtime version bump cuts the old OTA stream
+cleanly. Users on the old binary keep receiving updates from the old
+stream; users on the new one switch over.
+
+---
+
+## Rollback
+
+EAS Update keeps every published update in history per branch. To roll
+back:
+
+```bash
+# List recent updates on the branch:
+eas update:list --branch production
+
+# Republish a known-good prior update as the latest:
+eas update:republish --branch production --group <update-group-id>
+```
+
+Devices then download the republished bundle on next launch. There's
+no "delete" — the broken update remains in history but is no longer
+the head.
+
+Faster alternative: fix-forward. If the bug is small, push a
+corrective `eas update` over the broken one — same time-to-ship as
+the original update.
+
+---
+
+## Gotchas to watch for
+
+1. **The launch-N+1 lag.** Default behavior is background download on
+   launch N, apply on launch N+1. If a user does N → N+1 in the same
+   session (e.g. force-quit and reopen), they get the update; if they
+   only ever open the app once a day, the bug fix takes two app
+   launches to land. Override with `Updates.checkForUpdateAsync()` +
+   `reloadAsync()` for critical hotfixes.
+2. **Runtime version mismatches are silent.** A device on `version
+   0.1.0` won't even see updates published against `version 0.2.0` —
+   the update server simply returns "no update available." No error,
+   no warning. If you're testing an OTA and it doesn't land, check
+   the app's runtime version matches the update's.
+3. **Apple Guideline 4.5.4.** Apple permits OTA for "minor bug fixes,
+   performance improvements, and similar changes." Don't ship "a new
+   sport" or "a new social feature" via OTA — that's a guideline
+   violation and could put the App Store listing at risk. JS bug
+   fixes, copy changes, layout tweaks, color adjustments are all
+   fine and standard.
+4. **`EXPO_PUBLIC_*` env vars are inlined at build time.** If you
+   change Firebase project keys, API URLs, or Sentry DSN in `eas.json`,
+   an OTA WILL pick them up — the JS bundle that's published embeds
+   the env values active at `eas update` time. This is usually what
+   you want, but it means an OTA can shift env state without a native
+   build, which is worth knowing.
+5. **`expo-updates` adds a tiny startup cost.** The module runs an
+   update-check on launch (HEAD request to `updates.url`). On a cold
+   start over flaky cellular this can add ~200–500 ms before the
+   splash hides. Acceptable, but worth a real-device check.
+6. **The smoke test in step 6 only proves wiring — it doesn't prove
+   the update applied correctly.** Always look at the bundle's
+   behavior on device after a non-trivial OTA, not just the EAS
+   dashboard "delivered" indicator.
+
+---
+
+## Pricing
+
+EAS Update has a usage-based pricing model layered on top of the EAS
+plan tier:
+
+- **Free tier**: 1,000 monthly active users (MAUs) per project,
+  generous bandwidth. Sufficient for solo dev + small beta cohorts.
+- **Paid tiers**: scale with MAU + bandwidth. The free tier covers
+  TestFlight beta + early access comfortably.
+
+EAS Build cost is unchanged — OTA doesn't reduce the per-build minute
+quota; it just reduces *how often you need a build*.
+
+---
+
+## References
+
+- `expo-deployment-model.md` — high-level Expo deployment overview;
+  Section 4 is the EAS Update mention this doc expands on.
+- `android-deployment.md` — sibling rollout doc for the Google Play
+  side. The OTA flow described here applies equally to Android once
+  Play Console distribution is live.
+- `firebase-config-in-eas-builds.md` — env var management. Relevant
+  because OTAs inherit env values from the `eas update` invocation's
+  config.
+- [Expo docs: EAS Update how-it-works](https://docs.expo.dev/eas-update/how-it-works/)
+- [Expo docs: runtime version](https://docs.expo.dev/eas-update/runtime-versions/)
+- [Apple Guideline 4.5.4](https://developer.apple.com/app-store/review/guidelines/#4.5.4) — the rule that permits OTA JS delivery

@@ -47,7 +47,7 @@ public class GetContestOverviewQueryHandlerTests : ProducerTestBase<GetContestOv
         // Assert
         Assert.IsType<Failure<ContestOverviewDto>>(result);
         var failure = (Failure<ContestOverviewDto>)result;
-        Assert.Equal(ResultStatus.BadRequest, failure.Status);
+        Assert.Equal(ResultStatus.Validation, failure.Status);
         Assert.Single(failure.Errors);
         Assert.Equal("ContestId", failure.Errors[0].PropertyName);
         Assert.Equal("ContestId must be provided", failure.Errors[0].ErrorMessage);
@@ -96,7 +96,7 @@ public class GetContestOverviewQueryHandlerTests : ProducerTestBase<GetContestOv
         // Assert
         Assert.IsType<Failure<ContestOverviewDto>>(result);
         var failure = (Failure<ContestOverviewDto>)result;
-        Assert.Equal(ResultStatus.BadRequest, failure.Status);
+        Assert.Equal(ResultStatus.Validation, failure.Status);
         Assert.Single(failure.Errors);
         Assert.Equal("ContestId", failure.Errors[0].PropertyName);
     }

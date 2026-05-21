@@ -44,7 +44,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         {
             return new Failure<ContestOverviewDto>(
                 default!,
-                ResultStatus.BadRequest,
+                ResultStatus.Validation,
                 validationResult.Errors);
         }
 

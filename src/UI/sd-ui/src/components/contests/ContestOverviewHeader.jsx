@@ -1,10 +1,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useTheme } from "../../contexts/ThemeContext";
 import { teamLink } from '../../utils/sportLinks';
 import BoxScoreTable from "../shared/BoxScoreTable";
 import "./ContestOverview.css";
 
 export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScores, homeTeamColor, awayTeamColor, seasonYear, sport, league }) {
+  const { theme } = useTheme() ?? {};
+  const pickLogo = (t) =>
+    theme === 'dark'
+      ? (t.logoUrlDark || t.logoUrl)
+      : (t.logoUrlLight || t.logoUrl);
   // Normalize and muted color helpers (small subset copied from TeamComparison)
   const normalizeColor = (color) => {
     if (typeof color === 'string' && color.length === 6 && !color.startsWith('#')) return `#${color}`;
@@ -35,7 +41,7 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
       <div className="contest-header-row contest-header-flex">
         {/* Away Side */}
         <div className="contest-team-logo-wrap" style={awayTeamColor ? { background: normAwayBg, borderColor: 'rgba(255,255,255,0.06)' } : {}}>
-          <img src={awayTeam.logoUrl} alt={awayTeam.displayName} className="contest-team-logo" />
+          <img src={pickLogo(awayTeam)} alt={awayTeam.displayName} className="contest-team-logo" />
         </div>
         <Link
           to={teamLink(awayTeam.slug, seasonYear, sport, league)}
@@ -59,7 +65,7 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
           {homeTeam.displayName}
         </Link>
         <div className="contest-team-logo-wrap" style={homeTeamColor ? { background: normHomeBg, borderColor: 'rgba(255,255,255,0.06)' } : {}}>
-          <img src={homeTeam.logoUrl} alt={homeTeam.displayName} className="contest-team-logo" />
+          <img src={pickLogo(homeTeam)} alt={homeTeam.displayName} className="contest-team-logo" />
         </div>
       </div>
     </div>

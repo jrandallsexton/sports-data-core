@@ -41,6 +41,8 @@ export interface Matchup {
   awaySlug: string;
   awayFranchiseSeasonId: string;
   awayLogoUri?: string | null;
+  /** Dark-theme variant. Falls back to awayLogoUri when null. */
+  awayLogoUriDark?: string | null;
   awayColor?: string | null;
   awayRank?: number | null;
   awayWins?: number;
@@ -54,6 +56,8 @@ export interface Matchup {
   homeSlug: string;
   homeFranchiseSeasonId: string;
   homeLogoUri?: string | null;
+  /** Dark-theme variant. Falls back to homeLogoUri when null. */
+  homeLogoUriDark?: string | null;
   homeColor?: string | null;
   homeRank?: number | null;
   homeWins?: number;

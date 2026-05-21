@@ -82,7 +82,14 @@ function TeamRow({
   const isHome = side === 'home';
   const name = isHome ? matchup.home : matchup.away;
   const abbr = isHome ? matchup.homeShort : matchup.awayShort;
-  const logoUrl = isHome ? matchup.homeLogoUri : matchup.awayLogoUri;
+  // Dark-mode logo swap: some teams have a *Dark variant for use against
+  // a dark surface (e.g. dark-on-white wordmarks that disappear against
+  // theme.card in dark mode). Falls back to the default variant when no
+  // dark version exists. Mirrors web's pattern in
+  // sd-ui/src/components/matchups/MatchupCard.jsx.
+  const logoUriLight = isHome ? matchup.homeLogoUri : matchup.awayLogoUri;
+  const logoUriDark = isHome ? matchup.homeLogoUriDark : matchup.awayLogoUriDark;
+  const logoUrl = scheme === 'dark' ? (logoUriDark ?? logoUriLight) : logoUriLight;
   const rank = isHome ? matchup.homeRank : matchup.awayRank;
   const score = isHome ? matchup.homeScore : matchup.awayScore;
   const wins = isHome ? matchup.homeWins : matchup.awayWins;
@@ -478,7 +485,33 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
 
   const handleOpenStats = async () => {
     setShowStats(true);
-    if (statsData) return; // already loaded
+
+    // Resolve the logo URI against the live scheme. Same fallback rule as
+    // TeamRow. Computed at the top of the handler so the cache check below
+    // can compare against current values and refresh if the user toggled
+    // themes between opens.
+    const awayLogoUri =
+      scheme === 'dark' ? (matchup.awayLogoUriDark ?? matchup.awayLogoUri) : matchup.awayLogoUri;
+    const homeLogoUri =
+      scheme === 'dark' ? (matchup.homeLogoUriDark ?? matchup.homeLogoUri) : matchup.homeLogoUri;
+
+    // Stats / metrics are cached across opens, but the resolved logo URIs
+    // depend on the active theme. If the user toggled themes between
+    // opens, refresh just the logoUri fields on the existing cache —
+    // don't re-fetch stats.
+    if (statsData) {
+      if (
+        statsData.teamA.logoUri !== awayLogoUri ||
+        statsData.teamB.logoUri !== homeLogoUri
+      ) {
+        setStatsData({
+          teamA: { ...statsData.teamA, logoUri: awayLogoUri },
+          teamB: { ...statsData.teamB, logoUri: homeLogoUri },
+        });
+      }
+      return;
+    }
+
     setStatsLoading(true);
     try {
       const [awayStats, homeStats, awayMetrics, homeMetrics] = await Promise.all([
@@ -488,8 +521,8 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         teamCardApi.getMetrics(matchup.homeSlug, year, matchup.homeFranchiseSeasonId),
       ]);
       setStatsData({
-        teamA: { name: matchup.away, logoUri: matchup.awayLogoUri, stats: awayStats, metrics: awayMetrics },
-        teamB: { name: matchup.home, logoUri: matchup.homeLogoUri, stats: homeStats, metrics: homeMetrics },
+        teamA: { name: matchup.away, logoUri: awayLogoUri, stats: awayStats, metrics: awayMetrics },
+        teamB: { name: matchup.home, logoUri: homeLogoUri, stats: homeStats, metrics: homeMetrics },
       });
     } catch (err) {
       console.warn('[MatchupCard] stats fetch error', err);

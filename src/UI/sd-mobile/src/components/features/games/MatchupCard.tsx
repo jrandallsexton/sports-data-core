@@ -485,7 +485,33 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
 
   const handleOpenStats = async () => {
     setShowStats(true);
-    if (statsData) return; // already loaded
+
+    // Resolve the logo URI against the live scheme. Same fallback rule as
+    // TeamRow. Computed at the top of the handler so the cache check below
+    // can compare against current values and refresh if the user toggled
+    // themes between opens.
+    const awayLogoUri =
+      scheme === 'dark' ? (matchup.awayLogoUriDark ?? matchup.awayLogoUri) : matchup.awayLogoUri;
+    const homeLogoUri =
+      scheme === 'dark' ? (matchup.homeLogoUriDark ?? matchup.homeLogoUri) : matchup.homeLogoUri;
+
+    // Stats / metrics are cached across opens, but the resolved logo URIs
+    // depend on the active theme. If the user toggled themes between
+    // opens, refresh just the logoUri fields on the existing cache —
+    // don't re-fetch stats.
+    if (statsData) {
+      if (
+        statsData.teamA.logoUri !== awayLogoUri ||
+        statsData.teamB.logoUri !== homeLogoUri
+      ) {
+        setStatsData({
+          teamA: { ...statsData.teamA, logoUri: awayLogoUri },
+          teamB: { ...statsData.teamB, logoUri: homeLogoUri },
+        });
+      }
+      return;
+    }
+
     setStatsLoading(true);
     try {
       const [awayStats, homeStats, awayMetrics, homeMetrics] = await Promise.all([
@@ -494,13 +520,6 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         teamCardApi.getMetrics(matchup.awaySlug, year, matchup.awayFranchiseSeasonId),
         teamCardApi.getMetrics(matchup.homeSlug, year, matchup.homeFranchiseSeasonId),
       ]);
-      // Resolve the logo URI at modal-open time so the StatsComparisonModal
-      // gets the dark-mode variant when appropriate. Same fallback rule as
-      // TeamRow above.
-      const awayLogoUri =
-        scheme === 'dark' ? (matchup.awayLogoUriDark ?? matchup.awayLogoUri) : matchup.awayLogoUri;
-      const homeLogoUri =
-        scheme === 'dark' ? (matchup.homeLogoUriDark ?? matchup.homeLogoUri) : matchup.homeLogoUri;
       setStatsData({
         teamA: { name: matchup.away, logoUri: awayLogoUri, stats: awayStats, metrics: awayMetrics },
         teamB: { name: matchup.home, logoUri: homeLogoUri, stats: homeStats, metrics: homeMetrics },

@@ -150,16 +150,27 @@ Mirror `ThemeContext` line-for-line:
 
 ---
 
-## Current state
+## Current state (as of PR #346, 2026-05-21)
 
-Nothing relevant exists yet:
+All four pieces are wired up:
 
-- No `TextSizeContext` or related hook.
-- No `AppText` wrapper — all 23 files import `Text` directly from
-  `react-native`.
-- No settings UI control. The "Appearance" section in
-  `app/(tabs)/profile.tsx` only has the theme `SegmentedControl`.
-- Splash gating in `app/_layout.tsx` waits on theme hydration only.
+- `TextSizeContext` lives at `src/lib/textSize/TextSizeContext.tsx` —
+  provider, `useTextSize` (mode + setter + `isHydrated`), `useTextScale`
+  (multiplier), AsyncStorage persistence under key `text-size`.
+- `AppText` wrapper at `src/components/ui/AppText.tsx` — drop-in
+  `<Text>` that multiplies `fontSize` by the current scale and sets
+  `allowFontScaling={false}` so iOS Dynamic Type doesn't compound.
+- Settings UI in `app/(tabs)/profile.tsx` — second `SegmentedControl`
+  (S | M | L) in the Appearance section with the hint "Affects all
+  in-app text. Header brand stays fixed."
+- Splash gating in `app/_layout.tsx` — `<TextSizeProvider>` wraps
+  `<RootLayoutNav>`, and `SplashScreen.hideAsync()` waits on both the
+  theme and text-size `isHydrated` flags before revealing the UI.
+
+22 component / screen files were migrated to import `Text` from the
+new `AppText` path. `src/components/brand/Wordmark.tsx` was
+intentionally left importing `Text` directly from `react-native` so
+the brand lockup stays fixed regardless of the user's preference.
 
 ---
 
@@ -234,7 +245,7 @@ brand glyphs hold their relative weight.
 
 ### New files
 
-```
+```text
 src/UI/sd-mobile/src/lib/textSize/TextSizeContext.tsx  (~90 lines)
 src/UI/sd-mobile/src/components/ui/AppText.tsx          (~25 lines)
 ```

@@ -31,5 +31,9 @@ export function Text(props: TextProps) {
     flat && typeof flat.fontSize === 'number'
       ? { ...flat, fontSize: flat.fontSize * scale }
       : flat;
-  return <RNText allowFontScaling={false} {...props} style={scaled} />;
+  // allowFontScaling={false} sits AFTER the spread so callers can't
+  // reintroduce OS-level font scaling and re-create the compound-scaling
+  // footgun this wrapper exists to prevent. style stays last so it wins
+  // over any style in props (multiplied fontSize is the whole point).
+  return <RNText {...props} allowFontScaling={false} style={scaled} />;
 }

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   TextInput,
   StyleSheet,
   KeyboardAvoidingView,
@@ -11,6 +10,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

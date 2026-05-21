@@ -1,12 +1,12 @@
 import React from 'react';
 import {
   TouchableOpacity,
-  Text,
   ActivityIndicator,
   StyleSheet,
   type ViewStyle,
   type TextStyle,
 } from 'react-native';
+import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 

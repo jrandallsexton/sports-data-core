@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   View,
-  Text,
   TouchableOpacity,
   StyleSheet,
   FlatList,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
+import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import { DEFAULT_TIMEZONE } from '@/src/utils/timeUtils';

@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
   RefreshControl,
 } from 'react-native';
+import { Text } from '@/src/components/ui/AppText';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';

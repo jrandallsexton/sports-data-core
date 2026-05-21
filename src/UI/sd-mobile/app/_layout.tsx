@@ -16,6 +16,7 @@ import 'react-native-reanimated';
 import { queryClient } from '@/src/lib/queryClient';
 import { useAuthInit, useAuth } from '@/src/hooks/useAuth';
 import { ThemeProvider, useThemeMode } from '@/src/lib/theme/ThemeContext';
+import { TextSizeProvider, useTextSize } from '@/src/lib/textSize/TextSizeContext';
 import { SignalRGate } from '@/src/components/signalR/SignalRGate';
 
 export {
@@ -86,7 +87,9 @@ function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <RootLayoutNav />
+        <TextSizeProvider>
+          <RootLayoutNav />
+        </TextSizeProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
@@ -99,14 +102,16 @@ export default Sentry.wrap(RootLayout);
 function RootLayoutNav() {
   // Feed the user-resolved scheme into React Navigation so native header
   // transitions and focus rings match the chosen theme.
-  const { resolvedScheme, isHydrated } = useThemeMode();
+  const { resolvedScheme, isHydrated: themeHydrated } = useThemeMode();
+  const { isHydrated: textSizeHydrated } = useTextSize();
 
-  // Second splash gate: fonts loaded + theme hydrated from AsyncStorage.
-  // Keeps the splash visible through the full startup path so the first
-  // painted pixels already reflect the user's stored preference.
+  // Second splash gate: fonts loaded + BOTH user preferences hydrated from
+  // AsyncStorage. Keeps the splash visible through the full startup path
+  // so the first painted pixels already reflect every stored preference
+  // (no theme flash, no font-size flash on launch).
   useEffect(() => {
-    if (isHydrated) SplashScreen.hideAsync();
-  }, [isHydrated]);
+    if (themeHydrated && textSizeHydrated) SplashScreen.hideAsync();
+  }, [themeHydrated, textSizeHydrated]);
 
   return (
     <NavThemeProvider value={resolvedScheme === 'dark' ? DarkTheme : DefaultTheme}>

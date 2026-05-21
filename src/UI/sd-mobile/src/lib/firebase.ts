@@ -10,6 +10,7 @@ import {
   type Auth,
 } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
 /**
  * Firebase config is loaded from EXPO_PUBLIC_ environment variables.
@@ -29,24 +30,38 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 
 // initializeAuth wires AsyncStorage so the user's session survives cold
 // launch (iOS kills backgrounded apps under memory pressure — without
-// persistence the user re-signs-in every cold open). Must be called exactly
-// once per app instance; on Fast Refresh the app instance is reused, so
-// subsequent calls throw 'auth/already-initialized' — fall back to getAuth
-// for that case only. Any other error means our config is broken (e.g.
-// missing keys, AsyncStorage unavailable); rethrow so we don't silently
-// degrade back to in-memory persistence, which is the bug this file fixes.
+// persistence the user re-signs-in every cold open).
+//
+// Platform split:
+//   - iOS / Android: initializeAuth with getReactNativePersistence(AsyncStorage)
+//   - Web: getAuth() — Firebase defaults to browserLocalPersistence on web,
+//     which gives the same "session survives reload" via localStorage.
+//     getReactNativePersistence is undefined on the browser build of
+//     firebase/auth, so calling it on web throws TypeError (and breaks
+//     `eas update`'s --platform=all bundle step during static rendering).
+//
+// On native: must be called exactly once per app instance. Fast Refresh
+// reuses the app instance, so subsequent calls throw
+// 'auth/already-initialized' — fall back to getAuth for that case only.
+// Any other error means our config is broken (missing keys, AsyncStorage
+// unavailable); rethrow so we don't silently degrade back to in-memory
+// persistence, which is the bug this file fixes.
 let authInstance: Auth;
-try {
-  authInstance = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
-  });
-} catch (err) {
-  const code = (err as { code?: string })?.code;
-  if (code === 'auth/already-initialized') {
-    authInstance = getAuth(app);
-  } else {
-    console.error('[firebase] initializeAuth failed unexpectedly', err);
-    throw err;
+if (Platform.OS === 'web') {
+  authInstance = getAuth(app);
+} else {
+  try {
+    authInstance = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  } catch (err) {
+    const code = (err as { code?: string })?.code;
+    if (code === 'auth/already-initialized') {
+      authInstance = getAuth(app);
+    } else {
+      console.error('[firebase] initializeAuth failed unexpectedly', err);
+      throw err;
+    }
   }
 }
 

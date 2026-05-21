@@ -273,6 +273,10 @@ export interface UserDto {
 export interface ContestOverviewTeam {
   displayName: string;
   logoUrl?: string | null;
+  /** Explicit dark-theme variant. Falls back to logoUrl when null. */
+  logoUrlDark?: string | null;
+  /** Explicit light-theme variant. Falls back to logoUrl when null. */
+  logoUrlLight?: string | null;
   slug?: string | null;
 }
 
@@ -340,6 +344,10 @@ export interface TeamCardScheduleGame {
 export interface TeamCardDto {
   name: string;
   logoUrl?: string | null;
+  /** Explicit dark-theme variant. Falls back to logoUrl when null. */
+  logoUrlDark?: string | null;
+  /** Explicit light-theme variant. Falls back to logoUrl when null. */
+  logoUrlLight?: string | null;
   colorPrimary?: string | null;
   colorSecondary?: string | null;
   conferenceName?: string | null;

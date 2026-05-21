@@ -172,6 +172,15 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
 
         var competitionIdForHeader = comp?.Id ?? Guid.Empty;
 
+        var homeLogoDark = _logoSelectionService.SelectWithFallback(
+            homeTeamSeason?.Logos, homeTeamSeason?.Franchise?.Logos, darkBackground: true)?.OriginalString;
+        var homeLogoLight = _logoSelectionService.SelectWithFallback(
+            homeTeamSeason?.Logos, homeTeamSeason?.Franchise?.Logos, darkBackground: false)?.OriginalString;
+        var awayLogoDark = _logoSelectionService.SelectWithFallback(
+            awayTeamSeason?.Logos, awayTeamSeason?.Franchise?.Logos, darkBackground: true)?.OriginalString;
+        var awayLogoLight = _logoSelectionService.SelectWithFallback(
+            awayTeamSeason?.Logos, awayTeamSeason?.Franchise?.Logos, darkBackground: false)?.OriginalString;
+
         var quarterScores = await _dbContext.CompetitionCompetitorLineScores
             .AsNoTracking()
             .Include(ls => ls.CompetitionCompetitor)
@@ -194,8 +203,9 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             {
                 FranchiseSeasonId = contest.HomeTeamFranchiseSeasonId,
                 DisplayName = homeTeamSeason?.Franchise?.Name,
-                LogoUrl = (_logoSelectionService.SelectLogoForDarkBackground(homeTeamSeason?.Logos)
-                          ?? _logoSelectionService.SelectLogoForDarkBackground(homeTeamSeason?.Franchise?.Logos))?.OriginalString,
+                LogoUrl = homeLogoDark,
+                LogoUrlDark = homeLogoDark,
+                LogoUrlLight = homeLogoLight,
                 ColorPrimary = homeTeamSeason?.Franchise?.ColorCodeHex,
                 FinalScore = contest.HomeScore,
                 Slug = homeTeamSeason?.Franchise?.Slug ?? string.Empty,
@@ -206,8 +216,9 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             {
                 FranchiseSeasonId = contest.AwayTeamFranchiseSeasonId,
                 DisplayName = awayTeamSeason?.Franchise?.Name,
-                LogoUrl = (_logoSelectionService.SelectLogoForDarkBackground(awayTeamSeason?.Logos)
-                          ?? _logoSelectionService.SelectLogoForDarkBackground(awayTeamSeason?.Franchise?.Logos))?.OriginalString,
+                LogoUrl = awayLogoDark,
+                LogoUrlDark = awayLogoDark,
+                LogoUrlLight = awayLogoLight,
                 ColorPrimary = awayTeamSeason?.Franchise?.ColorCodeHex,
                 FinalScore = contest.AwayScore,
                 Slug = awayTeamSeason?.Franchise?.Slug ?? string.Empty,

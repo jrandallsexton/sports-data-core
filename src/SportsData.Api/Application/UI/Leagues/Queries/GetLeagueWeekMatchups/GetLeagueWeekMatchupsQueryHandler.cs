@@ -217,9 +217,14 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     // value (already on matchup.HeadLine from the initial
                     // projection) is the last-resort safety net for historical
                     // leagues whose CompetitionNote may no longer resolve.
-                    matchup.HeadLine = canonical.Headline
-                                       ?? canonical.CurrentSeriesSummary
-                                       ?? matchup.HeadLine;
+                    // Whitespace guard: cn."Headline" is non-null in the schema
+                    // but could be empty/blank; treat empty as missing so the
+                    // fallback chain isn't suppressed.
+                    matchup.HeadLine = !string.IsNullOrWhiteSpace(canonical.Headline)
+                        ? canonical.Headline
+                        : !string.IsNullOrWhiteSpace(canonical.CurrentSeriesSummary)
+                            ? canonical.CurrentSeriesSummary
+                            : matchup.HeadLine;
 
                     var preview = previews
                         .Where(x => x.ContestId == matchup.ContestId &&

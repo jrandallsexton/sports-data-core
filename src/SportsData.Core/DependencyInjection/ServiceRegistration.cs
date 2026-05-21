@@ -239,6 +239,18 @@ namespace SportsData.Core.DependencyInjection
                 x.UsePostgreSqlStorage(options =>
                 {
                     options.UseNpgsqlConnection(connString);
+                }, new PostgreSqlStorageOptions
+                {
+                    // Long-running stream jobs (BaseballCompetitionStreamer, up to 5h
+                    // per CompetitionStreamerBase.MaxStreamDuration) must outlive
+                    // Hangfire's invisibility window or the storage layer re-fetches
+                    // the "abandoned" job and cancels the in-flight worker via its
+                    // linked CancellationToken. The default (30 min) caused every
+                    // baseball live-stream to be reaped mid-game on 2026-05-21 (see
+                    // Seq CorrelationId 1a80a1e6-02a3-4fa0-9ed9-291ed363beb9). Setting
+                    // this above MaxStreamDuration with margin keeps streaming jobs
+                    // owned by their original worker for the full game.
+                    InvisibilityTimeout = TimeSpan.FromHours(6)
                 });
                 x.UseTagsWithPostgreSql();
 

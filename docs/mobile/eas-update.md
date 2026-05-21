@@ -4,8 +4,11 @@ Companion to `expo-deployment-model.md`. That doc introduces EAS
 Update at a 30,000-ft level; this one is the rollout plan + steady-state
 playbook.
 
-Status: **planning** as of 2026-05-20. Currently zero of `expo-updates`,
-`runtimeVersion`, `updates.url`, or per-profile `channel` is wired up.
+Status: **configuration complete** as of 2026-05-20. `expo-updates`,
+`runtimeVersion`, `updates.url`, and per-profile `channel` are all
+wired up (steps 1–3 of the sequence below). The remaining work is
+the user-side EAS build per profile (step 4 onward) that gets the
+update-aware bundle onto TestFlight devices.
 
 ---
 

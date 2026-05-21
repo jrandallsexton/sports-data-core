@@ -7,7 +7,7 @@ they get picked up.
 Order within each section reflects rough priority, but only the
 **In flight** section is binding; everything else is just on deck.
 
-Last updated: 2026-05-21 (post dark-logo cascade for Contest Overview + Team Card)
+Last updated: 2026-05-21 (post #349 + #350 — dark-logo cascade complete on both platforms)
 
 ---
 
@@ -43,11 +43,10 @@ Last updated: 2026-05-21 (post dark-logo cascade for Contest Overview + Team Car
 - **Postponed / cancelled status handling** — mobile shows the raw
   status string in error color; web falls through to Scheduled
   markup. Pick one and apply on both. See blueprint "Known drift".
-- **Dark-mode logo variants** — MatchupCard, Contest Overview, and
-  Team Card all swap via `useColorScheme()` now. Web parity already
-  in place via `useTheme()`. Remaining surfaces (TeamRow expandable
-  schedule, headline banner, etc.) inherit the same fields when
-  added.
+- **Dark-mode logo variants** — done across MatchupCard, Contest
+  Overview header, Team Card on mobile (#348, #349) and ContestOverviewHeader + TeamCard on web (#350,
+  prior). Future surfaces that render a team logo inherit the
+  pattern via `logoUrlDark` / `logoUrlLight` on the existing DTOs.
 - **TeamRow expandable schedule** — web's TeamRow opens a per-team
   schedule on tap via `useTeamSchedule`; mobile's TeamRow has no
   equivalent.
@@ -55,9 +54,11 @@ Last updated: 2026-05-21 (post dark-logo cascade for Contest Overview + Team Car
   the card; mobile omits the slot entirely.
 - **ConfidencePicker integration** — confidence-points leagues work
   on web; mobile has no path to set a confidence score.
-- **Headline banner population** — confirm server-side that
-  `matchup.headLine` populates consistently across sports + states.
-  Today it appears only for some marquee games.
+- **Headline banner population** — addressed in #351:
+  GetMatchupsByContestIds.sql now joins CompetitionNote.Headline live;
+  API coalesces canonical Headline → baseball CurrentSeriesSummary →
+  frozen PickemGroupMatchup.Headline. Football marquee tags now refresh
+  live; baseball regular-season games show series state in the banner.
 
 ---
 

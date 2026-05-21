@@ -14,6 +14,20 @@ public class LeagueMatchupDto
     public string? Status { get; set; }
     public string? Broadcasts { get; set; }
 
+    /// <summary>
+    /// Marquee headline pulled live from CompetitionNote.Headline (Type=event).
+    /// Set for special games (bowl names, conference championships, postseason
+    /// designations). Null otherwise.
+    /// </summary>
+    public string? Headline { get; set; }
+
+    /// <summary>
+    /// Baseball-only series state snapshot (e.g. "BOS leads series 2-0"), pulled
+    /// from BaseballCompetition.CurrentSeriesSummary. Null on non-baseball
+    /// matchups and on baseball games not part of a current series.
+    /// </summary>
+    public string? CurrentSeriesSummary { get; set; }
+
     public string? Venue { get; set; }
     public string? VenueCity { get; set; }
     public string? VenueState { get; set; }

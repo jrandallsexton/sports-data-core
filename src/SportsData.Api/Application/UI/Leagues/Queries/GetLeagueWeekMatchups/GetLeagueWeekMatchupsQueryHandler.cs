@@ -210,6 +210,22 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     // Predictions, AiWinner, IsPreview*) stay below.
                     MatchupForPickDtoMapper.ApplyCanonical(matchup, canonical);
 
+                    // Headline priority: live CompetitionNote.Headline (marquee
+                    // tag — bowl/conf championship/postseason designation) wins,
+                    // baseball CurrentSeriesSummary is the regular-season fallback
+                    // (e.g. "BOS leads series 2-0"), frozen PickemGroupMatchup
+                    // value (already on matchup.HeadLine from the initial
+                    // projection) is the last-resort safety net for historical
+                    // leagues whose CompetitionNote may no longer resolve.
+                    // Whitespace guard: cn."Headline" is non-null in the schema
+                    // but could be empty/blank; treat empty as missing so the
+                    // fallback chain isn't suppressed.
+                    matchup.HeadLine = !string.IsNullOrWhiteSpace(canonical.Headline)
+                        ? canonical.Headline
+                        : !string.IsNullOrWhiteSpace(canonical.CurrentSeriesSummary)
+                            ? canonical.CurrentSeriesSummary
+                            : matchup.HeadLine;
+
                     var preview = previews
                         .Where(x => x.ContestId == matchup.ContestId &&
                                     x.RejectedUtc == null)

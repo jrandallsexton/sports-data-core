@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   Alert,
@@ -9,7 +8,9 @@ import {
 } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { useQueryClient } from '@tanstack/react-query';
+import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme, useThemeMode, type ThemeMode } from '@/src/lib/theme/ThemeContext';
+import { useTextSize, type TextSize } from '@/src/lib/textSize/TextSizeContext';
 import { getTheme } from '@/constants/Colors';
 import { auth } from '@/src/lib/firebase';
 import { useAuthStore } from '@/src/stores/authStore';
@@ -85,6 +86,12 @@ const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
   { value: 'system', label: 'System' },
 ];
 
+const TEXT_SIZE_OPTIONS: { value: TextSize; label: string }[] = [
+  { value: 'small', label: 'S' },
+  { value: 'medium', label: 'M' },
+  { value: 'large', label: 'L' },
+];
+
 // Device default — Hermes exposes Intl.DateTimeFormat().resolvedOptions().
 // We use this to pre-populate the picker when the user hasn't picked a tz
 // yet. We do NOT auto-save the device tz; the user must explicitly confirm.
@@ -102,6 +109,7 @@ export default function ProfileScreen() {
   const { user } = useAuthStore();
   const { data: me } = useCurrentUser();
   const { mode, setMode } = useThemeMode();
+  const { size: textSize, setSize: setTextSize } = useTextSize();
   const queryClient = useQueryClient();
 
   const deviceTz = useMemo(() => detectDeviceTimezone(), []);
@@ -201,6 +209,15 @@ export default function ProfileScreen() {
           />
           <Text style={[styles.sectionHint, { color: theme.textMuted }]}>
             System follows your device's light/dark setting.
+          </Text>
+          <SegmentedControl
+            value={textSize}
+            options={TEXT_SIZE_OPTIONS}
+            onChange={setTextSize}
+            accessibilityLabel="Text size"
+          />
+          <Text style={[styles.sectionHint, { color: theme.textMuted }]}>
+            Affects all in-app text. Header brand stays fixed.
           </Text>
         </View>
       </View>

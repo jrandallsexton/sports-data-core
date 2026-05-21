@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   View,
-  Text,
   TextInput,
   StyleSheet,
   KeyboardAvoidingView,
@@ -9,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { Text } from '@/src/components/ui/AppText';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';

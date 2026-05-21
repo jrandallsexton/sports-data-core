@@ -1,6 +1,7 @@
 import { Stack, useRouter } from 'expo-router';
-import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { useNavigationState } from '@react-navigation/native';
 import { getTheme } from '@/constants/Colors';

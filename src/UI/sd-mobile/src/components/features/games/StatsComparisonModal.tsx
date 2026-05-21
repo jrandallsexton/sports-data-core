@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import {
   Modal,
   View,
-  Text,
   ScrollView,
   TouchableOpacity,
   Image,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import type { Matchup, TeamComparisonData, TeamStatEntry } from '@/src/types/models';

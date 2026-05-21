@@ -179,6 +179,25 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                         switch (startOutcome)
                         {
                             case LiveStartOutcome.StartDetected:
+                                // The initial competitionDto fetch above happened while the
+                                // game was still STATUS_SCHEDULED, so ESPN had not yet
+                                // populated the live-data refs (Plays, Probability,
+                                // Situation, Leaders) on the parent EventCompetition
+                                // payload. Re-fetch now that the game is in progress so
+                                // GetPollingTargets returns real URIs instead of nulls.
+                                // Without this refresh, every poller logs "URI is null",
+                                // StartPollingWorkers spawns Active workers: 0, and the
+                                // monitoring loop runs silently for the full game.
+                                competitionDto = await GetCompetitionAsync(new Uri(externalId.SourceUrl), cancellationToken);
+                                if (competitionDto == null)
+                                {
+                                    _logger.LogError("Competition re-fetch after live start failed");
+                                    if (stream != null)
+                                    {
+                                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition re-fetch after live start failed");
+                                    }
+                                    return;
+                                }
                                 break;
 
                             case LiveStartOutcome.AlreadyFinal:

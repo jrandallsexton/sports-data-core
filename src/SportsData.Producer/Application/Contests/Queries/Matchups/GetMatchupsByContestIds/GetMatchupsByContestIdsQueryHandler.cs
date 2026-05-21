@@ -58,6 +58,7 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
 
         var streamTimes = await GetActiveStreamTimesAsync(query.ContestIds, cancellationToken);
         var probables = await GetProbablePitchersAsync(query.ContestIds, cancellationToken);
+        var seriesSummaries = await GetCurrentSeriesSummariesAsync(query.ContestIds, cancellationToken);
         foreach (var matchup in matchups)
         {
             matchup.StreamScheduledTimeUtc = streamTimes.GetValueOrDefault(matchup.ContestId);
@@ -67,9 +68,50 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
                 matchup.HomeProbablePitcher = pair.Home;
                 matchup.AwayProbablePitcher = pair.Away;
             }
+
+            matchup.CurrentSeriesSummary = seriesSummaries.GetValueOrDefault(matchup.ContestId);
         }
 
         return new Success<List<LeagueMatchupDto>>(matchups);
+    }
+
+    /// <summary>
+    /// Stitches MLB CurrentSeriesSummary onto the matchup result. Sport-gated:
+    /// only runs against BaseballDataContext (NFL/NCAAFB no-op without a round
+    /// trip). Mirrors the 2-phase stitch in <see cref="GetProbablePitchersAsync"/>.
+    /// A Contest can host multiple Competitions (doubleheaders); the snapshot is
+    /// locked-at-game-start per-Competition so any non-null value is acceptable
+    /// — first match wins per ContestId.
+    /// </summary>
+    internal async Task<Dictionary<Guid, string>> GetCurrentSeriesSummariesAsync(
+        Guid[] contestIds,
+        CancellationToken cancellationToken)
+    {
+        if (_dbContext is not BaseballDataContext baseballCtx)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var rows = await baseballCtx.Competitions
+            .AsNoTracking()
+            .Where(c => contestIds.Contains(c.ContestId))
+            .Where(c => c.CurrentSeriesSummary != null)
+            .Select(c => new
+            {
+                c.ContestId,
+                c.CurrentSeriesSummary
+            })
+            .ToListAsync(cancellationToken);
+
+        var dict = new Dictionary<Guid, string>();
+        foreach (var r in rows)
+        {
+            if (!dict.ContainsKey(r.ContestId) && !string.IsNullOrWhiteSpace(r.CurrentSeriesSummary))
+            {
+                dict[r.ContestId] = r.CurrentSeriesSummary!;
+            }
+        }
+        return dict;
     }
 
     /// <summary>

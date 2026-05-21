@@ -2,6 +2,7 @@ SELECT
   c."SeasonWeekId" AS "SeasonWeekId",
   c."Id" AS "ContestId",
   c."StartDateUtc" AS "StartDateUtc",
+  cn."Headline" AS "Headline",
   REPLACE(cs."StatusDescription", ' ', '') AS "Status",
   STRING_AGG(cb."MediaName", ' | ') AS "Broadcasts",
   v."Name" AS "Venue", v."City" AS "VenueCity", v."State" AS "VenueState",
@@ -33,6 +34,7 @@ SELECT
 FROM public."Contest" c
 LEFT JOIN public."Venue" v ON v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
+LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'
 LEFT JOIN public."CompetitionBroadcast" cb ON cb."CompetitionId" = comp."Id"
 LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
 LEFT JOIN LATERAL (
@@ -114,7 +116,7 @@ LEFT JOIN LATERAL (
 LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdHome ON fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 WHERE c."Id" = ANY(@ContestIds)
 GROUP BY
-  c."SeasonWeekId", c."Id", c."StartDateUtc", cs."StatusDescription",
+  c."SeasonWeekId", c."Id", c."StartDateUtc", cn."Headline", cs."StatusDescription",
   v."Name", v."City", v."State",
   fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id",
   flAway."Uri", fslAway."Uri", flDarkAway."Uri", fslDarkAway."Uri", fAway."Slug",

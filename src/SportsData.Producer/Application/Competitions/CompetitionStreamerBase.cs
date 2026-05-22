@@ -313,8 +313,17 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
             return json.FromJson<TCompetitionDto>();
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // Genuine caller-initiated cancellation — propagate so the outer
+            // OperationCanceledException catch in ExecuteAsync runs.
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Includes HttpClient.Timeout (TaskCanceledException with no caller-token
+            // cancellation), socket errors, JSON parse failures. Surface as a null
+            // result so the polling loops' consecutiveFailures logic handles it.
             _logger.LogError(ex, "Failed to get competition from {Uri}", uri);
             return null;
         }
@@ -334,8 +343,17 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
             return json.FromJson<EspnEventCompetitionStatusDtoBase>();
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // Genuine caller-initiated cancellation — propagate so the outer
+            // OperationCanceledException catch in ExecuteAsync runs.
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Includes HttpClient.Timeout (TaskCanceledException with no caller-token
+            // cancellation), socket errors, JSON parse failures. Surface as a null
+            // result so the polling loops' consecutiveFailures logic handles it.
             _logger.LogError(ex, "Failed to get status from {Uri}", uri);
             return null;
         }

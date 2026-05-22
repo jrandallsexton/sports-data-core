@@ -18,11 +18,20 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
 {
     private readonly Mock<IProvideContests> _contestClientMock = new();
 
+    // Fixed "now" for any test-seeded timestamps. Using IDateTimeProvider
+    // (via AutoMocker) instead of DateTime.UtcNow keeps test-seeded entities
+    // deterministic per CLAUDE.md guidance.
+    private static readonly DateTime FixedUtcNow = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     public ContestScoringProcessorTests()
     {
         Mocker.GetMock<IContestClientFactory>()
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_contestClientMock.Object);
+
+        Mocker.GetMock<IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(FixedUtcNow);
     }
     [Fact]
     public async Task Process_WithValidMatchupResult_ScoresEachPick()
@@ -244,7 +253,7 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
             .With(x => x.ContestId, contestId)
             .With(x => x.PickemGroupId, groupId)
             .With(x => x.Group, group)
-            .With(x => x.ScoredAt, (DateTime?)DateTime.UtcNow)
+            .With(x => x.ScoredAt, (DateTime?)FixedUtcNow)
             .CreateMany(2)
             .ToList();
 

@@ -1,92 +1,71 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Core.Infrastructure.Clients.Season;
-using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Jobs
 {
+    /// <summary>
+    /// Daily backstop for the live contest-scoring path.
+    ///
+    /// Primary scoring trigger is event-driven (Producer publishes
+    /// <c>ContestCompleted</c> on STATUS_FINAL → API <c>ContestCompletedHandler</c>
+    /// enqueues <see cref="ContestScoringProcessor"/>). This job is the
+    /// safety net for events lost in transit (broker outage, consumer pod
+    /// restart, admin replay races, etc.).
+    ///
+    /// Sport-agnostic by construction: we enqueue a <see cref="ScoreContestCommand"/>
+    /// for every distinct contest that still has unscored picks, regardless of
+    /// sport. The processor (PR-N+1) resolves sport per-contest via
+    /// <c>PickemGroup.Sport</c>, checks finalization through the sport-specific
+    /// <c>ContestClient</c>, and short-circuits cleanly when there's nothing
+    /// to do — so this job stays a thin "enqueue all candidates" pass.
+    /// </summary>
     public class ContestScoringJob : IAmARecurringJob
     {
         private readonly ILogger<ContestScoringJob> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly ISeasonClientFactory _seasonClientFactory;
-        private readonly IContestClientFactory _contestClientFactory;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly Guid _correlationId = Guid.NewGuid();
 
         public ContestScoringJob(
             ILogger<ContestScoringJob> logger,
             AppDataContext dataContext,
-            ISeasonClientFactory seasonClientFactory,
-            IContestClientFactory contestClientFactory,
             IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _seasonClientFactory = seasonClientFactory;
-            _contestClientFactory = contestClientFactory;
             _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task ExecuteAsync()
         {
             using (_logger.BeginScope(new Dictionary<string, object>
-                   {
-                       ["CorrelationId"] = _correlationId
-                    }))
+            {
+                ["CorrelationId"] = _correlationId
+            }))
             {
                 _logger.LogInformation("{MethodName} Began", nameof(ContestScoringJob));
 
-                await ExecuteInternal();
-            }
-        }
-
-        private async Task ExecuteInternal()
-        {
-            // get the current week
-            // TODO: multi-sport
-            var weeksResult = await _seasonClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetCurrentAndLastSeasonWeeks();
-            if (!weeksResult.IsSuccess)
-            {
-                _logger.LogWarning("Failed to retrieve season weeks from Producer. Will retry on next run.");
-                return;
-            }
-
-            var seasonWeeks = weeksResult.Value;
-
-            foreach (var seasonWeek in seasonWeeks)
-            {
-                // get a distinct list of all contests associated with UserPick records that have not been scored
                 var unscoredContestIds = await _dataContext.UserPicks
                     .Where(p => p.ScoredAt == null)
                     .Select(p => p.ContestId)
                     .Distinct()
                     .ToListAsync();
 
-                // get a list of all contests for the week that have been finalized
-                var finalizedResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
-                    .GetFinalizedContestIds(seasonWeek.Id);
-                if (!finalizedResult.IsSuccess)
-                {
-                    _logger.LogWarning("Failed to retrieve finalized contests for week {WeekId}. Skipping.", seasonWeek.Id);
-                    continue;
-                }
-                var contestIdsReadyToScore = finalizedResult.Value;
+                _logger.LogInformation(
+                    "Found {Count} distinct contests with unscored picks. Enqueuing scoring for each.",
+                    unscoredContestIds.Count);
 
-                // determine if they have been enriched
-                var contestIdsToScore = unscoredContestIds
-                    .Where(x => contestIdsReadyToScore.Contains(x));
-
-                // send them each for scoring (generating UserPick points)
-                foreach (var contestId in contestIdsToScore)
+                foreach (var contestId in unscoredContestIds)
                 {
-                    var cmd = new ScoreContestCommand(contestId);
+                    var cmd = new ScoreContestCommand(contestId, _correlationId);
                     _backgroundJobProvider.Enqueue<IScoreContests>(p => p.Process(cmd));
                 }
+
+                _logger.LogInformation("{MethodName} Ended", nameof(ContestScoringJob));
             }
         }
     }

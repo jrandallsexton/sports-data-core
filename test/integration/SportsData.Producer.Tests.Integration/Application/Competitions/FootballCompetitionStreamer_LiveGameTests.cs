@@ -104,16 +104,19 @@ public class FootballCompetitionStreamer_LiveGameTests : IClassFixture<Integrati
             CorrelationId = Guid.NewGuid()
         };
 
-        // Create the streamer with test dependencies
+        // Create the streamer with test dependencies. IEventBus is the
+        // test-provided instance so the test can observe published messages;
+        // IMessageDeliveryScope comes from the DI container as normal
+        // (AsyncLocal-backed, thread-safe).
         var logger = _serviceProvider.GetRequiredService<ILogger<FootballCompetitionStreamer>>();
-        var baseScopeFactory = _serviceProvider.GetRequiredService<IServiceScopeFactory>();
-        var scopeFactory = new EventBusOverrideScopeFactory(baseScopeFactory, eventBus);
+        var deliveryScope = _serviceProvider.GetRequiredService<IMessageDeliveryScope>();
         var dateTimeProvider = _serviceProvider.GetRequiredService<IDateTimeProvider>();
         var sut = new FootballCompetitionStreamer(
             logger,
             _dataContext,
             httpFactory,
-            scopeFactory,
+            eventBus,
+            deliveryScope,
             dateTimeProvider);
         
         // Act - Run the complete game stream
@@ -404,57 +407,6 @@ public class TestHttpClientFactory : IHttpClientFactory
     }
     
     public HttpClient CreateClient(string name) => _httpClient;
-}
-
-/// <summary>
-/// Wraps an existing IServiceScopeFactory so every scope it produces resolves
-/// IEventBus to a test-provided instance, while delegating all other service
-/// resolution to the underlying scope. This lets a test observe publishes that
-/// CompetitionStreamerBase performs from inside per-poll DI scopes — a local
-/// TestEventBus instance is otherwise invisible to scoped resolution.
-/// </summary>
-public sealed class EventBusOverrideScopeFactory : IServiceScopeFactory
-{
-    private readonly IServiceScopeFactory _inner;
-    private readonly IEventBus _eventBusOverride;
-
-    public EventBusOverrideScopeFactory(IServiceScopeFactory inner, IEventBus eventBusOverride)
-    {
-        _inner = inner;
-        _eventBusOverride = eventBusOverride;
-    }
-
-    public IServiceScope CreateScope() => new OverrideScope(_inner.CreateScope(), _eventBusOverride);
-
-    private sealed class OverrideScope : IServiceScope
-    {
-        private readonly IServiceScope _inner;
-
-        public OverrideScope(IServiceScope inner, IEventBus eventBusOverride)
-        {
-            _inner = inner;
-            ServiceProvider = new OverrideProvider(inner.ServiceProvider, eventBusOverride);
-        }
-
-        public IServiceProvider ServiceProvider { get; }
-
-        public void Dispose() => _inner.Dispose();
-    }
-
-    private sealed class OverrideProvider : IServiceProvider
-    {
-        private readonly IServiceProvider _inner;
-        private readonly IEventBus _eventBusOverride;
-
-        public OverrideProvider(IServiceProvider inner, IEventBus eventBusOverride)
-        {
-            _inner = inner;
-            _eventBusOverride = eventBusOverride;
-        }
-
-        public object? GetService(Type serviceType)
-            => serviceType == typeof(IEventBus) ? _eventBusOverride : _inner.GetService(serviceType);
-    }
 }
 
 /// <summary>

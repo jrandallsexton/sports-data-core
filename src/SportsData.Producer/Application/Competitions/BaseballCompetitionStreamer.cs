@@ -1,6 +1,5 @@
-using Microsoft.Extensions.DependencyInjection;
-
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Producer.Infrastructure.Data.Baseball;
 
@@ -19,9 +18,10 @@ public class BaseballCompetitionStreamer : CompetitionStreamerBase<EspnBaseballE
         ILogger<BaseballCompetitionStreamer> logger,
         BaseballDataContext dataContext,
         IHttpClientFactory httpClientFactory,
-        IServiceScopeFactory scopeFactory,
+        IEventBus eventBus,
+        IMessageDeliveryScope deliveryScope,
         IDateTimeProvider dateTimeProvider)
-        : base(logger, dataContext, httpClientFactory, scopeFactory, dateTimeProvider)
+        : base(logger, dataContext, httpClientFactory, eventBus, deliveryScope, dateTimeProvider)
     {
     }
 

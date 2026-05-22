@@ -10,6 +10,7 @@ using Moq;
 using Moq.Protected;
 
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Competitions;
@@ -488,9 +489,10 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
             ILogger<FootballCompetitionStreamer> logger,
             FootballDataContext dataContext,
             IHttpClientFactory httpClientFactory,
-            IServiceScopeFactory scopeFactory,
+            IEventBus eventBus,
+            IMessageDeliveryScope deliveryScope,
             IDateTimeProvider dateTimeProvider)
-            : base(logger, dataContext, httpClientFactory, scopeFactory, dateTimeProvider)
+            : base(logger, dataContext, httpClientFactory, eventBus, deliveryScope, dateTimeProvider)
         {
         }
 

@@ -50,28 +50,33 @@ namespace SportsData.Api.Tests.Unit.Application.Events
             // the method call shape, command type, or field wiring.
             background.Verify(x => x.Enqueue<IScoreContests>(
                 It.Is<Expression<Func<IScoreContests, Task>>>(expr =>
-                    ScoreContestCommandFromExpression(expr) != null
-                    && ScoreContestCommandFromExpression(expr)!.ContestId == contestId
-                    && ScoreContestCommandFromExpression(expr)!.CorrelationId == correlationId
-                )),
+                    EnqueueInvokesProcessWith(expr, contestId, correlationId))),
                 Times.Once);
         }
 
         /// <summary>
-        /// Compiles and evaluates the single argument of a
-        /// <c>p =&gt; p.Process(cmd)</c> expression to extract the captured
-        /// <see cref="ScoreContestCommand"/> instance. Returns null when the
-        /// expression isn't shaped as expected (wrong method, wrong arity, or
-        /// non-<see cref="ScoreContestCommand"/> argument).
+        /// True iff <paramref name="expr"/> is shaped as
+        /// <c>p =&gt; p.Process(cmd)</c> where <c>cmd</c> is a
+        /// <see cref="ScoreContestCommand"/> whose <c>ContestId</c> and
+        /// <c>CorrelationId</c> match the expected values. The argument
+        /// expression is compiled and evaluated exactly once so the predicate
+        /// inside <c>It.Is&lt;...&gt;</c> stays a single helper call (the
+        /// expression-tree form of <c>It.Is</c> can't host a block-bodied
+        /// lambda with a local).
         /// </summary>
-        private static ScoreContestCommand? ScoreContestCommandFromExpression(
-            Expression<Func<IScoreContests, Task>> expr)
+        private static bool EnqueueInvokesProcessWith(
+            Expression<Func<IScoreContests, Task>> expr,
+            Guid expectedContestId,
+            Guid expectedCorrelationId)
         {
-            if (expr.Body is not MethodCallExpression call) return null;
-            if (call.Method.Name != nameof(IScoreContests.Process)) return null;
-            if (call.Arguments.Count != 1) return null;
+            if (expr.Body is not MethodCallExpression call) return false;
+            if (call.Method.Name != nameof(IScoreContests.Process)) return false;
+            if (call.Arguments.Count != 1) return false;
 
-            return Expression.Lambda<Func<ScoreContestCommand>>(call.Arguments[0]).Compile()();
+            var cmd = Expression.Lambda<Func<ScoreContestCommand>>(call.Arguments[0]).Compile()();
+            return cmd != null
+                && cmd.ContestId == expectedContestId
+                && cmd.CorrelationId == expectedCorrelationId;
         }
     }
 }

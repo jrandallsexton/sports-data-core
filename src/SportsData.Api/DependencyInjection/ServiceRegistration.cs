@@ -293,10 +293,13 @@ namespace SportsData.Api.DependencyInjection
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 
+            // Daily primary trigger. Can't be event-driven — matchups must
+            // be generated BEFORE games happen. Daily is sufficient since
+            // week boundaries move at most once per week per sport.
             recurringJobManager.AddOrUpdate<MatchupScheduler>(
                 nameof(MatchupScheduler),
                 job => job.ExecuteAsync(),
-                Cron.Weekly);
+                Cron.Daily(6));
 
             return services;
         }

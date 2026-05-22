@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data;
@@ -10,6 +10,22 @@ using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Jobs
 {
+    /// <summary>
+    /// Generates next-week PickemGroupWeek + matchup-schedule jobs for every
+    /// active league.
+    ///
+    /// Sport-agnostic by construction: discovers the active sport list at
+    /// runtime from <c>PickemGroups.Select(g => g.Sport).Distinct()</c>, then
+    /// resolves each sport's current week through its own
+    /// <see cref="ISeasonClientFactory"/>-routed client. Sports with no active
+    /// leagues are skipped; sports whose Producer can't report a current week
+    /// (offseason, transient failure) are skipped with a warning.
+    ///
+    /// This is the only scoring/scheduling job NOT in the event-driven primary
+    /// path — matchups must be generated BEFORE games happen, so this stays a
+    /// cron-driven primary. Daily cadence is sufficient since week boundaries
+    /// move at most once per week per sport.
+    /// </summary>
     public class MatchupScheduler : IAmARecurringJob
     {
         private readonly ILogger<MatchupScheduler> _logger;
@@ -31,20 +47,45 @@ namespace SportsData.Api.Application.Jobs
 
         public async Task ExecuteAsync()
         {
-            // get the current week
-            // TODO: multi-sport — resolve sport from context instead of defaulting
-            var result = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek();
-            var currentWeek = result.IsSuccess ? result.Value : null;
+            _logger.LogInformation("{JobName} Began", nameof(MatchupScheduler));
+
+            // Discover sports with at least one league. Adding a new sport
+            // becomes "create a league" — no code change to this job.
+            var activeSports = await _dataContext.PickemGroups
+                .Select(g => g.Sport)
+                .Distinct()
+                .ToListAsync();
+
+            _logger.LogInformation(
+                "Found {Count} active sport(s) with leagues: {Sports}",
+                activeSports.Count, string.Join(", ", activeSports));
+
+            foreach (var sport in activeSports)
+            {
+                await ScheduleForSportAsync(sport);
+            }
+
+            _logger.LogInformation("{JobName} Ended", nameof(MatchupScheduler));
+        }
+
+        private async Task ScheduleForSportAsync(Sport sport)
+        {
+            var weekResult = await _seasonClientFactory.Resolve(sport).GetCurrentSeasonWeek();
+            var currentWeek = weekResult.IsSuccess ? weekResult.Value : null;
 
             if (currentWeek is null)
             {
-                _logger.LogWarning("Current week could not be found; skipping matchup scheduling");
+                _logger.LogWarning(
+                    "Current week could not be resolved for {Sport}; skipping matchup scheduling for this sport.",
+                    sport);
                 return;
             }
 
-            // find all PickemGroup entities who do not yet have a PickemGroupWeek for this week
+            // Only this sport's leagues. Loading Weeks for the ordinal lookup
+            // below + the existence check.
             var groups = await _dataContext.PickemGroups
                 .Include(x => x.Weeks)
+                .Where(x => x.Sport == sport)
                 .OrderBy(x => x.CreatedUtc)
                 .ToListAsync();
 

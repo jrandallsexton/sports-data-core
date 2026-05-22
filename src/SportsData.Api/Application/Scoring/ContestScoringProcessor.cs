@@ -44,7 +44,6 @@ namespace SportsData.Api.Application.Scoring
             // been scored. Skip the Producer round-trip and per-pick iteration when
             // there is nothing left to do.
             var hasUnscoredPicks = await _dataContext.UserPicks
-                .AsNoTracking()
                 .AnyAsync(p => p.ContestId == command.ContestId && p.ScoredAt == null);
 
             if (!hasUnscoredPicks)
@@ -61,7 +60,6 @@ namespace SportsData.Api.Application.Scoring
             // PickemGroup. The (Sport?) projection disambiguates "no row" from
             // "row with Sport.All (== 0)".
             var sport = await _dataContext.PickemGroupMatchups
-                .AsNoTracking()
                 .Where(m => m.ContestId == command.ContestId)
                 .Join(_dataContext.PickemGroups,
                     m => m.GroupId,

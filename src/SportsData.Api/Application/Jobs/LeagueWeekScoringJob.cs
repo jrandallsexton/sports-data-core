@@ -2,35 +2,40 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Core.Infrastructure.Clients.Season;
-using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common.Jobs;
 
 namespace SportsData.Api.Application.Jobs
 {
     /// <summary>
-    /// Recurring job that ensures all league weeks with finalized contests are scored.
-    /// Automatically detects and fills gaps in league week results.
+    /// Daily backstop for the leaderboard-scoring path.
+    ///
+    /// Primary trigger is the tail call inside
+    /// <see cref="ContestScoringProcessor"/>: after picks for a contest are
+    /// scored, the processor invokes
+    /// <see cref="ILeagueWeekScoringService.ScoreLeagueWeekAsync"/> for each
+    /// (league, year, week) tuple that had picks in that contest. This job
+    /// catches league weeks where the tail call failed (e.g., a transient
+    /// exception or pod restart between contest scoring and league-week
+    /// scoring).
+    ///
+    /// Sport-agnostic by construction: the staleness predicate only looks at
+    /// <c>UserPick.ScoredAt</c> and <c>PickemGroupWeekResult.CalculatedUtc</c>
+    /// — no sport-specific endpoints or week semantics. <see cref="ILeagueWeekScoringService"/>
+    /// itself is already sport-neutral.
     /// </summary>
     public class LeagueWeekScoringJob : IAmARecurringJob
     {
         private readonly ILogger<LeagueWeekScoringJob> _logger;
         private readonly AppDataContext _dataContext;
-        private readonly ISeasonClientFactory _seasonClientFactory;
-        private readonly IContestClientFactory _contestClientFactory;
         private readonly ILeagueWeekScoringService _leagueWeekScoringService;
 
         public LeagueWeekScoringJob(
             ILogger<LeagueWeekScoringJob> logger,
             AppDataContext dataContext,
-            ISeasonClientFactory seasonClientFactory,
-            IContestClientFactory contestClientFactory,
             ILeagueWeekScoringService leagueWeekScoringService)
         {
             _logger = logger;
             _dataContext = dataContext;
-            _seasonClientFactory = seasonClientFactory;
-            _contestClientFactory = contestClientFactory;
             _leagueWeekScoringService = leagueWeekScoringService;
         }
 
@@ -40,113 +45,84 @@ namespace SportsData.Api.Application.Jobs
 
             try
             {
-                // Get current and previous season weeks
-                // TODO: multi-sport
-                var weeksResult = await _seasonClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetCurrentAndLastSeasonWeeks();
-                if (!weeksResult.IsSuccess)
-            {
-                _logger.LogWarning("Failed to retrieve season weeks from Producer. Will retry on next run.");
-                return;
-            }
+                // For each league week with any scored picks, find the most-recently-
+                // scored pick. Pairs (league, year, week) → max UserPick.ScoredAt.
+                var pickStatusByLeagueWeek = await _dataContext.PickemGroupMatchups
+                    .Join(_dataContext.UserPicks.Where(p => p.ScoredAt != null),
+                        m => new { m.ContestId, GroupId = m.GroupId },
+                        p => new { p.ContestId, GroupId = p.PickemGroupId },
+                        (m, p) => new { GroupId = m.GroupId, m.SeasonYear, m.SeasonWeek, p.ScoredAt })
+                    .GroupBy(x => new { x.GroupId, x.SeasonYear, x.SeasonWeek })
+                    .Select(g => new
+                    {
+                        g.Key.GroupId,
+                        g.Key.SeasonYear,
+                        g.Key.SeasonWeek,
+                        LatestPickScored = g.Max(x => x.ScoredAt)
+                    })
+                    .ToListAsync();
 
-            var seasonWeeks = weeksResult.Value;
+                // For each league week with any result row, find the most-recent
+                // calculation. Pairs (league, year, week) → max
+                // PickemGroupWeekResult.CalculatedUtc.
+                var resultStatusByLeagueWeek = await _dataContext.PickemGroupWeekResults
+                    .GroupBy(r => new { r.PickemGroupId, r.SeasonYear, r.SeasonWeek })
+                    .Select(g => new
+                    {
+                        GroupId = g.Key.PickemGroupId,
+                        g.Key.SeasonYear,
+                        g.Key.SeasonWeek,
+                        LatestCalc = g.Max(r => (DateTime?)r.CalculatedUtc)
+                    })
+                    .ToListAsync();
 
-                foreach (var seasonWeek in seasonWeeks)
+                var resultLookup = resultStatusByLeagueWeek.ToDictionary(
+                    r => (r.GroupId, r.SeasonYear, r.SeasonWeek),
+                    r => r.LatestCalc);
+
+                // Stale = pick scored more recently than the last leaderboard
+                // calculation, OR no result row exists yet.
+                var staleLeagueWeeks = pickStatusByLeagueWeek
+                    .Where(p =>
+                    {
+                        var lastCalc = resultLookup.GetValueOrDefault((p.GroupId, p.SeasonYear, p.SeasonWeek));
+                        return lastCalc == null
+                            || (p.LatestPickScored.HasValue && p.LatestPickScored > lastCalc);
+                    })
+                    .ToList();
+
+                _logger.LogInformation(
+                    "Found {Count} stale league weeks needing leaderboard rescore.",
+                    staleLeagueWeeks.Count);
+
+                var successCount = 0;
+                var failureCount = 0;
+
+                foreach (var lw in staleLeagueWeeks)
                 {
-                    _logger.LogInformation(
-                        "Processing season year={Year}, week={Week}",
-                        seasonWeek.SeasonYear,
-                        seasonWeek.WeekNumber);
-
-                    // Get all leagues that have matchups for this week
-                    var leagueWeeks = await _dataContext.PickemGroupMatchups
-                        .Where(m => m.SeasonYear == seasonWeek.SeasonYear && m.SeasonWeek == seasonWeek.WeekNumber)
-                        .Select(m => new { m.GroupId, m.SeasonYear, m.SeasonWeek })
-                        .Distinct()
-                        .ToListAsync();
-
-                    _logger.LogInformation(
-                        "Found {Count} leagues with matchups for week {Week}",
-                        leagueWeeks.Count,
-                        seasonWeek.WeekNumber);
-
-                    // Fetch finalized contests once per season week (shared across all leagues)
-                    var finalizedResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa)
-                        .GetFinalizedContestIds(seasonWeek.Id);
-                    if (!finalizedResult.IsSuccess)
+                    try
                     {
-                        _logger.LogWarning("Failed to retrieve finalized contests for week {WeekId}. Skipping.", seasonWeek.Id);
-                        continue;
+                        _logger.LogInformation(
+                            "Rescoring league week: leagueId={LeagueId}, year={Year}, week={Week}",
+                            lw.GroupId, lw.SeasonYear, lw.SeasonWeek);
+
+                        await _leagueWeekScoringService.ScoreLeagueWeekAsync(
+                            lw.GroupId, lw.SeasonYear, lw.SeasonWeek);
+                        successCount++;
                     }
-                    var finalizedContestIds = finalizedResult.Value;
-
-                    foreach (var leagueWeek in leagueWeeks)
+                    catch (Exception ex)
                     {
-                        try
-                        {
-                            // Check if this league week has been scored recently
-                            var lastCalculated = await _dataContext.PickemGroupWeekResults
-                                .Where(r =>
-                                    r.PickemGroupId == leagueWeek.GroupId &&
-                                    r.SeasonYear == leagueWeek.SeasonYear &&
-                                    r.SeasonWeek == leagueWeek.SeasonWeek)
-                                .MaxAsync(r => (DateTime?)r.CalculatedUtc);
-
-                            // Check if all contests for this week are finalized
-                            var allContestIds = await _dataContext.PickemGroupMatchups
-                                .Where(m =>
-                                    m.GroupId == leagueWeek.GroupId &&
-                                    m.SeasonYear == leagueWeek.SeasonYear &&
-                                    m.SeasonWeek == leagueWeek.SeasonWeek)
-                                .Select(m => m.ContestId)
-                                .ToListAsync();
-
-                            var allFinalized = allContestIds.All(id => finalizedContestIds.Contains(id));
-
-                            // Score if:
-                            // 1. Never scored (lastCalculated == null), OR
-                            // 2. All contests are finalized and it's been more than 1 hour since last calculation
-                            var shouldScore = lastCalculated == null || 
-                                (allFinalized && lastCalculated < DateTime.UtcNow.AddHours(-1));
-
-                            if (shouldScore)
-                            {
-                                _logger.LogInformation(
-                                    "Scoring league week: leagueId={LeagueId}, year={Year}, week={Week}, reason={Reason}",
-                                    leagueWeek.GroupId,
-                                    leagueWeek.SeasonYear,
-                                    leagueWeek.SeasonWeek,
-                                    lastCalculated == null ? "never scored" : "contests finalized");
-
-                                await _leagueWeekScoringService.ScoreLeagueWeekAsync(
-                                    leagueWeek.GroupId,
-                                    leagueWeek.SeasonYear,
-                                    leagueWeek.SeasonWeek);
-                            }
-                            else
-                            {
-                                _logger.LogDebug(
-                                    "Skipping league week (already scored): leagueId={LeagueId}, year={Year}, week={Week}, lastCalculated={LastCalculated}",
-                                    leagueWeek.GroupId,
-                                    leagueWeek.SeasonYear,
-                                    leagueWeek.SeasonWeek,
-                                    lastCalculated);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(
-                                ex,
-                                "Error scoring league week: leagueId={LeagueId}, year={Year}, week={Week}",
-                                leagueWeek.GroupId,
-                                leagueWeek.SeasonYear,
-                                leagueWeek.SeasonWeek);
-                            // Continue processing other leagues
-                        }
+                        _logger.LogError(
+                            ex,
+                            "Error rescoring league week: leagueId={LeagueId}, year={Year}, week={Week}",
+                            lw.GroupId, lw.SeasonYear, lw.SeasonWeek);
+                        failureCount++;
                     }
                 }
 
-                _logger.LogInformation("Completed {JobName}", nameof(LeagueWeekScoringJob));
+                _logger.LogInformation(
+                    "Completed {JobName}: {Success} successful, {Failure} failed",
+                    nameof(LeagueWeekScoringJob), successCount, failureCount);
             }
             catch (Exception ex)
             {

@@ -271,15 +271,22 @@ namespace SportsData.Api.DependencyInjection
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
 
+            // Daily backstop. Primary scoring trigger is event-driven
+            // (Producer ContestCompleted → API ContestCompletedHandler enqueues
+            // ContestScoringProcessor); this catches events lost in transit.
             recurringJobManager.AddOrUpdate<ContestScoringJob>(
                 nameof(ContestScoringJob),
                 job => job.ExecuteAsync(),
-                Cron.Weekly);
+                Cron.Daily(9));
 
+            // Daily backstop. Primary trigger is the tail call inside
+            // ContestScoringProcessor; this catches league weeks where the
+            // tail leaderboard scoring failed. 15-min stagger so it runs
+            // after ContestScoringJob's enqueues have had time to process.
             recurringJobManager.AddOrUpdate<LeagueWeekScoringJob>(
                 nameof(LeagueWeekScoringJob),
                 job => job.ExecuteAsync(),
-                Cron.Weekly);
+                Cron.Daily(9, 15));
 
             recurringJobManager.AddOrUpdate<MatchupPreviewGenerator>(
                 nameof(MatchupPreviewGenerator),

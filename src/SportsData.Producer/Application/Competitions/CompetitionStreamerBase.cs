@@ -10,6 +10,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.Competitions;
 
@@ -96,13 +97,19 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
     public async Task ExecuteAsync(StreamCompetitionCommand command, CancellationToken cancellationToken)
     {
+        // RunId distinguishes individual executions of the same stream (Hangfire
+        // refire, admin replay, pod restart). The CorrelationId rebound below is
+        // CompetitionStream.Id and is stable across runs; RunId is fresh per run.
+        var runId = Guid.NewGuid();
+
         using (_logger.BeginScope(new Dictionary<string, object>
         {
             ["Sport"] = command.Sport,
             ["SeasonYear"] = command.SeasonYear,
             ["ContestId"] = command.ContestId,
             ["CorrelationId"] = command.CorrelationId,
-            ["CompetitionId"] = command.CompetitionId
+            ["CompetitionId"] = command.CompetitionId,
+            ["RunId"] = runId
         }))
         {
             _logger.LogInformation("Broadcasting job started for {@Command}", command);
@@ -142,120 +149,32 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 stream = await _dataContext.CompetitionStreams
                     .FirstOrDefaultAsync(x => x.CompetitionId == command.CompetitionId, cancellationToken);
 
-                if (stream != null)
-                {
-                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.AwaitingStart, cancellationToken);
-                }
-                else
+                if (stream == null)
                 {
                     _logger.LogError("No CompetitionStream record found for competition. Status tracking will be skipped.");
                     return;
                 }
 
-                var competitionDto = await GetCompetitionAsync(new Uri(externalId.SourceUrl), cancellationToken);
-                if (competitionDto == null)
+                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.AwaitingStart, cancellationToken);
+
+                // Rebind CorrelationId to stream.Id so a single Seq query finds
+                // every log line across Producer (streamer + document processors)
+                // and Provider (DocumentRequestedHandler + sourcing pipeline) for
+                // this stream's lifetime — including refires/restarts of the
+                // same stream. The DocumentRequested / ContestCompleted publishes
+                // also carry stream.Id as CorrelationId so downstream services
+                // see the same id in their resolved fallback chain.
+                using (_logger.BeginScope(new Dictionary<string, object>
                 {
-                    _logger.LogError("Competition fetch failed from ESPN");
-                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition fetch failed");
-                    return;
-                }
-
-                var statusUri = EspnUriMapper.CompetitionRefToCompetitionStatusRef(new Uri(externalId.SourceUrl));
-
-                var status = await GetStatusAsync(statusUri, cancellationToken);
-                if (status == null)
+                    ["CorrelationId"] = stream.Id,
+                    ["StreamId"] = stream.Id
+                }))
                 {
-                    _logger.LogError("Initial status fetch failed");
-                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Initial status fetch failed");
-                    return;
-                }
+                    _logger.LogInformation(
+                        "CompetitionStream loaded. StreamId={StreamId}; CorrelationId rebound from {PriorCorrelationId} to StreamId for the remainder of this run.",
+                        stream.Id, command.CorrelationId);
 
-                switch (status.Type.Name)
-                {
-                    case "STATUS_SCHEDULED":
-                        _logger.LogInformation("Competition is scheduled. Waiting for competition to start...");
-                        var startOutcome = await WaitForLiveStartAsync(statusUri, cancellationToken);
-                        switch (startOutcome)
-                        {
-                            case LiveStartOutcome.StartDetected:
-                                // The initial competitionDto fetch above happened while the
-                                // game was still STATUS_SCHEDULED, so ESPN had not yet
-                                // populated the live-data refs (Plays, Probability,
-                                // Situation, Leaders) on the parent EventCompetition
-                                // payload. Re-fetch now that the game is in progress so
-                                // GetPollingTargets returns real URIs instead of nulls.
-                                // Without this refresh, every poller logs "URI is null",
-                                // StartPollingWorkers spawns Active workers: 0, and the
-                                // monitoring loop runs silently for the full game.
-                                competitionDto = await GetCompetitionAsync(new Uri(externalId.SourceUrl), cancellationToken);
-                                if (competitionDto == null)
-                                {
-                                    _logger.LogError("Competition re-fetch after live start failed");
-                                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition re-fetch after live start failed");
-                                    return;
-                                }
-                                break;
-
-                            case LiveStartOutcome.AlreadyFinal:
-                                _logger.LogInformation("Competition went final while waiting for start. Skipping live polling.");
-                                await PublishContestCompletedAsync(command, competition.Contest!.SeasonWeekId, cancellationToken);
-                                stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
-                                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
-                                return;
-
-                            case LiveStartOutcome.Timeout:
-                                _logger.LogWarning("Live start was not detected within max stream duration. Aborting.");
-                                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Live start not detected within max stream duration");
-                                return;
-                        }
-                        break;
-
-                    case "STATUS_IN_PROGRESS":
-                        _logger.LogInformation("Competition already in progress. Starting workers immediately.");
-                        break;
-
-                    case "STATUS_FINAL":
-                        _logger.LogInformation("Competition already final. Skipping streaming.");
-                        await PublishContestCompletedAsync(command, competition.Contest!.SeasonWeekId, cancellationToken);
-                        stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
-                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
-                        return;
-
-                    default:
-                        // An unknown status string is anomalous data — bail rather than
-                        // optimistically spawning live workers against an unverified competition state.
-                        _logger.LogWarning("Unknown status type: {StatusType}. Aborting stream.", status.Type.Name);
-                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, $"Unknown status type: {status.Type.Name}");
-                        return;
-                }
-
-                _logger.LogInformation("Starting polling workers for live competition updates");
-
-                stream.StreamStartedUtc = _dateTimeProvider.UtcNow();
-                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Active, cancellationToken);
-
-                _workerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-                StartPollingWorkers(competitionDto, command, _workerCts.Token);
-
-                var pollOutcome = await PollWhileInProgressAsync(statusUri, _workerCts.Token);
-
-                _logger.LogInformation("Polling loop exited with outcome {Outcome}. Stopping workers gracefully.", pollOutcome);
-                if (pollOutcome == PollOutcome.Final)
-                {
-                    await PublishContestCompletedAsync(command, competition.Contest!.SeasonWeekId, cancellationToken);
-                }
-
-                stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
-                switch (pollOutcome)
-                {
-                    case PollOutcome.Final:
-                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
-                        break;
-
-                    case PollOutcome.Timeout:
-                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Stream exceeded max duration without STATUS_FINAL");
-                        break;
+                    await ExecuteWithStreamAsync(command, competition, externalId, stream, cancellationToken);
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -281,6 +200,128 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             {
                 await StopWorkersAsync();
             }
+        }
+    }
+
+    /// <summary>
+    /// Post-stream-load streaming lifecycle. Called from inside the nested log
+    /// scope in <see cref="ExecuteAsync"/> that rebinds CorrelationId to
+    /// <c>stream.Id</c>, so every log line written from here forward (including
+    /// from the polling loops + publish helpers) carries the stream-scoped
+    /// CorrelationId. Exceptions propagate to <see cref="ExecuteAsync"/>'s
+    /// outer try/catch.
+    /// </summary>
+    private async Task ExecuteWithStreamAsync(
+        StreamCompetitionCommand command,
+        CompetitionBase competition,
+        CompetitionExternalId externalId,
+        CompetitionStream stream,
+        CancellationToken cancellationToken)
+    {
+        var competitionDto = await GetCompetitionAsync(new Uri(externalId.SourceUrl), cancellationToken);
+        if (competitionDto == null)
+        {
+            _logger.LogError("Competition fetch failed from ESPN");
+            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition fetch failed");
+            return;
+        }
+
+        var statusUri = EspnUriMapper.CompetitionRefToCompetitionStatusRef(new Uri(externalId.SourceUrl));
+
+        var status = await GetStatusAsync(statusUri, cancellationToken);
+        if (status == null)
+        {
+            _logger.LogError("Initial status fetch failed");
+            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Initial status fetch failed");
+            return;
+        }
+
+        switch (status.Type.Name)
+        {
+            case "STATUS_SCHEDULED":
+                _logger.LogInformation("Competition is scheduled. Waiting for competition to start...");
+                var startOutcome = await WaitForLiveStartAsync(statusUri, cancellationToken);
+                switch (startOutcome)
+                {
+                    case LiveStartOutcome.StartDetected:
+                        // The initial competitionDto fetch above happened while the
+                        // game was still STATUS_SCHEDULED, so ESPN had not yet
+                        // populated the live-data refs (Plays, Probability,
+                        // Situation, Leaders) on the parent EventCompetition
+                        // payload. Re-fetch now that the game is in progress so
+                        // GetPollingTargets returns real URIs instead of nulls.
+                        // Without this refresh, every poller logs "URI is null",
+                        // StartPollingWorkers spawns Active workers: 0, and the
+                        // monitoring loop runs silently for the full game.
+                        competitionDto = await GetCompetitionAsync(new Uri(externalId.SourceUrl), cancellationToken);
+                        if (competitionDto == null)
+                        {
+                            _logger.LogError("Competition re-fetch after live start failed");
+                            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition re-fetch after live start failed");
+                            return;
+                        }
+                        break;
+
+                    case LiveStartOutcome.AlreadyFinal:
+                        _logger.LogInformation("Competition went final while waiting for start. Skipping live polling.");
+                        await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, cancellationToken);
+                        stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
+                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                        return;
+
+                    case LiveStartOutcome.Timeout:
+                        _logger.LogWarning("Live start was not detected within max stream duration. Aborting.");
+                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Live start not detected within max stream duration");
+                        return;
+                }
+                break;
+
+            case "STATUS_IN_PROGRESS":
+                _logger.LogInformation("Competition already in progress. Starting workers immediately.");
+                break;
+
+            case "STATUS_FINAL":
+                _logger.LogInformation("Competition already final. Skipping streaming.");
+                await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, cancellationToken);
+                stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
+                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                return;
+
+            default:
+                // An unknown status string is anomalous data — bail rather than
+                // optimistically spawning live workers against an unverified competition state.
+                _logger.LogWarning("Unknown status type: {StatusType}. Aborting stream.", status.Type.Name);
+                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, $"Unknown status type: {status.Type.Name}");
+                return;
+        }
+
+        _logger.LogInformation("Starting polling workers for live competition updates");
+
+        stream.StreamStartedUtc = _dateTimeProvider.UtcNow();
+        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Active, cancellationToken);
+
+        _workerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        StartPollingWorkers(competitionDto, stream.Id, command, _workerCts.Token);
+
+        var pollOutcome = await PollWhileInProgressAsync(statusUri, _workerCts.Token);
+
+        _logger.LogInformation("Polling loop exited with outcome {Outcome}. Stopping workers gracefully.", pollOutcome);
+        if (pollOutcome == PollOutcome.Final)
+        {
+            await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, cancellationToken);
+        }
+
+        stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
+        switch (pollOutcome)
+        {
+            case PollOutcome.Final:
+                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                break;
+
+            case PollOutcome.Timeout:
+                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Stream exceeded max duration without STATUS_FINAL");
+                break;
         }
     }
 
@@ -400,6 +441,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
     private void StartPollingWorkers(
         TCompetitionDto competitionDto,
+        Guid correlationId,
         StreamCompetitionCommand command,
         CancellationToken cancellationToken)
     {
@@ -416,7 +458,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             }
 
             SpawnPollingWorker(
-                () => PublishDocumentRequestAsync(refUri, docType, requiresParentId, command, cancellationToken),
+                () => PublishDocumentRequestAsync(correlationId, refUri, docType, requiresParentId, command, cancellationToken),
                 intervalSeconds,
                 docType,
                 cancellationToken);
@@ -431,6 +473,12 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
         var startTime = _dateTimeProvider.UtcNow();
         var consecutiveFailures = 0;
+        var tickCount = 0;
+        // Info heartbeat every Nth tick so Seq has proof-of-life during long
+        // in-game stretches without flooding at every 30s poll. At 10 ticks
+        // (~5 min) a healthy stream emits 12 heartbeats per hour — readable
+        // in Seq, distinguishable from a hang.
+        const int HeartbeatEveryNTicks = 10;
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -465,8 +513,21 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 return PollOutcome.Final;
             }
 
-            _logger.LogDebug("Competition still in progress. Status: {Status}, Clock: {Clock}",
-                status.Type.Name, status.DisplayClock);
+            tickCount++;
+            if (tickCount % HeartbeatEveryNTicks == 0)
+            {
+                _logger.LogInformation(
+                    "Streaming heartbeat. Tick={Tick}, ElapsedMin={ElapsedMin:F1}, Status={Status}, Clock={Clock}",
+                    tickCount,
+                    (_dateTimeProvider.UtcNow() - startTime).TotalMinutes,
+                    status.Type.Name,
+                    status.DisplayClock);
+            }
+            else
+            {
+                _logger.LogDebug("Competition still in progress. Status: {Status}, Clock: {Clock}",
+                    status.Type.Name, status.DisplayClock);
+            }
         }
 
         // Cancellation observed by the while-condition. Treat as timeout-equivalent
@@ -580,13 +641,14 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     /// the contest are unscored.
     /// </summary>
     private async Task PublishContestCompletedAsync(
+        Guid correlationId,
         StreamCompetitionCommand command,
         Guid? seasonWeekId,
         CancellationToken cancellationToken)
     {
         _logger.LogInformation(
-            "Publishing ContestCompleted for ContestId={ContestId}, CompetitionId={CompetitionId}",
-            command.ContestId, command.CompetitionId);
+            "Publishing ContestCompleted for ContestId={ContestId}, CompetitionId={CompetitionId}, CorrelationId={CorrelationId}",
+            command.ContestId, command.CompetitionId, correlationId);
 
         using var _ = _deliveryScope.Use(DeliveryMode.Direct);
         await _eventBus.Publish(new ContestCompleted(
@@ -596,8 +658,8 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             Ref: null,
             Sport: command.Sport,
             SeasonYear: command.SeasonYear,
-            CorrelationId: command.CorrelationId,
-            CausationId: command.CorrelationId
+            CorrelationId: correlationId,
+            CausationId: correlationId
         ), cancellationToken);
     }
 
@@ -616,6 +678,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     /// share the same injected instances without per-call scoping.
     /// </summary>
     private async Task PublishDocumentRequestAsync(
+        Guid correlationId,
         Uri refUri,
         DocumentType type,
         bool requiresParentId,
@@ -624,7 +687,12 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     {
         var parentId = requiresParentId ? command.CompetitionId.ToString() : null;
 
-        _logger.LogDebug("Publishing {Type} document request for {Uri}", type, refUri);
+        // Promoted from Debug to Info so steady-state worker activity is visible
+        // at default filtering. ~3-6 publishes/min total across all polling
+        // workers — not noisy. Closes the "healthy stream and hung stream look
+        // identical in Seq" observability gap that masked the silent-publish
+        // failure mode prior to PR #362.
+        _logger.LogInformation("Publishing {Type} document request for {Uri}", type, refUri);
 
         using var _ = _deliveryScope.Use(DeliveryMode.Direct);
         await _eventBus.Publish(new DocumentRequested(
@@ -636,8 +704,8 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             SeasonYear: command.SeasonYear,
             DocumentType: type,
             SourceDataProvider: command.DataProvider,
-            CorrelationId: command.CorrelationId,
-            CausationId: command.CorrelationId
+            CorrelationId: correlationId,
+            CausationId: correlationId
         ), cancellationToken);
     }
 

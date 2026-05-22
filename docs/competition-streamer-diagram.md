@@ -44,6 +44,8 @@ Notes:
 
 The entry point. All paths converge on the `finally { StopWorkersAsync(); }` at the bottom.
 
+**Code-structure note**: `ExecuteAsync` handles pre-stream-load validation (Competition load → externalId → CompetitionStream load), then opens a nested log scope that rebinds `CorrelationId` to `CompetitionStream.Id` and delegates to `ExecuteWithStreamAsync` for everything from the first `GetCompetitionAsync` call onward. The diagram below collapses both methods into one logical flow.
+
 ```mermaid
 flowchart TD
     Start([ExecuteAsync entry]) --> Scope[Begin log scope with<br/>Sport, SeasonYear, ContestId,<br/>CorrelationId, CompetitionId]
@@ -263,23 +265,33 @@ Both `catch` blocks dereference `stream` only after a null-check; if the `Compet
 
 ---
 
-## 8. Quick-reference: where each `Publishing` log line lives
+## 8. Quick-reference: where each domain event publish + key log line lives
 
-These are the only places this class emits domain events, useful when grep-ing Seq for proof-of-life.
+These are the places this class emits domain events or key proof-of-life log lines, useful when grep-ing Seq.
 
-| Source line (approx) | Log level | Log template | Conditions |
+| Source method | Log level | Log template | Conditions |
 |---|---|---|---|
-| `PublishContestCompletedAsync:605` | Info | `Publishing ContestCompleted for ContestId={ContestId}, CompetitionId={CompetitionId}` | Fires from three sites: `LiveStartOutcome.AlreadyFinal`, initial `STATUS_FINAL` switch arm, `PollOutcome.Final`. |
-| `PublishDocumentRequestAsync:636` | **Debug** | `Publishing {Type} document request for {Uri}` | Fires once per polling worker tick. **Not visible at default Info filtering** — be aware when searching Seq for streamer proof-of-life. |
+| `PublishContestCompletedAsync` | Info | `Publishing ContestCompleted for ContestId={ContestId}, CompetitionId={CompetitionId}, CorrelationId={CorrelationId}` | Fires from three sites: `LiveStartOutcome.AlreadyFinal`, initial `STATUS_FINAL` switch arm, `PollOutcome.Final`. |
+| `PublishDocumentRequestAsync` | Info | `Publishing {Type} document request for {Uri}` | Fires once per polling worker tick. Promoted from Debug → Info so steady-state worker activity is visible at default filtering. |
+| `PollWhileInProgressAsync` | Info | `Streaming heartbeat. Tick={Tick}, ElapsedMin={ElapsedMin:F1}, Status={Status}, Clock={Clock}` | Heartbeat every 10th tick (≈ every 5 min at 30s polling). 12/hour at default filtering — proof-of-life during long in-game stretches. |
+| `PollWhileInProgressAsync` | Debug | `Competition still in progress. Status: {Status}, Clock: {Clock}` | Every non-heartbeat tick. Verbose-mode only. |
+| `ExecuteAsync` (post stream load) | Info | `CompetitionStream loaded. StreamId={StreamId}; CorrelationId rebound from {PriorCorrelationId} to StreamId for the remainder of this run.` | Once per run, immediately after stream load. Pivot point for Seq searches: switch from `command.CorrelationId` to `stream.Id`. |
 
 ---
 
-## 9. Spots where the streamer is silent at Info level
+## 9. CorrelationId model + log scope
 
-These are the gaps where a healthy stream and a hung stream look identical at the default Seq filter:
+Two layers of log scope wrap the streaming work:
 
-- **Between worker spawn and the first STATUS change** — 3 `Worker started for ...` lines, then nothing until `Competition status is FINAL` minutes-to-hours later. The 30s `PollWhileInProgressAsync` heartbeat is `LogDebug`.
-- **Inside `PublishDocumentRequestAsync`** — `LogDebug` only.
-- **Workers' steady-state poll cycle** — only logs at success completion (`LogDebug`) or on error.
+1. **Outer scope** (whole `ExecuteAsync`): `Sport`, `SeasonYear`, `ContestId`, `CorrelationId = command.CorrelationId`, `CompetitionId`, `RunId = Guid.NewGuid()`. Carries early "Broadcasting job started" logs and the pre-stream-load validation.
+2. **Inner scope** (everything after `CompetitionStream` loads, including `ExecuteWithStreamAsync` and all downstream calls): overrides `CorrelationId` to `stream.Id` and adds `StreamId = stream.Id`. Every subsequent log line + every domain-event publish carries `stream.Id` as the correlation.
 
-Practical implication: any future change that adds an Info-level periodic heartbeat from either `PollWhileInProgressAsync` or `SpawnPollingWorker` would be a meaningful observability improvement. Today there is no Info-level proof-of-life between worker spawn and stream end — exactly why a stuck stream is hard to distinguish from a quiet one.
+`RunId` distinguishes execution boundaries (Hangfire refire, admin replay, pod restart) while `CorrelationId = stream.Id` stays stable across runs — so a single Seq query by `stream.Id` returns every log line for that stream's full lifetime including refires, while `RunId` lets you separate which run produced which line.
+
+Downstream propagation (already wired upstream of this class):
+- `PublishContestCompletedAsync` and `PublishDocumentRequestAsync` set `CorrelationId = stream.Id` on the emitted events.
+- `EventBusAdapter` auto-stamps `X-Correlation-Id` transport header from `EventBase.CorrelationId` (see `EventBus.cs:93-98`) — belt-and-suspenders alongside the body field.
+- Provider's `DocumentRequestedHandler` runs a 5-level fallback resolver (body → header → MT context → Activity TraceId → NewGuid+ERROR) and sets its own `BeginScope` from the resolved id. See `src/SportsData.Provider/Application/Documents/DocumentRequestedHandler.cs`.
+- Producer's `DocumentProcessorBase.ProcessAsync` opens its scope from `command.ToLogScope()` (carrying `CorrelationId`) and propagates it forward into any child `DocumentRequested` re-publishes.
+
+Net result: querying Seq by `stream.Id` returns the full Producer (streamer) → Provider (handler + ESPN fetch) → Producer (document processors) → API (consumers, e.g., `BaseballPlayCompletedHandler`) chain for the entire lifetime of one CompetitionStream.

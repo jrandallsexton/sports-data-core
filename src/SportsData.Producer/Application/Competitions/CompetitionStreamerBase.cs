@@ -27,7 +27,8 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     private readonly ILogger _logger;
     private readonly TeamSportDataContext _dataContext;
     private readonly HttpClient _httpClient;
-    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IEventBus _eventBus;
+    private readonly IMessageDeliveryScope _deliveryScope;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     private readonly List<Task> _activeWorkers = new();
@@ -64,13 +65,15 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
         ILogger logger,
         TeamSportDataContext dataContext,
         IHttpClientFactory httpClientFactory,
-        IServiceScopeFactory scopeFactory,
+        IEventBus eventBus,
+        IMessageDeliveryScope deliveryScope,
         IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
         _httpClient = httpClientFactory.CreateClient();
-        _scopeFactory = scopeFactory;
+        _eventBus = eventBus;
+        _deliveryScope = deliveryScope;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -145,17 +148,15 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 }
                 else
                 {
-                    _logger.LogWarning("No CompetitionStream record found for competition. Status tracking will be skipped.");
+                    _logger.LogError("No CompetitionStream record found for competition. Status tracking will be skipped.");
+                    return;
                 }
 
                 var competitionDto = await GetCompetitionAsync(new Uri(externalId.SourceUrl), cancellationToken);
                 if (competitionDto == null)
                 {
                     _logger.LogError("Competition fetch failed from ESPN");
-                    if (stream != null)
-                    {
-                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition fetch failed");
-                    }
+                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition fetch failed");
                     return;
                 }
 
@@ -165,10 +166,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 if (status == null)
                 {
                     _logger.LogError("Initial status fetch failed");
-                    if (stream != null)
-                    {
-                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Initial status fetch failed");
-                    }
+                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Initial status fetch failed");
                     return;
                 }
 
@@ -193,10 +191,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                                 if (competitionDto == null)
                                 {
                                     _logger.LogError("Competition re-fetch after live start failed");
-                                    if (stream != null)
-                                    {
-                                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition re-fetch after live start failed");
-                                    }
+                                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition re-fetch after live start failed");
                                     return;
                                 }
                                 break;
@@ -204,19 +199,13 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                             case LiveStartOutcome.AlreadyFinal:
                                 _logger.LogInformation("Competition went final while waiting for start. Skipping live polling.");
                                 await PublishContestCompletedAsync(command, competition.Contest!.SeasonWeekId, cancellationToken);
-                                if (stream != null)
-                                {
-                                    stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
-                                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
-                                }
+                                stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
+                                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
                                 return;
 
                             case LiveStartOutcome.Timeout:
                                 _logger.LogWarning("Live start was not detected within max stream duration. Aborting.");
-                                if (stream != null)
-                                {
-                                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Live start not detected within max stream duration");
-                                }
+                                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Live start not detected within max stream duration");
                                 return;
                         }
                         break;
@@ -228,31 +217,22 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                     case "STATUS_FINAL":
                         _logger.LogInformation("Competition already final. Skipping streaming.");
                         await PublishContestCompletedAsync(command, competition.Contest!.SeasonWeekId, cancellationToken);
-                        if (stream != null)
-                        {
-                            stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
-                            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
-                        }
+                        stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
+                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
                         return;
 
                     default:
                         // An unknown status string is anomalous data — bail rather than
                         // optimistically spawning live workers against an unverified competition state.
                         _logger.LogWarning("Unknown status type: {StatusType}. Aborting stream.", status.Type.Name);
-                        if (stream != null)
-                        {
-                            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, $"Unknown status type: {status.Type.Name}");
-                        }
+                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, $"Unknown status type: {status.Type.Name}");
                         return;
                 }
 
                 _logger.LogInformation("Starting polling workers for live competition updates");
 
-                if (stream != null)
-                {
-                    stream.StreamStartedUtc = _dateTimeProvider.UtcNow();
-                    await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Active, cancellationToken);
-                }
+                stream.StreamStartedUtc = _dateTimeProvider.UtcNow();
+                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Active, cancellationToken);
 
                 _workerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
@@ -265,19 +245,17 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 {
                     await PublishContestCompletedAsync(command, competition.Contest!.SeasonWeekId, cancellationToken);
                 }
-                if (stream != null)
-                {
-                    stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
-                    switch (pollOutcome)
-                    {
-                        case PollOutcome.Final:
-                            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
-                            break;
 
-                        case PollOutcome.Timeout:
-                            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Stream exceeded max duration without STATUS_FINAL");
-                            break;
-                    }
+                stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
+                switch (pollOutcome)
+                {
+                    case PollOutcome.Final:
+                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                        break;
+
+                    case PollOutcome.Timeout:
+                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Stream exceeded max duration without STATUS_FINAL");
+                        break;
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -587,10 +565,14 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     /// <summary>
     /// Publish ContestCompleted at any STATUS_FINAL detection point so the API
     /// scoring path can trigger immediately rather than waiting on the daily
-    /// cron backstop. Uses the same fresh-scope pattern as
-    /// <see cref="PublishDocumentRequestAsync"/> so the MassTransit EF outbox
-    /// interceptor captures the publish and flushes it on the scope's
-    /// SaveChangesAsync within the same transaction.
+    /// cron backstop.
+    ///
+    /// Uses <see cref="DeliveryMode.Direct"/> because this is a stateless
+    /// publish — no entity write happens inside this method, so the EF outbox
+    /// interceptor wouldn't have a SaveChangesAsync hook to ride. Direct
+    /// delivery sidesteps the outbox entirely and hands the message to the
+    /// broker immediately. Same pattern as
+    /// <see cref="Application.Contests.BaseballContestReplayService"/>.
     ///
     /// Idempotency on the consumer side handles at-least-once redelivery and
     /// the three concurrent publish sites in <see cref="ExecuteAsync"/> —
@@ -606,11 +588,8 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             "Publishing ContestCompleted for ContestId={ContestId}, CompetitionId={CompetitionId}",
             command.ContestId, command.CompetitionId);
 
-        using var scope = _scopeFactory.CreateScope();
-        var dataContext = scope.ServiceProvider.GetRequiredService<TeamSportDataContext>();
-        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IEventBus>();
-
-        await publishEndpoint.Publish(new ContestCompleted(
+        using var _ = _deliveryScope.Use(DeliveryMode.Direct);
+        await _eventBus.Publish(new ContestCompleted(
             ContestId: command.ContestId,
             CompetitionId: command.CompetitionId,
             SeasonWeekId: seasonWeekId,
@@ -620,10 +599,22 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             CorrelationId: command.CorrelationId,
             CausationId: command.CorrelationId
         ), cancellationToken);
-
-        await dataContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Fan out one DocumentRequested per polling worker tick.
+    ///
+    /// Stateless — no entity write — so we use <see cref="DeliveryMode.Direct"/>
+    /// for the same reason as <see cref="PublishContestCompletedAsync"/>. The
+    /// outbox interceptor only flushes on SaveChangesAsync against a non-empty
+    /// change set; without that anchor, an outbox-mode publish would sit
+    /// captured in the in-memory pending list and never reach the broker.
+    ///
+    /// <see cref="IEventBus"/> and <see cref="IMessageDeliveryScope"/> are
+    /// thread-safe (MassTransit's IBus/IPublishEndpoint internals + an
+    /// AsyncLocal-scoped policy respectively), so all polling workers can
+    /// share the same injected instances without per-call scoping.
+    /// </summary>
     private async Task PublishDocumentRequestAsync(
         Uri refUri,
         DocumentType type,
@@ -635,18 +626,8 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
         _logger.LogDebug("Publishing {Type} document request for {Uri}", type, refUri);
 
-        // Workers run concurrently with each other and with the main thread that
-        // owns _dataContext. EF Core DbContext is not thread-safe, so each poll
-        // resolves its own scope (and therefore its own DbContext + IEventBus
-        // pair). The MassTransit EF outbox interceptor flushes pending publishes
-        // on SaveChangesAsync within this scope's DbContext — so resolving the
-        // bus from the same scope as the context is required for transactional
-        // outbox semantics.
-        using var scope = _scopeFactory.CreateScope();
-        var dataContext = scope.ServiceProvider.GetRequiredService<TeamSportDataContext>();
-        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IEventBus>();
-
-        await publishEndpoint.Publish(new DocumentRequested(
+        using var _ = _deliveryScope.Use(DeliveryMode.Direct);
+        await _eventBus.Publish(new DocumentRequested(
             Id: Guid.NewGuid().ToString(),
             ParentId: parentId,
             Uri: refUri,
@@ -658,8 +639,6 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             CorrelationId: command.CorrelationId,
             CausationId: command.CorrelationId
         ), cancellationToken);
-
-        await dataContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task UpdateStreamStatusAsync(

@@ -62,9 +62,15 @@ namespace SportsData.Api.Application.Jobs
                     })
                     .ToListAsync();
 
-                // For each league week with any result row, find the most-recent
-                // calculation. Pairs (league, year, week) → max
-                // PickemGroupWeekResult.CalculatedUtc.
+                // For each league week with any result row, find the OLDEST
+                // calculation timestamp across all user rows.
+                //
+                // PickemGroupWeekResult is one row per user per league-week. Using
+                // Min rather than Max means the league-week is only considered
+                // fresh when every member's row is up to date. If we used Max, a
+                // single recently-updated row (e.g. a new league member whose row
+                // was just created) would mask older rows for other members and
+                // leave them stale.
                 var resultStatusByLeagueWeek = await _dataContext.PickemGroupWeekResults
                     .GroupBy(r => new { r.PickemGroupId, r.SeasonYear, r.SeasonWeek })
                     .Select(g => new
@@ -72,22 +78,22 @@ namespace SportsData.Api.Application.Jobs
                         GroupId = g.Key.PickemGroupId,
                         g.Key.SeasonYear,
                         g.Key.SeasonWeek,
-                        LatestCalc = g.Max(r => (DateTime?)r.CalculatedUtc)
+                        OldestCalc = g.Min(r => (DateTime?)r.CalculatedUtc)
                     })
                     .ToListAsync();
 
                 var resultLookup = resultStatusByLeagueWeek.ToDictionary(
                     r => (r.GroupId, r.SeasonYear, r.SeasonWeek),
-                    r => r.LatestCalc);
+                    r => r.OldestCalc);
 
-                // Stale = pick scored more recently than the last leaderboard
+                // Stale = pick scored more recently than the oldest user's last
                 // calculation, OR no result row exists yet.
                 var staleLeagueWeeks = pickStatusByLeagueWeek
                     .Where(p =>
                     {
-                        var lastCalc = resultLookup.GetValueOrDefault((p.GroupId, p.SeasonYear, p.SeasonWeek));
-                        return lastCalc == null
-                            || (p.LatestPickScored.HasValue && p.LatestPickScored > lastCalc);
+                        var oldestCalc = resultLookup.GetValueOrDefault((p.GroupId, p.SeasonYear, p.SeasonWeek));
+                        return oldestCalc == null
+                            || (p.LatestPickScored.HasValue && p.LatestPickScored > oldestCalc);
                     })
                     .ToList();
 

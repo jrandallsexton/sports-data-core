@@ -42,17 +42,46 @@ public class ContestScoringJobTests : ApiTestBase<ContestScoringJob>
 
         await DataContext.SaveChangesAsync();
 
+        // Capture every enqueued ScoreContestCommand so we can verify the exact
+        // set of ContestIds, not just the call count. The count alone would miss
+        // a regression where the same ContestId is enqueued twice and a distinct
+        // one is dropped.
+        var enqueuedCommands = new List<ScoreContestCommand>();
         var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        background
+            .Setup(x => x.Enqueue<IScoreContests>(It.IsAny<Expression<Func<IScoreContests, Task>>>()))
+            .Callback<Expression<Func<IScoreContests, Task>>>(expr =>
+            {
+                var cmd = ScoreContestCommandFromExpression(expr);
+                if (cmd != null) enqueuedCommands.Add(cmd);
+            });
 
         var sut = Mocker.CreateInstance<ContestScoringJob>();
 
         // Act
         await sut.ExecuteAsync();
 
-        // Assert — exactly two distinct unscored contests enqueued;
-        // the already-scored contest is excluded by the WHERE clause.
-        background.Verify(x => x.Enqueue<IScoreContests>(
-            It.IsAny<Expression<Func<IScoreContests, Task>>>()), Times.Exactly(2));
+        // Assert — exactly two enqueues, one per distinct unscored contest.
+        Assert.Equal(2, enqueuedCommands.Count);
+        Assert.Equal(
+            new HashSet<Guid> { contestId1, contestId2 },
+            enqueuedCommands.Select(c => c.ContestId).ToHashSet());
+    }
+
+    /// <summary>
+    /// Compiles and evaluates the single argument of a
+    /// <c>p =&gt; p.Process(cmd)</c> expression to extract the captured
+    /// <see cref="ScoreContestCommand"/> instance. Returns null when the
+    /// expression isn't shaped as expected.
+    /// </summary>
+    private static ScoreContestCommand? ScoreContestCommandFromExpression(
+        Expression<Func<IScoreContests, Task>> expr)
+    {
+        if (expr.Body is not MethodCallExpression call) return null;
+        if (call.Method.Name != nameof(IScoreContests.Process)) return null;
+        if (call.Arguments.Count != 1) return null;
+
+        return Expression.Lambda<Func<ScoreContestCommand>>(call.Arguments[0]).Compile()();
     }
 
     [Fact]

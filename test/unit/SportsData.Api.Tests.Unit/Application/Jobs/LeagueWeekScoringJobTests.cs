@@ -97,6 +97,36 @@ public class LeagueWeekScoringJobTests : ApiTestBase<LeagueWeekScoringJob>
     }
 
     [Fact]
+    public async Task ExecuteAsync_Rescores_WhenAnyResultRowIsStale()
+    {
+        // Arrange — same (PickemGroupId, SeasonYear, SeasonWeek) has two user
+        // result rows: one fresh (after the pick was scored), one stale (before).
+        // The staleness check must compare against the OLDEST row, not the newest,
+        // so the league-week is rescored to bring the lagging user up to date.
+        // Regression test for the Min vs Max ambiguity flagged by CodeRabbit.
+        var leagueId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        const int seasonYear = 2026;
+        const int seasonWeek = 1;
+
+        await SeedMatchupAndScoredPickAsync(leagueId, contestId, seasonYear, seasonWeek, PickScoredAt);
+        await SeedResultAsync(leagueId, seasonYear, seasonWeek, ResultCalculatedBefore); // stale user
+        await SeedResultAsync(leagueId, seasonYear, seasonWeek, ResultCalculatedAfter);  // fresh user
+
+        var service = Mocker.GetMock<ILeagueWeekScoringService>();
+
+        var sut = Mocker.CreateInstance<LeagueWeekScoringJob>();
+
+        // Act
+        await sut.ExecuteAsync();
+
+        // Assert — must rescore because at least one user's row is stale.
+        // With a Max-based check this would incorrectly skip (false negative);
+        // with Min, the older row dominates and the tuple is correctly stale.
+        service.Verify(x => x.ScoreLeagueWeekAsync(leagueId, seasonYear, seasonWeek, default), Times.Once);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_Skips_WhenNoScoredPicks()
     {
         // Arrange — matchup exists but no UserPicks have ScoredAt set.

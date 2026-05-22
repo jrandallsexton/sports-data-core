@@ -39,8 +39,45 @@ namespace SportsData.Api.Application.Scoring
 
         public async Task Process(ScoreContestCommand command)
         {
-            // TODO: multi-sport
-            var matchupResultResponse = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupResult(command.ContestId);
+            // Short-circuit: ContestCompleted may re-deliver (at-least-once delivery)
+            // and the cron backstop may enqueue contests whose picks have already
+            // been scored. Skip the Producer round-trip and per-pick iteration when
+            // there is nothing left to do.
+            var hasUnscoredPicks = await _dataContext.UserPicks
+                .AsNoTracking()
+                .AnyAsync(p => p.ContestId == command.ContestId && p.ScoredAt == null);
+
+            if (!hasUnscoredPicks)
+            {
+                _logger.LogInformation(
+                    "Contest already scored or no picks exist. Skipping. ContestId={ContestId}",
+                    command.ContestId);
+                return;
+            }
+
+            // Resolve sport for this contest by joining PickemGroupMatchups to
+            // PickemGroups. A contest belongs to exactly one sport, so any matchup
+            // row that references this contest carries the canonical Sport via its
+            // PickemGroup. The (Sport?) projection disambiguates "no row" from
+            // "row with Sport.All (== 0)".
+            var sport = await _dataContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.ContestId == command.ContestId)
+                .Join(_dataContext.PickemGroups,
+                    m => m.GroupId,
+                    g => g.Id,
+                    (m, g) => (Sport?)g.Sport)
+                .FirstOrDefaultAsync();
+
+            if (sport is null)
+            {
+                _logger.LogWarning(
+                    "Could not resolve sport for contest. No PickemGroupMatchup found. ContestId={ContestId}",
+                    command.ContestId);
+                return;
+            }
+
+            var matchupResultResponse = await _contestClientFactory.Resolve(sport.Value).GetMatchupResult(command.ContestId);
 
             if (!matchupResultResponse.IsSuccess)
             {

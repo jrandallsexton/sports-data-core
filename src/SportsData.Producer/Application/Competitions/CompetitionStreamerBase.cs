@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
@@ -202,6 +203,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
                             case LiveStartOutcome.AlreadyFinal:
                                 _logger.LogInformation("Competition went final while waiting for start. Skipping live polling.");
+                                await PublishContestCompletedAsync(command, competition.Contest!.SeasonWeekId, cancellationToken);
                                 if (stream != null)
                                 {
                                     stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
@@ -225,6 +227,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
                     case "STATUS_FINAL":
                         _logger.LogInformation("Competition already final. Skipping streaming.");
+                        await PublishContestCompletedAsync(command, competition.Contest!.SeasonWeekId, cancellationToken);
                         if (stream != null)
                         {
                             stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
@@ -258,6 +261,10 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 var pollOutcome = await PollWhileInProgressAsync(statusUri, _workerCts.Token);
 
                 _logger.LogInformation("Polling loop exited with outcome {Outcome}. Stopping workers gracefully.", pollOutcome);
+                if (pollOutcome == PollOutcome.Final)
+                {
+                    await PublishContestCompletedAsync(command, competition.Contest!.SeasonWeekId, cancellationToken);
+                }
                 if (stream != null)
                 {
                     stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
@@ -575,6 +582,46 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             _workerCts?.Dispose();
             _workerCts = null;
         }
+    }
+
+    /// <summary>
+    /// Publish ContestCompleted at any STATUS_FINAL detection point so the API
+    /// scoring path can trigger immediately rather than waiting on the daily
+    /// cron backstop. Uses the same fresh-scope pattern as
+    /// <see cref="PublishDocumentRequestAsync"/> so the MassTransit EF outbox
+    /// interceptor captures the publish and flushes it on the scope's
+    /// SaveChangesAsync within the same transaction.
+    ///
+    /// Idempotency on the consumer side handles at-least-once redelivery and
+    /// the three concurrent publish sites in <see cref="ExecuteAsync"/> —
+    /// downstream ContestScoringProcessor short-circuits when no UserPicks for
+    /// the contest are unscored.
+    /// </summary>
+    private async Task PublishContestCompletedAsync(
+        StreamCompetitionCommand command,
+        Guid? seasonWeekId,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation(
+            "Publishing ContestCompleted for ContestId={ContestId}, CompetitionId={CompetitionId}",
+            command.ContestId, command.CompetitionId);
+
+        using var scope = _scopeFactory.CreateScope();
+        var dataContext = scope.ServiceProvider.GetRequiredService<TeamSportDataContext>();
+        var publishEndpoint = scope.ServiceProvider.GetRequiredService<IEventBus>();
+
+        await publishEndpoint.Publish(new ContestCompleted(
+            ContestId: command.ContestId,
+            CompetitionId: command.CompetitionId,
+            SeasonWeekId: seasonWeekId,
+            Ref: null,
+            Sport: command.Sport,
+            SeasonYear: command.SeasonYear,
+            CorrelationId: command.CorrelationId,
+            CausationId: command.CorrelationId
+        ), cancellationToken);
+
+        await dataContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task PublishDocumentRequestAsync(

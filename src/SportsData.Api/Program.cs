@@ -227,6 +227,7 @@ namespace SportsData.Api
                 services.AddMessaging<AppDataContext>(config,
                 [
                     typeof(BaseballPlayCompletedHandler),
+                    typeof(ContestCompletedHandler),
                     typeof(ContestOddsUpdatedHandler),
                     typeof(ContestRecapArticlePublishedHandler),
                     typeof(ContestRefreshRequestedHandler),

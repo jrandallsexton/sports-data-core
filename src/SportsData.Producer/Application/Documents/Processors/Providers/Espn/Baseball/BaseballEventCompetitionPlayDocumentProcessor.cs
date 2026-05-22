@@ -55,10 +55,12 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext>
     /// way. Per-play statistics refs are captured verbatim — those
     /// pipelines don't materialize canonical entities yet.
     ///
-    /// Unrecognized participant types are still persisted (we don't drop
-    /// data) but log a warning so Seq surfaces forward-compat work. Null
-    /// AthleteSeasonId is acceptable — the play update path re-resolves on
-    /// each re-ingest, so transient nulls heal naturally without a
+    /// Type strings are stored verbatim (batter, pitcher, onFirst, onSecond,
+    /// onThird, fielder, …). Structural info is captured by the resolved
+    /// AthleteSeasonId + PositionId — the Type string only matters at read
+    /// time when a consumer needs to filter (e.g. ExtractPrimaryAthletes).
+    /// Null AthleteSeasonId is acceptable — the play update path re-resolves
+    /// on each re-ingest, so transient nulls heal naturally without a
     /// throw-retry loop on every play of a freshly-sourced game.
     /// </summary>
     private async Task<List<BaseballCompetitionPlayParticipant>> BuildParticipantsAsync(
@@ -92,27 +94,10 @@ public class BaseballEventCompetitionPlayDocumentProcessor<TDataContext>
                     key: p => p.Id);
             }
 
-            var type = participant.Type;
-            var isPitcher = string.Equals(type, "pitcher", StringComparison.OrdinalIgnoreCase);
-            var isBatter = string.Equals(type, "batter", StringComparison.OrdinalIgnoreCase);
-
-            if (!isPitcher && !isBatter)
-            {
-                // Forward-compat watch: ESPN's play taxonomy can grow (substitution
-                // rows, runner refs, fielders on a play-result, etc.). Surface in
-                // Seq so we notice and can decide whether to add denormalized
-                // columns. The row is still persisted — we don't drop data.
-                _logger.LogWarning(
-                    "Unrecognized baseball participant type '{ParticipantType}' on PlayId={PlayId}, PlayText={PlayText}",
-                    string.IsNullOrEmpty(type) ? "(null)" : type,
-                    dto.Id,
-                    dto.Type?.Text);
-            }
-
             result.Add(new BaseballCompetitionPlayParticipant
             {
                 Order = participant.Order,
-                Type = type ?? string.Empty,
+                Type = participant.Type ?? string.Empty,
                 AthleteSeasonId = athleteSeasonId,
                 PositionId = positionId,
                 StatisticsRef = participant.Statistics?.Ref?.ToString()

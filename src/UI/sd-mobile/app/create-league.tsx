@@ -102,6 +102,28 @@ const VALID_SPORT_PARAMS = new Set<SportKey>([
   'BaseballMlb',
 ]);
 
+// ─── Grid layout helpers ──────────────────────────────────────────────────────
+
+// Pick a column count for laying out an even number of pills in a balanced
+// grid. Picks the factor pair closest to a square shape: 6 → 3 cols x 2 rows,
+// 8 → 4 x 2, 4 → 2 x 2, 10 → 5 x 2. For non-even (or prime) counts the picker
+// falls back to flexWrap upstream — the strict-even rule mirrors the user
+// expectation that NFL (8) and MLB (6) should produce a balanced grid, while
+// future odd counts (e.g. an NCAA conference picker) keep natural wrapping.
+const balancedGridColumns = (count: number): number => {
+  if (count <= 1) return 1;
+  for (let c = Math.ceil(Math.sqrt(count)); c <= count; c++) {
+    if (count % c === 0) return c;
+  }
+  return count;
+};
+
+const chunkInto = <T,>(arr: T[], size: number): T[][] => {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+};
+
 // ─── Validation schema ────────────────────────────────────────────────────────
 
 // League Window. Web's "Week Range" mode is intentionally omitted on mobile —
@@ -385,11 +407,11 @@ export default function CreateLeagueScreen() {
   }, [isAdmin, params.sport, sport, setValue]);
 
   const sportOptions = useMemo<{ value: SportKey; label: string }[]>(() => {
-    const base: { value: SportKey; label: string }[] = [
-      { value: 'FootballNcaa', label: 'NCAA' },
-      { value: 'FootballNfl', label: 'NFL' },
-    ];
-    if (isAdmin) base.push({ value: 'BaseballMlb', label: 'MLB' });
+    // Emoji pulled from SPORT_COPY so the icon stays in lockstep with the
+    // Divisions header (which also reads copy.emoji) — single source of truth.
+    const fmt = (k: SportKey) => ({ value: k, label: `${SPORT_COPY[k].emoji} ${SPORT_COPY[k].label}` });
+    const base: { value: SportKey; label: string }[] = [fmt('FootballNcaa'), fmt('FootballNfl')];
+    if (isAdmin) base.push(fmt('BaseballMlb'));
     return base;
   }, [isAdmin]);
 
@@ -701,46 +723,92 @@ export default function CreateLeagueScreen() {
             </View>
           )}
 
-          {/* Division picker — NFL + MLB */}
+          {/* Division picker — NFL + MLB.
+              Even pill counts use a balanced grid (NFL = 4x2, MLB = 3x2) so
+              the layout stays visually consistent across phone widths instead
+              of reflowing to 5x1 vs 4x2 by screen size. Odd counts fall back
+              to flexWrap. */}
           {currentDivisions.length > 0 && (
             <View style={styles.field}>
               <Text style={[styles.label, { color: theme.textMuted }]}>
                 {copy.emoji} Divisions
               </Text>
-              <View style={styles.divisionGrid}>
-                {currentDivisions.map((div) => {
-                  const selected = divisionSlugs.includes(div.slug);
-                  return (
-                    <TouchableOpacity
-                      key={div.slug}
-                      style={[
-                        styles.divisionChip,
-                        {
-                          backgroundColor: selected ? theme.tint : theme.card,
-                          borderColor: selected ? theme.tint : theme.border,
-                        },
-                      ]}
-                      onPress={() => toggleDivision(div.slug)}
-                      activeOpacity={0.75}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: selected }}
-                    >
-                      <Text
+              {currentDivisions.length % 2 === 0 ? (
+                <View style={styles.divisionGridStacked}>
+                  {chunkInto(
+                    currentDivisions,
+                    balancedGridColumns(currentDivisions.length),
+                  ).map((rowDivs, rowIdx) => (
+                    <View key={rowIdx} style={styles.divisionRow}>
+                      {rowDivs.map((div) => {
+                        const selected = divisionSlugs.includes(div.slug);
+                        return (
+                          <TouchableOpacity
+                            key={div.slug}
+                            style={[
+                              styles.divisionChip,
+                              styles.divisionChipFlex,
+                              {
+                                backgroundColor: selected ? theme.tint : theme.card,
+                                borderColor: selected ? theme.tint : theme.border,
+                              },
+                            ]}
+                            onPress={() => toggleDivision(div.slug)}
+                            activeOpacity={0.75}
+                            accessibilityRole="checkbox"
+                            accessibilityState={{ checked: selected }}
+                          >
+                            <Text
+                              style={[
+                                styles.divisionChipText,
+                                styles.divisionChipTextCentered,
+                                { color: selected ? theme.textOnAccent : theme.text },
+                              ]}
+                            >
+                              {div.shortName}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.divisionGrid}>
+                  {currentDivisions.map((div) => {
+                    const selected = divisionSlugs.includes(div.slug);
+                    return (
+                      <TouchableOpacity
+                        key={div.slug}
                         style={[
-                          styles.divisionChipText,
-                          // Selected chip bg is theme.tint → foreground must be
-                          // its paired textOnAccent token (white in light,
-                          // near-black in dark). Hard-coded '#fff' was
-                          // illegible on dark-mode's light-cyan tint.
-                          { color: selected ? theme.textOnAccent : theme.text },
+                          styles.divisionChip,
+                          {
+                            backgroundColor: selected ? theme.tint : theme.card,
+                            borderColor: selected ? theme.tint : theme.border,
+                          },
                         ]}
+                        onPress={() => toggleDivision(div.slug)}
+                        activeOpacity={0.75}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: selected }}
                       >
-                        {div.shortName}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                        <Text
+                          style={[
+                            styles.divisionChipText,
+                            // Selected chip bg is theme.tint → foreground must
+                            // be its paired textOnAccent token (white in light,
+                            // near-black in dark). Hard-coded '#fff' was
+                            // illegible on dark-mode's light-cyan tint.
+                            { color: selected ? theme.textOnAccent : theme.text },
+                          ]}
+                        >
+                          {div.shortName}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
             </View>
           )}
 
@@ -847,15 +915,29 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  divisionGridStacked: {
+    gap: 8,
+  },
+  divisionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   divisionChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1.5,
   },
+  divisionChipFlex: {
+    flex: 1,
+    alignItems: 'center',
+  },
   divisionChipText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  divisionChipTextCentered: {
+    textAlign: 'center',
   },
   dateRow: {
     flexDirection: 'row',

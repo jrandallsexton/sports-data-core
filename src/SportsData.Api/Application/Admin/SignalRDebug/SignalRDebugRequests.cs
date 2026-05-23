@@ -14,11 +14,14 @@ public static class SignalRDebugContestIds
 
 /// <summary>
 /// Request body for POST /admin/signalr-debug/contest-status.
-/// Sport-neutral lifecycle event: Scheduled / InProgress / Final.
+/// Sport-neutral lifecycle event. Caller supplies BOTH the raw ESPN status
+/// type name (for programmatic branching) and the human-readable description
+/// (for display) — same wire shape the live status-doc processor publishes.
 /// </summary>
 public record DebugContestStatusRequest(
-    string Sport,    // "FootballNcaa" / "FootballNfl" / "BaseballMlb"
-    string Status);  // "Scheduled" / "InProgress" / "Final"
+    string Sport,               // "FootballNcaa" / "FootballNfl" / "BaseballMlb"
+    string Status,              // "STATUS_SCHEDULED" / "STATUS_IN_PROGRESS" / "STATUS_FINAL"
+    string StatusDescription);  // "Scheduled" / "In Progress" / "Final"
 
 /// <summary>
 /// Request body for POST /admin/signalr-debug/football-play. Drives a

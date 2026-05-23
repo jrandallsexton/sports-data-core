@@ -6,6 +6,7 @@
     cn."Headline" AS "Headline",
 	c."StartDateUtc" as "StartDateUtc",
     cs."StatusTypeName" as "Status",
+    cs."StatusDescription" as "StatusDescription",
 
 	v."Name" as "Venue",
 	v."City" as "VenueCity",

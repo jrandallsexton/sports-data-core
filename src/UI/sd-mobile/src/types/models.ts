@@ -72,8 +72,12 @@ export interface Matchup {
   homeConferenceWins?: number;
   homeConferenceLosses?: number;
 
-  // Status
-  status: string;               // "Scheduled" | "InProgress" | "Halftime" | "Final" | etc.
+  // Status — raw ESPN status type name for programmatic branching
+  // (e.g. "STATUS_IN_PROGRESS", "STATUS_FINAL", "STATUS_RAIN_DELAY"). Pair
+  // with `statusDescription` for display.
+  status: string;
+  /** Human-readable status (e.g. "In Progress", "Final"). For display. */
+  statusDescription?: string;
   isComplete?: boolean;
 
   // Live game state — football (populated when status = InProgress / Halftime)

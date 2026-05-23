@@ -33,8 +33,8 @@ namespace SportsData.Api.Application.Events
             var msg = context.Message;
 
             _logger.LogInformation(
-                "ContestStatusChanged consume: received. ContestId={ContestId}, Status={Status}, Sport={Sport}, CausationId={CausationId}, CorrelationId={CorrelationId}, MessageId={MessageId}",
-                msg.ContestId, msg.Status, msg.Sport, msg.CausationId, msg.CorrelationId, context.MessageId);
+                "ContestStatusChanged consume: received. ContestId={ContestId}, Status={Status}, StatusDescription={StatusDescription}, Sport={Sport}, CausationId={CausationId}, CorrelationId={CorrelationId}, MessageId={MessageId}",
+                msg.ContestId, msg.Status, msg.StatusDescription, msg.Sport, msg.CausationId, msg.CorrelationId, context.MessageId);
 
             await _hubContext.Clients
                 .All // ← simple, global broadcast for now

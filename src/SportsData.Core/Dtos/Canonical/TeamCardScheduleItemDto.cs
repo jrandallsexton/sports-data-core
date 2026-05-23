@@ -20,7 +20,17 @@ public record TeamCardScheduleItemDto
 
     public string LocationType { get; init; } = default!;
 
+    /// <summary>
+    /// Raw ESPN status type name (e.g. "STATUS_IN_PROGRESS", "STATUS_FINAL")
+    /// for programmatic branching. Pair with <see cref="StatusDescription"/>
+    /// for display.
+    /// </summary>
     public string? Status { get; init; }
+
+    /// <summary>
+    /// Human-readable status (e.g. "In Progress", "Final"). For display.
+    /// </summary>
+    public string? StatusDescription { get; init; }
 
     public DateTime? FinalizedUtc { get; init; }
 

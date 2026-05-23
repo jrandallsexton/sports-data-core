@@ -23,26 +23,44 @@ interface GameStatusProps {
   onPressGameDetail?: () => void;
 }
 
+// Mid-game paused states. Game is technically still live (score + period/
+// inning are meaningful), but no play is happening. Render the InProgress
+// block beneath a banner that names the reason via statusDescription.
+const DELAY_STATUSES = new Set(['STATUS_DELAYED', 'STATUS_RAIN_DELAY', 'STATUS_SUSPENDED']);
+
+// Terminal "game won't be played as scheduled" states. Same struck-through
+// gameTime visual; statusDescription drives the label.
+const TERMINAL_STATUSES = new Set(['STATUS_POSTPONED', 'STATUS_CANCELED']);
+
 /**
  * Renders the center status strip of a MatchupCard.
  *
+ * Branches on raw ESPN `matchup.status` (e.g. "STATUS_FINAL"); display
+ * labels come from `matchup.statusDescription` (e.g. "Final") where the
+ * label isn't hardcoded.
+ *
  * States:
- *   Scheduled   – game time, broadcasts, venue
- *   InProgress  – dispatched by leagueSport:
- *                   BaseballMlb → inning + count + outs + runners + at-bat
- *                   default     → LIVE dot + period/clock + possession 🏈
- *   Final       – FINAL label + score (tappable → game detail)
- *   Other       – raw status string (postponed, cancelled, etc.)
+ *   STATUS_SCHEDULED       – game time, broadcasts, venue
+ *   STATUS_IN_PROGRESS /
+ *   STATUS_HALFTIME        – dispatched by leagueSport:
+ *                              BaseballMlb → inning + count + outs + runners + at-bat
+ *                              default     → LIVE dot + period/clock + possession 🏈
+ *   DELAY_STATUSES         – Delayed / RainDelay / Suspended — same
+ *                            InProgress block beneath a delay banner.
+ *   STATUS_FINAL           – FINAL label + score (tappable → game detail)
+ *   TERMINAL_STATUSES      – Postponed / Canceled — label + struck-through
+ *                            gameTime + venue.
+ *   Other                  – raw statusDescription (defensive fallback)
  */
 export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStatusProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const userTz = useUserTimeZone();
 
-  const status = matchup.status.toLowerCase();
+  const status = matchup.status;
 
   // ── Scheduled ──────────────────────────────────────────────────────────────
-  if (status === 'scheduled') {
+  if (status === 'STATUS_SCHEDULED') {
     const cityState = [matchup.venueCity, matchup.venueState].filter(Boolean).join(', ');
     return (
       <View style={styles.statusSection}>
@@ -69,28 +87,42 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
     );
   }
 
-  // ── In Progress ────────────────────────────────────────────────────────────
-  if (status === 'inprogress' || status === 'ongoing' || status === 'halftime') {
-    if (leagueSport === 'BaseballMlb') {
-      return (
+  // ── In Progress (+ paused-live banner overlay) ────────────────────────────
+  const isDelayed = DELAY_STATUSES.has(status);
+  if (
+    status === 'STATUS_IN_PROGRESS' || status === 'STATUS_HALFTIME' ||
+    isDelayed
+  ) {
+    const inProgressBlock =
+      leagueSport === 'BaseballMlb' ? (
         <BaseballInProgress
           matchup={matchup}
           theme={theme}
           onPressGameDetail={onPressGameDetail}
         />
+      ) : (
+        <FootballInProgress
+          matchup={matchup}
+          theme={theme}
+          onPressGameDetail={onPressGameDetail}
+        />
+      );
+
+    if (isDelayed) {
+      return (
+        <View>
+          <Text style={[styles.delayBanner, { color: theme.tint }]}>
+            {(matchup.statusDescription ?? '').toUpperCase()}
+          </Text>
+          {inProgressBlock}
+        </View>
       );
     }
-    return (
-      <FootballInProgress
-        matchup={matchup}
-        theme={theme}
-        onPressGameDetail={onPressGameDetail}
-      />
-    );
+    return inProgressBlock;
   }
 
   // ── Final ──────────────────────────────────────────────────────────────────
-  if (status === 'final' || status === 'completed') {
+  if (status === 'STATUS_FINAL') {
     const awayScore = matchup.awayScore ?? 0;
     const homeScore = matchup.homeScore ?? 0;
 
@@ -105,10 +137,39 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
     );
   }
 
-  // ── Other (postponed, cancelled, etc.) ────────────────────────────────────
+  // ── Terminal (Postponed / Canceled) ───────────────────────────────────────
+  // Won't be played on the displayed time. Visually identical between the
+  // two states — statusDescription provides the label.
+  if (TERMINAL_STATUSES.has(status)) {
+    const cityState = [matchup.venueCity, matchup.venueState].filter(Boolean).join(', ');
+    return (
+      <View style={styles.statusSection}>
+        <Text style={[styles.statusLabel, { color: theme.tint }]}>
+          {(matchup.statusDescription ?? '').toUpperCase()}
+        </Text>
+        <Text style={[styles.statusTime, styles.struckThrough, { color: theme.textMuted }]}>
+          {formatToUserTime(matchup.startDateUtc, userTz)}
+        </Text>
+        {matchup.venue ? (
+          <Text style={[styles.statusMeta, { color: theme.textMuted }]} numberOfLines={1}>
+            {matchup.venue}
+          </Text>
+        ) : null}
+        {cityState ? (
+          <Text style={[styles.statusMeta, { color: theme.textMuted }]} numberOfLines={1}>
+            {cityState}
+          </Text>
+        ) : null}
+      </View>
+    );
+  }
+
+  // ── Other (defensive — unrecognized status string) ────────────────────────
   return (
     <View style={styles.statusSection}>
-      <Text style={[styles.statusLabel, { color: theme.error }]}>{matchup.status}</Text>
+      <Text style={[styles.statusLabel, { color: theme.error }]}>
+        {matchup.statusDescription ?? matchup.status}
+      </Text>
     </View>
   );
 }
@@ -384,6 +445,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  // Mid-game paused banner — sits above the InProgress block when status is
+  // Delayed / RainDelay / Suspended. The InProgress block below still shows
+  // the meaningful state (score, period, runners) — the banner just names
+  // why no play is happening.
+  delayBanner: {
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    marginHorizontal: 12,
+    marginBottom: 2,
+  },
+  struckThrough: {
+    textDecorationLine: 'line-through',
+    opacity: 0.7,
   },
   // Overview link — shared affordance for "tap to open the Contest Overview",
   // sized to be obviously a link without competing visually with the status

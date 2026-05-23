@@ -127,10 +127,10 @@ describe('useSignalRClient', () => {
 
     const cid = '00000000-0000-0000-0000-000000000abc';
     act(() => {
-      mockConnection.__invoke('ContestStatusChanged', { contestId: cid, status: 'InProgress' });
+      mockConnection.__invoke('ContestStatusChanged', { contestId: cid, status: 'STATUS_IN_PROGRESS', statusDescription: 'In Progress' });
     });
 
-    expect(useContestUpdatesStore.getState().contests[cid]?.status).toBe('InProgress');
+    expect(useContestUpdatesStore.getState().contests[cid]?.status).toBe('STATUS_IN_PROGRESS');
   });
 
   it('stops the connection when AppState transitions to background', async () => {

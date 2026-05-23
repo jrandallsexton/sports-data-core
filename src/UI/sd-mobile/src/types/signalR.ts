@@ -12,8 +12,13 @@
 
 export interface ContestStatusChangedPayload {
   contestId: string;
-  /** Sport-neutral lifecycle state, e.g. "Scheduled", "InProgress", "Final". */
+  /**
+   * Raw ESPN status type name for programmatic branching
+   * (e.g. "STATUS_IN_PROGRESS", "STATUS_FINAL", "STATUS_RAIN_DELAY").
+   */
   status: string;
+  /** Human-readable status (e.g. "In Progress", "Final"). For display. */
+  statusDescription: string;
 }
 
 export interface FootballPlayCompletedPayload {

@@ -11,17 +11,20 @@ function TeamSchedule({ schedule, seasonYear, sport = 'football', league = 'ncaa
   const startLabel = getStartLabel(sport);
   // Helper function to format game result
   const formatGameResult = (game) => {
-    if (game.status === "Final") {
+    if (game.status === "STATUS_FINAL") {
       const score = `${game.awayScore}-${game.homeScore}`;
       const resultText = game.wasWinner ? "W" : "L";
       return `${resultText} | ${score}`;
     }
-    return game.status || "TBD";
+    // statusDescription is the human-readable form ("In Progress", "Postponed",
+    // "Rain Delay"). Fall back to "TBD" when the description is missing
+    // (e.g. games with no CompetitionStatus row yet).
+    return game.statusDescription || "TBD";
   };
 
   // Helper function to get CSS class for result
   const getResultClass = (game) => {
-    if (game.status === "Final") {
+    if (game.status === "STATUS_FINAL") {
       return game.wasWinner ? "result-win" : "result-loss";
     }
     return "result-tbd";

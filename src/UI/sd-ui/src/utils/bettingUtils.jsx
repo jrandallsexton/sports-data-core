@@ -67,14 +67,15 @@ export const calculateOverUnderArrow = (current, open) => {
 
 /**
  * Get CSS class for card border based on game status and pick result
- * @param {string} status - Game status ('Final', 'InProgress', 'Scheduled')
+ * @param {string} status - Game status (raw ESPN type name: 'STATUS_FINAL',
+ *   'STATUS_IN_PROGRESS', 'STATUS_SCHEDULED', etc.)
  * @param {object} userPickResult - User pick result object
  * @param {string} userPickFranchiseSeasonId - Legacy pick ID
  * @param {string} pickResult - Pick result ('correct', 'incorrect', or null)
  * @returns {string} CSS class name
  */
 export const getPickResultClass = (status, userPickResult, userPickFranchiseSeasonId, pickResult) => {
-  if (status !== 'Final') return ""; // No border for non-final games
+  if (status !== 'STATUS_FINAL') return ""; // No border for non-final games
   
   // Check if user made a pick (either in new or old format)
   if (!userPickResult && !userPickFranchiseSeasonId) return "pick-no-submission"; // Red border for no pick

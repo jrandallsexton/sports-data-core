@@ -107,9 +107,12 @@ namespace SportsData.Producer.Application.Contests
                 using var _directDelivery = _deliveryScope.Use(DeliveryMode.Direct);
 
                 // Lifecycle bookend — Scheduled→InProgress. Sport-neutral.
+                // Status pair matches the live status-doc processor wire shape:
+                // raw ESPN type name for branching, description for display.
                 await _eventBus.Publish(new ContestStatusChanged(
                     contestId,
-                    nameof(ContestStatus.InProgress),
+                    "STATUS_IN_PROGRESS",
+                    "In Progress",
                     null,
                     contest.Sport,
                     contest.SeasonYear,
@@ -217,7 +220,8 @@ namespace SportsData.Producer.Application.Contests
                 // InProgress publish at the top of the try block.
                 await _eventBus.Publish(new ContestStatusChanged(
                     contestId,
-                    nameof(ContestStatus.Final),
+                    "STATUS_FINAL",
+                    "Final",
                     null,
                     contest.Sport,
                     contest.SeasonYear,

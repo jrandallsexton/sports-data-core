@@ -21,17 +21,20 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
     private readonly ILogoSelectionService _logoSelectionService;
     private readonly IValidator<GetContestOverviewQuery> _validator;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ILogger<GetContestOverviewQueryHandler> _logger;
 
     public GetContestOverviewQueryHandler(
         TeamSportDataContext dbContext,
         ILogoSelectionService logoSelectionService,
         IValidator<GetContestOverviewQuery> validator,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ILogger<GetContestOverviewQueryHandler> logger)
     {
         _dbContext = dbContext;
         _logoSelectionService = logoSelectionService;
         _validator = validator;
         _dateTimeProvider = dateTimeProvider;
+        _logger = logger;
     }
 
     public async Task<Result<ContestOverviewDto>> ExecuteAsync(
@@ -195,6 +198,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         {
             ContestId = contest.Id,
             Status = DetermineContestStatus(contest, compStatus),
+            StatusDescription = compStatus?.StatusDescription,
             WeekLabel = contest.SeasonWeek?.Number.ToString(),
             SeasonWeekId = contest.SeasonWeek?.Id,
             SeasonYear = contest.SeasonYear,
@@ -246,6 +250,11 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
     /// Determines the contest status based on Competition.Status fields and Contest properties.
     /// Uses CompetitionStatus.StatusState and StatusTypeName as primary indicators,
     /// with fallback to Contest timestamps and current time.
+    ///
+    /// Warning logs fire when ESPN ships a status string we don't recognize
+    /// or when the timestamp-only fallback can't classify the contest — both
+    /// are signals that ESPN may have introduced a new status value worth
+    /// adding an explicit branch for.
     /// </summary>
     private ContestStatus DetermineContestStatus(ContestBase contest, CompetitionStatusBase? competitionStatus = null)
     {
@@ -258,7 +267,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             if (competitionStatus.StatusTypeName != null)
             {
                 var statusName = competitionStatus.StatusTypeName.ToLowerInvariant();
-                
+
                 if (statusName.Contains("canceled"))
                     return ContestStatus.Canceled;
                 if (statusName.Contains("postponed"))
@@ -275,16 +284,27 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             if (competitionStatus.StatusState != null)
             {
                 var state = competitionStatus.StatusState.ToLowerInvariant();
-                
+
                 if (state == "post" || competitionStatus.IsCompleted == true)
                     return contest.IsFinal ? ContestStatus.Final : ContestStatus.Completed;
-                
+
                 if (state == "in")
                     return ContestStatus.InProgress;
-                
+
                 if (state == "pre")
                     return contest.StartDateUtc > now ? ContestStatus.Scheduled : ContestStatus.Ongoing;
             }
+
+            // Reached only when CompetitionStatus exists but neither StatusTypeName
+            // nor StatusState matched a known classification. Likely a new ESPN
+            // status value we should add explicit handling for.
+            _logger.LogWarning(
+                "DetermineContestStatus could not classify CompetitionStatus; falling back to Contest timestamps. ContestId={ContestId}, StatusTypeName={StatusTypeName}, StatusState={StatusState}, StatusDescription={StatusDescription}, IsCompleted={IsCompleted}",
+                contest.Id,
+                competitionStatus.StatusTypeName,
+                competitionStatus.StatusState,
+                competitionStatus.StatusDescription,
+                competitionStatus.IsCompleted);
         }
 
         // Fallback to Contest properties if CompetitionStatus is unavailable
@@ -299,6 +319,18 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
 
         if (contest.StartDateUtc <= now)
             return ContestStatus.InProgress;
+
+        // All checks exhausted. Should not happen with valid Contest data
+        // (StartDateUtc + IsFinal are required), so this likely indicates
+        // corrupted or partially-sourced data worth investigating.
+        _logger.LogWarning(
+            "DetermineContestStatus exhausted all checks; returning Undefined. ContestId={ContestId}, IsFinal={IsFinal}, StartDateUtc={StartDateUtc}, EndDateUtc={EndDateUtc}, NowUtc={NowUtc}, HadCompetitionStatus={HadCompetitionStatus}",
+            contest.Id,
+            contest.IsFinal,
+            contest.StartDateUtc,
+            contest.EndDateUtc,
+            now,
+            competitionStatus != null);
 
         return ContestStatus.Undefined;
     }

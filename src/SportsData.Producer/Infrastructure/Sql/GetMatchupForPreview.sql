@@ -6,6 +6,7 @@ SELECT
   cn."Headline" AS "Headline",
   c."StartDateUtc" AS "StartDateUtc",
   cs."StatusTypeName" AS "Status",
+  cs."StatusDescription" AS "StatusDescription",
   v."Name" AS "Venue", v."City" AS "VenueCity", v."State" AS "VenueState",
   fsAway."Id" AS "AwayFranchiseSeasonId", fAway."DisplayName" AS "Away",
   fAway."Slug" AS "AwaySlug", fsrdAway."Current" AS "AwayRank",

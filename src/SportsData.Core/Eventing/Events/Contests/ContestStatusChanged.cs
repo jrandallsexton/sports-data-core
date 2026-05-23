@@ -11,9 +11,19 @@ namespace SportsData.Core.Eventing.Events.Contests
     /// <see cref="Football.FootballPlayCompleted"/> /
     /// <see cref="Baseball.BaseballPlayCompleted"/> events.
     /// </summary>
+    /// <param name="Status">
+    /// Raw ESPN status type name — "STATUS_IN_PROGRESS", "STATUS_FINAL",
+    /// "STATUS_RAIN_DELAY". Stable identifier for programmatic branching.
+    /// Sourced from <c>CompetitionStatus.StatusTypeName</c>.
+    /// </param>
+    /// <param name="StatusDescription">
+    /// Human-readable status — "In Progress", "Final", "Rain Delay". For
+    /// display. Sourced from <c>CompetitionStatus.StatusDescription</c>.
+    /// </param>
     public record ContestStatusChanged(
         Guid ContestId,
         string Status,
+        string StatusDescription,
         Uri? Ref,
         Sport Sport,
         int? SeasonYear,

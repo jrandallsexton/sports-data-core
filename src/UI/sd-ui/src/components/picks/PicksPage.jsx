@@ -84,6 +84,7 @@ function PicksPage() {
           // `lastUpdated`) can't undefine real canonical fields like
           // awayScore / homeScore.
           status: liveUpdate.status ?? matchup.status,
+          statusDescription: liveUpdate.statusDescription ?? matchup.statusDescription,
           awayScore: liveUpdate.awayScore ?? matchup.awayScore,
           homeScore: liveUpdate.homeScore ?? matchup.homeScore,
           // Football-shaped

@@ -118,7 +118,12 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
 
             await _publishEndpoint.Publish(new ContestStatusChanged(
                 contestId,
+                // Raw ESPN status type for programmatic branching ("STATUS_FINAL"),
+                // plus the human-readable description ("Final") for display.
+                // Both come straight from the CompetitionStatus row — no
+                // transformation, no chance of drift between code and DB.
                 entity.StatusTypeName,
+                entity.StatusDescription,
                 _refGenerator.ForCompetition(competitionIdValue),
                 command.Sport,
                 command.SeasonYear,

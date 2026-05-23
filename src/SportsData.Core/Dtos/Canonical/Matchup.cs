@@ -15,7 +15,17 @@ using System;
 
         public DateTime StartDateUtc { get; set; }
 
+        /// <summary>
+        /// Raw ESPN status type name (e.g. "STATUS_IN_PROGRESS", "STATUS_FINAL")
+        /// for programmatic branching. Pair with <see cref="StatusDescription"/>
+        /// for display.
+        /// </summary>
         public string Status { get; set; } = null!;
+
+        /// <summary>
+        /// Human-readable status (e.g. "In Progress", "Final"). For display.
+        /// </summary>
+        public string StatusDescription { get; set; } = null!;
 
         // Venue Info
         public string? VenueName { get; set; }

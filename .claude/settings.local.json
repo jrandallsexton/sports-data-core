@@ -36,7 +36,17 @@
       "Bash(npm ls:*)",
       "Bash(npm view:*)",
       "Bash(kubectl logs:*)",
-      "WebFetch(domain:datalust.co)"
+      "WebFetch(domain:datalust.co)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(npx expo *)",
+      "Bash(npx eas-cli *)",
+      "Bash(awk 'NR==127||NR==128||NR==247||NR==248||NR==287||NR==288{printf \"%d: %s\\\\n\",NR,$0}' docs/mobile/text-size-setting.md)",
+      "PowerShell(dotnet test *)",
+      "PowerShell(Set-Location \"C:/Projects/sports-data/src/UI/sd-mobile\"; npx tsc --noEmit 2>&1 | Select-Object -Last 40; \"EXIT=$LASTEXITCODE\")",
+      "PowerShell(git *)",
+      "PowerShell(dotnet build *)",
+      "PowerShell(npm run *)",
+      "Bash(npm config *)"
     ]
   }
 }

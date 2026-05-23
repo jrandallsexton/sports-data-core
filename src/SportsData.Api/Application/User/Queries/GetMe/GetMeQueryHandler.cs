@@ -60,10 +60,15 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                     // today; a background job will automate it later. A future
                     // "Past Seasons" endpoint can surface the excluded rows.
                     .Where(m => m.Group.DeactivatedUtc == null)
+                    // Newest-first so a just-created league lands at the top of
+                    // YourLeaguesCard on the next /me fetch — matches the
+                    // commissioner's mental model coming out of the create flow.
+                    .OrderByDescending(m => m.Group.CreatedUtc)
                     .Select(m => new UserDto.UserLeagueMembership
                     {
                         Id = m.Group.Id,
                         Name = m.Group.Name,
+                        Sport = m.Group.Sport,
                         // Dedupe: some leagues have multiple PickemGroupWeek rows with
                         // the same SeasonWeek number (e.g. a preseason Week 1 alongside a
                         // regular-season Week 1, or rows carried over across SeasonYears).

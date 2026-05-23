@@ -13,6 +13,13 @@ export interface League {
   id: string;
   name: string;
   /**
+   * Backend Sport enum (PascalCase). Drives the default sport-icon glyph
+   * shown next to the league name on YourLeaguesCard until commissioner-
+   * uploaded league icons land. Optional — older API builds (pre the
+   * GetMeQueryHandler Sport projection) don't include it.
+   */
+  sport?: 'FootballNcaa' | 'FootballNfl' | 'BaseballMlb';
+  /**
    * Ascending list of week numbers that exist in this league.
    * Custom-window leagues may contain a subset (e.g. [4]) rather than 1..N.
    */

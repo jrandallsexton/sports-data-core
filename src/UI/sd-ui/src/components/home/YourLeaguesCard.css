@@ -52,6 +52,18 @@
   border-radius: 6px;
 }
 
+.your-leagues-card__icon {
+  font-size: 1.15rem;
+  line-height: 1;
+  /* Lock width so leagues without an icon (unknown future Sport enum
+     value) don't shift the name column inconsistently — the absent-icon
+     case skips rendering this span entirely. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+}
+
 .your-leagues-card__name {
   flex: 1;
   /* Flex items default to min-width: auto, which prevents shrinking

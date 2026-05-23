@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
+using SportsData.Core.Common;
+
 namespace SportsData.Api.Application.User.Dtos;
 
 public class UserDto
@@ -30,6 +32,13 @@ public class UserDto
         public Guid Id { get; set; }
 
         public required string Name { get; set; }
+
+        /// <summary>
+        /// Sport this league belongs to (FootballNcaa / FootballNfl / BaseballMlb).
+        /// Used by the UI to render a default sport icon next to the league name
+        /// until commissioner-uploaded league icons land.
+        /// </summary>
+        public Sport Sport { get; set; }
 
         /// <summary>
         /// Week numbers that exist for this league, ascending with duplicates removed.

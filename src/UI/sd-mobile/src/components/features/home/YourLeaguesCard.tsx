@@ -6,6 +6,15 @@ import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import type { League } from '@/src/types/models';
 
+// Default sport-icon glyphs. Mirrors sd-ui's YourLeaguesCard SPORT_ICON map.
+// Stand-in until commissioner-uploaded league icons land — at that point the
+// per-league icon overrides this map and unknown-sport rows skip the glyph.
+const SPORT_ICON: Record<NonNullable<League['sport']>, string> = {
+  FootballNcaa: '🏈',
+  FootballNfl: '🏈',
+  BaseballMlb: '⚾',
+};
+
 interface Props {
   leagues: League[];
 }
@@ -43,40 +52,39 @@ export function YourLeaguesCard({ leagues }: Props) {
     >
       <Text style={[styles.eyebrow, { color: theme.tint }]}>YOUR LEAGUES</Text>
 
-      <View style={styles.list}>
-        {leagues.map((league, i) => (
-          <TouchableOpacity
-            key={league.id}
-            onPress={() => openLeague(league.id)}
-            activeOpacity={0.6}
-            accessibilityRole="button"
-            accessibilityLabel={`Open ${league.name}`}
-            style={[
-              styles.row,
-              i > 0 && {
-                borderTopColor: theme.separator,
-                borderTopWidth: StyleSheet.hairlineWidth,
-              },
-            ]}
-          >
-            <Text
-              style={[styles.name, { color: theme.text }]}
-              numberOfLines={1}
+      <View style={styles.pillGrid}>
+        {leagues.map((league) => {
+          const icon = league.sport ? SPORT_ICON[league.sport] : undefined;
+          return (
+            <TouchableOpacity
+              key={league.id}
+              onPress={() => openLeague(league.id)}
+              activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${league.name}`}
+              style={[
+                styles.pill,
+                { backgroundColor: theme.background, borderColor: theme.border },
+              ]}
             >
-              {league.name}
-            </Text>
-            <Text
-              style={[styles.chevron, { color: theme.textMuted }]}
-              // accessibilityElementsHidden is iOS-only; importantForAccessibility
-              // covers Android TalkBack. Pass both so the "›" glyph never reaches
-              // a screen reader alongside the row's accessibilityLabel.
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            >
-              ›
-            </Text>
-          </TouchableOpacity>
-        ))}
+              {icon && (
+                <Text
+                  style={styles.pillIcon}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                >
+                  {icon}
+                </Text>
+              )}
+              <Text
+                style={[styles.pillName, { color: theme.text }]}
+                numberOfLines={1}
+              >
+                {league.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -94,23 +102,30 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginBottom: 10,
   },
-  list: {
-    gap: 0,
+  pillGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  row: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    gap: 6,
+    // Hard cap so a single very-long league name can't push the pill past
+    // the card width; long names truncate via numberOfLines={1} + flexShrink
+    // on the name Text.
+    maxWidth: '100%',
   },
-  name: {
-    fontSize: 15,
+  pillIcon: {
+    fontSize: 14,
+  },
+  pillName: {
+    fontSize: 14,
     fontWeight: '600',
-    flex: 1,
-  },
-  chevron: {
-    fontSize: 22,
-    fontWeight: '400',
-    marginLeft: 8,
+    flexShrink: 1,
   },
 });

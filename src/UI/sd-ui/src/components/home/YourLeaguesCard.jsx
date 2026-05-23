@@ -2,6 +2,15 @@ import { Link } from "react-router-dom";
 import { useUserDto } from "../../contexts/UserContext";
 import "./YourLeaguesCard.css";
 
+// Default sport-icon glyphs. Stand-in until commissioner-uploaded league
+// icons land — at that point the per-league icon overrides this map and
+// the unknown-sport branch becomes the fallback for legacy rows.
+const SPORT_ICON = {
+  FootballNcaa: "🏈",
+  FootballNfl: "🏈",
+  BaseballMlb: "⚾",
+};
+
 /**
  * Tier 2 — "Your Leagues" card. Web mirror of sd-mobile's YourLeaguesCard
  * (src/UI/sd-mobile/src/components/features/home/YourLeaguesCard.tsx).
@@ -27,20 +36,31 @@ function YourLeaguesCard() {
     <div className="your-leagues-card">
       <div className="your-leagues-card__eyebrow">YOUR LEAGUES</div>
       <ul className="your-leagues-card__list">
-        {leagues.map((league) => (
-          <li key={league.id} className="your-leagues-card__item">
-            <Link
-              to={`/app/picks/${league.id}`}
-              className="your-leagues-card__row"
-              aria-label={`Open ${league.name}`}
-            >
-              <span className="your-leagues-card__name">{league.name}</span>
-              <span className="your-leagues-card__chevron" aria-hidden="true">
-                ›
-              </span>
-            </Link>
-          </li>
-        ))}
+        {leagues.map((league) => {
+          const icon = SPORT_ICON[league.sport];
+          return (
+            <li key={league.id} className="your-leagues-card__item">
+              <Link
+                to={`/app/picks/${league.id}`}
+                className="your-leagues-card__row"
+                aria-label={`Open ${league.name}`}
+              >
+                {/* Always render the icon span — its CSS min-width reserves
+                    the column even when icon is undefined (unknown Sport
+                    enum value, or pre-rollout cached /me without the Sport
+                    field). Skipping the span entirely produces a mid-rollout
+                    visual jitter where mixed rows shift the name column. */}
+                <span className="your-leagues-card__icon" aria-hidden="true">
+                  {icon}
+                </span>
+                <span className="your-leagues-card__name">{league.name}</span>
+                <span className="your-leagues-card__chevron" aria-hidden="true">
+                  ›
+                </span>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

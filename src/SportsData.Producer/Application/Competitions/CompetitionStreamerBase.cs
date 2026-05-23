@@ -264,10 +264,14 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
                     case LiveStartOutcome.AlreadyFinal:
                         _logger.LogInformation("Competition went final while waiting for start. Skipping live polling.");
-                        await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, cancellationToken);
-                        await PublishContestRefreshOnFinalAsync(stream.Id, new Uri(externalId.SourceUrl), command, cancellationToken);
+                        // Finalization writes must not be cancellable by the caller — a token trip
+                        // mid-finalize would leave Contest stuck on Live and skip scoring, defeating
+                        // the whole point of this finalization path. Matches the catch block's
+                        // CancellationToken.None precedent below.
+                        await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, CancellationToken.None);
+                        await PublishContestRefreshOnFinalAsync(stream.Id, new Uri(externalId.SourceUrl), command, CancellationToken.None);
                         stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
-                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, CancellationToken.None);
                         return;
 
                     case LiveStartOutcome.Timeout:
@@ -283,10 +287,11 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
             case "STATUS_FINAL":
                 _logger.LogInformation("Competition already final. Skipping streaming.");
-                await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, cancellationToken);
-                await PublishContestRefreshOnFinalAsync(stream.Id, new Uri(externalId.SourceUrl), command, cancellationToken);
+                // Finalization writes use CancellationToken.None — see AlreadyFinal block above.
+                await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, CancellationToken.None);
+                await PublishContestRefreshOnFinalAsync(stream.Id, new Uri(externalId.SourceUrl), command, CancellationToken.None);
                 stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
-                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, CancellationToken.None);
                 return;
 
             default:
@@ -311,15 +316,16 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
         _logger.LogInformation("Polling loop exited with outcome {Outcome}. Stopping workers gracefully.", pollOutcome);
         if (pollOutcome == PollOutcome.Final)
         {
-            await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, cancellationToken);
-            await PublishContestRefreshOnFinalAsync(stream.Id, new Uri(externalId.SourceUrl), command, cancellationToken);
+            // Finalization writes use CancellationToken.None — see AlreadyFinal block above.
+            await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, CancellationToken.None);
+            await PublishContestRefreshOnFinalAsync(stream.Id, new Uri(externalId.SourceUrl), command, CancellationToken.None);
         }
 
         stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
         switch (pollOutcome)
         {
             case PollOutcome.Final:
-                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, CancellationToken.None);
                 break;
 
             case PollOutcome.Timeout:

@@ -8,6 +8,34 @@ import { createContext, useContext, useState, useCallback } from 'react';
 let _ctxInstanceCounter = 0;
 
 /**
+ * Normalize an ESPN-style status string to the PascalCase form the UI
+ * components branch on. The backend's ContestStatusChanged event carries
+ * the raw ESPN value verbatim ("STATUS_FINAL", "STATUS_IN_PROGRESS",
+ * "STATUS_POSTPONED"), but GameStatus / BoxScoreTable / ContestOverview
+ * compare against "Final" / "InProgress" / "Postponed". Without this
+ * normalization the lifecycle event lands in state but every branch
+ * misses, so the card stays on its previous (e.g. live) layout.
+ *
+ * Pass-through for values that don't look like the ESPN form so any
+ * already-normalized status (e.g. set by the *PlayCompleted handlers)
+ * is preserved unchanged.
+ */
+const normalizeStatus = (raw) => {
+  if (typeof raw !== 'string' || raw.length === 0) return raw;
+  if (!raw.includes('_')) return raw;
+  const stripped = raw.startsWith('STATUS_') ? raw.slice('STATUS_'.length) : raw;
+  // Defensive: a malformed "STATUS_" (prefix-only) would slice to empty and
+  // produce '' downstream, which no GameStatus branch matches. Return the
+  // original so logs/fallback rendering at least see the wire value.
+  if (stripped.length === 0) return raw;
+  return stripped
+    .toLowerCase()
+    .split('_')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
+};
+
+/**
  * Context for managing real-time contest updates from SignalR.
  * Stores live game data including lifecycle status, play description,
  * scores, possession (FB), inning/count/runners (MLB), and clock.
@@ -35,13 +63,14 @@ export const ContestUpdatesProvider = ({ children }) => {
       return;
     }
 
-    console.log(`[ContestCtx#${instanceId}] setContests (status)`, { contestId: data.contestId, status: data.status });
+    const normalized = normalizeStatus(data.status);
+    console.log(`[ContestCtx#${instanceId}] setContests (status)`, { contestId: data.contestId, status: normalized, raw: data.status });
     setContests(prev => ({
       ...prev,
       [data.contestId]: {
         ...prev[data.contestId],
         contestId: data.contestId,
-        status: data.status,
+        status: normalized,
         lastUpdated: Date.now()
       }
     }));

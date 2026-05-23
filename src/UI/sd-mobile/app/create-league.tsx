@@ -360,9 +360,21 @@ export default function CreateLeagueScreen() {
   const sport = watch('sport');
   const divisionSlugs = watch('divisionSlugs');
   const durationMode = watch('durationMode');
-  // Watched so the end-date picker can clamp its minimumDate to startsOn,
-  // preventing the user from picking an end date earlier than the start.
+  // Watched for two reasons: (1) the end-date picker clamps its
+  // minimumDate to startsOn so the user can't pick an end earlier than
+  // the start, and (2) if the user moves startsOn *past* an already-set
+  // endsOn, the effect below clamps endsOn forward to keep the window
+  // valid without waiting for submit-time validation to flag it.
   const startsOn = watch('startsOn');
+  const endsOn = watch('endsOn');
+
+  useEffect(() => {
+    if (durationMode !== DURATION_DATES) return;
+    if (!startsOn || !endsOn) return;
+    if (endsOn < startsOn) {
+      setValue('endsOn', startsOn, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [durationMode, startsOn, endsOn, setValue]);
   const copy = SPORT_COPY[sport];
   const isNcaa = sport === 'FootballNcaa';
 

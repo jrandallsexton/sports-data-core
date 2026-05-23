@@ -24,6 +24,10 @@ const normalizeStatus = (raw) => {
   if (typeof raw !== 'string' || raw.length === 0) return raw;
   if (!raw.includes('_')) return raw;
   const stripped = raw.startsWith('STATUS_') ? raw.slice('STATUS_'.length) : raw;
+  // Defensive: a malformed "STATUS_" (prefix-only) would slice to empty and
+  // produce '' downstream, which no GameStatus branch matches. Return the
+  // original so logs/fallback rendering at least see the wire value.
+  if (stripped.length === 0) return raw;
   return stripped
     .toLowerCase()
     .split('_')

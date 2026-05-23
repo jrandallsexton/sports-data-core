@@ -95,6 +95,9 @@ const LeagueDetail = () => {
       <div className="league-detail-primary">
         <div className="league-info-card">
           <h2>{league.name}</h2>
+          <Link to={`/app/picks/${league.id}`} className="make-picks-button">
+            Make Your Picks
+          </Link>
           <ul className="league-details-list">
             <li><strong>Description:</strong> {league.description}</li>
             <li><strong>Pick Type:</strong> {league.pickType}</li>

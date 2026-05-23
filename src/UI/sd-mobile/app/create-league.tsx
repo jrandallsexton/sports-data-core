@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   TextInput,
@@ -10,6 +10,9 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { useForm, Controller } from 'react-hook-form';
@@ -101,17 +104,43 @@ const VALID_SPORT_PARAMS = new Set<SportKey>([
 
 // ─── Validation schema ────────────────────────────────────────────────────────
 
-const schema = z.object({
-  sport: z.enum(['FootballNcaa', 'FootballNfl', 'BaseballMlb']),
-  name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be 100 characters or fewer'),
-  description: z.string().max(500, 'Description must be 500 characters or fewer').optional(),
-  pickType: z.enum(['StraightUp', 'AgainstTheSpread']),
-  tiebreakerType: z.enum(['TotalPoints', 'EarliestSubmission']),
-  useConfidencePoints: z.boolean(),
-  isPublic: z.boolean(),
-  rankingFilter: z.enum(['', 'AP_TOP_25', 'AP_TOP_20', 'AP_TOP_15', 'AP_TOP_10', 'AP_TOP_5']),
-  divisionSlugs: z.array(z.string()),
-});
+// League Window. Web's "Week Range" mode is intentionally omitted on mobile —
+// Date Range already covers the same span semantics and the web's Week Range
+// UI itself errors on submit pending a BE season calendar endpoint.
+const DURATION_FULL = 'full';
+const DURATION_DATES = 'dates';
+
+const schema = z
+  .object({
+    sport: z.enum(['FootballNcaa', 'FootballNfl', 'BaseballMlb']),
+    name: z.string().trim().min(1, 'Name is required').max(100, 'Name must be 100 characters or fewer'),
+    description: z.string().max(500, 'Description must be 500 characters or fewer').optional(),
+    pickType: z.enum(['StraightUp', 'AgainstTheSpread']),
+    tiebreakerType: z.enum(['TotalPoints', 'EarliestSubmission']),
+    useConfidencePoints: z.boolean(),
+    isPublic: z.boolean(),
+    rankingFilter: z.enum(['', 'AP_TOP_25', 'AP_TOP_20', 'AP_TOP_15', 'AP_TOP_10', 'AP_TOP_5']),
+    divisionSlugs: z.array(z.string()),
+    durationMode: z.enum([DURATION_FULL, DURATION_DATES]),
+    // YYYY-MM-DD or empty string. Stored as a plain date string (no TZ) so the
+    // submit-time conversion to ISO can anchor at local midnight / end-of-day
+    // without timezone drift — matches web's toStartOfDayIso / toEndOfDayIso.
+    startsOn: z.string(),
+    endsOn: z.string(),
+    dropLowWeeksCount: z.number().int().min(0).max(3),
+  })
+  .superRefine((data, ctx) => {
+    if (data.durationMode !== DURATION_DATES) return;
+    if (!data.startsOn) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['startsOn'], message: 'Start date is required' });
+    }
+    if (!data.endsOn) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['endsOn'], message: 'End date is required' });
+    }
+    if (data.startsOn && data.endsOn && data.endsOn < data.startsOn) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['endsOn'], message: 'End date must be on or after the start date' });
+    }
+  });
 
 type FormData = z.infer<typeof schema>;
 
@@ -131,6 +160,124 @@ const VISIBILITY_OPTIONS: { value: 'private' | 'public'; label: string }[] = [
   { value: 'private', label: 'Private' },
   { value: 'public', label: 'Public' },
 ];
+
+const WINDOW_OPTIONS: { value: 'full' | 'dates'; label: string }[] = [
+  { value: DURATION_FULL, label: 'Full Season' },
+  { value: DURATION_DATES, label: 'Date Range' },
+];
+
+// Stringified for SegmentedControl, which keys options by string value. Coerced
+// back to number at the Controller boundary.
+const DROP_LOW_WEEKS_OPTIONS: { value: string; label: string }[] = [
+  { value: '0', label: 'None' },
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+];
+
+// ─── Date helpers ─────────────────────────────────────────────────────────────
+
+// Parse 'YYYY-MM-DD' into a local-midnight Date. Avoids `new Date(str)`'s
+// implicit UTC interpretation for date-only strings, which would skew the
+// display by up to 24 hours for users east/west of UTC.
+const parseDateOnly = (s: string): Date => {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
+const formatDateOnlyDisplay = (s: string): string =>
+  parseDateOnly(s).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+
+const dateToIsoDateOnly = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+// Mirrors web's toStartOfDayIso / toEndOfDayIso. Anchored at the caller's
+// local timezone — appending 'Z' would wrongly treat the local calendar
+// date as UTC, skewing the window by up to 24 hours.
+const toStartOfDayIso = (s: string): string | null => {
+  if (!s) return null;
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d, 0, 0, 0).toISOString();
+};
+
+const toEndOfDayIso = (s: string): string | null => {
+  if (!s) return null;
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d, 23, 59, 59).toISOString();
+};
+
+// ─── DateField ────────────────────────────────────────────────────────────────
+
+type ThemePalette = ReturnType<typeof getTheme>;
+
+type DateFieldProps = {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  accessibilityLabel: string;
+  theme: ThemePalette;
+  error?: string;
+  minimumDate?: Date;
+};
+
+// Pressable that shows the formatted date (or placeholder) and opens the
+// native picker on tap. Android dismisses the picker after any interaction;
+// iOS keeps it on screen until the user taps away, so we drive visibility
+// from local state and only commit form value on `event.type === 'set'`.
+function DateField({ value, onChange, placeholder, accessibilityLabel, theme, error, minimumDate }: DateFieldProps) {
+  const [show, setShow] = useState(false);
+
+  const dateValue = value ? parseDateOnly(value) : new Date();
+  const display = value ? formatDateOnlyDisplay(value) : placeholder;
+  const hasValue = value.length > 0;
+
+  const handleChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (Platform.OS === 'android') setShow(false);
+    if (event.type === 'set' && selectedDate) {
+      onChange(dateToIsoDateOnly(selectedDate));
+    }
+  };
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.card,
+            borderColor: error ? theme.error : theme.border,
+            justifyContent: 'center',
+          },
+        ]}
+        onPress={() => setShow(true)}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+      >
+        <Text style={{ color: hasValue ? theme.text : theme.textMuted, fontSize: 16 }}>
+          {display}
+        </Text>
+      </TouchableOpacity>
+      {show && (
+        <DateTimePicker
+          value={dateValue}
+          mode="date"
+          display="default"
+          onChange={handleChange}
+          minimumDate={minimumDate}
+        />
+      )}
+      {error && <Text style={[styles.fieldError, { color: theme.error }]}>{error}</Text>}
+    </>
+  );
+}
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -181,11 +328,19 @@ export default function CreateLeagueScreen() {
           : initialSport === 'BaseballMlb'
           ? MLB_DIVISIONS.map((d) => d.slug)
           : [],
+      durationMode: DURATION_FULL,
+      startsOn: '',
+      endsOn: '',
+      dropLowWeeksCount: 0,
     },
   });
 
   const sport = watch('sport');
   const divisionSlugs = watch('divisionSlugs');
+  const durationMode = watch('durationMode');
+  // Watched so the end-date picker can clamp its minimumDate to startsOn,
+  // preventing the user from picking an end date earlier than the start.
+  const startsOn = watch('startsOn');
   const copy = SPORT_COPY[sport];
   const isNcaa = sport === 'FootballNcaa';
 
@@ -253,6 +408,11 @@ export default function CreateLeagueScreen() {
 
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      const window =
+        data.durationMode === DURATION_DATES
+          ? { startsOn: toStartOfDayIso(data.startsOn), endsOn: toEndOfDayIso(data.endsOn) }
+          : { startsOn: null, endsOn: null };
+
       const base = {
         name: data.name.trim(),
         description: data.description?.trim() || null,
@@ -261,9 +421,8 @@ export default function CreateLeagueScreen() {
         tiebreakerTiePolicy: 'EarliestSubmission' as const,
         useConfidencePoints: data.useConfidencePoints,
         isPublic: data.isPublic,
-        dropLowWeeksCount: 0,
-        startsOn: null,
-        endsOn: null,
+        dropLowWeeksCount: data.dropLowWeeksCount,
+        ...window,
       };
 
       if (data.sport === 'FootballNcaa') {
@@ -449,6 +608,80 @@ export default function CreateLeagueScreen() {
             />
           </View>
 
+          {/* Drop Low Weeks */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Drop Low Weeks</Text>
+            <Controller
+              control={control}
+              name="dropLowWeeksCount"
+              render={({ field: { onChange, value } }) => (
+                <SegmentedControl
+                  value={String(value)}
+                  options={DROP_LOW_WEEKS_OPTIONS}
+                  onChange={(v) => onChange(Number(v))}
+                  accessibilityLabel="Drop Low Weeks"
+                />
+              )}
+            />
+          </View>
+
+          {/* League Window */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: theme.textMuted }]}>League Window</Text>
+            <Controller
+              control={control}
+              name="durationMode"
+              render={({ field: { onChange, value } }) => (
+                <SegmentedControl
+                  value={value}
+                  options={WINDOW_OPTIONS}
+                  onChange={(v) => onChange(v as 'full' | 'dates')}
+                  accessibilityLabel="League Window"
+                />
+              )}
+            />
+
+            {durationMode === DURATION_DATES && (
+              <View style={styles.dateRow}>
+                <View style={styles.dateCol}>
+                  <Text style={[styles.label, { color: theme.textMuted }]}>Start</Text>
+                  <Controller
+                    control={control}
+                    name="startsOn"
+                    render={({ field: { onChange, value } }) => (
+                      <DateField
+                        value={value}
+                        onChange={onChange}
+                        placeholder="Select start"
+                        accessibilityLabel="Start Date"
+                        theme={theme}
+                        error={errors.startsOn?.message}
+                      />
+                    )}
+                  />
+                </View>
+                <View style={styles.dateCol}>
+                  <Text style={[styles.label, { color: theme.textMuted }]}>End</Text>
+                  <Controller
+                    control={control}
+                    name="endsOn"
+                    render={({ field: { onChange, value } }) => (
+                      <DateField
+                        value={value}
+                        onChange={onChange}
+                        placeholder="Select end"
+                        accessibilityLabel="End Date"
+                        theme={theme}
+                        error={errors.endsOn?.message}
+                        minimumDate={startsOn ? parseDateOnly(startsOn) : undefined}
+                      />
+                    )}
+                  />
+                </View>
+              </View>
+            )}
+          </View>
+
           {/* Ranking filter — NCAA only */}
           {isNcaa && (
             <View style={styles.field}>
@@ -623,5 +856,14 @@ const styles = StyleSheet.create({
   divisionChipText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  dateCol: {
+    flex: 1,
+    gap: 6,
   },
 });

@@ -45,11 +45,14 @@ function YourLeaguesCard() {
                 className="your-leagues-card__row"
                 aria-label={`Open ${league.name}`}
               >
-                {icon && (
-                  <span className="your-leagues-card__icon" aria-hidden="true">
-                    {icon}
-                  </span>
-                )}
+                {/* Always render the icon span — its CSS min-width reserves
+                    the column even when icon is undefined (unknown Sport
+                    enum value, or pre-rollout cached /me without the Sport
+                    field). Skipping the span entirely produces a mid-rollout
+                    visual jitter where mixed rows shift the name column. */}
+                <span className="your-leagues-card__icon" aria-hidden="true">
+                  {icon}
+                </span>
                 <span className="your-leagues-card__name">{league.name}</span>
                 <span className="your-leagues-card__chevron" aria-hidden="true">
                   ›

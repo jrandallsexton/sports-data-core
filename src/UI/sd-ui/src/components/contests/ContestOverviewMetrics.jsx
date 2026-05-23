@@ -38,6 +38,13 @@ export default function ContestOverviewMetrics({ homeMetrics = {}, awayMetrics =
     .filter((k) => !excluded.has(String(k).toLowerCase()))
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
+  // No metric data on either side (scheduled / postponed / canceled, or just
+  // before stat feeds kick in) — hide the whole section rather than render an
+  // empty Metrics card.
+  if (sortedKeys.length === 0) {
+    return null;
+  }
+
   return (
     <div className="contest-section">
   <div className="contest-section-title">Metrics</div>

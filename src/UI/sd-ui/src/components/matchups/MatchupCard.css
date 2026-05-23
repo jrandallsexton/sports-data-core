@@ -245,6 +245,11 @@
   gap: 2px;
 }
 
+.game-time-location-postponed .game-time-original {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
 /* Game Result Section */
 .game-result {
   text-align: center;

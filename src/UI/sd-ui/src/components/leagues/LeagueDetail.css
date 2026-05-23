@@ -58,6 +58,24 @@
   text-align: center;
 }
 
+.make-picks-button {
+  display: block;
+  text-align: center;
+  background-color: var(--accent);
+  color: var(--bg-modal);
+  text-decoration: none;
+  padding: 0.875rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin-bottom: 1.5rem;
+  transition: opacity 0.2s ease;
+}
+
+.make-picks-button:hover {
+  opacity: 0.85;
+}
+
 .league-details-list {
   list-style-type: none;
   padding: 0;

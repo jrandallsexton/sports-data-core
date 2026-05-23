@@ -264,9 +264,14 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
                     case LiveStartOutcome.AlreadyFinal:
                         _logger.LogInformation("Competition went final while waiting for start. Skipping live polling.");
-                        await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, cancellationToken);
+                        // Finalization writes must not be cancellable by the caller — a token trip
+                        // mid-finalize would leave Contest stuck on Live and skip scoring, defeating
+                        // the whole point of this finalization path. Matches the catch block's
+                        // CancellationToken.None precedent below.
+                        await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, CancellationToken.None);
+                        await PublishContestRefreshOnFinalAsync(stream.Id, new Uri(externalId.SourceUrl), command, CancellationToken.None);
                         stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
-                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                        await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, CancellationToken.None);
                         return;
 
                     case LiveStartOutcome.Timeout:
@@ -282,9 +287,11 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
             case "STATUS_FINAL":
                 _logger.LogInformation("Competition already final. Skipping streaming.");
-                await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, cancellationToken);
+                // Finalization writes use CancellationToken.None — see AlreadyFinal block above.
+                await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, CancellationToken.None);
+                await PublishContestRefreshOnFinalAsync(stream.Id, new Uri(externalId.SourceUrl), command, CancellationToken.None);
                 stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
-                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, CancellationToken.None);
                 return;
 
             default:
@@ -309,14 +316,16 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
         _logger.LogInformation("Polling loop exited with outcome {Outcome}. Stopping workers gracefully.", pollOutcome);
         if (pollOutcome == PollOutcome.Final)
         {
-            await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, cancellationToken);
+            // Finalization writes use CancellationToken.None — see AlreadyFinal block above.
+            await PublishContestCompletedAsync(stream.Id, command, competition.Contest!.SeasonWeekId, CancellationToken.None);
+            await PublishContestRefreshOnFinalAsync(stream.Id, new Uri(externalId.SourceUrl), command, CancellationToken.None);
         }
 
         stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
         switch (pollOutcome)
         {
             case PollOutcome.Final:
-                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, cancellationToken);
+                await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Completed, CancellationToken.None);
                 break;
 
             case PollOutcome.Timeout:
@@ -658,6 +667,52 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             Ref: null,
             Sport: command.Sport,
             SeasonYear: command.SeasonYear,
+            CorrelationId: correlationId,
+            CausationId: correlationId
+        ), cancellationToken);
+    }
+
+    /// <summary>
+    /// Re-source the parent Event document at STATUS_FINAL so the canonical
+    /// Contest entity gets its final state (IsFinal, completed status flags,
+    /// final score totals) regardless of whether the in-progress poll loop
+    /// caught the last update tick. Without this, a viewer that leaves the
+    /// picks page open overnight sees stale "Live" status the next morning
+    /// because the canonical entity never received the finalization write.
+    ///
+    /// <c>IncludeLinkedDocumentTypes</c> is intentionally omitted — at
+    /// finalization we want every linked child type re-sourced, not the
+    /// narrowed set used by the manual <c>ContestUpdateProcessor</c> path.
+    /// Provider's re-publish suppression window (~90 min) absorbs the
+    /// inevitable duplicates against documents we already polled during
+    /// the stream, so asking for "everything" here is cheap.
+    ///
+    /// The Event URI is derived from the EventCompetition URI we already
+    /// hold via <see cref="EspnUriMapper.CompetitionRefToContestRef"/>, so
+    /// no extra DB roundtrip for Contest.ExternalIds is needed.
+    /// </summary>
+    private async Task PublishContestRefreshOnFinalAsync(
+        Guid correlationId,
+        Uri competitionRef,
+        StreamCompetitionCommand command,
+        CancellationToken cancellationToken)
+    {
+        var contestUri = EspnUriMapper.CompetitionRefToContestRef(competitionRef);
+
+        _logger.LogInformation(
+            "Publishing final Contest refresh DocumentRequested. ContestId={ContestId}, Uri={Uri}",
+            command.ContestId, contestUri);
+
+        using var _ = _deliveryScope.Use(DeliveryMode.Direct);
+        await _eventBus.Publish(new DocumentRequested(
+            Id: Guid.NewGuid().ToString(),
+            ParentId: null,
+            Uri: contestUri,
+            Ref: null,
+            Sport: command.Sport,
+            SeasonYear: command.SeasonYear,
+            DocumentType: DocumentType.Event,
+            SourceDataProvider: command.DataProvider,
             CorrelationId: correlationId,
             CausationId: correlationId
         ), cancellationToken);

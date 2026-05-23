@@ -27,6 +27,13 @@ export default function BoxScoreTable({
   homeLabel,
   statusLabel = "Final",
 }) {
+  // No periods means the game hasn't produced any line-score data yet
+  // (scheduled, postponed, canceled). Render nothing so the caller doesn't
+  // get an empty header + bare team labels.
+  if (!periodScores || periodScores.length === 0) {
+    return null;
+  }
+
   const awayTotal = periodScores.reduce((sum, p) => sum + p.awayScore, 0);
   const homeTotal = periodScores.reduce((sum, p) => sum + p.homeScore, 0);
   const wideClass = periodScores.length > 4 ? " wide" : "";

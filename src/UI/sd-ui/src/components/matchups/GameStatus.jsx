@@ -151,6 +151,16 @@ function GameStatus({
     );
   }
 
+  if (status === 'Postponed') {
+    return (
+      <div className="game-time-location game-time-location-postponed">
+        <div className="result-label">POSTPONED</div>
+        <div className="game-time-original">{gameTime}</div>
+        <div>{venue} | {location}</div>
+      </div>
+    );
+  }
+
   // Scheduled or other status
   return (
     <>

@@ -5,7 +5,7 @@ import { teamLink } from '../../utils/sportLinks';
 import BoxScoreTable from "../shared/BoxScoreTable";
 import "./ContestOverview.css";
 
-export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScores, homeTeamColor, awayTeamColor, seasonYear, sport, league }) {
+export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScores, homeTeamColor, awayTeamColor, seasonYear, sport, league, status }) {
   const { theme } = useTheme() ?? {};
   const pickLogo = (t) =>
     theme === 'dark'
@@ -54,7 +54,7 @@ export default function ContestOverviewHeader({ homeTeam, awayTeam, quarterScore
           periodScores={quarterScores}
           awayLabel={awayTeam.displayName.split(' ')[0].toUpperCase()}
           homeLabel={homeTeam.displayName.split(' ')[0].toUpperCase()}
-          statusLabel="Final"
+          statusLabel={status}
         />
         {/* Home Side */}
         <div className="contest-team-score contest-header-team-score-home">{homeTotal}</div>

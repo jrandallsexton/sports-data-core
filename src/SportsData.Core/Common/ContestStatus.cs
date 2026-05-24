@@ -22,8 +22,17 @@ namespace SportsData.Core.Common
         public const string Final = "Final";
         public const string Completed = "Completed";
 
+        // Raw ESPN status type names. Producer ships these verbatim on the
+        // canonical Matchup.Status under the dual-field wire shape; the
+        // PascalCase enum-name forms above stay supported during the
+        // transition window in case any caller still passes them.
+        public const string FinalRaw = "STATUS_FINAL";
+        public const string CompletedRaw = "STATUS_COMPLETED";
+
         public static bool IsCompleted(string? status) =>
             string.Equals(status, Final, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(status, Completed, StringComparison.OrdinalIgnoreCase);
+            string.Equals(status, Completed, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(status, FinalRaw, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(status, CompletedRaw, StringComparison.OrdinalIgnoreCase);
     }
 }

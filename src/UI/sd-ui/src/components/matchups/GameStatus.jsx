@@ -117,7 +117,7 @@ function GameStatus({
   }
 
   const isDelayed = DELAY_STATUSES.has(status);
-  if (status === 'STATUS_IN_PROGRESS' || isDelayed) {
+  if (status === 'STATUS_IN_PROGRESS' || status === 'STATUS_HALFTIME' || isDelayed) {
     const inProgressBlock = leagueSport === 'BaseballMlb' ? (
       <BaseballGameStatusInProgress
         awayShort={awayShort}
@@ -172,7 +172,7 @@ function GameStatus({
       return (
         <>
           <div className="game-delay-banner">
-            {(statusDescription || '').toUpperCase()}
+            {(statusDescription || status || '').toUpperCase()}
           </div>
           {inProgressBlock}
         </>
@@ -184,7 +184,7 @@ function GameStatus({
   if (TERMINAL_STATUSES.has(status)) {
     return (
       <div className="game-time-location game-time-location-postponed">
-        <div className="result-label">{(statusDescription || '').toUpperCase()}</div>
+        <div className="result-label">{(statusDescription || status || '').toUpperCase()}</div>
         <div className="game-time-original">{gameTime}</div>
         <div>{venue} | {location}</div>
       </div>

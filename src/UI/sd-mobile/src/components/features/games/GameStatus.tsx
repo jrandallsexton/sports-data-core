@@ -112,7 +112,7 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
       return (
         <View>
           <Text style={[styles.delayBanner, { color: theme.tint }]}>
-            {(matchup.statusDescription ?? '').toUpperCase()}
+            {(matchup.statusDescription ?? matchup.status).toUpperCase()}
           </Text>
           {inProgressBlock}
         </View>
@@ -145,7 +145,7 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
     return (
       <View style={styles.statusSection}>
         <Text style={[styles.statusLabel, { color: theme.tint }]}>
-          {(matchup.statusDescription ?? '').toUpperCase()}
+          {(matchup.statusDescription ?? matchup.status).toUpperCase()}
         </Text>
         <Text style={[styles.statusTime, styles.struckThrough, { color: theme.textMuted }]}>
           {formatToUserTime(matchup.startDateUtc, userTz)}

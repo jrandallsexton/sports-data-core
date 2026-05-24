@@ -117,7 +117,7 @@ LEFT JOIN LATERAL (
 LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdHome ON fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 WHERE c."Id" = ANY(@ContestIds)
 GROUP BY
-  c."SeasonWeekId", c."Id", c."StartDateUtc", cn."Headline", cs."StatusDescription",
+  c."SeasonWeekId", c."Id", c."StartDateUtc", cn."Headline", cs."StatusTypeName", cs."StatusDescription",
   v."Name", v."City", v."State",
   fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id",
   flAway."Uri", fslAway."Uri", flDarkAway."Uri", fslDarkAway."Uri", fAway."Slug",

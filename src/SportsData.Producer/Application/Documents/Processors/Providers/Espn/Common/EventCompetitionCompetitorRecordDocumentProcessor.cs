@@ -110,7 +110,7 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
                         .FirstOrDefaultAsync(r =>
                             r.CompetitionCompetitorId == competitorId &&
                             r.Type == dto.Type);
-                    
+
                     if (existingRecord == null)
                     {
                         _logger.LogWarning(
@@ -121,18 +121,36 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
                             command.CorrelationId);
                         return;
                     }
+
+                    // Jittered backoff before the next attempt. Seq analysis
+                    // of the conflict bursts (single fan-out CorrelationId
+                    // generating dozens of sibling messages within ~160ms)
+                    // showed all 3 attempts firing within ~15ms total — the
+                    // retry was spinning through the contention window. A
+                    // 50-200ms jitter pushes the next attempt past the burst
+                    // window, giving attempt 2/3 a real chance to land
+                    // before escalating to outer-delivery retry.
+                    var backoffMs = Random.Shared.Next(50, 200);
+                    await Task.Delay(backoffMs);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    // Final retry failed - another pod won
+                    // Final retry failed. Previously this swallowed the
+                    // exception with `return;`, which caused Hangfire /
+                    // MassTransit to treat the message as succeeded and
+                    // silently drop the update. Rethrow so the outer
+                    // delivery layer can apply its own exponential backoff
+                    // and retry — by the time the message redelivers, the
+                    // burst window that caused the in-process contention
+                    // will have cleared.
                     _logger.LogWarning(
-                        "Concurrency conflict after {MaxRetries} retries. Another process owns this update. " +
+                        "Concurrency conflict after {MaxRetries} retries. Rethrowing for outer-delivery retry. " +
                         "CompetitorId={CompetitorId}, Type={Type}, CorrelationId={CorrelationId}",
                         maxRetries,
                         competitorId,
                         dto.Type,
                         command.CorrelationId);
-                    return;
+                    throw;
                 }
             }
         }
@@ -234,12 +252,77 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
         existingRecord.Value = dto.Value;
         existingRecord.ModifiedUtc = DateTime.UtcNow;
 
-        // Remove old stats
-        _dataContext.CompetitionCompetitorRecordStats.RemoveRange(existingRecord.Stats);
-        existingRecord.Stats.Clear();
+        // Diff-merge stats by Name (ESPN's natural per-stat identifier).
+        // The prior "RemoveRange + re-Add" pattern issued explicit DELETE
+        // statements for every stat row; under burst-fan-out contention a
+        // sibling worker could DELETE the same rows first, causing EF to
+        // throw DbUpdateConcurrencyException on the row-count mismatch
+        // (the entity has no IsRowVersion token, so EF only verifies
+        // 1 row affected per DELETE). Diff-merge emits UPDATEs for the
+        // steady-state case where ESPN ships the same stat keys with new
+        // values — UPDATEs don't race the same way, and only orphan
+        // removal / new additions hit DELETE / INSERT paths.
+        var now = DateTime.UtcNow;
+        var incoming = (dto.Stats ?? new List<EspnRecordStatDto>())
+            .Where(s => !string.IsNullOrEmpty(s.Name))
+            .GroupBy(s => s.Name)
+            .ToDictionary(g => g.Key, g => g.First());
+        var existingByName = existingRecord.Stats
+            .Where(s => !string.IsNullOrEmpty(s.Name))
+            .GroupBy(s => s.Name)
+            .ToDictionary(g => g.Key, g => g.First());
 
-        // Add new stats
-        CreateStatsForRecord(dto.Stats, existingRecord, command.CorrelationId);
+        // Update existing + insert new
+        foreach (var (name, statDto) in incoming)
+        {
+            if (existingByName.TryGetValue(name, out var existingStat))
+            {
+                existingStat.DisplayName = statDto.DisplayName;
+                existingStat.ShortDisplayName = statDto.ShortDisplayName;
+                existingStat.Description = statDto.Description;
+                existingStat.Abbreviation = statDto.Abbreviation;
+                existingStat.Type = statDto.Type;
+                existingStat.Value = statDto.Value;
+                existingStat.DisplayValue = statDto.DisplayValue;
+                existingStat.ModifiedUtc = now;
+            }
+            else
+            {
+                var newStat = new CompetitionCompetitorRecordStat
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionCompetitorRecordId = existingRecord.Id,
+                    Name = statDto.Name,
+                    DisplayName = statDto.DisplayName,
+                    ShortDisplayName = statDto.ShortDisplayName,
+                    Description = statDto.Description,
+                    Abbreviation = statDto.Abbreviation,
+                    Type = statDto.Type,
+                    Value = statDto.Value,
+                    DisplayValue = statDto.DisplayValue,
+                    CreatedUtc = now,
+                    CreatedBy = command.CorrelationId
+                };
+                existingRecord.Stats.Add(newStat);
+                // Mark on the DbSet too — relying on navigation-collection
+                // auto-detection alone has surfaced as a real failure path
+                // (InMemory provider raised "entity does not exist in the
+                // store" on SaveChanges when only added to the collection).
+                _dataContext.CompetitionCompetitorRecordStats.Add(newStat);
+            }
+        }
+
+        // Remove orphans (stats ESPN no longer ships)
+        var orphans = existingRecord.Stats
+            .Where(s => !string.IsNullOrEmpty(s.Name) && !incoming.ContainsKey(s.Name))
+            .ToList();
+        foreach (var orphan in orphans)
+        {
+            existingRecord.Stats.Remove(orphan);
+            _dataContext.CompetitionCompetitorRecordStats.Remove(orphan);
+        }
+
+        await Task.CompletedTask;
 
         _logger.LogInformation(
             "✅ RECORD_UPDATED: CompetitionCompetitorRecord updated. RecordId={RecordId}, Stats={StatCount}",

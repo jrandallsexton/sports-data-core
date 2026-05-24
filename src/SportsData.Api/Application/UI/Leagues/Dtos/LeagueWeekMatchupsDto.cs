@@ -32,7 +32,20 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
 
             public DateTime StartDateUtc { get; set; }
 
-            public ContestStatus Status { get; set; }
+            /// <summary>
+            /// Raw ESPN status type name for programmatic branching
+            /// (e.g. "STATUS_IN_PROGRESS", "STATUS_FINAL"). Pair with
+            /// <see cref="StatusDescription"/> for display. Null when the
+            /// underlying CompetitionStatus row hasn't been sourced yet
+            /// (LEFT JOIN on the producer-side query).
+            /// </summary>
+            public string? Status { get; set; }
+
+            /// <summary>
+            /// Human-readable status (e.g. "In Progress", "Final"). For display.
+            /// Null when CompetitionStatus hasn't been sourced.
+            /// </summary>
+            public string? StatusDescription { get; set; }
 
             public string? Broadcasts { get; set; }
 

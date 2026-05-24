@@ -42,6 +42,7 @@ export default function AdminBaseballPage() {
     return {
       ...matchup,
       status: live.status ?? matchup.status,
+      statusDescription: live.statusDescription ?? matchup.statusDescription,
       awayScore: live.awayScore ?? matchup.awayScore,
       homeScore: live.homeScore ?? matchup.homeScore,
       // Baseball-shaped live fields (handleBaseballPlayCompleted writes

@@ -12,7 +12,10 @@ import type {
  */
 export interface ContestLiveRecord {
   contestId: string;
+  /** Raw ESPN status type name (e.g. "STATUS_IN_PROGRESS"). */
   status?: string;
+  /** Human-readable status (e.g. "In Progress"). For display. */
+  statusDescription?: string;
 
   awayScore?: number;
   homeScore?: number;
@@ -84,6 +87,7 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
           ...state.contests[data.contestId],
           contestId: data.contestId,
           status: data.status,
+          statusDescription: data.statusDescription,
           lastUpdated: now,
         },
       },
@@ -103,7 +107,8 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
           // ContestStatusChanged fan-out would otherwise stay stuck on
           // the prior status. Receiving any play is itself proof the
           // contest is live — promote here. (Web counterpart: PR #322.)
-          status: 'InProgress',
+          status: 'STATUS_IN_PROGRESS',
+          statusDescription: 'In Progress',
           period: data.period,
           clock: data.clock,
           awayScore: data.awayScore,
@@ -154,7 +159,8 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
           ...state.contests[data.contestId],
           contestId: data.contestId,
           // Same self-heal rationale as handleFootballPlayCompleted.
-          status: 'InProgress',
+          status: 'STATUS_IN_PROGRESS',
+          statusDescription: 'In Progress',
           inning: data.inning,
           halfInning: data.halfInning,
           awayScore: data.awayScore,

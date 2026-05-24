@@ -152,7 +152,9 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
 
             await _publishEndpoint.Publish(new ContestStatusChanged(
                 contestId,
+                // See matching comment in EventCompetitionStatusDocumentProcessor.
                 entity.StatusTypeName,
+                entity.StatusDescription,
                 _refGenerator.ForCompetition(competitionIdValue),
                 command.Sport,
                 command.SeasonYear,

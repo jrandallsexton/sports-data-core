@@ -498,6 +498,7 @@ namespace SportsData.Api.Application.Admin
                 await _eventBus.Publish(new ContestStatusChanged(
                     ContestId: contestId,
                     Status: request.Status,
+                    StatusDescription: request.StatusDescription,
                     Ref: null,
                     Sport: sport,
                     SeasonYear: null,

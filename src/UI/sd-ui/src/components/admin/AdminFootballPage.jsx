@@ -62,6 +62,7 @@ export default function AdminFootballPage() {
     return {
       ...matchup,
       status: live.status ?? matchup.status,
+      statusDescription: live.statusDescription ?? matchup.statusDescription,
       awayScore: live.awayScore ?? matchup.awayScore,
       homeScore: live.homeScore ?? matchup.homeScore,
       period: live.period ?? matchup.period,

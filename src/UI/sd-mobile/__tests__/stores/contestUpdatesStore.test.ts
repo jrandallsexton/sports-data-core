@@ -9,7 +9,8 @@ const CID = '00000000-0000-0000-0000-000000000001';
 
 const statusPayload = (overrides?: Partial<ContestStatusChangedPayload>): ContestStatusChangedPayload => ({
   contestId: CID,
-  status: 'Scheduled',
+  status: 'STATUS_SCHEDULED',
+  statusDescription: 'Scheduled',
   ...overrides,
 });
 
@@ -66,35 +67,37 @@ describe('contestUpdatesStore', () => {
 
   describe('handleStatusUpdate', () => {
     it('writes status and contestId for a fresh contest', () => {
-      useContestUpdatesStore.getState().handleStatusUpdate(statusPayload({ status: 'InProgress' }));
+      useContestUpdatesStore.getState().handleStatusUpdate(statusPayload({ status: 'STATUS_IN_PROGRESS', statusDescription: 'In Progress' }));
 
       const record = useContestUpdatesStore.getState().contests[CID];
       expect(record).toBeDefined();
       expect(record.contestId).toBe(CID);
-      expect(record.status).toBe('InProgress');
+      expect(record.status).toBe('STATUS_IN_PROGRESS');
+      expect(record.statusDescription).toBe('In Progress');
       expect(record.lastUpdated).toEqual(expect.any(Number));
     });
 
     it('ignores payloads missing contestId', () => {
-      useContestUpdatesStore.getState().handleStatusUpdate({ contestId: '', status: 'InProgress' });
+      useContestUpdatesStore.getState().handleStatusUpdate({ contestId: '', status: 'STATUS_IN_PROGRESS', statusDescription: 'In Progress' });
       expect(Object.keys(useContestUpdatesStore.getState().contests)).toHaveLength(0);
     });
 
     it('overwrites prior status without dropping other fields', () => {
       useContestUpdatesStore.getState().handleFootballPlayCompleted(footballPayload({ period: 'Q3' }));
-      useContestUpdatesStore.getState().handleStatusUpdate(statusPayload({ status: 'Final' }));
+      useContestUpdatesStore.getState().handleStatusUpdate(statusPayload({ status: 'STATUS_FINAL', statusDescription: 'Final' }));
 
       const record = useContestUpdatesStore.getState().contests[CID];
-      expect(record.status).toBe('Final');
+      expect(record.status).toBe('STATUS_FINAL');
       expect(record.period).toBe('Q3');
     });
   });
 
   describe('handleFootballPlayCompleted', () => {
-    it('promotes status to InProgress even if no prior status event arrived (self-heal)', () => {
+    it('promotes status to STATUS_IN_PROGRESS even if no prior status event arrived (self-heal)', () => {
       useContestUpdatesStore.getState().handleFootballPlayCompleted(footballPayload());
 
-      expect(useContestUpdatesStore.getState().contests[CID].status).toBe('InProgress');
+      expect(useContestUpdatesStore.getState().contests[CID].status).toBe('STATUS_IN_PROGRESS');
+      expect(useContestUpdatesStore.getState().contests[CID].statusDescription).toBe('In Progress');
     });
 
     it('writes football scoreboard fields', () => {
@@ -165,10 +168,11 @@ describe('contestUpdatesStore', () => {
   });
 
   describe('handleBaseballPlayCompleted', () => {
-    it('promotes status to InProgress (self-heal)', () => {
+    it('promotes status to STATUS_IN_PROGRESS (self-heal)', () => {
       useContestUpdatesStore.getState().handleBaseballPlayCompleted(baseballPayload());
 
-      expect(useContestUpdatesStore.getState().contests[CID].status).toBe('InProgress');
+      expect(useContestUpdatesStore.getState().contests[CID].status).toBe('STATUS_IN_PROGRESS');
+      expect(useContestUpdatesStore.getState().contests[CID].statusDescription).toBe('In Progress');
     });
 
     it('writes baseball scoreboard fields including runners and at-bat header', () => {

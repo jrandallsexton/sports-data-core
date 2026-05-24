@@ -25,9 +25,12 @@ public static class MatchupForPickDtoMapper
         LeagueWeekMatchupsDto.MatchupForPickDto matchup,
         LeagueMatchupDto canonical)
     {
-        matchup.Status = Enum.TryParse<ContestStatus>(canonical.Status, true, out var status)
-            ? status
-            : ContestStatus.Undefined;
+        // Pass both wire-shape status fields through verbatim — no
+        // transformation, no enum parse. Same dual-field shape the rest of
+        // the picks-page wire surface uses (canonical Matchup, SignalR
+        // ContestStatusChanged).
+        matchup.Status = canonical.Status;
+        matchup.StatusDescription = canonical.StatusDescription;
         matchup.Broadcasts = canonical.Broadcasts;
 
         // Away team

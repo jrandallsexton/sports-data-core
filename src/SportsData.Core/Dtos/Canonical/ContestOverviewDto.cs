@@ -63,7 +63,19 @@ namespace SportsData.Core.Dtos.Canonical
     {
         public Guid ContestId { get; set; }
 
+        /// <summary>
+        /// Inferred contest state — combines CompetitionStatus.StatusTypeName
+        /// with timestamp-based fallbacks when the status doc isn't sourced
+        /// yet. Used for typed branching in C# consumers.
+        /// </summary>
         public ContestStatus Status { get; set; }
+
+        /// <summary>
+        /// Human-readable status description ("In Progress", "Rain Delay")
+        /// sourced from CompetitionStatus.StatusDescription. For display.
+        /// Null when no status row exists yet.
+        /// </summary>
+        public string? StatusDescription { get; set; }
 
         public string? WeekLabel { get; set; }
 

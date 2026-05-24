@@ -95,7 +95,7 @@ function MatchupCard({
 
   // Determine pick result when game is complete
   const getUserPickResult = () => {
-    if (matchup.status !== 'Final') return null;
+    if (matchup.status !== 'STATUS_FINAL') return null;
     // Only use server-calculated result
     if (userPickResult && typeof userPickResult.isCorrect === 'boolean') {
       return userPickResult.isCorrect ? 'correct' : 'incorrect';
@@ -217,6 +217,7 @@ function MatchupCard({
         {/* Game Status */}
         <GameStatus
           status={matchup.status}
+          statusDescription={matchup.statusDescription}
           awayShort={matchup.awayShort}
           homeShort={matchup.homeShort}
           awayScore={matchup.awayScore}

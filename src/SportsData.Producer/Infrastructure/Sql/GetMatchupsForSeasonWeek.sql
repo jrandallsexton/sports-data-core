@@ -6,6 +6,7 @@ SELECT
   cn."Headline" AS "Headline",
   c."StartDateUtc" AS "StartDateUtc",
   cs."StatusTypeName" AS "Status",
+  cs."StatusDescription" AS "StatusDescription",
 
   v."Name"                  AS "VenueName",
   v."City"                  AS "VenueCity",

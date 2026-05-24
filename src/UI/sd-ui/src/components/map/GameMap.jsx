@@ -34,6 +34,22 @@ const mapOptions = {
   ]
 };
 
+// Statuses treated as "live" for rendering purposes. Includes the
+// paused-live trio (Delayed / RainDelay / Suspended) — the game is still
+// on, just on hold; score + period are meaningful. Used by both the
+// status filter and the per-game render checks (marker size, hover
+// score, InfoWindow period/clock) so rendering and filtering stay in
+// lockstep.
+const LIVE_STATUSES = new Set([
+  "STATUS_IN_PROGRESS",
+  "STATUS_HALFTIME",
+  "STATUS_DELAYED",
+  "STATUS_RAIN_DELAY",
+  "STATUS_SUSPENDED",
+]);
+
+const isLive = (status) => LIVE_STATUSES.has(status);
+
 function GameMap() {
   console.log('=== Google Maps API Key Debug ===');
   console.log('REACT_APP_GOOGLE_MAPS_API_KEY:', process.env.REACT_APP_GOOGLE_MAPS_API_KEY);
@@ -113,9 +129,12 @@ function GameMap() {
           homeRank: game.homeRank,
           awayScore: null, // Will be updated by SignalR
           homeScore: null, // Will be updated by SignalR
-          status: game.status === "STATUS_SCHEDULED" ? "Scheduled" : 
-                  game.status === "STATUS_IN_PROGRESS" ? "InProgress" :
-                  game.status === "STATUS_FINAL" ? "Final" : "Scheduled",
+          // Raw ESPN type name (e.g. "STATUS_FINAL") — same wire shape as
+          // ContestStatusChanged.Status, so the live-update merge below
+          // doesn't need to renormalize. Display labels come from
+          // statusDescription where rendered.
+          status: game.status,
+          statusDescription: game.statusDescription,
           homeSpread: game.homeSpread,
           startDateUtc: game.startDateUtc,
           venueName: game.venueName,
@@ -191,6 +210,7 @@ function GameMap() {
       return {
         ...game,
         status: liveUpdate.status,
+        statusDescription: liveUpdate.statusDescription ?? game.statusDescription,
         awayScore: liveUpdate.awayScore,
         homeScore: liveUpdate.homeScore,
         period: liveUpdate.period,
@@ -209,11 +229,11 @@ function GameMap() {
 
     let statusMatch = true;
     if (statusFilter === "upcoming") {
-      statusMatch = game.status === "Scheduled" || !game.status;
+      statusMatch = game.status === "STATUS_SCHEDULED" || !game.status;
     } else if (statusFilter === "live") {
-      statusMatch = game.status === "InProgress";
+      statusMatch = isLive(game.status);
     } else if (statusFilter === "final") {
-      statusMatch = game.status === "Final";
+      statusMatch = game.status === "STATUS_FINAL";
     }
 
     return conferenceMatch && statusMatch;
@@ -235,8 +255,8 @@ function GameMap() {
   }, [enrichedGames, selectedGame]);
 
   const getMarkerColor = (game) => {
-    if (game.status === "Final") return "#F44336"; // Red
-    if (game.status === "InProgress") return "#4CAF50"; // Green
+    if (game.status === "STATUS_FINAL") return "#F44336"; // Red
+    if (isLive(game.status)) return "#4CAF50"; // Green
     return "#9E9E9E"; // Gray
   };
 
@@ -414,7 +434,7 @@ function GameMap() {
                   fillOpacity: 0.9,
                   strokeColor: "#FFFFFF",
                   strokeWeight: 2,
-                  scale: game.status === "InProgress" ? 12 : 8,
+                  scale: isLive(game.status) ? 12 : 8,
                 }}
               />
             );
@@ -445,7 +465,7 @@ function GameMap() {
                     <span className="tooltip-team-name">{hoveredGame.homeShort}</span>
                   </div>
                 </div>
-                {hoveredGame.status === "InProgress" && (
+                {isLive(hoveredGame.status) && (
                   <div className="tooltip-score">
                     {hoveredGame.awayScore} - {hoveredGame.homeScore}
                   </div>
@@ -483,7 +503,7 @@ function GameMap() {
                       <span className="tooltip-team-name">{game.homeShort}</span>
                     </div>
                   </div>
-                  {game.status === "InProgress" && (
+                  {isLive(game.status) && (
                     <div className="tooltip-score">
                       {game.awayScore} - {game.homeScore}
                     </div>
@@ -554,7 +574,7 @@ function GameMap() {
                 </div>
                 
                 {/* Live Score Display */}
-                {(selectedGame.status === "InProgress" || selectedGame.status === "Final") && 
+                {(isLive(selectedGame.status) || selectedGame.status === "STATUS_FINAL") &&
                  selectedGame.awayScore !== null && selectedGame.homeScore !== null && (
                   <div className="map-score-display">
                     <div className="map-score-line">
@@ -569,13 +589,13 @@ function GameMap() {
                 )}
                 
                 {/* Game Status Info */}
-                {selectedGame.status === "InProgress" && selectedGame.period && (
+                {isLive(selectedGame.status) && selectedGame.period && (
                   <div className="map-game-status">
                     {selectedGame.period}
                     {selectedGame.clock && ` - ${selectedGame.clock}`}
                   </div>
                 )}
-                {selectedGame.status === "Final" && (
+                {selectedGame.status === "STATUS_FINAL" && (
                   <div className="map-game-status map-final-status">
                     Final
                   </div>

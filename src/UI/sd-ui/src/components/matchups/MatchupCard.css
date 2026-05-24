@@ -250,6 +250,22 @@
   opacity: 0.7;
 }
 
+/* Mid-game paused state banner — sits above the InProgress block when the
+   game is Delayed / RainDelay / Suspended. The game IS still live (the
+   InProgress block below shows score + period/inning), but no play is
+   happening right now, so we name the reason prominently. */
+.game-delay-banner {
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  background-color: var(--bg-elevated);
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin: 6px 8px 0;
+}
+
 /* Game Result Section */
 .game-result {
   text-align: center;

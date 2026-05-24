@@ -44,7 +44,7 @@ const buildBaseballMatchup = (overrides?: Partial<Matchup>): Matchup => ({
   homeFranchiseSeasonId: '00000000-0000-0000-0000-0000000000a2',
   homeLogoUri: 'https://example.test/red-sox.png',
 
-  status: 'Scheduled',
+  status: 'STATUS_SCHEDULED',
   ...overrides,
 });
 
@@ -64,7 +64,7 @@ const buildFootballMatchup = (overrides?: Partial<Matchup>): Matchup => ({
   homeFranchiseSeasonId: '00000000-0000-0000-0000-0000000000b2',
   homeLogoUri: null,
 
-  status: 'Scheduled',
+  status: 'STATUS_SCHEDULED',
   ...overrides,
 });
 

@@ -19,14 +19,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
     public EventCompetitionCompetitorRecordDocumentProcessor(
         ILogger<EventCompetitionCompetitorRecordDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus eventBus,
         IGenerateExternalRefIdentities identityGenerator,
-        IGenerateResourceRefs refs)
+        IGenerateResourceRefs refs,
+        IDateTimeProvider dateTimeProvider)
         : base(logger, dataContext, eventBus, identityGenerator, refs)
     {
+        _dateTimeProvider = dateTimeProvider;
     }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
@@ -219,12 +223,12 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
             Summary = dto.Summary,
             DisplayValue = dto.DisplayValue,
             Value = dto.Value,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = _dateTimeProvider.UtcNow(),
             CreatedBy = command.CorrelationId
         };
 
         // Add stats
-        CreateStatsForRecord(dto.Stats, record, command.CorrelationId);
+        CreateStatsForRecord(dto.Stats, record, command.CorrelationId, _dateTimeProvider.UtcNow());
 
         await _dataContext.CompetitionCompetitorRecords.AddAsync(record);
 
@@ -235,7 +239,7 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
             record.Stats.Count);
     }
 
-    private async Task ProcessUpdate(
+    private Task ProcessUpdate(
         ProcessDocumentCommand command,
         EspnEventCompetitionCompetitorRecordDto dto,
         CompetitionCompetitorRecord existingRecord)
@@ -250,7 +254,7 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
         existingRecord.Summary = dto.Summary;
         existingRecord.DisplayValue = dto.DisplayValue;
         existingRecord.Value = dto.Value;
-        existingRecord.ModifiedUtc = DateTime.UtcNow;
+        existingRecord.ModifiedUtc = _dateTimeProvider.UtcNow();
 
         // Diff-merge stats by Name (ESPN's natural per-stat identifier).
         // The prior "RemoveRange + re-Add" pattern issued explicit DELETE
@@ -262,7 +266,7 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
         // steady-state case where ESPN ships the same stat keys with new
         // values — UPDATEs don't race the same way, and only orphan
         // removal / new additions hit DELETE / INSERT paths.
-        var now = DateTime.UtcNow;
+        var now = _dateTimeProvider.UtcNow();
         var incoming = (dto.Stats ?? new List<EspnRecordStatDto>())
             .Where(s => !string.IsNullOrEmpty(s.Name))
             .GroupBy(s => s.Name)
@@ -322,18 +326,19 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
             _dataContext.CompetitionCompetitorRecordStats.Remove(orphan);
         }
 
-        await Task.CompletedTask;
-
         _logger.LogInformation(
             "✅ RECORD_UPDATED: CompetitionCompetitorRecord updated. RecordId={RecordId}, Stats={StatCount}",
             existingRecord.Id,
             existingRecord.Stats.Count);
+
+        return Task.CompletedTask;
     }
 
     private static void CreateStatsForRecord(
         IEnumerable<EspnRecordStatDto>? statDtos,
         CompetitionCompetitorRecord record,
-        Guid correlationId)
+        Guid correlationId,
+        DateTime now)
     {
         if (statDtos == null)
             return;
@@ -352,7 +357,7 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
                 Type = statDto.Type,
                 Value = statDto.Value,
                 DisplayValue = statDto.DisplayValue,
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = now,
                 CreatedBy = correlationId
             };
 

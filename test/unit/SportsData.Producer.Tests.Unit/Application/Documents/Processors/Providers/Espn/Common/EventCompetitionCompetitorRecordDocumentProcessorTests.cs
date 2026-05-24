@@ -4,6 +4,8 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using System.Globalization;
+
 using SportsData.Core.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
@@ -43,6 +45,9 @@ public class EventCompetitionCompetitorRecordDocumentProcessorTests
 
     private static string BuildDocumentJson(string type, params (string Name, double Value, string DisplayValue)[] stats)
     {
+        // Numeric values rendered with InvariantCulture so the resulting
+        // JSON is valid on locales with non-dot decimal separators (e.g.
+        // de-DE would otherwise emit "value": 0,667 — invalid JSON).
         var statsJson = string.Join(",", stats.Select(s =>
             $$"""
             {
@@ -52,7 +57,7 @@ public class EventCompetitionCompetitorRecordDocumentProcessorTests
               "description": "{{s.Name}} desc",
               "abbreviation": "{{s.Name}}",
               "type": "{{s.Name}}",
-              "value": {{s.Value}},
+              "value": {{s.Value.ToString(CultureInfo.InvariantCulture)}},
               "displayValue": "{{s.DisplayValue}}"
             }
             """));
@@ -150,9 +155,10 @@ public class EventCompetitionCompetitorRecordDocumentProcessorTests
 
         // Second call ships the same stat NAMES but different VALUES. Under
         // diff-merge this should UPDATE in place — same row Ids. Under the
-        // prior DELETE-INSERT pattern, Ids would be regenerated.
-        // Use a fresh SUT (and thus a fresh DbContext from the test base's
-        // Mocker) to simulate a different worker / message processing.
+        // prior DELETE-INSERT pattern, Ids would be regenerated. The
+        // ChangeTracker.Clear() above simulates the production "fresh DI
+        // scope per message" semantic; reusing the same `sut` here is fine
+        // because the processor is stateless apart from the DbContext.
         var secondDoc = BuildDocumentJson("road",
             ("wins", 11, "11"),
             ("losses", 5, "5"));
@@ -241,7 +247,7 @@ public class EventCompetitionCompetitorRecordDocumentProcessorTests
 
         var anyRecords = await FootballDataContext.CompetitionCompetitorRecords
             .AsNoTracking()
-            .AnyAsync();
+            .AnyAsync(r => r.CompetitionCompetitorId == phantomCompetitorId);
 
         anyRecords.Should().BeFalse();
     }

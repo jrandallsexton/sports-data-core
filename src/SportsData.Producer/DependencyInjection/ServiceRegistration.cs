@@ -38,6 +38,7 @@ using SportsData.Producer.Application.Franchises.Queries.GetFranchiseLogos;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseSeasons;
 using SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 using SportsData.Producer.Application.Franchises.Queries.GetTeamCard;
+using SportsData.Producer.Application.Franchises.Queries.GetTeamSchedule;
 using SportsData.Producer.Application.Franchises.Queries.GetTeamRoster;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetCurrentPolls;
 using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetPollBySeasonWeekId;
@@ -269,6 +270,7 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IGetFranchiseSeasonsQueryHandler, GetFranchiseSeasonsQueryHandler>();
             services.AddScoped<IGetSeasonContestsQueryHandler, GetSeasonContestsQueryHandler>();
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
+            services.AddScoped<IGetTeamScheduleQueryHandler, GetTeamScheduleQueryHandler>();
             services.AddScoped<IGetTeamRosterQueryHandler, GetTeamRosterQueryHandler>();
             services.AddScoped<IGetFranchiseLogosQueryHandler, GetFranchiseLogosQueryHandler>();
             services.AddScoped<IUpdateLogoDarkBgCommandHandler, UpdateLogoDarkBgCommandHandler>();

@@ -12,6 +12,18 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
 
         public int WeekNumber { get; set; }
 
+        /// <summary>
+        /// Inclusive upper bound for the mini-schedule snapshot. Equals
+        /// SeasonWeek.EndDate of the displayed week (derived from the first
+        /// matchup's contest → SeasonWeek FK). UI passes this to
+        /// /ui/teamcard/.../schedule?asOfDate=… so historical pick-review
+        /// views show results only through that week's close — fixes both
+        /// the MLB "same-week games dropped" bug and the football
+        /// "postseason Week 1 sneaks in" bug that a numeric week filter
+        /// couldn't cleanly handle. Null when the week has no matchups.
+        /// </summary>
+        public DateTime? AsOfDate { get; set; }
+
         public PickType PickType { get; set; }
 
         public bool UseConfidencePoints { get; set; }

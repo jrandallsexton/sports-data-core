@@ -23,14 +23,15 @@ function getResultClass(game) {
   return "result-tbd";
 }
 
-export default function MiniSchedule({ schedule = [], seasonYear, leagueSport }) {
+export default function MiniSchedule({ schedule = [], seasonYear, leagueSport, asOfDate = null }) {
   // Null when the backend sport enum is missing or unmapped — we then render
   // plain-text team names instead of risking a wrong-sport route.
   const sportLeague = resolveSportLeague(leagueSport);
   const userTz = useUserTimeZone();
-  // TODO: create new endpoint that only returns completed games
+  // Endpoint already returns completed-only, newest-first, inclusive of `asOfDate`.
+  // Football shows the entire (short) schedule; other sports cap at 10.
   const limit = sportLeague?.sport === 'football' ? schedule.length : 10;
-  const games = [...schedule].reverse().slice(0, limit);
+  const games = schedule.slice(0, limit);
   // Drilldown state: which row is open, and its data
   const [drillIndex, setDrillIndex] = useState(null);
   const [drillSchedule, setDrillSchedule] = useState([]);
@@ -55,10 +56,11 @@ export default function MiniSchedule({ schedule = [], seasonYear, leagueSport })
       return;
     }
     try {
-      // Use current seasonYear for opponent
+      // Same snapshot semantics as the parent row: pass asOfDate so the
+      // opponent's history is filtered to what was knowable at pick-time.
       const res = await import("../../api/apiWrapper").then(m =>
-        m.default.TeamCard.getBySlugAndSeason(sportLeague.sport, sportLeague.league, opponentSlug, seasonYear));
-      setDrillSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule : []);
+        m.default.TeamCard.getSchedule(sportLeague.sport, sportLeague.league, opponentSlug, seasonYear, asOfDate));
+      setDrillSchedule(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
       setDrillError("Failed to load schedule");
     } finally {
@@ -134,7 +136,7 @@ export default function MiniSchedule({ schedule = [], seasonYear, leagueSport })
                     ) : drillError ? (
                       <div style={{ padding: 6, color: 'red', fontSize: '0.95em' }}>{drillError}</div>
                     ) : (
-                      <MiniSchedule schedule={drillSchedule} seasonYear={seasonYear} leagueSport={leagueSport} />
+                      <MiniSchedule schedule={drillSchedule} seasonYear={seasonYear} leagueSport={leagueSport} asOfDate={asOfDate} />
                     )}
                   </td>
                 </tr>

@@ -9,6 +9,16 @@ namespace SportsData.Core.Dtos.Canonical;
 public class LeagueMatchupDto
 {
     public Guid SeasonWeekId { get; set; }
+
+    /// <summary>
+    /// EndDate of the SeasonWeek this contest belongs to. Used by the API
+    /// matchups handler to compute LeagueWeekMatchupsDto.AsOfDate — the
+    /// inclusive boundary the mini-schedule endpoint uses to filter completed
+    /// games. All contests in a single league-week share the same SeasonWeek,
+    /// so any row's value is authoritative.
+    /// </summary>
+    public DateTime SeasonWeekEndDate { get; set; }
+
     public Guid ContestId { get; set; }
     public DateTime StartDateUtc { get; set; }
     /// <summary>

@@ -17,7 +17,8 @@ function MatchupList({
   usedConfidencePoints,
   totalGames,
   leagueSport,
-  leagueSeasonYear
+  leagueSeasonYear,
+  leagueAsOfDate
 }) {
   if (loading) {
     return (
@@ -47,6 +48,7 @@ function MatchupList({
           totalGames={totalGames}
           leagueSport={leagueSport}
           leagueSeasonYear={leagueSeasonYear}
+          leagueAsOfDate={leagueAsOfDate}
         />
       ))}
     </div>

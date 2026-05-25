@@ -38,7 +38,8 @@ function TeamRow({
   schedule,
   loading,
   error,
-  probablePitcher
+  probablePitcher,
+  asOfDate
 }) {
   // resolveSportLeague returns null for unknown/missing enums so unsupported
   // sports don't silently render as an NCAA football route. Fall back to a
@@ -112,7 +113,7 @@ function TeamRow({
         ) : error ? (
           <div style={{ padding: 4, color: 'red', fontSize: '0.95em' }}>{error}</div>
         ) : (
-          <MiniSchedule schedule={schedule} seasonYear={seasonYear} leagueSport={leagueSport} />
+          <MiniSchedule schedule={schedule} seasonYear={seasonYear} leagueSport={leagueSport} asOfDate={asOfDate} />
         )
       )}
     </>

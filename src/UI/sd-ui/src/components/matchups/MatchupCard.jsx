@@ -31,7 +31,8 @@ function MatchupCard({
   usedConfidencePoints = [],
   totalGames,
   leagueSport, // Backend Sport enum name (e.g. "BaseballMlb") — drives team-link routing
-  leagueSeasonYear // From LeagueWeekMatchupsDto.SeasonYear — canonical for all matchups in this response
+  leagueSeasonYear, // From LeagueWeekMatchupsDto.SeasonYear — canonical for all matchups in this response
+  leagueAsOfDate // From LeagueWeekMatchupsDto.AsOfDate (= SeasonWeek.EndDate of the displayed week). Threaded into MiniSchedule as an inclusive FinalizedUtc upper bound so historical pick reviews don't show future game results.
 }) {
   const { userDto } = useUserDto();
   // seasonYear is authoritative from leagueSeasonYear (set by the backend
@@ -84,7 +85,7 @@ function MatchupCard({
     homeLoading,
     awayError,
     homeError
-  } = useTeamSchedule(matchup.awaySlug, matchup.homeSlug, seasonYear, leagueSport);
+  } = useTeamSchedule(matchup.awaySlug, matchup.homeSlug, seasonYear, leagueSport, leagueAsOfDate);
 
   const userTz = useUserTimeZone();
 
@@ -184,6 +185,7 @@ function MatchupCard({
           loading={awayLoading}
           error={awayError}
           probablePitcher={matchup.awayProbablePitcher}
+          asOfDate={leagueAsOfDate}
         />
 
         {/* Home Team Row */}
@@ -204,6 +206,7 @@ function MatchupCard({
           loading={homeLoading}
           error={homeError}
           probablePitcher={matchup.homeProbablePitcher}
+          asOfDate={leagueAsOfDate}
         />
 
         {/* Spread and Over/Under */}

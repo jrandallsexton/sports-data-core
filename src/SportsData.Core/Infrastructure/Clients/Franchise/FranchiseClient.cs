@@ -26,6 +26,7 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
     Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default);
     Task<TeamCardDto?> GetTeamCard(string slug, int seasonYear, CancellationToken cancellationToken = default);
+    Task<Result<List<TeamCardScheduleItemDto>>> GetTeamSchedule(string slug, int seasonYear, DateTime? asOfDate = null, CancellationToken cancellationToken = default);
     Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
     Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonPreviewStats(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
     Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResults(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
@@ -146,6 +147,26 @@ public class FranchiseClient : ClientBase, IProvideFranchises
         {
             return null;
         }
+    }
+
+    public async Task<Result<List<TeamCardScheduleItemDto>>> GetTeamSchedule(
+        string slug,
+        int seasonYear,
+        DateTime? asOfDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Round-trip via ISO-8601 ("o") so Producer's DateTime model binder gets
+        // an unambiguous UTC instant regardless of server locale.
+        var path = asOfDate.HasValue
+            ? $"franchises/{Uri.EscapeDataString(slug)}/seasons/{seasonYear}/schedule?asOfDate={Uri.EscapeDataString(asOfDate.Value.ToUniversalTime().ToString("o"))}"
+            : $"franchises/{Uri.EscapeDataString(slug)}/seasons/{seasonYear}/schedule";
+
+        var schedule = await GetOrDefaultAsync(
+            path,
+            new List<TeamCardScheduleItemDto>(),
+            cancellationToken);
+
+        return new Success<List<TeamCardScheduleItemDto>>(schedule);
     }
 
     public async Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId, CancellationToken cancellationToken = default)

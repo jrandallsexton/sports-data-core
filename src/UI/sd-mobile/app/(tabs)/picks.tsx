@@ -173,6 +173,7 @@ export default function PicksScreen() {
               matchup={item.matchup}
               pick={item.pick}
               leagueSport={matchupsResponse?.sport ?? null}
+              leagueAsOfDate={matchupsResponse?.asOfDate ?? null}
               onPress={() => {
                 if (!sportLeague) {
                   // Sport hasn't resolved yet (matchups response still in flight)

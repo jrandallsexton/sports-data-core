@@ -33,6 +33,11 @@ function PicksPage() {
   const [useConfidencePoints, setUseConfidencePoints] = useState(false);
   const [leagueSport, setLeagueSport] = useState(null);
   const [leagueSeasonYear, setLeagueSeasonYear] = useState(null);
+  // SeasonWeek.EndDate of the displayed week (ISO 8601). Threaded down to
+  // MiniSchedule's fetch as an inclusive FinalizedUtc upper bound — see
+  // docs/team-schedule-endpoint.md for why numeric week filtering doesn't work
+  // (MLB same-week games + football postseason Week-N reuse).
+  const [leagueAsOfDate, setLeagueAsOfDate] = useState(null);
   const [loadingMatchups, setLoadingMatchups] = useState(true);
 
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
@@ -179,6 +184,7 @@ function PicksPage() {
         setUseConfidencePoints(response.data.useConfidencePoints);
         setLeagueSport(response.data.sport);
         setLeagueSeasonYear(response.data.seasonYear);
+        setLeagueAsOfDate(response.data.asOfDate ?? null);
       } catch (error) {
         console.error("Failed to fetch matchups:", error);
       } finally {
@@ -447,6 +453,7 @@ function PicksPage() {
                 usedConfidencePoints={usedConfidencePoints}
                 totalGames={enrichedMatchups.length}
                 leagueSport={leagueSport}
+                leagueAsOfDate={leagueAsOfDate}
                 leagueSeasonYear={leagueSeasonYear}
               />
             ) : (

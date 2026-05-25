@@ -33,30 +33,52 @@ export const useTeamSchedule = (awaySlug, homeSlug, seasonYear, leagueSport, asO
     if (!showAwayGames || !seasonYear) return;
     const sportLeague = resolveSportLeague(leagueSport);
     if (!sportLeague) return;
+    // Race guard: when deps change (e.g. asOfDate flips on week switch) the
+    // effect re-runs while the prior fetch may still be in flight. The cleanup
+    // function flips `cancelled`, and the resolved promise checks it before
+    // calling any setState — so a late response can't stomp newer state.
+    let cancelled = false;
     setAwayLoading(true);
     setAwayError(null);
     const { sport, league } = sportLeague;
     apiWrapper.TeamCard.getSchedule(sport, league, awaySlug, seasonYear, asOfDate)
       .then(res => {
+        if (cancelled) return;
         setAwaySchedule(Array.isArray(res.data) ? res.data : []);
       })
-      .catch(() => setAwayError("Failed to load schedule"))
-      .finally(() => setAwayLoading(false));
+      .catch(() => {
+        if (cancelled) return;
+        setAwayError("Failed to load schedule");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setAwayLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [showAwayGames, awaySlug, seasonYear, leagueSport, asOfDate]);
 
   useEffect(() => {
     if (!showHomeGames || !seasonYear) return;
     const sportLeague = resolveSportLeague(leagueSport);
     if (!sportLeague) return;
+    let cancelled = false;
     setHomeLoading(true);
     setHomeError(null);
     const { sport, league } = sportLeague;
     apiWrapper.TeamCard.getSchedule(sport, league, homeSlug, seasonYear, asOfDate)
       .then(res => {
+        if (cancelled) return;
         setHomeSchedule(Array.isArray(res.data) ? res.data : []);
       })
-      .catch(() => setHomeError("Failed to load schedule"))
-      .finally(() => setHomeLoading(false));
+      .catch(() => {
+        if (cancelled) return;
+        setHomeError("Failed to load schedule");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setHomeLoading(false);
+      });
+    return () => { cancelled = true; };
   }, [showHomeGames, homeSlug, seasonYear, leagueSport, asOfDate]);
 
   return {

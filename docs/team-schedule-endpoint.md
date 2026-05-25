@@ -87,7 +87,7 @@ the MiniSchedule fetch.
 
 ### API (`SportsData.Api`)
 
-```
+```http
 GET /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{year}/schedule
     ?asOfDate={ISO 8601, optional}
 ```
@@ -102,7 +102,7 @@ GET /ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{year}/schedule
 
 ### Producer (`SportsData.Producer`)
 
-```
+```http
 GET /api/franchises/{slug}/seasons/{year}/schedule
     ?asOfDate={ISO 8601, optional}
 ```
@@ -135,7 +135,7 @@ client doesn't need a `.reverse()` step.
 `LeagueWeekMatchupsDto.AsOfDate` is populated server-side, sourced
 from the SeasonWeek the matchup's contests belong to:
 
-```
+```text
 LeagueWeekMatchupsDto.AsOfDate
   = first canonical matchup's contest
   → Contest.SeasonWeekId (FK)
@@ -187,7 +187,7 @@ The PicksPage already fetches
 per matchup. `LeagueWeekMatchupsDto` now carries `AsOfDate`. That
 value threads down:
 
-```
+```text
 PicksPage  →  MatchupList(leagueAsOfDate)
            →  MatchupCard(leagueAsOfDate)
            →  TeamRow(asOfDate)

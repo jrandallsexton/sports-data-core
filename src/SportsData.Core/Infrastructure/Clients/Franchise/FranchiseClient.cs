@@ -155,11 +155,26 @@ public class FranchiseClient : ClientBase, IProvideFranchises
         DateTime? asOfDate = null,
         CancellationToken cancellationToken = default)
     {
-        // Round-trip via ISO-8601 ("o") so Producer's DateTime model binder gets
-        // an unambiguous UTC instant regardless of server locale.
-        var path = asOfDate.HasValue
-            ? $"franchises/{Uri.EscapeDataString(slug)}/seasons/{seasonYear}/schedule?asOfDate={Uri.EscapeDataString(asOfDate.Value.ToUniversalTime().ToString("o"))}"
-            : $"franchises/{Uri.EscapeDataString(slug)}/seasons/{seasonYear}/schedule";
+        string path;
+        if (asOfDate.HasValue)
+        {
+            // Npgsql maps Postgres TIMESTAMP WITHOUT TIME ZONE (SeasonWeek.EndDate)
+            // to DateTime with Kind=Unspecified. ToUniversalTime() treats those as
+            // Local and shifts by the server's offset — wrong, since the project
+            // convention is that those timestamps are already UTC. Pin Unspecified
+            // to UTC so the wire value is stable regardless of server timezone.
+            var d = asOfDate.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(asOfDate.Value, DateTimeKind.Utc)
+                : asOfDate.Value;
+            // Round-trip via ISO-8601 ("o") so Producer's DateTime model binder gets
+            // an unambiguous UTC instant.
+            var asOfIso = d.ToUniversalTime().ToString("o");
+            path = $"franchises/{Uri.EscapeDataString(slug)}/seasons/{seasonYear}/schedule?asOfDate={Uri.EscapeDataString(asOfIso)}";
+        }
+        else
+        {
+            path = $"franchises/{Uri.EscapeDataString(slug)}/seasons/{seasonYear}/schedule";
+        }
 
         var schedule = await GetOrDefaultAsync(
             path,

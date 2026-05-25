@@ -30,9 +30,20 @@ export const useTeamSchedule = (awaySlug, homeSlug, seasonYear, leagueSport, asO
   const [homeError, setHomeError] = useState(null);
 
   useEffect(() => {
-    if (!showAwayGames || !seasonYear) return;
+    // Early-return paths must explicitly clear loading: the race guard below
+    // suppresses the in-flight promise's `setAwayLoading(false)` once a newer
+    // effect starts, so a transition from "fetching" to "early-return" (e.g.
+    // user closes the chevron, leagueSport becomes unmapped) would otherwise
+    // strand the spinner.
+    if (!showAwayGames || !seasonYear) {
+      setAwayLoading(false);
+      return;
+    }
     const sportLeague = resolveSportLeague(leagueSport);
-    if (!sportLeague) return;
+    if (!sportLeague) {
+      setAwayLoading(false);
+      return;
+    }
     // Race guard: when deps change (e.g. asOfDate flips on week switch) the
     // effect re-runs while the prior fetch may still be in flight. The cleanup
     // function flips `cancelled`, and the resolved promise checks it before
@@ -58,9 +69,16 @@ export const useTeamSchedule = (awaySlug, homeSlug, seasonYear, leagueSport, asO
   }, [showAwayGames, awaySlug, seasonYear, leagueSport, asOfDate]);
 
   useEffect(() => {
-    if (!showHomeGames || !seasonYear) return;
+    // Same loading-reset pattern as the away effect — see comment above.
+    if (!showHomeGames || !seasonYear) {
+      setHomeLoading(false);
+      return;
+    }
     const sportLeague = resolveSportLeague(leagueSport);
-    if (!sportLeague) return;
+    if (!sportLeague) {
+      setHomeLoading(false);
+      return;
+    }
     let cancelled = false;
     setHomeLoading(true);
     setHomeError(null);

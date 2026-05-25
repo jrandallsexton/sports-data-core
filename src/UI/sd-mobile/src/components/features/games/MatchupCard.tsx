@@ -74,6 +74,7 @@ function TeamRow({
   isFinal,
   isScheduleOpen,
   onToggleSchedule,
+  canShowSchedule,
 }: {
   matchup: Matchup;
   side: 'home' | 'away';
@@ -83,6 +84,7 @@ function TeamRow({
   isFinal: boolean;
   isScheduleOpen: boolean;
   onToggleSchedule: () => void;
+  canShowSchedule: boolean;
 }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -141,9 +143,11 @@ function TeamRow({
           {rank != null ? <Text style={[styles.rankText, { color: theme.tint }]}>#{rank} </Text> : null}
           {name}
         </Text>
-        {record !== '' && (
-          <View style={styles.recordRow}>
+        <View style={styles.recordRow}>
+          {record !== '' && (
             <Text style={[styles.recordText, { color: theme.textMuted }]}>{record}</Text>
+          )}
+          {canShowSchedule && (
             <TouchableOpacity
               onPress={onToggleSchedule}
               hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
@@ -155,8 +159,8 @@ function TeamRow({
                 color={theme.tint}
               />
             </TouchableOpacity>
-          </View>
-        )}
+          )}
+        </View>
         {probablePitcher?.displayName ? (
           <View style={styles.probablePitcherRow}>
             {probablePitcher.headshotUrl ? (
@@ -512,19 +516,22 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   const year = seasonYear ?? new Date(matchup.startDateUtc).getFullYear();
   const sportLeague = resolveSportLeague(leagueSport);
 
+  // Only fetch when the sport enum resolves — otherwise we'd issue a
+  // football/ncaa request for a slug that lives in a different sport
+  // (resolveSportLeague returns null for unmapped/unknown enums by design).
   const awayTeamCard = useTeamCard(
     matchup.awaySlug ?? null,
     year,
     sportLeague?.sport ?? 'football',
     sportLeague?.league ?? 'ncaa',
-    showAwaySchedule,
+    showAwaySchedule && !!sportLeague,
   );
   const homeTeamCard = useTeamCard(
     matchup.homeSlug ?? null,
     year,
     sportLeague?.sport ?? 'football',
     sportLeague?.league ?? 'ncaa',
-    showHomeSchedule,
+    showHomeSchedule && !!sportLeague,
   );
 
   const handleOpenStats = async () => {
@@ -659,6 +666,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
             isFinal={isFinal}
             isScheduleOpen={showAwaySchedule}
             onToggleSchedule={() => setShowAwaySchedule((v) => !v)}
+            canShowSchedule={!!sportLeague}
           />
         </TouchableOpacity>
         {showAwaySchedule && (
@@ -689,6 +697,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
             isFinal={isFinal}
             isScheduleOpen={showHomeSchedule}
             onToggleSchedule={() => setShowHomeSchedule((v) => !v)}
+            canShowSchedule={!!sportLeague}
           />
         </TouchableOpacity>
         {showHomeSchedule && (

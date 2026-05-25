@@ -21,7 +21,9 @@ interface MiniScheduleProps {
 function formatGameResult(game: TeamCardScheduleGame): string {
   if (!game.finalizedUtc) return 'TBD';
   const score = `${game.awayScore ?? 0}-${game.homeScore ?? 0}`;
-  const resultText = game.wasWinner ? 'W' : 'L';
+  // wasWinner is nullable — a finalized game with unknown outcome (canceled,
+  // tied, backend gap) shouldn't silently render as a loss.
+  const resultText = game.wasWinner === true ? 'W' : game.wasWinner === false ? 'L' : '—';
   return `${resultText} | ${score}`;
 }
 
@@ -65,9 +67,11 @@ export function MiniSchedule({ schedule, seasonYear, leagueSport, loading, error
         const opponentLabel = game.opponent ?? 'Opponent';
         const resultColor = !game.finalizedUtc
           ? theme.textMuted
-          : game.wasWinner
+          : game.wasWinner === true
           ? theme.success
-          : theme.error;
+          : game.wasWinner === false
+          ? theme.error
+          : theme.textMuted;
         const isLast = idx === games.length - 1;
 
         return (

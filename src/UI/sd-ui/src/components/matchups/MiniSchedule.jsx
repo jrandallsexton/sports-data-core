@@ -10,13 +10,17 @@ import "./MiniScheduleDrilldown.css";
 function formatGameResult(game) {
   if (!game.finalizedUtc) return "TBD";
   const score = `${game.awayScore}-${game.homeScore}`;
-  const resultText = game.wasWinner ? "W" : "L";
+  // wasWinner is nullable — a finalized game with unknown outcome (canceled,
+  // tied, backend gap) shouldn't silently render as a loss.
+  const resultText = game.wasWinner === true ? "W" : game.wasWinner === false ? "L" : "—";
   return `${resultText} | ${score}`;
 }
 
 function getResultClass(game) {
   if (!game.finalizedUtc) return "result-tbd";
-  return game.wasWinner ? "result-win" : "result-loss";
+  if (game.wasWinner === true) return "result-win";
+  if (game.wasWinner === false) return "result-loss";
+  return "result-tbd";
 }
 
 export default function MiniSchedule({ schedule = [], seasonYear, leagueSport }) {
@@ -25,7 +29,8 @@ export default function MiniSchedule({ schedule = [], seasonYear, leagueSport })
   const sportLeague = resolveSportLeague(leagueSport);
   const userTz = useUserTimeZone();
   // TODO: create new endpoint that only returns completed games
-  const games = schedule.slice(0, 13);
+  const limit = sportLeague?.sport === 'football' ? schedule.length : 10;
+  const games = [...schedule].reverse().slice(0, limit);
   // Drilldown state: which row is open, and its data
   const [drillIndex, setDrillIndex] = useState(null);
   const [drillSchedule, setDrillSchedule] = useState([]);
@@ -53,7 +58,7 @@ export default function MiniSchedule({ schedule = [], seasonYear, leagueSport })
       // Use current seasonYear for opponent
       const res = await import("../../api/apiWrapper").then(m =>
         m.default.TeamCard.getBySlugAndSeason(sportLeague.sport, sportLeague.league, opponentSlug, seasonYear));
-      setDrillSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule.slice(0, 13) : []);
+      setDrillSchedule(Array.isArray(res.data?.schedule) ? res.data.schedule : []);
     } catch (e) {
       setDrillError("Failed to load schedule");
     } finally {

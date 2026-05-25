@@ -18,6 +18,7 @@ export function useTeamCard(
   seasonYear: number | null | undefined,
   sport: string = 'football',
   league: string = 'ncaa',
+  enabled: boolean = true,
 ) {
   return useQuery<TeamCardDto>({
     queryKey: teamCardKeys.bySlugAndSeason(sport, league, slug ?? '', seasonYear ?? 0),
@@ -27,7 +28,7 @@ export function useTeamCard(
         const wrapped = body as { data?: TeamCardDto };
         return wrapped.data ?? (body as TeamCardDto);
       }),
-    enabled: !!slug && !!seasonYear,
+    enabled: enabled && !!slug && !!seasonYear,
     staleTime: 1000 * 60 * 5, // 5 min — schedule data doesn't change rapidly
   });
 }

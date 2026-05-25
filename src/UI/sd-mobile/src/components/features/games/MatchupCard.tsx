@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
@@ -8,9 +9,12 @@ import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
 import { useContestUpdate } from '@/src/stores/contestUpdatesStore';
 import { useCurrentUser } from '@/src/hooks/useStandings';
+import { useTeamCard } from '@/src/hooks/useTeamCard';
+import { resolveSportLeague } from '@/src/utils/sportLinks';
 import { InsightModal } from './InsightModal';
 import { StatsComparisonModal } from './StatsComparisonModal';
 import { GameStatus } from './GameStatus';
+import { MiniSchedule } from './MiniSchedule';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +72,8 @@ function TeamRow({
   isPicked,
   isPickCorrect,
   isFinal,
+  isScheduleOpen,
+  onToggleSchedule,
 }: {
   matchup: Matchup;
   side: 'home' | 'away';
@@ -75,6 +81,8 @@ function TeamRow({
   isPicked: boolean;
   isPickCorrect: boolean | null;
   isFinal: boolean;
+  isScheduleOpen: boolean;
+  onToggleSchedule: () => void;
 }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -134,7 +142,20 @@ function TeamRow({
           {name}
         </Text>
         {record !== '' && (
-          <Text style={[styles.recordText, { color: theme.textMuted }]}>{record}</Text>
+          <View style={styles.recordRow}>
+            <Text style={[styles.recordText, { color: theme.textMuted }]}>{record}</Text>
+            <TouchableOpacity
+              onPress={onToggleSchedule}
+              hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}
+              accessibilityLabel={isScheduleOpen ? 'Hide recent games' : 'Show recent games'}
+            >
+              <Ionicons
+                name={isScheduleOpen ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={theme.tint}
+              />
+            </TouchableOpacity>
+          </View>
         )}
         {probablePitcher?.displayName ? (
           <View style={styles.probablePitcherRow}>
@@ -481,7 +502,30 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   const [previewData, setPreviewData] = useState<PreviewResponse | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  // ── Mini-schedule state ────────────────────────────────────────────────────
+  // Each team's schedule expands independently. Lazy-fetched via useTeamCard
+  // with an `enabled` gate so cards in the feed don't burn requests for
+  // schedules the user never opens.
+  const [showAwaySchedule, setShowAwaySchedule] = useState(false);
+  const [showHomeSchedule, setShowHomeSchedule] = useState(false);
+
   const year = seasonYear ?? new Date(matchup.startDateUtc).getFullYear();
+  const sportLeague = resolveSportLeague(leagueSport);
+
+  const awayTeamCard = useTeamCard(
+    matchup.awaySlug ?? null,
+    year,
+    sportLeague?.sport ?? 'football',
+    sportLeague?.league ?? 'ncaa',
+    showAwaySchedule,
+  );
+  const homeTeamCard = useTeamCard(
+    matchup.homeSlug ?? null,
+    year,
+    sportLeague?.sport ?? 'football',
+    sportLeague?.league ?? 'ncaa',
+    showHomeSchedule,
+  );
 
   const handleOpenStats = async () => {
     setShowStats(true);
@@ -597,37 +641,67 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         </View>
       )}
 
-      {/* Away team — taps go to the team page, not the contest overview. */}
-      <TouchableOpacity
-        onPress={onPressTeam ? () => onPressTeam('away') : undefined}
-        activeOpacity={onPressTeam ? 0.6 : 1}
-        disabled={!onPressTeam}
-      >
-        <TeamRow
-          matchup={enrichedMatchup}
-          side="away"
-          isWinning={!homeIsWinning}
-          isPicked={pickedAway}
-          isPickCorrect={isPickCorrect}
-          isFinal={isFinal}
-        />
-      </TouchableOpacity>
+      {/* Away team — taps go to the team page, not the contest overview.
+          MiniSchedule sits outside the touchable so taps within the schedule
+          don't navigate to the team page. */}
+      <View>
+        <TouchableOpacity
+          onPress={onPressTeam ? () => onPressTeam('away') : undefined}
+          activeOpacity={onPressTeam ? 0.6 : 1}
+          disabled={!onPressTeam}
+        >
+          <TeamRow
+            matchup={enrichedMatchup}
+            side="away"
+            isWinning={!homeIsWinning}
+            isPicked={pickedAway}
+            isPickCorrect={isPickCorrect}
+            isFinal={isFinal}
+            isScheduleOpen={showAwaySchedule}
+            onToggleSchedule={() => setShowAwaySchedule((v) => !v)}
+          />
+        </TouchableOpacity>
+        {showAwaySchedule && (
+          <MiniSchedule
+            schedule={awayTeamCard.data?.schedule}
+            seasonYear={year}
+            leagueSport={leagueSport}
+            loading={awayTeamCard.isLoading}
+            error={awayTeamCard.isError ? 'Failed to load schedule' : null}
+            teamName={matchup.away}
+          />
+        )}
+      </View>
 
       {/* Home team */}
-      <TouchableOpacity
-        onPress={onPressTeam ? () => onPressTeam('home') : undefined}
-        activeOpacity={onPressTeam ? 0.6 : 1}
-        disabled={!onPressTeam}
-      >
-        <TeamRow
-          matchup={enrichedMatchup}
-          side="home"
-          isWinning={homeIsWinning}
-          isPicked={pickedHome}
-          isPickCorrect={isPickCorrect}
-          isFinal={isFinal}
-        />
-      </TouchableOpacity>
+      <View>
+        <TouchableOpacity
+          onPress={onPressTeam ? () => onPressTeam('home') : undefined}
+          activeOpacity={onPressTeam ? 0.6 : 1}
+          disabled={!onPressTeam}
+        >
+          <TeamRow
+            matchup={enrichedMatchup}
+            side="home"
+            isWinning={homeIsWinning}
+            isPicked={pickedHome}
+            isPickCorrect={isPickCorrect}
+            isFinal={isFinal}
+            isScheduleOpen={showHomeSchedule}
+            onToggleSchedule={() => setShowHomeSchedule((v) => !v)}
+          />
+        </TouchableOpacity>
+        {showHomeSchedule && (
+          <MiniSchedule
+            schedule={homeTeamCard.data?.schedule}
+            seasonYear={year}
+            leagueSport={leagueSport}
+            loading={homeTeamCard.isLoading}
+            error={homeTeamCard.isError ? 'Failed to load schedule' : null}
+            teamName={matchup.home}
+          />
+        )}
+      </View>
 
       {/* Spread & O/U — tap goes to the contest overview. */}
       <TouchableOpacity
@@ -754,6 +828,11 @@ const styles = StyleSheet.create({
   },
   rankText: {
     fontWeight: '700',
+  },
+  recordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   recordText: {
     fontSize: 13,

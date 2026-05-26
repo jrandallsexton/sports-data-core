@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import TeamComparison from "../teams/TeamComparison";
 import { useUserDto } from "../../contexts/UserContext";
 import { getPickResultClass } from "../../utils/bettingUtils";
-import { useTeamSchedule } from "../../hooks/useTeamSchedule";
+import { useTeamFinalizedGames } from "../../hooks/useTeamFinalizedGames";
 import { usePickLocking } from "../../hooks/usePickLocking";
 import { useTeamComparison } from "../../hooks/useTeamComparison";
 import TeamRow from "./TeamRow";
@@ -79,13 +79,13 @@ function MatchupCard({
     setShowAwayGames,
     showHomeGames,
     setShowHomeGames,
-    awaySchedule,
-    homeSchedule,
+    awayGames,
+    homeGames,
     awayLoading,
     homeLoading,
     awayError,
     homeError
-  } = useTeamSchedule(matchup.awaySlug, matchup.homeSlug, seasonYear, leagueSport, leagueAsOfDate);
+  } = useTeamFinalizedGames(matchup.awaySlug, matchup.homeSlug, seasonYear, leagueSport, leagueAsOfDate);
 
   const userTz = useUserTimeZone();
 
@@ -181,7 +181,7 @@ function MatchupCard({
           leagueSport={leagueSport}
           showSchedule={showAwayGames}
           onToggleSchedule={() => setShowAwayGames(v => !v)}
-          schedule={awaySchedule}
+          schedule={awayGames}
           loading={awayLoading}
           error={awayError}
           probablePitcher={matchup.awayProbablePitcher}
@@ -202,7 +202,7 @@ function MatchupCard({
           leagueSport={leagueSport}
           showSchedule={showHomeGames}
           onToggleSchedule={() => setShowHomeGames(v => !v)}
-          schedule={homeSchedule}
+          schedule={homeGames}
           loading={homeLoading}
           error={homeError}
           probablePitcher={matchup.homeProbablePitcher}

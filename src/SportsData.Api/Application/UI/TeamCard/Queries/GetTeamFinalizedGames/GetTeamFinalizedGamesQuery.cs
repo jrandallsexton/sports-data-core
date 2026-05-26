@@ -1,6 +1,6 @@
-namespace SportsData.Api.Application.UI.TeamCard.Queries.GetTeamSchedule;
+namespace SportsData.Api.Application.UI.TeamCard.Queries.GetTeamFinalizedGames;
 
-public class GetTeamScheduleQuery
+public class GetTeamFinalizedGamesQuery
 {
     public required string Sport { get; init; }
 

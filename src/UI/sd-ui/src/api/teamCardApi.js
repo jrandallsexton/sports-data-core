@@ -6,14 +6,14 @@ const TeamCardApi = {
     apiClient.get(
       `/ui/teamcard/sport/${sport}/league/${league}/team/${slug}/${seasonYear}`
     ),
-  // Slim schedule — completed games only. `asOfDate` (ISO 8601 from
+  // Finalized games only (FinalizedUtc IS NOT NULL). `asOfDate` (ISO 8601 from
   // LeagueWeekMatchupsDto.asOfDate, which equals the displayed week's
   // SeasonWeek.EndDate) is an inclusive upper bound on FinalizedUtc, so the
   // mini-schedule doesn't leak future-game results into a historical
   // pick-review context. Server returns newest-first.
-  getSchedule: (sport, league, slug, seasonYear, asOfDate) =>
+  getFinalizedGames: (sport, league, slug, seasonYear, asOfDate) =>
     apiClient.get(
-      `/ui/teamcard/sport/${sport}/league/${league}/team/${slug}/${seasonYear}/schedule`,
+      `/ui/teamcard/sport/${sport}/league/${league}/team/${slug}/${seasonYear}/finalized-games`,
       asOfDate ? { params: { asOfDate } } : undefined
     ),
   getStatistics: (sport, league, slug, seasonYear, franchiseSeasonId) =>

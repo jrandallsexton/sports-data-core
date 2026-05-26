@@ -7,21 +7,21 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Sql;
 
-namespace SportsData.Producer.Application.Franchises.Queries.GetTeamSchedule;
+namespace SportsData.Producer.Application.Franchises.Queries.GetTeamFinalizedGames;
 
-public interface IGetTeamScheduleQueryHandler
+public interface IGetTeamFinalizedGamesQueryHandler
 {
     Task<Result<List<TeamCardScheduleItemDto>>> ExecuteAsync(
-        GetTeamScheduleQuery query,
+        GetTeamFinalizedGamesQuery query,
         CancellationToken cancellationToken = default);
 }
 
-public class GetTeamScheduleQueryHandler : IGetTeamScheduleQueryHandler
+public class GetTeamFinalizedGamesQueryHandler : IGetTeamFinalizedGamesQueryHandler
 {
     private readonly TeamSportDataContext _dbContext;
     private readonly ProducerSqlQueryProvider _sqlProvider;
 
-    public GetTeamScheduleQueryHandler(
+    public GetTeamFinalizedGamesQueryHandler(
         TeamSportDataContext dbContext,
         ProducerSqlQueryProvider sqlProvider)
     {
@@ -30,18 +30,18 @@ public class GetTeamScheduleQueryHandler : IGetTeamScheduleQueryHandler
     }
 
     public async Task<Result<List<TeamCardScheduleItemDto>>> ExecuteAsync(
-        GetTeamScheduleQuery query,
+        GetTeamFinalizedGamesQuery query,
         CancellationToken cancellationToken = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
         var parameters = new { query.Slug, query.SeasonYear, query.AsOfDate };
 
-        var schedule = (await connection.QueryAsync<TeamCardScheduleItemDto>(
+        var games = (await connection.QueryAsync<TeamCardScheduleItemDto>(
             new CommandDefinition(
-                _sqlProvider.GetTeamScheduleCompleted(),
+                _sqlProvider.GetTeamFinalizedGames(),
                 parameters,
                 cancellationToken: cancellationToken))).ToList();
 
-        return new Success<List<TeamCardScheduleItemDto>>(schedule);
+        return new Success<List<TeamCardScheduleItemDto>>(games);
     }
 }

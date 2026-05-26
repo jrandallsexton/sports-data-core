@@ -24,7 +24,7 @@ public class ProducerSqlQueryProvider
         "GetConferenceNamesAndSlugs.sql",
         "GetTeamCard.sql",
         "GetTeamCardSchedule.sql",
-        "GetTeamScheduleCompleted.sql",
+        "GetTeamFinalizedGames.sql",
         "GetTeamSeasons.sql",
         "GetTeamRoster.sql",
         "GetPollByTypeAndSeason.sql"
@@ -110,7 +110,7 @@ public class ProducerSqlQueryProvider
 
     public string GetTeamCardSchedule() => Get("GetTeamCardSchedule.sql");
 
-    public string GetTeamScheduleCompleted() => Get("GetTeamScheduleCompleted.sql");
+    public string GetTeamFinalizedGames() => Get("GetTeamFinalizedGames.sql");
 
     public string GetTeamSeasons() => Get("GetTeamSeasons.sql");
 

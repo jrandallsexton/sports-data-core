@@ -9,7 +9,7 @@ using SportsData.Producer.Application.Franchises.Queries.GetFranchiseLogos;
 using SportsData.Producer.Application.Franchises.Queries.GetFranchiseSeasons;
 using SportsData.Producer.Application.Franchises.Queries.GetSeasonContests;
 using SportsData.Producer.Application.Franchises.Queries.GetTeamCard;
-using SportsData.Producer.Application.Franchises.Queries.GetTeamSchedule;
+using SportsData.Producer.Application.Franchises.Queries.GetTeamFinalizedGames;
 using SportsData.Producer.Application.Franchises.Queries.GetTeamRoster;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
 
@@ -98,15 +98,15 @@ public class FranchisesController : ControllerBase
         return result.ToActionResult();
     }
 
-    [HttpGet("{slug}/seasons/{seasonYear}/schedule")]
-    public async Task<ActionResult<List<TeamCardScheduleItemDto>>> GetTeamSchedule(
+    [HttpGet("{slug}/seasons/{seasonYear}/finalized-games")]
+    public async Task<ActionResult<List<TeamCardScheduleItemDto>>> GetTeamFinalizedGames(
         [FromRoute] string slug,
         [FromRoute] int seasonYear,
-        [FromServices] IGetTeamScheduleQueryHandler handler,
+        [FromServices] IGetTeamFinalizedGamesQueryHandler handler,
         [FromQuery] DateTime? asOfDate = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await handler.ExecuteAsync(new GetTeamScheduleQuery(slug, seasonYear, asOfDate), cancellationToken);
+        var result = await handler.ExecuteAsync(new GetTeamFinalizedGamesQuery(slug, seasonYear, asOfDate), cancellationToken);
         return result.ToActionResult();
     }
 

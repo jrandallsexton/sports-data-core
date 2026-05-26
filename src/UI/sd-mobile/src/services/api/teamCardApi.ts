@@ -9,21 +9,21 @@ export const teamCardApi = {
     ),
 
   /**
-   * GET /ui/teamcard/.../{year}/schedule[?asOfDate=ISO]
+   * GET /ui/teamcard/.../{year}/finalized-games[?asOfDate=ISO]
    *
-   * Slim schedule — completed games only, newest-first. `asOfDate`
+   * Finalized games only (FinalizedUtc IS NOT NULL), newest-first. `asOfDate`
    * (LeagueWeekMatchupsDto.asOfDate = SeasonWeek.EndDate of the displayed
    * week) is an inclusive FinalizedUtc upper bound so a Week-N pick-review
    * view doesn't show results the picker couldn't yet have known about.
    */
-  getSchedule: (
+  getFinalizedGames: (
     slug: string,
     seasonYear: number,
     sport = 'football',
     league = 'ncaa',
     asOfDate?: string | null,
   ) => {
-    const base = `/ui/teamcard/sport/${sport}/league/${league}/team/${encodeURIComponent(slug)}/${seasonYear}/schedule`;
+    const base = `/ui/teamcard/sport/${sport}/league/${league}/team/${encodeURIComponent(slug)}/${seasonYear}/finalized-games`;
     const url = asOfDate ? `${base}?asOfDate=${encodeURIComponent(asOfDate)}` : base;
     return apiClient.get<TeamCardScheduleGame[]>(url);
   },

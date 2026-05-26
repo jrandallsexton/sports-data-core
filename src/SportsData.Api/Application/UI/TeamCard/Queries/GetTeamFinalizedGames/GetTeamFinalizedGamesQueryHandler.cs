@@ -5,22 +5,22 @@ using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
-namespace SportsData.Api.Application.UI.TeamCard.Queries.GetTeamSchedule;
+namespace SportsData.Api.Application.UI.TeamCard.Queries.GetTeamFinalizedGames;
 
-public interface IGetTeamScheduleQueryHandler
+public interface IGetTeamFinalizedGamesQueryHandler
 {
     Task<Result<List<TeamCardScheduleItemDto>>> ExecuteAsync(
-        GetTeamScheduleQuery query,
+        GetTeamFinalizedGamesQuery query,
         CancellationToken cancellationToken = default);
 }
 
-public class GetTeamScheduleQueryHandler : IGetTeamScheduleQueryHandler
+public class GetTeamFinalizedGamesQueryHandler : IGetTeamFinalizedGamesQueryHandler
 {
-    private readonly ILogger<GetTeamScheduleQueryHandler> _logger;
+    private readonly ILogger<GetTeamFinalizedGamesQueryHandler> _logger;
     private readonly IFranchiseClientFactory _franchiseClientFactory;
 
-    public GetTeamScheduleQueryHandler(
-        ILogger<GetTeamScheduleQueryHandler> logger,
+    public GetTeamFinalizedGamesQueryHandler(
+        ILogger<GetTeamFinalizedGamesQueryHandler> logger,
         IFranchiseClientFactory franchiseClientFactory)
     {
         _logger = logger;
@@ -28,7 +28,7 @@ public class GetTeamScheduleQueryHandler : IGetTeamScheduleQueryHandler
     }
 
     public async Task<Result<List<TeamCardScheduleItemDto>>> ExecuteAsync(
-        GetTeamScheduleQuery query,
+        GetTeamFinalizedGamesQuery query,
         CancellationToken cancellationToken = default)
     {
         Sport mode;
@@ -53,7 +53,7 @@ public class GetTeamScheduleQueryHandler : IGetTeamScheduleQueryHandler
         try
         {
             var client = _franchiseClientFactory.Resolve(mode);
-            return await client.GetTeamSchedule(query.Slug, query.SeasonYear, query.AsOfDate, cancellationToken);
+            return await client.GetTeamFinalizedGames(query.Slug, query.SeasonYear, query.AsOfDate, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -63,13 +63,13 @@ public class GetTeamScheduleQueryHandler : IGetTeamScheduleQueryHandler
             // depth for file/stdout sinks.
             _logger.LogError(
                 ex,
-                "Error retrieving team schedule for sport={Sport}, league={League}, slug={Slug}, seasonYear={SeasonYear}, asOfDate={AsOfDate}",
+                "Error retrieving team finalized games for sport={Sport}, league={League}, slug={Slug}, seasonYear={SeasonYear}, asOfDate={AsOfDate}",
                 SanitizeForLog(query.Sport), SanitizeForLog(query.League), SanitizeForLog(query.Slug), query.SeasonYear, query.AsOfDate);
 
             return new Failure<List<TeamCardScheduleItemDto>>(
                 new List<TeamCardScheduleItemDto>(),
                 ResultStatus.Error,
-                [new ValidationFailure("TeamSchedule", "Error retrieving team schedule. Please try again later.")]);
+                [new ValidationFailure("TeamFinalizedGames", "Error retrieving team finalized games. Please try again later.")]);
         }
     }
 

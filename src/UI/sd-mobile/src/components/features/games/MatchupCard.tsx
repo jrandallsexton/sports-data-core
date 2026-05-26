@@ -9,7 +9,7 @@ import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
 import { useContestUpdate } from '@/src/stores/contestUpdatesStore';
 import { useCurrentUser } from '@/src/hooks/useStandings';
-import { useTeamSchedule } from '@/src/hooks/useTeamSchedule';
+import { useTeamFinalizedGames } from '@/src/hooks/useTeamFinalizedGames';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
 import { InsightModal } from './InsightModal';
 import { StatsComparisonModal } from './StatsComparisonModal';
@@ -528,7 +528,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   // Only fetch when the sport enum resolves — otherwise we'd issue a
   // football/ncaa request for a slug that lives in a different sport
   // (resolveSportLeague returns null for unmapped/unknown enums by design).
-  const awaySchedule = useTeamSchedule(
+  const awayFinalizedGames = useTeamFinalizedGames(
     matchup.awaySlug ?? null,
     year,
     sportLeague?.sport ?? 'football',
@@ -536,7 +536,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
     showAwaySchedule && !!sportLeague,
     leagueAsOfDate ?? null,
   );
-  const homeSchedule = useTeamSchedule(
+  const homeFinalizedGames = useTeamFinalizedGames(
     matchup.homeSlug ?? null,
     year,
     sportLeague?.sport ?? 'football',
@@ -682,11 +682,11 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         </TouchableOpacity>
         {showAwaySchedule && (
           <MiniSchedule
-            schedule={awaySchedule.data}
+            schedule={awayFinalizedGames.data}
             seasonYear={year}
             leagueSport={leagueSport}
-            loading={awaySchedule.isLoading}
-            error={awaySchedule.isError ? 'Failed to load schedule' : null}
+            loading={awayFinalizedGames.isLoading}
+            error={awayFinalizedGames.isError ? 'Failed to load games' : null}
             teamName={matchup.away}
           />
         )}
@@ -713,11 +713,11 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         </TouchableOpacity>
         {showHomeSchedule && (
           <MiniSchedule
-            schedule={homeSchedule.data}
+            schedule={homeFinalizedGames.data}
             seasonYear={year}
             leagueSport={leagueSport}
-            loading={homeSchedule.isLoading}
-            error={homeSchedule.isError ? 'Failed to load schedule' : null}
+            loading={homeFinalizedGames.isLoading}
+            error={homeFinalizedGames.isError ? 'Failed to load games' : null}
             teamName={matchup.home}
           />
         )}

@@ -59,7 +59,7 @@ export default function MiniSchedule({ schedule = [], seasonYear, leagueSport, a
       // Same snapshot semantics as the parent row: pass asOfDate so the
       // opponent's history is filtered to what was knowable at pick-time.
       const res = await import("../../api/apiWrapper").then(m =>
-        m.default.TeamCard.getSchedule(sportLeague.sport, sportLeague.league, opponentSlug, seasonYear, asOfDate));
+        m.default.TeamCard.getFinalizedGames(sportLeague.sport, sportLeague.league, opponentSlug, seasonYear, asOfDate));
       setDrillSchedule(Array.isArray(res.data) ? res.data : []);
     } catch (e) {
       setDrillError("Failed to load schedule");

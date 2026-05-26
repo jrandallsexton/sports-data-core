@@ -3,13 +3,14 @@ import apiWrapper from '../api/apiWrapper';
 import { resolveSportLeague } from '../utils/sportLinks';
 
 /**
- * Custom hook to fetch and manage schedule data for both teams in a matchup.
+ * Custom hook to fetch and manage a team's finalized (completed-with-result)
+ * games for the embedded MiniSchedule UI on MatchupCards.
  *
- * Calls the slim `/schedule` endpoint, which returns completed games only,
- * newest-first. When `asOfDate` (ISO 8601) is provided the backend filters
- * games with FinalizedUtc <= asOfDate so the MiniSchedule mirrors what the
- * picker could see at pick-time (no future results bleeding into historical
- * week views).
+ * Calls the slim `/finalized-games` endpoint, which returns games with
+ * FinalizedUtc IS NOT NULL, newest-first. When `asOfDate` (ISO 8601) is
+ * provided the backend additionally filters to FinalizedUtc <= asOfDate so
+ * the MiniSchedule mirrors what the picker could see at pick-time (no future
+ * results bleeding into historical week views).
  *
  * @param {string} awaySlug
  * @param {string} homeSlug
@@ -17,13 +18,13 @@ import { resolveSportLeague } from '../utils/sportLinks';
  * @param {string} leagueSport - Backend Sport enum name (e.g. "BaseballMlb")
  * @param {string|null} asOfDate - ISO 8601 timestamp; LeagueWeekMatchupsDto.asOfDate
  *   (= SeasonWeek.EndDate of the displayed week). Omit/null returns the full
- *   completed schedule (non-pick'em context).
+ *   set of finalized games for the season (non-pick'em context).
  */
-export const useTeamSchedule = (awaySlug, homeSlug, seasonYear, leagueSport, asOfDate = null) => {
+export const useTeamFinalizedGames = (awaySlug, homeSlug, seasonYear, leagueSport, asOfDate = null) => {
   const [showAwayGames, setShowAwayGames] = useState(false);
   const [showHomeGames, setShowHomeGames] = useState(false);
-  const [awaySchedule, setAwaySchedule] = useState([]);
-  const [homeSchedule, setHomeSchedule] = useState([]);
+  const [awayGames, setAwayGames] = useState([]);
+  const [homeGames, setHomeGames] = useState([]);
   const [awayLoading, setAwayLoading] = useState(false);
   const [homeLoading, setHomeLoading] = useState(false);
   const [awayError, setAwayError] = useState(null);
@@ -52,14 +53,14 @@ export const useTeamSchedule = (awaySlug, homeSlug, seasonYear, leagueSport, asO
     setAwayLoading(true);
     setAwayError(null);
     const { sport, league } = sportLeague;
-    apiWrapper.TeamCard.getSchedule(sport, league, awaySlug, seasonYear, asOfDate)
+    apiWrapper.TeamCard.getFinalizedGames(sport, league, awaySlug, seasonYear, asOfDate)
       .then(res => {
         if (cancelled) return;
-        setAwaySchedule(Array.isArray(res.data) ? res.data : []);
+        setAwayGames(Array.isArray(res.data) ? res.data : []);
       })
       .catch(() => {
         if (cancelled) return;
-        setAwayError("Failed to load schedule");
+        setAwayError("Failed to load games");
       })
       .finally(() => {
         if (cancelled) return;
@@ -83,14 +84,14 @@ export const useTeamSchedule = (awaySlug, homeSlug, seasonYear, leagueSport, asO
     setHomeLoading(true);
     setHomeError(null);
     const { sport, league } = sportLeague;
-    apiWrapper.TeamCard.getSchedule(sport, league, homeSlug, seasonYear, asOfDate)
+    apiWrapper.TeamCard.getFinalizedGames(sport, league, homeSlug, seasonYear, asOfDate)
       .then(res => {
         if (cancelled) return;
-        setHomeSchedule(Array.isArray(res.data) ? res.data : []);
+        setHomeGames(Array.isArray(res.data) ? res.data : []);
       })
       .catch(() => {
         if (cancelled) return;
-        setHomeError("Failed to load schedule");
+        setHomeError("Failed to load games");
       })
       .finally(() => {
         if (cancelled) return;
@@ -104,8 +105,8 @@ export const useTeamSchedule = (awaySlug, homeSlug, seasonYear, leagueSport, asO
     setShowAwayGames,
     showHomeGames,
     setShowHomeGames,
-    awaySchedule,
-    homeSchedule,
+    awayGames,
+    homeGames,
     awayLoading,
     homeLoading,
     awayError,

@@ -26,6 +26,7 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
     Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default);
     Task<TeamCardDto?> GetTeamCard(string slug, int seasonYear, CancellationToken cancellationToken = default);
+    Task<Result<List<TeamCardScheduleItemDto>>> GetTeamFinalizedGames(string slug, int seasonYear, DateTime? asOfDate = null, CancellationToken cancellationToken = default);
     Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
     Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonPreviewStats(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
     Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResults(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
@@ -146,6 +147,41 @@ public class FranchiseClient : ClientBase, IProvideFranchises
         {
             return null;
         }
+    }
+
+    public async Task<Result<List<TeamCardScheduleItemDto>>> GetTeamFinalizedGames(
+        string slug,
+        int seasonYear,
+        DateTime? asOfDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        string path;
+        if (asOfDate.HasValue)
+        {
+            // Npgsql maps Postgres TIMESTAMP WITHOUT TIME ZONE (SeasonWeek.EndDate)
+            // to DateTime with Kind=Unspecified. ToUniversalTime() treats those as
+            // Local and shifts by the server's offset — wrong, since the project
+            // convention is that those timestamps are already UTC. Pin Unspecified
+            // to UTC so the wire value is stable regardless of server timezone.
+            var d = asOfDate.Value.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(asOfDate.Value, DateTimeKind.Utc)
+                : asOfDate.Value;
+            // Round-trip via ISO-8601 ("o") so Producer's DateTime model binder gets
+            // an unambiguous UTC instant.
+            var asOfIso = d.ToUniversalTime().ToString("o");
+            path = $"franchises/{Uri.EscapeDataString(slug)}/seasons/{seasonYear}/finalized-games?asOfDate={Uri.EscapeDataString(asOfIso)}";
+        }
+        else
+        {
+            path = $"franchises/{Uri.EscapeDataString(slug)}/seasons/{seasonYear}/finalized-games";
+        }
+
+        var games = await GetOrDefaultAsync(
+            path,
+            new List<TeamCardScheduleItemDto>(),
+            cancellationToken);
+
+        return new Success<List<TeamCardScheduleItemDto>>(games);
     }
 
     public async Task<FranchiseSeasonStatisticDto> GetFranchiseSeasonStatistics(Guid franchiseSeasonId, CancellationToken cancellationToken = default)

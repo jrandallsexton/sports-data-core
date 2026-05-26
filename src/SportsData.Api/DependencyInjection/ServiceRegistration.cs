@@ -72,6 +72,7 @@ using SportsData.Api.Application.UI.Rankings.Queries.GetRankingsBySeasonYear;
 using SportsData.Api.Application.UI.TeamCard;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
+using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamFinalizedGames;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Api.Application.User;
 using SportsData.Api.Application.User.Commands.UpdateUserTimezone;
@@ -210,6 +211,7 @@ namespace SportsData.Api.DependencyInjection
 
             // TeamCard Queries
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();
+            services.AddScoped<IGetTeamFinalizedGamesQueryHandler, GetTeamFinalizedGamesQueryHandler>();
             services.AddScoped<IGetTeamStatisticsQueryHandler, GetTeamStatisticsQueryHandler>();
             services.AddScoped<IGetTeamMetricsQueryHandler, GetTeamMetricsQueryHandler>();
             services.AddScoped<IStatFormattingService, StatFormattingService>();

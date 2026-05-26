@@ -279,12 +279,19 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.LeagueId,
                 query.Week);
 
+            // All canonical matchups in a single league-week share the same
+            // SeasonWeek.EndDate (they're picked from the same SeasonWeek
+            // bucket), so any row is authoritative. Null when no canonical
+            // matchups came back (empty week / missing Producer data).
+            var asOfDate = canonicalMatchups.FirstOrDefault()?.SeasonWeekEndDate;
+
             var result = new LeagueWeekMatchupsDto
             {
                 PickType = league!.PickType,
                 UseConfidencePoints = league!.UseConfidencePoints,
                 SeasonYear = seasonYear,
                 WeekNumber = query.Week,
+                AsOfDate = asOfDate,
                 Sport = league.Sport.ToString(),
                 Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()
             };

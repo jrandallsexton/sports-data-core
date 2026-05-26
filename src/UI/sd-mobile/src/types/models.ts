@@ -150,6 +150,14 @@ export interface Matchup {
 export interface LeagueMatchupsResponse {
   seasonYear: number;
   weekNumber: number;
+  /**
+   * ISO 8601 inclusive cutoff = SeasonWeek.EndDate of the displayed week.
+   * Passed to /ui/teamcard/.../schedule?asOfDate=… by the MiniSchedule fetch
+   * so historical pick reviews don't leak future-game results. Null when the
+   * week has no canonical matchups to derive it from.
+   * See docs/team-schedule-endpoint.md.
+   */
+  asOfDate?: string | null;
   matchups: Matchup[];
   pickType: PickType;
   useConfidencePoints: boolean;

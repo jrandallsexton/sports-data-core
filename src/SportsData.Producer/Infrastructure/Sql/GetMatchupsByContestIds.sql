@@ -1,5 +1,6 @@
 SELECT
   c."SeasonWeekId" AS "SeasonWeekId",
+  sw_contest."EndDate" AS "SeasonWeekEndDate",
   c."Id" AS "ContestId",
   c."StartDateUtc" AS "StartDateUtc",
   cn."Headline" AS "Headline",
@@ -33,6 +34,7 @@ SELECT
   c."OverUnder" AS "OverUnderResult",
   c."EndDateUtc" AS "CompletedUtc"
 FROM public."Contest" c
+INNER JOIN public."SeasonWeek" sw_contest ON sw_contest."Id" = c."SeasonWeekId"
 LEFT JOIN public."Venue" v ON v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
 LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'
@@ -117,7 +119,7 @@ LEFT JOIN LATERAL (
 LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdHome ON fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
 WHERE c."Id" = ANY(@ContestIds)
 GROUP BY
-  c."SeasonWeekId", c."Id", c."StartDateUtc", cn."Headline", cs."StatusTypeName", cs."StatusDescription",
+  c."SeasonWeekId", sw_contest."EndDate", c."Id", c."StartDateUtc", cn."Headline", cs."StatusTypeName", cs."StatusDescription",
   v."Name", v."City", v."State",
   fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id",
   flAway."Uri", fslAway."Uri", flDarkAway."Uri", fslDarkAway."Uri", fAway."Slug",

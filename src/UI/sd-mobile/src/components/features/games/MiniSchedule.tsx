@@ -58,8 +58,10 @@ export function MiniSchedule({ schedule, seasonYear, leagueSport, loading, error
     );
   }
 
+  // Endpoint already returns completed-only, newest-first, exclusive of `week`.
+  // Football shows the entire (short) schedule; other sports cap at 10.
   const limit = sportLeague?.sport === 'football' ? schedule.length : 10;
-  const games = [...schedule].reverse().slice(0, limit);
+  const games = schedule.slice(0, limit);
 
   return (
     <View style={[styles.container, { borderTopColor: theme.separator }]}>

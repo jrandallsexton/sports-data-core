@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
+using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamFinalizedGames;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Core.Dtos.Canonical;
@@ -33,6 +34,31 @@ public class TeamCardController : ApiControllerBase
             League = league,
             Slug = slug,
             SeasonYear = seasonYear
+        };
+
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    [HttpGet("finalized-games")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(List<TeamCardScheduleItemDto>))]
+    public async Task<ActionResult<List<TeamCardScheduleItemDto>>> GetTeamFinalizedGames(
+        string sport,
+        string league,
+        string slug,
+        int seasonYear,
+        [FromServices] IGetTeamFinalizedGamesQueryHandler handler,
+        [FromQuery] DateTime? asOfDate,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetTeamFinalizedGamesQuery
+        {
+            Sport = sport,
+            League = league,
+            Slug = slug,
+            SeasonYear = seasonYear,
+            AsOfDate = asOfDate
         };
 
         var result = await handler.ExecuteAsync(query, cancellationToken);

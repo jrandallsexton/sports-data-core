@@ -9,7 +9,7 @@ import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
 import { useContestUpdate } from '@/src/stores/contestUpdatesStore';
 import { useCurrentUser } from '@/src/hooks/useStandings';
-import { useTeamCard } from '@/src/hooks/useTeamCard';
+import { useTeamFinalizedGames } from '@/src/hooks/useTeamFinalizedGames';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
 import { InsightModal } from './InsightModal';
 import { StatsComparisonModal } from './StatsComparisonModal';
@@ -431,9 +431,18 @@ export interface MatchupCardProps {
    * Resolved from LeagueMatchupsResponse.sport at the screen level.
    */
   leagueSport?: string | null;
+  /**
+   * SeasonWeek.EndDate of the displayed week (ISO 8601), surfaced via
+   * LeagueWeekMatchupsDto.asOfDate. Passed into MiniSchedule's fetch as an
+   * inclusive FinalizedUtc upper bound so the historical-pick-review case
+   * doesn't show results from games the picker couldn't yet have seen. Date
+   * filter (not week number) so MLB same-week games and football post-season
+   * Week-1 reuse both behave correctly.
+   */
+  leagueAsOfDate?: string | null;
 }
 
-export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seasonYear, leagueSport }: MatchupCardProps) {
+export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seasonYear, leagueSport, leagueAsOfDate }: MatchupCardProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
@@ -519,19 +528,21 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   // Only fetch when the sport enum resolves — otherwise we'd issue a
   // football/ncaa request for a slug that lives in a different sport
   // (resolveSportLeague returns null for unmapped/unknown enums by design).
-  const awayTeamCard = useTeamCard(
+  const awayFinalizedGames = useTeamFinalizedGames(
     matchup.awaySlug ?? null,
     year,
     sportLeague?.sport ?? 'football',
     sportLeague?.league ?? 'ncaa',
     showAwaySchedule && !!sportLeague,
+    leagueAsOfDate ?? null,
   );
-  const homeTeamCard = useTeamCard(
+  const homeFinalizedGames = useTeamFinalizedGames(
     matchup.homeSlug ?? null,
     year,
     sportLeague?.sport ?? 'football',
     sportLeague?.league ?? 'ncaa',
     showHomeSchedule && !!sportLeague,
+    leagueAsOfDate ?? null,
   );
 
   const handleOpenStats = async () => {
@@ -671,11 +682,11 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         </TouchableOpacity>
         {showAwaySchedule && (
           <MiniSchedule
-            schedule={awayTeamCard.data?.schedule}
+            schedule={awayFinalizedGames.data}
             seasonYear={year}
             leagueSport={leagueSport}
-            loading={awayTeamCard.isLoading}
-            error={awayTeamCard.isError ? 'Failed to load schedule' : null}
+            loading={awayFinalizedGames.isLoading}
+            error={awayFinalizedGames.isError ? 'Failed to load games' : null}
             teamName={matchup.away}
           />
         )}
@@ -702,11 +713,11 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         </TouchableOpacity>
         {showHomeSchedule && (
           <MiniSchedule
-            schedule={homeTeamCard.data?.schedule}
+            schedule={homeFinalizedGames.data}
             seasonYear={year}
             leagueSport={leagueSport}
-            loading={homeTeamCard.isLoading}
-            error={homeTeamCard.isError ? 'Failed to load schedule' : null}
+            loading={homeFinalizedGames.isLoading}
+            error={homeFinalizedGames.isError ? 'Failed to load games' : null}
             teamName={matchup.home}
           />
         )}

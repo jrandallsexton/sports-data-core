@@ -1,0 +1,56 @@
+import { useQuery } from '@tanstack/react-query';
+import { teamCardApi } from '@/src/services/api/teamCardApi';
+import type { TeamCardScheduleGame } from '@/src/types/models';
+
+export const teamFinalizedGamesKeys = {
+  bySlugSeasonAsOf: (
+    sport: string,
+    league: string,
+    slug: string,
+    season: number,
+    asOfDate: string | null,
+  ) => ['teamFinalizedGames', sport, league, slug, season, asOfDate] as const,
+};
+
+/**
+ * Fetch a team's finalized (completed-with-result) games for the embedded
+ * MiniSchedule. When `asOfDate` is set (ISO 8601 from
+ * LeagueWeekMatchupsDto.asOfDate = SeasonWeek.EndDate of the displayed week),
+ * the server applies an inclusive FinalizedUtc cutoff so the MiniSchedule
+ * mirrors what was knowable at pick-time. `enabled` gates the fetch so
+ * MatchupCard rows in a feed don't burn requests for game lists the user
+ * never expands.
+ */
+export function useTeamFinalizedGames(
+  slug: string | null | undefined,
+  seasonYear: number | null | undefined,
+  sport: string = 'football',
+  league: string = 'ncaa',
+  enabled: boolean = true,
+  asOfDate: string | null = null,
+) {
+  return useQuery<TeamCardScheduleGame[]>({
+    queryKey: teamFinalizedGamesKeys.bySlugSeasonAsOf(
+      sport,
+      league,
+      slug ?? '',
+      seasonYear ?? 0,
+      asOfDate,
+    ),
+    queryFn: () =>
+      teamCardApi
+        .getFinalizedGames(slug!, seasonYear!, sport, league, asOfDate)
+        .then((r) => {
+          const body = r.data as unknown;
+          // Some apiClient setups unwrap to a { data: T } envelope. Handle both.
+          const wrapped = body as { data?: TeamCardScheduleGame[] };
+          return Array.isArray(wrapped.data)
+            ? wrapped.data
+            : Array.isArray(body)
+              ? (body as TeamCardScheduleGame[])
+              : [];
+        }),
+    enabled: enabled && !!slug && !!seasonYear,
+    staleTime: 1000 * 60 * 5,
+  });
+}

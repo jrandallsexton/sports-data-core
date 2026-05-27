@@ -1,6 +1,6 @@
 import "./PicksPage.css";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUserDto } from "../../contexts/UserContext";
 import { useLeagueContext } from "../../contexts/LeagueContext";
@@ -40,7 +40,11 @@ function PicksPage() {
   const [leagueAsOfDate, setLeagueAsOfDate] = useState(null);
   const [loadingMatchups, setLoadingMatchups] = useState(true);
 
-  const [selectedLeagueId, setSelectedLeagueId] = useState(null);
+  // Source of truth for the selected league is the route param
+  // (/app/picks/:leagueId?). The dropdown navigates instead of holding
+  // local state — this kills the prior fight between `selectedLeagueId`
+  // state, the URL sync effect, and the week-snap effect that was
+  // emitting 5 matchups XHRs per league switch.
   const [selectedWeek, setSelectedWeek] = useState(null);
   const viewMode = "card";
 
@@ -54,7 +58,32 @@ function PicksPage() {
     return () => clearInterval(interval);
   }, []);
 
-  const leagues = Object.values(userDto?.leagues || {});
+  // Memoized so the init effect's dep check doesn't fire on every render
+  // (a fresh `Object.values` ref every render previously triggered re-init
+  // and stomped the user's dropdown selection).
+  const leagues = useMemo(
+    () => Object.values(userDto?.leagues || {}),
+    [userDto]
+  );
+
+  // Derive the selected league from the route param. With `leagues`
+  // memoized, `selectedLeague` is a stable reference across renders
+  // (same routeLeagueId → same league object) so downstream effect deps
+  // don't churn.
+  const selectedLeague = useMemo(
+    () => leagues.find((l) => l.id === routeLeagueId) ?? null,
+    [leagues, routeLeagueId]
+  );
+  // Memoized so the `?? []` fallback doesn't hand a fresh array to the
+  // fetch effects' dep arrays on every render.
+  const seasonWeeks = useMemo(
+    () => selectedLeague?.seasonWeeks ?? [],
+    [selectedLeague]
+  );
+  // Default to the latest week the league has (last element of the
+  // ascending list). Custom-window leagues may only have a single entry.
+  const latestSeasonWeek =
+    seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
 
   // Get contest updates for live game data
   const { getContestUpdate, _instanceId: contestCtxInstanceId } = useContestUpdates();
@@ -127,56 +156,55 @@ function PicksPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchups, getContestUpdate]);
 
-  // Select default league on load or when leagues change
+  // One-shot init: ensure the URL carries a valid league. When the user
+  // lands on /app/picks with no param (or a stale id) redirect to the
+  // remembered league (LeagueContext, localStorage-backed) or the first
+  // available. Once the URL has a valid league id, subsequent league
+  // switches happen through `handleLeagueChange` (selector → navigate).
   useEffect(() => {
-    if (!userLoading && leagues.length > 0) {
-      // Initialize global context
-      initializeLeagueSelection(leagues);
+    if (userLoading || leagues.length === 0) return;
 
-      const isRouteValid =
-        routeLeagueId && leagues.some((l) => l.id === routeLeagueId);
-      if (isRouteValid) {
-        setSelectedLeagueId(routeLeagueId);
-        setGlobalLeagueId(routeLeagueId); // Sync with global context
-      } else if (!selectedLeagueId) {
-        // Use global context if available, otherwise default to first league
-        const leagueToUse =
-          globalLeagueId && leagues.some((l) => l.id === globalLeagueId)
-            ? globalLeagueId
-            : leagues[0].id;
-        setSelectedLeagueId(leagueToUse);
-        setGlobalLeagueId(leagueToUse);
-      }
+    initializeLeagueSelection(leagues);
+
+    const isRouteValid =
+      routeLeagueId && leagues.some((l) => l.id === routeLeagueId);
+    if (isRouteValid) {
+      // Keep cross-page memory current with the URL-driven selection so
+      // Leaderboard/Messageboard remember the user's league after a tab
+      // switch.
+      setGlobalLeagueId(routeLeagueId);
+      return;
     }
+
+    const fallback =
+      globalLeagueId && leagues.some((l) => l.id === globalLeagueId)
+        ? globalLeagueId
+        : leagues[0].id;
+    setGlobalLeagueId(fallback);
+    navigate(`/app/picks/${fallback}`, { replace: true });
   }, [
     userLoading,
     leagues,
     routeLeagueId,
-    selectedLeagueId,
     globalLeagueId,
     setGlobalLeagueId,
     initializeLeagueSelection,
+    navigate,
   ]);
-
-  // Keep URL in sync with selectedLeagueId and update global context
-  useEffect(
-    () => {
-      if (selectedLeagueId && selectedLeagueId !== routeLeagueId) {
-        navigate(`/app/picks/${selectedLeagueId}`, { replace: true });
-        setGlobalLeagueId(selectedLeagueId); // Update global context
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedLeagueId] // Intentionally omitting routeLeagueId and navigate
-  );
 
   useEffect(() => {
     async function fetchMatchups() {
-      if (!selectedLeagueId || selectedWeek === null) return;
+      if (!routeLeagueId || selectedWeek === null) return;
+      // Skip the request when the current week isn't in the selected
+      // league's week list — happens for one render right after a
+      // league switch, before the week-snap effect below updates
+      // selectedWeek to the new league's latest. Without this gate we
+      // emit a (newLeagueId, oldWeek) XHR that the user never sees.
+      if (!seasonWeeks.includes(selectedWeek)) return;
       setLoadingMatchups(true);
       try {
         const response = await apiWrapper.Matchups.getByLeagueAndWeek(
-          selectedLeagueId,
+          routeLeagueId,
           selectedWeek
         );
         setMatchups(response.data.matchups || []);
@@ -193,15 +221,16 @@ function PicksPage() {
     }
 
     fetchMatchups();
-  }, [selectedLeagueId, selectedWeek]);
+  }, [routeLeagueId, selectedWeek, seasonWeeks]);
 
   useEffect(() => {
     async function fetchPicks() {
-      if (!selectedLeagueId || selectedWeek === null) return;
+      if (!routeLeagueId || selectedWeek === null) return;
+      if (!seasonWeeks.includes(selectedWeek)) return;
 
       try {
         const response = await apiWrapper.Picks.getUserPicksByWeek(
-          selectedLeagueId,
+          routeLeagueId,
           selectedWeek
         );
 
@@ -217,12 +246,12 @@ function PicksPage() {
     }
 
     fetchPicks();
-  }, [selectedLeagueId, selectedWeek]);
+  }, [routeLeagueId, selectedWeek, seasonWeeks]);
 
   async function handlePick(matchup, selectedFranchiseSeasonId, confidencePoints) {
     try {
       const pickPayload = {
-        pickemGroupId: selectedLeagueId,
+        pickemGroupId: routeLeagueId,
         contestId: matchup.contestId,
         pickType: pickType || "StraightUp",
         franchiseSeasonId: selectedFranchiseSeasonId,
@@ -355,29 +384,36 @@ function PicksPage() {
     }
   }
 
-  // Find the selected league's week list (ascending from /user/me)
-  const selectedLeague = leagues.find((l) => l.id === selectedLeagueId) ?? null;
-  const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
-  // Default to the latest week the league has (last element of the ascending list).
-  // Custom-window leagues may only have a single entry; full-season leagues have many.
-  const latestSeasonWeek = seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
+  // Switch league → ensure the URL changes (route is the source of
+  // truth) and persist the choice for cross-page memory. The week-snap
+  // effect below adjusts selectedWeek on the next render; the matchups
+  // fetch is gated on the new league's seasonWeeks so the brief
+  // (newLeagueId, oldWeek) window doesn't emit an XHR.
+  const handleLeagueChange = useCallback(
+    (newLeagueId) => {
+      if (!newLeagueId || newLeagueId === routeLeagueId) return;
+      setGlobalLeagueId(newLeagueId);
+      navigate(`/app/picks/${newLeagueId}`, { replace: true });
+    },
+    [routeLeagueId, navigate, setGlobalLeagueId]
+  );
 
-  // When selectedLeagueId or week list changes, snap selectedWeek to the latest
-  // week in the league. If the league has no weeks defined (latestSeasonWeek
-  // falsy), explicitly clear selectedWeek — otherwise a stale value from the
-  // previously-selected league would carry over and the matchups fetch would
-  // issue an invalid (leagueId, week) pair.
+  // Snap selectedWeek when the URL-driven league changes, or when the
+  // current week falls outside the new league's week list. Respects a
+  // user's manual mid-week selection (deps don't change on week
+  // selection alone, and we only re-snap when the current week is no
+  // longer valid for this league).
   useEffect(() => {
-    if (!selectedLeagueId) return;
+    if (!routeLeagueId) return;
     if (!latestSeasonWeek) {
       if (selectedWeek !== null) setSelectedWeek(null);
       return;
     }
-    if (selectedWeek !== latestSeasonWeek) {
+    if (selectedWeek === null || !seasonWeeks.includes(selectedWeek)) {
       setSelectedWeek(latestSeasonWeek);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLeagueId, latestSeasonWeek, selectedLeague]);
+  }, [routeLeagueId, latestSeasonWeek, selectedLeague]);
 
   if (userLoading) return <div>Loading user info...</div>;
 
@@ -411,8 +447,8 @@ function PicksPage() {
         <div className="picks-page-header">
           <LeagueWeekSelector
             leagues={leagues}
-            selectedLeagueId={selectedLeagueId}
-            setSelectedLeagueId={setSelectedLeagueId}
+            selectedLeagueId={routeLeagueId}
+            setSelectedLeagueId={handleLeagueChange}
             selectedWeek={selectedWeek}
             setSelectedWeek={setSelectedWeek}
             seasonWeeks={seasonWeeks}

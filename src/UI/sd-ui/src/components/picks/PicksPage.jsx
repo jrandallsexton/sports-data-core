@@ -207,6 +207,12 @@ function PicksPage() {
   }, [routeLeagueId]);
 
   useEffect(() => {
+    // `cancelled` flips in the cleanup so a late response from the
+    // previous (routeLeagueId, selectedWeek) pair can't stomp newer
+    // state. Without this, a fast A→B switch where A's XHR resolves
+    // after B's clearing effect (or after B's own fetch) would briefly
+    // render A's matchups under B's identity.
+    let cancelled = false;
     async function fetchMatchups() {
       if (!routeLeagueId || selectedWeek === null) return;
       // Skip the request when the current week isn't in the selected
@@ -221,6 +227,7 @@ function PicksPage() {
           routeLeagueId,
           selectedWeek
         );
+        if (cancelled) return;
         setMatchups(response.data.matchups || []);
         setPickType(response.data.pickType);
         setUseConfidencePoints(response.data.useConfidencePoints);
@@ -228,16 +235,22 @@ function PicksPage() {
         setLeagueSeasonYear(response.data.seasonYear);
         setLeagueAsOfDate(response.data.asOfDate ?? null);
       } catch (error) {
+        if (cancelled) return;
         console.error("Failed to fetch matchups:", error);
       } finally {
-        setLoadingMatchups(false);
+        if (!cancelled) setLoadingMatchups(false);
       }
     }
 
     fetchMatchups();
+    return () => {
+      cancelled = true;
+    };
   }, [routeLeagueId, selectedWeek, seasonWeeks]);
 
   useEffect(() => {
+    // Same race guard as fetchMatchups — see comment above.
+    let cancelled = false;
     async function fetchPicks() {
       if (!routeLeagueId || selectedWeek === null) return;
       if (!seasonWeeks.includes(selectedWeek)) return;
@@ -247,6 +260,7 @@ function PicksPage() {
           routeLeagueId,
           selectedWeek
         );
+        if (cancelled) return;
 
         const picksByContest = {};
         for (const pick of response.data) {
@@ -255,11 +269,15 @@ function PicksPage() {
 
         setUserPicks(picksByContest);
       } catch (error) {
+        if (cancelled) return;
         console.error("Failed to fetch user picks:", error);
       }
     }
 
     fetchPicks();
+    return () => {
+      cancelled = true;
+    };
   }, [routeLeagueId, selectedWeek, seasonWeeks]);
 
   async function handlePick(matchup, selectedFranchiseSeasonId, confidencePoints) {

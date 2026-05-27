@@ -4,7 +4,9 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
+  Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/src/components/ui/AppText';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
@@ -37,6 +39,7 @@ export default function PicksScreen() {
 
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+  const [hidePicked, setHidePicked] = useState(false);
 
   // Latest week = last element of the ascending seasonWeeks list.
   const latestWeek = (l: { seasonWeeks?: number[] } | null | undefined) =>
@@ -111,7 +114,12 @@ export default function PicksScreen() {
 
   const total = entries.length;
   const made = myPicks.length;
-  const remaining = total - made;
+  const allPicked = total > 0 && made >= total;
+
+  const visibleEntries = useMemo(
+    () => (hidePicked ? entries.filter((e) => !e.pick) : entries),
+    [entries, hidePicked],
+  );
 
   // ── Inject pick counter into this tab's header ──────────────────────────────
   useEffect(() => {
@@ -122,18 +130,41 @@ export default function PicksScreen() {
     navigation.setOptions({
       headerRight: () => (
         <View style={headerStyles.pill}>
-          <Text style={[headerStyles.pillText, { color: theme.tint }]}>
-            {made}/{total}
-          </Text>
-          {remaining > 0 && (
-            <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>
-              {' '}· {remaining} left
+          {allPicked ? (
+            <Text style={[headerStyles.pillText, { color: theme.tint }]}>
+              All Picks Made
             </Text>
+          ) : (
+            <>
+              <Text style={[headerStyles.pillText, { color: theme.tint }]}>
+                {made}/{total}
+              </Text>
+              <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>
+                {' '}Picks Made
+              </Text>
+              <Pressable
+                onPress={() => setHidePicked((v) => !v)}
+                hitSlop={6}
+                style={headerStyles.hideToggle}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: hidePicked }}
+                accessibilityLabel="Hide picked games"
+              >
+                <Ionicons
+                  name={hidePicked ? 'checkbox' : 'square-outline'}
+                  size={18}
+                  color={hidePicked ? theme.tint : theme.textMuted}
+                />
+                <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>
+                  {' '}Hide Picked
+                </Text>
+              </Pressable>
+            </>
           )}
         </View>
       ),
     });
-  }, [made, total, remaining, theme]);
+  }, [made, total, allPicked, hidePicked, theme]);
 
   if (meLoading) {
     return <LoadingSpinner message="Loading picks…" fullScreen />;
@@ -166,7 +197,7 @@ export default function PicksScreen() {
         <LoadingSpinner message="Loading picks…" />
       ) : (
         <FlatList
-          data={entries}
+          data={visibleEntries}
           keyExtractor={(item) => item.matchup.contestId}
           renderItem={({ item }) => (
             <MatchupCard
@@ -274,7 +305,7 @@ const styles = StyleSheet.create({
 const headerStyles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     marginRight: 12,
   },
   pillText: {
@@ -284,5 +315,10 @@ const headerStyles = StyleSheet.create({
   pillSub: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  hideToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
   },
 });

@@ -192,6 +192,20 @@ function PicksPage() {
     navigate,
   ]);
 
+  // Clear league-scoped state immediately on league change so the UI
+  // doesn't render the previous league's matchups during the brief
+  // window between navigate() and the new matchups fetch resolving.
+  // Also prevents handlePick from racing a click against stale
+  // (newLeagueId, oldContestId) ids — MatchupList reads from `matchups`,
+  // which would otherwise hold the prior league's contests for one or
+  // two renders (and for inbound-link switches the route changes
+  // without remounting PicksPage, so the state survives the transition).
+  useEffect(() => {
+    setMatchups([]);
+    setUserPicks({});
+    setLoadingMatchups(true);
+  }, [routeLeagueId]);
+
   useEffect(() => {
     async function fetchMatchups() {
       if (!routeLeagueId || selectedWeek === null) return;

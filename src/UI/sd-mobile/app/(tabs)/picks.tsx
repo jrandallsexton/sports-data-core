@@ -113,7 +113,14 @@ export default function PicksScreen() {
   );
 
   const total = entries.length;
-  const made = myPicks.length;
+  // Count picks that correspond to currently-displayed matchups rather
+  // than myPicks.length directly — picks and matchups load on separate
+  // query cycles, so during a league/week transition (or if myPicks
+  // carries a stale pick for a contest no longer in the matchups list)
+  // raw myPicks.length can briefly exceed entries with picks. Derive
+  // from entries so total / made / allPicked stay aligned with what's
+  // on screen.
+  const made = entries.filter((e) => e.pick !== null).length;
   const allPicked = total > 0 && made >= total;
 
   const visibleEntries = useMemo(

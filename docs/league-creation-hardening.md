@@ -16,9 +16,24 @@ one created days later by `MatchupScheduler` once the current
 both show up in the league's ascending week list. The PicksPage UI
 defaults to the first week → zero matchups → reads as broken.
 
-**Status:** drafted 2026-05-28. Not yet executed. Implementation
-expected to land in 2–3 PRs (factory extraction → handler dispatch
-→ scheduler gate); backfill is explicitly deferred.
+**Status:** drafted 2026-05-28. Partially executed — three of four
+PRs:
+
+- **PR-A** (factory extraction) — **merged** in #372.
+- **PR-C** (UI date-picker guards on web + mobile) — **merged** in
+  #373. Note: originally listed third in the plan; reordered to
+  ship in parallel with PR-A since it's independent of all
+  backend work.
+- **PR-B** (server validator + bootstrap-mode dispatch) — **in
+  flight** as the PR that introduces this doc.
+- **PR-D** (`MatchupScheduler` window gate + handler base
+  extraction) — **not started**. The motivating bug (single-day
+  leagues producing two `PickemGroupWeek` rows in `/user/me`) is
+  only fully closed once PR-D lands; PR-B alone removes the
+  eager-bootstrap orphan but leaves the daily-scheduler orphan
+  intact.
+
+Backfill is explicitly deferred (see *Out of scope*).
 
 ---
 

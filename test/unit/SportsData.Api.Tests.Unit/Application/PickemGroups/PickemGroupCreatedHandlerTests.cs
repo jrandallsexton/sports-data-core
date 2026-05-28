@@ -1,5 +1,7 @@
 using FluentAssertions;
 
+using FluentValidation.Results;
+
 using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
@@ -142,11 +144,18 @@ public class PickemGroupCreatedHandlerTests : ApiTestBase<PickemGroupCreatedHand
     {
         // Transient failure: throw so MassTransit retries. A briefly-between-
         // seasons sport will eventually DLQ via retry policy, at which point
-        // a human re-enqueues via MatchupScheduler.
+        // a human re-enqueues via MatchupScheduler. The season client expresses
+        // unavailability as a Failure result (see SeasonClient.GetCurrentSeasonWeek
+        // which returns Failure<...>(default!, ResultStatus.NotFound, ...) on
+        // upstream miss) — the handler checks !IsSuccess rather than a null
+        // Value payload.
         var groupId = await SeedGroup(startsOn: null);
         _seasonClientMock
             .Setup(x => x.GetCurrentSeasonWeek(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<CanonicalSeasonWeekDto>(null!));
+            .ReturnsAsync(new Failure<CanonicalSeasonWeekDto>(
+                default!,
+                ResultStatus.NotFound,
+                new List<ValidationFailure>()));
 
         var sut = Mocker.CreateInstance<PickemGroupCreatedHandler>();
         var context = ConsumeContextFor(new PickemGroupCreated(

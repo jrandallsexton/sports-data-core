@@ -424,7 +424,7 @@ PR-A. Sensible order: A → C in parallel with B → D.
   architectural call and orthogonal to this cleanup.
 
 - **NCAA / NFL handler equivalents.** Same code shape, same
-  holes. PR-C's base extraction fixes all three at once. Don't
+  holes. PR-D's base extraction fixes all three at once. Don't
   fix NCAA/NFL in isolation.
 
 ---
@@ -480,6 +480,6 @@ behavioral change that has to be exercised. Test plan:
   confirm the current-week row appears and matchups populate
   (current happy-path regression check).
 
-For PR-C, the scheduler window gate: spin up two leagues — one
+For PR-D, the scheduler window gate: spin up two leagues — one
 future-start, one current — let the scheduler run, confirm only
 the current-start league gets a new `PickemGroupWeek` row.

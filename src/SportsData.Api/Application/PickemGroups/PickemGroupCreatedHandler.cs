@@ -105,9 +105,8 @@ namespace SportsData.Api.Application.PickemGroups
             // ESPN provides native week boundaries for all three via SeasonType, so
             // the Producer-side GetCurrentSeasonWeek endpoint works uniformly.
             var weekResult = await _seasonClientFactory.Resolve(group.Sport).GetCurrentSeasonWeek();
-            var currentWeek = weekResult.IsSuccess ? weekResult.Value : null;
 
-            if (currentWeek is null)
+            if (!weekResult.IsSuccess)
             {
                 // Transient: the current-week endpoint is offline / sport is briefly
                 // between seasons. Throw so MassTransit retries the message. If the
@@ -120,6 +119,8 @@ namespace SportsData.Api.Application.PickemGroups
                 throw new InvalidOperationException(
                     $"Current week unavailable for sport {group.Sport}.");
             }
+
+            var currentWeek = weekResult.Value;
 
             var groupWeek = group.Weeks.FirstOrDefault(x => x.SeasonWeekId == currentWeek.Id);
 

@@ -123,9 +123,14 @@ export default function PicksScreen() {
   const made = entries.filter((e) => e.pick !== null).length;
   const allPicked = total > 0 && made >= total;
 
+  // Hide Picked is a no-op once allPicked flips true — the toggle is also
+  // hidden in that branch of the header, so respecting it would strand the
+  // user with an empty FlatList ("No games this week") and no in-UI escape.
+  // Treating the filter as inactive when allPicked === true keeps the cards
+  // visible after the final pick while the header reads "All Picks Made".
   const visibleEntries = useMemo(
-    () => (hidePicked ? entries.filter((e) => !e.pick) : entries),
-    [entries, hidePicked],
+    () => (hidePicked && !allPicked ? entries.filter((e) => !e.pick) : entries),
+    [entries, hidePicked, allPicked],
   );
 
   // ── Inject pick counter into this tab's header ──────────────────────────────

@@ -26,10 +26,15 @@ public class CreateBaseballMlbLeagueCommandHandlerTests : ApiTestBase<CreateBase
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_franchiseClientMock.Object);
 
+        // Fixed clock far enough in the past that the validator's
+        // EndsOn-in-future rule doesn't fire for the (null EndsOn) test requests.
+        var dateTimeProviderMock = Mocker.GetMock<IDateTimeProvider>();
+        dateTimeProviderMock.Setup(x => x.UtcNow()).Returns(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
         // Use the real validator so Name/enum/date-window assertions exercise the
         // production rules rather than AutoMocker's default IsValid=true stub.
         Mocker.Use<IValidator<CreateBaseballMlbLeagueRequest>>(
-            new CreateBaseballMlbLeagueRequestValidator());
+            new CreateBaseballMlbLeagueRequestValidator(dateTimeProviderMock.Object));
     }
 
     private CreateBaseballMlbLeagueRequest BuildValidRequest() => new()

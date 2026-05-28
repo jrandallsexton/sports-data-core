@@ -1,13 +1,15 @@
 using FluentValidation;
 
 using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague.Dtos;
+using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague;
 
 public class CreateBaseballMlbLeagueRequestValidator
     : CreateLeagueRequestBaseValidator<CreateBaseballMlbLeagueRequest>
 {
-    public CreateBaseballMlbLeagueRequestValidator()
+    public CreateBaseballMlbLeagueRequestValidator(IDateTimeProvider dateTimeProvider)
+        : base(dateTimeProvider)
     {
         // Empty DivisionSlugs is allowed (means "include all divisions"); but when the
         // caller provides entries they must be unique. Duplicates almost always indicate

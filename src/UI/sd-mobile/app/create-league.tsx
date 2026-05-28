@@ -162,6 +162,13 @@ const schema = z
     if (data.startsOn && data.endsOn && data.endsOn < data.startsOn) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['endsOn'], message: 'End date must be on or after the start date' });
     }
+    // Mirror of the server `EffectiveEndsOn > now` rule. Recomputes today
+    // at validation time so a long-running form session can't sneak through
+    // a now-stale date.
+    const today = getTodayIsoDate();
+    if (data.endsOn && data.endsOn < today) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['endsOn'], message: "End date can't be in the past" });
+    }
   });
 
 type FormData = z.infer<typeof schema>;
@@ -220,6 +227,13 @@ const dateToIsoDateOnly = (d: Date): string => {
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 };
+
+// Today as 'YYYY-MM-DD' anchored at the user's local calendar day. Used for
+// the date-picker `minimumDate` floor and the Zod `superRefine` rule. The
+// server-side `EffectiveEndsOn > now` validator is the trust boundary —
+// these UI guards just prevent users from constructing an invalid window in
+// the first place.
+const getTodayIsoDate = (): string => dateToIsoDateOnly(new Date());
 
 // Mirrors web's toStartOfDayIso / toEndOfDayIso. Anchored at the caller's
 // local timezone — appending 'Z' would wrongly treat the local calendar
@@ -375,6 +389,15 @@ export default function CreateLeagueScreen() {
       setValue('endsOn', startsOn, { shouldDirty: true, shouldValidate: true });
     }
   }, [durationMode, startsOn, endsOn, setValue]);
+
+  // Today as 'YYYY-MM-DD' for the date-picker floors. Memoized so re-renders
+  // during the form session don't create a new Date object per render, but
+  // intentionally NOT recomputed at midnight — the Zod superRefine catches
+  // a stale "today" on submit if the user leaves the form open overnight.
+  const todayIsoDate = useMemo(() => getTodayIsoDate(), []);
+  const endsOnMinIsoDate =
+    startsOn && startsOn > todayIsoDate ? startsOn : todayIsoDate;
+
   const copy = SPORT_COPY[sport];
   const isNcaa = sport === 'FootballNcaa';
 
@@ -690,6 +713,7 @@ export default function CreateLeagueScreen() {
                         accessibilityLabel="Start Date"
                         theme={theme}
                         error={errors.startsOn?.message}
+                        minimumDate={parseDateOnly(todayIsoDate)}
                       />
                     )}
                   />
@@ -707,7 +731,7 @@ export default function CreateLeagueScreen() {
                         accessibilityLabel="End Date"
                         theme={theme}
                         error={errors.endsOn?.message}
-                        minimumDate={startsOn ? parseDateOnly(startsOn) : undefined}
+                        minimumDate={parseDateOnly(endsOnMinIsoDate)}
                       />
                     )}
                   />

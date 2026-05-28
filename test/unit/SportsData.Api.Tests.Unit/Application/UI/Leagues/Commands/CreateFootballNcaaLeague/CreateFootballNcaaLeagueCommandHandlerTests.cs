@@ -24,10 +24,16 @@ public class CreateFootballNcaaLeagueCommandHandlerTests : ApiTestBase<CreateFoo
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_franchiseClientMock.Object);
 
+        // Fixed clock for the validator's EndsOn-in-future rule. Test
+        // requests use a null EndsOn so the rule is a no-op; setup is just
+        // to satisfy the constructor dependency.
+        var dateTimeProviderMock = Mocker.GetMock<IDateTimeProvider>();
+        dateTimeProviderMock.Setup(x => x.UtcNow()).Returns(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
         // Use the real validator so Name/enum/date-window assertions exercise the
         // production rules rather than AutoMocker's default IsValid=true stub.
         Mocker.Use<FluentValidation.IValidator<CreateFootballNcaaLeagueRequest>>(
-            new CreateFootballNcaaLeagueRequestValidator());
+            new CreateFootballNcaaLeagueRequestValidator(dateTimeProviderMock.Object));
     }
 
     private CreateFootballNcaaLeagueRequest BuildValidRequest() => new()

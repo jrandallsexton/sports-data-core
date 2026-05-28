@@ -2,13 +2,15 @@ using FluentValidation;
 
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague.Dtos;
+using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
 
 public class CreateFootballNcaaLeagueRequestValidator
     : CreateLeagueRequestBaseValidator<CreateFootballNcaaLeagueRequest>
 {
-    public CreateFootballNcaaLeagueRequestValidator()
+    public CreateFootballNcaaLeagueRequestValidator(IDateTimeProvider dateTimeProvider)
+        : base(dateTimeProvider)
     {
         // RankingFilter is optional — only validate when the caller supplied a value.
         RuleFor(x => x.RankingFilter)

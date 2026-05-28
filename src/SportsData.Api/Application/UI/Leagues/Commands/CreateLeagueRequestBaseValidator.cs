@@ -1,6 +1,7 @@
 using FluentValidation;
 
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands;
 
@@ -13,8 +14,10 @@ namespace SportsData.Api.Application.UI.Leagues.Commands;
 public abstract class CreateLeagueRequestBaseValidator<TRequest> : AbstractValidator<TRequest>
     where TRequest : CreateLeagueRequestBase
 {
-    protected CreateLeagueRequestBaseValidator()
+    protected CreateLeagueRequestBaseValidator(IDateTimeProvider dateTimeProvider)
     {
+        ArgumentNullException.ThrowIfNull(dateTimeProvider);
+
         RuleFor(x => x.Name)
             .NotEmpty()
             .WithMessage("League name is required.");
@@ -41,6 +44,21 @@ public abstract class CreateLeagueRequestBaseValidator<TRequest> : AbstractValid
                 || x.StartsOn.Value < x.EffectiveEndsOn.Value)
             .WithName(nameof(CreateLeagueRequestBase.EndsOn))
             .WithMessage("EndsOn must be after StartsOn.");
+
+        // Reject windows whose end has already passed — no pickable games can
+        // exist in such a window. Windows that straddle "now" (e.g. a single-day
+        // league created at noon where the morning games already started) are
+        // allowed: the matchup processor's [StartsOn, EndsOn] filter still grabs
+        // the in-window games and the pick-lock logic handles per-game
+        // pickability. EndsOn-only check is sufficient because the existing
+        // StartsOn < EffectiveEndsOn rule above already prevents a degenerate
+        // window. UI sibling guards in PR-C (web `min={today}` + mobile Zod
+        // superRefine) prevent users from constructing this from the form; this
+        // is the trust boundary for admin / direct-API callers.
+        RuleFor(x => x)
+            .Must(x => !x.EffectiveEndsOn.HasValue || x.EffectiveEndsOn.Value > dateTimeProvider.UtcNow())
+            .WithName(nameof(CreateLeagueRequestBase.EndsOn))
+            .WithMessage("EndsOn can't be in the past.");
     }
 
     /// <summary>

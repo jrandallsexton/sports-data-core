@@ -16,22 +16,30 @@ one created days later by `MatchupScheduler` once the current
 both show up in the league's ascending week list. The PicksPage UI
 defaults to the first week → zero matchups → reads as broken.
 
-**Status:** drafted 2026-05-28. Partially executed — three of four
-PRs:
+**Status:** drafted 2026-05-28. Motivating bug fixed; hygiene
+deferred to a follow-up:
 
 - **PR-A** (factory extraction) — **merged** in #372.
 - **PR-C** (UI date-picker guards on web + mobile) — **merged** in
   #373. Note: originally listed third in the plan; reordered to
   ship in parallel with PR-A since it's independent of all
   backend work.
-- **PR-B** (server validator + bootstrap-mode dispatch) — **in
-  flight** as the PR that introduces this doc.
-- **PR-D** (`MatchupScheduler` window gate + handler base
-  extraction) — **not started**. The motivating bug (single-day
-  leagues producing two `PickemGroupWeek` rows in `/user/me`) is
-  only fully closed once PR-D lands; PR-B alone removes the
-  eager-bootstrap orphan but leaves the daily-scheduler orphan
-  intact.
+- **PR-B** (server validator + bootstrap-mode dispatch) — **merged**
+  in #375.
+- **PR-D** (`MatchupScheduler` window gate) — **in flight** as the
+  PR landing the scheduler-side daily-orphan fix. Scope reduced
+  vs. the original plan: just the window/active gate, no handler
+  base extraction or `MaxUsers` / `NonStandardWeekGroupSeasonMapFilter`
+  wiring. Those land in a follow-up (`PR-E`) — they're hygiene,
+  not motivating-bug closure. With PR-D's gate in place the
+  motivating bug is fully fixed: no orphan at creation (PR-B),
+  no orphan on subsequent scheduler runs (PR-D).
+- **PR-E** (deferred) — handler base extraction collapsing the
+  three sport-specific create-league handlers (NCAA / NFL / MLB)
+  into a shared base; wire-through of `MaxUsers` and
+  `NonStandardWeekGroupSeasonMapFilter` request fields. No
+  behavior change to in-flight bug, so safe to land whenever the
+  refactor cost feels worth paying.
 
 Backfill is explicitly deferred (see *Out of scope*).
 
@@ -385,15 +393,24 @@ Four PRs:
      restrictive in what it allows; safe regardless of server
      state).
 
-4. **PR-D: `MatchupScheduler` window gate + handler base
-   extraction.** Add the `[StartsOn, EndsOn]` and `DeactivatedUtc`
-   gates in the scheduler. Collapse the three sport-specific
-   create-league handlers into a shared base. Wire `MaxUsers` /
-   `NonStandardWeekGroupSeasonMapFilter` through.
+4. **PR-D: `MatchupScheduler` window gate.** Add the
+   `[StartsOn, EndsOn]` and `DeactivatedUtc` gates in the
+   scheduler so the daily run respects per-league windows.
+   Closes the second half of the motivating bug
+   (eager-bootstrap orphan was closed in PR-B). Scope-trimmed
+   from the original plan — handler base extraction and field
+   wiring split out to PR-E (below).
 
-Dependency graph: PR-A blocks PR-B and PR-D (both use the
-factory). PR-B and PR-C are independent. PR-D depends only on
-PR-A. Sensible order: A → C in parallel with B → D.
+5. **PR-E (deferred): Handler base extraction + field wiring.**
+   Collapse the three sport-specific create-league handlers into
+   a shared base. Wire `MaxUsers` / `NonStandardWeekGroupSeasonMapFilter`
+   through the request DTOs. Pure hygiene; no behavior change.
+   Land whenever the refactor cost feels worth paying.
+
+Dependency graph: PR-A blocks PR-B (use the factory). PR-B and
+PR-C are independent. PR-D is independent of PR-B (could have
+landed in either order). PR-E builds on PR-B's handler shape.
+Shipped order: A → C parallel with B → D, E to follow.
 
 ---
 
@@ -424,7 +441,7 @@ PR-A. Sensible order: A → C in parallel with B → D.
   architectural call and orthogonal to this cleanup.
 
 - **NCAA / NFL handler equivalents.** Same code shape, same
-  holes. PR-D's base extraction fixes all three at once. Don't
+  holes. PR-E's base extraction fixes all three at once. Don't
   fix NCAA/NFL in isolation.
 
 ---

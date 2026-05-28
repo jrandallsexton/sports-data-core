@@ -4,8 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Entities;
-using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Core.Infrastructure.Clients.Season;
 using SportsData.Core.Processing;
@@ -73,15 +71,7 @@ namespace SportsData.Api.Application.PickemGroups
 
             if (groupWeek is null)
             {
-                groupWeek = new PickemGroupWeek()
-                {
-                    Id = Guid.NewGuid(),
-                    AreMatchupsGenerated = false,
-                    GroupId = group.Id,
-                    SeasonWeek = currentWeek.WeekNumber,
-                    SeasonYear = currentWeek.SeasonYear,
-                    SeasonWeekId = currentWeek.Id
-                };
+                groupWeek = PickemGroupWeekFactory.CreateForCurrentWeek(group, currentWeek);
                 group.Weeks.Add(groupWeek);
                 await _dataContext.SaveChangesAsync();
             }

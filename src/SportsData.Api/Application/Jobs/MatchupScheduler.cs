@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Jobs;
 using SportsData.Core.Infrastructure.Clients.Season;
@@ -95,26 +95,7 @@ namespace SportsData.Api.Application.Jobs
 
                 if (groupWeek is null)
                 {
-                    var currentWeekOrdinal = currentWeek.WeekNumber;
-
-                    // if current week is postseason, we need to change the ordinal week number to reflect that
-                    if (currentWeek.IsPostSeason)
-                    {
-                        // we need to get the number of regular season weeks for this season year
-                        currentWeekOrdinal = group.Weeks.OrderByDescending(x => x.SeasonWeek)
-                            .Take(1).FirstOrDefault()?.SeasonWeek + 1 ?? currentWeek.WeekNumber;
-                    }
-
-                    groupWeek = new PickemGroupWeek()
-                    {
-                        Id = Guid.NewGuid(),
-                        AreMatchupsGenerated = false,
-                        GroupId = group.Id,
-                        SeasonWeek = currentWeekOrdinal,
-                        SeasonYear = currentWeek.SeasonYear,
-                        SeasonWeekId = currentWeek.Id,
-                        IsNonStandardWeek = currentWeek.IsNonStandardWeek
-                    };
+                    groupWeek = PickemGroupWeekFactory.CreateForCurrentWeek(group, currentWeek);
                     group.Weeks.Add(groupWeek);
                     await _dataContext.SaveChangesAsync();
                 }

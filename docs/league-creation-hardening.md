@@ -487,16 +487,255 @@ For PR-B in particular, the bootstrap-mode dispatch is the
 behavioral change that has to be exercised. Test plan:
 
 - Unit tests on `PickemGroupCreatedHandler` covering each mode
-  (`Immediate` / `Future` / `Past` / `WrongYear`), asserting
-  whether `PickemGroupWeek` was created and whether
-  `ScheduleGroupWeekMatchupsCommand` was enqueued.
-- Local E2E: create an MLB league with `StartsOn = today + 10`,
-  confirm no `PickemGroupWeek` rows materialize. Re-run the
-  daily scheduler at `StartsOn + 1`, confirm a row appears.
-- Local E2E: create an MLB league with `StartsOn = today`,
-  confirm the current-week row appears and matchups populate
-  (current happy-path regression check).
+  (`Immediate` / `Future`), asserting whether `PickemGroupWeek`
+  was created and whether `ScheduleGroupWeekMatchupsCommand`
+  was enqueued. (PR-B `PickemGroupCreatedHandlerTests`.)
 
-For PR-D, the scheduler window gate: spin up two leagues — one
-future-start, one current — let the scheduler run, confirm only
-the current-start league gets a new `PickemGroupWeek` row.
+The detailed local E2E matrix below is the pre-merge regression
+checklist for **PR-D** specifically — every scenario exercises
+some combination of the four shipped PRs to confirm the
+motivating bug is fully closed end-to-end.
+
+---
+
+## Local E2E test cases
+
+Pre-merge regression matrix for PR-D. Each scenario exercises
+the validator (PR-B), the eager-bootstrap dispatch (PR-B), the
+factory (PR-A), the UI guards (PR-C), the scheduler gate (PR-D),
+or some combination. Run them with a local stack:
+
+### Setup checklist
+
+- API, Producer, Provider, RabbitMQ, Postgres running locally
+  (docker-compose or k8s — whatever your local convention is).
+- Logged-in admin user (MLB league creation is admin-gated; see
+  `LeagueCreatePage` / `create-league.tsx`).
+- MLB current-week data sourced so `GetCurrentSeasonWeek`
+  returns a real `CanonicalSeasonWeekDto`. Out-of-season MLB
+  collapses several scenarios — confirm `seasons/current-week`
+  on Producer returns 200 first.
+- A Hangfire dashboard reachable for manually triggering
+  `MatchupScheduler.ExecuteAsync` (don't wait for the cron).
+
+### Verification queries
+
+Keep these handy in a SQL session against the local Postgres:
+
+```sql
+-- Latest leagues plus their windows
+SELECT "Id", "Name", "Sport", "StartsOn", "EndsOn",
+       "DeactivatedUtc", "CreatedUtc"
+FROM "PickemGroup"
+ORDER BY "CreatedUtc" DESC
+LIMIT 10;
+
+-- PickemGroupWeek rows for a given league
+SELECT pgw."Id", pgw."SeasonYear", pgw."SeasonWeek",
+       pgw."SeasonWeekId", pgw."AreMatchupsGenerated",
+       pgw."IsNonStandardWeek",
+       (SELECT COUNT(*) FROM "PickemGroupMatchup" pgm
+        WHERE pgm."GroupId" = pgw."GroupId"
+          AND pgm."SeasonWeekId" = pgw."SeasonWeekId") AS matchup_count
+FROM "PickemGroupWeek" pgw
+WHERE pgw."GroupId" = '<league-id>';
+
+-- /user/me payload for a logged-in user (substitute auth)
+curl -s http://localhost:5xxx/api/users/me \
+     -H "Authorization: Bearer <token>" | jq '.leagues'
+```
+
+### Scenario matrix
+
+| # | Scenario | Validator | Eager bootstrap | Daily scheduler |
+| --- | --- | --- | --- | --- |
+| 1 | Future-start single-day league | ✅ accepts | ⛔ no-op (Future) | ⛔ skip (gate) |
+| 2 | Past-end league (admin/direct-API) | ⛔ reject | (n/a) | (n/a) |
+| 3 | Half-played single-day league | ✅ accepts | ✅ Immediate | ✅ in-window |
+| 4 | Full-season league (no window) | ✅ accepts | ✅ Immediate | ✅ in-window |
+| 5 | Closed-window league | (was valid at create) | (was valid at create) | ⛔ skip (gate) |
+| 6 | Deactivated league | (n/a) | (n/a) | ⛔ skip (gate) |
+| 7 | Web UI date picker | rejects past in browser | — | — |
+| 8 | Mobile UI date picker | rejects past in app | — | — |
+| 9 | Mixed-window batch | varies | varies | only in-window processed |
+
+### Detailed scenarios
+
+#### Scenario 1 — Future-start single-day league (motivating bug)
+
+**Setup:** create an MLB league via the web UI with `StartsOn =
+today + 5 days, EndsOn = today + 5 days`.
+
+**Verify at creation:**
+- API responds `201`.
+- `PickemGroupWeek` for this `GroupId` returns **zero rows**.
+- `/user/me` for the creator shows the league with
+  `seasonWeeks: []`.
+- Seq has a `LogInformation` line containing `"deferring
+  bootstrap to MatchupScheduler"` and the league id. (PR-B
+  `Future` mode.)
+
+**Trigger daily scheduler** (Hangfire dashboard → run
+`MatchupScheduler.ExecuteAsync`).
+
+**Verify after scheduler:**
+- Still **zero** `PickemGroupWeek` rows for this league. (PR-D
+  gate skipped the future-start league.)
+- Scheduler did NOT call `seasons/current-week` if this is the
+  only MLB league. (Log line: `Found 0 active sport(s)…`.)
+
+**Time-shift the league** (UPDATE `StartsOn` in Postgres to
+`now() - INTERVAL '1 hour'`).
+
+**Trigger scheduler again. Verify:**
+- One `PickemGroupWeek` row appears for this league for the
+  current `SeasonWeekId`. (Gate now passes; factory creates the
+  row.)
+- A `ScheduleGroupWeekMatchupsCommand` Hangfire job is enqueued.
+
+**What this proves:** the motivating bug is closed
+end-to-end — no orphan at creation (PR-B), no orphan on
+subsequent scheduler runs (PR-D), correct behavior when the
+window finally opens (factory + scheduler).
+
+#### Scenario 2 — Past-end league rejected at validator
+
+**Setup:** craft a direct-API POST to
+`/api/leagues/baseball-mlb` (admin token) with `StartsOn =
+yesterday, EndsOn = yesterday`. The UI won't construct this —
+PR-C's `min={today}` blocks it — so use `curl` / Postman to
+bypass.
+
+**Verify:**
+- API responds `400` with `ResultStatus.Validation`.
+- Error payload contains a `EndsOn` violation with message
+  `"EndsOn can't be in the past."` (PR-B validator rule.)
+- No `PickemGroup` row created.
+
+**What this proves:** the server-side trust boundary holds even
+when the UI guards are bypassed.
+
+#### Scenario 3 — Half-played single-day league
+
+**Setup:** create an MLB league via the UI with `StartsOn =
+today (some hours ago)` and `EndsOn = today (end of day)`. Use
+the date inputs — they should accept today.
+
+**Verify at creation:**
+- API responds `201`.
+- One `PickemGroupWeek` row for this league at the current
+  `SeasonWeekId`. (Eager bootstrap, `Immediate` mode.)
+- `ScheduleGroupWeekMatchupsCommand` enqueued.
+
+**Verify after matchup generation completes:**
+- `PickemGroupMatchup` rows exist only for contests with
+  `StartDateUtc` between `StartsOn` and `EndsOn` (i.e., today's
+  games). Morning games already played should still be present
+  (locked picks) — afternoon games still pickable.
+- `/user/me` shows the league with `seasonWeeks` containing the
+  current week number.
+
+**What this proves:** the validator allows mid-day windows
+(the explicit "half-played single-day" carve-out from PR-B),
+and the existing matchup processor's window filter handles
+per-game pickability correctly.
+
+#### Scenario 4 — Full-season league (no window)
+
+**Setup:** create an MLB league via the UI with **Full Season**
+selected (the duration mode that leaves `StartsOn` /
+`EndsOn` null).
+
+**Verify:**
+- One `PickemGroupWeek` row for the current `SeasonWeekId`.
+- Matchups populated.
+- Scheduler picks the league up on subsequent runs and creates
+  rows for newly-current weeks as the season progresses.
+
+**What this proves:** the gate's `StartsOn == null || EndsOn ==
+null` short-circuits do the right thing — full-season leagues
+still flow through the existing happy path.
+
+#### Scenario 5 — Closed-window league + scheduler skip
+
+**Setup:** take a league from Scenario 3 or 4 (or create a
+fresh one) and `UPDATE "PickemGroup" SET "EndsOn" = now() -
+INTERVAL '1 day' WHERE "Id" = '<league-id>'` to simulate the
+window closing.
+
+**Trigger scheduler. Verify:**
+- No new `PickemGroupWeek` rows added.
+- Scheduler did NOT enqueue a `ScheduleGroupWeekMatchupsCommand`
+  for this league.
+- Already-existing `PickemGroupWeek` rows from the in-window
+  period stay intact (the gate prevents *new* rows, doesn't
+  delete old ones).
+
+**What this proves:** PR-D's closed-window branch of the gate.
+
+#### Scenario 6 — Deactivated league + scheduler skip
+
+**Setup:** set an in-window league's `DeactivatedUtc` to
+`now()`.
+
+**Trigger scheduler. Verify:**
+- No new `PickemGroupWeek` rows added.
+- No matchup enqueue for this league.
+
+**What this proves:** PR-D's `DeactivatedUtc` filter.
+
+#### Scenario 7 — Web UI date picker guards
+
+**Setup:** open the web app's Create League page in a browser.
+
+**Verify:**
+- The Start Date `<input type="date">` rejects yesterday in the
+  native picker (`min` attribute).
+- The End Date input rejects dates earlier than either today or
+  the chosen Start Date, whichever is later.
+- In DevTools, override the start input's value to
+  `2020-01-01` programmatically and click submit → an alert
+  fires *before* the confirmation dialog opens (`handleFormSubmit`
+  guard).
+
+**What this proves:** PR-C's web guards.
+
+#### Scenario 8 — Mobile UI date picker guards
+
+**Setup:** open the mobile app's Create League screen.
+
+**Verify:**
+- Both date pickers grey out days before today (`minimumDate`).
+- If you set Start to a future date and then move it back, the
+  End picker's floor follows (`max(startsOn, today)`).
+- Attempting to submit with a manipulated state that yields
+  `endsOn < today` surfaces the Zod `superRefine` error
+  `"End date can't be in the past"`.
+
+**What this proves:** PR-C's mobile guards + the Zod-level
+trust boundary mirroring the server validator.
+
+#### Scenario 9 — Mixed-window batch through scheduler
+
+**Setup:** create three MLB leagues:
+- A: `StartsOn = today - 7, EndsOn = today + 7` (in-window).
+- B: `StartsOn = today + 10` (future).
+- C: same as A but `UPDATE … SET "DeactivatedUtc" = now()`.
+
+**Trigger scheduler. Verify:**
+- Exactly one `ScheduleGroupWeekMatchupsCommand` enqueued (for A).
+- B and C have **zero** new `PickemGroupWeek` rows.
+- Seq log line `Found 1 active sport(s) with in-window
+  leagues: BaseballMlb` (or similar — single sport with the
+  one in-window league).
+
+**What this proves:** the gate filters per-league, not
+per-sport — a single out-of-window league doesn't poison the
+sport's processing.
+
+### Prod-data cleanup checkpoint
+
+After PR-D merges and is deployed, the existing orphan
+`PickemGroupWeek` rows already in prod still need the manual
+SQL cleanup documented in *Prod data remediation* above. The
+gate prevents new orphans but doesn't reach back.

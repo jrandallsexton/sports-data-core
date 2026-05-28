@@ -107,6 +107,18 @@ const LeagueCreatePage = () => {
 
   const navigate = useNavigate();
 
+  // Today as a `YYYY-MM-DD` string for the date-input `min` attribute and
+  // the pre-submit guard. Anchored at the user's local calendar day so the
+  // picker rejects yesterday in the user's timezone (the server-side
+  // EffectiveEndsOn > now check is the trust boundary; this is just UX).
+  const todayIsoDate = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }, []);
+
   const isNcaa = sport === SPORT_NCAA;
   const isMlbAvailable = userDto?.isAdmin === true;
   const copy = SPORT_COPY[sport];
@@ -164,6 +176,23 @@ const LeagueCreatePage = () => {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+
+    // Mirror of the server `EffectiveEndsOn > now` rule. The `min` attribute
+    // on the date inputs handles the native-picker UX, but the keyboard /
+    // paste path can bypass it — guard before opening the confirm dialog so
+    // the user gets a clear message instead of a confirmed-then-rejected
+    // round-trip.
+    if (durationMode === DURATION_DATES) {
+      if (endsOn && endsOn < todayIsoDate) {
+        alert("End date can't be in the past.");
+        return;
+      }
+      if (startsOn && endsOn && endsOn < startsOn) {
+        alert("End date must be on or after the start date.");
+        return;
+      }
+    }
+
     setShowConfirmDialog(true);
   };
 
@@ -435,6 +464,7 @@ const LeagueCreatePage = () => {
                     type="date"
                     id="startsOn"
                     value={startsOn}
+                    min={todayIsoDate}
                     onChange={(e) => setStartsOn(e.target.value)}
                   />
                 </div>
@@ -444,6 +474,7 @@ const LeagueCreatePage = () => {
                     type="date"
                     id="endsOn"
                     value={endsOn}
+                    min={startsOn || todayIsoDate}
                     onChange={(e) => setEndsOn(e.target.value)}
                   />
                 </div>

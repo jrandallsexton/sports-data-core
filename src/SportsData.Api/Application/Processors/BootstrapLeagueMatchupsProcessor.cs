@@ -141,6 +141,24 @@ namespace SportsData.Api.Application.Processors
             }
 
             var (from, to) = ResolveDateRange(group);
+
+            if (from > to)
+            {
+                // Permanent input error: the league's window resolved to an
+                // inverted range. The PR-B validator blocks this at creation
+                // (EffectiveEndsOn > now AND StartsOn < EffectiveEndsOn) but
+                // it can still surface here if EndsOn was set, StartsOn was
+                // null, and the clock rolled past EndsOn before the Hangfire
+                // job ran — or if an admin edited the entity into a bad
+                // state post-creation. Retrying won't help; log and return
+                // an empty list so the caller treats it like row 11
+                // ("nothing to bootstrap") rather than DLQ'ing the job.
+                _logger.LogError(
+                    "Inverted date range for {Sport} (group {GroupId}, [{From}, {To}]); skipping bootstrap.",
+                    group.Sport, group.Id, from, to);
+                return [];
+            }
+
             var rangeResult = await seasonClient.GetSeasonWeeksOverlapping(from, to);
 
             if (!rangeResult.IsSuccess)

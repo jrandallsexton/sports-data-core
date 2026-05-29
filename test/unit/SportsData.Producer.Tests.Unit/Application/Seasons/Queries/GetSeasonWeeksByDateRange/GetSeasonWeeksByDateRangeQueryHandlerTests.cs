@@ -1,5 +1,7 @@
 using FluentAssertions;
 
+using Moq;
+
 using SportsData.Core.Common;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonWeeksByDateRange;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -19,6 +21,19 @@ public class GetSeasonWeeksByDateRangeQueryHandlerTests : ProducerTestBase<GetSe
     private static readonly Guid SeasonId = Guid.NewGuid();
     private static readonly Guid SeasonPhaseId = Guid.NewGuid();
     private const int SeasonYear = 2026;
+    private static readonly DateTime FixedUtcNow = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    public GetSeasonWeeksByDateRangeQueryHandlerTests()
+    {
+        // The handler under test doesn't consume IDateTimeProvider, but the
+        // seed helpers set CreatedUtc via the provider so test fixtures stay
+        // deterministic (per CLAUDE.md guidance — DateTime.UtcNow is banned
+        // in tests). Centralized setup keeps every entity's CreatedUtc equal
+        // to FixedUtcNow.
+        Mocker.GetMock<IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(FixedUtcNow);
+    }
 
     [Fact]
     public async Task ExecuteAsync_SingleWeekFullyInsideRange_ReturnsThatWeek()
@@ -172,7 +187,7 @@ public class GetSeasonWeeksByDateRangeQueryHandlerTests : ProducerTestBase<GetSe
         // Assert
         result.IsSuccess.Should().BeFalse();
         var failure = (Failure<List<Core.Dtos.Canonical.CanonicalSeasonWeekDto>>)result;
-        failure.Status.Should().Be(ResultStatus.BadRequest);
+        failure.Status.Should().Be(ResultStatus.Validation);
         failure.Errors.Should().ContainSingle()
             .Which.PropertyName.Should().Be(nameof(GetSeasonWeeksByDateRangeQuery.From));
     }
@@ -188,7 +203,7 @@ public class GetSeasonWeeksByDateRangeQueryHandlerTests : ProducerTestBase<GetSe
             Name = $"{SeasonYear} Season",
             StartDate = new DateTime(SeasonYear, 8, 1, 0, 0, 0, DateTimeKind.Utc),
             EndDate = new DateTime(SeasonYear + 1, 2, 1, 0, 0, 0, DateTimeKind.Utc),
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(),
             CreatedBy = Guid.NewGuid()
         };
         var phase = new SeasonPhase
@@ -201,7 +216,7 @@ public class GetSeasonWeeksByDateRangeQueryHandlerTests : ProducerTestBase<GetSe
             Year = SeasonYear,
             StartDate = season.StartDate,
             EndDate = season.EndDate,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(),
             CreatedBy = Guid.NewGuid()
         };
 
@@ -220,7 +235,7 @@ public class GetSeasonWeeksByDateRangeQueryHandlerTests : ProducerTestBase<GetSe
             Number = weekNumber,
             StartDate = startDate,
             EndDate = endDate,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(),
             CreatedBy = Guid.NewGuid()
         });
         await FootballDataContext.SaveChangesAsync();

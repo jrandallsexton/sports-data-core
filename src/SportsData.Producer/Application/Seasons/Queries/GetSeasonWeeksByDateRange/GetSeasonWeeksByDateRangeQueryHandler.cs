@@ -53,7 +53,7 @@ public class GetSeasonWeeksByDateRangeQueryHandler : IGetSeasonWeeksByDateRangeQ
         {
             return new Failure<List<CanonicalSeasonWeekDto>>(
                 [],
-                ResultStatus.BadRequest,
+                ResultStatus.Validation,
                 [new FluentValidation.Results.ValidationFailure(
                     nameof(query.From),
                     "From must be on or before To.")]);

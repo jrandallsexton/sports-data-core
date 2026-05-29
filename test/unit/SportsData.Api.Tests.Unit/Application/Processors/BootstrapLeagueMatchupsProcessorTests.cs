@@ -167,6 +167,31 @@ public class BootstrapLeagueMatchupsProcessorTests : ApiTestBase<BootstrapLeague
     }
 
     [Fact]
+    public async Task InvertedDateRange_LogsAndReturns_NoEndpointCall_NoEnqueues()
+    {
+        // Permanent input error: window resolved to from > to. The PR-B
+        // validator blocks this at creation but it can surface here if
+        // EndsOn was set, StartsOn was null, and the clock rolled past
+        // EndsOn before the Hangfire job ran. Verify the processor
+        // short-circuits without calling the date-range endpoint and
+        // without throwing (which would burn Hangfire retry budget on a
+        // state that can't be fixed by retrying).
+        var groupId = await SeedGroup(startsOn: null, endsOn: FixedNow.AddDays(-1));
+
+        var sut = Mocker.CreateInstance<BootstrapLeagueMatchupsProcessor>();
+        var command = new BootstrapLeagueMatchupsCommand(groupId, Guid.NewGuid());
+
+        var act = async () => await sut.Process(command);
+
+        await act.Should().NotThrowAsync();
+        _seasonClientMock.Verify(
+            x => x.GetSeasonWeeksOverlapping(
+                It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        VerifyNoEnqueues();
+    }
+
+    [Fact]
     public async Task EmptyDateRangeResult_LogsAndReturns_NoEnqueues()
     {
         // Row 11: very-far-future league whose SeasonWeeks aren't sourced

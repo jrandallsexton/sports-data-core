@@ -139,32 +139,49 @@ runs. Not required for correctness; defer to PR-E or later.
 
 ---
 
-## UX: shell-without-matchups placeholder
+## UX: shell-without-matchups placeholder (proposed follow-up)
 
-A `PickemGroupWeek` row that exists but has zero
-`PickemGroupMatchup` rows needs UI treatment. Today's `MatchupList`
-(web) and FlatList (mobile) just render nothing for the empty case
-— the user sees the week in the selector but a blank body.
+> **Status:** not part of PR-D. PR-D ships backend only — no UI
+> changes. This section is a sketch of the UX direction we'd want
+> *if* and when we wire a placeholder for the shell-without-matchups
+> state. Pinned here so the design space is captured alongside the
+> backend behavior that creates it.
 
-Chosen behavior (option c from prior discussion): show **"Week N
-picks available on X"** placeholder copy. Date is sport+week
-specific:
-- NCAAFB+TOP25 preseason: AP poll drops ~mid-August. Use the
-  expected poll release date if known.
-- NCAAFB+TOP25 in-season: Sunday afternoon after games close.
-- Other sports: never hit this state today.
+**The state in question:** a `PickemGroupWeek` row that exists but
+has zero `PickemGroupMatchup` rows. Today's UI surfaces this as a
+blank body — `MatchupList.jsx` (web) maps `matchups` after loading
+and has no empty-state branch of its own; `picks.tsx` (mobile)
+renders a `ListEmptyComponent` with title `"No games this week"`.
 
-**Implementation:**
-- Web: `MatchupList.jsx` — if `matchups.length === 0` and the week
-  is in the future, render a placeholder card with the copy.
-- Mobile: same shape in the picks tab FlatList's `ListEmptyComponent`
-  or a per-week pre-list check.
-- API: `/user/me` should already expose enough — the week shell
-  exists in `seasonWeeks`; client decides placeholder based on
-  matchup count + sport.
+**Direction (option c from the discussion):** show a placeholder
+indicating *when* picks for that week will become available,
+rather than the current "no games" framing. The exact copy and
+date-source is a UX call that hasn't been made — the discussion
+mentioned strings like *"Week N picks available on X"* as a
+sketch, not a decision.
 
-Specifics are out of scope for PR-D's *backend* but listed here as
-a "what this means for the UI" follow-up to track.
+**Trigger conditions** (still under-specified):
+- NCAAFB + `RankingFilter`, preseason: AP poll release date if
+  known.
+- NCAAFB + `RankingFilter`, in-season: Sunday afternoon after the
+  prior week's games close.
+- Other sports / non-rank-filter leagues: don't hit this state
+  today and may not need the placeholder at all.
+
+**Implementation sketch** (when it's wired):
+- Web: add an empty-state branch in `MatchupList.jsx` keyed on
+  `matchups.length === 0` plus a future-week check.
+- Mobile: replace the `"No games this week"` title in the picks
+  tab's `ListEmptyComponent` with the placeholder copy when the
+  same conditions hold.
+- API: `/user/me` already exposes the week shell via
+  `seasonWeeks` — client decides placeholder based on matchup
+  count + sport.
+
+Bullets above are starting points, not committed copy. A real
+follow-up PR would resolve the exact wording, the date-source for
+"available on X" (poll-publication date isn't in the API contract
+today), and whether to extend this to non-NCAAFB use cases.
 
 ---
 

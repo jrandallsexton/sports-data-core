@@ -115,7 +115,7 @@ namespace SportsData.Api.Application.Jobs
 
                 if (groupWeek is null)
                 {
-                    groupWeek = PickemGroupWeekFactory.CreateForCurrentWeek(group, currentWeek);
+                    groupWeek = PickemGroupWeekFactory.Create(group, currentWeek);
                     group.Weeks.Add(groupWeek);
                     await _dataContext.SaveChangesAsync();
                 }

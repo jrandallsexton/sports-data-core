@@ -179,7 +179,13 @@ namespace SportsData.Api.Application.Processors
                 });
             }
 
-            groupWeek.AreMatchupsGenerated = true;
+            // Mark "generated" only when matchups were actually written.
+            // Empty results leave the flag false so the daily scheduler re-fires
+            // matchup generation on the next pass — the load-bearing piece that
+            // makes the eager-bootstrap path work for NCAAFB+RankingFilter
+            // shells created pre-poll. See docs/league-creation-matrix.md
+            // "Processor change: AreMatchupsGenerated rule".
+            groupWeek.AreMatchupsGenerated = groupMatchups.Count > 0;
 
             // Publish BEFORE SaveChanges so MassTransit's bus-outbox interceptor flushes
             // the captured message into the OutboxMessage table within the same transaction

@@ -862,5 +862,79 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                 sameDayEveningKickoff,
             });
         }
+
+        /// <summary>
+        /// AreMatchupsGenerated rule: empty result must leave the flag false so
+        /// the daily scheduler retries. This is the load-bearing piece for the
+        /// eager-bootstrap path — NCAAFB+RankingFilter shells created pre-poll
+        /// would otherwise mark themselves done with 0 rows and never get
+        /// reconsidered after the AP poll lands.
+        /// </summary>
+        [Fact]
+        public async Task Process_NoMatchupsAfterFilter_LeavesAreMatchupsGeneratedFalse()
+        {
+            // Arrange — direct group construction (AutoFixture's int? Matchup
+            // generation has been flaky in this file; bypass it for the
+            // filter assertion to stay deterministic).
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+
+            var group = new PickemGroup
+            {
+                Id = groupId,
+                Name = "Test",
+                Sport = Core.Common.Sport.FootballNcaa,
+                League = League.NCAAF,
+                RankingFilter = TeamRankingFilter.AP_TOP_5,
+                CommissionerUserId = Guid.NewGuid(),
+                CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(),
+                CreatedBy = Guid.Empty,
+            };
+            await DataContext.PickemGroups.AddAsync(group);
+            await DataContext.SaveChangesAsync();
+
+            // Direct Matchup construction — no AutoFixture for these so the
+            // rank values stay exactly what the test sets.
+            var allMatchups = new List<Matchup>
+            {
+                new()
+                {
+                    SeasonWeekId = seasonWeekId,
+                    SeasonYear = 2024,
+                    SeasonWeek = 1,
+                    ContestId = Guid.NewGuid(),
+                    AwaySlug = "team-a",
+                    HomeSlug = "team-b",
+                    AwayRank = 20,
+                    HomeRank = null,
+                    AwayConferenceSlug = "unaffiliated-1",
+                    HomeConferenceSlug = "unaffiliated-2",
+                    Status = "STATUS_SCHEDULED",
+                    StatusDescription = "Scheduled",
+                    StartDateUtc = new DateTime(2024, 9, 7, 19, 0, 0, DateTimeKind.Utc),
+                },
+            };
+
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
+
+            var command = new ScheduleGroupWeekMatchupsCommand(
+                groupId, seasonWeekId, 2024, 1, false, Guid.NewGuid());
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert — shell persisted, but flag stays false so the scheduler
+            // re-fires this week on its next pass.
+            var savedGroupWeek = await DataContext.PickemGroupWeeks
+                .Include(gw => gw.Matchups)
+                .FirstOrDefaultAsync(x => x.GroupId == groupId);
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.Matchups.Should().BeEmpty();
+            savedGroupWeek.AreMatchupsGenerated.Should().BeFalse();
+        }
     }
 }

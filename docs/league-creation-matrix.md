@@ -295,15 +295,36 @@ sites + factory tests. Cosmetic but worth doing while in the file.
 - Routed via the existing sport-resolved factory.
 
 **API (`PickemGroupCreatedHandler`):**
-- Branch: any window set → date-range path; otherwise → current-week.
-- Date-range path: compute `from = StartsOn ?? now`, `to = EndsOn ??
-  StartsOn + 365d`, query, get N SeasonWeeks, per week
-  factory-create the shell + enqueue
-  `ScheduleGroupWeekMatchupsCommand`.
-- Empty result → log + return (row 11).
-- Endpoint failure → throw transient.
-- Idempotent against replay (composite PK + AreMatchupsGenerated
-  gate).
+- Slim MassTransit consumer. Performs a single existence check on
+  the `PickemGroup` (permanent log + return if missing) and
+  enqueues exactly one `BootstrapLeagueMatchupsCommand` via
+  Hangfire. No HTTP calls, no SeasonWeek lookup, no
+  `PickemGroupWeek` writes. Stays as a fan-out point for future
+  creation-time side-effects (invitations, notifications, etc.).
+  All dispatch logic moved to the orchestrator below.
+
+**API (`BootstrapLeagueMatchupsProcessor`, new — Hangfire,
+`IBootstrapLeagueMatchups`):**
+- Owns the windowed-vs-full-season branch: any window bound set →
+  date-range path; otherwise → current-week.
+- Date-range path: `from = StartsOn ?? now`, `to = EndsOn ??
+  from + 365d` (DP-3 cap). Inverted result (`from > to`) → permanent
+  error log + return empty (PR-B validator blocks creation-time
+  inversion, but post-creation clock drift or admin edits can
+  still surface it; retrying won't fix it).
+- Calls `SeasonClient.GetSeasonWeeksOverlapping(from, to)` —
+  empty result → log + return (row 11); transient endpoint
+  failure → throw (Hangfire retries).
+- For each resolved SeasonWeek, enqueues a per-week
+  `ScheduleGroupWeekMatchupsCommand` carrying the league id +
+  week ids + correlation id. Per-week shell creation (find-or-
+  create via `PickemGroupWeekFactory.Create`) happens inside the
+  existing `MatchupScheduleProcessor` — single owner of per-week
+  work, called from both this orchestrator and the daily
+  `MatchupScheduler`.
+- Idempotent against replay: the per-week processor's
+  find-or-create on the composite PK `(GroupId, SeasonWeekId)`
+  plus its `!AreMatchupsGenerated` gate handles the dedup.
 
 **API (`MatchupScheduleProcessor`):**
 - One-line rule change: `groupWeek.AreMatchupsGenerated = true`

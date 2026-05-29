@@ -52,7 +52,7 @@ public class GetSeasonWeeksByDateRangeQueryHandler : IGetSeasonWeeksByDateRangeQ
         if (query.From > query.To)
         {
             return new Failure<List<CanonicalSeasonWeekDto>>(
-                [],
+                default!,
                 ResultStatus.Validation,
                 [new FluentValidation.Results.ValidationFailure(
                     nameof(query.From),

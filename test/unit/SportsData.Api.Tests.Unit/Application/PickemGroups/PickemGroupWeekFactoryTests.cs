@@ -19,12 +19,12 @@ namespace SportsData.Api.Tests.Unit.Application.PickemGroups;
 public class PickemGroupWeekFactoryTests
 {
     [Fact]
-    public void CreateForCurrentWeek_RegularSeason_UsesWeekNumberAsOrdinal()
+    public void Create_RegularSeason_UsesWeekNumberAsOrdinal()
     {
         var group = NewGroup();
         var currentWeek = NewWeek(weekNumber: 7, isPostSeason: false);
 
-        var result = PickemGroupWeekFactory.CreateForCurrentWeek(group, currentWeek);
+        var result = PickemGroupWeekFactory.Create(group, currentWeek);
 
         result.SeasonWeek.Should().Be(7);
         result.SeasonYear.Should().Be(currentWeek.SeasonYear);
@@ -35,12 +35,12 @@ public class PickemGroupWeekFactoryTests
     }
 
     [Fact]
-    public void CreateForCurrentWeek_RegularSeason_PropagatesIsNonStandardWeek()
+    public void Create_RegularSeason_PropagatesIsNonStandardWeek()
     {
         var group = NewGroup();
         var currentWeek = NewWeek(weekNumber: 8, isPostSeason: false, isNonStandardWeek: true);
 
-        var result = PickemGroupWeekFactory.CreateForCurrentWeek(group, currentWeek);
+        var result = PickemGroupWeekFactory.Create(group, currentWeek);
 
         // Bug being prevented: PickemGroupCreatedHandler used to omit this
         // field, so a non-standard regular-season week (rare but possible)
@@ -49,7 +49,7 @@ public class PickemGroupWeekFactoryTests
     }
 
     [Fact]
-    public void CreateForCurrentWeek_Postseason_WithNoExistingWeeks_FallsBackToWeekNumber()
+    public void Create_Postseason_WithNoExistingWeeks_FallsBackToWeekNumber()
     {
         // Scheduler's first run for a sport that started in postseason
         // (degenerate but possible — fresh data, recurring job firing for
@@ -58,13 +58,13 @@ public class PickemGroupWeekFactoryTests
         var group = NewGroup();
         var currentWeek = NewWeek(weekNumber: 1, isPostSeason: true);
 
-        var result = PickemGroupWeekFactory.CreateForCurrentWeek(group, currentWeek);
+        var result = PickemGroupWeekFactory.Create(group, currentWeek);
 
         result.SeasonWeek.Should().Be(1);
     }
 
     [Fact]
-    public void CreateForCurrentWeek_Postseason_WithExistingWeeks_SequencesOffHighest()
+    public void Create_Postseason_WithExistingWeeks_SequencesOffHighest()
     {
         // Common case: league played a full regular season (ordinals 1..18
         // for an NFL league say), now in postseason. ESPN restarts
@@ -74,31 +74,31 @@ public class PickemGroupWeekFactoryTests
         var group = NewGroup(existingWeekOrdinals: [1, 2, 3, 17, 18]);
         var currentWeek = NewWeek(weekNumber: 1, isPostSeason: true);
 
-        var result = PickemGroupWeekFactory.CreateForCurrentWeek(group, currentWeek);
+        var result = PickemGroupWeekFactory.Create(group, currentWeek);
 
         result.SeasonWeek.Should().Be(19);
     }
 
     [Fact]
-    public void CreateForCurrentWeek_Postseason_IgnoresWeekOrderingInGroupWeeks()
+    public void Create_Postseason_IgnoresWeekOrderingInGroupWeeks()
     {
         // Defensive: the factory must not assume group.Weeks is sorted.
         var group = NewGroup(existingWeekOrdinals: [18, 1, 17, 3, 2]);
         var currentWeek = NewWeek(weekNumber: 2, isPostSeason: true);
 
-        var result = PickemGroupWeekFactory.CreateForCurrentWeek(group, currentWeek);
+        var result = PickemGroupWeekFactory.Create(group, currentWeek);
 
         result.SeasonWeek.Should().Be(19);
     }
 
     [Fact]
-    public void CreateForCurrentWeek_AssignsNewIdEachCall()
+    public void Create_AssignsNewIdEachCall()
     {
         var group = NewGroup();
         var currentWeek = NewWeek(weekNumber: 1, isPostSeason: false);
 
-        var first = PickemGroupWeekFactory.CreateForCurrentWeek(group, currentWeek);
-        var second = PickemGroupWeekFactory.CreateForCurrentWeek(group, currentWeek);
+        var first = PickemGroupWeekFactory.Create(group, currentWeek);
+        var second = PickemGroupWeekFactory.Create(group, currentWeek);
 
         first.Id.Should().NotBe(Guid.Empty);
         second.Id.Should().NotBe(Guid.Empty);
@@ -106,23 +106,23 @@ public class PickemGroupWeekFactoryTests
     }
 
     [Fact]
-    public void CreateForCurrentWeek_NullGroup_Throws()
+    public void Create_NullGroup_Throws()
     {
         var currentWeek = NewWeek(weekNumber: 1, isPostSeason: false);
 
-        var act = () => PickemGroupWeekFactory.CreateForCurrentWeek(null!, currentWeek);
+        var act = () => PickemGroupWeekFactory.Create(null!, currentWeek);
 
         act.Should().Throw<ArgumentNullException>().WithParameterName("group");
     }
 
     [Fact]
-    public void CreateForCurrentWeek_NullCurrentWeek_Throws()
+    public void Create_NullCurrentWeek_Throws()
     {
         var group = NewGroup();
 
-        var act = () => PickemGroupWeekFactory.CreateForCurrentWeek(group, null!);
+        var act = () => PickemGroupWeekFactory.Create(group, null!);
 
-        act.Should().Throw<ArgumentNullException>().WithParameterName("currentWeek");
+        act.Should().Throw<ArgumentNullException>().WithParameterName("week");
     }
 
     private static PickemGroup NewGroup(int[]? existingWeekOrdinals = null)

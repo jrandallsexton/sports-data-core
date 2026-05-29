@@ -14,30 +14,33 @@ namespace SportsData.Api.Application.PickemGroups;
 public static class PickemGroupWeekFactory
 {
     /// <summary>
-    /// Build a <see cref="PickemGroupWeek"/> for the league's current week.
+    /// Build a <see cref="PickemGroupWeek"/> for the given
+    /// <see cref="CanonicalSeasonWeekDto"/>. Used at both creation time
+    /// (any SeasonWeek the league window overlaps) and from the daily
+    /// scheduler (the sport's then-current SeasonWeek).
     /// </summary>
     /// <param name="group">
     /// The league. <see cref="PickemGroup.Weeks"/> must be loaded — the
     /// postseason ordinal adjustment reads existing weeks to compute the
     /// next sequential <see cref="PickemGroupWeek.SeasonWeek"/> value.
     /// </param>
-    /// <param name="currentWeek">Sport-resolved current season week.</param>
-    public static PickemGroupWeek CreateForCurrentWeek(
+    /// <param name="week">Sport-resolved season week DTO.</param>
+    public static PickemGroupWeek Create(
         PickemGroup group,
-        CanonicalSeasonWeekDto currentWeek)
+        CanonicalSeasonWeekDto week)
     {
         ArgumentNullException.ThrowIfNull(group);
-        ArgumentNullException.ThrowIfNull(currentWeek);
+        ArgumentNullException.ThrowIfNull(week);
 
         return new PickemGroupWeek
         {
             Id = Guid.NewGuid(),
             AreMatchupsGenerated = false,
             GroupId = group.Id,
-            SeasonWeek = ResolveOrdinal(group, currentWeek),
-            SeasonYear = currentWeek.SeasonYear,
-            SeasonWeekId = currentWeek.Id,
-            IsNonStandardWeek = currentWeek.IsNonStandardWeek,
+            SeasonWeek = ResolveOrdinal(group, week),
+            SeasonYear = week.SeasonYear,
+            SeasonWeekId = week.Id,
+            IsNonStandardWeek = week.IsNonStandardWeek,
         };
     }
 
@@ -47,18 +50,18 @@ public static class PickemGroupWeekFactory
     /// the postseason ordinal off the league's highest existing week instead
     /// so the list stays monotonically increasing (used by ascending
     /// <c>seasonWeeks</c> projections on /user/me and the week selector).
-    /// Falls back to <c>currentWeek.WeekNumber</c> for a league with no prior
+    /// Falls back to <c>week.WeekNumber</c> for a league with no prior
     /// weeks (first run of the recurring scheduler hits this).
     /// </summary>
-    private static int ResolveOrdinal(PickemGroup group, CanonicalSeasonWeekDto currentWeek)
+    private static int ResolveOrdinal(PickemGroup group, CanonicalSeasonWeekDto week)
     {
-        if (!currentWeek.IsPostSeason)
-            return currentWeek.WeekNumber;
+        if (!week.IsPostSeason)
+            return week.WeekNumber;
 
         var highestExisting = group.Weeks
             .OrderByDescending(x => x.SeasonWeek)
             .FirstOrDefault();
 
-        return (highestExisting?.SeasonWeek + 1) ?? currentWeek.WeekNumber;
+        return (highestExisting?.SeasonWeek + 1) ?? week.WeekNumber;
     }
 }

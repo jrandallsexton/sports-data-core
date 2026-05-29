@@ -24,6 +24,12 @@ namespace SportsData.Api.Tests.Unit.Application.Jobs;
 /// </summary>
 public class MatchupSchedulerTests : ApiTestBase<MatchupScheduler>
 {
+    // Fixed "now" for the in-window predicate. All seeded leagues default to
+    // null StartsOn/EndsOn (full-season) so the gate is a no-op for legacy
+    // assertions; the PR-D regression tests below seed explicit window bounds
+    // relative to this anchor.
+    private static readonly DateTime FixedNow = new(2026, 5, 28, 12, 0, 0, DateTimeKind.Utc);
+
     private readonly Mock<IProvideSeasons> _footballSeasonClientMock = new();
     private readonly Mock<IProvideSeasons> _baseballSeasonClientMock = new();
 
@@ -35,6 +41,10 @@ public class MatchupSchedulerTests : ApiTestBase<MatchupScheduler>
         Mocker.GetMock<ISeasonClientFactory>()
             .Setup(x => x.Resolve(Sport.BaseballMlb))
             .Returns(_baseballSeasonClientMock.Object);
+
+        Mocker.GetMock<IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(FixedNow);
     }
 
     [Fact]
@@ -144,6 +154,134 @@ public class MatchupSchedulerTests : ApiTestBase<MatchupScheduler>
         _baseballSeasonClientMock.Verify(x => x.GetCurrentSeasonWeek(It.IsAny<CancellationToken>()), Times.Never);
         background.Verify(x => x.Enqueue<IScheduleGroupWeekMatchups>(
             It.IsAny<Expression<Func<IScheduleGroupWeekMatchups, Task>>>()), Times.Never);
+    }
+
+    // ── PR-D window/active gate regression tests ─────────────────────────
+
+    [Fact]
+    public async Task ExecuteAsync_Skips_FutureStart_League()
+    {
+        // Daily-orphan regression. Pre-PR-D, a league with StartsOn in the
+        // future still received a PickemGroupWeek for the sport's *current*
+        // week on every scheduler run until StartsOn arrived, producing the
+        // empty extra-week row visible in /user/me. The window gate now
+        // skips the league entirely; SeasonClient isn't even consulted for
+        // a sport whose only league is future-start.
+        var leagueId = Guid.NewGuid();
+        var group = BuildPickemGroup(leagueId, Sport.BaseballMlb, League.MLB);
+        group.StartsOn = FixedNow.AddDays(10);
+        await DataContext.PickemGroups.AddAsync(group);
+        await DataContext.SaveChangesAsync();
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        var sut = Mocker.CreateInstance<MatchupScheduler>();
+
+        await sut.ExecuteAsync();
+
+        _baseballSeasonClientMock.Verify(x => x.GetCurrentSeasonWeek(It.IsAny<CancellationToken>()), Times.Never);
+        background.Verify(x => x.Enqueue<IScheduleGroupWeekMatchups>(
+            It.IsAny<Expression<Func<IScheduleGroupWeekMatchups, Task>>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Skips_ClosedWindow_League()
+    {
+        // Mirror of the future-start case for an EndsOn-in-past league.
+        // The matchup processor's window filter already drops new matchups
+        // post-EndsOn, but creating a PickemGroupWeek row for a closed
+        // league is still noise — gate it here.
+        var leagueId = Guid.NewGuid();
+        var group = BuildPickemGroup(leagueId, Sport.BaseballMlb, League.MLB);
+        group.StartsOn = FixedNow.AddDays(-30);
+        group.EndsOn = FixedNow.AddDays(-1);
+        await DataContext.PickemGroups.AddAsync(group);
+        await DataContext.SaveChangesAsync();
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        var sut = Mocker.CreateInstance<MatchupScheduler>();
+
+        await sut.ExecuteAsync();
+
+        _baseballSeasonClientMock.Verify(x => x.GetCurrentSeasonWeek(It.IsAny<CancellationToken>()), Times.Never);
+        background.Verify(x => x.Enqueue<IScheduleGroupWeekMatchups>(
+            It.IsAny<Expression<Func<IScheduleGroupWeekMatchups, Task>>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Skips_Deactivated_League()
+    {
+        // DeactivatedUtc is the commissioner-closed / auto-completed flag.
+        // Inactive leagues shouldn't produce new PickemGroupWeek rows even
+        // if their date window technically still covers now.
+        var leagueId = Guid.NewGuid();
+        var group = BuildPickemGroup(leagueId, Sport.BaseballMlb, League.MLB);
+        group.DeactivatedUtc = FixedNow.AddDays(-1);
+        await DataContext.PickemGroups.AddAsync(group);
+        await DataContext.SaveChangesAsync();
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        var sut = Mocker.CreateInstance<MatchupScheduler>();
+
+        await sut.ExecuteAsync();
+
+        _baseballSeasonClientMock.Verify(x => x.GetCurrentSeasonWeek(It.IsAny<CancellationToken>()), Times.Never);
+        background.Verify(x => x.Enqueue<IScheduleGroupWeekMatchups>(
+            It.IsAny<Expression<Func<IScheduleGroupWeekMatchups, Task>>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Processes_InWindow_League()
+    {
+        // Mid-window happy path: StartsOn in past, EndsOn in future,
+        // DeactivatedUtc null. League is processed normally.
+        var leagueId = Guid.NewGuid();
+        var weekId = Guid.NewGuid();
+        var group = BuildPickemGroup(leagueId, Sport.BaseballMlb, League.MLB);
+        group.StartsOn = FixedNow.AddDays(-7);
+        group.EndsOn = FixedNow.AddDays(7);
+        await DataContext.PickemGroups.AddAsync(group);
+        await DataContext.SaveChangesAsync();
+
+        SetupCurrentWeek(_baseballSeasonClientMock, weekId, 2026, 9, false, "regular");
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        var sut = Mocker.CreateInstance<MatchupScheduler>();
+
+        await sut.ExecuteAsync();
+
+        background.Verify(x => x.Enqueue<IScheduleGroupWeekMatchups>(
+            It.IsAny<Expression<Func<IScheduleGroupWeekMatchups, Task>>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_MixedWindow_OnlyProcesses_InWindow_League()
+    {
+        // Two MLB leagues, one in-window and one future-start. Confirms the
+        // window gate filters per-league rather than per-sport — the
+        // future-start league mustn't poison the sport's processing.
+        var inWindowId = Guid.NewGuid();
+        var futureStartId = Guid.NewGuid();
+        var weekId = Guid.NewGuid();
+
+        var inWindow = BuildPickemGroup(inWindowId, Sport.BaseballMlb, League.MLB);
+        inWindow.StartsOn = FixedNow.AddDays(-7);
+        inWindow.EndsOn = FixedNow.AddDays(7);
+
+        var futureStart = BuildPickemGroup(futureStartId, Sport.BaseballMlb, League.MLB);
+        futureStart.StartsOn = FixedNow.AddDays(10);
+
+        await DataContext.PickemGroups.AddRangeAsync(inWindow, futureStart);
+        await DataContext.SaveChangesAsync();
+
+        SetupCurrentWeek(_baseballSeasonClientMock, weekId, 2026, 9, false, "regular");
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        var sut = Mocker.CreateInstance<MatchupScheduler>();
+
+        await sut.ExecuteAsync();
+
+        background.Verify(x => x.Enqueue<IScheduleGroupWeekMatchups>(
+            It.IsAny<Expression<Func<IScheduleGroupWeekMatchups, Task>>>()), Times.Once);
     }
 
     private async Task SeedLeagueAsync(Guid leagueId, Sport sport, League league)

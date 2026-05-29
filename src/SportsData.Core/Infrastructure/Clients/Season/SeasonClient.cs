@@ -21,6 +21,7 @@ public interface IProvideSeasons : IProvideHealthChecks
     Task<Result<CanonicalSeasonWeekDto>> GetCurrentSeasonWeek(CancellationToken ct = default);
     Task<Result<List<CanonicalSeasonWeekDto>>> GetCurrentAndLastSeasonWeeks(CancellationToken ct = default);
     Task<Result<List<CanonicalSeasonWeekDto>>> GetCompletedSeasonWeeks(int seasonYear, CancellationToken ct = default);
+    Task<Result<List<CanonicalSeasonWeekDto>>> GetSeasonWeeksOverlapping(DateTime from, DateTime to, CancellationToken ct = default);
     Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken ct = default);
 }
 
@@ -116,6 +117,29 @@ public class SeasonClient : ClientBase, IProvideSeasons
             $"seasons/{seasonYear}/completed-weeks",
             new List<CanonicalSeasonWeekDto>(),
             "Completed season weeks",
+            ResultStatus.NotFound,
+            ct);
+    }
+
+    public async Task<Result<List<CanonicalSeasonWeekDto>>> GetSeasonWeeksOverlapping(
+        DateTime from,
+        DateTime to,
+        CancellationToken ct = default)
+    {
+        if (from > to)
+        {
+            return new Failure<List<CanonicalSeasonWeekDto>>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure(nameof(from), "from must be on or before to")]);
+        }
+
+        // ISO 8601 round-trip ("o") is the canonical wire format ASP.NET's
+        // [FromQuery] DateTime model binder reads back without timezone drift.
+        return await GetAsync<List<CanonicalSeasonWeekDto>>(
+            $"seasons/weeks/by-date-range?from={Uri.EscapeDataString(from.ToString("o"))}&to={Uri.EscapeDataString(to.ToString("o"))}",
+            new List<CanonicalSeasonWeekDto>(),
+            "Season weeks by date range",
             ResultStatus.NotFound,
             ct);
     }

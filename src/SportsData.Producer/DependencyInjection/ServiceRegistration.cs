@@ -59,6 +59,7 @@ using SportsData.Producer.Application.Seasons.Queries.GetCompletedSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentAndLastSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeasonWeek;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonOverview;
+using SportsData.Producer.Application.Seasons.Queries.GetSeasonWeeksByDateRange;
 using SportsData.Producer.Application.SeasonWeek.Commands.EnqueueSeasonWeekContestsUpdate;
 using SportsData.Producer.Application.Services;
 using SportsData.Producer.Application.Venues;
@@ -320,6 +321,7 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IGetCurrentSeasonWeekQueryHandler, GetCurrentSeasonWeekQueryHandler>();
             services.AddScoped<IGetCurrentAndLastSeasonWeeksQueryHandler, GetCurrentAndLastSeasonWeeksQueryHandler>();
             services.AddScoped<IGetCompletedSeasonWeeksQueryHandler, GetCompletedSeasonWeeksQueryHandler>();
+            services.AddScoped<IGetSeasonWeeksByDateRangeQueryHandler, GetSeasonWeeksByDateRangeQueryHandler>();
 
             // Contest Matchup Queries
             services.AddScoped<IGetMatchupsForCurrentWeekQueryHandler, GetMatchupsForCurrentWeekQueryHandler>();

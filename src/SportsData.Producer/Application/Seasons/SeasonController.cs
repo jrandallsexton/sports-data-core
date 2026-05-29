@@ -7,6 +7,7 @@ using SportsData.Producer.Application.Seasons.Queries.GetCompletedSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentAndLastSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeasonWeek;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonOverview;
+using SportsData.Producer.Application.Seasons.Queries.GetSeasonWeeksByDateRange;
 
 namespace SportsData.Producer.Application.Seasons;
 
@@ -50,6 +51,26 @@ public class SeasonController : ControllerBase
         CancellationToken cancellationToken = default)
     {
         var result = await handler.ExecuteAsync(new GetCompletedSeasonWeeksQuery(seasonYear), cancellationToken);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Resolves the SeasonWeek(s) overlapping the requested date range.
+    /// Drives the API-side league-creation handler for windowed leagues
+    /// (single-day, multi-day, multi-week), replacing the prior "always
+    /// use the current week" model that produced orphan empty
+    /// <c>PickemGroupWeek</c> rows.
+    /// </summary>
+    [HttpGet("weeks/by-date-range")]
+    public async Task<ActionResult<List<CanonicalSeasonWeekDto>>> GetSeasonWeeksByDateRange(
+        [FromQuery] DateTime from,
+        [FromQuery] DateTime to,
+        [FromServices] IGetSeasonWeeksByDateRangeQueryHandler handler,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await handler.ExecuteAsync(
+            new GetSeasonWeeksByDateRangeQuery(from, to),
+            cancellationToken);
         return result.ToActionResult();
     }
 }

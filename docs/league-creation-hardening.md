@@ -16,22 +16,58 @@ one created days later by `MatchupScheduler` once the current
 both show up in the league's ascending week list. The PicksPage UI
 defaults to the first week → zero matchups → reads as broken.
 
-**Status:** drafted 2026-05-28. Partially executed — three of four
-PRs:
+**Status:** drafted 2026-05-28. **Scope and shape of PR-D
+expanded materially on 2026-05-29** — local testing surfaced
+that PR-B's `Future`-mode dispatch was wrong for near-future
+leagues (tomorrow-only), and reflection on the original
+"current-week-only" model showed it was wrong by construction
+for *any* windowed league. PR-D was held open and rebuilt as a
+proper redesign rather than the originally-scoped scheduler-gate
+fix.
 
 - **PR-A** (factory extraction) — **merged** in #372.
-- **PR-C** (UI date-picker guards on web + mobile) — **merged** in
-  #373. Note: originally listed third in the plan; reordered to
+- **PR-C** (UI date-picker guards on web + mobile) — **merged**
+  in #373. Originally listed third in the plan; reordered to
   ship in parallel with PR-A since it's independent of all
   backend work.
-- **PR-B** (server validator + bootstrap-mode dispatch) — **in
-  flight** as the PR that introduces this doc.
-- **PR-D** (`MatchupScheduler` window gate + handler base
-  extraction) — **not started**. The motivating bug (single-day
-  leagues producing two `PickemGroupWeek` rows in `/user/me`) is
-  only fully closed once PR-D lands; PR-B alone removes the
-  eager-bootstrap orphan but leaves the daily-scheduler orphan
-  intact.
+- **PR-B** (server validator + Immediate/Future dispatch) —
+  **merged** in #375. The `Future`-mode no-op shipped here is
+  superseded by PR-D below; the validator + permanent-vs-transient
+  exception split stay.
+- **PR-D** (creation-time bootstrap redesign) — **in flight** as
+  the PR you're reading the doc against. Replaces the original
+  "scheduler window gate only" scope with:
+  1. New Producer endpoint that returns SeasonWeeks overlapping
+     a date range (drives windowed-league resolution).
+  2. New `SeasonClient.GetSeasonWeeksOverlapping` consuming it.
+  3. New `BootstrapLeagueMatchupsProcessor` — Hangfire
+     orchestrator that decides full-season vs windowed, resolves
+     target SeasonWeek(s), and fans out one
+     `ScheduleGroupWeekMatchupsCommand` per week to the existing
+     per-week worker.
+  4. `PickemGroupCreatedHandler` slimmed to a thin MassTransit-side
+     fan-out point (existence check + single enqueue). All week
+     resolution and shell creation moved to the new processor.
+  5. `MatchupScheduleProcessor.AreMatchupsGenerated` rule fix:
+     only set `true` when matchups were actually written; empty
+     results leave the flag `false` so the daily scheduler
+     retries (required for the eager-bootstrap path to work for
+     NCAAFB+RankingFilter shells created pre-poll).
+  6. Factory rename `CreateForCurrentWeek` → `Create` to match
+     its post-redesign use (any SeasonWeek, not just current).
+  7. Original `MatchupScheduler` window/active gate stays — it's
+     still useful for the daily refresh path even though
+     creation-time orphans are now prevented upstream.
+
+  Design space the redesign covers is enumerated in
+  `docs/league-creation-matrix.md`.
+
+- **PR-E** (deferred) — handler base extraction collapsing the
+  three sport-specific create-league handlers (NCAA / NFL / MLB)
+  into a shared base; wire-through of `MaxUsers` and
+  `NonStandardWeekGroupSeasonMapFilter` request fields. No
+  behavior change to in-flight bug, so safe to land whenever the
+  refactor cost feels worth paying.
 
 Backfill is explicitly deferred (see *Out of scope*).
 
@@ -223,25 +259,26 @@ attacks become a concern.
 
 ### What does "bootstrap mode" actually mean?
 
-After the validator rejects past / wrong-year inputs, the
-handler's mode dispatch shrinks to two:
+> **Historical — superseded by PR-D.** This section described
+> PR-B's `Immediate` / `Future` dispatch, where the handler did
+> the SeasonWeek lookup and picked one of two paths. Live testing
+> showed `Future` mode (no-op) was wrong for near-future leagues
+> like "tomorrow-only" — the current SeasonWeek usually contains
+> tomorrow, so we should be eagerly populating matchups, not
+> deferring. The actual PR-D dispatch is documented in
+> `docs/league-creation-matrix.md` (rows 1–17). In short: the
+> orchestrator branches on *windowed vs full-season*, not on
+> *future vs now*, and resolves overlapping SeasonWeeks via the
+> new date-range endpoint.
+
+For posterity, the original PR-B dispatch was:
 
 | Mode | When | Action |
 | --- | --- | --- |
-| `Immediate` | `(StartsOn ?? -∞) <= now`. | Bootstrap *current week* (today's behavior, narrowed). |
-| `Future` | `StartsOn > now`. | **No-op.** Don't create any `PickemGroupWeek`. Daily scheduler will pick it up once `now >= StartsOn`. |
+| `Immediate` | `(StartsOn ?? -∞) <= now`. | Bootstrap *current week*. |
+| `Future` | `StartsOn > now`. | **No-op.** Daily scheduler picks it up once `now >= StartsOn`. |
 
-`Immediate` fires for:
-- Full-season leagues (`StartsOn` null).
-- Today-or-earlier-start leagues whose window still extends into
-  the future (the validator allows these; the half-played
-  single-day case fits here).
-- Leagues whose `StartsOn` was just-barely-future at validation
-  time but the event-handler clock has since rolled past.
-
-`Future` fires for leagues whose `StartsOn` is still strictly
-in the future at consume time. The daily scheduler picks them
-up when the calendar reaches `StartsOn`.
+The `Future` no-op is what PR-D removed.
 
 ### UI hardening (web + mobile)
 
@@ -385,15 +422,62 @@ Four PRs:
      restrictive in what it allows; safe regardless of server
      state).
 
-4. **PR-D: `MatchupScheduler` window gate + handler base
-   extraction.** Add the `[StartsOn, EndsOn]` and `DeactivatedUtc`
-   gates in the scheduler. Collapse the three sport-specific
-   create-league handlers into a shared base. Wire `MaxUsers` /
-   `NonStandardWeekGroupSeasonMapFilter` through.
+4. **PR-D: Creation-time bootstrap redesign.** The big one.
+   Originally scoped to just the scheduler window/active gate;
+   expanded mid-flight after PR-B's `Future`-mode dispatch
+   proved wrong for near-future leagues (tomorrow-only) and the
+   underlying "current-week-only" model was shown to be wrong
+   by construction for any windowed league. Ships:
+   - New Producer endpoint
+     `GET /api/seasons/weeks/by-date-range?from=…&to=…` plus
+     query + handler + tests. Returns the SeasonWeeks whose
+     `[StartDate, EndDate]` overlaps the requested range,
+     ordered by `StartDate`. Inclusive on both bounds. Empty
+     result is a Success (row 11 — "no SeasonWeeks defined
+     yet"), `From > To` is a `BadRequest` Failure.
+   - New `IProvideSeasons.GetSeasonWeeksOverlapping(from, to)`
+     method on `SeasonClient`.
+   - New `BootstrapLeagueMatchupsProcessor` (Hangfire,
+     `IBootstrapLeagueMatchups`) — the orchestrator. Resolves
+     full-season vs windowed, calls the appropriate Producer
+     endpoint, fans out one `ScheduleGroupWeekMatchupsCommand`
+     per resolved SeasonWeek to the existing
+     `MatchupScheduleProcessor`. Caps partial windows
+     (`EndsOn = null` or `StartsOn = null`) at `now + 365d` per
+     DP-3 in the matrix doc.
+   - `PickemGroupCreatedHandler` slimmed to ~50 lines: group
+     existence check + single Hangfire enqueue. No more HTTP
+     calls, no more `PickemGroupWeek` writes. Stays as a
+     MassTransit-side fan-out point for future side-effects
+     (invitations, notifications, etc.) per the user's design
+     intent.
+   - `MatchupScheduleProcessor.AreMatchupsGenerated` rule fix:
+     `true` only when matchups were actually written; empty
+     filter results leave the flag `false` so the daily
+     `MatchupScheduler` re-fires. Required for the eager-bootstrap
+     path to work for NCAAFB+`RankingFilter` shells created
+     pre-poll (see "External inputs" appendix in the matrix doc).
+   - `PickemGroupWeekFactory.CreateForCurrentWeek` →
+     `Create`. Two call sites + tests. Cosmetic but worth doing
+     since the factory now creates rows for any SeasonWeek.
+   - `MatchupScheduler` window/active gate (the original PR-D
+     scope) stays as-is. Still useful as a fast-path filter on
+     the daily refresh job — handler-side eager bootstrap means
+     creation-time orphans no longer happen, but the gate keeps
+     the scheduler from doing pointless work on out-of-window
+     leagues.
 
-Dependency graph: PR-A blocks PR-B and PR-D (both use the
-factory). PR-B and PR-C are independent. PR-D depends only on
-PR-A. Sensible order: A → C in parallel with B → D.
+5. **PR-E (deferred): Handler base extraction + field wiring.**
+   Collapse the three sport-specific create-league handlers into
+   a shared base. Wire `MaxUsers` / `NonStandardWeekGroupSeasonMapFilter`
+   through the request DTOs. Pure hygiene; no behavior change.
+   Land whenever the refactor cost feels worth paying.
+
+Dependency graph: PR-A blocks PR-B (use the factory). PR-B and
+PR-C are independent. PR-D depends on PR-B (validator stays;
+exception split stays) but supersedes PR-B's `Future`-mode
+dispatch. PR-E builds on PR-D's slimmed handler shape. Shipped
+order: A → C parallel with B → D, E to follow.
 
 ---
 
@@ -424,7 +508,7 @@ PR-A. Sensible order: A → C in parallel with B → D.
   architectural call and orthogonal to this cleanup.
 
 - **NCAA / NFL handler equivalents.** Same code shape, same
-  holes. PR-D's base extraction fixes all three at once. Don't
+  holes. PR-E's base extraction fixes all three at once. Don't
   fix NCAA/NFL in isolation.
 
 ---
@@ -466,20 +550,329 @@ becomes a one-shot manual cleanup; no recurring need.
 
 ## Validation
 
-For PR-B in particular, the bootstrap-mode dispatch is the
-behavioral change that has to be exercised. Test plan:
+Unit-test coverage shipped on this branch:
 
-- Unit tests on `PickemGroupCreatedHandler` covering each mode
-  (`Immediate` / `Future` / `Past` / `WrongYear`), asserting
-  whether `PickemGroupWeek` was created and whether
-  `ScheduleGroupWeekMatchupsCommand` was enqueued.
-- Local E2E: create an MLB league with `StartsOn = today + 10`,
-  confirm no `PickemGroupWeek` rows materialize. Re-run the
-  daily scheduler at `StartsOn + 1`, confirm a row appears.
-- Local E2E: create an MLB league with `StartsOn = today`,
-  confirm the current-week row appears and matchups populate
-  (current happy-path regression check).
+- `BootstrapLeagueMatchupsProcessorTests` — 9 cases pinning the
+  full-season vs windowed dispatch, the date-range partial-window
+  cap, empty result handling, group-not-found permanence, and
+  transient endpoint failures. This is the load-bearing
+  behavioral test layer for PR-D.
+- `PickemGroupCreatedHandlerTests` — 2 cases for the slimmed
+  handler: existence-check + enqueue, group-not-found permanence.
+- `MatchupScheduleProcessorTests.Process_NoMatchupsAfterFilter_…`
+  — pins the `AreMatchupsGenerated` rule that makes the
+  eager-bootstrap refresh path work.
+- `MatchupSchedulerTests` — existing window/active gate tests
+  still pass (the gate stays as a fast-path filter).
+- `PickemGroupWeekFactoryTests` — existing 8 cases, renamed
+  after the `Create` rename.
+- `GetSeasonWeeksByDateRangeQueryHandlerTests` (Producer side) —
+  7 cases pinning overlap predicate, ordering, boundary
+  inclusion, empty result, and bad-input rejection.
 
-For PR-D, the scheduler window gate: spin up two leagues — one
-future-start, one current — let the scheduler run, confirm only
-the current-start league gets a new `PickemGroupWeek` row.
+The detailed local E2E matrix below is the pre-merge regression
+checklist for **PR-D** specifically — every scenario exercises
+some combination of the four shipped PRs to confirm the
+motivating bug is fully closed end-to-end.
+
+---
+
+## Local E2E test cases
+
+Pre-merge regression matrix for PR-D. Each scenario exercises
+the validator (PR-B), the eager-bootstrap dispatch (PR-B), the
+factory (PR-A), the UI guards (PR-C), the scheduler gate (PR-D),
+or some combination. Run them with a local stack:
+
+### Setup checklist
+
+- API, Producer, Provider, RabbitMQ, Postgres running locally
+  (docker-compose or k8s — whatever your local convention is).
+- Logged-in admin user (MLB league creation is admin-gated; see
+  `LeagueCreatePage` / `create-league.tsx`).
+- MLB current-week data sourced so `GetCurrentSeasonWeek`
+  returns a real `CanonicalSeasonWeekDto`. Out-of-season MLB
+  collapses several scenarios — confirm `seasons/current-week`
+  on Producer returns 200 first.
+- A Hangfire dashboard reachable for manually triggering
+  `MatchupScheduler.ExecuteAsync` (don't wait for the cron).
+
+### Verification queries
+
+Keep these handy in a SQL session against the local Postgres:
+
+```sql
+-- Latest leagues plus their windows
+SELECT "Id", "Name", "Sport", "StartsOn", "EndsOn",
+       "DeactivatedUtc", "CreatedUtc"
+FROM "PickemGroup"
+ORDER BY "CreatedUtc" DESC
+LIMIT 10;
+
+-- PickemGroupWeek rows for a given league
+SELECT pgw."Id", pgw."SeasonYear", pgw."SeasonWeek",
+       pgw."SeasonWeekId", pgw."AreMatchupsGenerated",
+       pgw."IsNonStandardWeek",
+       (SELECT COUNT(*) FROM "PickemGroupMatchup" pgm
+        WHERE pgm."GroupId" = pgw."GroupId"
+          AND pgm."SeasonWeekId" = pgw."SeasonWeekId") AS matchup_count
+FROM "PickemGroupWeek" pgw
+WHERE pgw."GroupId" = '<league-id>';
+
+-- /user/me payload for a logged-in user (substitute auth)
+curl -s http://localhost:5xxx/api/users/me \
+     -H "Authorization: Bearer <token>" | jq '.leagues'
+```
+
+### Scenario matrix
+
+The PR-D redesign changed the eager-bootstrap behavior for windowed
+leagues. Rather than re-enumerate the design space here, see
+`docs/league-creation-matrix.md` for the full 17-row matrix
+(shell creation × matchup generation × external inputs). The
+local-E2E scenarios below are a representative subset:
+
+| # | Scenario | Validator | Bootstrap (handler → processor) | Daily scheduler |
+| --- | --- | --- | --- | --- |
+| 1 | Future-start single-day league | ✅ accepts | ✅ shell + matchups for the future SeasonWeek that overlaps StartsOn | ⛔ skip (gate) until window opens |
+| 2 | Past-end league (admin/direct-API) | ⛔ reject | (n/a) | (n/a) |
+| 3 | Half-played single-day league | ✅ accepts | ✅ shell + matchups for current SeasonWeek; processor filters to in-window contests | ✅ in-window |
+| 4 | Full-season league (no window) | ✅ accepts | ✅ shell + matchups for current SeasonWeek | ✅ advances weekly |
+| 5 | Closed-window league | (was valid at create) | (was valid at create) | ⛔ skip (gate) |
+| 6 | Deactivated league | (n/a) | (n/a) | ⛔ skip (gate) |
+| 7 | Web UI date picker | rejects past in browser | — | — |
+| 8 | Mobile UI date picker | rejects past in app | — | — |
+| 9 | Mixed-window batch | varies | per-league orchestrator decides | only in-window processed |
+| 10 | NCAAFB + `RankingFilter` shell before AP poll | ✅ accepts | ✅ shell only; matchups deferred (filter result is empty) | retries daily until poll lands |
+
+### Detailed scenarios
+
+#### Scenario 1 — Future-start single-day league (motivating bug)
+
+**Setup:** create an MLB league via the web UI with `StartsOn =
+today + 5 days, EndsOn = today + 5 days`. (Same shape works for
+"tomorrow" — the load-bearing case the redesign was driven by.)
+
+**Verify at creation:**
+- API responds `201`.
+- Seq has handler log line + `BootstrapLeagueMatchupsProcessor`
+  log line `"Bootstrap for group {GroupId} resolved 1 SeasonWeek(s)"`.
+- `PickemGroupWeek` for this `GroupId` returns **exactly one
+  row** — the SeasonWeek whose `[StartDate, EndDate]` contains
+  `today + 5 days` (typically same as the current MLB SeasonWeek
+  in-season, sometimes the next one if the window straddles a
+  Monday boundary).
+- `/user/me` for the creator shows the league with that one
+  week in `seasonWeeks`.
+
+**Verify shortly after creation:**
+- `PickemGroupMatchup` rows for that PickemGroupWeek match the
+  MLB schedule for the league window — i.e., the games on
+  `today + 5 days`. **Not** today's already-played games (the
+  processor's `[StartsOn, EndsOn]` filter drops those).
+- `AreMatchupsGenerated` is `true` for that week.
+
+**Trigger daily scheduler** (Hangfire dashboard → run
+`MatchupScheduler.ExecuteAsync`).
+
+**Verify after scheduler:**
+- No new `PickemGroupWeek` rows (the one created at bootstrap
+  is the only valid one until the league window arrives at
+  today; the gate skips out-of-window leagues, so the scheduler
+  is a no-op here).
+
+**What this proves:** the motivating bug is closed
+end-to-end — bootstrap creates the **right** SeasonWeek shell
+at creation (PR-D orchestrator), matchups populate
+immediately because MLB schedules are sourced well in advance
+(PR-D `AreMatchupsGenerated` rule confirms the populated state),
+no orphan rows in `/user/me`.
+
+#### Scenario 2 — Past-end league rejected at validator
+
+**Setup:** craft a direct-API POST to
+`/api/leagues/baseball-mlb` (admin token) with `StartsOn =
+yesterday, EndsOn = yesterday`. The UI won't construct this —
+PR-C's `min={today}` blocks it — so use `curl` / Postman to
+bypass.
+
+**Verify:**
+- API responds `400` with `ResultStatus.Validation`.
+- Error payload contains a `EndsOn` violation with message
+  `"EndsOn can't be in the past."` (PR-B validator rule.)
+- No `PickemGroup` row created.
+
+**What this proves:** the server-side trust boundary holds even
+when the UI guards are bypassed.
+
+#### Scenario 3 — Half-played single-day league
+
+**Setup:** create an MLB league via the UI with `StartsOn =
+today (some hours ago)` and `EndsOn = today (end of day)`. Use
+the date inputs — they should accept today.
+
+**Verify at creation:**
+- API responds `201`.
+- One `PickemGroupWeek` row for this league at the current
+  `SeasonWeekId`. (`BootstrapLeagueMatchupsProcessor` resolves
+  the window to one overlapping SeasonWeek and enqueues a
+  per-week `ScheduleGroupWeekMatchupsCommand`.)
+- `ScheduleGroupWeekMatchupsCommand` enqueued.
+
+**Verify after matchup generation completes:**
+- `PickemGroupMatchup` rows exist only for contests with
+  `StartDateUtc` between `StartsOn` and `EndsOn` (i.e., today's
+  games). Morning games already played should still be present
+  (locked picks) — afternoon games still pickable.
+- `/user/me` shows the league with `seasonWeeks` containing the
+  current week number.
+
+**What this proves:** the validator allows mid-day windows
+(the explicit "half-played single-day" carve-out from PR-B),
+and the existing matchup processor's window filter handles
+per-game pickability correctly.
+
+#### Scenario 4 — Full-season league (no window)
+
+**Setup:** create an MLB league via the UI with **Full Season**
+selected (the duration mode that leaves `StartsOn` /
+`EndsOn` null).
+
+**Verify:**
+- One `PickemGroupWeek` row for the current `SeasonWeekId`.
+- Matchups populated.
+- Scheduler picks the league up on subsequent runs and creates
+  rows for newly-current weeks as the season progresses.
+
+**What this proves:** the gate's `StartsOn == null || EndsOn ==
+null` short-circuits do the right thing — full-season leagues
+still flow through the existing happy path.
+
+#### Scenario 5 — Closed-window league + scheduler skip
+
+**Setup:** take a league from Scenario 3 or 4 (or create a
+fresh one) and `UPDATE "PickemGroup" SET "EndsOn" = now() -
+INTERVAL '1 day' WHERE "Id" = '<league-id>'` to simulate the
+window closing.
+
+**Trigger scheduler. Verify:**
+- No new `PickemGroupWeek` rows added.
+- Scheduler did NOT enqueue a `ScheduleGroupWeekMatchupsCommand`
+  for this league.
+- Already-existing `PickemGroupWeek` rows from the in-window
+  period stay intact (the gate prevents *new* rows, doesn't
+  delete old ones).
+
+**What this proves:** PR-D's closed-window branch of the gate.
+
+#### Scenario 6 — Deactivated league + scheduler skip
+
+**Setup:** set an in-window league's `DeactivatedUtc` to
+`now()`.
+
+**Trigger scheduler. Verify:**
+- No new `PickemGroupWeek` rows added.
+- No matchup enqueue for this league.
+
+**What this proves:** PR-D's `DeactivatedUtc` filter.
+
+#### Scenario 7 — Web UI date picker guards
+
+**Setup:** open the web app's Create League page in a browser.
+
+**Verify:**
+- The Start Date `<input type="date">` rejects yesterday in the
+  native picker (`min` attribute).
+- The End Date input rejects dates earlier than either today or
+  the chosen Start Date, whichever is later.
+- In DevTools, override the start input's value to
+  `2020-01-01` programmatically and click submit → an alert
+  fires *before* the confirmation dialog opens (`handleFormSubmit`
+  guard).
+
+**What this proves:** PR-C's web guards.
+
+#### Scenario 8 — Mobile UI date picker guards
+
+**Setup:** open the mobile app's Create League screen.
+
+**Verify:**
+- Both date pickers grey out days before today (`minimumDate`).
+- If you set Start to a future date and then move it back, the
+  End picker's floor follows (`max(startsOn, today)`).
+- Attempting to submit with a manipulated state that yields
+  `endsOn < today` surfaces the Zod `superRefine` error
+  `"End date can't be in the past"`.
+
+**What this proves:** PR-C's mobile guards + the Zod-level
+trust boundary mirroring the server validator.
+
+#### Scenario 9 — Mixed-window batch through scheduler
+
+**Setup:** create three MLB leagues:
+- A: `StartsOn = today - 7, EndsOn = today + 7` (in-window).
+- B: `StartsOn = today + 10` (future-start).
+- C: same as A but `UPDATE … SET "DeactivatedUtc" = now()`.
+
+**At creation** (verify after each `POST`):
+- A and B both get **one or more** `PickemGroupWeek` rows from
+  the creation-time bootstrap (A's current SeasonWeek for A;
+  the SeasonWeek containing `today + 10` for B).
+- C gets the same as A (deactivation happens after creation).
+
+**Trigger scheduler. Verify:**
+- Exactly one `ScheduleGroupWeekMatchupsCommand` enqueued
+  (for A, refreshing the current week).
+- B's bootstrap-created week stays untouched (gate skips B
+  because `StartsOn > now`).
+- C's bootstrap-created week stays untouched (gate skips C
+  because `DeactivatedUtc IS NOT NULL`).
+- Seq log line `Found 1 active sport(s) with in-window
+  leagues: BaseballMlb` (the per-sport discovery query also
+  applies the window gate).
+
+**What this proves:** creation-time bootstrap (PR-D
+orchestrator) handles all three leagues correctly; the daily
+scheduler's window/active gate filters per-league for the
+*refresh* path.
+
+#### Scenario 10 — NCAAFB + `RankingFilter` shell pre-poll
+
+**Setup:** create an NCAAFB league with `RankingFilter =
+AP_TOP_25` and `StartsOn = first Saturday of the 2026 season,
+EndsOn = same day`. Pick a date that's before the preseason AP
+poll release (typically mid-August).
+
+**Verify at creation:**
+- API responds `201`.
+- One `PickemGroupWeek` row exists for the SeasonWeek
+  containing the StartsOn date.
+- `AreMatchupsGenerated` is **`false`** for that row (the
+  processor ran, found schedule data for those games, but
+  no ranks were set on any matchup → filter result is empty
+  → flag stays `false` per the PR-D rule).
+- Zero `PickemGroupMatchup` rows.
+
+**Time-shift past the poll publication** (or manually source
+poll data via the existing Producer poll-source flow).
+
+**Trigger daily scheduler. Verify:**
+- The scheduler finds the shell, sees `AreMatchupsGenerated =
+  false`, enqueues `ScheduleGroupWeekMatchupsCommand`.
+- The processor re-runs, now with ranks populated → filter
+  result is non-empty → `PickemGroupMatchup` rows written →
+  `AreMatchupsGenerated` flips to `true`.
+
+**What this proves:** the eager-bootstrap path correctly defers
+matchup materialization for NCAAFB+rank-filter shells until the
+external input (AP poll) lands. The `AreMatchupsGenerated` rule
+is what makes this work — without it the empty pre-poll run
+would mark the shell "done" and the scheduler would never come
+back.
+
+### Prod-data cleanup checkpoint
+
+After PR-D merges and is deployed, the existing orphan
+`PickemGroupWeek` rows already in prod still need the manual
+SQL cleanup documented in *Prod data remediation* above. The
+gate prevents new orphans but doesn't reach back.

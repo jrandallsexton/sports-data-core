@@ -105,7 +105,7 @@ export default function ContestOverview() {
           <ContestOverviewInfo info={info} />
         </div>
         <div className="contest-overview-col">
-          <ContestOverviewPlaylog playLog={playLog} sport={sport} />
+          <ContestOverviewPlaylog playLog={playLog} sport={sport} contestId={contestId} league={league} />
         </div>
       </div>
       {isAdmin && (

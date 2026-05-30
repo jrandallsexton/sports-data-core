@@ -31,6 +31,14 @@ public interface IProvideContests : IProvideHealthChecks
 
     Task<Result<ContestOverviewDto>> GetContestOverviewByContestId(Guid contestId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Full play-by-play log for a contest. Companion to the overview
+    /// endpoint, which trims plays to key/scoring only — this returns the
+    /// complete list (up to ~500 rows for an MLB game). Backs the
+    /// on-demand "Show all plays" expansion in the UI.
+    /// </summary>
+    Task<Result<PlayLogDto>> GetContestPlayLogByContestId(Guid contestId, CancellationToken cancellationToken = default);
+
     Task<Result<bool>> RefreshContest(Guid contestId, CancellationToken cancellationToken = default);
 
     Task<Result<bool>> RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default);
@@ -136,6 +144,25 @@ public class ContestClient : ClientBase, IProvideContests
             overview => overview,
             default!,
             "Contest overview",
+            ResultStatus.NotFound,
+            cancellationToken);
+    }
+
+    public async Task<Result<PlayLogDto>> GetContestPlayLogByContestId(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<PlayLogDto>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
+
+        return await GetAsync<PlayLogDto, PlayLogDto>(
+            $"contests/{contestId}/playlog",
+            playLog => playLog,
+            default!,
+            "Contest play log",
             ResultStatus.NotFound,
             cancellationToken);
     }

@@ -15,6 +15,11 @@ using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
+// Alias to disambiguate from the sibling SportsData.Producer.Application.SeasonWeek
+// namespace, which name-resolution prefers over the entity type when the bare name
+// is used in this file.
+using SeasonWeekEntity = SportsData.Producer.Infrastructure.Data.Entities.SeasonWeek;
+
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.SeasonTypeWeekRankings)]
@@ -69,7 +74,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
 
         // Determine the SeasonWeek for this poll
         // can be null: preseason/postseason polls
-        Guid? seasonWeekId = null;
+        SeasonWeekEntity? seasonWeek = null;
 
         if (dto.Season.Type.Week is not null)
         {
@@ -77,7 +82,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
             // Example: Week 9 poll is published on the Sunday after Week 9 games
             // therefore we use it for Week 10
             // TODO:  At the end of the season, correct this data and adjust for next season
-            var seasonWeek = await _dataContext.SeasonWeeks
+            seasonWeek = await _dataContext.SeasonWeeks
                 .Include(x => x.Season)
                 .Include(x => x.ExternalIds)
                 .Include(x => x.Rankings)
@@ -98,8 +103,6 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
 
                 throw new ExternalDocumentNotSourcedException("SeasonWeek not found. Sourcing requested. Will retry.");
             }
-
-            seasonWeekId = seasonWeek.Id;
         }
 
         var dtoIdentity = _externalRefIdentityGenerator.Generate(dto.Ref);
@@ -110,9 +113,9 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
 
         if (pollWeek is null)
         {
-            await ProcessNewEntity(dto, dtoIdentity, seasonPollId, seasonWeekId, command);
+            await ProcessNewEntity(dto, dtoIdentity, seasonPollId, seasonWeek, command);
         }
-        else 
+        else
         {
             await ProcessExistingEntity();
         }
@@ -122,7 +125,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         EspnFootballSeasonTypeWeekRankingsDto dto,
         ExternalRefIdentity dtoIdentity,
         Guid seasonPollId,
-        Guid? seasonWeekId,
+        SeasonWeekEntity? seasonWeek,
         ProcessDocumentCommand command)
     {
         // We need to create a mapping of the Team's season ref to the FranchiseSeasonId
@@ -160,7 +163,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         // Create the entity from the DTO
         var entity = dto.AsEntity(
             seasonPollId,
-            seasonWeekId,
+            seasonWeek?.Id,
             _externalRefIdentityGenerator,
             franchiseDictionary,
             command.CorrelationId);
@@ -193,25 +196,14 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         // Add to EF and save
         await _dataContext.SeasonPollWeeks.AddAsync(entity);
 
-        // Resolve poll slug + season-week dates for the event payload so the
-        // API-side consumer (rank-poll refresh path) doesn't have to call
-        // back to Producer to overlap-test the affected SeasonWeek against
-        // league windows. Both are cheap PK lookups; only fire on poll
-        // publication (weekly per sport during NCAAFB season).
+        // Resolve poll slug for the event payload. The SeasonWeek row was
+        // already loaded earlier in ProcessInternal and threaded in here, so
+        // we reuse its dates without re-querying. SeasonPoll wasn't loaded
+        // earlier — one cheap PK lookup, only fires on poll publication
+        // (weekly per sport during NCAAFB season).
         var seasonPoll = await _dataContext.SeasonPolls
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == seasonPollId);
-
-        DateTime? seasonWeekStart = null;
-        DateTime? seasonWeekEnd = null;
-        if (seasonWeekId.HasValue)
-        {
-            var seasonWeek = await _dataContext.SeasonWeeks
-                .AsNoTracking()
-                .FirstOrDefaultAsync(w => w.Id == seasonWeekId.Value);
-            seasonWeekStart = seasonWeek?.StartDate;
-            seasonWeekEnd = seasonWeek?.EndDate;
-        }
 
         // Publish BEFORE SaveChanges so the bus-outbox interceptor captures
         // the message in the same transaction as the entity write — if the
@@ -219,9 +211,9 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         await _publishEndpoint.Publish(new SeasonPollWeekCreated(
             SeasonPollWeekId: entity.Id,
             SeasonPollId: seasonPollId,
-            SeasonWeekId: seasonWeekId,
-            SeasonWeekStartDate: seasonWeekStart,
-            SeasonWeekEndDate: seasonWeekEnd,
+            SeasonWeekId: seasonWeek?.Id,
+            SeasonWeekStartDate: seasonWeek?.StartDate,
+            SeasonWeekEndDate: seasonWeek?.EndDate,
             SeasonYear: command.SeasonYear,
             PollSlug: seasonPoll?.Slug,
             Ref: null,

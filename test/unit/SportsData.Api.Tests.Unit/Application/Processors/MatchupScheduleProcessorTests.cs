@@ -1151,8 +1151,13 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             var saved = await DataContext.PickemGroupWeeks
                 .Include(gw => gw.Matchups)
                 .FirstOrDefaultAsync(x => x.Id == groupWeek.Id);
-            saved!.Matchups.Should().ContainSingle()
-                .Which.ContestId.Should().Be(formerlyRankedContestId);
+            var preserved = saved!.Matchups.Should().ContainSingle().Subject;
+            preserved.ContestId.Should().Be(formerlyRankedContestId);
+            // Pin the "no update" contract: seeded AwayRank=2 must NOT have
+            // been overwritten with the new poll's AwayRank=15. ContestId
+            // alone wouldn't catch an update because it's the upsert key.
+            preserved.AwayRank.Should().Be(2);
+            preserved.HomeRank.Should().BeNull();
         }
 
         /// <summary>

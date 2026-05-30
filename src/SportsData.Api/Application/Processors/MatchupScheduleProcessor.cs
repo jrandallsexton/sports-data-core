@@ -21,17 +21,20 @@ namespace SportsData.Api.Application.Processors
         private readonly ILogger<MatchupScheduleProcessor> _logger;
         private readonly IContestClientFactory _contestClientFactory;
         private readonly IEventBus _eventBus;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public MatchupScheduleProcessor(
             AppDataContext dataContext,
             ILogger<MatchupScheduleProcessor> logger,
             IContestClientFactory contestClientFactory,
-            IEventBus eventBus)
+            IEventBus eventBus,
+            IDateTimeProvider dateTimeProvider)
         {
             _dataContext = dataContext;
             _logger = logger;
             _contestClientFactory = contestClientFactory;
             _eventBus = eventBus;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task Process(ScheduleGroupWeekMatchupsCommand command)
@@ -208,7 +211,7 @@ namespace SportsData.Api.Application.Processors
                         AwayWins = groupMatchup.AwayWins,
                         ContestId = groupMatchup.ContestId,
                         CreatedBy = Guid.Empty,
-                        CreatedUtc = DateTime.UtcNow,
+                        CreatedUtc = _dateTimeProvider.UtcNow(),
                         GroupId = group.Id,
                         GroupWeek = groupWeek,
                         Headline = groupMatchup.Headline,

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getPeriodPrefix } from "../../utils/periodLabel";
 import apiWrapper from "../../api/apiWrapper";
 import "./ContestOverview.css";
@@ -20,6 +20,19 @@ export default function ContestOverviewPlaylog({ playLog, sport, contestId, leag
   const [fullPlayLog, setFullPlayLog] = useState(null);
   const [loadingFull, setLoadingFull] = useState(false);
   const [fullError, setFullError] = useState(null);
+
+  // Reset lazy-load state when the contest context changes. The parent
+  // page (ContestOverview) is rendered by a React Router route that
+  // matches the same definition for every contest id, so navigating
+  // between contests re-renders this component instance with new props
+  // rather than remounting it — without this effect the cached
+  // fullPlayLog from a prior contest would leak into the next one.
+  useEffect(() => {
+    setShowAll(false);
+    setFullPlayLog(null);
+    setLoadingFull(false);
+    setFullError(null);
+  }, [contestId, sport, league]);
 
   if (!playLog || !playLog.plays) return null;
 

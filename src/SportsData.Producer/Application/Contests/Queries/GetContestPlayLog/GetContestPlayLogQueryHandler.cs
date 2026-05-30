@@ -99,19 +99,27 @@ public class GetContestPlayLogQueryHandler : IGetContestPlayLogQueryHandler
             .OrderBy(p => p.SequenceNumber)
             .ToListAsync(cancellationToken);
 
+        var homeTeamFranchiseSeasonId = contest.HomeTeamFranchiseSeasonId;
+
         var playDtos = plays.Select((p, x) =>
         {
             // Mirrors the mapping in GetContestOverviewQueryHandler.GetPlayLogAsync.
             // StartFranchiseSeasonId is the start team (football) / batting team
-            // (baseball) — both serve as "team on play" for display.
+            // (baseball) — both serve as "team on play" for display. Neutral
+            // plays (no attribution, or attribution to a third party we don't
+            // recognize) get Team = null so the UI renders no logo rather than
+            // mis-attributing to home.
             var teamId = p.StartFranchiseSeasonId ?? Guid.Empty;
+            string? teamSlug = null;
+            if (teamId == awayTeamFranchiseSeasonId) teamSlug = awayTeamSlug;
+            else if (teamId == homeTeamFranchiseSeasonId) teamSlug = homeTeamSlug;
 
             return new PlayDto
             {
                 Ordinal = x,
                 Quarter = p.PeriodNumber,
                 FranchiseSeasonId = teamId,
-                Team = teamId == awayTeamFranchiseSeasonId ? awayTeamSlug : homeTeamSlug,
+                Team = teamSlug,
                 Description = p.ShortAlternativeText ?? p.Text,
                 TimeRemaining = (p as FootballCompetitionPlay)?.ClockDisplayValue,
                 IsScoringPlay = p.ScoringPlay,

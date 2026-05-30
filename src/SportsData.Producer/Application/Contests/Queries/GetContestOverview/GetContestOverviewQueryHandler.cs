@@ -123,6 +123,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
                 awayTeamLogoUri,
                 homeTeamLogoUri,
                 awayTeamFranchiseSeasonId,
+                homeTeamFranchiseSeasonId,
                 cancellationToken),
             TeamStats = await GetTeamStatsAsync(query.ContestId, cancellationToken),
             Info = await GetGameInfoAsync(query.ContestId, cancellationToken),
@@ -524,6 +525,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         Uri? awayTeamLogoUri,
         Uri? homeTeamLogoUri,
         Guid awayTeamFranchiseSeasonId,
+        Guid homeTeamFranchiseSeasonId,
         CancellationToken cancellationToken)
     {
         var plays = await _dbContext.CompetitionPlays
@@ -537,14 +539,20 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         {
             // Use StartFranchiseSeasonId (shared) — for football this is the start team,
             // for baseball this is the batting team. Both serve as the "team on play".
+            // Neutral plays (no attribution, or attribution to a third party we
+            // don't recognize) get Team = null so the UI renders no logo rather
+            // than mis-attributing to home.
             var teamId = p.StartFranchiseSeasonId ?? Guid.Empty;
+            string? teamSlug = null;
+            if (teamId == awayTeamFranchiseSeasonId) teamSlug = awayTeamSlug;
+            else if (teamId == homeTeamFranchiseSeasonId) teamSlug = homeTeamSlug;
 
             return new PlayDto
             {
                 Ordinal = x,
                 Quarter = p.PeriodNumber,
                 FranchiseSeasonId = teamId,
-                Team = teamId == awayTeamFranchiseSeasonId ? awayTeamSlug : homeTeamSlug,
+                Team = teamSlug,
                 Description = p.ShortAlternativeText ?? p.Text,
                 TimeRemaining = (p as FootballCompetitionPlay)?.ClockDisplayValue,
                 IsScoringPlay = p.ScoringPlay,

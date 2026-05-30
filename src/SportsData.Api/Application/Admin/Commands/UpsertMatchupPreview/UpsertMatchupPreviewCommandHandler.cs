@@ -56,23 +56,33 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
                     [new ValidationFailure(nameof(command.JsonContent), "Invalid preview content")]);
             }
 
-            // Use explicit transaction to ensure atomicity of the upsert operation
-            await using var transaction = await _dataContext.Database.BeginTransactionAsync(cancellationToken);
+            // Wrap in the DbContext execution strategy: EnableRetryOnFailure is configured
+            // globally for Npgsql (see Core/DependencyInjection/ServiceRegistration.cs),
+            // and raw BeginTransactionAsync under a retry strategy throws at runtime unless
+            // the transaction body is scoped inside strategy.ExecuteAsync so the whole unit
+            // can retry atomically on transient failures. Same fix shape as PR #271
+            // (DeleteLeague). The InMemory provider's no-op execution strategy makes
+            // existing tests still pass; the wrap only changes behavior under Npgsql.
+            var strategy = _dataContext.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync<Result<Guid>>(async () =>
+            {
+                await using var transaction = await _dataContext.Database.BeginTransactionAsync(cancellationToken);
 
-            var existing = await _dataContext.MatchupPreviews
-                .FirstOrDefaultAsync(x => x.ContestId == preview.ContestId, cancellationToken);
+                var existing = await _dataContext.MatchupPreviews
+                    .FirstOrDefaultAsync(x => x.ContestId == preview.ContestId, cancellationToken);
 
-            if (existing is not null)
-                _dataContext.MatchupPreviews.Remove(existing);
+                if (existing is not null)
+                    _dataContext.MatchupPreviews.Remove(existing);
 
-            await _dataContext.MatchupPreviews.AddAsync(preview, cancellationToken);
-            await _dataContext.SaveChangesAsync(cancellationToken);
+                await _dataContext.MatchupPreviews.AddAsync(preview, cancellationToken);
+                await _dataContext.SaveChangesAsync(cancellationToken);
 
-            await transaction.CommitAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
 
-            _logger.LogInformation("Upserted matchup preview for contest {ContestId}", preview.ContestId);
+                _logger.LogInformation("Upserted matchup preview for contest {ContestId}", preview.ContestId);
 
-            return new Success<Guid>(preview.ContestId);
+                return new Success<Guid>(preview.ContestId);
+            });
         }
         catch (Exception ex)
         {

@@ -8,6 +8,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Eventing.Events.Seasons;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -191,6 +192,43 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
 
         // Add to EF and save
         await _dataContext.SeasonPollWeeks.AddAsync(entity);
+
+        // Resolve poll slug + season-week dates for the event payload so the
+        // API-side consumer (rank-poll refresh path) doesn't have to call
+        // back to Producer to overlap-test the affected SeasonWeek against
+        // league windows. Both are cheap PK lookups; only fire on poll
+        // publication (weekly per sport during NCAAFB season).
+        var seasonPoll = await _dataContext.SeasonPolls
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == seasonPollId);
+
+        DateTime? seasonWeekStart = null;
+        DateTime? seasonWeekEnd = null;
+        if (seasonWeekId.HasValue)
+        {
+            var seasonWeek = await _dataContext.SeasonWeeks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(w => w.Id == seasonWeekId.Value);
+            seasonWeekStart = seasonWeek?.StartDate;
+            seasonWeekEnd = seasonWeek?.EndDate;
+        }
+
+        // Publish BEFORE SaveChanges so the bus-outbox interceptor captures
+        // the message in the same transaction as the entity write — if the
+        // save fails, the captured publish is rolled back with it.
+        await _publishEndpoint.Publish(new SeasonPollWeekCreated(
+            SeasonPollWeekId: entity.Id,
+            SeasonPollId: seasonPollId,
+            SeasonWeekId: seasonWeekId,
+            SeasonWeekStartDate: seasonWeekStart,
+            SeasonWeekEndDate: seasonWeekEnd,
+            SeasonYear: command.SeasonYear,
+            PollSlug: seasonPoll?.Slug,
+            Ref: null,
+            Sport: command.Sport,
+            CorrelationId: command.CorrelationId,
+            CausationId: Guid.NewGuid()));
+
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation("Created SeasonPollWeek entity {@SeasonRankingId}", entity.Id);

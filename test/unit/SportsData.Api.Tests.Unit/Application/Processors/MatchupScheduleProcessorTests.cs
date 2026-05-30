@@ -936,5 +936,317 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             savedGroupWeek!.Matchups.Should().BeEmpty();
             savedGroupWeek.AreMatchupsGenerated.Should().BeFalse();
         }
+
+        /// <summary>
+        /// PR-F refresh path: a SeasonPollWeekCreated event triggers a second
+        /// call with IsRefresh=true. The week is already marked
+        /// AreMatchupsGenerated, so the legacy gate would return early —
+        /// IsRefresh must bypass it so newly-eligible matchups (ranked teams
+        /// from the just-published AP poll) can be inserted.
+        /// </summary>
+        [Fact]
+        public async Task Process_Refresh_BypassesAreMatchupsGeneratedGate_AndInsertsNewMatchup()
+        {
+            // Arrange — a TOP25+SEC NCAAFB league that already has its SEC
+            // matchups in place from creation-time bootstrap; AP poll wasn't
+            // published yet so no ranked-team matchups got in.
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+            var existingSecContestId = Guid.NewGuid();
+            var newRankedContestId = Guid.NewGuid();
+
+            var group = new PickemGroup
+            {
+                Id = groupId,
+                Name = "Test",
+                Sport = Core.Common.Sport.FootballNcaa,
+                League = League.NCAAF,
+                RankingFilter = TeamRankingFilter.AP_TOP_25,
+                CommissionerUserId = Guid.NewGuid(),
+                CreatedUtc = FixedUtcNow,
+                CreatedBy = Guid.Empty,
+                Conferences = new List<PickemGroupConference>
+                {
+                    new() { Id = Guid.NewGuid(), ConferenceSlug = "sec", PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = FixedUtcNow, CreatedBy = Guid.Empty }
+                }
+            };
+            await DataContext.PickemGroups.AddAsync(group);
+
+            var groupWeek = new PickemGroupWeek
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                SeasonWeekId = seasonWeekId,
+                SeasonYear = 2024,
+                SeasonWeek = 1,
+                AreMatchupsGenerated = true, // first-pass already ran
+                IsNonStandardWeek = false,
+            };
+            groupWeek.Matchups.Add(new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                ContestId = existingSecContestId,
+                GroupId = groupId,
+                SeasonWeekId = seasonWeekId,
+                SeasonYear = 2024,
+                SeasonWeek = 1,
+                AwayRank = null,
+                HomeRank = null,
+                CreatedUtc = FixedUtcNow,
+                CreatedBy = Guid.Empty,
+            });
+            await DataContext.PickemGroupWeeks.AddAsync(groupWeek);
+            await DataContext.SaveChangesAsync();
+
+            // Second pass: the SEC matchup still passes the filter (conference
+            // match); the newly-ranked AP Top 25 contest is new.
+            var allMatchups = new List<Matchup>
+            {
+                new()
+                {
+                    SeasonWeekId = seasonWeekId,
+                    SeasonYear = 2024,
+                    SeasonWeek = 1,
+                    ContestId = existingSecContestId,
+                    AwaySlug = "ole-miss",
+                    HomeSlug = "lsu",
+                    AwayRank = null,
+                    HomeRank = null,
+                    AwayConferenceSlug = "sec",
+                    HomeConferenceSlug = "sec",
+                    Status = "STATUS_SCHEDULED",
+                    StatusDescription = "Scheduled",
+                    StartDateUtc = new DateTime(2024, 9, 7, 19, 0, 0, DateTimeKind.Utc),
+                },
+                new()
+                {
+                    SeasonWeekId = seasonWeekId,
+                    SeasonYear = 2024,
+                    SeasonWeek = 1,
+                    ContestId = newRankedContestId,
+                    AwaySlug = "michigan",
+                    HomeSlug = "ohio-state",
+                    AwayRank = 3,
+                    HomeRank = 1,
+                    AwayConferenceSlug = "big10",
+                    HomeConferenceSlug = "big10",
+                    Status = "STATUS_SCHEDULED",
+                    StatusDescription = "Scheduled",
+                    StartDateUtc = new DateTime(2024, 9, 7, 12, 0, 0, DateTimeKind.Utc),
+                },
+            };
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
+
+            var command = new ScheduleGroupWeekMatchupsCommand(
+                groupId, seasonWeekId, 2024, 1, false, Guid.NewGuid(), IsRefresh: true);
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert — both matchups now present; existing SEC row preserved
+            // by ContestId; newly-ranked Big Ten contest inserted.
+            var saved = await DataContext.PickemGroupWeeks
+                .Include(gw => gw.Matchups)
+                .FirstOrDefaultAsync(x => x.Id == groupWeek.Id);
+            saved.Should().NotBeNull();
+            saved!.Matchups.Select(m => m.ContestId).Should().BeEquivalentTo(new[]
+            {
+                existingSecContestId,
+                newRankedContestId,
+            });
+        }
+
+        /// <summary>
+        /// Picks-sacred contract: a refresh call must NOT delete a matchup
+        /// whose contest fell out of the filter (e.g. team dropped out of
+        /// Top 25). User picks against it would be silently invalidated.
+        /// </summary>
+        [Fact]
+        public async Task Process_Refresh_DoesNotDeleteExistingMatchupThatFellOutOfFilter()
+        {
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+            var formerlyRankedContestId = Guid.NewGuid();
+
+            var group = new PickemGroup
+            {
+                Id = groupId,
+                Name = "Test",
+                Sport = Core.Common.Sport.FootballNcaa,
+                League = League.NCAAF,
+                RankingFilter = TeamRankingFilter.AP_TOP_5,  // tight filter
+                CommissionerUserId = Guid.NewGuid(),
+                CreatedUtc = FixedUtcNow,
+                CreatedBy = Guid.Empty,
+                Conferences = new List<PickemGroupConference>(),
+            };
+            await DataContext.PickemGroups.AddAsync(group);
+
+            var groupWeek = new PickemGroupWeek
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                SeasonWeekId = seasonWeekId,
+                SeasonYear = 2024,
+                SeasonWeek = 1,
+                AreMatchupsGenerated = true,
+                IsNonStandardWeek = false,
+            };
+            // Matchup from a prior poll where this team WAS ranked #2.
+            groupWeek.Matchups.Add(new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                ContestId = formerlyRankedContestId,
+                GroupId = groupId,
+                SeasonWeekId = seasonWeekId,
+                SeasonYear = 2024,
+                SeasonWeek = 1,
+                AwayRank = 2,
+                HomeRank = null,
+                CreatedUtc = FixedUtcNow,
+                CreatedBy = Guid.Empty,
+            });
+            await DataContext.PickemGroupWeeks.AddAsync(groupWeek);
+            await DataContext.SaveChangesAsync();
+
+            // New poll — this team is now ranked #15, outside TOP_5.
+            var allMatchups = new List<Matchup>
+            {
+                new()
+                {
+                    SeasonWeekId = seasonWeekId,
+                    SeasonYear = 2024,
+                    SeasonWeek = 1,
+                    ContestId = formerlyRankedContestId,
+                    AwaySlug = "unaffiliated-away",
+                    HomeSlug = "unaffiliated-home",
+                    AwayRank = 15,
+                    HomeRank = null,
+                    AwayConferenceSlug = "x",
+                    HomeConferenceSlug = "y",
+                    Status = "STATUS_SCHEDULED",
+                    StatusDescription = "Scheduled",
+                    StartDateUtc = new DateTime(2024, 9, 7, 19, 0, 0, DateTimeKind.Utc),
+                },
+            };
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
+
+            var command = new ScheduleGroupWeekMatchupsCommand(
+                groupId, seasonWeekId, 2024, 1, false, Guid.NewGuid(), IsRefresh: true);
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert — the row stays; user picks against it are safe. (No
+            // attribute update either because the contest fell out of the
+            // filter result — only filter-passing contests get upserted.)
+            var saved = await DataContext.PickemGroupWeeks
+                .Include(gw => gw.Matchups)
+                .FirstOrDefaultAsync(x => x.Id == groupWeek.Id);
+            saved!.Matchups.Should().ContainSingle()
+                .Which.ContestId.Should().Be(formerlyRankedContestId);
+        }
+
+        /// <summary>
+        /// Refresh with only-existing matchups (filter result is non-empty
+        /// but every contest is already in the week) must NOT re-fire
+        /// PickemGroupWeekMatchupsGenerated. The downstream preview-spawn
+        /// consumer only enqueues for contests without existing previews
+        /// anyway, but re-firing wastes a query per league per refresh.
+        /// </summary>
+        [Fact]
+        public async Task Process_Refresh_NoNewMatchups_DoesNotPublishGeneratedEvent()
+        {
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+            var existingContestId = Guid.NewGuid();
+
+            var group = new PickemGroup
+            {
+                Id = groupId,
+                Name = "Test",
+                Sport = Core.Common.Sport.FootballNcaa,
+                League = League.NCAAF,
+                RankingFilter = TeamRankingFilter.AP_TOP_25,
+                CommissionerUserId = Guid.NewGuid(),
+                CreatedUtc = FixedUtcNow,
+                CreatedBy = Guid.Empty,
+                Conferences = new List<PickemGroupConference>(),
+            };
+            await DataContext.PickemGroups.AddAsync(group);
+
+            var groupWeek = new PickemGroupWeek
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                SeasonWeekId = seasonWeekId,
+                SeasonYear = 2024,
+                SeasonWeek = 1,
+                AreMatchupsGenerated = true,
+                IsNonStandardWeek = false,
+            };
+            groupWeek.Matchups.Add(new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                ContestId = existingContestId,
+                GroupId = groupId,
+                SeasonWeekId = seasonWeekId,
+                SeasonYear = 2024,
+                SeasonWeek = 1,
+                AwayRank = 5,
+                CreatedUtc = FixedUtcNow,
+                CreatedBy = Guid.Empty,
+            });
+            await DataContext.PickemGroupWeeks.AddAsync(groupWeek);
+            await DataContext.SaveChangesAsync();
+
+            // Filter passes the existing contest (still ranked) but adds
+            // nothing new.
+            var allMatchups = new List<Matchup>
+            {
+                new()
+                {
+                    SeasonWeekId = seasonWeekId,
+                    SeasonYear = 2024,
+                    SeasonWeek = 1,
+                    ContestId = existingContestId,
+                    AwaySlug = "a",
+                    HomeSlug = "b",
+                    AwayRank = 5,
+                    HomeRank = null,
+                    AwayConferenceSlug = "x",
+                    HomeConferenceSlug = "y",
+                    Status = "STATUS_SCHEDULED",
+                    StatusDescription = "Scheduled",
+                    StartDateUtc = new DateTime(2024, 9, 7, 19, 0, 0, DateTimeKind.Utc),
+                },
+            };
+            _contestClientMock
+                .Setup(x => x.GetMatchupsForSeasonWeek(2024, 1, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(allMatchups));
+
+            var eventBus = Mocker.GetMock<IEventBus>();
+
+            var command = new ScheduleGroupWeekMatchupsCommand(
+                groupId, seasonWeekId, 2024, 1, false, Guid.NewGuid(), IsRefresh: true);
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert
+            eventBus.Verify(
+                x => x.Publish(It.IsAny<PickemGroupWeekMatchupsGenerated>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
     }
 }

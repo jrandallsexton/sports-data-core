@@ -529,7 +529,7 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
         var plays = await _dbContext.CompetitionPlays
             .AsNoTracking()
             .Include(p => p.Competition)
-            .Where(p => p.Competition.ContestId == contestId)
+            .Where(p => p.Competition.ContestId == contestId && (p.Priority || p.ScoringPlay)) // return only significant plays (scoring or marked key plays) to limit payload size; adjust as needed
             .OrderBy(p => p.SequenceNumber)
             .ToListAsync(cancellationToken);
 

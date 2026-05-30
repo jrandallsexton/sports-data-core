@@ -5,6 +5,7 @@ using SportsData.Api.Application.UI.Contest.Commands.FinalizeContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
 using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
+using SportsData.Api.Application.UI.Contest.Queries.GetContestPlayLog;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
@@ -27,6 +28,27 @@ public class ContestController : ApiControllerBase
     {
         var mode = ModeMapper.ResolveMode(sport, league);
         var query = new GetContestOverviewQuery { ContestId = id, Sport = mode };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// On-demand full play log for the Contest Overview page's "Show all
+    /// plays" toggle. The default overview endpoint trims to key/scoring
+    /// plays to keep its payload small (~10 rows); this endpoint returns
+    /// every play (~500 for MLB, ~150 for football).
+    /// </summary>
+    [HttpGet("{id}/playlog")]
+    public async Task<ActionResult<PlayLogDto>> GetContestPlayLog(
+        [FromRoute] Guid id,
+        [FromQuery] string sport = "football",
+        [FromQuery] string league = "ncaa",
+        [FromServices] IGetContestPlayLogQueryHandler handler = default!,
+        CancellationToken cancellationToken = default)
+    {
+        var mode = ModeMapper.ResolveMode(sport, league);
+        var query = new GetContestPlayLogQuery { ContestId = id, Sport = mode };
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();

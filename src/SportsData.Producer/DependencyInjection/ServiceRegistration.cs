@@ -18,6 +18,7 @@ using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Application.Contests.Commands;
 using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
+using SportsData.Producer.Application.Contests.Queries.GetContestPlayLog;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetCompletedFbsContestIds;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestResults;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetFinalizedContestIds;
@@ -293,9 +294,11 @@ namespace SportsData.Producer.DependencyInjection
             // Contest Queries
             services.AddScoped<IGetContestByIdQueryHandler, GetContestByIdQueryHandler>();
             services.AddScoped<IGetContestOverviewQueryHandler, GetContestOverviewQueryHandler>();
+            services.AddScoped<IGetContestPlayLogQueryHandler, GetContestPlayLogQueryHandler>();
 
             // Contest Query Validators
             services.AddScoped<FluentValidation.IValidator<GetContestOverviewQuery>, GetContestOverviewQueryValidator>();
+            services.AddScoped<FluentValidation.IValidator<GetContestPlayLogQuery>, GetContestPlayLogQueryValidator>();
 
             services.AddScoped<IGroupSeasonsService, GroupSeasonsService>();
             services.AddScoped<ILogoSelectionService, LogoSelectionService>();

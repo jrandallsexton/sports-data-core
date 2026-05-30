@@ -14,6 +14,7 @@ using SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMe
 using SportsData.Producer.Application.Contests.Commands;
 using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
+using SportsData.Producer.Application.Contests.Queries.GetContestPlayLog;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -188,6 +189,25 @@ namespace SportsData.Producer.Application.Contests
             CancellationToken cancellationToken = default)
         {
             var query = new GetContestOverviewQuery(id);
+            var result = await handler.ExecuteAsync(query, cancellationToken);
+
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Full play-by-play log for a contest. The overview endpoint above
+        /// trims plays to key/scoring only to keep the typical "Contest
+        /// Overview" page payload manageable; this endpoint backs the
+        /// on-demand "Show all plays" expansion in the UI (e.g., 500+ MLB
+        /// plays).
+        /// </summary>
+        [HttpGet("{id}/playlog")]
+        public async Task<ActionResult<PlayLogDto>> GetContestPlayLog(
+            [FromServices] IGetContestPlayLogQueryHandler handler,
+            [FromRoute] Guid id,
+            CancellationToken cancellationToken = default)
+        {
+            var query = new GetContestPlayLogQuery(id);
             var result = await handler.ExecuteAsync(query, cancellationToken);
 
             return result.ToActionResult();

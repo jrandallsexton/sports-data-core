@@ -35,6 +35,7 @@ using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
 using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
+using SportsData.Api.Application.UI.Contest.Queries.GetContestPlayLog;
 using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboard;
 using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboardWidget;
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
@@ -168,6 +169,7 @@ namespace SportsData.Api.DependencyInjection
 
             // Contest Queries
             services.AddScoped<IGetContestOverviewQueryHandler, GetContestOverviewQueryHandler>();
+            services.AddScoped<IGetContestPlayLogQueryHandler, GetContestPlayLogQueryHandler>();
 
             // Season Queries
             services.AddScoped<IGetSeasonOverviewQueryHandler, GetSeasonOverviewQueryHandler>();

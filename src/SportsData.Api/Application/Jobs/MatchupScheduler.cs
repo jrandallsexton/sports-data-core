@@ -163,4 +163,5 @@ public record ScheduleGroupWeekMatchupsCommand(
     int SeasonYear,
     int SeasonWeek,
     bool IsNonStandardWeek,
-    Guid CorrelationId);
+    Guid CorrelationId,
+    bool IsRefresh = false);

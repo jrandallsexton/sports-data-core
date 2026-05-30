@@ -27,8 +27,9 @@ public class CreateFootballNcaaLeagueCommandHandler
         AppDataContext dbContext,
         IEventBus eventBus,
         IFranchiseClientFactory franchiseClientFactory,
-        IValidator<CreateFootballNcaaLeagueRequest> validator)
-        : base(logger, dbContext, eventBus, franchiseClientFactory, validator)
+        IValidator<CreateFootballNcaaLeagueRequest> validator,
+        IDateTimeProvider dateTimeProvider)
+        : base(logger, dbContext, eventBus, franchiseClientFactory, validator, dateTimeProvider)
     {
     }
 

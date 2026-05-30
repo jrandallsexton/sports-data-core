@@ -26,8 +26,9 @@ public class CreateBaseballMlbLeagueCommandHandler
         AppDataContext dbContext,
         IEventBus eventBus,
         IFranchiseClientFactory franchiseClientFactory,
-        IValidator<CreateBaseballMlbLeagueRequest> validator)
-        : base(logger, dbContext, eventBus, franchiseClientFactory, validator)
+        IValidator<CreateBaseballMlbLeagueRequest> validator,
+        IDateTimeProvider dateTimeProvider)
+        : base(logger, dbContext, eventBus, franchiseClientFactory, validator, dateTimeProvider)
     {
     }
 

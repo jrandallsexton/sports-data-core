@@ -53,19 +53,22 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
     private readonly IEventBus _eventBus;
     private readonly IFranchiseClientFactory _franchiseClientFactory;
     private readonly IValidator<TRequest> _validator;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     protected CreateLeagueCommandHandlerBase(
         ILogger logger,
         AppDataContext dbContext,
         IEventBus eventBus,
         IFranchiseClientFactory franchiseClientFactory,
-        IValidator<TRequest> validator)
+        IValidator<TRequest> validator,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dbContext = dbContext;
         _eventBus = eventBus;
         _franchiseClientFactory = franchiseClientFactory;
         _validator = validator;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     protected abstract Sport SportMode { get; }
@@ -115,12 +118,12 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
         var tiebreakerType = Enum.Parse<TiebreakerType>(request.TiebreakerType, ignoreCase: true);
         var tiebreakerTiePolicy = Enum.Parse<TiebreakerTiePolicy>(request.TiebreakerTiePolicy, ignoreCase: true);
 
-        var seasonYear = request.SeasonYear ?? DateTime.UtcNow.Year;
+        var seasonYear = request.SeasonYear ?? _dateTimeProvider.UtcNow().Year;
         var slugs = GetGroupingSlugs(request);
         var groupingIds = slugs.Count > 0
             ? await _franchiseClientFactory
                 .Resolve(SportMode)
-                .GetConferenceIdsBySlugs(seasonYear, slugs.ToList())
+                .GetConferenceIdsBySlugs(seasonYear, slugs.ToList(), cancellationToken)
             : new Dictionary<Guid, string>();
 
         var unresolved = slugs

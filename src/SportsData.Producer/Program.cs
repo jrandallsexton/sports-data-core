@@ -8,6 +8,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Consumers;
 using SportsData.Producer.Application.Documents;
+using SportsData.Producer.Application.Events;
 using SportsData.Producer.Application.Images.Handlers;
 using SportsData.Producer.Config;
 using SportsData.Producer.DependencyInjection;
@@ -121,6 +122,7 @@ public class Program
             var consumers = new List<Type>
             {
                 typeof(CompetitorScoreUpdatedConsumer),
+                typeof(ContestCompletedHandler),
                 typeof(DocumentCreatedHandler),
                 // typeof(DocumentDeadLetterConsumer), // DISABLED: Allow messages to accumulate for later replay
                 typeof(LoadTestProducerEventConsumer),

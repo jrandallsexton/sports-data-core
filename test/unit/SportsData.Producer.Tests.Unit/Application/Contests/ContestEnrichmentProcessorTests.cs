@@ -43,7 +43,36 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         await _sut.Process(command);
 
         Mock.Get(Mocker.Get<IEventBus>())
-            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenContestAlreadyFinalized_SkipsWithoutPublishing()
+    {
+        // D4 short-circuit (docs/contest-finalization-event-restructure.md):
+        // a Contest already carrying FinalizedUtc means the work is done.
+        // Re-runs (admin replay, at-least-once redelivery, event+cron overlap)
+        // must no-op rather than re-doing the work and re-publishing.
+        var (contestId, _) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        var contestToFinalize = await FootballDataContext.Contests.FindAsync(contestId);
+        contestToFinalize!.FinalizedUtc = new DateTime(2026, 3, 9, 23, 30, 0, DateTimeKind.Utc);
+        contestToFinalize.AwayScore = 21;
+        contestToFinalize.HomeScore = 28;
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+
+        await _sut.Process(command);
+
+        // No publish — short-circuit fires before the publish site.
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        // Scores untouched — verifies the short-circuit didn't run, not just that publish was suppressed.
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.AwayScore.Should().Be(21);
+        contest.HomeScore.Should().Be(28);
     }
 
     [Fact]
@@ -68,7 +97,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         await _sut.Process(command);
 
         Mock.Get(Mocker.Get<IEventBus>())
-            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -97,7 +126,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         await _sut.Process(command);
 
         Mock.Get(Mocker.Get<IEventBus>())
-            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -126,7 +155,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         await _sut.Process(command);
 
         Mock.Get(Mocker.Get<IEventBus>())
-            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -139,7 +168,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         await _sut.Process(command);
 
         Mock.Get(Mocker.Get<IEventBus>())
-            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -170,7 +199,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         await _sut.Process(command);
 
         Mock.Get(Mocker.Get<IEventBus>())
-            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     #endregion
@@ -200,7 +229,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         contest.FinalizedUtc.Should().NotBeNull();
 
         Mock.Get(Mocker.Get<IEventBus>())
-            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Once);
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -270,7 +299,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         contest.FinalizedUtc.Should().NotBeNull();
 
         Mock.Get(Mocker.Get<IEventBus>())
-            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Once);
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -305,7 +334,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         contest!.FinalizedUtc.Should().BeNull();
 
         Mock.Get(Mocker.Get<IEventBus>())
-            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -320,7 +349,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         contest!.FinalizedUtc.Should().BeNull();
 
         Mock.Get(Mocker.Get<IEventBus>())
-            .Verify(x => x.Publish(It.IsAny<ContestEnrichmentCompleted>(), It.IsAny<CancellationToken>()), Times.Never);
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     #endregion

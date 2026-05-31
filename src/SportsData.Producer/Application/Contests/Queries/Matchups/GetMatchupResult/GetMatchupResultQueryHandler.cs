@@ -7,12 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Sql;
-
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupResult;
 

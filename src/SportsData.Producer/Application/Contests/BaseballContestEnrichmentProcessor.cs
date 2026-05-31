@@ -52,6 +52,14 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
+                if (competition.Contest.FinalizedUtc != null)
+                {
+                    _logger.LogInformation(
+                        "Contest already finalized. Skipping. ContestId={ContestId}, FinalizedUtc={FinalizedUtc}",
+                        command.ContestId, competition.Contest.FinalizedUtc);
+                    return;
+                }
+
                 var awayCompetitor = competition.Competitors.FirstOrDefault(c => c.HomeAway == "away");
                 var homeCompetitor = competition.Competitors.FirstOrDefault(c => c.HomeAway == "home");
 
@@ -143,7 +151,7 @@ namespace SportsData.Producer.Application.Contests
                 }
 
                 await _bus.Publish(
-                    new ContestEnrichmentCompleted(
+                    new ContestFinalized(
                         command.ContestId,
                         null,
                         contest.Sport,

@@ -117,11 +117,49 @@ public abstract class EventCompetitionPlayDocumentProcessorBase<TDataContext, TD
             }
 
             await _dataContext.CompetitionPlays.AddAsync(play);
-            await _dataContext.SaveChangesAsync();
 
-            _logger.LogInformation(
-                "Persisted CompetitionPlay. CompetitionId={CompId}, PlayId={PlayId}, Sequence={Sequence}",
-                competition.Id, play.Id, play.SequenceNumber);
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Persisted CompetitionPlay. CompetitionId={CompId}, PlayId={PlayId}, Sequence={Sequence}",
+                    competition.Id, play.Id, play.SequenceNumber);
+            }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                // Two workers raced on the SELECT-then-INSERT for the same play
+                // (at-least-once delivery + parallel Hangfire workers fanning out
+                // play documents for the same live game). The winner's row is
+                // already canonical; the loser detaches and treats this as
+                // idempotent success.
+                //
+                // Confirm the conflict is on the expected play Id — if not, the
+                // unique violation is on an unrelated constraint and must rethrow.
+                var alreadyExists = await _dataContext.CompetitionPlays
+                    .AsNoTracking()
+                    .AnyAsync(p => p.Id == play.Id);
+
+                // Detach regardless so the failed Add can't be retried by EF.
+                _dataContext.Entry(play).State = EntityState.Detached;
+                foreach (var externalId in play.ExternalIds.ToList())
+                    _dataContext.Entry(externalId).State = EntityState.Detached;
+
+                if (!alreadyExists)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Unique constraint violation on CompetitionPlay insert but no matching row found by Id — " +
+                        "unrelated data-integrity issue. PlayId={PlayId}, CorrelationId={CorrelationId}",
+                        play.Id, command.CorrelationId);
+                    throw;
+                }
+
+                _logger.LogWarning(
+                    "Duplicate key on CompetitionPlay insert — another worker won the race. " +
+                    "Treating as idempotent success. PlayId={PlayId}, CorrelationId={CorrelationId}",
+                    play.Id, command.CorrelationId);
+            }
         }
         else
         {

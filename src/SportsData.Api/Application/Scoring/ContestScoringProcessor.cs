@@ -40,7 +40,7 @@ namespace SportsData.Api.Application.Scoring
 
         public async Task Process(ScoreContestCommand command)
         {
-            // Short-circuit: ContestCompleted may re-deliver (at-least-once delivery)
+            // Short-circuit: ContestFinalized may re-deliver (at-least-once delivery)
             // and the cron backstop may enqueue contests whose picks have already
             // been scored. Skip the Producer round-trip and per-pick iteration when
             // there is nothing left to do.

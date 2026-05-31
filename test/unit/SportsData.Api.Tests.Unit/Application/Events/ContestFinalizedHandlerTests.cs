@@ -14,20 +14,17 @@ using Xunit;
 
 namespace SportsData.Api.Tests.Unit.Application.Events
 {
-    public class ContestCompletedHandlerTests : ApiTestBase<ContestCompletedHandler>
+    public class ContestFinalizedHandlerTests : ApiTestBase<ContestFinalizedHandler>
     {
         [Fact]
         public async Task Consume_EnqueuesScoreContestCommandForContestId()
         {
             // Arrange
             var contestId = Guid.NewGuid();
-            var competitionId = Guid.NewGuid();
             var correlationId = Guid.NewGuid();
 
-            var message = new ContestCompleted(
+            var message = new ContestFinalized(
                 ContestId: contestId,
-                CompetitionId: competitionId,
-                SeasonWeekId: Guid.NewGuid(),
                 Ref: null,
                 Sport: Sport.BaseballMlb,
                 SeasonYear: 2026,
@@ -36,10 +33,10 @@ namespace SportsData.Api.Tests.Unit.Application.Events
 
             var background = Mocker.GetMock<IProvideBackgroundJobs>();
 
-            var context = Mock.Of<ConsumeContext<ContestCompleted>>(ctx =>
+            var context = Mock.Of<ConsumeContext<ContestFinalized>>(ctx =>
                 ctx.Message == message);
 
-            var sut = Mocker.CreateInstance<ContestCompletedHandler>();
+            var sut = Mocker.CreateInstance<ContestFinalizedHandler>();
 
             // Act
             await sut.Consume(context);

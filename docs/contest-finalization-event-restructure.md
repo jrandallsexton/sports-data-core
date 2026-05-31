@@ -12,7 +12,7 @@ The work API actually needs sits in `Producer.{Baseball|Football}ContestEnrichme
 
 ## Current flow (with bug)
 
-```
+```text
 Producer.CompetitionStreamerBase  (STATUS_FINAL detected; 3 publish sites)
   ├─ publish ContestCompleted                    (Direct delivery)
   └─ publish DocumentRequested(Event)            async re-source canonical Event
@@ -36,7 +36,7 @@ Producer.{Sport}ContestEnrichmentProcessor
 
 ## Proposed flow
 
-```
+```text
 Producer.CompetitionStreamerBase                 unchanged
   ├─ publish ContestCompleted
   └─ publish DocumentRequested(Event)
@@ -121,11 +121,12 @@ Total: ~10 file touches. No DB migration. No DTO/contract change.
 
 **Event rename safety.** `ContestEnrichmentCompleted` currently has zero consumers in the codebase (verified by grep). Any in-flight messages of the old type at deploy time would have no consumer to dispatch to even *before* the rename — they're already invisible. After the rename, publishers emit only `ContestFinalized`. Zero risk of dropping legitimate work.
 
-**Cross-service deploy order.** No coupling concern:
-- If Producer deploys first: starts publishing `ContestFinalized`. API still has old `ContestCompletedHandler` running. API still scores immediately on `ContestCompleted` (the bug, unchanged). New `ContestFinalized` messages accumulate in API's queue waiting for a consumer — no harm, just no scoring yet.
-- If API deploys first: starts consuming `ContestFinalized` (none yet published). Old `ContestCompletedHandler` is gone, so `ContestCompleted` no longer triggers scoring — *scoring stops entirely* until Producer deploys.
+**Cross-service deploy order matters.** Producer and API are coupled through the renamed event and the handler relocation; rollout sequence determines whether scoring stays continuous or pauses during the deploy window.
 
-**Recommendation:** Deploy **Producer first**, then API. During the gap, the bug stays in effect (current behavior); after API deploy, the new flow takes over. Avoid the API-first window where scoring goes dark.
+- **Producer first (required):** Producer starts publishing `ContestFinalized`. API still has the old `ContestCompletedHandler` running and continues to score immediately on `ContestCompleted` (the bug, unchanged). New `ContestFinalized` messages accumulate in API's queue waiting for the new consumer — no work lost. Scoring stays continuous in its buggy form until the API deploy, then the new flow takes over.
+- **API first (must avoid):** API starts consuming `ContestFinalized`, but Producer hasn't published any yet. The old `ContestCompletedHandler` is gone, so `ContestCompleted` no longer triggers scoring — *scoring pauses entirely* until Producer deploys and begins publishing `ContestFinalized`.
+
+**Required sequence:** **Producer first, then API.** Producer-first keeps scoring continuous through the deploy window; API-first creates a scoring outage that lasts until the Producer deploy completes.
 
 **Rollback:** Revert both PRs simultaneously. The system returns to the buggy-but-functional baseline. No data shape changes; rollback is purely code.
 

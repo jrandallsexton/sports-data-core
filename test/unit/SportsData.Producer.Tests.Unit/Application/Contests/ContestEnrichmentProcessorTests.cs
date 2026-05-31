@@ -53,12 +53,25 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         // a Contest already carrying FinalizedUtc means the work is done.
         // Re-runs (admin replay, at-least-once redelivery, event+cron overlap)
         // must no-op rather than re-doing the work and re-publishing.
-        var (contestId, _) = await SeedCompetitionWithStatus("STATUS_FINAL");
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
 
         var contestToFinalize = await FootballDataContext.Contests.FindAsync(contestId);
         contestToFinalize!.FinalizedUtc = new DateTime(2026, 3, 9, 23, 30, 0, DateTimeKind.Utc);
         contestToFinalize.AwayScore = 21;
         contestToFinalize.HomeScore = 28;
+        await FootballDataContext.SaveChangesAsync();
+
+        // Decoy scoring plays the enrichment processor would otherwise read
+        // (CompetitionPlays is its primary write path). Different scores than
+        // the seeded 21-28 so that if the D4 short-circuit were removed, the
+        // processor would proceed past the guard, load the last scoring play
+        // (7-14), and overwrite the contest — failing both assertions below.
+        // Without these decoys the test passes for the wrong reason: the
+        // "no plays or competitor scores → return early" guard at the bottom
+        // of the processor catches the empty case instead of D4.
+        FootballDataContext.CompetitionPlays.AddRange(
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 7, homeScore: 0, period: 1, clock: 600),
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 7, homeScore: 14, period: 4, clock: 300));
         await FootballDataContext.SaveChangesAsync();
 
         var command = new EnrichContestCommand(contestId, Guid.NewGuid());
@@ -69,7 +82,9 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         Mock.Get(Mocker.Get<IEventBus>())
             .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
 
-        // Scores untouched — verifies the short-circuit didn't run, not just that publish was suppressed.
+        // Scores untouched — verifies the short-circuit ran, not just that publish
+        // was suppressed. If D4 were removed, the decoy scoring play would overwrite
+        // these to 7-14.
         var contest = await FootballDataContext.Contests.FindAsync(contestId);
         contest!.AwayScore.Should().Be(21);
         contest.HomeScore.Should().Be(28);

@@ -4,6 +4,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
+using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Scoring
 {
@@ -19,7 +20,7 @@ namespace SportsData.Api.Application.Scoring
         private readonly IContestClientFactory _contestClientFactory;
         private readonly IEventBus _bus;
         private readonly IPickScoringService _pickScoringService;
-        private readonly ILeagueWeekScoringService _leagueWeekScoringService;
+        private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
         public ContestScoringProcessor(
             ILogger<ContestScoringProcessor> logger,
@@ -27,14 +28,14 @@ namespace SportsData.Api.Application.Scoring
             IContestClientFactory contestClientFactory,
             IEventBus bus,
             IPickScoringService pickScoringService,
-            ILeagueWeekScoringService leagueWeekScoringService)
+            IProvideBackgroundJobs backgroundJobProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _contestClientFactory = contestClientFactory;
             _bus = bus;
             _pickScoringService = pickScoringService;
-            _leagueWeekScoringService = leagueWeekScoringService;
+            _backgroundJobProvider = backgroundJobProvider;
         }
 
         public async Task Process(ScoreContestCommand command)
@@ -172,28 +173,36 @@ namespace SportsData.Api.Application.Scoring
                 leaguesNeedingScoring.Add((group.Id, matchup.SeasonYear, matchup.SeasonWeek));
             }
 
-            // After all picks are scored, trigger league week scoring
+            // Enqueue per (league, year, week) instead of calling inline. The
+            // IScoreLeagueWeeks job is DisableConcurrentExecution-decorated and
+            // runs a staleness short-circuit, so a burst of contests finalizing
+            // in the same scoring week (a) cannot race on the
+            // PickemGroupWeekResult unique index and (b) collapses into a
+            // single real rescore rather than N.
             foreach (var (leagueId, seasonYear, weekNumber) in leaguesNeedingScoring)
             {
                 try
                 {
+                    _backgroundJobProvider.Enqueue<IScoreLeagueWeeks>(
+                        p => p.Process(leagueId, seasonYear, weekNumber, command.CorrelationId));
+
                     _logger.LogInformation(
-                        "Triggering league week scoring for leagueId={LeagueId}, seasonYear={SeasonYear}, week={Week} after contest scoring",
+                        "Enqueued league-week scoring. LeagueId={LeagueId}, SeasonYear={SeasonYear}, Week={Week}, CorrelationId={CorrelationId}",
                         leagueId,
                         seasonYear,
-                        weekNumber);
-
-                    await _leagueWeekScoringService.ScoreLeagueWeekAsync(leagueId, seasonYear, weekNumber);
+                        weekNumber,
+                        command.CorrelationId);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(
                         ex,
-                        "Failed to score league week for leagueId={LeagueId}, seasonYear={SeasonYear}, week={Week}",
+                        "Failed to enqueue league-week scoring. LeagueId={LeagueId}, SeasonYear={SeasonYear}, Week={Week}",
                         leagueId,
                         seasonYear,
                         weekNumber);
-                    // Don't throw - we don't want to fail contest scoring if league scoring fails
+                    // Don't throw — the recurring LeagueWeekScoringJob backstop
+                    // catches league weeks where the tail enqueue failed.
                 }
             }
         }

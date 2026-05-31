@@ -208,6 +208,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IBootstrapLeagueMatchups, BootstrapLeagueMatchupsProcessor>();
             services.AddScoped<IScoreContests, ContestScoringProcessor>();
+            services.AddScoped<IScoreLeagueWeeks, LeagueWeekScoringProcessor>();
             
             // HATEOAS Ref Generator (external API)
             services.AddSingleton<IGenerateApiResourceRefs, ApiResourceRefGenerator>();

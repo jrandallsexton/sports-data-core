@@ -121,6 +121,15 @@ export interface Matchup {
   homeScore?: number | null;
   winnerFranchiseSeasonId?: string | null;
   spreadWinnerFranchiseSeasonId?: string | null;
+  /**
+   * Post-enrichment O/U verdict. Wire shape is messy: API DTO type is
+   * OverUnderPick ("None"/"Over"/"Under") but Producer's Contest.OverUnder
+   * uses OverUnderResult which adds Push=3 — the mapper casts an int
+   * through, so a real push can arrive as "Push", 3, or "3" depending on
+   * serializer behavior on the unnamed enum value. Consumers should match
+   * all three (see FinalScoreResult).
+   */
+  overUnderResult?: string | number | null;
   completedUtc?: string | null;
 
   // Odds

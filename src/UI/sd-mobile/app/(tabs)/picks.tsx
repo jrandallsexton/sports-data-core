@@ -133,6 +133,18 @@ export default function PicksScreen() {
     [entries, hidePicked, allPicked],
   );
 
+  // Pick-mode badge label. Mirrors web's pill in PicksPage.jsx; suppressed
+  // when pickType is missing or unrecognized so a misconfigured league
+  // doesn't render a stray "?".
+  const pickModeLabel = useMemo(() => {
+    switch (pickType) {
+      case 'StraightUp': return 'SU';
+      case 'AgainstTheSpread': return 'ATS';
+      case 'OverUnder': return 'O/U';
+      default: return null;
+    }
+  }, [pickType]);
+
   // ── Inject pick counter into this tab's header ──────────────────────────────
   useEffect(() => {
     if (total === 0) {
@@ -142,6 +154,13 @@ export default function PicksScreen() {
     navigation.setOptions({
       headerRight: () => (
         <View style={headerStyles.pill}>
+          {pickModeLabel ? (
+            <View style={[headerStyles.modeBadge, { borderColor: theme.tint }]}>
+              <Text style={[headerStyles.modeBadgeText, { color: theme.tint }]}>
+                {pickModeLabel}
+              </Text>
+            </View>
+          ) : null}
           {allPicked ? (
             <Text style={[headerStyles.pillText, { color: theme.tint }]}>
               All Picks Made
@@ -176,7 +195,7 @@ export default function PicksScreen() {
         </View>
       ),
     });
-  }, [made, total, allPicked, hidePicked, theme]);
+  }, [made, total, allPicked, hidePicked, theme, pickModeLabel]);
 
   if (meLoading) {
     return <LoadingSpinner message="Loading picks…" fullScreen />;
@@ -217,6 +236,7 @@ export default function PicksScreen() {
               pick={item.pick}
               leagueSport={matchupsResponse?.sport ?? null}
               leagueAsOfDate={matchupsResponse?.asOfDate ?? null}
+              pickType={pickType}
               onPress={() => {
                 if (!sportLeague) {
                   // Sport hasn't resolved yet (matchups response still in flight)
@@ -319,6 +339,20 @@ const headerStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 12,
+  },
+  // SU / ATS / O/U pill — accent-bordered chip preceding the picks-made
+  // counter. Mirrors the web .pick-mode-badge pattern.
+  modeBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    marginRight: 8,
+  },
+  modeBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   pillText: {
     fontSize: 15,

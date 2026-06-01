@@ -52,10 +52,23 @@ function formatRecord(wins?: number, losses?: number, confWins?: number, confLos
   return s;
 }
 
-/** Returns true when picks should be locked (5 min before kickoff, or game started/finished). */
+/** Returns true when picks should be locked (5 min before kickoff, or game started/finished).
+ *  Canonical status set mirrors GameStatus.tsx: live, paused-live, and
+ *  terminal-final variants all lock. The prior version lowercased the
+ *  status and matched against bare 'final' / 'inprogress' which never
+ *  matched the wire's STATUS_* shape — picks were only ever locked via
+ *  the time-based fallback. */
+const LOCKED_STATUSES = new Set([
+  'STATUS_IN_PROGRESS',
+  'STATUS_HALFTIME',
+  'STATUS_FINAL',
+  'STATUS_DELAYED',
+  'STATUS_RAIN_DELAY',
+  'STATUS_SUSPENDED',
+]);
+
 function isPickLocked(matchup: Matchup): boolean {
-  const status = matchup.status.toLowerCase();
-  if (status === 'inprogress' || status === 'ongoing' || status === 'halftime' || status === 'final' || status === 'completed') {
+  if (LOCKED_STATUSES.has(matchup.status)) {
     return true;
   }
   const kickoff = new Date(matchup.startDateUtc).getTime();
@@ -305,14 +318,17 @@ function PickButton({
   let teamColor = theme.text;
 
   // Web parity: scored picks render as solid green/red buttons with
-  // white-on-accent text (mirrors .pick-button.result-correct /
-  // .result-incorrect in sd-ui/src/components/matchups/MatchupCard.css).
-  // The prior pale-tint values (#F0FDF4 / #FEF2F2) barely registered
-  // against the card background in either theme.
+  // white text (mirrors .pick-button.result-correct / .result-incorrect
+  // in sd-ui/src/components/matchups/MatchupCard.css). theme.textOnAccent
+  // is NOT used here — it's #111 in dark mode (intended for the bright
+  // cyan accent) and would render as dark-on-dark-green / dark-on-dark-red
+  // for the pick result colors. White holds up against both light-mode
+  // (#1b5e20 / #b71c1c) and dark-mode (#28a745 / #dc3545) palettes.
+  const ON_RESULT_FG = '#ffffff';
   if (isSelected && pickResult === 'correct') {
-    borderColor = theme.pickCorrect; bgColor = theme.pickCorrect; teamColor = theme.textOnAccent;
+    borderColor = theme.pickCorrect; bgColor = theme.pickCorrect; teamColor = ON_RESULT_FG;
   } else if (isSelected && pickResult === 'incorrect') {
-    borderColor = theme.pickIncorrect; bgColor = theme.pickIncorrect; teamColor = theme.textOnAccent;
+    borderColor = theme.pickIncorrect; bgColor = theme.pickIncorrect; teamColor = ON_RESULT_FG;
   } else if (isSelected) {
     borderColor = Colors.brand.navy; bgColor = '#EEF2FF'; teamColor = Colors.brand.navy;
   }
@@ -324,15 +340,16 @@ function PickButton({
       disabled={isLocked}
       activeOpacity={isLocked ? 1 : 0.7}
     >
-      {/* ✓ when selected and not incorrect — uses textOnAccent on the
-          solid green correct-bg, navy on the pale pending-bg. */}
+      {/* ✓ when selected and not incorrect — white on the solid green
+          correct-bg, navy on the pale pending-bg. White is hardcoded
+          (not theme.textOnAccent) so it stays legible against the dark
+          green / red pickCorrect-pickIncorrect palette in both themes. */}
       {isSelected && pickResult !== 'incorrect' && (
-        <Text style={[styles.pickIcon, { color: pickResult === 'correct' ? theme.textOnAccent : Colors.brand.navy }]}>✓</Text>
+        <Text style={[styles.pickIcon, { color: pickResult === 'correct' ? '#ffffff' : Colors.brand.navy }]}>✓</Text>
       )}
-      {/* ✗ when selected + incorrect — white-on-red for legibility on the
-          solid pickIncorrect bg. */}
+      {/* ✗ when selected + incorrect — white on the solid red bg. */}
       {isSelected && pickResult === 'incorrect' && (
-        <Text style={[styles.pickIcon, { color: theme.textOnAccent }]}>✗</Text>
+        <Text style={[styles.pickIcon, { color: '#ffffff' }]}>✗</Text>
       )}
       {/* 🔒 when not selected + locked + no result (missed / pre-game locked) */}
       {!isSelected && isLocked && pickResult === null && (
@@ -513,8 +530,13 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
     };
   }, [matchup, live]);
 
-  const status = enrichedMatchup.status.toLowerCase();
-  const isFinal = status === 'final' || status === 'completed';
+  // Use the canonical ESPN status name directly. The prior version
+  // lowercased and compared against bare 'final' / 'completed', which
+  // never matched the wire's STATUS_FINAL shape — so isFinal was always
+  // false and the entire scored-card visual pipeline (PickButton
+  // green/red, team-row indicator ✓/✗, card border tint, winning-team
+  // score color) silently no-op'd.
+  const isFinal = enrichedMatchup.status === 'STATUS_FINAL';
 
   // Optimistic local pick — shows selection instantly before server confirms
   const [optimisticFranchiseId, setOptimisticFranchiseId] = useState<string | null>(null);

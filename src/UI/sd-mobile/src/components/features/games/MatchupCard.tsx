@@ -121,13 +121,22 @@ function TeamRow({
   const confLosses = isHome ? matchup.homeConferenceLosses : matchup.awayConferenceLosses;
   const probablePitcher = isHome ? matchup.homeProbablePitcher : matchup.awayProbablePitcher;
 
-  const isActive = !isFinal || isWinning;
+  // On a finalized tie, neither side has isWinning true (parent uses
+  // strict >); without the tie branch both team names would mute.
+  const isTie =
+    matchup.awayScore != null &&
+    matchup.homeScore != null &&
+    matchup.awayScore === matchup.homeScore;
+  const isActive = !isFinal || isWinning || isTie;
   const record = formatRecord(wins, losses, confWins, confLosses);
 
-  // Pick indicator styling
+  // Pick indicator styling — uses the same theme.pickCorrect /
+  // theme.pickIncorrect tokens as PickButton and the card border, so all
+  // three result cues stay in lockstep across themes and match web's
+  // --pick-correct / --pick-incorrect palette.
   let pickIndicatorColor: string | null = null;
   if (isPicked && isFinal) {
-    pickIndicatorColor = isPickCorrect ? '#16A34A' : '#DC2626';
+    pickIndicatorColor = isPickCorrect ? theme.pickCorrect : theme.pickIncorrect;
   } else if (isPicked) {
     pickIndicatorColor = theme.tint;
   }
@@ -643,10 +652,21 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
     }
   };
 
+  // Strict > on each side so a true tie (rare in NFL, impossible in MLB)
+  // leaves BOTH sides' isWinning false — TeamRow's tie-aware isActive
+  // then keeps both team names at full text color and skips the
+  // winner-only tint / fontSize bump. Prior >= treated home as the
+  // winner on a tie, and the away row received !homeIsWinning which
+  // flipped the tie into "away wins" for downstream styling.
   const homeIsWinning =
     enrichedMatchup.homeScore != null &&
     enrichedMatchup.awayScore != null &&
-    enrichedMatchup.homeScore >= enrichedMatchup.awayScore;
+    enrichedMatchup.homeScore > enrichedMatchup.awayScore;
+
+  const awayIsWinning =
+    enrichedMatchup.awayScore != null &&
+    enrichedMatchup.homeScore != null &&
+    enrichedMatchup.awayScore > enrichedMatchup.homeScore;
 
   // Use server pick if available, otherwise optimistic
   const effectiveFranchiseId = pick?.franchiseId ?? optimisticFranchiseId;
@@ -664,13 +684,17 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   // `usePickLocking` hook's `userDto.isReadOnly` consultation.
   const locked = isPickLocked(enrichedMatchup) || !!me?.isReadOnly;
 
-  // Card border color based on pick result (matches web)
+  // Card border color based on pick result — same theme tokens as
+  // PickButton bg and the team-row indicator, so all three result cues
+  // share one palette (mirrors web .matchup-card.pick-correct /
+  // .pick-incorrect / .pick-no-submission borders using --pick-correct
+  // / --pick-incorrect).
   let cardBorderColor = theme.border;
   if (isFinal && hasPick) {
-    if (isPickCorrect === true) cardBorderColor = '#16A34A';
-    else if (isPickCorrect === false) cardBorderColor = '#DC2626';
+    if (isPickCorrect === true) cardBorderColor = theme.pickCorrect;
+    else if (isPickCorrect === false) cardBorderColor = theme.pickIncorrect;
   } else if (isFinal && !hasPick) {
-    cardBorderColor = '#DC2626'; // missed pick
+    cardBorderColor = theme.pickIncorrect; // missed pick
   }
 
   const handlePick = (choice: PickChoice, franchiseSeasonId: string) => {
@@ -717,7 +741,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
           <TeamRow
             matchup={enrichedMatchup}
             side="away"
-            isWinning={!homeIsWinning}
+            isWinning={awayIsWinning}
             isPicked={pickedAway}
             isPickCorrect={isPickCorrect}
             isFinal={isFinal}

@@ -688,9 +688,12 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         isFinal && (isPickCorrect === false || !hasPick) && styles.cardIncorrect,
       ]}
     >
-      {/* Headline banner */}
+      {/* Headline banner — theme-aware accent background matches web's
+          .matchup-headline { background-color: var(--accent); } so the
+          marquee tag (bowl name, conf championship, series-leader
+          summary) reads as a branded chip rather than a static navy bar. */}
       {matchup.headLine != null && matchup.headLine !== '' && (
-        <View style={styles.headline}>
+        <View style={[styles.headline, { backgroundColor: theme.tint }]}>
           <Text style={styles.headlineText} numberOfLines={1}>{matchup.headLine}</Text>
         </View>
       )}
@@ -835,9 +838,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
   },
 
-  // Headline
+  // Headline — backgroundColor lives at the call site so it can pick
+  // up theme.tint (accent). See web parity comment above the <View />.
   headline: {
-    backgroundColor: Colors.brand.navy,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },

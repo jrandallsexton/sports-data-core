@@ -688,13 +688,20 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         isFinal && (isPickCorrect === false || !hasPick) && styles.cardIncorrect,
       ]}
     >
-      {/* Headline banner — theme-aware accent background matches web's
-          .matchup-headline { background-color: var(--accent); } so the
-          marquee tag (bowl name, conf championship, series-leader
-          summary) reads as a branded chip rather than a static navy bar. */}
+      {/* Headline banner — theme-aware accent background + text-on-accent
+          foreground match web's .matchup-headline { background-color:
+          var(--accent); color: var(--text-on-accent); }. Light → white on
+          blue, dark → dark on cyan. The marquee tag (bowl name, conf
+          championship, series-leader summary) reads as a branded chip
+          rather than a static navy bar. */}
       {matchup.headLine != null && matchup.headLine !== '' && (
         <View style={[styles.headline, { backgroundColor: theme.tint }]}>
-          <Text style={styles.headlineText} numberOfLines={1}>{matchup.headLine}</Text>
+          <Text
+            style={[styles.headlineText, { color: theme.textOnAccent }]}
+            numberOfLines={1}
+          >
+            {matchup.headLine}
+          </Text>
         </View>
       )}
 
@@ -845,7 +852,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   headlineText: {
-    color: '#fff',
+    // color lives at the call site so it picks up theme.textOnAccent.
     fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',

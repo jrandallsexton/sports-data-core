@@ -304,10 +304,15 @@ function PickButton({
   let bgColor = theme.background;
   let teamColor = theme.text;
 
+  // Web parity: scored picks render as solid green/red buttons with
+  // white-on-accent text (mirrors .pick-button.result-correct /
+  // .result-incorrect in sd-ui/src/components/matchups/MatchupCard.css).
+  // The prior pale-tint values (#F0FDF4 / #FEF2F2) barely registered
+  // against the card background in either theme.
   if (isSelected && pickResult === 'correct') {
-    borderColor = '#16A34A'; bgColor = '#F0FDF4'; teamColor = '#16A34A';
+    borderColor = theme.pickCorrect; bgColor = theme.pickCorrect; teamColor = theme.textOnAccent;
   } else if (isSelected && pickResult === 'incorrect') {
-    borderColor = '#DC2626'; bgColor = '#FEF2F2'; teamColor = '#DC2626';
+    borderColor = theme.pickIncorrect; bgColor = theme.pickIncorrect; teamColor = theme.textOnAccent;
   } else if (isSelected) {
     borderColor = Colors.brand.navy; bgColor = '#EEF2FF'; teamColor = Colors.brand.navy;
   }
@@ -319,13 +324,15 @@ function PickButton({
       disabled={isLocked}
       activeOpacity={isLocked ? 1 : 0.7}
     >
-      {/* ✓ when selected and not incorrect */}
+      {/* ✓ when selected and not incorrect — uses textOnAccent on the
+          solid green correct-bg, navy on the pale pending-bg. */}
       {isSelected && pickResult !== 'incorrect' && (
-        <Text style={[styles.pickIcon, { color: pickResult === 'correct' ? '#16A34A' : Colors.brand.navy }]}>✓</Text>
+        <Text style={[styles.pickIcon, { color: pickResult === 'correct' ? theme.textOnAccent : Colors.brand.navy }]}>✓</Text>
       )}
-      {/* ✗ when selected + incorrect */}
+      {/* ✗ when selected + incorrect — white-on-red for legibility on the
+          solid pickIncorrect bg. */}
       {isSelected && pickResult === 'incorrect' && (
-        <Text style={[styles.pickIcon, { color: '#DC2626' }]}>✗</Text>
+        <Text style={[styles.pickIcon, { color: theme.textOnAccent }]}>✗</Text>
       )}
       {/* 🔒 when not selected + locked + no result (missed / pre-game locked) */}
       {!isSelected && isLocked && pickResult === null && (

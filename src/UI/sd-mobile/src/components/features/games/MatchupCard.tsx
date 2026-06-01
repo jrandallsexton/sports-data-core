@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
-import type { Matchup, UserPick, PickChoice, PreviewResponse, TeamComparisonData } from '@/src/types/models';
+import type { Matchup, UserPick, PickChoice, PreviewResponse, TeamComparisonData, PickType } from '@/src/types/models';
 import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
 import { useContestUpdate } from '@/src/stores/contestUpdatesStore';
@@ -440,9 +440,16 @@ export interface MatchupCardProps {
    * Week-1 reuse both behave correctly.
    */
   leagueAsOfDate?: string | null;
+  /**
+   * League pick mode (StraightUp / AgainstTheSpread / OverUnder), surfaced
+   * via LeagueWeekMatchupsDto.pickType. Threaded to GameStatus for the
+   * STATUS_FINAL quick-scan indicator (inline ✓ for SU, "covered" / Over /
+   * Under / Push row for ATS / O/U). Optional — falls back to SU visuals.
+   */
+  pickType?: PickType | null;
 }
 
-export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seasonYear, leagueSport, leagueAsOfDate }: MatchupCardProps) {
+export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seasonYear, leagueSport, leagueAsOfDate, pickType }: MatchupCardProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
@@ -740,6 +747,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         matchup={enrichedMatchup}
         leagueSport={leagueSport}
         onPressGameDetail={onPress}
+        pickType={pickType}
       />
 
       {/* Inline pick buttons */}

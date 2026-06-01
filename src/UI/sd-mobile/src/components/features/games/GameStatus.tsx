@@ -3,9 +3,10 @@ import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
-import type { Matchup } from '@/src/types/models';
+import type { Matchup, PickType } from '@/src/types/models';
 import { formatToUserTime } from '@/src/utils/timeUtils';
 import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
+import { FinalScoreResult } from './FinalScoreResult';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -21,6 +22,15 @@ interface GameStatusProps {
   leagueSport?: string | null;
   /** If provided, called when the user taps on a FINAL/completed game row (preserves full nav context from caller). */
   onPressGameDetail?: () => void;
+  /**
+   * League pick mode. Drives the STATUS_FINAL quick-scan indicator:
+   *   StraightUp        → inline ✓ next to the winning team's short
+   *   AgainstTheSpread  → row below score reading "✓ {team} covered" or "Push"
+   *   OverUnder         → row below score reading "✓ Over/Under {N}" or "Push"
+   * Null / undefined falls back to StraightUp visuals so the indicator
+   * doesn't silently disappear if a caller hasn't threaded it through.
+   */
+  pickType?: PickType | null;
 }
 
 // Mid-game paused states. Game is technically still live (score + period/
@@ -52,7 +62,7 @@ const TERMINAL_STATUSES = new Set(['STATUS_POSTPONED', 'STATUS_CANCELED']);
  *                            gameTime + venue.
  *   Other                  – raw statusDescription (defensive fallback)
  */
-export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStatusProps) {
+export function GameStatus({ matchup, leagueSport, onPressGameDetail, pickType }: GameStatusProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const userTz = useUserTimeZone();
@@ -126,12 +136,47 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail }: GameStat
     const awayScore = matchup.awayScore ?? 0;
     const homeScore = matchup.homeScore ?? 0;
 
+    // SU quick-scan: a checkmark on the OUTSIDE of the winning team's
+    // short (left of away or right of home). Skipped for ATS / O/U
+    // leagues — those render their own indicator on a row below.
+    // Skipped pre-enrichment (winnerFranchiseSeasonId null) and on a
+    // true tie. Unknown / null pickType defaults to SU treatment so
+    // callers that don't yet thread the prop through don't regress.
+    const isSU = !pickType || pickType === 'StraightUp';
+    const awayWonSU =
+      isSU &&
+      matchup.winnerFranchiseSeasonId != null &&
+      matchup.winnerFranchiseSeasonId === matchup.awayFranchiseSeasonId;
+    const homeWonSU =
+      isSU &&
+      matchup.winnerFranchiseSeasonId != null &&
+      matchup.winnerFranchiseSeasonId === matchup.homeFranchiseSeasonId;
+
     return (
       <View style={styles.statusSection}>
         <Text style={[styles.statusLabel, { color: theme.textMuted }]}>FINAL</Text>
-        <Text style={[styles.scoreText, { color: theme.text }]}>
-          {matchup.awayShort} {awayScore} – {homeScore} {matchup.homeShort}
-        </Text>
+        <View style={styles.finalScoreRow}>
+          {awayWonSU ? (
+            <Text style={[styles.suCheck, { color: '#16A34A' }]}>✓</Text>
+          ) : null}
+          <Text style={[styles.scoreText, { color: theme.text }]}>
+            {matchup.awayShort} {awayScore} – {homeScore} {matchup.homeShort}
+          </Text>
+          {homeWonSU ? (
+            <Text style={[styles.suCheck, { color: '#16A34A' }]}>✓</Text>
+          ) : null}
+        </View>
+        <FinalScoreResult
+          pickType={pickType}
+          awayFranchiseSeasonId={matchup.awayFranchiseSeasonId}
+          homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
+          awayShort={matchup.awayShort}
+          homeShort={matchup.homeShort}
+          winnerFranchiseSeasonId={matchup.winnerFranchiseSeasonId}
+          spreadWinnerFranchiseSeasonId={matchup.spreadWinnerFranchiseSeasonId}
+          overUnderResult={matchup.overUnderResult as string | number | null | undefined}
+          overUnderCurrent={matchup.overUnderCurrent}
+        />
         <OverviewLink label="Box Score" onPress={onPressGameDetail} theme={theme} />
       </View>
     );
@@ -515,6 +560,19 @@ const styles = StyleSheet.create({
   scoreText: {
     fontSize: 15,
     fontWeight: '700',
+  },
+  // STATUS_FINAL row: flex container for the score text plus the
+  // optional SU checkmark that hugs the outside of the winning team's
+  // short. Gap supplies breathing room between the score and the check
+  // without text concatenation.
+  finalScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  suCheck: {
+    fontSize: 15,
+    fontWeight: '800',
   },
   possessionIcon: {
     fontSize: 14,

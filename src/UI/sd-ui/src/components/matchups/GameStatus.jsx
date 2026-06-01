@@ -149,6 +149,7 @@ function GameStatus({
             homeFranchiseSeasonId={homeFranchiseSeasonId}
             awayShort={awayShort}
             homeShort={homeShort}
+            winnerFranchiseSeasonId={winnerFranchiseSeasonId}
             spreadWinnerFranchiseSeasonId={spreadWinnerFranchiseSeasonId}
             overUnderResult={overUnderResult}
             overUnderCurrent={overUnderCurrent}

@@ -379,7 +379,6 @@
 .final-score-result-push {
   color: var(--text-muted);
   font-style: italic;
-  text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 

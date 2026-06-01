@@ -342,6 +342,47 @@
   gap: 8px;
 }
 
+/* SU quick-scan indicator: a checkmark hugging the winning team's
+   short directly in the score line. .score-display-team groups the
+   team short + (optional) check so flex gap stays between team groups
+   and score numbers, not between the short and its own check. */
+.score-display-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.final-score-inline-check {
+  color: var(--pick-correct);
+  font-size: 0.9rem;
+}
+
+/* ATS / O/U quick-scan indicator: separate row below the final score.
+   .final-score is a flex column so this lands centered beneath the
+   score line. See FinalScoreResult.jsx. */
+.final-score-result {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+
+.final-score-result-icon {
+  color: var(--pick-correct);
+  font-size: 0.85rem;
+}
+
+.final-score-result-push {
+  color: var(--text-muted);
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .possession-indicator {
   font-size: 0.9rem;
   animation: bounce-football 1s ease-in-out infinite;

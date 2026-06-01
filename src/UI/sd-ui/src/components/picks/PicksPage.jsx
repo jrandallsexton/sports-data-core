@@ -486,6 +486,23 @@ function PicksPage() {
             seasonWeeks={seasonWeeks}
           />
           <div className="pick-status-toggle-row">
+            {(() => {
+              // Pick-mode badge. PickType enum on the wire serializes as a
+              // string ("StraightUp" / "AgainstTheSpread" / "OverUnder").
+              // Anything else (None / unknown) suppresses the badge so a
+              // misconfigured league doesn't render a stray "?".
+              const label = {
+                StraightUp: { short: "SU", full: "Straight Up" },
+                AgainstTheSpread: { short: "ATS", full: "Against The Spread" },
+                OverUnder: { short: "O/U", full: "Over / Under" },
+              }[pickType];
+              if (!label) return null;
+              return (
+                <span className="pick-mode-badge" title={label.full}>
+                  {label.short}
+                </span>
+              );
+            })()}
             <span className="pick-status">
               {allPicked
                 ? "All Picks Made"

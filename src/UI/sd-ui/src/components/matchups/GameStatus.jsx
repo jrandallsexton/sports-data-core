@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { Webcam } from "lucide-react";
+import { FaCheck } from "react-icons/fa";
 import { contestLink } from '../../utils/sportLinks';
 import FootballGameStatusInProgress from './FootballGameStatusInProgress';
 import BaseballGameStatusInProgress from './BaseballGameStatusInProgress';
+import FinalScoreResult from './FinalScoreResult';
 
 // Mid-game paused states. Game is technically still live (score + period/
 // inning are meaningful), but no play is happening. Render the existing
@@ -85,13 +87,43 @@ function GameStatus({
   sport,
   league,
   streamScheduledTimeUtc,
+  // Pick-mode-aware result indicator inputs. pickType drives which
+  // outcome we summarize ("X covered" / "Over 8.5 ✓" / "✓ NYY"); the
+  // *FranchiseSeasonId fields come off the canonical Contest row and
+  // are null until enrichment runs (PR #384). Indicator renders nothing
+  // in that pre-enrichment window — score still shows.
+  pickType,
+  winnerFranchiseSeasonId,
+  spreadWinnerFranchiseSeasonId,
+  overUnderResult,
+  overUnderCurrent,
 }) {
   if (status === 'STATUS_FINAL') {
+    // SU's quick-scan indicator is just a checkmark hugging the
+    // winning team's short directly in the score line — no duplicated
+    // team name. ATS / O/U handle their indicators on a new row below
+    // via FinalScoreResult, since their result ("BOS covered", "Over
+    // 8.5") doesn't map cleanly to a single side of the score.
+    // Unknown / null pickType defaults to SU treatment.
+    const isSU = !pickType || pickType === 'StraightUp';
+    const awayWonSU = isSU && winnerFranchiseSeasonId &&
+      winnerFranchiseSeasonId === awayFranchiseSeasonId;
+    const homeWonSU = isSU && winnerFranchiseSeasonId &&
+      winnerFranchiseSeasonId === homeFranchiseSeasonId;
+
     const scoreContent = (
       <>
         <span className="result-label">FINAL:</span>
         <span className="score-display">
-          {awayShort} {awayScore} - {homeScore} {homeShort}
+          <span className="score-display-team">
+            {awayWonSU && <FaCheck className="final-score-inline-check" />}
+            {awayShort}
+          </span>
+          {awayScore} - {homeScore}
+          <span className="score-display-team">
+            {homeShort}
+            {homeWonSU && <FaCheck className="final-score-inline-check" />}
+          </span>
         </span>
       </>
     );
@@ -111,6 +143,16 @@ function GameStatus({
           ) : (
             scoreContent
           )}
+          <FinalScoreResult
+            pickType={pickType}
+            awayFranchiseSeasonId={awayFranchiseSeasonId}
+            homeFranchiseSeasonId={homeFranchiseSeasonId}
+            awayShort={awayShort}
+            homeShort={homeShort}
+            spreadWinnerFranchiseSeasonId={spreadWinnerFranchiseSeasonId}
+            overUnderResult={overUnderResult}
+            overUnderCurrent={overUnderCurrent}
+          />
         </div>
       </div>
     );

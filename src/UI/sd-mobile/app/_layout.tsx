@@ -1,3 +1,9 @@
+// Suppress known third-party dev-console deprecations BEFORE Sentry's
+// console instrumentation hooks console.warn — otherwise each filtered
+// warning still becomes a Sentry breadcrumb. See the file's header
+// comment for the suppression list and removal triggers.
+import '@/src/lib/silenceKnownWarnings';
+
 // Sentry MUST initialize before any other module that could throw at
 // import time (Firebase, React Query, navigation). Side-effect import
 // kept on its own line, above all other imports, for that reason.

@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme, useThemeMode, type ThemeMode } from '@/src/lib/theme/ThemeContext';
 import { useTextSize, type TextSize } from '@/src/lib/textSize/TextSizeContext';
@@ -111,6 +112,7 @@ export default function ProfileScreen() {
   const { mode, setMode } = useThemeMode();
   const { size: textSize, setSize: setTextSize } = useTextSize();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const deviceTz = useMemo(() => detectDeviceTimezone(), []);
   const [tzPickerOpen, setTzPickerOpen] = useState(false);
@@ -234,6 +236,19 @@ export default function ProfileScreen() {
         <SettingsRow label="Notifications" onPress={() => {}} />
         <SettingsRow label="Sign Out" onPress={handleSignOut} destructive />
       </View>
+
+      {/* Developer — admin-only diagnostics. Gated on isAdmin so it
+          doesn't leak into the regular user surface; remove the gate
+          once the push-token retrieval becomes a normal user setting. */}
+      {me?.isAdmin ? (
+        <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Developer</Text>
+          <SettingsRow
+            label="Push Token (FCM)"
+            onPress={() => router.push('/admin/push-token')}
+          />
+        </View>
+      ) : null}
 
       <View style={{ height: 40 }} />
 

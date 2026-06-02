@@ -14,7 +14,8 @@ import { useFonts } from 'expo-font';
 import { Poppins_400Regular, Poppins_700Bold_Italic } from '@expo-google-fonts/poppins';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import * as Notifications from 'expo-notifications';
+import { useEffect, useRef } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react-native';
 import 'react-native-reanimated';
@@ -35,6 +36,21 @@ export const unstable_settings = {
 };
 
 SplashScreen.preventAutoHideAsync();
+
+// Notification handler — controls what happens when a push arrives
+// while the app is in the foreground. iOS does not show foreground
+// notifications by default; this config opts in to a banner + sound
+// so developer testing can see notifications fire without having to
+// background the app first. Set at module level so it's registered
+// before any push could arrive.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 /**
  * Watches auth state and redirects between (auth) and (tabs) groups.
@@ -85,6 +101,59 @@ function RootLayout() {
     if (error) throw error;
   }, [error]);
 
+  // Push notification receive + tap diagnostics. v1 just logs — actual
+  // deep-link routing (notification → /(tabs)/picks?leagueId=…&contestId=…)
+  // lands in a follow-up once the test-push round-trip is proven.
+  //
+  // Cold-start coverage: useLastNotificationResponse resolves to the
+  // response that launched the app when the user tapped a notification
+  // from a killed state. addNotificationResponseReceivedListener can
+  // race the iOS launch-time dispatch (the tap fires before the JS
+  // listener mounts) and silently drop that response, so we explicitly
+  // handle the launching response via the hook. handledTapIdsRef dedupes
+  // against any later listener delivery of the same response so the tap
+  // handler doesn't run twice for a single user action.
+  const lastResponse = Notifications.useLastNotificationResponse();
+  const handledTapIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    // Privacy: log only non-content fields. console.log feeds Sentry
+    // breadcrumbs through Sentry's console integration, so anything we
+    // emit here ships with crash reports. notification title / body /
+    // arbitrary data payload may carry user-specific content (future
+    // LeagueInvite / CommissionerAnnouncement kinds, contestId /
+    // leagueId UUIDs tied to the recipient). The notification
+    // identifier is a system-generated UUID — anonymous on its own —
+    // and "kind" is a category label from our wire contract, not user
+    // state. Keep both for correlation, drop the rest.
+    const handleTap = (response: Notifications.NotificationResponse) => {
+      const id = response.notification.request.identifier;
+      if (handledTapIdsRef.current.has(id)) return;
+      handledTapIdsRef.current.add(id);
+      console.log('[push] tapped', {
+        id,
+        kind: response.notification.request.content.data?.kind,
+        actionIdentifier: response.actionIdentifier,
+      });
+    };
+
+    if (lastResponse) {
+      handleTap(lastResponse);
+    }
+
+    const receivedSub = Notifications.addNotificationReceivedListener((notification) => {
+      console.log('[push] received', {
+        id: notification.request.identifier,
+        kind: notification.request.content.data?.kind,
+      });
+    });
+    const responseSub = Notifications.addNotificationResponseReceivedListener(handleTap);
+    return () => {
+      receivedSub.remove();
+      responseSub.remove();
+    };
+  }, [lastResponse]);
+
   // Splash stays up until fonts load; the ThemeProvider's hydration state
   // then takes over (see RootLayoutNav) so users never see a system-resolved
   // flash before their persisted preference applies.
@@ -125,6 +194,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="create-league" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="admin/push-token" options={{ title: 'Push Token' }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <AuthGuard />

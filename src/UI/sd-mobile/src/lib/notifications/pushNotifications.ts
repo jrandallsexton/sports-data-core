@@ -61,8 +61,14 @@ export async function requestNotificationPermission(): Promise<PermissionStatus>
  * need the user to grant permission first.
  */
 export async function getFcmToken(): Promise<FcmTokenResult> {
+  // Declared outside the try so the catch can return the actual
+  // resolved permission state — without this, a failure in
+  // registerDeviceForRemoteMessages / getToken (which only run AFTER
+  // permission resolves) would mask a granted permission as
+  // "undetermined" in the UI.
+  let permissionStatus: PermissionStatus = 'undetermined';
   try {
-    const permissionStatus = await requestNotificationPermission();
+    permissionStatus = await requestNotificationPermission();
     if (permissionStatus !== 'granted') {
       return { token: null, permissionStatus, error: null };
     }
@@ -82,6 +88,6 @@ export async function getFcmToken(): Promise<FcmTokenResult> {
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    return { token: null, permissionStatus: 'undetermined', error: message };
+    return { token: null, permissionStatus, error: message };
   }
 }

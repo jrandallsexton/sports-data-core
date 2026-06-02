@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
+import { useCurrentUser } from '@/src/hooks/useStandings';
 import {
   getFcmToken,
   type FcmTokenResult,
@@ -22,6 +23,15 @@ export default function PushTokenScreen() {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
+  // Defense-in-depth admin gate. The profile menu link is gated on
+  // me.isAdmin, but /admin/push-token is reachable by direct URL
+  // navigation; without this check a non-admin who guessed the path
+  // would trigger the iOS notification-permission prompt and see their
+  // own FCM token. Low-impact in isolation, but the right convention
+  // for anything under the admin/ route.
+  const { data: me, isLoading: meLoading } = useCurrentUser();
+  const isAdmin = me?.isAdmin === true;
+
   const [result, setResult] = useState<FcmTokenResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
@@ -38,8 +48,9 @@ export default function PushTokenScreen() {
   }, []);
 
   useEffect(() => {
+    if (!isAdmin) return;
     fetchToken();
-  }, [fetchToken]);
+  }, [isAdmin, fetchToken]);
 
   const handleCopy = async () => {
     if (!result?.token) return;
@@ -47,6 +58,31 @@ export default function PushTokenScreen() {
     setCopyFeedback('Copied to clipboard.');
     setTimeout(() => setCopyFeedback(null), 1500);
   };
+
+  if (meLoading) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Push Token (FCM)', headerBackTitle: 'Back' }} />
+        <View style={[styles.container, styles.gateContent, { backgroundColor: theme.background }]}>
+          <Text style={{ color: theme.textMuted }}>Loading…</Text>
+        </View>
+      </>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Push Token (FCM)', headerBackTitle: 'Back' }} />
+        <View style={[styles.container, styles.gateContent, { backgroundColor: theme.background }]}>
+          <Text style={[styles.heading, { color: theme.text }]}>Unauthorized</Text>
+          <Text style={[styles.subhead, { color: theme.textMuted, textAlign: 'center' }]}>
+            This screen is restricted to admin users.
+          </Text>
+        </View>
+      </>
+    );
+  }
 
   return (
     <>
@@ -169,6 +205,13 @@ export default function PushTokenScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 20, gap: 14 },
+  gateContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    gap: 8,
+  },
   heading: { fontSize: 22, fontWeight: '800' },
   subhead: { fontSize: 13, lineHeight: 18 },
   statusRow: {

@@ -36,14 +36,30 @@ const SUPPRESSED_WARNING_FRAGMENTS = [
   '"shadow*" style props are deprecated',
 ];
 
-const originalWarn = console.warn;
-console.warn = (...args: unknown[]) => {
-  const first = args[0];
-  if (
-    typeof first === 'string' &&
-    SUPPRESSED_WARNING_FRAGMENTS.some((fragment) => first.includes(fragment))
-  ) {
-    return;
-  }
-  originalWarn(...args);
-};
+// Dev-only. The deprecation warnings we're filtering are emitted by
+// react-native-web's warnOnce, which itself only fires under __DEV__,
+// so the shim accomplishes nothing in production builds. Skipping the
+// patch in prod avoids the per-call overhead and eliminates the
+// (small) risk of silently swallowing a real production warn that
+// happens to overlap a suppressed fragment.
+if (__DEV__) {
+  const originalWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    // Scan every string-typed arg, not just args[0]. RN-Web's warnOnce
+    // (the source of our current suppressed warnings) passes the
+    // message as a single string, but React's own warnings use the
+    // format-string pattern console.warn('Warning: %s', detail) — so
+    // a future suppression target's substantive text could live at
+    // args[1+]. Scanning all string args keeps the filter robust
+    // without affecting current cases.
+    const matchesSuppressed = args.some(
+      (arg) =>
+        typeof arg === 'string' &&
+        SUPPRESSED_WARNING_FRAGMENTS.some((fragment) => arg.includes(fragment)),
+    );
+    if (matchesSuppressed) {
+      return;
+    }
+    originalWarn(...args);
+  };
+}

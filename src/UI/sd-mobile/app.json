@@ -19,7 +19,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "22"
+      "buildNumber": "23"
     },
     "android": {
       "package": "com.sportdeets.mobile",
@@ -54,7 +54,11 @@
           "ios": {
             "useFrameworks": "static",
             "extraPods": [
-              { "name": "React-Core", "modular_headers": true }
+              {
+                "name": "React-Core",
+                "path": "../node_modules/react-native/",
+                "modular_headers": true
+              }
             ]
           }
         }

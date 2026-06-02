@@ -20,6 +20,20 @@ const SUPPRESSED_WARNING_FRAGMENTS = [
   // warnings. Remove this entry once @react-navigation/elements drops
   // the prop form.
   'props.pointerEvents is deprecated',
+
+  // react-native-web 0.19+ deprecated shadow* style props
+  // (shadowColor, shadowOffset, shadowOpacity, shadowRadius) in favor
+  // of boxShadow on web. shadow* remains the correct styling on
+  // native iOS/Android — RN-Web translates internally and just emits
+  // the deprecation, so functionality is unaffected. Fires from both
+  // @react-navigation/elements (Header / HeaderBackground) and from
+  // our own shadowed surfaces (MatchupCard, Card, sign-in screen).
+  // Rewriting our styles to Platform.select between shadow* and
+  // boxShadow would scatter conditional logic for a purely cosmetic
+  // web warning, so we silence at the source. Remove this entry once
+  // either upstream stops emitting the warning or React Native's
+  // shadow primitive unifies with web's boxShadow.
+  '"shadow*" style props are deprecated',
 ];
 
 const originalWarn = console.warn;

@@ -1,0 +1,29 @@
+info:
+  name: notifications-test-push
+  type: http
+  seq: 99
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/Admin/notifications/test-push"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "token": "REPLACE_ME",
+        "title": "sportDeets test push",
+        "body": "If you can read this, the pipeline works.",
+        "data": {
+          "deepLink": "sportdeets://picks"
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

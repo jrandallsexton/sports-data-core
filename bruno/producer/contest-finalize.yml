@@ -1,0 +1,26 @@
+info:
+  name: contest-finalize
+  type: http
+  seq: 15
+
+http:
+  method: POST
+  url: "{{baseUrlProducer}}/api/contests/finalize"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "sport": 3,
+        "seasonYear": 2000,
+        "reprocessEnriched": true,
+        "correlationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -3,8 +3,12 @@ import { initializeApp } from "firebase/app";
 import { getAuth, setPersistence, browserLocalPersistence } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBRkQwtEl3jeqoYKBN-hPv8VxTjUycNJgM",
-  authDomain: "sportdeets-dev.firebaseapp.com",
+  apiKey: "AIzaSyD2z-aIlO1REuGmdiw1Z2kmcUgrpDl4-ko",
+  authDomain: "sportdeets.firebaseapp.com",
+  projectId: "sportdeets",
+  storageBucket: "sportdeets.firebasestorage.app",
+  messagingSenderId: "812654295319",
+  appId: "1:812654295319:web:bb9e42d84312b00c9a1f52",
 };
 
 const firebaseApp = initializeApp(firebaseConfig);

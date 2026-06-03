@@ -4,6 +4,7 @@ using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
+using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
 using SportsData.Api.Application.Admin.Queries.GetAiResponse;
@@ -84,6 +85,29 @@ namespace SportsData.Api.Application.Admin
         public async Task<ActionResult<GameRecapResponse>> GenerateGameRecap(
             [FromBody] GenerateGameRecapCommand command,
             [FromServices] IGenerateGameRecapCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Send a single test push notification to a specific FCM device
+        /// token. Pre-persistence proof-of-concept — see
+        /// docs/mobile/push-notifications.md for the production-shaped
+        /// dispatcher work that will eventually consume UserDeviceToken
+        /// + NotificationDispatchLog. Used to verify the APNS / FCM
+        /// pipeline is wired correctly during initial setup.
+        ///
+        /// Example: POST /admin/notifications/test-push
+        /// Body: { "token": "...", "title": "...", "body": "...",
+        ///         "data": { "deepLink": "sportdeets://..." } }
+        /// </summary>
+        [HttpPost]
+        [Route("notifications/test-push")]
+        public async Task<ActionResult<SendTestPushNotificationResponse>> SendTestPushNotification(
+            [FromBody] SendTestPushNotificationCommand command,
+            [FromServices] ISendTestPushNotificationCommandHandler handler,
             CancellationToken cancellationToken)
         {
             var result = await handler.ExecuteAsync(command, cancellationToken);

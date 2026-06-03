@@ -6,6 +6,7 @@ using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
+using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
 using SportsData.Api.Application.Admin.Queries.GetAiResponse;
@@ -120,7 +121,12 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGenerateGameRecapCommandHandler, GenerateGameRecapCommandHandler>();
             services.AddScoped<IGenerateLoadTestCommandHandler, GenerateLoadTestCommandHandler>();
             services.AddScoped<IRefreshAiExistenceCommandHandler, RefreshAiExistenceCommandHandler>();
+            services.AddScoped<ISendTestPushNotificationCommandHandler, SendTestPushNotificationCommandHandler>();
             services.AddScoped<IUpsertMatchupPreviewCommandHandler, UpsertMatchupPreviewCommandHandler>();
+
+            // Notifications
+            services.AddScoped<SportsData.Api.Infrastructure.Notifications.IPushNotificationSender,
+                SportsData.Api.Infrastructure.Notifications.FirebasePushNotificationSender>();
 
             // Admin Jobs
             services.AddScoped<SportsData.Api.Application.Admin.Jobs.IPublishLoadTestEventsJob, SportsData.Api.Application.Admin.Jobs.PublishLoadTestEventsJob>();

@@ -5,27 +5,21 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/Admin/notifications/test-push"
+  url: "{{baseUrlApi}}/Admin/notifications/test-push"
   headers:
     - name: X-Admin-Token
-      value: "{{adminToken}}"
+      value: "{{X-Admin-Token}}"
   body:
     type: json
-    data: "{\r
-
-      \  \"token\": \"REPLACE_WITH_FCM_DEVICE_TOKEN\",\r
-
-      \  \"title\": \"sportDeets test push\",\r
-
-      \  \"body\": \"If you can read this, the pipeline works.\",\r
-
-      \  \"data\": {\r
-
-      \    \"deepLink\": \"sportdeets://picks\"\r
-
-      \  }\r
-
-      }"
+    data: |-
+      {
+        "token": "REPLACE_ME",
+        "title": "sportDeets test push",
+        "body": "If you can read this, the pipeline works.",
+        "data": {
+          "deepLink": "sportdeets://picks"
+        }
+      }
   auth: inherit
 
 settings:

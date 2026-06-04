@@ -9,6 +9,7 @@ import {
 import { signOut } from 'firebase/auth';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import { signOutGoogle } from '@/src/lib/googleSignIn';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme, useThemeMode, type ThemeMode } from '@/src/lib/theme/ThemeContext';
 import { useTextSize, type TextSize } from '@/src/lib/textSize/TextSizeContext';
@@ -131,7 +132,16 @@ export default function ProfileScreen() {
       {
         text: 'Sign Out',
         style: 'destructive',
-        onPress: () => signOut(auth),
+        onPress: async () => {
+          // Clear the Google native session first so the next
+          // "Continue with Google" tap re-prompts the account picker
+          // instead of silently re-auth'ing the last-used account.
+          // Apple Sign-In has no equivalent client-side session — iOS
+          // manages it system-wide and clears it via the user's Apple
+          // ID settings, not via the app.
+          await signOutGoogle();
+          await signOut(auth);
+        },
       },
     ]);
   };

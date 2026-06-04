@@ -75,7 +75,10 @@ function AuthGuard() {
 
     const inAuthGroup = segments[0] === '(auth)';
     if (!user && !inAuthGroup) {
-      router.replace('/(auth)/sign-in');
+      // Cast — Expo Router's typed-routes generator hasn't picked up the
+      // new welcome.tsx file yet at typecheck time; regenerates on next
+      // expo start / build.
+      router.replace('/(auth)/welcome' as never);
     } else if (user && inAuthGroup) {
       router.replace('/(tabs)');
     }

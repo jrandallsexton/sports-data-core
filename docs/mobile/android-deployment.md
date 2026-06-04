@@ -5,14 +5,17 @@ This doc focuses on the Android side: getting builds onto a physical
 test device, then onto the Google Play Console for friend testers and
 eventually production users.
 
-Status: **Android Firebase wiring complete** as of 2026-06-04 (PR #405
-landed `google-services.json` and `android.googleServicesFile` in
-`app.json`, unblocking EAS Android builds). iOS path is shipped end-
-to-end (TestFlight builds + Firebase Auth + Apple Sign-In + push
-notifications round-trip validated). Android first-build is now
-mechanically possible; remaining work is **EAS profile config**,
-**Play Console listing**, and **distribution-track setup**. Google
-Play Developer account ($25) paid and verified 2026-05-18, dedicated
+Status: **Play Console app created, Internal Testing prep in flight**
+as of 2026-06-04. PR #405 landed `google-services.json` and
+`android.googleServicesFile` in `app.json` (Firebase Android wiring).
+Play Console app registered with package `com.sportdeets.mobile` the
+same day. iOS path is shipped end-to-end (TestFlight builds +
+Firebase Auth + Apple Sign-In + push notifications round-trip
+validated). Remaining work for friend-tester distribution: **four
+App-content forms** (content rating / target audience / data safety
+/ privacy policy URL), **manual first AAB upload** through Play
+Console UI, **service account JSON** for `eas submit`. Google Play
+Developer account ($25) paid and verified 2026-05-18, dedicated
 Android test device acquired the same day.
 
 ---
@@ -30,17 +33,46 @@ What's already in place:
 - `eas.json` defines `development` / `preview` / `production` build
   profiles, but only iOS resource classes are configured. There is no
   Android-specific build config and no `submit` section.
+- **Play Console app registered** (2026-06-04): app name SportDeets,
+  package `com.sportdeets.mobile`, free, country list configured.
+  Status: "You can start testing your app right away using internal
+  testing." Closed test + production access apply for later graduation.
 
-What's missing:
+What's missing for Internal Testing (friend distribution):
+
+- **App content forms**, all four required:
+  - Content rating questionnaire (~10 min)
+  - Target audience declaration (~2 min)
+  - Data safety form (~15 min — declare Firebase Auth, Sentry, FCM
+    collection)
+  - Privacy policy URL — required because we collect personal data
+    via Firebase Auth (user IDs, emails). Cheap fix: a static page on
+    sportdeets.com.
+- **Manual first `.aab` upload** through Play Console UI (initializes
+  Play App Signing — `eas submit` cannot do this).
+- **Internal testing track** populated with tester Google account
+  emails + share link sent to friends.
+
+What's missing for `eas submit` automation:
 
 - Android-specific build configuration in `eas.json` (`buildType` per
   profile, `resourceClass` if we want anything other than the default).
 - `submit` section in `eas.json` for automated Play Console pushes.
 - Google Cloud service account JSON for EAS Submit to authenticate
-  against the Play Console API.
-- Play Console store listing (app name, description, screenshots,
-  content rating questionnaire).
-- Internal Testing track configured with tester Google accounts.
+  against the Play Console API (also referenced from `eas.json`'s
+  `submit.production.android.serviceAccountKeyPath`).
+
+What's missing for Production (eventual public release):
+
+- Full store listing: screenshots (phone + tablet), feature graphic,
+  short description, long description, categorization.
+- **Closed test completion** before Google grants production access.
+  Play Console explicitly requires this gate now: complete a closed
+  test (typically 12+ testers for 14+ days) and apply for production
+  access — it's no longer enough to just submit to production.
+
+What's missing for Google Sign-In on Android (separate from Play):
+
 - **SHA-1 debug fingerprint registered in Firebase Console** for the
   Android app — required for Google Sign-In on Android (Firebase
   needs to verify which client signed the OAuth request). Get the
@@ -76,12 +108,19 @@ testing tracks, testers install through the Play Store on their
 devices. Path B has **four tracks** of progressively wider audience,
 and you escalate through them as you gain confidence:
 
-| Track | Audience | Review time | Typical use |
-|---|---|---|---|
-| **Internal testing** | Up to 100 testers added by Google account email | **Minutes** (no human review) | Friends, early validation, the TestFlight-Internal equivalent |
-| **Closed testing** | Specific tester list / Google Groups (larger) | Hours to ~1 day | Wider beta, still gated, structured QA |
-| **Open testing** | Anyone with the opt-in URL | Hours to ~1 day | Public beta — appears in Play Store as "beta" |
-| **Production** | Public | **Days** (full review, multiple cycles common) | App-Store equivalent — slow, deliberate release |
+| Track | Audience | Review time | Listing requirements | Typical use |
+|---|---|---|---|---|
+| **Internal testing** | Up to 100 testers added by Google account email | **Minutes** (no human review) | Minimal — four App-content forms + privacy policy URL. No screenshots, no description copy required. | Friends, early validation, the TestFlight-Internal equivalent |
+| **Closed testing** | Specific tester list / Google Groups (larger) | Hours to ~1 day | Full store listing required (screenshots, description, feature graphic) | Wider beta, structured QA, **also the production-access gate** (see below) |
+| **Open testing** | Anyone with the opt-in URL | Hours to ~1 day | Full store listing required | Public beta — appears in Play Store as "beta" |
+| **Production** | Public | **Days** (full review, multiple cycles common) | Full store listing + completed closed test + apply for production access | App-Store equivalent — slow, deliberate release |
+
+**Production is gated by a closed test.** Google's current policy (in
+the Play Console UI verbatim): *"To publish to everyone, you need to
+finish setting up your app, complete a closed test, and apply for
+production access."* In practice this means a closed test with 12+
+testers active for 14+ days before you can apply. Plan the timeline
+accordingly — production access is not a same-day operation.
 
 For "friends bang on it before public" — **Internal testing** is the
 right track. Some advantages over TestFlight worth knowing:
@@ -106,33 +145,61 @@ during early dev and graduate to Path B once the build is solid.
 
 **Google requires the very first `.aab` of a new app to be uploaded
 manually through the Play Console UI** — not via the API, not via
-`eas submit`. This is one-time setup that associates Google Play App
-Signing with your app.
+`eas submit`. This is one-time setup that initializes Google Play App
+Signing for your app. Since Internal Testing setup happens through
+the Play Console UI anyway (you create the release and pick the AAB
+from a file dialog), this requirement is satisfied naturally on the
+first Internal Testing release. The gotcha is only painful if you
+try `eas submit` as your *literal* first action without ever having
+touched the Play Console UI — which will fail with cryptic errors.
 
 After that initial manual upload, subsequent `eas submit` calls work
-on autopilot. Plan for it in the sequence below.
+on autopilot.
 
 ---
 
 ## Recommended sequence
 
-Numbered for execution order. Time estimates are rough.
+Numbered for execution order. Time estimates are rough. The sequence
+splits into two phases: **Internal Testing** (friend distribution,
+~2 hours total) and **Production graduation** (much later, weeks of
+gated steps).
+
+### Phase 1 — Internal Testing (friend distribution)
 
 | # | Step | Time | Outcome |
 | - | ---- | ---- | ------- |
 | 1 | EAS Android build config + first APK build | ~30 min | APK lands on the dev device; daily dev unblocked |
-| 2 | Play Console store listing + Internal Testing track | ~1 hr | App exists in Play Console; tester list configured |
-| 3 | Manual upload of first `.aab` to Internal Testing | ~15 min | Play App Signing initialized; tester install link live |
-| 4 | Service account JSON + `eas.json` `submit` profile | ~15 min | `eas submit --platform android` works |
-| 5 | Steady state: `eas build && eas submit` | ongoing | Each release ships to Internal Testing automatically |
+| 2 | Play Console app created (DONE 2026-06-04) | — | App exists in Play Console |
+| 3 | Privacy policy URL hosted on sportdeets.com | ~30 min | Required field for Data Safety form |
+| 4 | App-content forms: content rating + target audience + data safety + privacy URL | ~45 min | Internal Testing track unblocked |
+| 5 | Manual upload of first `.aab` to Internal Testing via Play Console UI | ~15 min | Play App Signing initialized; tester install link live |
+| 6 | Add tester Google emails to Internal track + send share link | ~5 min | Friends can install |
+| 7 | Service account JSON + `eas.json` `submit` profile | ~15 min | `eas submit -p android --latest --track internal` works |
+| 8 | Steady state: `eas build && eas submit` | ongoing | Each release ships to Internal Testing automatically |
 
-Steps 1 alone unblocks dev iteration. Steps 2–5 are sequenced for
-when distribution to friend testers becomes relevant.
+Step 1 alone unblocks dev iteration on the test device. Steps 3–7
+are the friend-distribution path. **Total budget: ~2 hours.**
 
-The tedious step is **#2** — Play Console listing requirements
-(screenshots at multiple resolutions, description text, content
-rating questionnaire, target audience declaration, data safety form).
-Budget for that one accordingly.
+### Phase 2 — Production graduation (weeks later)
+
+| # | Step | Time | Outcome |
+| - | ---- | ---- | ------- |
+| 9 | Full store listing: screenshots, descriptions, feature graphic, categorization | ~2-4 hrs | Required for Closed/Open/Production tracks |
+| 10 | Closed test with 12+ testers, run for 14+ days | 2+ weeks calendar time | Required gate for production access |
+| 11 | Apply for production access through Play Console | ~1 hr forms + days of waiting | Google reviews and grants production capability |
+| 12 | First production release | ~1-3 days review | App live in Play Store |
+
+Phase 2 is not on the critical path until we're ready to leave beta.
+Don't pre-do it — Google's policies for the production-access
+application change and the screenshots you need will likely have
+evolved by then.
+
+The tedious step in Phase 1 is **#4** — the Data Safety form, which
+requires honest declarations about Firebase Auth, Sentry, FCM, and
+any other data-collecting SDKs. The honest-declaration part matters:
+Google audits, and misdeclaration gets your app yanked. Budget the
+~15 minutes accordingly and don't rush it.
 
 ---
 
@@ -193,7 +260,7 @@ session.
 
 ## What changes when we execute
 
-### `eas.json` additions (Step 1)
+### `eas.json` additions (Phase 1, Step 1)
 
 Each profile grows an `android` section. Example for `preview`:
 
@@ -223,7 +290,7 @@ And `production` (AAB for Play Console):
 `versionCode` on the Android side just like it handles `buildNumber`
 on iOS.
 
-### `eas.json` `submit` section (Step 4)
+### `eas.json` `submit` section (Phase 1, Step 7)
 
 ```json
 "submit": {
@@ -241,7 +308,7 @@ on iOS.
 `alpha` / `beta` / `production` when you graduate from Internal
 Testing.
 
-### Environment variables (Steps 1–5)
+### Environment variables
 
 Android builds consume the same `EXPO_PUBLIC_*` env vars as iOS — no
 duplication needed. Firebase config lives in the same env block
@@ -256,7 +323,7 @@ Native bundle-side config (`GoogleService-Info.plist` for iOS,
 and is wired through `app.json`'s `ios.googleServicesFile` /
 `android.googleServicesFile` declarations.
 
-### Google Cloud service account (Step 4)
+### Google Cloud service account (Phase 1, Step 7)
 
 One-time setup:
 
@@ -277,7 +344,7 @@ is the preferred storage for production setups.
 
 ---
 
-## Per-build workflow (steady state, post-Step 5)
+## Per-build workflow (steady state, post-Phase 1)
 
 ```bash
 # Bump versionCode (handled by autoIncrement on production profile,
@@ -348,10 +415,26 @@ EAS Update is not currently wired up for this project (per
    until you declare what user data your app collects (Firebase Auth
    counts; Sentry counts). Be honest; users see this in the listing.
 6. **Adaptive icon background color must match.** `app.json` sets
-   `android.adaptiveIcon.backgroundColor` (currently `#1B3A6B` — the
-   navy brand color). Verify this renders correctly on the test
+   `android.adaptiveIcon.backgroundColor` (currently `#0d1117` — the
+   dark brand color). Verify this renders correctly on the test
    device's launcher before submitting; some launchers crop
    aggressively.
+7. **Production access requires a completed closed test.** Google's
+   current policy: you can't ship to Production directly. Must run a
+   closed test (typically 12+ testers, 14+ day window) and apply for
+   production access through the Play Console. Plan ~2 weeks of
+   calendar time for the gate alone, separate from the actual review.
+8. **Internal Testing has reduced listing requirements.** You do NOT
+   need screenshots, feature graphic, or long description to ship to
+   Internal Testing — only the four App-content forms (content
+   rating, target audience, data safety, privacy policy URL). Don't
+   pre-do the full listing when all you want is friends installing
+   the app. (Closed/Open/Production require the full listing.)
+9. **Free apps cannot be converted to Paid post-publish.** The Play
+   Console toggle is one-way. Pick Free; monetize via in-app
+   purchases / subscriptions through Google Play Billing instead.
+   This is the universal mobile monetization pattern (Spotify,
+   Netflix, etc. are all Free apps with paid tiers).
 
 ---
 

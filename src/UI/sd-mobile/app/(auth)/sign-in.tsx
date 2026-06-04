@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   TextInput,
@@ -8,12 +8,22 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { Text } from '@/src/components/ui/AppText';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/src/lib/firebase';
+import {
+  signInWithGoogle,
+  GoogleSignInCancelled,
+} from '@/src/lib/googleSignIn';
+import {
+  signInWithApple,
+  isAppleSignInAvailable,
+  AppleSignInCancelled,
+} from '@/src/lib/appleSignIn';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Button } from '@/src/components/ui/Button';
 import { Wordmark } from '@/src/components/brand/Wordmark';
@@ -34,11 +44,22 @@ export default function SignInScreen() {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
+  // Apple Sign-In availability is async (checks iOS version + Apple ID
+  // status); resolves to false on Android and on iOS < 13. The button is
+  // suppressed entirely when unavailable.
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  const [thirdPartyBusy, setThirdPartyBusy] = useState(false);
+
+  useEffect(() => {
+    isAppleSignInAvailable().then(setAppleAvailable).catch(() => setAppleAvailable(false));
+  }, []);
+
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
+    clearErrors,
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
@@ -61,6 +82,42 @@ export default function SignInScreen() {
       } else {
         setError('root', { message: 'Sign in failed. Please try again.' });
       }
+    }
+  };
+
+  const handleThirdPartySignIn = async (
+    provider: 'google' | 'apple',
+  ) => {
+    if (thirdPartyBusy) return;
+    setThirdPartyBusy(true);
+    clearErrors('root');
+    try {
+      if (provider === 'google') {
+        await signInWithGoogle();
+      } else {
+        await signInWithApple();
+      }
+      // AuthGuard handles redirect.
+    } catch (err: unknown) {
+      if (err instanceof GoogleSignInCancelled || err instanceof AppleSignInCancelled) {
+        // User backed out of the picker — no error UI, just unbusy.
+        return;
+      }
+      const code = (err as { code?: string })?.code ?? '';
+      if (code === 'auth/account-exists-with-different-credential') {
+        // The email is already registered with a different provider
+        // (typically email/password). Account-linking auto-flow is
+        // deferred — for now, point the user at their existing method.
+        setError('root', {
+          message: 'An account with this email already exists. Sign in with your password to continue.',
+        });
+      } else {
+        setError('root', {
+          message: err instanceof Error ? err.message : 'Sign in failed. Please try again.',
+        });
+      }
+    } finally {
+      setThirdPartyBusy(false);
     }
   };
 
@@ -94,6 +151,41 @@ export default function SignInScreen() {
               </Text>
             </View>
           )}
+
+          {/* Third-party providers — surfaced above email/password so the
+              path of least friction (federated sign-in) is the first thing
+              users see. Apple button only renders on iOS where the API is
+              available; Google works on both platforms. */}
+          <View style={styles.thirdPartyStack}>
+            <Button
+              title="Continue with Google"
+              onPress={() => handleThirdPartySignIn('google')}
+              loading={thirdPartyBusy}
+              fullWidth
+              size="lg"
+              variant="secondary"
+            />
+            {appleAvailable ? (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={
+                  scheme === 'dark'
+                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={10}
+                style={styles.appleButton}
+                onPress={() => handleThirdPartySignIn('apple')}
+              />
+            ) : null}
+          </View>
+
+          {/* Divider */}
+          <View style={styles.dividerRow}>
+            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            <Text style={[styles.dividerText, { color: theme.textMuted }]}>or</Text>
+            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+          </View>
 
           {/* Email */}
           <View style={styles.field}>
@@ -226,6 +318,30 @@ const styles = StyleSheet.create({
     borderLeftColor: '#EF4444',
   },
   errorBannerText: { fontSize: 14 },
+  thirdPartyStack: {
+    gap: 10,
+    marginBottom: 18,
+  },
+  appleButton: {
+    width: '100%',
+    height: 48,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 18,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  dividerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   field: { marginBottom: 16 },
   label: {
     fontSize: 12,

@@ -19,7 +19,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "25"
+      "buildNumber": "26"
     },
     "android": {
       "package": "com.sportdeets.mobile",
@@ -53,9 +53,18 @@
         {
           "ios": {
             "extraPods": [
-              { "name": "GoogleUtilities", "modular_headers": true }
+              {
+                "name": "GoogleUtilities",
+                "modular_headers": true
+              }
             ]
           }
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.812654295319-fckkt2811fn0sr745366rmh62g5788da"
         }
       ]
     ],

@@ -3,21 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>195964983674-kh4jsgj979vksgij5drse0tcjb0tn7rc.apps.googleusercontent.com</string>
+	<string>812654295319-fckkt2811fn0sr745366rmh62g5788da.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.195964983674-kh4jsgj979vksgij5drse0tcjb0tn7rc</string>
+	<string>com.googleusercontent.apps.812654295319-fckkt2811fn0sr745366rmh62g5788da</string>
 	<key>API_KEY</key>
-	<string>AIzaSyCo0ho9bZ-Rbm0F5k2Is6TamILNIf8nX6g</string>
+	<string>AIzaSyD76-Gj0Ite3YgMZQivuxUu32m-oMnMuJU</string>
 	<key>GCM_SENDER_ID</key>
-	<string>195964983674</string>
+	<string>812654295319</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.sportdeets.mobile</string>
 	<key>PROJECT_ID</key>
-	<string>sportdeets-dev</string>
+	<string>sportdeets</string>
 	<key>STORAGE_BUCKET</key>
-	<string>sportdeets-dev.firebasestorage.app</string>
+	<string>sportdeets.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:195964983674:ios:8ad22ac149721cb3475ec3</string>
+	<string>1:812654295319:ios:124e10809ef6bee99a1f52</string>
 </dict>
 </plist>

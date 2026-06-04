@@ -16,6 +16,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react-native';
 import 'react-native-reanimated';
@@ -43,14 +44,22 @@ SplashScreen.preventAutoHideAsync();
 // so developer testing can see notifications fire without having to
 // background the app first. Set at module level so it's registered
 // before any push could arrive.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+//
+// Web no-op: expo-notifications' web implementation doesn't support
+// most of this API surface (no APNs / FCM equivalent in-browser), and
+// calling setNotificationHandler / useLastNotificationResponse / the
+// listeners on web throws UnavailabilityError. Gate the entire push
+// surface on native and let the web bundle skip it cleanly.
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 /**
  * Watches auth state and redirects between (auth) and (tabs) groups.
@@ -101,18 +110,52 @@ function RootLayout() {
     if (error) throw error;
   }, [error]);
 
-  // Push notification receive + tap diagnostics. v1 just logs — actual
-  // deep-link routing (notification → /(tabs)/picks?leagueId=…&contestId=…)
-  // lands in a follow-up once the test-push round-trip is proven.
-  //
-  // Cold-start coverage: useLastNotificationResponse resolves to the
-  // response that launched the app when the user tapped a notification
-  // from a killed state. addNotificationResponseReceivedListener can
-  // race the iOS launch-time dispatch (the tap fires before the JS
-  // listener mounts) and silently drop that response, so we explicitly
-  // handle the launching response via the hook. handledTapIdsRef dedupes
-  // against any later listener delivery of the same response so the tap
-  // handler doesn't run twice for a single user action.
+  // Push notification surface is native-only — see NativePushDiagnostics
+  // below. The component is rendered conditionally so the hooks it uses
+  // (useLastNotificationResponse + addNotification*Listener under the
+  // hood) never execute on web, where expo-notifications' implementation
+  // throws UnavailabilityError.
+
+  // Splash stays up until fonts load; the ThemeProvider's hydration state
+  // then takes over (see RootLayoutNav) so users never see a system-resolved
+  // flash before their persisted preference applies.
+  if (!loaded) return null;
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <TextSizeProvider>
+          <RootLayoutNav />
+        </TextSizeProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
+
+// Wrap with Sentry so navigation transitions become breadcrumbs and the
+// root error boundary forwards into the SDK.
+export default Sentry.wrap(RootLayout);
+
+/**
+ * Native-only push notification receive + tap diagnostics. v1 just
+ * logs — actual deep-link routing (notification → /(tabs)/picks?
+ * leagueId=…&contestId=…) lands in a follow-up once the test-push
+ * round-trip is proven.
+ *
+ * Cold-start coverage: useLastNotificationResponse resolves to the
+ * response that launched the app when the user tapped a notification
+ * from a killed state. addNotificationResponseReceivedListener can
+ * race the iOS launch-time dispatch (the tap fires before the JS
+ * listener mounts) and silently drop that response, so we explicitly
+ * handle the launching response via the hook. handledTapIdsRef dedupes
+ * against any later listener delivery of the same response so the tap
+ * handler doesn't run twice for a single user action.
+ *
+ * Rendered only when Platform.OS !== 'web' (see RootLayoutNav). The
+ * hooks here all touch expo-notifications native modules that aren't
+ * implemented on web.
+ */
+function NativePushDiagnostics() {
   const lastResponse = Notifications.useLastNotificationResponse();
   const handledTapIdsRef = useRef<Set<string>>(new Set());
 
@@ -154,25 +197,8 @@ function RootLayout() {
     };
   }, [lastResponse]);
 
-  // Splash stays up until fonts load; the ThemeProvider's hydration state
-  // then takes over (see RootLayoutNav) so users never see a system-resolved
-  // flash before their persisted preference applies.
-  if (!loaded) return null;
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <TextSizeProvider>
-          <RootLayoutNav />
-        </TextSizeProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
+  return null;
 }
-
-// Wrap with Sentry so navigation transitions become breadcrumbs and the
-// root error boundary forwards into the SDK.
-export default Sentry.wrap(RootLayout);
 
 function RootLayoutNav() {
   // Feed the user-resolved scheme into React Navigation so native header
@@ -199,6 +225,7 @@ function RootLayoutNav() {
       </Stack>
       <AuthGuard />
       <SignalRGate />
+      {Platform.OS !== 'web' ? <NativePushDiagnostics /> : null}
     </NavThemeProvider>
   );
 }

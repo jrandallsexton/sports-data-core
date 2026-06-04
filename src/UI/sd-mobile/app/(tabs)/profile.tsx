@@ -4,6 +4,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Platform,
   ScrollView,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
@@ -126,47 +127,63 @@ export default function ProfileScreen() {
   const effectiveTimezone = me?.timezone || deviceTz;
   const isUserSet = !!me?.timezone;
 
+  const performSignOut = async () => {
+    // Clear the Google native session first so the next "Continue with
+    // Google" tap re-prompts the account picker instead of silently
+    // re-auth'ing the last-used account. Apple Sign-In has no
+    // equivalent client-side session — iOS manages it system-wide via
+    // the user's Apple ID settings, not the app.
+    //
+    // Independent try/catch from the Firebase sign-out below: Google's
+    // clearing is best-effort cosmetic, but Firebase's signOut is the
+    // load-bearing operation that actually flips the auth state and
+    // triggers the redirect. If Google's signOut throws (e.g.,
+    // configure() bridge issue), we still need Firebase's signOut to
+    // run — otherwise the user taps Sign Out, sees no error (or only
+    // the warn-log), and stays signed in.
+    try {
+      await signOutGoogle();
+    } catch (err) {
+      console.warn(
+        '[ProfileScreen] Google sign-out failed (continuing to Firebase sign-out)',
+        err,
+      );
+    }
+    try {
+      await signOut(auth);
+      // Success path: useAuthInit's onAuthStateChanged listener observes
+      // the auth flip → AuthGuard handles the redirect to /(auth)/welcome.
+      // No local state cleanup required.
+    } catch (err) {
+      console.error('[ProfileScreen] Firebase sign-out failed', err);
+      Alert.alert(
+        'Sign Out Failed',
+        'We could not sign you out. Please check your connection and try again.',
+      );
+    }
+  };
+
   const handleSignOut = () => {
+    // Cross-platform confirmation. React Native Web's Alert.alert is a
+    // stub that doesn't reliably fire onPress callbacks from the buttons
+    // array, so the previous Alert.alert(...) confirmation deadlocked
+    // on web — the destructive "Sign Out" button rendered but never
+    // executed performSignOut. Use window.confirm on web (synchronous,
+    // returns boolean) and the native Alert on iOS/Android (where the
+    // buttons array works correctly).
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to sign out?')) {
+        void performSignOut();
+      }
+      return;
+    }
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',
         style: 'destructive',
-        onPress: async () => {
-          // Clear the Google native session first so the next "Continue
-          // with Google" tap re-prompts the account picker instead of
-          // silently re-auth'ing the last-used account. Apple Sign-In
-          // has no equivalent client-side session — iOS manages it
-          // system-wide via the user's Apple ID settings, not the app.
-          //
-          // Independent try/catch from the Firebase sign-out below:
-          // Google's clearing is best-effort cosmetic, but Firebase's
-          // signOut is the load-bearing operation that actually flips
-          // the auth state and triggers the redirect. If Google's
-          // signOut throws (e.g., configure() bridge issue), we still
-          // need Firebase's signOut to run — otherwise the user taps
-          // Sign Out, sees no error (or only the warn-log), and stays
-          // signed in.
-          try {
-            await signOutGoogle();
-          } catch (err) {
-            console.warn(
-              '[ProfileScreen] Google sign-out failed (continuing to Firebase sign-out)',
-              err,
-            );
-          }
-          try {
-            await signOut(auth);
-            // Success path: useAuthInit's onAuthStateChanged listener
-            // observes the auth flip → AuthGuard handles the redirect
-            // to /(auth)/sign-in. No local state cleanup required.
-          } catch (err) {
-            console.error('[ProfileScreen] Firebase sign-out failed', err);
-            Alert.alert(
-              'Sign Out Failed',
-              'We could not sign you out. Please check your connection and try again.',
-            );
-          }
+        onPress: () => {
+          void performSignOut();
         },
       },
     ]);

@@ -133,20 +133,35 @@ export default function ProfileScreen() {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
-          // Clear the Google native session first so the next
-          // "Continue with Google" tap re-prompts the account picker
-          // instead of silently re-auth'ing the last-used account.
-          // Apple Sign-In has no equivalent client-side session — iOS
-          // manages it system-wide and clears it via the user's Apple
-          // ID settings, not via the app.
+          // Clear the Google native session first so the next "Continue
+          // with Google" tap re-prompts the account picker instead of
+          // silently re-auth'ing the last-used account. Apple Sign-In
+          // has no equivalent client-side session — iOS manages it
+          // system-wide via the user's Apple ID settings, not the app.
+          //
+          // Independent try/catch from the Firebase sign-out below:
+          // Google's clearing is best-effort cosmetic, but Firebase's
+          // signOut is the load-bearing operation that actually flips
+          // the auth state and triggers the redirect. If Google's
+          // signOut throws (e.g., configure() bridge issue), we still
+          // need Firebase's signOut to run — otherwise the user taps
+          // Sign Out, sees no error (or only the warn-log), and stays
+          // signed in.
           try {
             await signOutGoogle();
+          } catch (err) {
+            console.warn(
+              '[ProfileScreen] Google sign-out failed (continuing to Firebase sign-out)',
+              err,
+            );
+          }
+          try {
             await signOut(auth);
             // Success path: useAuthInit's onAuthStateChanged listener
             // observes the auth flip → AuthGuard handles the redirect
             // to /(auth)/sign-in. No local state cleanup required.
           } catch (err) {
-            console.error('[ProfileScreen] sign-out failed', err);
+            console.error('[ProfileScreen] Firebase sign-out failed', err);
             Alert.alert(
               'Sign Out Failed',
               'We could not sign you out. Please check your connection and try again.',

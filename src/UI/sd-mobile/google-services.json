@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "812654295319",
+    "project_id": "sportdeets",
+    "storage_bucket": "sportdeets.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:812654295319:android:b495341435975a099a1f52",
+        "android_client_info": {
+          "package_name": "com.sportdeets.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "812654295319-dgb618dhnl9oflea534fjgdlipkgoi5f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvSKaKzd3TIWaXaKssKawE81-ONPknFgY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "812654295319-dgb618dhnl9oflea534fjgdlipkgoi5f.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "812654295319-fckkt2811fn0sr745366rmh62g5788da.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.sportdeets.mobile"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

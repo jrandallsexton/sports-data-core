@@ -5,7 +5,18 @@ import {
   statusCodes,
 } from '@react-native-google-signin/google-signin';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { Platform } from 'react-native';
 import { auth } from './firebase';
+
+// Native-module-only library: @react-native-google-signin doesn't have a
+// web implementation. On web, any call into GoogleSignin throws (or
+// crashes synchronously if the native bridge is missing entirely),
+// which then breaks the *unrelated* Firebase signOut path that runs
+// right after signOutGoogle in the profile screen's logout flow. Treat
+// the entire module as native-only and short-circuit on web. Web
+// federated sign-in (if ever needed) would route through Firebase's
+// signInWithPopup, a separate code path.
+const isNative = Platform.OS !== 'web';
 
 // Web OAuth Client ID for the sportdeets Firebase project. Public-readable
 // (it ships in the IPA bundle anyway via the plugin's URL scheme config);
@@ -20,6 +31,7 @@ const WEB_CLIENT_ID =
 // library but the guard avoids the noise.
 let configured = false;
 function configureOnce() {
+  if (!isNative) return;
   if (configured) return;
   GoogleSignin.configure({ webClientId: WEB_CLIENT_ID });
   configured = true;
@@ -43,6 +55,9 @@ export class GoogleSignInCancelled extends Error {
  *   - generic Error with a user-readable message for everything else
  */
 export async function signInWithGoogle(): Promise<void> {
+  if (!isNative) {
+    throw new Error('Continue with Google is not yet supported on web.');
+  }
   configureOnce();
 
   let response: Awaited<ReturnType<typeof GoogleSignin.signIn>>;
@@ -91,6 +106,7 @@ export async function signInWithGoogle(): Promise<void> {
  * account picker, which is confusing on shared devices.
  */
 export async function signOutGoogle(): Promise<void> {
+  if (!isNative) return; // no-op on web; nothing to clear here
   configureOnce();
   try {
     await GoogleSignin.signOut();

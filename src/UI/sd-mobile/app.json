@@ -16,10 +16,13 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.sportdeets.mobile",
       "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "aps-environment": "production"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "26"
+      "buildNumber": "29"
     },
     "android": {
       "package": "com.sportdeets.mobile",

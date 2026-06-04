@@ -1,7 +1,41 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { OAuthProvider, signInWithCredential } from 'firebase/auth';
 import { Platform } from 'react-native';
 import { auth } from './firebase';
+
+/**
+ * Generates an OIDC nonce pair for the Apple sign-in flow:
+ *
+ *   - rawNonce: a cryptographically random opaque string. We hand the
+ *     unhashed value to Firebase's OAuthProvider.credential.
+ *   - hashedNonce: SHA-256 of rawNonce, hex-encoded. We hand THIS value
+ *     to Apple via AppleAuthentication.signInAsync. Apple embeds it in
+ *     the identity token's `nonce` claim verbatim.
+ *
+ * Firebase verifies the token's nonce claim by hashing the rawNonce we
+ * supply and comparing — protects against identity-token replay attacks
+ * by binding the token to a specific sign-in attempt that only this
+ * client could have initiated.
+ *
+ * 32 bytes of randomness is the common recommendation (Firebase's own
+ * web SDK docs use 32). Hex encoding gives 64 chars, well within
+ * Apple's nonce length limit.
+ */
+async function generateNoncePair(): Promise<{
+  rawNonce: string;
+  hashedNonce: string;
+}> {
+  const randomBytes = await Crypto.getRandomBytesAsync(32);
+  const rawNonce = Array.from(randomBytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  const hashedNonce = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    rawNonce,
+  );
+  return { rawNonce, hashedNonce };
+}
 
 export class AppleSignInCancelled extends Error {
   constructor() {
@@ -36,6 +70,12 @@ export async function isAppleSignInAvailable(): Promise<boolean> {
  *   - generic Error with a user-readable message for everything else
  */
 export async function signInWithApple(): Promise<void> {
+  // OIDC nonce flow: generate a raw nonce + its SHA-256 hash, hand the
+  // hash to Apple, and the raw value to Firebase. Firebase rehashes the
+  // raw value and compares against the token's nonce claim. Mismatched
+  // or missing nonce = identity token rejected.
+  const { rawNonce, hashedNonce } = await generateNoncePair();
+
   let credential: AppleAuthentication.AppleAuthenticationCredential;
   try {
     credential = await AppleAuthentication.signInAsync({
@@ -43,6 +83,7 @@ export async function signInWithApple(): Promise<void> {
         AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
         AppleAuthentication.AppleAuthenticationScope.EMAIL,
       ],
+      nonce: hashedNonce,
     });
   } catch (err) {
     const code = (err as { code?: string })?.code ?? '';
@@ -62,11 +103,7 @@ export async function signInWithApple(): Promise<void> {
   const provider = new OAuthProvider('apple.com');
   const firebaseCredential = provider.credential({
     idToken: identityToken,
-    // rawNonce intentionally omitted — Expo's
-    // AppleAuthentication.signInAsync generates and validates the nonce
-    // internally and does NOT expose it on the result. Firebase accepts
-    // the identityToken without us re-supplying the nonce because the
-    // token's hashed nonce claim is already baked in.
+    rawNonce,
   });
   await signInWithCredential(auth, firebaseCredential);
 }

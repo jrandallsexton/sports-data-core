@@ -139,8 +139,19 @@ export default function ProfileScreen() {
           // Apple Sign-In has no equivalent client-side session — iOS
           // manages it system-wide and clears it via the user's Apple
           // ID settings, not via the app.
-          await signOutGoogle();
-          await signOut(auth);
+          try {
+            await signOutGoogle();
+            await signOut(auth);
+            // Success path: useAuthInit's onAuthStateChanged listener
+            // observes the auth flip → AuthGuard handles the redirect
+            // to /(auth)/sign-in. No local state cleanup required.
+          } catch (err) {
+            console.error('[ProfileScreen] sign-out failed', err);
+            Alert.alert(
+              'Sign Out Failed',
+              'We could not sign you out. Please check your connection and try again.',
+            );
+          }
         },
       },
     ]);

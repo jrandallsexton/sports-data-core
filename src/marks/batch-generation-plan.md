@@ -411,7 +411,17 @@ Dependencies:
   the dev environment's franchise list, which is smaller but
   validates the pipeline)
 - Azure Blob connection string for the test environment, placed
-  in `src/marks/batch/.env` (NEVER commit)
+  in `src/marks/batch/.env` (NEVER commit) — or sourced via
+  `run.ps1` from your canonical secrets file (see below)
+- `SPORTDEETS_SECRETS_PATH` environment variable pointing at your
+  local canonical secrets `.ps1` file (the path stays out of the
+  repo; `run.ps1` reads it at runtime). Set once per machine:
+  ```powershell
+  [Environment]::SetEnvironmentVariable(
+    'SPORTDEETS_SECRETS_PATH',
+    'C:\path\to\_common-variables.ps1',
+    'User')
+  ```
 - Confirmation on the recommendations in the Decisions section
   (PNG, 512px, new rows tagged `sportdeets-mark`, single container,
   skip light/dark variants, run against local first)

@@ -1,8 +1,17 @@
 # PowerShell wrapper for the marks batch pipeline.
 #
-# Dot-sources the canonical secrets file (outside the repo, in Dropbox),
-# maps the variables defined there onto the env vars the Node scripts read,
-# then invokes the requested phase.
+# Dot-sources the canonical secrets file (path read from
+# $env:SPORTDEETS_SECRETS_PATH so the local filesystem location stays out of
+# the repo), maps the variables defined there onto the env vars the Node
+# scripts read, then invokes the requested phase.
+#
+# Prerequisite: set SPORTDEETS_SECRETS_PATH in your user environment to the
+# absolute path of your _common-variables.ps1 (or equivalent) secrets file.
+# Example (PowerShell):
+#   [Environment]::SetEnvironmentVariable(
+#     'SPORTDEETS_SECRETS_PATH',
+#     'C:\path\to\_common-variables.ps1',
+#     'User')
 #
 # Usage:
 #   ./run.ps1 -Environment dev -Phase upload
@@ -25,9 +34,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$SecretsFile = 'D:\Dropbox\Code\sports-data-provision\_secrets\_common-variables.ps1'
+if (-not $env:SPORTDEETS_SECRETS_PATH) {
+  Write-Error "SPORTDEETS_SECRETS_PATH is not set. Point it at your secrets .ps1 file before running this script."
+  exit 1
+}
+$SecretsFile = $env:SPORTDEETS_SECRETS_PATH
 if (-not (Test-Path $SecretsFile)) {
-  Write-Error "Secrets file not found: $SecretsFile"
+  Write-Error "Secrets file not found at SPORTDEETS_SECRETS_PATH: $SecretsFile"
   exit 1
 }
 . $SecretsFile

@@ -891,8 +891,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Team row — visual offset from the outer card. Mirrors sd-ui's .team-row:
-  //   background-color: var(--bg-card); border-radius: 8px; margin-bottom: 0.5rem;
+  // Team row — visual offset from the outer card. Mirrors sd-ui's .team-row
+  // (background, rounded corners, gap) PLUS the inset created by web's
+  // .matchup-card { padding: 20px; }. On mobile the outer card has no
+  // padding, so we use marginHorizontal here to keep the row off the card
+  // edges. marginVertical creates the spacing between rows AND between the
+  // top row and the headline banner / bottom row and the odds section.
   // Background color is applied at the call site (theme.card) so the
   // tokens stay consistent across light/dark.
   teamRow: {
@@ -902,7 +906,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 10,
     borderRadius: 8,
-    marginBottom: 6,
+    marginHorizontal: 10,
+    marginVertical: 4,
   },
   logoBox: {
     width: 40,

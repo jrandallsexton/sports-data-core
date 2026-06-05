@@ -5,12 +5,13 @@
 # the repo), maps the variables defined there onto the env vars the Node
 # scripts read, then invokes the requested phase.
 #
-# Prerequisite: set SPORTDEETS_SECRETS_PATH in your user environment to the
-# absolute path of your _common-variables.ps1 (or equivalent) secrets file.
+# Prerequisite: set SPORTDEETS_SECRETS_PATH in your user environment. Either
+# point it at the .ps1 file directly, or at the directory that contains
+# _common-variables.ps1 — the script handles both.
 # Example (PowerShell):
 #   [Environment]::SetEnvironmentVariable(
 #     'SPORTDEETS_SECRETS_PATH',
-#     'C:\path\to\_common-variables.ps1',
+#     'C:\path\to\_common-variables.ps1',  # or 'C:\path\to\secrets-dir'
 #     'User')
 #
 # Usage:
@@ -18,8 +19,10 @@
 #   ./run.ps1 -Environment dev -Phase insert
 #   ./run.ps1 -Environment dev -Phase insert -Manifest .\output\manifests\manifest-2026-06-05....json
 #
-# Environment toggles which Azure Blob account we upload to (dev vs prod).
-# Postgres is always local for this batch — no prod-DB write path here.
+# Environment toggles BOTH the Azure Blob account (dev vs prod) AND the
+# Postgres host the inserts run against (local copy of prod vs actual prod).
+# The two move together because writing marks blobs to one environment and
+# pointing the DB rows at the other would create cross-env URLs.
 
 param(
   [Parameter(Mandatory=$true)]
@@ -29,21 +32,33 @@ param(
   [ValidateSet('dev','prod')]
   [string]$Environment = 'dev',
 
+  [ValidateSet('Mlb','Ncaafb','Nfl')]
+  [string]$Sport = 'Mlb',
+
+  [string]$Scope,
+
   [string]$Manifest
 )
 
 $ErrorActionPreference = 'Stop'
 
 if (-not $env:SPORTDEETS_SECRETS_PATH) {
-  Write-Error "SPORTDEETS_SECRETS_PATH is not set. Point it at your secrets .ps1 file before running this script."
+  Write-Error "SPORTDEETS_SECRETS_PATH is not set. Point it at your secrets .ps1 file (or the directory that contains _common-variables.ps1) before running this script."
   exit 1
 }
 $SecretsFile = $env:SPORTDEETS_SECRETS_PATH
+# Accept either a direct path to the .ps1 file OR a directory that contains
+# _common-variables.ps1 — different machines/people set the env var either way.
+if ((Test-Path $SecretsFile) -and (Get-Item $SecretsFile).PSIsContainer) {
+  $SecretsFile = Join-Path $SecretsFile '_common-variables.ps1'
+}
 if (-not (Test-Path $SecretsFile)) {
-  Write-Error "Secrets file not found at SPORTDEETS_SECRETS_PATH: $SecretsFile"
+  Write-Error "Secrets file not found at SPORTDEETS_SECRETS_PATH (resolved to: $SecretsFile)"
   exit 1
 }
-. $SecretsFile
+# Quote the path on dot-source so any spaces / parser-sensitive chars in
+# the resolved value (e.g. "Dropbox (Personal)") don't get split.
+. "$SecretsFile"
 
 # Azure Blob — dev vs prod per the -Environment flag.
 if ($Environment -eq 'prod') {
@@ -52,18 +67,51 @@ if ($Environment -eq 'prod') {
   $env:AZURE_BLOB_CONNECTION_STRING = $AzureBlobStorageDev
 }
 
-# Postgres — always local for this batch. We're writing into the Producer's
-# MLB database (sdProducer.BaseballMlb).
-$env:PG_HOST     = $pgHostLocal
-$env:PG_USER     = $pgUserLocal
-$env:PG_PASSWORD = $pgPasswordLocal
-$env:PG_PORT     = '5432'
-$env:PG_DATABASE = 'sdProducer.BaseballMlb'
+# Postgres host — local copy vs actual prod per the -Environment flag.
+if ($Environment -eq 'prod') {
+  $env:PG_HOST     = $pgHostProd
+  $env:PG_USER     = $pgUserProd
+  $env:PG_PASSWORD = $pgPasswordProd
+} else {
+  $env:PG_HOST     = $pgHostLocal
+  $env:PG_USER     = $pgUserLocal
+  $env:PG_PASSWORD = $pgPasswordLocal
+}
+$env:PG_PORT = '5432'
+
+# Sport — picks the per-sport Producer DB, the slug used inside the SVG
+# aria-label and the marks.js sportFamily branch, and the source data file
+# upload.js reads. All three are scoped to FranchiseSeason 2026.
+switch ($Sport) {
+  'Mlb' {
+    $env:PG_DATABASE  = 'sdProducer.BaseballMlb'
+    $env:SD_SPORT     = 'MLB'
+    $env:SD_DATA_FILE = 'franchise-colors-mlb.txt'
+  }
+  'Ncaafb' {
+    $env:PG_DATABASE  = 'sdProducer.FootballNcaa'
+    $env:SD_SPORT     = 'NCAAFB'
+    $env:SD_DATA_FILE = 'franchise-colors-ncaafb.txt'
+  }
+  'Nfl' {
+    $env:PG_DATABASE  = 'sdProducer.FootballNfl'
+    $env:SD_SPORT     = 'NFL'
+    $env:SD_DATA_FILE = 'franchise-colors-nfl.txt'
+  }
+}
+
+# SCOPE labels the manifest with the FranchiseSeason year the data file
+# was pulled from (see franchise-colors.sql for the canonical query). Set
+# at the wrapper level so reruns against a different year only need a -Scope
+# override here, not a code edit in upload.js.
+if (-not $Scope) { $Scope = 'franchise-season:2025' }
+$env:SD_SCOPE = $Scope
 
 $env:SD_TARGET_ENV = $Environment
 
-Write-Host "Phase: $Phase  Environment: $Environment" -ForegroundColor Cyan
+Write-Host "Phase: $Phase  Environment: $Environment  Sport: $Sport" -ForegroundColor Cyan
 Write-Host "PG: $env:PG_DATABASE @ $env:PG_HOST" -ForegroundColor Cyan
+Write-Host "Data file: $env:SD_DATA_FILE  Scope: $env:SD_SCOPE" -ForegroundColor Cyan
 
 if ($Phase -eq 'upload') {
   node "$PSScriptRoot\upload.js"

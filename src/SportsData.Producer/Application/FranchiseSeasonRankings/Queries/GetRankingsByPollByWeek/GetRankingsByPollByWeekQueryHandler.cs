@@ -40,10 +40,14 @@ public class GetRankingsByPollByWeekQueryHandler : IGetRankingsByPollByWeekQuery
         var sql = _sqlProvider.GetRankingsByPollByWeek();
         var connection = _dbContext.Database.GetDbConnection();
 
+        // Direction is the lowercase enum name ("roundel" / "shield" / "hex")
+        // matching the Rel-tag convention used by the marks batch script.
+        var directionTag = query.Direction.ToString().ToLowerInvariant();
+
         var entries = (await connection.QueryAsync<RankingsByPollIdByWeekDto.RankingsByPollIdByWeekEntryDto>(
             new CommandDefinition(
                 sql,
-                new { query.PollType, query.WeekNumber, query.SeasonYear },
+                new { query.PollType, query.WeekNumber, query.SeasonYear, Direction = directionTag },
                 cancellationToken: cancellationToken))).ToList();
 
         if (entries.Count == 0)

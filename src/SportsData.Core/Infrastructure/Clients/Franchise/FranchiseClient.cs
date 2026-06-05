@@ -32,7 +32,7 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResults(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
     Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugs(int seasonYear, CancellationToken cancellationToken = default);
     Task<Dictionary<Guid, string>> GetConferenceIdsBySlugs(int seasonYear, List<string> slugs, CancellationToken cancellationToken = default);
-    Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken cancellationToken = default);
+    Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, MarkDirection direction, CancellationToken cancellationToken = default);
     Task<Result<TeamRosterDto>> GetTeamRoster(string slug, int seasonYear, CancellationToken cancellationToken = default);
     Task<Result<FranchiseLogosDto>> GetFranchiseLogos(string slug, CancellationToken cancellationToken = default);
     Task<Result<bool>> UpdateLogoDarkBg(Guid logoId, bool isForDarkBg, string logoType, CancellationToken cancellationToken = default);
@@ -226,10 +226,10 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             cancellationToken);
     }
 
-    public async Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken cancellationToken = default)
+    public async Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, MarkDirection direction, CancellationToken cancellationToken = default)
     {
         return await GetOrDefaultAsync(
-            $"franchise-season-rankings/by-poll?poll={poll}&seasonYear={seasonYear}&weekNumber={weekNumber}",
+            $"franchise-season-rankings/by-poll?poll={poll}&seasonYear={seasonYear}&weekNumber={weekNumber}&direction={direction}",
             new RankingsByPollIdByWeekDto
             {
                 PollName = poll,

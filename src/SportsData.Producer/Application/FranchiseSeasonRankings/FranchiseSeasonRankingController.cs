@@ -28,10 +28,11 @@ namespace SportsData.Producer.Application.FranchiseSeasonRankings
             [FromQuery] string poll,
             [FromQuery] int seasonYear,
             [FromQuery] int weekNumber,
+            [FromQuery] MarkDirection direction,
             [FromServices] IGetRankingsByPollByWeekQueryHandler handler,
             CancellationToken cancellationToken = default)
         {
-            var query = new GetRankingsByPollByWeekQuery(poll, seasonYear, weekNumber);
+            var query = new GetRankingsByPollByWeekQuery(poll, seasonYear, weekNumber, direction);
             var result = await handler.ExecuteAsync(query, cancellationToken);
             return result.ToActionResult();
         }

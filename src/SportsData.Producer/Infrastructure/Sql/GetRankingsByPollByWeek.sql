@@ -14,11 +14,20 @@ SELECT
 FROM public."FranchiseSeasonRankingDetail" fsrd
 INNER JOIN public."FranchiseSeasonRanking" fsr on fsr."Id" = fsrd."FranchiseSeasonRankingId"
 INNER JOIN public."FranchiseSeason" fs on fs."Id" = fsr."FranchiseSeasonId"
+-- Logo selection: prefer sportdeets-mark + requested direction, then any
+-- sportdeets-mark, then anything else. Matches the pattern in
+-- GetMatchupsByContestIds.sql and LogoSelectionService.
 LEFT JOIN LATERAL (
   SELECT fsl."Uri"
   FROM public."FranchiseSeasonLogo" fsl
   WHERE fsl."FranchiseSeasonId" = fs."Id"
-  ORDER BY fsl."Uri"
+  ORDER BY
+    CASE
+      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
+      ELSE                                                                2
+    END,
+    fsl."Uri"
   LIMIT 1
 ) as fsl on true
 INNER JOIN public."SeasonWeek" sw on sw."Id" = fsr."SeasonWeekId"

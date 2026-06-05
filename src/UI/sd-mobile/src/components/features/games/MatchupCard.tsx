@@ -142,7 +142,11 @@ function TeamRow({
   }
 
   return (
-    <View style={styles.teamRow}>
+    // Background lives at the call site so the team row gets theme.card,
+    // visually offset from the outer card (which uses theme.background).
+    // Mirrors sd-ui's `.team-row { background: var(--bg-card); }` against
+    // `.matchup-card { background: var(--bg-primary); }`.
+    <View style={[styles.teamRow, { backgroundColor: theme.card }]}>
       {/* Logo */}
       <View style={styles.logoBox}>
         {logoUrl ? (
@@ -707,7 +711,10 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
     <View
       style={[
         styles.card,
-        { backgroundColor: theme.card, borderColor: cardBorderColor },
+        // Outer card uses theme.background (mirrors web's --bg-primary on
+        // .matchup-card). The inner team rows then carry theme.card and
+        // visually pop as inset rows — same layered look the web app has.
+        { backgroundColor: theme.background, borderColor: cardBorderColor },
         isFinal && hasPick && isPickCorrect === true && styles.cardCorrect,
         isFinal && (isPickCorrect === false || !hasPick) && styles.cardIncorrect,
       ]}
@@ -884,13 +891,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Team row
+  // Team row — visual offset from the outer card. Mirrors sd-ui's .team-row
+  // (background, rounded corners, gap) PLUS the inset created by web's
+  // .matchup-card { padding: 20px; }. On mobile the outer card has no
+  // padding, so we use marginHorizontal here to keep the row off the card
+  // edges. marginVertical creates the spacing between rows AND between the
+  // top row and the headline banner / bottom row and the odds section.
+  // Background color is applied at the call site (theme.card) so the
+  // tokens stay consistent across light/dark.
   teamRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 10,
+    borderRadius: 8,
+    marginHorizontal: 10,
+    marginVertical: 4,
   },
   logoBox: {
     width: 40,

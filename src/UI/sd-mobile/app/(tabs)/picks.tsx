@@ -170,9 +170,6 @@ export default function PicksScreen() {
               <Text style={[headerStyles.pillText, { color: theme.tint }]}>
                 {made}/{total}
               </Text>
-              <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>
-                {' '}Picks Made
-              </Text>
               <Pressable
                 onPress={() => setHidePicked((v) => !v)}
                 hitSlop={6}

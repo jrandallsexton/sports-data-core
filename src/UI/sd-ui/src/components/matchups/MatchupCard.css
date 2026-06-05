@@ -140,9 +140,9 @@
   height: 60px;
   object-fit: contain;
   background-color: var(--bg-card);
-  border-radius: 8px;
+  /* border-radius: 8px; */
   padding: 0.25rem;
-  border: 1px solid var(--border-subtle);
+  /* border: 1px solid var(--border-subtle); */
 }
 
 .team-details {

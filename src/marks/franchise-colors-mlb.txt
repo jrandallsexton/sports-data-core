@@ -1,9 +1,3 @@
-select fr."Id" as "FranchiseId", f."Id" as "FranchiseSeasonId", f."Slug", f."Abbreviation", f."ColorCodeHex", f."ColorCodeAltHex"
-from public."FranchiseSeason" f
-inner join public."Franchise" fr on fr."Id" = f."FranchiseId"
-where f."SeasonYear" = 2026 and f."IsActive" = true
-order by f."Slug";
-
 FranchiseId	FranchiseSeasonId	Slug	Abbreviation	ColorCodeHex	ColorCodeAltHex
 dc2849d9-5e10-a3ac-a57e-0b74f74c6c09	c5a9db8e-a364-abbb-fb04-f645226d10b3	arizona-diamondbacks	ARI	aa182c	000000
 21b8cc0f-6e6a-5284-850c-d602ad3cb8bb	5810cf06-f4d7-7c16-367f-a191ca445771	athletics	ATH	003831	efb21e

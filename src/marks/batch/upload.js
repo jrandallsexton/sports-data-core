@@ -13,13 +13,22 @@ const { BlobServiceClient } = require('@azure/storage-blob');
 
 const SDMarks = require('../marks.js');
 
-const DATA_FILE = path.resolve(__dirname, '..', 'franchise-colors-mlb.txt');
+// Per-run inputs come from env vars set by run.ps1 (SD_SPORT / SD_DATA_FILE),
+// with MLB defaults so the first-pass developer experience still works
+// without the wrapper.
+const SPORT = process.env.SD_SPORT || 'MLB';
+const DATA_FILE = path.resolve(
+  __dirname,
+  '..',
+  process.env.SD_DATA_FILE || 'franchise-colors-mlb.txt'
+);
+// Default matches the year currently in franchise-colors.sql; run.ps1 sets
+// SD_SCOPE explicitly so this default only matters for direct node invocation.
+const SCOPE = process.env.SD_SCOPE || 'franchise-season:2025';
 const OUTPUT_DIR = path.resolve(__dirname, 'output');
 const MANIFEST_DIR = path.join(OUTPUT_DIR, 'manifests');
 const CONTAINER = 'sportdeets-marks';
 const SIZE = 512;
-const SPORT = 'MLB';
-const SCOPE = 'franchise-season:2026';
 const DIRECTIONS = ['roundel', 'shield', 'hex'];
 
 function readTeams(filePath) {
@@ -81,12 +90,16 @@ async function main() {
   const failures = [];
 
   for (const row of rows) {
+    // NCAAFB data carries the literal string "NULL" (not an empty cell) for
+    // teams without a secondary color. Treat that as a real null so the
+    // engine's derived-accent path kicks in.
+    const altHex = row.ColorCodeAltHex;
     const team = {
       abbr: row.Abbreviation,
       name: row.Slug,
       sport: SPORT,
       primary: '#' + row.ColorCodeHex,
-      secondary: row.ColorCodeAltHex ? '#' + row.ColorCodeAltHex : null
+      secondary: (altHex && altHex !== 'NULL') ? '#' + altHex : null
     };
 
     for (const direction of DIRECTIONS) {

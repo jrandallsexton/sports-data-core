@@ -54,14 +54,28 @@
                  split). Derived from the palette when secondary is missing/weak.
         ink    — letter color, max contrast on `base`
      Deterministic: no randomness, pure function of the two input colors.
+
+     ACCENT_CONTRAST_MIN is the threshold for "is this secondary visually
+     distinct enough from the primary to use as the accent ring/band." This
+     is NOT WCAG text-contrast (4.5/3.0) — that bar applies to text
+     legibility and informational graphical elements. The accent here is
+     brand-decoration; the bar is "are these two color blocks clearly
+     separate?" Set at 1.7 by empirical validation against real MLB color
+     data: at 2.5+ the threshold rejects authentic navy+red pairs (Guardians,
+     Twins, Braves, Rangers — all ~2.3) and forces a washed-out derived
+     mix instead of the actual brand secondary. Tune downward only with new
+     visual validation; tune upward only if a navy+near-black case slips
+     through.
   ------------------------------------------------------------------------ */
+  var ACCENT_CONTRAST_MIN = 1.7;
+
   function resolvePalette(primaryHex, secondaryHex) {
     var base = parseHex(primaryHex) || { r: 90, g: 95, b: 105 };
     var sec = parseHex(secondaryHex); // may be null
     var baseLight = relLum(base) > 0.42;
 
     var accent;
-    var secUsable = sec && contrast(sec, base) >= 1.7;
+    var secUsable = sec && contrast(sec, base) >= ACCENT_CONTRAST_MIN;
     if (secUsable) {
       accent = sec;
     } else {
@@ -69,7 +83,7 @@
       accent = baseLight ? mix(base, INKBLACK, 0.62) : mix(base, WHITE, 0.74);
     }
     // Guarantee the accent will actually read against base.
-    if (contrast(accent, base) < 1.7) {
+    if (contrast(accent, base) < ACCENT_CONTRAST_MIN) {
       accent = baseLight ? mix(base, INKBLACK, 0.7) : mix(base, WHITE, 0.82);
     }
 
@@ -117,7 +131,24 @@
     if (opt.stroke) attrs.push('stroke="' + opt.stroke + '"', 'stroke-width="' + (opt.strokeW || 0) + '"', 'paint-order="stroke"');
     return '<text ' + attrs.join(' ') + '>' + esc(text) + '</text>';
   }
-  function esc(s) { return String(s).replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }); }
+  // Escapes for BOTH HTML element content (the <text> body) AND attribute
+  // values (the aria-label on <svg>). " and ' aren't needed for element
+  // content, but they ARE needed for attribute safety — if a future caller
+  // passes a team name that contains a double-quote, the unescaped value
+  // would break out of the aria-label attribute. Current callers route only
+  // engine-controlled or DB-slug inputs through here, but the escape is
+  // cheap defense-in-depth for any future reuse with less-trusted data.
+  function esc(s) {
+    return String(s).replace(/[<>&"']/g, function (c) {
+      return {
+        '<': '&lt;',
+        '>': '&gt;',
+        '&': '&amp;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[c];
+    });
+  }
 
   function svg(inner, opt) {
     opt = opt || {};

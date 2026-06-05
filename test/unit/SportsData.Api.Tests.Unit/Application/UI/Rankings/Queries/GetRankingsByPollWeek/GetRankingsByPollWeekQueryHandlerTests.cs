@@ -49,7 +49,7 @@ public class GetRankingsByPollWeekQueryHandlerTests : UnitTestBase<GetRankingsBy
         };
 
         _franchiseClientMock
-            .Setup(x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(rankings);
 
         var handler = Mocker.CreateInstance<GetRankingsByPollWeekQueryHandler>();
@@ -135,7 +135,7 @@ public class GetRankingsByPollWeekQueryHandlerTests : UnitTestBase<GetRankingsBy
     {
         // Arrange
         _franchiseClientMock
-            .Setup(x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((RankingsByPollIdByWeekDto)null!);
 
         var handler = Mocker.CreateInstance<GetRankingsByPollWeekQueryHandler>();
@@ -163,7 +163,7 @@ public class GetRankingsByPollWeekQueryHandlerTests : UnitTestBase<GetRankingsBy
         };
 
         _franchiseClientMock
-            .Setup(x => x.GetRankingsByPollByWeek("usa", 2025, 5, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetRankingsByPollByWeek("usa", 2025, 5, It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(rankings);
 
         var handler = Mocker.CreateInstance<GetRankingsByPollWeekQueryHandler>();
@@ -194,7 +194,7 @@ public class GetRankingsByPollWeekQueryHandlerTests : UnitTestBase<GetRankingsBy
         };
 
         _franchiseClientMock
-            .Setup(x => x.GetRankingsByPollByWeek("cfp", 2025, 10, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetRankingsByPollByWeek("cfp", 2025, 10, It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(rankings);
 
         var handler = Mocker.CreateInstance<GetRankingsByPollWeekQueryHandler>();
@@ -225,7 +225,7 @@ public class GetRankingsByPollWeekQueryHandlerTests : UnitTestBase<GetRankingsBy
         };
 
         _franchiseClientMock
-            .Setup(x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(rankings);
 
         var handler = Mocker.CreateInstance<GetRankingsByPollWeekQueryHandler>();
@@ -253,7 +253,7 @@ public class GetRankingsByPollWeekQueryHandlerTests : UnitTestBase<GetRankingsBy
         };
 
         _franchiseClientMock
-            .Setup(x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(rankings);
 
         var handler = Mocker.CreateInstance<GetRankingsByPollWeekQueryHandler>();
@@ -265,7 +265,7 @@ public class GetRankingsByPollWeekQueryHandlerTests : UnitTestBase<GetRankingsBy
         // Assert
         result.IsSuccess.Should().BeTrue();
         _franchiseClientMock.Verify(
-            x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<CancellationToken>()),
+            x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -274,7 +274,7 @@ public class GetRankingsByPollWeekQueryHandlerTests : UnitTestBase<GetRankingsBy
     {
         // Arrange
         _franchiseClientMock
-            .Setup(x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetRankingsByPollByWeek("ap", 2025, 5, It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("HTTP error"));
 
         var handler = Mocker.CreateInstance<GetRankingsByPollWeekQueryHandler>();

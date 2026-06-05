@@ -31,9 +31,10 @@ public class GetMatchupForContestQueryHandler : IGetMatchupForContestQueryHandle
         GetMatchupForContestQuery query,
         CancellationToken cancellationToken)
     {
+        // Admin debug endpoint — no user context, so default to Roundel.
         var matchupsResult = await _contestClientFactory
             .Resolve(query.Sport)
-            .GetMatchupsByContestIds(new List<Guid> { query.ContestId }, cancellationToken);
+            .GetMatchupsByContestIds(new List<Guid> { query.ContestId }, MarkDirection.Roundel, cancellationToken);
 
         if (!matchupsResult.IsSuccess)
         {

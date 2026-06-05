@@ -22,7 +22,7 @@ public interface IProvideSeasons : IProvideHealthChecks
     Task<Result<List<CanonicalSeasonWeekDto>>> GetCurrentAndLastSeasonWeeks(CancellationToken ct = default);
     Task<Result<List<CanonicalSeasonWeekDto>>> GetCompletedSeasonWeeks(int seasonYear, CancellationToken ct = default);
     Task<Result<List<CanonicalSeasonWeekDto>>> GetSeasonWeeksOverlapping(DateTime from, DateTime to, CancellationToken ct = default);
-    Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken ct = default);
+    Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, MarkDirection direction, CancellationToken ct = default);
 }
 
 public class SeasonClient : ClientBase, IProvideSeasons
@@ -144,10 +144,10 @@ public class SeasonClient : ClientBase, IProvideSeasons
             ct);
     }
 
-    public async Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, CancellationToken ct = default)
+    public async Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, MarkDirection direction, CancellationToken ct = default)
     {
         return await GetOrDefaultAsync(
-            $"franchise-season-rankings/by-poll?poll={poll}&seasonYear={seasonYear}&weekNumber={weekNumber}",
+            $"franchise-season-rankings/by-poll?poll={poll}&seasonYear={seasonYear}&weekNumber={weekNumber}&direction={direction}",
             new RankingsByPollIdByWeekDto
             {
                 PollName = poll,

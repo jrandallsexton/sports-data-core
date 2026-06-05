@@ -56,7 +56,7 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         await DataContext.SaveChangesAsync();
 
         _contestClientMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<LeagueMatchupDto>>([]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
@@ -100,7 +100,7 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         var canonicalMatchup2 = CreateCanonicalMatchup(contestId2);
 
         _contestClientMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<LeagueMatchupDto>>([canonicalMatchup1, canonicalMatchup2]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
@@ -143,7 +143,7 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         canonicalMatchup.OverUnderCurrent = 52.5;
 
         _contestClientMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<LeagueMatchupDto>>([canonicalMatchup]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
@@ -183,7 +183,7 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
         await DataContext.SaveChangesAsync();
 
         _contestClientMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<LeagueMatchupDto>>([]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
@@ -230,7 +230,7 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
 
         var canonicalMatchup = CreateCanonicalMatchup(contestId);
         _contestClientMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<LeagueMatchupDto>>([canonicalMatchup]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();
@@ -278,7 +278,7 @@ public class GetLeagueWeekMatchupsQueryHandlerTests : ApiTestBase<GetLeagueWeekM
 
         var canonicalMatchup = CreateCanonicalMatchup(contestId);
         _contestClientMock
-            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMatchupsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<MarkDirection>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<LeagueMatchupDto>>([canonicalMatchup]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekMatchupsQueryHandler>();

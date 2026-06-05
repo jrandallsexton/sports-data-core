@@ -1,0 +1,16 @@
+{
+  "name": "sportdeets-marks-batch",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Batch generator for sportDeets team marks. Reads franchise color data, renders SVG via ../marks.js, rasterizes to PNG, and (in later phases) uploads to Azure Blob + inserts FranchiseLogo rows.",
+  "scripts": {
+    "generate:local": "node generate.js",
+    "upload": "node upload.js",
+    "insert": "node insert.js"
+  },
+  "dependencies": {
+    "@azure/storage-blob": "^12.27.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "pg": "^8.13.1"
+  }
+}

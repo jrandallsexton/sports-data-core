@@ -368,8 +368,10 @@ namespace SportsData.Api.Application.Admin
             // Canonical statuses come from Producer in one round-trip;
             // .ToList() is for the cast — GetMatchupsByContestIds takes
             // a List<Guid>, contestIds is IReadOnlyList<Guid>.
+            // Direction = Roundel: admin path, no user preference context.
             var matchupsResult = await client.GetMatchupsByContestIds(
                 contestIds.ToList(),
+                MarkDirection.Roundel,
                 cancellationToken);
 
             if (!matchupsResult.IsSuccess)

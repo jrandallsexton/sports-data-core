@@ -49,29 +49,76 @@ LEFT JOIN LATERAL (
 LEFT JOIN public."CompetitionTeamOdds" cto ON cto."CompetitionOddsId" = co."Id" AND cto."Side" = 'Home'
 INNER JOIN public."FranchiseSeason" fsAway ON fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fAway ON fAway."Id" = fsAway."FranchiseId"
+-- Logo selection order (applies to all eight lateral subqueries below):
+--   1. sportdeets-mark row tagged with the requested direction (@Direction)
+--   2. any sportdeets-mark row (fallback when requested direction not yet
+--      generated for this team — e.g. shields not backfilled)
+--   3. anything else (preserves ESPN-sourced behavior for unbackfilled teams)
+-- Tie-breaker stays CreatedUtc ASC to match prior behavior on ties.
 LEFT JOIN LATERAL (
   SELECT fl.* FROM public."FranchiseLogo" fl
   WHERE fl."FranchiseId" = fAway."Id"
-  ORDER BY fl."CreatedUtc" ASC LIMIT 1
+  ORDER BY
+    CASE
+      WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
+      ELSE                                                               2
+    END,
+    fl."CreatedUtc" ASC
+  LIMIT 1
 ) flAway ON TRUE
 -- FranchiseSeason-level logo is preferred; Franchise-level acts as fallback
 -- (matches LogoSelectionService.SelectWithFallback convention: season -> franchise).
 LEFT JOIN LATERAL (
   SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
   WHERE fsl."FranchiseSeasonId" = fsAway."Id"
-  ORDER BY fsl."CreatedUtc" ASC LIMIT 1
+  ORDER BY
+    CASE
+      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
+      ELSE                                                                2
+    END,
+    fsl."CreatedUtc" ASC
+  LIMIT 1
 ) fslAway ON TRUE
 -- Dark-bg variants for theme-aware UI rendering. Same season -> franchise
--- fallback as the default lateral above, but filtered to IsForDarkBg = true.
+-- fallback as the default lateral above. Note sportdeets-marks are
+-- theme-agnostic (single render serves both backgrounds), so a team with
+-- sportdeets-mark rows will surface the same Uri here as in the light lateral
+-- above — that is the intended behavior until/unless dedicated dark variants
+-- are generated. The IsForDarkBg = TRUE filter only matters for ESPN-sourced
+-- rows in the ELSE branch.
 LEFT JOIN LATERAL (
   SELECT fl.* FROM public."FranchiseLogo" fl
-  WHERE fl."FranchiseId" = fAway."Id" AND fl."IsForDarkBg" = TRUE
-  ORDER BY fl."CreatedUtc" ASC LIMIT 1
+  WHERE fl."FranchiseId" = fAway."Id"
+    AND (
+      fl."Rel" @> ARRAY['sportdeets-mark']::text[]
+      OR fl."IsForDarkBg" = TRUE
+    )
+  ORDER BY
+    CASE
+      WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
+      ELSE                                                               2
+    END,
+    fl."CreatedUtc" ASC
+  LIMIT 1
 ) flDarkAway ON TRUE
 LEFT JOIN LATERAL (
   SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
-  WHERE fsl."FranchiseSeasonId" = fsAway."Id" AND fsl."IsForDarkBg" = TRUE
-  ORDER BY fsl."CreatedUtc" ASC LIMIT 1
+  WHERE fsl."FranchiseSeasonId" = fsAway."Id"
+    AND (
+      fsl."Rel" @> ARRAY['sportdeets-mark']::text[]
+      OR fsl."IsForDarkBg" = TRUE
+    )
+  ORDER BY
+    CASE
+      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
+      ELSE                                                                2
+    END,
+    fsl."CreatedUtc" ASC
+  LIMIT 1
 ) fslDarkAway ON TRUE
 INNER JOIN public."GroupSeason" gsAway ON gsAway."Id" = fsAway."GroupSeasonId"
 LEFT JOIN LATERAL (
@@ -88,24 +135,60 @@ INNER JOIN public."Franchise" fHome ON fHome."Id" = fsHome."FranchiseId"
 LEFT JOIN LATERAL (
   SELECT fl.* FROM public."FranchiseLogo" fl
   WHERE fl."FranchiseId" = fHome."Id"
-  ORDER BY fl."CreatedUtc" ASC LIMIT 1
+  ORDER BY
+    CASE
+      WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
+      ELSE                                                               2
+    END,
+    fl."CreatedUtc" ASC
+  LIMIT 1
 ) flHome ON TRUE
 -- FranchiseSeason-level preferred, Franchise fallback — see Away comment above.
 LEFT JOIN LATERAL (
   SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
   WHERE fsl."FranchiseSeasonId" = fsHome."Id"
-  ORDER BY fsl."CreatedUtc" ASC LIMIT 1
+  ORDER BY
+    CASE
+      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
+      ELSE                                                                2
+    END,
+    fsl."CreatedUtc" ASC
+  LIMIT 1
 ) fslHome ON TRUE
 -- Dark-bg variants — see Away comment above.
 LEFT JOIN LATERAL (
   SELECT fl.* FROM public."FranchiseLogo" fl
-  WHERE fl."FranchiseId" = fHome."Id" AND fl."IsForDarkBg" = TRUE
-  ORDER BY fl."CreatedUtc" ASC LIMIT 1
+  WHERE fl."FranchiseId" = fHome."Id"
+    AND (
+      fl."Rel" @> ARRAY['sportdeets-mark']::text[]
+      OR fl."IsForDarkBg" = TRUE
+    )
+  ORDER BY
+    CASE
+      WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
+      ELSE                                                               2
+    END,
+    fl."CreatedUtc" ASC
+  LIMIT 1
 ) flDarkHome ON TRUE
 LEFT JOIN LATERAL (
   SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
-  WHERE fsl."FranchiseSeasonId" = fsHome."Id" AND fsl."IsForDarkBg" = TRUE
-  ORDER BY fsl."CreatedUtc" ASC LIMIT 1
+  WHERE fsl."FranchiseSeasonId" = fsHome."Id"
+    AND (
+      fsl."Rel" @> ARRAY['sportdeets-mark']::text[]
+      OR fsl."IsForDarkBg" = TRUE
+    )
+  ORDER BY
+    CASE
+      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
+      ELSE                                                                2
+    END,
+    fsl."CreatedUtc" ASC
+  LIMIT 1
 ) fslDarkHome ON TRUE
 INNER JOIN public."GroupSeason" gsHome ON gsHome."Id" = fsHome."GroupSeasonId"
 LEFT JOIN LATERAL (

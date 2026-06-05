@@ -56,7 +56,12 @@ public class GetRankingsByPollWeekQueryHandler : IGetRankingsByPollWeekQueryHand
         {
             // TODO: multi-sport - resolve from context
             var client = _franchiseClientFactory.Resolve(Sport.FootballNcaa);
-            var rankings = await client.GetRankingsByPollByWeek(poll, query.SeasonYear, query.Week, cancellationToken);
+
+            // TODO: read direction from user.PreferredMark once the profile-toggle
+            // UI ships. See docs/team-mark-user-preference-design.md.
+            var direction = MarkDirection.Roundel;
+
+            var rankings = await client.GetRankingsByPollByWeek(poll, query.SeasonYear, query.Week, direction, cancellationToken);
 
             if (rankings == null)
             {

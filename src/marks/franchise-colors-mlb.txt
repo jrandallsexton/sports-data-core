@@ -1,0 +1,37 @@
+select fr."Id" as "FranchiseId", f."Id" as "FranchiseSeasonId", f."Slug", f."Abbreviation", f."ColorCodeHex", f."ColorCodeAltHex"
+from public."FranchiseSeason" f
+inner join public."Franchise" fr on fr."Id" = f."FranchiseId"
+where f."SeasonYear" = 2026 and f."IsActive" = true
+order by f."Slug";
+
+FranchiseId	FranchiseSeasonId	Slug	Abbreviation	ColorCodeHex	ColorCodeAltHex
+dc2849d9-5e10-a3ac-a57e-0b74f74c6c09	c5a9db8e-a364-abbb-fb04-f645226d10b3	arizona-diamondbacks	ARI	aa182c	000000
+21b8cc0f-6e6a-5284-850c-d602ad3cb8bb	5810cf06-f4d7-7c16-367f-a191ca445771	athletics	ATH	003831	efb21e
+5bfdad78-da67-0998-b9cd-8e451d016299	a0f849f4-b184-f53a-82d7-9e0fe1d3c270	atlanta-braves	ATL	0c2340	ba0c2f
+2feeca7e-8013-deeb-a519-f3361e1df7d9	41e828e9-eb15-2f75-0a86-21686992ca2f	baltimore-orioles	BAL	df4601	000000
+d4a1bcb3-0028-576a-b81c-eb2378336622	4b64d3ac-92d3-6011-fd60-19eed40299e7	boston-red-sox	BOS	0d2b56	bd3039
+04c54daf-2e2f-dd23-7bb2-a82487f10dbe	807a38f3-6e52-be58-7f83-736e626726d7	chicago-cubs	CHC	0e3386	cc3433
+cea2344d-72e5-983d-be9f-3d283a592103	e23df181-22eb-a1a5-9442-edf1d8c6c19e	chicago-white-sox	CHW	000000	c4ced4
+f6e36945-4671-d120-604d-42c4d616060a	29232bf7-e39f-abd8-bb8e-1a2db63b2444	cincinnati-reds	CIN	c6011f	ffffff
+bf12bee0-3c29-7066-0cdd-8ea6907020ab	685b145e-6c60-9796-456c-4c25a81e0873	cleveland-guardians	CLE	002b5c	e31937
+5bef626e-76ec-c244-8a59-3de7c640b70c	ae5acbfc-0913-7cf3-0b62-5ad920f087ec	colorado-rockies	COL	33006f	000000
+4cd8f79d-2f0b-910d-a5a1-375ed8101eef	f501ec08-58c8-5172-0da8-c80690d75d01	detroit-tigers	DET	0a2240	ff4713
+7902f0af-eb3d-79f7-33fc-a813f3644806	75997be5-fab6-f6b9-11cb-d5afa093ae1c	houston-astros	HOU	002d62	eb6e1f
+c8cd7538-6e20-af03-8acc-6322978d9cca	185e1c2c-49e5-5804-313c-4c9831916f46	kansas-city-royals	KC	004687	7ab2dd
+7e865b0e-e5c8-4615-043f-4a1625539acd	919d32e9-a117-7b59-860a-66859ed66969	los-angeles-angels	LAA	ba0021	c4ced4
+aa1a9e9b-f14c-458b-2ddf-6e0397c71d78	9873e5f2-c092-e23c-0b86-2744e5e4461e	los-angeles-dodgers	LAD	005a9c	ffffff
+dec5cbce-245b-d68d-9b3d-bd6237b1564f	cfd671c4-2851-3ea7-4e06-07df98fca36c	miami-marlins	MIA	00a3e0	000000
+d31ee3a8-0c4a-807a-02e2-f018633d57b7	f72c5ddf-6b94-ba12-965d-55a892b5aa9a	milwaukee-brewers	MIL	13294b	ffc72c
+5c26f8d6-b93f-2e66-d6d0-9095d4122e53	91bb345f-72a4-a976-6dc3-428003e87c46	minnesota-twins	MIN	031f40	e20e32
+297446c9-7313-40bb-6248-2f78c0f88b17	1bfeddea-2a40-c500-599e-0ec8e9ae4761	new-york-mets	NYM	002d72	ff5910
+04e80690-ef19-ee97-cea4-848ac4e89293	bb6fe154-9ef6-15ab-ba4a-24abff9a78e2	new-york-yankees	NYY	132448	c4ced4
+3eb82f6d-ca69-2bd6-ddfb-c56cc7425c08	f359f9d6-3d7b-28ef-0b6b-d62b5f153c21	philadelphia-phillies	PHI	e81828	003278
+8c0eddc4-d015-e8f7-e7d6-ac3ca01694a6	e0cc7193-c9c1-b7da-e99c-f350564237f5	pittsburgh-pirates	PIT	000000	fdb827
+c0e4b30c-5580-bc0c-a5d7-983f17997ba2	2cfec554-358d-c7d8-ef67-ae9ffe5f8b3f	san-diego-padres	SD	2f241d	ffc425
+87ca06d5-1fb4-5777-7a19-2ed07f6025e4	3e3481c0-6061-9a63-d944-61efd4d59bcd	san-francisco-giants	SF	000000	fd5a1e
+a354a437-fc32-7800-3aa6-a1686c60751f	8b9c540a-bb08-3ff2-fe92-cb3a7ac36e40	seattle-mariners	SEA	005c5c	0c2c56
+2026e51d-e3e6-e4bb-0af6-f6763d0f154d	adc098fa-8647-1011-23f8-2cb4ac9852f6	st-louis-cardinals	STL	be0a14	001541
+73d1d893-2b38-a1b7-67fc-0c06e754d3a9	9c82230a-7266-3dfd-2560-8d5264ecbe9a	tampa-bay-rays	TB	092c5c	8fbce6
+4f890cb9-8d7f-7cf1-eb88-f4c46c1e78c1	d9e159eb-ee26-b954-3436-5449d182e106	texas-rangers	TEX	003278	c0111f
+0848f93a-d74a-368a-5c23-26cadf06fe7d	262b0a6f-70e2-1258-031d-233c41b5405c	toronto-blue-jays	TOR	134a8e	6cace5
+f965b06f-8a4c-d4d2-4aed-5e775ab145c3	b16fb8c0-cf9f-19ba-f71b-e10b20a9870c	washington-nationals	WSH	ab0003	11225b

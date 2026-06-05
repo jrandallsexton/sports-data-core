@@ -163,7 +163,14 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.LeagueId,
                 query.Week);
 
-            var matchupsResult = await _contestClientFactory.Resolve(league.Sport).GetMatchupsByContestIds(contestIds);
+            // TODO: read direction from user.PreferredMark once the profile-
+            // toggle UI ships. For now every user sees roundels. See
+            // docs/team-mark-user-preference-design.md.
+            var direction = MarkDirection.Roundel;
+
+            var matchupsResult = await _contestClientFactory
+                .Resolve(league.Sport)
+                .GetMatchupsByContestIds(contestIds, direction, cancellationToken);
             if (!matchupsResult.IsSuccess)
             {
                 _logger.LogError("Failed to retrieve canonical matchups for leagueId={LeagueId}, week={Week}", query.LeagueId, query.Week);

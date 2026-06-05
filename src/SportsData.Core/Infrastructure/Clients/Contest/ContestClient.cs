@@ -58,7 +58,7 @@ public interface IProvideContests : IProvideHealthChecks
     Task<Result<List<Matchup>>> GetMatchupsForCurrentWeek(CancellationToken ct = default);
     Task<Result<List<Matchup>>> GetMatchupsForSeasonWeek(int year, int week, CancellationToken ct = default);
     Task<Result<Matchup>> GetMatchupByContestId(Guid contestId, CancellationToken ct = default);
-    Task<Result<List<LeagueMatchupDto>>> GetMatchupsByContestIds(List<Guid> contestIds, CancellationToken ct = default);
+    Task<Result<List<LeagueMatchupDto>>> GetMatchupsByContestIds(List<Guid> contestIds, MarkDirection direction, CancellationToken ct = default);
     Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default);
     Task<Result<Dictionary<Guid, MatchupForPreviewDto>>> GetMatchupsForPreviewBatch(List<Guid> contestIds, CancellationToken ct = default);
     Task<Result<MatchupResult>> GetMatchupResult(Guid contestId, CancellationToken ct = default);
@@ -258,13 +258,14 @@ public class ContestClient : ClientBase, IProvideContests
             default!, "Matchup", ResultStatus.NotFound, ct);
     }
 
-    public async Task<Result<List<LeagueMatchupDto>>> GetMatchupsByContestIds(List<Guid> contestIds, CancellationToken ct = default)
+    public async Task<Result<List<LeagueMatchupDto>>> GetMatchupsByContestIds(List<Guid> contestIds, MarkDirection direction, CancellationToken ct = default)
     {
         if (contestIds is null || contestIds.Count == 0)
             return new Success<List<LeagueMatchupDto>>(new List<LeagueMatchupDto>());
 
-        var result = await PostOrDefaultAsync<List<LeagueMatchupDto>, Guid[]>(
-            "contests/matchups/by-ids", contestIds.ToArray(), new List<LeagueMatchupDto>(), ct);
+        var request = new GetMatchupsByContestIdsRequest(contestIds.ToArray(), direction);
+        var result = await PostOrDefaultAsync<List<LeagueMatchupDto>, GetMatchupsByContestIdsRequest>(
+            "contests/matchups/by-ids", request, new List<LeagueMatchupDto>(), ct);
         return new Success<List<LeagueMatchupDto>>(result);
     }
 

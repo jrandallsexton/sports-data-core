@@ -380,11 +380,15 @@ namespace SportsData.Producer.Application.Contests
 
         [HttpPost("matchups/by-ids")]
         public async Task<ActionResult<List<LeagueMatchupDto>>> GetMatchupsByContestIds(
-            [FromBody] Guid[] contestIds,
+            [FromBody] GetMatchupsByContestIdsRequest request,
             [FromServices] Queries.Matchups.GetMatchupsByContestIds.IGetMatchupsByContestIdsQueryHandler handler,
             CancellationToken cancellationToken = default)
         {
-            var result = await handler.ExecuteAsync(new Queries.Matchups.GetMatchupsByContestIds.GetMatchupsByContestIdsQuery(contestIds), cancellationToken);
+            var result = await handler.ExecuteAsync(
+                new Queries.Matchups.GetMatchupsByContestIds.GetMatchupsByContestIdsQuery(
+                    request.ContestIds,
+                    request.Direction),
+                cancellationToken);
             return result.ToActionResult();
         }
 

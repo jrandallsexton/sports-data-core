@@ -51,9 +51,17 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
 
         var sql = _sqlProvider.GetMatchupsByContestIds();
 
+        // Direction is the lowercase enum name ("roundel" / "shield" / "hex")
+        // so it matches the Rel-tag convention used by the marks batch script.
+        // The SQL's CASE-based ORDER BY checks Rel @> ARRAY['sportdeets-mark', @Direction].
+        var directionTag = query.Direction.ToString().ToLowerInvariant();
+
         var connection = _dbContext.Database.GetDbConnection();
         var matchups = (await connection.QueryAsync<LeagueMatchupDto>(
-            new CommandDefinition(sql, new { ContestIds = query.ContestIds }, cancellationToken: cancellationToken)))
+            new CommandDefinition(
+                sql,
+                new { ContestIds = query.ContestIds, Direction = directionTag },
+                cancellationToken: cancellationToken)))
             .ToList();
 
         var streamTimes = await GetActiveStreamTimesAsync(query.ContestIds, cancellationToken);

@@ -55,13 +55,19 @@ namespace SportsData.Api
                 .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 .AddJwtBearer(options =>
                 {
-                    options.Authority = "https://securetoken.google.com/sportdeets-dev";
+                    // Firebase project — migrated from "sportdeets-dev" to
+                    // "sportdeets" during the iOS push notification work
+                    // (see docs/firebase-project-migration.md). Web and
+                    // mobile clients were updated then; the API was missed
+                    // and surfaced as IDX10214 audience-validation errors
+                    // for every authenticated UI request in prod.
+                    options.Authority = "https://securetoken.google.com/sportdeets";
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
-                        ValidIssuer = "https://securetoken.google.com/sportdeets-dev",
+                        ValidIssuer = "https://securetoken.google.com/sportdeets",
                         ValidateAudience = true,
-                        ValidAudience = "sportdeets-dev",
+                        ValidAudience = "sportdeets",
                         ValidateLifetime = true,
                         NameClaimType = "user_id",
                         RoleClaimType = "role"

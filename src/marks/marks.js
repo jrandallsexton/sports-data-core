@@ -339,6 +339,72 @@
   var _u = 0;
   function uid() { return (_u++).toString(36) + Math.random().toString(36).slice(2, 5); }
 
+  /* =========================================================================
+     PLAYER AVATAR (roundel-only, single style)
+     Same disc + ring + center-text structure as the team roundel, with the
+     center content derived from the player. Cascade:
+        1. FL initials from the player's DisplayName (default)
+        2. Jersey number (fallback when DisplayName can't be parsed)
+        3. SCREAM render (hot magenta + "??") when both are unusable
+     No user-preference toggle — one render per player. One-off cleanup
+     (e.g. "Robert Williams IV" → "RW4") is handled by manually overriding
+     the chosen content upstream of this engine.
+  ========================================================================= */
+
+  // Hot-magenta scream disc. Stands out in any UI surface (no team in any
+  // sport uses pure #FF00FF). The aria-label includes whatever caller-side
+  // label we have so debug logs / screen readers can identify which athlete
+  // record is broken upstream.
+  function screamAvatar(o, label) {
+    var inner = '';
+    inner += '<circle cx="50" cy="50" r="47" fill="#FF00FF" stroke="#7a007a" stroke-width="1.5"/>';
+    inner += letter('??', 50, 51.5, '#ffffff', { maxW: 50, weight: 900 });
+    return svg(inner, { size: o.size, label: (label || 'unknown') + ' — missing data' });
+  }
+
+  // Derive "FL" initials from a DisplayName. Strips common Roman-numeral and
+  // Jr/Sr suffixes, splits on whitespace, takes char-0 of the first token +
+  // char-0 of the last token. Returns null when the result wouldn't be at
+  // least one character — the caller scream-renders in that case.
+  var INITIALS_SUFFIX_RE = /\s+(Jr\.?|Sr\.?|I{1,3}V?|VI{0,3})$/i;
+  function deriveInitials(displayName) {
+    if (!displayName) return null;
+    var s = String(displayName).replace(INITIALS_SUFFIX_RE, '').trim();
+    if (!s) return null;
+    var tokens = s.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return null;
+    var first = tokens[0].charAt(0);
+    if (!first) return null;
+    var last = tokens.length > 1 ? tokens[tokens.length - 1].charAt(0) : '';
+    return (first + last).toUpperCase();
+  }
+
+  function playerAvatar(player, team, o) {
+    o = o || {};
+
+    // Cascade: initials → jersey → scream. No style param; one render per
+    // player. Upstream callers can short-circuit the cascade by providing a
+    // pre-resolved player.contentOverride (used for manual one-off cleanup
+    // like "Robert Williams IV" → "RW4" where the auto-derivation would
+    // settle for "RW").
+    var content = (player && player.contentOverride) || null;
+    if (content == null) {
+      content = deriveInitials(player && player.displayName);
+    }
+    if (content == null && player && player.jersey != null && String(player.jersey).length > 0) {
+      content = String(player.jersey);
+    }
+    if (content == null) return screamAvatar(o, player && player.displayName);
+
+    var p = resolvePalette(team.primary, team.secondary);
+    var key = tileKeyline(o.theme);
+    var inner = '';
+    inner += '<circle cx="50" cy="50" r="47" fill="' + p.baseHex + '" stroke="' + key + '" stroke-width="1.5"/>';
+    inner += '<circle cx="50" cy="50" r="40.5" fill="none" stroke="' + p.accentHex + '" stroke-width="5"/>';
+    inner += letter(content, 50, 51.5, p.inkHex, { maxW: 56, weight: 800 });
+    return svg(inner, { size: o.size, label: (player && player.displayName) || '' });
+  }
+
   /* ---------- direction registry ----------------------------------------- */
   var DIRECTIONS = [
     {
@@ -376,7 +442,14 @@
     render: function (id, team, opt) {
       var d = this.byId(id);
       return d ? d.render(team, opt || {}) : '';
-    }
+    },
+    // Player avatars — single style, cascade initials → jersey → scream.
+    // See playerAvatar() above for the cascade details and the
+    // contentOverride escape hatch for manual one-off cleanup.
+    renderPlayer: function (player, team, opt) {
+      return playerAvatar(player, team, opt || {});
+    },
+    deriveInitials: deriveInitials
   };
   global.SDMarks = API;
   if (typeof module === 'object' && module.exports) module.exports = API;

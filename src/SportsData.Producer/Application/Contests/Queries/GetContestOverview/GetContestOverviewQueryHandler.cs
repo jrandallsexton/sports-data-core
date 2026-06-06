@@ -386,8 +386,15 @@ public partial class GetContestOverviewQueryHandler : IGetContestOverviewQueryHa
             .Select(a => new
             {
                 AthleteSeasonId = a.Id,
+                // Headshot priority: sportdeets-generated avatars
+                // (Rel = ["sportdeets-mark"]) win over any ESPN-sourced
+                // images. CreatedUtc breaks ties — preserves prior behavior
+                // for athletes that don't yet have a generated avatar.
                 HeadshotUrl = a.Athlete != null && a.Athlete.Images.Any()
-                    ? a.Athlete.Images.OrderBy(i => i.CreatedUtc).First().Uri.ToString()
+                    ? a.Athlete.Images
+                        .OrderBy(i => i.Rel != null && i.Rel.Contains("sportdeets-mark") ? 0 : 1)
+                        .ThenBy(i => i.CreatedUtc)
+                        .First().Uri.ToString()
                     : null
             })
             .ToListAsync(cancellationToken);

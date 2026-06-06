@@ -149,6 +149,14 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
         // surface multiple home/away SP rows. With this ordering combined
         // with the "first wins" stitch below, the chosen row is stable
         // across calls regardless of physical row order from Postgres.
+        //
+        // Two-phase headshot load: a flat projection here (no nested
+        // OrderBy inside Select) followed by a separate Images query and
+        // priority selection in C# memory. The previous one-phase form
+        // with the priority OrderBy inlined in the Select was either
+        // translated to SQL that ignored the priority or silently fell
+        // back to insertion order — sportdeets-mark rows didn't win even
+        // though the LINQ looked right.
         var rows = await baseballCtx.CompetitionCompetitorProbables
             .AsNoTracking()
             .Where(p => p.Name == ProbableStartingPitcherRole)
@@ -159,11 +167,38 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
                 ContestId = p.CompetitionCompetitor.Competition.ContestId,
                 p.CompetitionCompetitor.HomeAway,
                 p.AthleteSeason.DisplayName,
-                HeadshotUrl = p.AthleteSeason.Athlete != null && p.AthleteSeason.Athlete.Images.Any()
-                    ? p.AthleteSeason.Athlete.Images.OrderBy(i => i.CreatedUtc).First().Uri.ToString()
-                    : null
+                AthleteId = (Guid?)p.AthleteSeason.AthleteId
             })
             .ToListAsync(cancellationToken);
+
+        // Phase 2: fetch images for just the athletes we need, do the
+        // priority selection (sportdeets-mark first, CreatedUtc tiebreak)
+        // in C#. Translation surface is now trivial — Where + Select with
+        // no nested ordering.
+        var athleteIds = rows
+            .Where(r => r.AthleteId.HasValue)
+            .Select(r => r.AthleteId!.Value)
+            .Distinct()
+            .ToList();
+
+        var headshotByAthleteId = new Dictionary<Guid, string>();
+        if (athleteIds.Count > 0)
+        {
+            var imgRows = await baseballCtx.AthleteImages
+                .AsNoTracking()
+                .Where(i => athleteIds.Contains(i.AthleteId))
+                .Select(i => new { i.AthleteId, i.Uri, i.Rel, i.CreatedUtc })
+                .ToListAsync(cancellationToken);
+
+            foreach (var grp in imgRows.GroupBy(i => i.AthleteId))
+            {
+                var winner = grp
+                    .OrderBy(i => i.Rel != null && i.Rel.Contains("sportdeets-mark") ? 0 : 1)
+                    .ThenBy(i => i.CreatedUtc)
+                    .First();
+                headshotByAthleteId[grp.Key] = winner.Uri.ToString();
+            }
+        }
 
         var dict = new Dictionary<Guid, (ProbablePitcherDto? Home, ProbablePitcherDto? Away)>();
         foreach (var r in rows)
@@ -174,10 +209,15 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
             }
 
             dict.TryGetValue(r.ContestId, out var entry);
+            string? headshotUrl = null;
+            if (r.AthleteId.HasValue)
+            {
+                headshotByAthleteId.TryGetValue(r.AthleteId.Value, out headshotUrl);
+            }
             var pitcher = new ProbablePitcherDto
             {
                 DisplayName = r.DisplayName!,
-                HeadshotUrl = r.HeadshotUrl
+                HeadshotUrl = headshotUrl
             };
 
             // First match wins per side. Combined with the OrderBy above,

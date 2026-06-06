@@ -35,6 +35,12 @@ param(
   [ValidateSet('Mlb','Ncaafb','Nfl')]
   [string]$Sport = 'Mlb',
 
+  # 'Teams' (default) runs upload.js / insert.js against franchise-colors data
+  # and writes FranchiseSeasonLogo rows. 'Athletes' runs upload-athletes.js /
+  # insert-athletes.js against athletes-{sport} data and writes AthleteImage.
+  [ValidateSet('Teams','Athletes')]
+  [string]$Target = 'Teams',
+
   [string]$Scope,
 
   [string]$Manifest
@@ -79,46 +85,52 @@ if ($Environment -eq 'prod') {
 }
 $env:PG_PORT = '5432'
 
-# Sport — picks the per-sport Producer DB, the slug used inside the SVG
-# aria-label and the marks.js sportFamily branch, and the source data file
-# upload.js reads. All three are scoped to FranchiseSeason 2026.
+# Sport — picks the per-sport Producer DB and per-target source data file.
+# Teams reads franchise-colors-{sport}.txt; Athletes reads athletes-{sport}.txt.
 switch ($Sport) {
   'Mlb' {
-    $env:PG_DATABASE  = 'sdProducer.BaseballMlb'
-    $env:SD_SPORT     = 'MLB'
-    $env:SD_DATA_FILE = 'franchise-colors-mlb.txt'
+    $env:PG_DATABASE = 'sdProducer.BaseballMlb'
+    $env:SD_SPORT    = 'MLB'
+    $sportLower      = 'mlb'
   }
   'Ncaafb' {
-    $env:PG_DATABASE  = 'sdProducer.FootballNcaa'
-    $env:SD_SPORT     = 'NCAAFB'
-    $env:SD_DATA_FILE = 'franchise-colors-ncaafb.txt'
+    $env:PG_DATABASE = 'sdProducer.FootballNcaa'
+    $env:SD_SPORT    = 'NCAAFB'
+    $sportLower      = 'ncaafb'
   }
   'Nfl' {
-    $env:PG_DATABASE  = 'sdProducer.FootballNfl'
-    $env:SD_SPORT     = 'NFL'
-    $env:SD_DATA_FILE = 'franchise-colors-nfl.txt'
+    $env:PG_DATABASE = 'sdProducer.FootballNfl'
+    $env:SD_SPORT    = 'NFL'
+    $sportLower      = 'nfl'
   }
 }
 
-# SCOPE labels the manifest with the FranchiseSeason year the data file
-# was pulled from (see franchise-colors.sql for the canonical query). Set
-# at the wrapper level so reruns against a different year only need a -Scope
-# override here, not a code edit in upload.js.
-if (-not $Scope) { $Scope = 'franchise-season:2025' }
+if ($Target -eq 'Teams') {
+  $env:SD_DATA_FILE = "franchise-colors-$sportLower.txt"
+  if (-not $Scope) { $Scope = 'franchise-season:2026' }
+} else {
+  # Athletes
+  $env:SD_DATA_FILE = "athletes-$sportLower.txt"
+  if (-not $Scope) { $Scope = 'athletes' }
+}
 $env:SD_SCOPE = $Scope
 
 $env:SD_TARGET_ENV = $Environment
 
-Write-Host "Phase: $Phase  Environment: $Environment  Sport: $Sport" -ForegroundColor Cyan
+Write-Host "Phase: $Phase  Environment: $Environment  Sport: $Sport  Target: $Target" -ForegroundColor Cyan
 Write-Host "PG: $env:PG_DATABASE @ $env:PG_HOST" -ForegroundColor Cyan
 Write-Host "Data file: $env:SD_DATA_FILE  Scope: $env:SD_SCOPE" -ForegroundColor Cyan
 
-if ($Phase -eq 'upload') {
-  node "$PSScriptRoot\upload.js"
-} elseif ($Phase -eq 'insert') {
-  if ($Manifest) {
-    node "$PSScriptRoot\insert.js" $Manifest
-  } else {
-    node "$PSScriptRoot\insert.js"
-  }
+# Script picker: target × phase → which Node script runs.
+$scriptName = if ($Target -eq 'Teams') {
+  if ($Phase -eq 'upload') { 'upload.js' } else { 'insert.js' }
+} else {
+  if ($Phase -eq 'upload') { 'upload-athletes.js' } else { 'insert-athletes.js' }
+}
+
+if ($Phase -eq 'insert' -and $Manifest) {
+  # Quote $Manifest so paths with spaces aren't split into multiple args.
+  node "$PSScriptRoot\$scriptName" "$Manifest"
+} else {
+  node "$PSScriptRoot\$scriptName"
 }

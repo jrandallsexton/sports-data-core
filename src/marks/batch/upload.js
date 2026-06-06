@@ -24,7 +24,7 @@ const DATA_FILE = path.resolve(
 );
 // Default matches the year currently in franchise-colors.sql; run.ps1 sets
 // SD_SCOPE explicitly so this default only matters for direct node invocation.
-const SCOPE = process.env.SD_SCOPE || 'franchise-season:2025';
+const SCOPE = process.env.SD_SCOPE || 'franchise-season:2026';
 const OUTPUT_DIR = path.resolve(__dirname, 'output');
 const MANIFEST_DIR = path.join(OUTPUT_DIR, 'manifests');
 const CONTAINER = 'sportdeets-marks';

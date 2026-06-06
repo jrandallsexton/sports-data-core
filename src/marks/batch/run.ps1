@@ -107,7 +107,7 @@ switch ($Sport) {
 
 if ($Target -eq 'Teams') {
   $env:SD_DATA_FILE = "franchise-colors-$sportLower.txt"
-  if (-not $Scope) { $Scope = 'franchise-season:2025' }
+  if (-not $Scope) { $Scope = 'franchise-season:2026' }
 } else {
   # Athletes
   $env:SD_DATA_FILE = "athletes-$sportLower.txt"
@@ -129,7 +129,8 @@ $scriptName = if ($Target -eq 'Teams') {
 }
 
 if ($Phase -eq 'insert' -and $Manifest) {
-  node "$PSScriptRoot\$scriptName" $Manifest
+  # Quote $Manifest so paths with spaces aren't split into multiple args.
+  node "$PSScriptRoot\$scriptName" "$Manifest"
 } else {
   node "$PSScriptRoot\$scriptName"
 }

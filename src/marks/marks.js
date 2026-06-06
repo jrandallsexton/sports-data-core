@@ -386,8 +386,14 @@
     // player. Upstream callers can short-circuit the cascade by providing a
     // pre-resolved player.contentOverride (used for manual one-off cleanup
     // like "Robert Williams IV" → "RW4" where the auto-derivation would
-    // settle for "RW").
-    var content = (player && player.contentOverride) || null;
+    // settle for "RW"). Treat blank / whitespace-only override as unset so
+    // it falls through to the cascade rather than rendering an empty
+    // avatar; trim the kept value so stray edges don't survive.
+    var content = null;
+    if (player && typeof player.contentOverride === 'string') {
+      var trimmedOverride = player.contentOverride.trim();
+      if (trimmedOverride.length > 0) content = trimmedOverride;
+    }
     if (content == null) {
       content = deriveInitials(player && player.displayName);
     }

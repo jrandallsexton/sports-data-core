@@ -82,25 +82,46 @@ namespace SportsData.Producer.Application.Contests
             if (play.AtBatAthleteSeasonId.HasValue) seasonIds.Add(play.AtBatAthleteSeasonId.Value);
             if (play.PitchingAthleteSeasonId.HasValue) seasonIds.Add(play.PitchingAthleteSeasonId.Value);
 
-            var seasonRows = await dataContext.AthleteSeasons
+            // Two-phase headshot load (mirrors GetProbablePitchersAsync):
+            // a flat projection first, then a separate AthleteImage query
+            // with the priority pick (sportdeets-mark first, CreatedUtc
+            // tiebreak) in C# memory. Avoids the fragile EF translation of
+            // a ternary OrderBy nested inside a Select, which can silently
+            // fall back to insertion order and surface ESPN images even
+            // when sportdeets-mark rows exist.
+            var seasonMeta = await dataContext.AthleteSeasons
                 .AsNoTracking()
                 .Where(s => seasonIds.Contains(s.Id))
-                .Select(s => new AthleteSeasonDisplayRow(
-                    s.Id,
-                    s.ShortName,
-                    s.DisplayName,
-                    // Headshot priority: sportdeets-generated avatars
-                    // (Rel = ["sportdeets-mark"]) win over any ESPN-sourced
-                    // images. CreatedUtc breaks ties — preserves prior
-                    // behavior for athletes that don't yet have a generated
-                    // avatar.
-                    s.Athlete != null && s.Athlete.Images.Any()
-                        ? s.Athlete.Images
-                            .OrderBy(i => i.Rel != null && i.Rel.Contains("sportdeets-mark") ? 0 : 1)
-                            .ThenBy(i => i.CreatedUtc)
-                            .First().Uri.ToString()
-                        : null))
-                .ToDictionaryAsync(x => x.Id, cancellationToken);
+                .Select(s => new { s.Id, s.ShortName, s.DisplayName, s.AthleteId })
+                .ToListAsync(cancellationToken);
+
+            var athleteIds = seasonMeta.Select(m => m.AthleteId).Distinct().ToList();
+            var headshotByAthleteId = new Dictionary<Guid, string>();
+            if (athleteIds.Count > 0)
+            {
+                var imgRows = await dataContext.AthleteImages
+                    .AsNoTracking()
+                    .Where(i => athleteIds.Contains(i.AthleteId))
+                    .Select(i => new { i.AthleteId, i.Uri, i.Rel, i.CreatedUtc })
+                    .ToListAsync(cancellationToken);
+
+                foreach (var grp in imgRows.GroupBy(i => i.AthleteId))
+                {
+                    var winner = grp
+                        .OrderBy(i => i.Rel != null && i.Rel.Contains("sportdeets-mark") ? 0 : 1)
+                        .ThenBy(i => i.CreatedUtc)
+                        .First();
+                    headshotByAthleteId[grp.Key] = winner.Uri.ToString();
+                }
+            }
+
+            var seasonRows = seasonMeta.ToDictionary(
+                m => m.Id,
+                m => new AthleteSeasonDisplayRow(
+                    m.Id,
+                    m.ShortName,
+                    m.DisplayName,
+                    headshotByAthleteId.TryGetValue(m.AthleteId, out var url) ? url : null));
 
             // Batched read for the position abbreviations referenced by
             // the participants — AthletePosition is a small, stable lookup.

@@ -19,8 +19,71 @@
   line-height: 1.6;
 }
 
+/* Long-form policy layout — left-aligned body for readability, with
+   section spacing and link/list styling that the short placeholder
+   variant doesn't need. Applied via the .legal-page--policy modifier
+   so the original centered look still applies elsewhere. */
+.legal-page--policy {
+  text-align: left;
+}
+
+.legal-page--policy h2 {
+  text-align: center;
+}
+
+.legal-page--policy .legal-page__meta {
+  max-width: 800px;
+  margin: 0 auto 40px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--text-tertiary, var(--text-secondary));
+  opacity: 0.8;
+}
+
+.legal-page--policy section {
+  max-width: 800px;
+  margin: 0 auto 32px;
+}
+
+.legal-page--policy h3 {
+  font-size: 1.4rem;
+  margin: 24px 0 12px;
+  color: var(--accent);
+}
+
+.legal-page--policy h4 {
+  font-size: 1.1rem;
+  margin: 20px 0 8px;
+  color: var(--text-primary, var(--text-secondary));
+}
+
+.legal-page--policy ul {
+  max-width: 800px;
+  margin: 0 auto 20px;
+  padding-left: 24px;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.legal-page--policy li {
+  margin-bottom: 8px;
+}
+
+.legal-page--policy a {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.legal-page--policy a:hover {
+  color: var(--accent-hover);
+}
+
 .back-home-link {
   margin-top: 30px;
+}
+
+.legal-page--policy .back-home-link {
+  text-align: center;
 }
 
 .back-home-link a {

@@ -1,8 +1,11 @@
 
 select * from public."Athlete" where "Id" = 'fd200ac9-01e6-c385-3ba6-ba5f74a941bb'
 
-select *  from public."AthleteImage"
---delete from public."AthleteImage"
+select *  from public."AthleteImage" ai
+inner join public."Athlete" ath on ath."Id" = ai."AthleteId"
+inner join public."AthleteSeason" ats on ats."AthleteId" = ath."Id"
+where ath."LastName" = 'Wheeler'
+
 select count(*) from public."Athlete"
 select count(*) from public."AthleteSeason"
 select count(*) from public."AthleteImage"
@@ -16,7 +19,7 @@ where ath."IsActive" = true
 order by f."Slug", ath."LastName", ath."FirstName"
 
 select * from public."AthleteExternalId" where "AthleteId" = '839ab5ca-a490-92d2-2e22-31478ff032b0'
-select * from public."AthleteSeason"
+select * from public."AthleteSeason" limit 10;
 select * from public."FranchiseLogo" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7'
 select * from public."FranchiseSeason" where "GroupSeasonId" = '59e30a3c-b1cd-098e-cf76-9c4ac2441427'
 select * from public."Franchise"

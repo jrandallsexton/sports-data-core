@@ -173,6 +173,11 @@
   color: #9aa1ab;
   border: 1px solid rgba(154, 161, 171, 0.18);
 }
+.pick-badge.push {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f0b455;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
 
 @media (max-width: 640px) {
   .hero-stats {

@@ -6,6 +6,14 @@ function pickIndicator(hit) {
   return { symbol: "—", className: "ungraded" };
 }
 
+// ATS has a third state the SU market doesn't: a push (spread lands
+// exactly on the line). Render it distinctly so pushes don't get
+// collapsed with ungradable games (missing pick or no spread captured).
+function atsIndicator(game) {
+  if (game.atsPush) return { symbol: "P", className: "push" };
+  return pickIndicator(game.atsHit);
+}
+
 function teamRowClass(franchiseSeasonId, predictedSU) {
   if (predictedSU && franchiseSeasonId === predictedSU) return "team-row picked";
   return "team-row";
@@ -13,7 +21,7 @@ function teamRowClass(franchiseSeasonId, predictedSU) {
 
 export default function ScorebugTile({ game }) {
   const su = pickIndicator(game.suHit);
-  const ats = pickIndicator(game.atsHit);
+  const ats = atsIndicator(game);
 
   return (
     <div className="scorebug-tile" title={`Spread: ${game.spread ?? "—"}`}>

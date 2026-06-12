@@ -9,8 +9,15 @@ function recordString(agg) {
 
 function endDateLabel(iso) {
   if (!iso) return "";
+  // Backend ships SeasonWeekEndDate as midnight UTC. Format in UTC so
+  // viewers west of UTC don't see the date roll back to the prior day.
   const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 export default function WeeklyScoreboard({ week }) {

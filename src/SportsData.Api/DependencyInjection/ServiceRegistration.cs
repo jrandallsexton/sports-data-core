@@ -116,6 +116,11 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetPublicLeaguesQueryHandler, GetPublicLeaguesQueryHandler>();
             services.AddScoped<IGetUserLeaguesQueryHandler, GetUserLeaguesQueryHandler>();
 
+            // Public Results Queries
+            services.AddScoped<
+                SportsData.Api.Application.UI.Results.Queries.GetSeasonResults.IGetSeasonResultsQueryHandler,
+                SportsData.Api.Application.UI.Results.Queries.GetSeasonResults.GetSeasonResultsQueryHandler>();
+
             // Admin Commands
             services.AddScoped<IBackfillLeagueScoresCommandHandler, BackfillLeagueScoresCommandHandler>();
             services.AddScoped<IGenerateGameRecapCommandHandler, GenerateGameRecapCommandHandler>();

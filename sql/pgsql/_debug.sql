@@ -201,7 +201,7 @@ select count(*) from public."CompetitionDrive"
 -- FIX DEV - 07 OCT 2025
 -- update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
 
-select * from public."Contest" where "Id" = '38e65cdb-1d03-899c-4c43-e30049379f7f'
+select * from public."Contest" where "Id" = 'aa00bd58-a986-d3a3-d1e5-f166c92dbcd0'
 select * from public."Contest" where "SeasonWeekId" = '25fee87e-e0ee-ec63-4dfa-7bd98b787c7e'
 select * from public."Competition" where "ContestId" = '38e65cdb-1d03-899c-4c43-e30049379f7f'
 select * from public."CompetitionStatus" where "CompetitionId" = 'd9a6c35f-fea4-2dd2-3d6b-34f9cc65ba2d'

@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/leagues/8a209215-2f8e-42d0-93e3-f9e519543216/weeks/5/replay"
+  url: "{{baseUrlApi}}/admin/leagues/0d9fe76b-dbfa-4fd1-80e2-0421027514bd/weeks/8/replay"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"

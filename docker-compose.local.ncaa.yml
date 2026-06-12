@@ -181,10 +181,15 @@ services:
       CommonConfig__NotificationClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa:8080/api/
       CommonConfig__NotificationClientConfig__FootballNfl__ApiUrl: http://producer-nfl-api:8080/api/
       CommonConfig__NotificationClientConfig__BaseballMlb__ApiUrl: http://producer-mlb-api:8080/api/
+    # NOTE: producer-mlb-api is intentionally NOT in depends_on. It SEGVs
+    # (exit 139) on startup in this compose for an as-yet-undiagnosed
+    # reason — the BaseballMlb PG DB and migrations exist locally and
+    # NFL boots cleanly through the same code path, so it's MLB-specific
+    # and worth investigating, but it doesn't gate NCAA work. The API
+    # still has the MLB client URL in env; nothing calls it on NCAA
+    # routes, so it's a no-op until the SEGV is fixed.
     depends_on:
       producer-nfl-api:
-        condition: service_healthy
-      producer-mlb-api:
         condition: service_healthy
       producer-ncaa:
         condition: service_healthy

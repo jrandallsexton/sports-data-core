@@ -2,10 +2,10 @@
 select * from public."MatchupPreview" where "ContestId" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58' and "RejectedUtc" is null order by "CreatedUtc" desc
 -- http://localhost:5262/ui/matchup/8b0f8da2-4fa8-c797-73f1-000c14d82e1d/preview
 --update "MatchupPreview" set "RejectedUtc" = '2025-09-10 13:39:08.011918+00' where "Id" = 'a97f5e56-6849-4087-8e80-d3d618048ec0'
-update public."MatchupPreview" set
-"PredictedStraightUpWinner" = '9130be89-0706-9aa1-927c-06fb75a303cd',
-"PredictedSpreadWinner" = '9130be89-0706-9aa1-927c-06fb75a303cd'
-where "Id" = 'c30dedee-663b-405f-8de5-ce7c5ea6998e'
+-- update public."MatchupPreview" set
+-- "PredictedStraightUpWinner" = '9130be89-0706-9aa1-927c-06fb75a303cd',
+-- "PredictedSpreadWinner" = '9130be89-0706-9aa1-927c-06fb75a303cd'
+-- where "Id" = 'c30dedee-663b-405f-8de5-ce7c5ea6998e'
 
 /*
 update public."MatchupPreview" set
@@ -17,7 +17,7 @@ select * from public."MatchupPreview" where "ContestId" = 'aa00bd58-a986-d3a3-d1
 
 --update public."MatchupPreview" set "RejectedUtc" = '2025-11-19 22:31:26.653867+00' where "ContestId" = '9260bff8-b2b2-5c98-c70d-12bfefc6d8dd' and "ApprovedUtc" is not null and "RejectedUtc" is null
 --update public."MatchupPreview" set "RejectedUtc" = '2025-11-19 19:07:43.073712+00' where "Id" = '13af5484-b8e9-4d37-9161-5f19877e85cb'
-update public."MatchupPreview" set "PredictedSpreadWinner" = '71151ce3-4823-0d50-889c-a7ea9efae249' where "Id" = '2821e3d4-d4d6-413c-8937-b7cb9447084e'
+--update public."MatchupPreview" set "PredictedSpreadWinner" = '71151ce3-4823-0d50-889c-a7ea9efae249' where "Id" = '2821e3d4-d4d6-413c-8937-b7cb9447084e'
 
 select * from public."PickemGroup" where "IsPublic" = true
 update public."PickemGroup" set "NonStandardWeekGroupSeasonMapFilter" = 'fbs'

@@ -71,31 +71,11 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             if (logo is not null)
             {
-                _logger.LogWarning("groupSeason logo already exists. Will publish event and exit.");
-
-                // TODO: Do I REALLY need to publish this event? It will just cause more work for downstream
-
-                var outgoingEvt = new ProcessImageResponse(
-                    logo.Uri,
-                    logo.Id.ToString(),
-                    urlHash,
-                    request.ParentEntityId,
-                    request.Name,
-                    null,
-                    request.Sport,
-                    request.SeasonYear,
-                    logoDocType,
-                    request.SourceDataProvider,
-                    request.Height,
-                    request.Width,
-                    request.Rel,
-                    request.CorrelationId,
-                    request.CausationId);
-
-                await _bus.Publish(outgoingEvt);
-
-                await _dataContext.SaveChangesAsync();
-
+                // GroupSeasonLogoResponseProcessor does NOT check for an existing logo before
+                // INSERT; republishing here with the existing logo's Id would cause a PK
+                // violation in the downstream Hangfire job. Idempotency lives on the request
+                // side: if the GroupSeason already has a logo for this URL hash, we're done.
+                _logger.LogInformation("GroupSeason logo already exists. Skipping publish.");
                 return;
             }
 

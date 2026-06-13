@@ -77,7 +77,10 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             if (img is not null)
             {
-                await HandleExisting(img, urlHash, request, logoDocType);
+                // VenueImageResponseProcessor performs the same OriginalUrlHash duplicate
+                // check and silent-returns on hit. Republishing here would be a no-op cycle
+                // through broker + Hangfire + 2 DB queries for nothing.
+                _logger.LogInformation("Venue image already exists. Skipping publish.");
                 return;
             }
 
@@ -127,36 +130,5 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
             _logger.LogInformation("Published ProcessImageResponse");
         }
 
-        private async Task HandleExisting(
-            VenueImage img,
-            string urlHash,
-            ProcessImageRequest request,
-            DocumentType logoDocType)
-        {
-            _logger.LogWarning("Venue image already exists. Will publish event and exit.");
-
-            // TODO: Do I REALLY need to publish this event? It will just cause more work for downstream
-
-            var outgoingEvt = new ProcessImageResponse(
-                img.Uri,
-                img.Id.ToString(),
-                urlHash,
-                request.ParentEntityId,
-                request.Name,
-                null,
-                request.Sport,
-                request.SeasonYear,
-                logoDocType,
-                request.SourceDataProvider,
-                request.Height,
-                request.Width,
-                request.Rel,
-                request.CorrelationId,
-                request.CausationId);
-
-            await _bus.Publish(outgoingEvt);
-
-            await _dataContext.SaveChangesAsync();
-        }
     }
 }

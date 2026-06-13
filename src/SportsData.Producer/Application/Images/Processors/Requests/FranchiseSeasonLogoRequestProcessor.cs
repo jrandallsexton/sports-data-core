@@ -64,9 +64,12 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             if (logo is not null)
             {
-                _logger.LogWarning("franchiseSeason logo already exists. Will publish event and exit.");
-
-                // TODO: Do I REALLY need to publish this event? It will just cause more work for downstream
+                // Unlike the other *LogoRequestProcessors, this one's republish is load-bearing:
+                // FranchiseSeasonLogoResponseProcessor updates Height/Width/Rel/ModifiedUtc on
+                // the existing row when it sees the duplicate. Removing the publish would skip
+                // the metadata refresh path. (In practice ESPN rarely changes these values for
+                // a given URL hash, so this is defensive — revisit if metrics show it's wasted.)
+                _logger.LogInformation("franchiseSeason logo already exists. Publishing for metadata refresh.");
 
                 var outgoingEvt = new ProcessImageResponse(
                     logo.Uri,

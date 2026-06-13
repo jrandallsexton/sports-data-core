@@ -65,31 +65,10 @@ namespace SportsData.Producer.Application.Images.Processors.Requests
 
             if (logo is not null)
             {
-                _logger.LogWarning("Venue image already exists. Will publish event and exit.");
-
-                // TODO: Do I REALLY need to publish this event? It will just cause more work for downstream
-
-                var outgoingEvt = new ProcessImageResponse(
-                    logo.Uri,
-                    logo.Id.ToString(),
-                    urlHash,
-                    request.ParentEntityId,
-                    request.Name,
-                    null,
-                    request.Sport,
-                    request.SeasonYear,
-                    logoDocType,
-                    request.SourceDataProvider,
-                    request.Height,
-                    request.Width,
-                    request.Rel,
-                    request.CorrelationId,
-                    request.CausationId);
-
-                await _bus.Publish(outgoingEvt);
-                
-                await _dataContext.SaveChangesAsync();
-
+                // FranchiseLogoResponseProcessor performs the same OriginalUrlHash duplicate
+                // check and silent-returns on hit. Republishing here would be a no-op cycle
+                // through broker + Hangfire + 2 DB queries for nothing.
+                _logger.LogInformation("Franchise logo already exists. Skipping publish.");
                 return;
             }
 

@@ -8,22 +8,22 @@ using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Scoring
 {
-    public interface IScoreContests
+    public interface IScorePicks
     {
-        Task Process(ScoreContestCommand command);
+        Task Process(ScorePicksCommand command);
     }
 
-    public class ContestScoringProcessor : IScoreContests
+    public class PickScoringProcessor : IScorePicks
     {
-        private readonly ILogger<ContestScoringProcessor> _logger;
+        private readonly ILogger<PickScoringProcessor> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IContestClientFactory _contestClientFactory;
         private readonly IEventBus _bus;
         private readonly IPickScoringService _pickScoringService;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
-        public ContestScoringProcessor(
-            ILogger<ContestScoringProcessor> logger,
+        public PickScoringProcessor(
+            ILogger<PickScoringProcessor> logger,
             AppDataContext dataContext,
             IContestClientFactory contestClientFactory,
             IEventBus bus,
@@ -38,7 +38,7 @@ namespace SportsData.Api.Application.Scoring
             _backgroundJobProvider = backgroundJobProvider;
         }
 
-        public async Task Process(ScoreContestCommand command)
+        public async Task Process(ScorePicksCommand command)
         {
             // Short-circuit: ContestFinalized may re-deliver (at-least-once delivery)
             // and the cron backstop may enqueue contests whose picks have already

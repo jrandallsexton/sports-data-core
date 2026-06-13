@@ -9,8 +9,6 @@ namespace SportsData.Core.Common
 {
     public interface IDecodeDocumentProvidersAndTypes
     {
-        //Type GetType(SourceDataProvider sourceDataProvider, DocumentType docType);
-
         (Type Type, string CollectionName) GetTypeAndCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season);
 
         string GetCollectionName(SourceDataProvider sourceDataProvider, Sport sport, DocumentType docType, int? season);
@@ -20,44 +18,6 @@ namespace SportsData.Core.Common
 
     public class DocumentProviderAndTypeDecoder : IDecodeDocumentProvidersAndTypes
     {
-        //public Type GetType(SourceDataProvider sourceDataProvider, DocumentType docType)
-        //{
-        //    switch (docType)
-        //    {
-        //        case DocumentType.Franchise:
-        //            return typeof(EspnFranchiseDto);
-        //        case DocumentType.TeamSeason:
-        //            return typeof(EspnTeamSeasonDto);
-        //        case DocumentType.Venue:
-        //            return typeof(EspnVenueDto);
-        //        case DocumentType.CoachSeason:
-        //            return typeof(EspnCoachSeasonDto);
-        //        case DocumentType.Athlete:
-        //            return typeof(EspnAthleteDto);
-        //        case DocumentType.GroupSeason:
-        //            return typeof(EspnGroupSeasonDto);
-        //        case DocumentType.Position:
-        //            return typeof(EspnAthletePositionDto);
-        //        case DocumentType.AthleteSeason:
-        //            return typeof(EspnAthleteDto);
-        //        case DocumentType.Award:
-        //        case DocumentType.Contest:
-        //        // TODO: Create these => return typeof(EspnContestDto);
-        //        case DocumentType.GameSummary:
-        //        case DocumentType.Scoreboard:
-        //        case DocumentType.Season:
-        //        case DocumentType.Weeks:
-        //        case DocumentType.GroupLogo:
-        //        case DocumentType.FranchiseLogo:
-        //        case DocumentType.GroupSeasonLogo:
-        //        case DocumentType.TeamBySeasonLogo:
-        //        case DocumentType.VenueImage:
-        //        case DocumentType.AthleteImage:
-        //        default:
-        //            throw new ArgumentOutOfRangeException(nameof(docType), docType, null);
-        //    }
-        //}
-
         public (Type, string) GetTypeAndCollectionName(
             SourceDataProvider sourceDataProvider,
             Sport sport,

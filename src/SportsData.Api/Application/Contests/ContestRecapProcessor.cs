@@ -1,9 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
+using SportsData.Core.Config;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
@@ -19,6 +21,7 @@ namespace SportsData.Api.Application.Contests
         private readonly IEventBus _publishEndpoint;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IContestClientFactory _contestClientFactory;
+        private readonly SyntheticUsersConfig _syntheticUsers;
 
         public ContestRecapProcessor(
             ILogger<ContestRecapProcessor> logger,
@@ -26,7 +29,8 @@ namespace SportsData.Api.Application.Contests
             IGenerateGameRecapCommandHandler generateGameRecapHandler,
             IEventBus publishEndpoint,
             IDateTimeProvider dateTimeProvider,
-            IContestClientFactory contestClientFactory)
+            IContestClientFactory contestClientFactory,
+            IOptions<SyntheticUsersConfig> syntheticUsers)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -34,6 +38,7 @@ namespace SportsData.Api.Application.Contests
             _publishEndpoint = publishEndpoint;
             _dateTimeProvider = dateTimeProvider;
             _contestClientFactory = contestClientFactory;
+            _syntheticUsers = syntheticUsers.Value;
         }
 
         public async Task ProcessAsync(Guid contestId)
@@ -84,13 +89,13 @@ namespace SportsData.Api.Application.Contests
                 Title = recap.Title,
                 Content = recap.Recap,
                 CreatedUtc = _dateTimeProvider.UtcNow(),
-                CreatedBy = new Guid("b6e59053-46cb-4bbf-9876-0a70f539c81c"), // TODO: add synthetic userIds to appConfig
+                CreatedBy = _syntheticUsers.ContestRecap,
                 Tokens = recap.EstimatedPromptTokens,
                 TimeMs = recap.GenerationTimeMs,
                 AiModel = recap.Model,
                 AiPromptNameAndVersion = recap.PromptVersion,
                 PublishedAt = _dateTimeProvider.UtcNow(),
-                AuthorId = new Guid("b6e59053-46cb-4bbf-9876-0a70f539c81c"),
+                AuthorId = _syntheticUsers.ContestRecap,
                 SeasonWeekId = overview.Header!.SeasonWeekId ?? Guid.Empty,
                 SeasonYear = overview.Header!.SeasonYear,
                 SeasonWeekNumber = overview.Header!.SeasonWeekNumber ?? 0,

@@ -103,7 +103,7 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                 $"SeasonWeeks for league {league.Id} is not ascending+distinct.");
         }
 
-        _logger.LogInformation("User retrieved successfully. UserId={UserId}", query.UserId);
+        _logger.LogDebug("User retrieved successfully. UserId={UserId}", query.UserId);
 
         return new Success<UserDto>(userDto);
     }

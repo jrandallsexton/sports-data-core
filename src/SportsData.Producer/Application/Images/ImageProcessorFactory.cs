@@ -23,14 +23,21 @@ namespace SportsData.Producer.Application.Images
     public class ImageProcessorFactory<TDbContext> : IImageProcessorFactory
         where TDbContext : BaseDataContext
     {
+        // Maps are independent of TDbContext and only depend on attributes scanned across loaded
+        // assemblies, so a single AppDomain-wide cache is safe and avoids re-scanning on every
+        // scoped resolution.
+        private static readonly Lazy<(IReadOnlyDictionary<(SourceDataProvider, Sport, DocumentType), Type> Requests,
+                                      IReadOnlyDictionary<(SourceDataProvider, Sport, DocumentType), Type> Responses)>
+            ProcessorMaps = new(BuildProcessorMaps, LazyThreadSafetyMode.ExecutionAndPublication);
+
         private readonly IAppMode _appMode;
         private readonly IDecodeDocumentProvidersAndTypes _documentTypeDecoder;
         private readonly IServiceProvider _provider;
         private readonly TDbContext _dataContext;
         private readonly ILogger<ImageProcessorFactory<TDbContext>> _logger;
 
-        private readonly Dictionary<(SourceDataProvider, Sport, DocumentType), Type> _requestProcessors = new();
-        private readonly Dictionary<(SourceDataProvider, Sport, DocumentType), Type> _responseProcessors = new();
+        private IReadOnlyDictionary<(SourceDataProvider, Sport, DocumentType), Type> _requestProcessors => ProcessorMaps.Value.Requests;
+        private IReadOnlyDictionary<(SourceDataProvider, Sport, DocumentType), Type> _responseProcessors => ProcessorMaps.Value.Responses;
 
         public ImageProcessorFactory(
             IAppMode appMode,
@@ -44,47 +51,34 @@ namespace SportsData.Producer.Application.Images
             _provider = provider;
             _dataContext = dataContext;
             _logger = logger;
-
-            RegisterProcessors();
         }
 
-        // TODO: refactor this as a singleton or static to avoid re-building the map on every request
-        private void RegisterProcessors()
+        private static (IReadOnlyDictionary<(SourceDataProvider, Sport, DocumentType), Type> Requests,
+                        IReadOnlyDictionary<(SourceDataProvider, Sport, DocumentType), Type> Responses) BuildProcessorMaps()
         {
+            var requests = new Dictionary<(SourceDataProvider, Sport, DocumentType), Type>();
+            var responses = new Dictionary<(SourceDataProvider, Sport, DocumentType), Type>();
+
             var types = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(SafeGetTypes)
                 .Where(t => !t.IsAbstract && !t.IsInterface);
 
             foreach (var type in types)
             {
-                // Request processors
-                var requestAttrs = type.GetCustomAttributes<ImageRequestProcessorAttribute>();
-                foreach (var attr in requestAttrs)
+                foreach (var attr in type.GetCustomAttributes<ImageRequestProcessorAttribute>())
                 {
                     var key = (attr.Source, attr.Sport, attr.DocumentType);
-
-                    if (!_requestProcessors.ContainsKey(key))
-                    {
-                        _requestProcessors[key] = type;
-                        _logger.LogDebug("Registered image request processor: {Processor} for ({Source}, {Sport}, {Type})",
-                            type.Name, key.Item1, key.Item2, key.Item3);
-                    }
+                    requests.TryAdd(key, type);
                 }
 
-                // Response processors
-                var responseAttrs = type.GetCustomAttributes<ImageResponseProcessorAttribute>();
-                foreach (var attr in responseAttrs)
+                foreach (var attr in type.GetCustomAttributes<ImageResponseProcessorAttribute>())
                 {
                     var key = (attr.Source, attr.Sport, attr.DocumentType);
-
-                    if (!_responseProcessors.ContainsKey(key))
-                    {
-                        _responseProcessors[key] = type;
-                        _logger.LogDebug("Registered image response processor: {Processor} for ({Source}, {Sport}, {Type})",
-                            type.Name, key.Item1, key.Item2, key.Item3);
-                    }
+                    responses.TryAdd(key, type);
                 }
             }
+
+            return (requests, responses);
         }
 
         public IProcessLogoAndImageRequests GetRequestProcessor(DocumentType documentType)

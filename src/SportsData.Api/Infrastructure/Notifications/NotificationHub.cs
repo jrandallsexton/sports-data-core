@@ -13,7 +13,7 @@ public class NotificationHub : Hub
 
     public override async Task OnConnectedAsync()
     {
-        _logger.LogInformation("SignalR connection established. ConnectionId: {ConnectionId}, UserIdentifier: {UserIdentifier}, RemoteIpAddress: {RemoteIpAddress}", 
+        _logger.LogDebug("SignalR connection established. ConnectionId: {ConnectionId}, UserIdentifier: {UserIdentifier}, RemoteIpAddress: {RemoteIpAddress}", 
             Context.ConnectionId, 
             Context.UserIdentifier,
             Context.GetHttpContext()?.Connection.RemoteIpAddress);
@@ -35,7 +35,7 @@ public class NotificationHub : Hub
         }
         else
         {
-            _logger.LogInformation("SignalR connection {ConnectionId} disconnected normally", Context.ConnectionId);
+            _logger.LogDebug("SignalR connection {ConnectionId} disconnected normally", Context.ConnectionId);
         }
 
         await base.OnDisconnectedAsync(exception);

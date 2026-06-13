@@ -10,7 +10,7 @@ namespace SportsData.Api.Application.Jobs
     /// Daily backstop for the leaderboard-scoring path.
     ///
     /// Primary trigger is the tail call inside
-    /// <see cref="ContestScoringProcessor"/>: after picks for a contest are
+    /// <see cref="PickScoringProcessor"/>: after picks for a contest are
     /// scored, the processor invokes
     /// <see cref="ILeagueWeekScoringService.ScoreLeagueWeekAsync"/> for each
     /// (league, year, week) tuple that had picks in that contest. This job

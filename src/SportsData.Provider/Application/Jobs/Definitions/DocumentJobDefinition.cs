@@ -27,7 +27,7 @@ namespace SportsData.Provider.Application.Jobs.Definitions
         {
             DocumentType = task.DocumentType;
             Endpoint = task.Uri;
-            EndpointMask = string.Empty; // TODO: Do I need this?
+            EndpointMask = string.Empty;
             ResourceIndexId = task.Id;
             SeasonYear = task.SeasonYear;
             SourceDataProvider = task.SourceDataProvider;

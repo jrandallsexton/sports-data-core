@@ -435,8 +435,17 @@ namespace SportsData.Core.DependencyInjection
 
         public static IServiceCollection AddClients(this IServiceCollection services, IConfiguration configuration, Sport mode = Sport.All)
         {
-            var retryConfig = configuration.GetSection("CommonConfig:Http:Retry").Get<HttpRetryConfig>() ?? new HttpRetryConfig();
-            services.Configure<HttpRetryConfig>(configuration.GetSection("CommonConfig:Http:Retry"));
+            var retrySection = configuration.GetSection("CommonConfig:Http:Retry");
+            services.AddOptions<HttpRetryConfig>()
+                .Bind(retrySection)
+                .Validate(o => o.RetryCount >= 1 && o.BaseDelayMs >= 1,
+                    "CommonConfig:Http:Retry: RetryCount and BaseDelayMs must be >= 1");
+
+            // Eager read for the policy built at registration time. Normalize defensively in
+            // case bad values slip past App Config (Validate above runs lazily on IOptions resolve).
+            var retryConfig = retrySection.Get<HttpRetryConfig>() ?? new HttpRetryConfig();
+            retryConfig.RetryCount = Math.Max(1, retryConfig.RetryCount);
+            retryConfig.BaseDelayMs = Math.Max(1, retryConfig.BaseDelayMs);
 
             var registry = services.AddPolicyRegistry();
             registry.Add("HttpRetry", RetryPolicy.GetRetryPolicy(config: retryConfig));

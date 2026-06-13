@@ -2,6 +2,8 @@
 
 using Polly;
 
+using SportsData.Core.Config;
+
 using System;
 using System.IO;
 using System.Net;
@@ -35,11 +37,13 @@ namespace SportsData.Core.Http.Policies
         /// - 403 errors from ESPN require longer backoff to allow rate limit window to reset
         /// - Exponential backoff with jitter prevents thundering herd on recovery
         /// </remarks>
-        public static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(ILogger? logger = null)
+        public static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(
+            ILogger? logger = null,
+            HttpRetryConfig? config = null)
         {
-            // TODO: Extract the retry count and delay from a config file
-            const int retryCount = 3;
-            var baseDelay = TimeSpan.FromMilliseconds(200);
+            config ??= new HttpRetryConfig();
+            var retryCount = config.RetryCount;
+            var baseDelay = TimeSpan.FromMilliseconds(config.BaseDelayMs);
 
             return Policy<HttpResponseMessage>
                 .Handle<HttpRequestException>()

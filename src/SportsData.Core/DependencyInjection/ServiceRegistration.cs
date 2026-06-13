@@ -435,8 +435,11 @@ namespace SportsData.Core.DependencyInjection
 
         public static IServiceCollection AddClients(this IServiceCollection services, IConfiguration configuration, Sport mode = Sport.All)
         {
+            var retryConfig = configuration.GetSection("CommonConfig:Http:Retry").Get<HttpRetryConfig>() ?? new HttpRetryConfig();
+            services.Configure<HttpRetryConfig>(configuration.GetSection("CommonConfig:Http:Retry"));
+
             var registry = services.AddPolicyRegistry();
-            registry.Add("HttpRetry", RetryPolicy.GetRetryPolicy());
+            registry.Add("HttpRetry", RetryPolicy.GetRetryPolicy(config: retryConfig));
 
             // Enables IHttpClientFactory for named clients
             services.AddHttpClient();
@@ -450,7 +453,7 @@ namespace SportsData.Core.DependencyInjection
                 {
                     client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; SportDeets/1.0; +https://sportdeets.com)");
                 })
-                .AddPolicyHandler(RetryPolicy.GetRetryPolicy());
+                .AddPolicyHandler(RetryPolicy.GetRetryPolicy(config: retryConfig));
 
             services.AddScoped<IProvideEspnApiData, EspnApiClient>();
             services.AddSingleton<IEspnCircuitBreaker, NoOpEspnCircuitBreaker>();

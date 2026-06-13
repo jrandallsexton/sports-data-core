@@ -12,26 +12,26 @@ namespace SportsData.Api.Application.Jobs
     ///
     /// Primary scoring trigger is event-driven (Producer publishes
     /// <c>ContestCompleted</c> on STATUS_FINAL → API <c>ContestCompletedHandler</c>
-    /// enqueues <see cref="ContestScoringProcessor"/>). This job is the
+    /// enqueues <see cref="PickScoringProcessor"/>). This job is the
     /// safety net for events lost in transit (broker outage, consumer pod
     /// restart, admin replay races, etc.).
     ///
-    /// Sport-agnostic by construction: we enqueue a <see cref="ScoreContestCommand"/>
+    /// Sport-agnostic by construction: we enqueue a <see cref="ScorePicksCommand"/>
     /// for every distinct contest that still has unscored picks, regardless of
     /// sport. The processor (PR-N+1) resolves sport per-contest via
     /// <c>PickemGroup.Sport</c>, checks finalization through the sport-specific
     /// <c>ContestClient</c>, and short-circuits cleanly when there's nothing
     /// to do — so this job stays a thin "enqueue all candidates" pass.
     /// </summary>
-    public class ContestScoringJob : IAmARecurringJob
+    public class PickScoringJob : IAmARecurringJob
     {
-        private readonly ILogger<ContestScoringJob> _logger;
+        private readonly ILogger<PickScoringJob> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly Guid _correlationId = Guid.NewGuid();
 
-        public ContestScoringJob(
-            ILogger<ContestScoringJob> logger,
+        public PickScoringJob(
+            ILogger<PickScoringJob> logger,
             AppDataContext dataContext,
             IProvideBackgroundJobs backgroundJobProvider)
         {
@@ -47,7 +47,7 @@ namespace SportsData.Api.Application.Jobs
                 ["CorrelationId"] = _correlationId
             }))
             {
-                _logger.LogInformation("{MethodName} Began", nameof(ContestScoringJob));
+                _logger.LogInformation("{MethodName} Began", nameof(PickScoringJob));
 
                 var unscoredContestIds = await _dataContext.UserPicks
                     .Where(p => p.ScoredAt == null)
@@ -61,11 +61,11 @@ namespace SportsData.Api.Application.Jobs
 
                 foreach (var contestId in unscoredContestIds)
                 {
-                    var cmd = new ScoreContestCommand(contestId, _correlationId);
-                    _backgroundJobProvider.Enqueue<IScoreContests>(p => p.Process(cmd));
+                    var cmd = new ScorePicksCommand(contestId, _correlationId);
+                    _backgroundJobProvider.Enqueue<IScorePicks>(p => p.Process(cmd));
                 }
 
-                _logger.LogInformation("{MethodName} Ended", nameof(ContestScoringJob));
+                _logger.LogInformation("{MethodName} Ended", nameof(PickScoringJob));
             }
         }
     }

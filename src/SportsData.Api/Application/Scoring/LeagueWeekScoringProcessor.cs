@@ -13,7 +13,7 @@ public interface IScoreLeagueWeeks
 
 /// <summary>
 /// Per-(league, year, week) Hangfire job. Replaces the inline tail call inside
-/// <see cref="ContestScoringProcessor"/> so a burst of contests finalizing in
+/// <see cref="PickScoringProcessor"/> so a burst of contests finalizing in
 /// the same scoring week cannot fan out into N concurrent
 /// <see cref="ILeagueWeekScoringService.ScoreLeagueWeekAsync"/> invocations
 /// racing on the <c>PickemGroupWeekResult</c> unique index.

@@ -11,8 +11,8 @@ namespace SportsData.Api.Application.Events
     /// ContestEnrichmentProcessor publishes <see cref="ContestFinalized"/>
     /// once the canonical Contest row has been enriched with final scores,
     /// winner, odds results, and FinalizedUtc. This shim enqueues a
-    /// <see cref="ScoreContestCommand"/> via Hangfire so the existing
-    /// <see cref="ContestScoringProcessor"/> path runs as soon as the
+    /// <see cref="ScorePicksCommand"/> via Hangfire so the existing
+    /// <see cref="PickScoringProcessor"/> path runs as soon as the
     /// scoreable data is in place.
     ///
     /// Replaces the prior ContestCompletedHandler which fired off
@@ -47,11 +47,11 @@ namespace SportsData.Api.Application.Events
                 "ContestFinalized consume: received. ContestId={ContestId}, Sport={Sport}, CausationId={CausationId}, CorrelationId={CorrelationId}, MessageId={MessageId}",
                 msg.ContestId, msg.Sport, msg.CausationId, msg.CorrelationId, context.MessageId);
 
-            var cmd = new ScoreContestCommand(msg.ContestId, msg.CorrelationId);
-            _backgroundJobProvider.Enqueue<IScoreContests>(p => p.Process(cmd));
+            var cmd = new ScorePicksCommand(msg.ContestId, msg.CorrelationId);
+            _backgroundJobProvider.Enqueue<IScorePicks>(p => p.Process(cmd));
 
             _logger.LogInformation(
-                "ContestFinalized consume: ScoreContestCommand enqueued. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                "ContestFinalized consume: ScorePicksCommand enqueued. ContestId={ContestId}, CorrelationId={CorrelationId}",
                 msg.ContestId, msg.CorrelationId);
 
             return Task.CompletedTask;

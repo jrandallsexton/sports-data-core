@@ -35,40 +35,8 @@ namespace SportsData.Provider.Application.Jobs
 
         public async Task ExecuteAsync()
         {
-            // 1) Handle one-off scheduled jobs (placeholder hooks)
-            await ProcessScheduledJobs();
-
-            // 2) Register recurring jobs
             await RefreshRecurringSourcingJobs();
-
-            // 3) Kick a single one-time ResourceIndex if needed
             await RefreshOneTimeResourceIndexJobs();
-        }
-
-        private async Task ProcessScheduledJobs()
-        {
-            // (Intentionally left minimal; no ownership/claiming here)
-            var singleExecutionJobs = await _dbContext.ScheduledJobs
-                .Where(x => x.IsActive &&
-                            x.ExecutionMode == SourcingExecutionMode.OneTime &&
-                            !x.LastCompletedUtc.HasValue)
-                .ToListAsync();
-
-            foreach (var _ in singleExecutionJobs)
-            {
-                // TODO: wire scheduled jobs if/when you define them
-            }
-
-            var pollingJobs = await _dbContext.ScheduledJobs
-                .Where(x => x.IsActive &&
-                            x.ExecutionMode == SourcingExecutionMode.PollUntilConditionMet &&
-                            !x.LastCompletedUtc.HasValue)
-                .ToListAsync();
-
-            foreach (var _ in pollingJobs)
-            {
-                // TODO: wire polling jobs if/when you define them
-            }
         }
 
         private async Task RefreshRecurringSourcingJobs()

@@ -14,7 +14,7 @@ using Xunit;
 
 namespace SportsData.Api.Tests.Unit.Application.Scoring;
 
-public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
+public class PickScoringProcessorTests : ApiTestBase<PickScoringProcessor>
 {
     private readonly Mock<IProvideContests> _contestClientMock = new();
 
@@ -23,7 +23,7 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
     // deterministic per CLAUDE.md guidance.
     private static readonly DateTime FixedUtcNow = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-    public ContestScoringProcessorTests()
+    public PickScoringProcessorTests()
     {
         Mocker.GetMock<IContestClientFactory>()
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
@@ -91,9 +91,9 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         await DataContext.UserPicks.AddRangeAsync(picks);
         await DataContext.SaveChangesAsync();
 
-        var command = new ScoreContestCommand(contestId);
+        var command = new ScorePicksCommand(contestId);
 
-        var sut = Mocker.CreateInstance<ContestScoringProcessor>();
+        var sut = Mocker.CreateInstance<PickScoringProcessor>();
 
         // Act
         await sut.Process(command);
@@ -155,9 +155,9 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
             .Setup(x => x.GetMatchupResult(contestId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Failure<MatchupResult>(default!, ResultStatus.NotFound, []));
 
-        var command = new ScoreContestCommand(contestId);
+        var command = new ScorePicksCommand(contestId);
 
-        var sut = Mocker.CreateInstance<ContestScoringProcessor>();
+        var sut = Mocker.CreateInstance<PickScoringProcessor>();
 
         // Act
         await sut.Process(command);
@@ -215,9 +215,9 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         await DataContext.UserPicks.AddAsync(pick);
         await DataContext.SaveChangesAsync();
 
-        var command = new ScoreContestCommand(contestId);
+        var command = new ScorePicksCommand(contestId);
 
-        var sut = Mocker.CreateInstance<ContestScoringProcessor>();
+        var sut = Mocker.CreateInstance<PickScoringProcessor>();
 
         // Act
         await sut.Process(command);
@@ -260,9 +260,9 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         await DataContext.UserPicks.AddRangeAsync(picks);
         await DataContext.SaveChangesAsync();
 
-        var command = new ScoreContestCommand(contestId);
+        var command = new ScorePicksCommand(contestId);
 
-        var sut = Mocker.CreateInstance<ContestScoringProcessor>();
+        var sut = Mocker.CreateInstance<PickScoringProcessor>();
 
         // Act
         await sut.Process(command);
@@ -297,9 +297,9 @@ public class ContestScoringProcessorTests : ApiTestBase<ContestScoringProcessor>
         await DataContext.UserPicks.AddAsync(pick);
         await DataContext.SaveChangesAsync();
 
-        var command = new ScoreContestCommand(contestId);
+        var command = new ScorePicksCommand(contestId);
 
-        var sut = Mocker.CreateInstance<ContestScoringProcessor>();
+        var sut = Mocker.CreateInstance<PickScoringProcessor>();
 
         // Act
         await sut.Process(command);

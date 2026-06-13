@@ -1,148 +1,111 @@
-//using FluentAssertions;
-using SportsData.Api.Application.Common.Enums;
+using AutoFixture;
 
-//using Microsoft.EntityFrameworkCore;
-//using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 
-//using SportsData.Api.Application;
-//using SportsData.Api.Application.Scoring;
-//using SportsData.Api.Infrastructure.Data;
-//using SportsData.Api.Infrastructure.Data.Entities;
-//using SportsData.Core.Common;
+using SportsData.Api.Application.Jobs;
+using SportsData.Api.Application.Scoring;
+using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Processing;
 
-//using Xunit;
+using System.Linq.Expressions;
 
-//namespace SportsData.Api.Tests.Unit.Application.Scoring
-//{
-//    public class PickScoringJobTests
-//    {
-//        private static DbContextOptions<AppDataContext> CreateOptions(string dbName) =>
-//            new DbContextOptionsBuilder<AppDataContext>()
-//                .UseInMemoryDatabase(databaseName: dbName)
-//                .Options;
+using Xunit;
 
-//        private static async Task SeedTestDataAsync(AppDataContext db, Guid contestId, Guid franchiseId)
-//        {
-//            var league = new Infrastructure.Data.Entities.PickemGroup
-//            {
-//                Id = Guid.NewGuid(),
-//                Name = "Test League",
-//                Sport = Sport.FootballNcaa,
-//                League = Api.Application.League.NCAAF,
-//                CommissionerUserId = Guid.NewGuid(),
-//                PickType = PickType.StraightUp,
-//                UseConfidencePoints = false
-//            };
+namespace SportsData.Api.Tests.Unit.Application.Scoring;
 
-//            var contest = new Contest
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                HomeFranchiseId = franchiseId,
-//                AwayFranchiseId = Guid.NewGuid(),
-//                WinnerFranchiseId = franchiseId,
-//                SpreadWinnerFranchiseId = franchiseId,
-//                HomeScore = 28,
-//                AwayScore = 17,
-//                OverUnder = 44.5,
-//                FinalizedUtc = DateTime.UtcNow
-//            };
+public class PickScoringJobTests : ApiTestBase<PickScoringJob>
+{
+    [Fact]
+    public async Task Execute_EnqueuesScoreContestCommand_ForEachDistinctUnscoredContest()
+    {
+        // Arrange — three unscored picks spanning two distinct contests,
+        // plus one already-scored pick that should NOT be enqueued.
+        var contestId1 = Guid.NewGuid();
+        var contestId2 = Guid.NewGuid();
+        var contestId3 = Guid.NewGuid();
 
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                UserId = Guid.NewGuid(),
-//                PickemGroupId = league.Id,
-//                ContestId = contestId,
-//                FranchiseId = franchiseId
-//            };
+        DataContext.UserPicks.AddRange(
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, contestId1)
+                .With(x => x.ScoredAt, (DateTime?)null).Create(),
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, contestId1) // duplicate contest — should only enqueue once
+                .With(x => x.ScoredAt, (DateTime?)null).Create(),
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, contestId2)
+                .With(x => x.ScoredAt, (DateTime?)null).Create(),
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, contestId3)
+                .With(x => x.ScoredAt, (DateTime?)new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)) // already scored
+                .Create()
+        );
 
-//            await db.PickemGroups.AddAsync(league);
-//            await db.Contests.AddAsync(contest);
-//            await db.UserPicks.AddAsync(pick);
+        await DataContext.SaveChangesAsync();
 
-//            await db.SaveChangesAsync();
-//        }
+        // Capture every enqueued ScoreContestCommand so we can verify the exact
+        // set of ContestIds, not just the call count. The count alone would miss
+        // a regression where the same ContestId is enqueued twice and a distinct
+        // one is dropped.
+        var enqueuedCommands = new List<ScorePicksCommand>();
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        background
+            .Setup(x => x.Enqueue<IScorePicks>(It.IsAny<Expression<Func<IScorePicks, Task>>>()))
+            .Callback<Expression<Func<IScorePicks, Task>>>(expr =>
+            {
+                var cmd = ScorePicksCommandFromExpression(expr);
+                if (cmd != null) enqueuedCommands.Add(cmd);
+            });
 
-//        [Fact]
-//        public async Task ScoreAllAsync_ShouldScoreEligiblePicks()
-//        {
-//            // Arrange
-//            var contestId = Guid.NewGuid();
-//            var teamId = Guid.NewGuid();
+        var sut = Mocker.CreateInstance<PickScoringJob>();
 
-//            var options = CreateOptions(nameof(ScoreAllAsync_ShouldScoreEligiblePicks));
-//            await using var db = new AppDataContext(options);
+        // Act
+        await sut.ExecuteAsync();
 
-//            await SeedTestDataAsync(db, contestId, teamId);
+        // Assert — exactly two enqueues, one per distinct unscored contest.
+        Assert.Equal(2, enqueuedCommands.Count);
+        Assert.Equal(
+            new HashSet<Guid> { contestId1, contestId2 },
+            enqueuedCommands.Select(c => c.ContestId).ToHashSet());
+    }
 
-//            var scoringService = new PickScoringService();
-//            var job = new PickScoringJob(db, scoringService, NullLogger<PickScoringJob>.Instance);
+    /// <summary>
+    /// Compiles and evaluates the single argument of a
+    /// <c>p =&gt; p.Process(cmd)</c> expression to extract the captured
+    /// <see cref="ScorePicksCommand"/> instance. Returns null when the
+    /// expression isn't shaped as expected.
+    /// </summary>
+    private static ScorePicksCommand? ScorePicksCommandFromExpression(
+        Expression<Func<IScorePicks, Task>> expr)
+    {
+        if (expr.Body is not MethodCallExpression call) return null;
+        if (call.Method.Name != nameof(IScorePicks.Process)) return null;
+        if (call.Arguments.Count != 1) return null;
 
-//            // Act
-//            await job.ScoreAllAsync();
+        return Expression.Lambda<Func<ScorePicksCommand>>(call.Arguments[0]).Compile()();
+    }
 
-//            // Assert
-//            var pick = await db.UserPicks.SingleAsync();
-//            pick.IsCorrect.Should().BeTrue();
-//            pick.PointsAwarded.Should().Be(1);
-//            pick.ScoredAt.Should().NotBeNull();
-//        }
+    [Fact]
+    public async Task Execute_DoesNothing_WhenNoUnscoredPicks()
+    {
+        // Arrange — only already-scored picks in the database.
+        DataContext.UserPicks.Add(
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, Guid.NewGuid())
+                .With(x => x.ScoredAt, (DateTime?)new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc))
+                .Create()
+        );
 
-//        [Fact]
-//        public async Task ScoreAllAsync_ShouldSkip_UnfinalizedContests()
-//        {
-//            var contestId = Guid.NewGuid();
-//            var teamId = Guid.NewGuid();
+        await DataContext.SaveChangesAsync();
 
-//            var options = CreateOptions(nameof(ScoreAllAsync_ShouldSkip_UnfinalizedContests));
-//            await using var db = new AppDataContext(options);
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
 
-//            var league = new Infrastructure.Data.Entities.PickemGroup
-//            {
-//                Id = Guid.NewGuid(),
-//                Name = "Unfinalized League",
-//                Sport = Sport.FootballNcaa,
-//                League = Api.Application.League.NCAAF,
-//                CommissionerUserId = Guid.NewGuid(),
-//                PickType = PickType.StraightUp,
-//                UseConfidencePoints = false
-//            };
+        var sut = Mocker.CreateInstance<PickScoringJob>();
 
-//            var contest = new Contest
-//            {
-//                Id = Guid.NewGuid(),
-//                ContestId = contestId,
-//                HomeFranchiseId = teamId,
-//                AwayFranchiseId = Guid.NewGuid(),
-//                FinalizedUtc = null
-//            };
+        // Act
+        await sut.ExecuteAsync();
 
-//            var pick = new PickemGroupUserPick
-//            {
-//                Id = Guid.NewGuid(),
-//                UserId = Guid.NewGuid(),
-//                PickemGroupId = league.Id,
-//                ContestId = contestId,
-//                FranchiseId = teamId
-//            };
-
-//            db.PickemGroups.Add(league);
-//            db.Contests.Add(contest);
-//            db.UserPicks.Add(pick);
-
-//            await db.SaveChangesAsync();
-
-//            var job = new PickScoringJob(db, new PickScoringService(), NullLogger<PickScoringJob>.Instance);
-
-//            // Act
-//            await job.ScoreAllAsync();
-
-//            // Assert
-//            var result = await db.UserPicks.SingleAsync();
-//            result.IsCorrect.Should().BeNull();
-//            result.PointsAwarded.Should().BeNull();
-//            result.ScoredAt.Should().BeNull();
-//        }
-//    }
-//}
+        // Assert
+        background.Verify(x => x.Enqueue<IScorePicks>(
+            It.IsAny<Expression<Func<IScorePicks, Task>>>()), Times.Never);
+    }
+}

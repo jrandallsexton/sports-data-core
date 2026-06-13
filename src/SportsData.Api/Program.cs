@@ -78,7 +78,7 @@ namespace SportsData.Api
                         {
                             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
                             var cookie = context.Request.Cookies["authToken"];
-                            logger.LogInformation("JWT OnMessageReceived - Cookie present: {HasCookie}, Path: {Path}, Method: {Method}",
+                            logger.LogDebug("JWT OnMessageReceived - Cookie present: {HasCookie}, Path: {Path}, Method: {Method}",
                                 !string.IsNullOrEmpty(cookie),
                                 context.Request.Path,
                                 context.Request.Method);
@@ -96,7 +96,7 @@ namespace SportsData.Api
                         OnTokenValidated = context =>
                         {
                             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-                            logger.LogInformation("Token validated for user {UserId} on path {Path}",
+                            logger.LogDebug("Token validated for user {UserId} on path {Path}",
                                 context.Principal!.FindFirst("user_id")?.Value,
                                 context.Request.Path);
                             return Task.CompletedTask;
@@ -138,6 +138,7 @@ namespace SportsData.Api
             services.Configure<ApiConfig>(config.GetSection("SportsData.Api:ApiConfig"));
             services.Configure<NotificationConfig>(config.GetSection("CommonConfig:NotificationConfig"));
             services.Configure<SyntheticUserPickStylesConfig>(config.GetSection("SportsData.Api:SyntheticUserPickStyles"));
+            services.Configure<SyntheticUsersConfig>(config.GetSection("CommonConfig:SyntheticUsers"));
 
             if (!isTestingEnv)
             {

@@ -218,7 +218,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddSingleton<CanonicalAdminDataQueryProvider>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IBootstrapLeagueMatchups, BootstrapLeagueMatchupsProcessor>();
-            services.AddScoped<IScoreContests, ContestScoringProcessor>();
+            services.AddScoped<IScorePicks, PickScoringProcessor>();
             services.AddScoped<IScoreLeagueWeeks, LeagueWeekScoringProcessor>();
             
             // HATEOAS Ref Generator (external API)
@@ -246,7 +246,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<MatchupScheduler>();
             services.AddSingleton<MatchupPreviewPromptProvider>();
             services.AddSingleton<GameRecapPromptProvider>();
-            services.AddScoped<ContestScoringJob>();
+            services.AddScoped<PickScoringJob>();
             services.AddScoped<LeagueWeekScoringJob>();
 
             // TODO: Restore after Contest processing is refactored
@@ -291,8 +291,8 @@ namespace SportsData.Api.DependencyInjection
             // Daily backstop. Primary scoring trigger is event-driven
             // (Producer ContestCompleted → API ContestCompletedHandler enqueues
             // ContestScoringProcessor); this catches events lost in transit.
-            recurringJobManager.AddOrUpdate<ContestScoringJob>(
-                nameof(ContestScoringJob),
+            recurringJobManager.AddOrUpdate<PickScoringJob>(
+                nameof(PickScoringJob),
                 job => job.ExecuteAsync(),
                 Cron.Daily(9));
 

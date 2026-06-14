@@ -66,19 +66,28 @@ public class Program
         services.AddClients(config);
 
         // Per-role connection pool sizing — configurable via Azure App Config.
-        // Keys: {appName}:ConnectionPool:All, :Worker, :Api, :Ingest
-        // Defaults: All=60, Worker=22, Api=5, Ingest=5
+        // Keys: {appName}:ConnectionPool:All, :Worker, :Api, :Ingest, :Daemon
+        // Defaults: All=60, Worker=22, Daemon=10, Api=5, Ingest=5
         //
         // The All arm covers the local-dev / docker-compose case where one
         // process runs every role concurrently and starves the Worker-sized
         // pool. In prod K8s each role is its own pod, so this branch never
         // matches there — strictly additive.
+        //
+        // Daemon pods host long-running streamer jobs that spend most of their
+        // time sleeping between ESPN polls; default pool of 10 covers ~10-15
+        // concurrent streamers per pod comfortably.
+        // Worker and Daemon are mutually-exclusive host-pod roles in production
+        // (separate K8s Deployments). Order matters here: Worker is checked before
+        // Daemon so an accidental `Worker|Daemon` combo gets Worker's larger pool
+        // and both-queue listening — safer fallback than the smaller Daemon pool.
         var (roleName, defaultPoolSize) = role switch
         {
             _ when role == ProducerRole.All => ("All", 60),
-            _ when role.HasFlag(ProducerRole.Api) && !role.HasFlag(ProducerRole.Worker) => ("Api", 5),
-            _ when role.HasFlag(ProducerRole.Ingest) && !role.HasFlag(ProducerRole.Worker) => ("Ingest", 5),
+            _ when role.HasFlag(ProducerRole.Api) && !role.HasFlag(ProducerRole.Worker) && !role.HasFlag(ProducerRole.Daemon) => ("Api", 5),
+            _ when role.HasFlag(ProducerRole.Ingest) && !role.HasFlag(ProducerRole.Worker) && !role.HasFlag(ProducerRole.Daemon) => ("Ingest", 5),
             _ when role.HasFlag(ProducerRole.Worker) => ("Worker", 22),
+            _ when role.HasFlag(ProducerRole.Daemon) => ("Daemon", 10),
             _ => ("Default", 22)
         };
         int? maxPoolSize = Core.DependencyInjection.ServiceRegistration.ResolvePoolSize(config, builder.Environment.ApplicationName, roleName, defaultPoolSize);
@@ -110,11 +119,31 @@ public class Program
                 throw new ArgumentOutOfRangeException();
         }
 
-        // Hangfire — Worker gets client + server; Ingest and Api get client only
-        // Api needs client so controllers can enqueue jobs; Ingest needs it to enqueue from MassTransit consumers
-        var needsHangfireServer = role.HasFlag(ProducerRole.Worker);
+        // Hangfire — Worker and Daemon get client + server; Ingest and Api get client only.
+        // Api needs client so controllers can enqueue jobs; Ingest needs it to enqueue from
+        // MassTransit consumers. Daemon hosts long-running streamer jobs on its own queue.
+        //
+        // Queue routing:
+        //   - Daemon-only pods listen on ["daemon"] exclusively.
+        //   - Worker pods listen on ["default", "daemon"] during the streamer-cutover
+        //     transition (PR A–C). PR D will drop "daemon" from Worker once Daemon pods
+        //     are confirmed healthy in prod.
+        //   - All (local-dev / docker-compose) listens on both.
+        //   - Other combos fall back to Hangfire's default ["default"].
+        // See docs/contest-finalization-reconcile-backstop.md Step 4.
+        var needsHangfireServer = role.HasFlag(ProducerRole.Worker) || role.HasFlag(ProducerRole.Daemon);
+        // Worker checked before Daemon (same mutual-exclusion rationale as the
+        // pool-sizing switch above): an accidental `Worker|Daemon` combo falls
+        // through to the both-queues case, which is the safer fallback.
+        string[]? hangfireQueues = role switch
+        {
+            _ when role == ProducerRole.All => new[] { "default", "daemon" },
+            _ when role.HasFlag(ProducerRole.Worker) => new[] { "default", "daemon" },
+            _ when role.HasFlag(ProducerRole.Daemon) => new[] { "daemon" },
+            _ => null
+        };
         services.AddHangfire(config, builder.Environment.ApplicationName, mode,
-            includeServer: needsHangfireServer, maxPoolSize: maxPoolSize);
+            includeServer: needsHangfireServer, maxPoolSize: maxPoolSize, queues: hangfireQueues);
 
         // MassTransit consumers — only for Ingest role
         if (role.HasFlag(ProducerRole.Ingest))

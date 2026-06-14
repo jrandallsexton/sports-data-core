@@ -179,12 +179,20 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                _logger.LogWarning("Streaming cancelled by external request");
+                // RETHROW after persisting Failed state so Hangfire treats this as a
+                // shutdown cancellation and re-queues the job to another healthy worker.
+                // Swallowing was the bug behind the 2026-06-13 MLB miss — 10 of 14 streams
+                // were cancelled by KEDA scaling down their host pods, marked Failed, and
+                // Hangfire never retried because the catch returned normally. The next
+                // ExecuteAsync run overwrites Status (line 158) so the Failed write is
+                // diagnostic-only and brief.
+                _logger.LogWarning("Streaming cancelled by external request — rethrowing so Hangfire can re-queue.");
                 if (stream != null)
                 {
                     stream.StreamEndedUtc = _dateTimeProvider.UtcNow();
                     await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, CancellationToken.None, "Cancelled by external request");
                 }
+                throw;
             }
             catch (Exception ex)
             {

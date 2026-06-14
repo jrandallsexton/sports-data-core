@@ -404,6 +404,44 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         executeTask.IsCompleted.Should().BeTrue("task should complete gracefully");
     }
 
+    [Fact]
+    public async Task ExecuteAsync_RethrowsOperationCanceled_ForHangfireRetry()
+    {
+        // Regression guard for the 2026-06-13 swallow bug. The
+        // OperationCanceledException catch in CompetitionStreamerBase.ExecuteAsync
+        // must rethrow — otherwise Hangfire treats the cancelled job as
+        // successfully completed and never re-queues it, leaving the stream
+        // stranded when the host pod is recycled (KEDA scale-down, etc.).
+        // See docs/contest-finalization-reconcile-backstop.md Step 2A.
+        //
+        // Pre-cancelling the token deterministically forces the throwing path:
+        // the first awaited DB call (Competitions.FirstOrDefaultAsync) raises
+        // OCE immediately. A mid-execution cancel would race against
+        // WaitForLiveStartAsync's clean-exit-via-while-condition fallback and
+        // the two paths produce different outcomes (throw vs. silent Timeout).
+
+        // Arrange
+        var (contest, competition, _) = await CreateTestGameAsync();
+
+        var command = new StreamCompetitionCommand
+        {
+            CompetitionId = competition.Id,
+            ContestId = contest.Id,
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2025,
+            DataProvider = SourceDataProvider.Espn,
+            CorrelationId = Guid.NewGuid()
+        };
+
+        var sut = Mocker.CreateInstance<FootballCompetitionStreamer>();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // Act + Assert
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => sut.ExecuteAsync(command, cts.Token));
+    }
+
     #endregion
 
     #region Error Handling Tests

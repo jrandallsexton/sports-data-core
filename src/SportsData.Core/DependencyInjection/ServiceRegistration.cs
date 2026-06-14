@@ -209,7 +209,8 @@ namespace SportsData.Core.DependencyInjection
             string applicationName,
             Sport mode,
             bool includeServer = true,
-            int? maxPoolSize = null)
+            int? maxPoolSize = null,
+            string[]? queues = null)
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
@@ -271,6 +272,15 @@ namespace SportsData.Core.DependencyInjection
                 {
                     serverOptions.WorkerCount = minWorkers;
                     serverOptions.ShutdownTimeout = TimeSpan.FromSeconds(90);
+
+                    // Queue routing is role-driven (see Producer Program.cs). Daemon
+                    // pods listen on "daemon" only; Worker pods listen on the default
+                    // queue and (transitionally) "daemon" until streamers fully cut
+                    // over per docs/contest-finalization-reconcile-backstop.md PR D.
+                    if (queues is { Length: > 0 })
+                    {
+                        serverOptions.Queues = queues;
+                    }
                 });
             }
 

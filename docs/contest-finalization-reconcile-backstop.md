@@ -3,7 +3,7 @@
 **Status:** Diagnostic + design draft. Not yet implemented.
 **Origin:** 2026-06-14 MLB scoring miss — only ~4 of 14 played games produced `ContestCompleted` events; the other 10 never reached the publish point in `CompetitionStreamerBase`, so enrichment / `ContestFinalized` / pick scoring never ran.
 
-**Scope evolution:** investigation pinned the root cause on a KEDA + long-running-Hangfire-job mismatch. KEDA scale-down of Producer-MLB worker pods mid-game cancels in-flight streamer jobs that span hours. The structural fix is a new `Daemon` role for Producer (4th role alongside `Api` / `Ingest` / `Worker`, mirroring the planned [Producer role split](../memory/...)); streamers move there. The reconcile backstop remains as durable insurance against Daemon-pod death.
+**Scope evolution:** investigation pinned the root cause on a KEDA + long-running-Hangfire-job mismatch. KEDA scale-down of Producer-MLB worker pods mid-game cancels in-flight streamer jobs that span hours. The structural fix is a new `Daemon` role for Producer — the 4th role alongside the existing `Api` / `Ingest` / `Worker` split in `src/SportsData.Producer/Config/ProducerRole.cs`. Streamers move there. The reconcile backstop remains as durable insurance against Daemon-pod death.
 
 This doc covers streamers only. AI generation jobs (`MatchupPreviewGenerator`, `ContestRecapProcessor`) and the DLQ reprocessor are out of scope here despite sharing the same risk profile — they'll get the Daemon treatment in follow-ups.
 
@@ -194,13 +194,13 @@ Producer gets a 4th role alongside the planned `Api` / `Ingest` / `Worker` split
 
 ### Wiring
 
-- Producer image is unchanged; role is selected via a CLI flag (mirroring the `project_role_split` plan): `--role=Daemon`.
-- In `Program.cs`, the role gates Hangfire's `BackgroundJobServerOptions.Queues`:
+- Producer image is unchanged; role is selected via the existing `--role=` CLI flag (see `src/SportsData.Producer/Config/ProducerRole.cs`): `--role=Daemon`.
+- In `Program.cs`, the role gates Hangfire's `BackgroundJobServerOptions.Queues`. **Final state (post–PR D):**
   - `Api`: no `BackgroundJobServer` registered.
-  - `Ingest`: as planned.
-  - `Worker`: `Queues = ["default", ...]` — **excludes** `daemon`.
+  - `Ingest`: no `BackgroundJobServer` registered.
+  - `Worker`: `Queues = ["default"]` — **excludes** `daemon`.
   - `Daemon`: `Queues = ["daemon"]` — exclusively this queue.
-- Streamer enqueue sites (`CompetitionStreamScheduler` and any direct `Enqueue<ICompetitionBroadcastingJob>` call sites) specify `[Queue("daemon")]` or pass the queue name explicitly.
+- **Transition state during PRs A–C (current):** `Worker` listens on **both** `["default", "daemon"]`. Streamer enqueue sites (`CompetitionStreamScheduler` and direct `Enqueue<ICompetitionBroadcastingJob>` calls) still target the default queue — PR C is the step that switches them to `[Queue("daemon")]`. Worker's interim both-queue subscription means streamers continue to run on KEDA-scaled workers throughout the transition, with no gap when PR B's Daemon Deployment lands or when PR C's enqueue switch ships. PR D is the explicit step that drops `daemon` from Worker's queue list, completing the cutover.
 
 ### K8s manifests (per-sport)
 

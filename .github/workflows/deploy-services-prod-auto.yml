@@ -145,8 +145,11 @@ jobs:
             echo "::error::producer_tag contains invalid characters: $TAG"
             exit 1
           fi
-          # Update all producer role patch files (worker, ingest, api) for NCAA, NFL, and MLB
-          for patch in producer-patch.yaml producer-ingest-patch.yaml producer-api-patch.yaml producer-nfl-patch.yaml producer-nfl-ingest-patch.yaml producer-nfl-api-patch.yaml producer-mlb-patch.yaml producer-mlb-ingest-patch.yaml producer-mlb-api-patch.yaml; do
+          # Update all producer role patch files (worker, ingest, api, daemon) for NCAA, NFL, and MLB.
+          # Daemon patches are present per-sport once that sport's daemon Deployment ships in sports-data-config
+          # (MLB only as of PR B in the contest-finalization-reconcile-backstop workstream).
+          # Must stay in sync with deploy-services-prod.yml.
+          for patch in producer-patch.yaml producer-ingest-patch.yaml producer-api-patch.yaml producer-nfl-patch.yaml producer-nfl-ingest-patch.yaml producer-nfl-api-patch.yaml producer-mlb-patch.yaml producer-mlb-ingest-patch.yaml producer-mlb-api-patch.yaml producer-mlb-daemon-patch.yaml; do
             FILE="app/overlays/04_prod/$patch"
             if [ ! -f "$FILE" ]; then
               echo "::error::Missing producer patch file: $FILE"

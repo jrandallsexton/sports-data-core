@@ -47,7 +47,13 @@ public class FinalizationReconcileJob<TDataContext> : IFinalizationReconcileJob
     {
         _logger = logger;
         _dbContext = dbContext;
-        _httpClient = httpClientFactory.CreateClient();
+        // Route through the existing EspnHttpClient typed-client registration
+        // (Core/ServiceRegistration.cs::AddClients) so we inherit its retry
+        // policy + SportDeets User-Agent without inventing a parallel named
+        // client. AddHttpClient<EspnHttpClient>(...) registers the configured
+        // HttpClient under nameof(EspnHttpClient), so CreateClient(name) here
+        // returns the same configured instance the EspnHttpClient wrapper uses.
+        _httpClient = httpClientFactory.CreateClient(nameof(EspnHttpClient));
         _eventBus = eventBus;
         _deliveryScope = deliveryScope;
         _dateTimeProvider = dateTimeProvider;

@@ -219,17 +219,39 @@ namespace SportsData.Api
             services.AddScoped<IProvideAiCommunication>(sp => sp.GetRequiredService<DeepSeekClient>());
             /* End AI */
 
-            // API is a single pod — keep pool small to leave headroom for Producer/Provider
-            const int apiPoolSize = 10;
+            // Per-pool sizing. Two distinct pools live on this pod:
+            //   - AppData: serves HTTP requests via AppDataContext.
+            //   - Hangfire: client-side enqueue calls (no Hangfire server runs in-process
+            //     on the API; recurring cron triggers and POST-driven enqueues both
+            //     check out a connection per enqueue).
+            //
+            // Both default sizes are tunable via Azure App Config —
+            //   SportsData.Api:ConnectionPool:AppData
+            //   SportsData.Api:ConnectionPool:Hangfire
+            // — matching the Producer's per-role pattern. PostgreSQL max_connections is
+            // 500 on sdprod-data-01 so these numbers are well within capacity.
+            //
+            // Defaults bumped from 10 (hardcoded) → 20 / 30 after a 2026-06-15 prod
+            // incident where the Hangfire pool exhausted at 10 connections during a
+            // cron-driven scoring burst (LeagueWeekScoringJob → PickScoringProcessor
+            // enqueues many ScorePicksCommand in a tight loop). The hardcoded 10 was
+            // not load-tested against burst patterns; the Hangfire default is sized
+            // to absorb cron-fired multi-job enqueue waves comfortably.
+            var apiAppDataPoolSize = Core.DependencyInjection.ServiceRegistration.ResolvePoolSize(
+                config, builder.Environment.ApplicationName, "AppData", defaultPoolSize: 20);
+            var apiHangfirePoolSize = Core.DependencyInjection.ServiceRegistration.ResolvePoolSize(
+                config, builder.Environment.ApplicationName, "Hangfire", defaultPoolSize: 30);
+            Console.WriteLine($"Api ConnectionPool sizes — AppData: {apiAppDataPoolSize}, Hangfire: {apiHangfirePoolSize}");
+
             if (!isTestingEnv)
             {
-                services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, apiPoolSize);
+                services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, apiAppDataPoolSize);
             }
 
             string? sigRConnString = null;
             if (!isTestingEnv)
             {
-                services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: apiPoolSize);
+                services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: apiHangfirePoolSize);
 
                 services.AddMessaging<AppDataContext>(config,
                 [

@@ -7,6 +7,7 @@ using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
+using SportsData.Producer.Application.Competitions.Reconcile;
 using SportsData.Producer.Application.Consumers;
 using SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
 using SportsData.Producer.Application.Competitions.Commands.EnqueueCompetitionMediaRefresh;
@@ -236,6 +237,19 @@ namespace SportsData.Producer.DependencyInjection
                     break;
             }
 
+            // FinalizationReconcileJob: durable backstop that recovers stranded
+            // CompetitionStream rows when the streamer fails to publish ContestCompleted
+            // (KEDA scale-down mid-game, OOM, 5h MaxStreamDuration). Same closed-generic
+            // pattern as ContestEnrichmentJob; only MLB is wired up initially per the
+            // sequencing in docs/contest-finalization-reconcile-backstop.md. Football
+            // joins when its Daemon Deployments ship pre-season.
+            switch (mode)
+            {
+                case Sport.BaseballMlb:
+                    services.AddScoped<IFinalizationReconcileJob, FinalizationReconcileJob<BaseballDataContext>>();
+                    break;
+            }
+
             // SeasonWeek Commands
             services.AddScoped<IEnqueueSeasonWeekContestsUpdateCommandHandler, EnqueueSeasonWeekContestsUpdateCommandHandler>();
 
@@ -408,6 +422,17 @@ namespace SportsData.Producer.DependencyInjection
                     nameof(CompetitionStreamScheduler),
                     job => job.Execute(),
                     "0 7 * * *"); // Daily at 07:00 UTC
+
+                // FinalizationReconcileJob — durable backstop. Every 15 minutes
+                // it sweeps for CompetitionStream rows whose streamer process
+                // died before publishing ContestCompleted, re-checks ESPN status,
+                // and publishes the finalization events if the game is now FINAL.
+                // [Queue("daemon")] on IFinalizationReconcileJob.ExecuteAsync
+                // routes the trigger to the daemon queue.
+                recurringJobManager.AddOrUpdate<IFinalizationReconcileJob>(
+                    "FinalizationReconcileJob",
+                    job => job.ExecuteAsync(CancellationToken.None),
+                    "*/15 * * * *"); // Every 15 minutes
             }
 
             recurringJobManager.AddOrUpdate<FranchiseSeasonEnrichmentJob>(

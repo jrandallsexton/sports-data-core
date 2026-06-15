@@ -294,8 +294,12 @@ public class Program
             app.MapPrometheusScrapingEndpoint();
         }
 
-        // Recurring Hangfire jobs — only for Worker role
-        if (role.HasFlag(ProducerRole.Worker))
+        // Recurring Hangfire jobs — for Worker and Daemon roles. Hangfire's
+        // AddOrUpdate is idempotent so duplicate registration across roles is
+        // safe; per-job [Queue(...)] attributes route each trigger to the
+        // appropriate role's queue at run time (e.g. FinalizationReconcileJob
+        // is [Queue("daemon")] so only Daemon pods process it).
+        if (role.HasFlag(ProducerRole.Worker) || role.HasFlag(ProducerRole.Daemon))
         {
             app.Services.ConfigureHangfireJobs(mode);
         }

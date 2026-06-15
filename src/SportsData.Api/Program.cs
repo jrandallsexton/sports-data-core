@@ -221,9 +221,13 @@ namespace SportsData.Api
 
             // Per-pool sizing. Two distinct pools live on this pod:
             //   - AppData: serves HTTP requests via AppDataContext.
-            //   - Hangfire: client-side enqueue calls (no Hangfire server runs in-process
-            //     on the API; recurring cron triggers and POST-driven enqueues both
-            //     check out a connection per enqueue).
+            //   - Hangfire: a Hangfire server DOES run in-process here (AddHangfire
+            //     defaults includeServer: true). The API hosts five recurring jobs —
+            //     ContestRecapJob, PickScoringJob, LeagueWeekScoringJob,
+            //     MatchupPreviewGenerator, MatchupScheduler — plus the
+            //     PickScoringProcessor / LeagueWeekScoringProcessor that fan out
+            //     downstream enqueues from inside those jobs. This pool sees both
+            //     server-side state transitions and client-side enqueue bursts.
             //
             // Both default sizes are tunable via Azure App Config —
             //   SportsData.Api:ConnectionPool:AppData

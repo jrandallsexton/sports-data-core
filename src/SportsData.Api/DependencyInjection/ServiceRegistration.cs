@@ -255,6 +255,8 @@ namespace SportsData.Api.DependencyInjection
 
             services.AddScoped<IPickScoringService, PickScoringService>();
             services.AddScoped<ILeagueWeekScoringService, LeagueWeekScoringService>();
+            services.AddScoped<IPickScoringAudit, PickScoringAuditProcessor>();
+            services.AddScoped<PickScoringAuditJob>();
 
             // Synthetic pick services (required by other services)
             services.AddSingleton<ISyntheticPickStyleProvider, SyntheticPickStyleProvider>();
@@ -317,6 +319,31 @@ namespace SportsData.Api.DependencyInjection
                 nameof(MatchupScheduler),
                 job => job.ExecuteAsync(),
                 Cron.Daily(6));
+
+            // Per-sport historical audit of previously-scored picks. Catches
+            // (a) picks scored against a contest that later finalized to a
+            // different result and (b) picks still scored against an
+            // unfinalized contest. Runs before PickScoringJob(9) so any
+            // ScoredAt resets land in time for the daily rescore.
+            //
+            // Stagger by 15 min per sport so a single sport's audit owns
+            // its window in Seq — pods are separate so the lack of stagger
+            // wouldn't actually collide, but staggering makes "which sport
+            // is misbehaving" trivial to identify.
+            recurringJobManager.AddOrUpdate<PickScoringAuditJob>(
+                "PickScoringAudit-FootballNcaa",
+                job => job.ExecuteAsync(Sport.FootballNcaa),
+                "0 2 * * *");
+
+            recurringJobManager.AddOrUpdate<PickScoringAuditJob>(
+                "PickScoringAudit-FootballNfl",
+                job => job.ExecuteAsync(Sport.FootballNfl),
+                "15 2 * * *");
+
+            recurringJobManager.AddOrUpdate<PickScoringAuditJob>(
+                "PickScoringAudit-BaseballMlb",
+                job => job.ExecuteAsync(Sport.BaseballMlb),
+                "30 2 * * *");
 
             return services;
         }

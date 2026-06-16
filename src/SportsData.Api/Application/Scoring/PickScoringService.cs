@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 
@@ -10,10 +11,14 @@ namespace SportsData.Api.Application.Scoring;
 public class PickScoringService : IPickScoringService
 {
     private readonly ILogger<PickScoringService> _logger;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public PickScoringService(ILogger<PickScoringService> logger)
+    public PickScoringService(
+        ILogger<PickScoringService> logger,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public void ScorePick(
@@ -35,7 +40,7 @@ public class PickScoringService : IPickScoringService
             return;
         }
 
-        var now = DateTime.UtcNow;
+        var now = _dateTimeProvider.UtcNow();
 
         switch (group.PickType)
         {

@@ -3,6 +3,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using SportsData.Api.Application;
 using SportsData.Api.Application.Scoring;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Application.Common.Enums;
@@ -12,7 +13,9 @@ namespace SportsData.Api.Tests.Unit.Application.Scoring;
 
 public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 {
-    private readonly PickScoringService _sut = new(NullLogger<PickScoringService>.Instance);
+    private readonly PickScoringService _sut = new(
+        NullLogger<PickScoringService>.Instance,
+        new DateTimeProvider());
 
     #region StraightUp Tests
 

@@ -21,6 +21,7 @@ namespace SportsData.Api.Application.Scoring
         private readonly IEventBus _bus;
         private readonly IPickScoringService _pickScoringService;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public PickScoringProcessor(
             ILogger<PickScoringProcessor> logger,
@@ -28,7 +29,8 @@ namespace SportsData.Api.Application.Scoring
             IContestClientFactory contestClientFactory,
             IEventBus bus,
             IPickScoringService pickScoringService,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -36,6 +38,7 @@ namespace SportsData.Api.Application.Scoring
             _bus = bus;
             _pickScoringService = pickScoringService;
             _backgroundJobProvider = backgroundJobProvider;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task Process(ScorePicksCommand command)
@@ -181,7 +184,7 @@ namespace SportsData.Api.Application.Scoring
                         _logger.LogError(ex, "Error scoring pick {PickId} for group {GroupId}", pick.Id, group.Id);
                     }
 
-                    pick.ModifiedUtc = DateTime.UtcNow;
+                    pick.ModifiedUtc = _dateTimeProvider.UtcNow();
                     pick.ModifiedBy = CausationId.Api.PickScoringProcessor;
 
                     await _dataContext.SaveChangesAsync();

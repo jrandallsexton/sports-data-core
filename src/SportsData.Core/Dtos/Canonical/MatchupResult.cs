@@ -17,10 +17,15 @@ using System;
 
         public double? Spread { get; set; }
 
-        public Guid WinnerFranchiseSeasonId { get; set; }
+        // Nullable: unset until Producer's ContestEnrichmentProcessor populates
+        // the winner. Pre-enrichment reads would silently see Guid.Empty if this
+        // were non-nullable, causing every pick to be scored as incorrect.
+        public Guid? WinnerFranchiseSeasonId { get; set; }
 
         public Guid? SpreadWinnerFranchiseSeasonId { get; set; } // nullable if there was no spread
 
-        public DateTime FinalizedUtc { get; set; }
+        // Nullable: NULL until enrichment runs. PickScoringProcessor/Service
+        // gate on this — the canonical "is this contest scoreable" signal.
+        public DateTime? FinalizedUtc { get; set; }
     }
 }

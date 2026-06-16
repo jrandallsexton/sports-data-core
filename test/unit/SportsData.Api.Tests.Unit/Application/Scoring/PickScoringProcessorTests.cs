@@ -281,6 +281,65 @@ public class PickScoringProcessorTests : ApiTestBase<PickScoringProcessor>
     }
 
     [Fact]
+    public async Task Process_WhenMatchupResultNotFinalized_LogsAndReturns()
+    {
+        // Regression: 2026-06-16. The PickScoringJob cron pulled contests with
+        // unscored picks regardless of FinalizedUtc and produced
+        // MatchupResults whose WinnerFranchiseSeasonId silently mapped to
+        // Guid.Empty pre-enrichment. After the SQL filter + DTO nullability
+        // change, the processor must refuse the result whenever
+        // FinalizedUtc is null.
+        var contestId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+
+        var matchup = Fixture.Build<PickemGroupMatchup>()
+            .With(x => x.ContestId, contestId)
+            .With(x => x.GroupId, groupId)
+            .Create();
+
+        var group = Fixture.Build<PickemGroup>()
+            .With(x => x.Id, groupId)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.Weeks, new List<PickemGroupWeek>())
+            .Create();
+
+        await DataContext.PickemGroups.AddAsync(group);
+        await DataContext.PickemGroupMatchups.AddAsync(matchup);
+
+        var pick = Fixture.Build<PickemGroupUserPick>()
+            .With(x => x.ContestId, contestId)
+            .With(x => x.PickemGroupId, groupId)
+            .With(x => x.Group, group)
+            .With(x => x.ScoredAt, (DateTime?)null)
+            .Create();
+
+        await DataContext.UserPicks.AddAsync(pick);
+        await DataContext.SaveChangesAsync();
+
+        var result = Fixture.Build<MatchupResult>()
+            .With(x => x.ContestId, contestId)
+            .With(x => x.FinalizedUtc, (DateTime?)null)
+            .Create();
+
+        _contestClientMock
+            .Setup(x => x.GetMatchupResult(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<MatchupResult>(result));
+
+        var command = new ScorePicksCommand(contestId);
+        var sut = Mocker.CreateInstance<PickScoringProcessor>();
+
+        await sut.Process(command);
+
+        Mocker.GetMock<IPickScoringService>()
+            .Verify(x => x.ScorePick(
+                    It.IsAny<PickemGroup>(),
+                    It.IsAny<double?>(),
+                    It.IsAny<PickemGroupUserPick>(),
+                    It.IsAny<MatchupResult>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task Process_WhenSportCannotBeResolved_LogsAndReturns()
     {
         // Arrange — unscored picks but NO matchup row, so sport resolution returns null.

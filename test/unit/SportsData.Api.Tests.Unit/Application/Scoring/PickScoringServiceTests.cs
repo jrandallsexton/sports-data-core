@@ -1,7 +1,9 @@
 using AutoFixture;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using SportsData.Api.Application;
 using SportsData.Api.Application.Scoring;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Application.Common.Enums;
@@ -11,7 +13,9 @@ namespace SportsData.Api.Tests.Unit.Application.Scoring;
 
 public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 {
-    private readonly PickScoringService _sut = new(); // no dependencies
+    private readonly PickScoringService _sut = new(
+        NullLogger<PickScoringService>.Instance,
+        new DateTimeProvider());
 
     #region StraightUp Tests
 
@@ -498,6 +502,40 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 
         _sut.Invoking(s => s.ScorePick(group, matchup.HomeSpread, pick, result))
             .Should().NotThrow();
+    }
+
+    [Fact]
+    public void ScorePick_WhenResultNotFinalized_LogsAndReturns()
+    {
+        // Regression: 2026-06-16. PickScoringProcessor guards on
+        // FinalizedUtc.HasValue, but this service-level guard catches any
+        // future caller that bypasses the processor (admin endpoints, audit
+        // jobs, etc.) before silently locking the pick with bogus IsCorrect /
+        // ScoredAt. Early-return rather than throw so the processor's broad
+        // try/catch doesn't surface this as a misleading "Error scoring pick".
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.PickType, PickType.StraightUp)
+            .Create();
+
+        var matchup = Fixture.Create<PickemGroupMatchup>();
+
+        var pick = Fixture.Build<PickemGroupUserPick>()
+            .With(p => p.FranchiseId, Guid.NewGuid())
+            .With(p => p.ScoredAt, (DateTime?)null)
+            .With(p => p.IsCorrect, (bool?)null)
+            .With(p => p.PointsAwarded, 0)
+            .Create();
+
+        var result = Fixture.Build<MatchupResult>()
+            .With(r => r.FinalizedUtc, (DateTime?)null)
+            .Create();
+
+        _sut.Invoking(s => s.ScorePick(group, matchup.HomeSpread, pick, result))
+            .Should().NotThrow();
+
+        pick.ScoredAt.Should().BeNull("the early return must fire before ScoredAt is set");
+        pick.IsCorrect.Should().BeNull("the early return must fire before IsCorrect is set");
+        pick.PointsAwarded.Should().Be(0, "the early return must fire before PointsAwarded is set");
     }
 
     [Fact]

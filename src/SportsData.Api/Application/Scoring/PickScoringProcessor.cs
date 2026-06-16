@@ -21,6 +21,7 @@ namespace SportsData.Api.Application.Scoring
         private readonly IEventBus _bus;
         private readonly IPickScoringService _pickScoringService;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public PickScoringProcessor(
             ILogger<PickScoringProcessor> logger,
@@ -28,7 +29,8 @@ namespace SportsData.Api.Application.Scoring
             IContestClientFactory contestClientFactory,
             IEventBus bus,
             IPickScoringService pickScoringService,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -36,6 +38,7 @@ namespace SportsData.Api.Application.Scoring
             _bus = bus;
             _pickScoringService = pickScoringService;
             _backgroundJobProvider = backgroundJobProvider;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task Process(ScorePicksCommand command)
@@ -76,7 +79,9 @@ namespace SportsData.Api.Application.Scoring
                 return;
             }
 
-            var matchupResultResponse = await _contestClientFactory.Resolve(sport.Value).GetMatchupResult(command.ContestId);
+            var matchupResultResponse = await _contestClientFactory
+                .Resolve(sport.Value)
+                .GetMatchupResult(command.ContestId);
 
             if (!matchupResultResponse.IsSuccess)
             {
@@ -91,6 +96,22 @@ namespace SportsData.Api.Application.Scoring
             }
 
             var result = matchupResultResponse.Value;
+
+            // Belt-and-suspenders: GetMatchupResultByContestId.sql already
+            // filters to FinalizedUtc IS NOT NULL, so a finalized=null result
+            // here means either (a) the SQL filter was reverted, or (b) some
+            // future caller path bypasses the producer handler. Refuse to
+            // score either way — the cron backstop will retry once enrichment
+            // lands. See docs/contest-finalization-event-restructure.md and
+            // the 2026-06-16 bug where the cron pulled unfinalized contests
+            // and silently scored picks against Guid.Empty.
+            if (result.FinalizedUtc is null)
+            {
+                _logger.LogWarning(
+                    "Matchup result has no FinalizedUtc — contest is not yet enriched. Skipping scoring. ContestId={ContestId}",
+                    command.ContestId);
+                return;
+            }
 
             // canonical data has the true spread winner, but that is based on the final spread
             // our matchups were generated with the opening spread, so we need to adjust
@@ -163,8 +184,8 @@ namespace SportsData.Api.Application.Scoring
                         _logger.LogError(ex, "Error scoring pick {PickId} for group {GroupId}", pick.Id, group.Id);
                     }
 
-                    pick.ModifiedUtc = DateTime.UtcNow;
-                    pick.ModifiedBy = CausationId.Api.ContestScoringProcessor;
+                    pick.ModifiedUtc = _dateTimeProvider.UtcNow();
+                    pick.ModifiedBy = CausationId.Api.PickScoringProcessor;
 
                     await _dataContext.SaveChangesAsync();
                 }

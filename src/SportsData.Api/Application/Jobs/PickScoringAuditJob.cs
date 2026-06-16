@@ -71,12 +71,14 @@ public class PickScoringAuditJob
                 "Found {Count} distinct contests to audit for {Sport}.",
                 contestIds.Count, sport);
 
+            var enqueuedCount = 0;
             foreach (var contestId in contestIds)
             {
                 try
                 {
                     var cmd = new AuditContestCommand(contestId, sport, correlationId);
                     _backgroundJobProvider.Enqueue<IPickScoringAudit>(p => p.Process(cmd));
+                    enqueuedCount++;
                 }
                 catch (Exception ex)
                 {
@@ -89,7 +91,7 @@ public class PickScoringAuditJob
 
             _logger.LogInformation(
                 "{JobName} ended. EnqueuedCount={Count}.",
-                nameof(PickScoringAuditJob), contestIds.Count);
+                nameof(PickScoringAuditJob), enqueuedCount);
         }
     }
 }

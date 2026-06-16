@@ -4556,6 +4556,9 @@ namespace SportsData.Producer.Migrations.Football
                     b.Property<Guid>("AwayTeamFranchiseSeasonId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("CancelledUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 

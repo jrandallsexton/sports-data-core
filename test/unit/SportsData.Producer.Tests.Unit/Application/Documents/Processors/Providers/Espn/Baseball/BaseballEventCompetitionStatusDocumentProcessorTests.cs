@@ -291,4 +291,118 @@ public class BaseballEventCompetitionStatusDocumentProcessorTests
         athletes[1].Ordinal.Should().Be(1);
         athletes[1].Name.Should().Be("losingPitcher");
     }
+
+    [Fact]
+    public async Task WhenStatusIsCanceled_StampsContestCancelledUtc()
+    {
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+
+        var compId = Guid.NewGuid();
+        var (contest, _) = await SeedContestAndCompetitionAsync(compId);
+
+        var cmd = await BuildCommandAsync(compId, statusTypeName: "STATUS_CANCELED");
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionStatusDocumentProcessor<BaseballDataContext>>();
+
+        await sut.ProcessAsync(cmd);
+
+        var refreshed = await _baseballDataContext.Contests
+            .FirstAsync(c => c.Id == contest.Id);
+        refreshed.CancelledUtc.Should().Be(FixedNow);
+    }
+
+    [Fact]
+    public async Task WhenStatusIsCanceledButCancelledUtcAlreadySet_PreservesOriginal()
+    {
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+
+        var compId = Guid.NewGuid();
+        var originalCancelledUtc = FixedNow.AddDays(-5);
+        var (contest, _) = await SeedContestAndCompetitionAsync(compId);
+
+        // Stamp Contest.CancelledUtc as if a prior cancellation observation
+        // already fired. Also seed the existing CompetitionStatus as
+        // STATUS_CANCELED so the processor sees the "no transition" case.
+        contest.CancelledUtc = originalCancelledUtc;
+        await _baseballDataContext.SaveChangesAsync();
+
+        var existing = new BaseballCompetitionStatus
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = compId,
+            StatusTypeName = "STATUS_CANCELED",
+            CreatedUtc = FixedNow.AddDays(-5),
+            CreatedBy = Guid.NewGuid()
+        };
+        await _baseballDataContext.Set<BaseballCompetitionStatus>().AddAsync(existing);
+        await _baseballDataContext.SaveChangesAsync();
+
+        var cmd = await BuildCommandAsync(compId, statusTypeName: "STATUS_CANCELED");
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionStatusDocumentProcessor<BaseballDataContext>>();
+
+        await sut.ProcessAsync(cmd);
+
+        var refreshed = await _baseballDataContext.Contests
+            .FirstAsync(c => c.Id == contest.Id);
+        refreshed.CancelledUtc.Should().Be(originalCancelledUtc,
+            "first-observed cancellation timestamp is preserved across redundant doc refreshes");
+    }
+
+    [Fact]
+    public async Task WhenStatusTransitionsAwayFromCanceled_LeavesCancelledUtcInPlace()
+    {
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+
+        var compId = Guid.NewGuid();
+        var originalCancelledUtc = FixedNow.AddDays(-5);
+        var (contest, _) = await SeedContestAndCompetitionAsync(compId);
+
+        contest.CancelledUtc = originalCancelledUtc;
+        await _baseballDataContext.SaveChangesAsync();
+
+        var existing = new BaseballCompetitionStatus
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = compId,
+            StatusTypeName = "STATUS_CANCELED",
+            CreatedUtc = FixedNow.AddDays(-5),
+            CreatedBy = Guid.NewGuid()
+        };
+        await _baseballDataContext.Set<BaseballCompetitionStatus>().AddAsync(existing);
+        await _baseballDataContext.SaveChangesAsync();
+
+        var cmd = await BuildCommandAsync(compId, statusTypeName: "STATUS_SCHEDULED");
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionStatusDocumentProcessor<BaseballDataContext>>();
+
+        await sut.ProcessAsync(cmd);
+
+        var refreshed = await _baseballDataContext.Contests
+            .FirstAsync(c => c.Id == contest.Id);
+        refreshed.CancelledUtc.Should().Be(originalCancelledUtc,
+            "cancellation is treated as irrevocable; only an admin override should clear it");
+    }
+
+    private async Task<ProcessDocumentCommand> BuildCommandAsync(Guid compId, string statusTypeName)
+    {
+        var baseJson = await LoadJsonTestData("EspnBaseballMlb/EventCompetitionStatus.json");
+        // Swap the status name + description in the canonical MLB fixture so
+        // the processor sees the intended status without us authoring a
+        // separate fixture file per terminal state.
+        var json = baseJson
+            .Replace("\"STATUS_FINAL\"", $"\"{statusTypeName}\"")
+            .Replace("\"Final\"", $"\"{statusTypeName}\"");
+
+        return Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.ParentId, compId.ToString())
+            .With(x => x.SeasonYear, 2026)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.BaseballMlb)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionStatus)
+            .With(x => x.Document, json)
+            .With(x => x.UrlHash,
+                "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401814844/competitions/401814844/status?lang=en&region=us"
+                    .UrlHash())
+            .With(x => x.CorrelationId, Guid.NewGuid())
+            .OmitAutoProperties()
+            .Create();
+    }
 }

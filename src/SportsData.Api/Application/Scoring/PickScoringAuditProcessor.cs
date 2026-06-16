@@ -43,10 +43,17 @@ public class PickScoringAuditProcessor : IPickScoringAudit
                }))
         {
             // Load scored picks (audit only re-checks already-scored picks;
-            // unscored picks are PickScoringJob's territory).
+            // unscored picks are PickScoringJob's territory). Sport filter is
+            // defense-in-depth — the job already SQL-filters candidates by
+            // PickemGroup.Sport, but if a future caller (admin endpoint,
+            // direct enqueue) passes a mismatched command.Sport, the filter
+            // here prevents cross-sport corrections at the data layer.
             var scoredPicks = await _dataContext.UserPicks
                 .Include(p => p.Group)
-                .Where(p => p.ContestId == command.ContestId && p.ScoredAt != null)
+                .Where(p =>
+                    p.ContestId == command.ContestId
+                    && p.ScoredAt != null
+                    && p.Group.Sport == command.Sport)
                 .ToListAsync();
 
             if (scoredPicks.Count == 0)
@@ -103,9 +110,15 @@ public class PickScoringAuditProcessor : IPickScoringAudit
     {
         // Per-(GroupId) (SeasonYear, SeasonWeek) lookup for fan-out. The
         // matchup row carries season metadata; the pick alone doesn't.
+        // Sport-scoped — same defense-in-depth as the scoredPicks query.
         var matchupKeys = await _dataContext.PickemGroupMatchups
             .Where(m => m.ContestId == command.ContestId)
-            .Select(m => new { m.GroupId, m.SeasonYear, m.SeasonWeek })
+            .Join(_dataContext.PickemGroups,
+                m => m.GroupId,
+                g => g.Id,
+                (m, g) => new { m.GroupId, m.SeasonYear, m.SeasonWeek, g.Sport })
+            .Where(x => x.Sport == command.Sport)
+            .Select(x => new { x.GroupId, x.SeasonYear, x.SeasonWeek })
             .ToListAsync();
 
         var keyByGroup = matchupKeys.ToDictionary(
@@ -142,9 +155,15 @@ public class PickScoringAuditProcessor : IPickScoringAudit
     {
         // Per-(GroupId) matchup lookup. Audit needs SeasonYear/Week per
         // affected league-week for fan-out, just like PickScoringProcessor.
+        // Sport-scoped — same defense-in-depth as the scoredPicks query.
         var matchupKeys = await _dataContext.PickemGroupMatchups
             .Where(m => m.ContestId == command.ContestId)
-            .Select(m => new { m.GroupId, m.SeasonYear, m.SeasonWeek })
+            .Join(_dataContext.PickemGroups,
+                m => m.GroupId,
+                g => g.Id,
+                (m, g) => new { m.GroupId, m.SeasonYear, m.SeasonWeek, g.Sport })
+            .Where(x => x.Sport == command.Sport)
+            .Select(x => new { x.GroupId, x.SeasonYear, x.SeasonWeek })
             .ToListAsync();
 
         var keyByGroup = matchupKeys.ToDictionary(

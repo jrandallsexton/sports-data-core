@@ -60,9 +60,11 @@ public class PickScoringAuditProcessorTests : ApiTestBase<PickScoringAuditProces
             .ReturnsAsync(new Success<MatchupResult>(result));
 
         // Real PickScoringService — easier than mocking the score logic.
+        // Reuse the Mocker's already-mocked IDateTimeProvider (FixedUtcNow)
+        // so the service sees the same fixed time as the SUT.
         Mocker.Use<IPickScoringService>(new PickScoringService(
             Microsoft.Extensions.Logging.Abstractions.NullLogger<PickScoringService>.Instance,
-            new DateTimeProvider()));
+            Mocker.Get<IDateTimeProvider>()));
 
         var sut = Mocker.CreateInstance<PickScoringAuditProcessor>();
 
@@ -108,20 +110,31 @@ public class PickScoringAuditProcessorTests : ApiTestBase<PickScoringAuditProces
 
         Mocker.Use<IPickScoringService>(new PickScoringService(
             Microsoft.Extensions.Logging.Abstractions.NullLogger<PickScoringService>.Instance,
-            new DateTimeProvider()));
+            Mocker.Get<IDateTimeProvider>()));
 
-        AuditContestCommand? enqueuedFanOut = null;
+        // Capture the *actual* expression the processor passes to Enqueue so
+        // we can assert the league-week payload, not just the call count.
+        // Without this the test would pass even if the processor enqueued
+        // a wrong leagueId / year / week — exactly the kind of regression
+        // that breaks leaderboard rescore fan-out.
+        (Guid LeagueId, int SeasonYear, int Week, Guid CorrelationId)? enqueuedCall = null;
         Mocker.GetMock<IProvideBackgroundJobs>()
             .Setup(x => x.Enqueue<IScoreLeagueWeeks>(It.IsAny<Expression<Func<IScoreLeagueWeeks, Task>>>()))
-            .Callback<Expression<Func<IScoreLeagueWeeks, Task>>>(_ => enqueuedFanOut = new AuditContestCommand(contestId, Sport.FootballNcaa));
+            .Callback<Expression<Func<IScoreLeagueWeeks, Task>>>(expr =>
+                enqueuedCall = LeagueWeekScoreCallFromExpression(expr));
 
         var sut = Mocker.CreateInstance<PickScoringAuditProcessor>();
 
+        // Capture CorrelationId from the command we'll invoke with so the
+        // assertion can verify the processor propagates it to the fan-out.
+        var command = new AuditContestCommand(contestId, Sport.FootballNcaa);
+
         // Act
-        await sut.Process(new AuditContestCommand(contestId, Sport.FootballNcaa));
+        await sut.Process(command);
 
         // Assert — pick corrected in place; ScoredAt preserved; ModifiedBy
-        // stamped with the audit causation ID; fan-out fired.
+        // stamped with the audit causation ID; fan-out fired with the right
+        // league-week payload.
         var refreshed = await DataContext.UserPicks.FindAsync(pick.Id);
         refreshed!.IsCorrect.Should().BeTrue("clone re-scored to a correct pick");
         refreshed.PointsAwarded.Should().Be(1);
@@ -132,7 +145,11 @@ public class PickScoringAuditProcessorTests : ApiTestBase<PickScoringAuditProces
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(
             x => x.Enqueue<IScoreLeagueWeeks>(It.IsAny<Expression<Func<IScoreLeagueWeeks, Task>>>()),
             Times.Once);
-        enqueuedFanOut.Should().NotBeNull();
+        enqueuedCall.Should().NotBeNull();
+        enqueuedCall!.Value.LeagueId.Should().Be(groupId, "fan-out must target the pick's league");
+        enqueuedCall.Value.SeasonYear.Should().Be(2025, "seeded matchup is for the 2025 season");
+        enqueuedCall.Value.Week.Should().Be(10, "seeded matchup is for week 10");
+        enqueuedCall.Value.CorrelationId.Should().Be(command.CorrelationId, "audit must propagate the command's correlation id");
     }
 
     [Fact]
@@ -167,6 +184,7 @@ public class PickScoringAuditProcessorTests : ApiTestBase<PickScoringAuditProces
         refreshed.PointsAwarded.Should().BeNull();
         refreshed.WasAgainstSpread.Should().BeNull();
         refreshed.ModifiedBy.Should().Be(CausationId.Api.PickScoringAuditProcessor);
+        refreshed.ModifiedUtc.Should().Be(FixedUtcNow, "audit must stamp the reset with the deterministic time provider");
 
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(
             x => x.Enqueue<IScoreLeagueWeeks>(It.IsAny<Expression<Func<IScoreLeagueWeeks, Task>>>()),
@@ -232,6 +250,112 @@ public class PickScoringAuditProcessorTests : ApiTestBase<PickScoringAuditProces
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(
             x => x.Enqueue<IScoreLeagueWeeks>(It.IsAny<Expression<Func<IScoreLeagueWeeks, Task>>>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_IgnoresPicksFromOtherSports_EvenWithSameContestId()
+    {
+        // Defense in depth: even if a caller passes the wrong Sport in the
+        // command, the processor's data queries are sport-scoped so an MLB
+        // audit can't accidentally rewrite NCAAFB picks (or vice versa).
+        // Astronomically unlikely with random Guids, but the user explicitly
+        // wanted hard sport isolation per CR review on PR #422.
+        var sharedContestId = Guid.NewGuid();
+        var ncaaGroupId = Guid.NewGuid();
+        var mlbGroupId = Guid.NewGuid();
+        var winnerId = Guid.NewGuid();
+
+        // Seed an NCAAFB pick (wrong-sport for our MLB audit run).
+        var (ncaaPick, _, _) = await SeedScoredPickAsync(
+            sharedContestId, ncaaGroupId, winnerId,
+            storedIsCorrect: false, storedPoints: 0, wasAts: false,
+            franchiseId: winnerId);
+
+        // Seed an MLB pick that SHOULD be in scope.
+        var mlbGroup = Fixture.Build<PickemGroup>()
+            .With(g => g.Id, mlbGroupId)
+            .With(g => g.Sport, Sport.BaseballMlb)
+            .With(g => g.PickType, PickType.StraightUp)
+            .With(g => g.UseConfidencePoints, false)
+            .Create();
+        var mlbMatchup = Fixture.Build<PickemGroupMatchup>()
+            .With(m => m.ContestId, sharedContestId)
+            .With(m => m.GroupId, mlbGroupId)
+            .With(m => m.SeasonYear, 2026)
+            .With(m => m.SeasonWeek, 5)
+            .Without(m => m.GroupWeek)
+            .Create();
+        var mlbPick = Fixture.Build<PickemGroupUserPick>()
+            .With(p => p.ContestId, sharedContestId)
+            .With(p => p.PickemGroupId, mlbGroupId)
+            .With(p => p.Group, mlbGroup)
+            .With(p => p.FranchiseId, (Guid?)winnerId)
+            .With(p => p.IsCorrect, (bool?)false)
+            .With(p => p.PointsAwarded, 0)
+            .With(p => p.WasAgainstSpread, (bool?)false)
+            .With(p => p.ScoredAt, (DateTime?)OriginalScoredAt)
+            .Create();
+        await DataContext.PickemGroups.AddAsync(mlbGroup);
+        await DataContext.PickemGroupMatchups.AddAsync(mlbMatchup);
+        await DataContext.UserPicks.AddAsync(mlbPick);
+        await DataContext.SaveChangesAsync();
+        DataContext.ChangeTracker.Clear();
+
+        var result = Fixture.Build<MatchupResult>()
+            .With(r => r.ContestId, sharedContestId)
+            .With(r => r.WinnerFranchiseSeasonId, (Guid?)winnerId)
+            .With(r => r.FinalizedUtc, (DateTime?)FixedUtcNow.AddHours(-2))
+            .Create();
+
+        _contestClientMock
+            .Setup(x => x.GetMatchupResult(sharedContestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<MatchupResult>(result));
+
+        Mocker.Use<IPickScoringService>(new PickScoringService(
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<PickScoringService>.Instance,
+            Mocker.Get<IDateTimeProvider>()));
+
+        var sut = Mocker.CreateInstance<PickScoringAuditProcessor>();
+
+        // Act — run the MLB audit. NCAAFB pick is "wrong" relative to the
+        // MatchupResult winner, but should NOT be corrected because it
+        // belongs to a different sport.
+        await sut.Process(new AuditContestCommand(sharedContestId, Sport.BaseballMlb));
+
+        // Assert — NCAAFB pick untouched.
+        var refreshedNcaa = await DataContext.UserPicks.FindAsync(ncaaPick.Id);
+        refreshedNcaa!.IsCorrect.Should().BeFalse("NCAAFB pick must not be touched by MLB audit");
+        refreshedNcaa.PointsAwarded.Should().Be(0);
+        refreshedNcaa.ModifiedBy.Should().NotBe(CausationId.Api.PickScoringAuditProcessor);
+
+        // MLB pick gets corrected — proves the audit DID run for the
+        // right sport.
+        var refreshedMlb = await DataContext.UserPicks.FindAsync(mlbPick.Id);
+        refreshedMlb!.IsCorrect.Should().BeTrue();
+        refreshedMlb.PointsAwarded.Should().Be(1);
+        refreshedMlb.ModifiedBy.Should().Be(CausationId.Api.PickScoringAuditProcessor);
+    }
+
+    /// <summary>
+    /// Compiles the four argument expressions of a
+    /// <c>p =&gt; p.Process(leagueId, seasonYear, week, correlationId)</c>
+    /// lambda and returns the captured values. Returns null when the
+    /// expression isn't shaped as expected — caller asserts NotBeNull.
+    /// Mirrors the pattern in PickScoringJobTests.
+    /// </summary>
+    private static (Guid LeagueId, int SeasonYear, int Week, Guid CorrelationId)?
+        LeagueWeekScoreCallFromExpression(Expression<Func<IScoreLeagueWeeks, Task>> expr)
+    {
+        if (expr.Body is not MethodCallExpression call) return null;
+        if (call.Method.Name != nameof(IScoreLeagueWeeks.Process)) return null;
+        if (call.Arguments.Count != 4) return null;
+
+        var leagueId = Expression.Lambda<Func<Guid>>(call.Arguments[0]).Compile()();
+        var seasonYear = Expression.Lambda<Func<int>>(call.Arguments[1]).Compile()();
+        var week = Expression.Lambda<Func<int>>(call.Arguments[2]).Compile()();
+        var correlationId = Expression.Lambda<Func<Guid>>(call.Arguments[3]).Compile()();
+
+        return (leagueId, seasonYear, week, correlationId);
     }
 
     private async Task<(PickemGroupUserPick pick, PickemGroup group, PickemGroupMatchup matchup)>

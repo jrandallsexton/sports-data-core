@@ -13,6 +13,16 @@ public class PickScoringService : IPickScoringService
         PickemGroupUserPick pick,
         MatchupResult result)
     {
+        // Belt-and-suspenders: PickScoringProcessor already guards on this,
+        // but enforce at the service boundary too so a future caller cannot
+        // accidentally score against pre-enrichment data (Guid.Empty winner,
+        // 0-0 scores) and silently lock the pick as ScoredAt.
+        if (result.FinalizedUtc is null)
+        {
+            throw new InvalidOperationException(
+                $"Cannot score pick for unfinalized contest. ContestId={result.ContestId}, PickId={pick.Id}");
+        }
+
         var now = DateTime.UtcNow;
 
         switch (group.PickType)

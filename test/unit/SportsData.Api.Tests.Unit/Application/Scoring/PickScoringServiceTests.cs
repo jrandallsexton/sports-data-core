@@ -501,6 +501,36 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
     }
 
     [Fact]
+    public void ScorePick_WhenResultNotFinalized_Throws()
+    {
+        // Regression: 2026-06-16. PickScoringProcessor guards on
+        // FinalizedUtc.HasValue, but this service-level guard catches any
+        // future caller that bypasses the processor (admin endpoints, audit
+        // jobs, etc.) before silently locking the pick with bogus IsCorrect /
+        // ScoredAt.
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.PickType, PickType.StraightUp)
+            .Create();
+
+        var matchup = Fixture.Create<PickemGroupMatchup>();
+
+        var pick = Fixture.Build<PickemGroupUserPick>()
+            .With(p => p.FranchiseId, Guid.NewGuid())
+            .With(p => p.ScoredAt, (DateTime?)null)
+            .Create();
+
+        var result = Fixture.Build<MatchupResult>()
+            .With(r => r.FinalizedUtc, (DateTime?)null)
+            .Create();
+
+        _sut.Invoking(s => s.ScorePick(group, matchup.HomeSpread, pick, result))
+            .Should().Throw<InvalidOperationException>()
+            .WithMessage("*Cannot score pick for unfinalized contest*");
+
+        pick.ScoredAt.Should().BeNull("the throw must fire before ScoredAt is set");
+    }
+
+    [Fact]
     public void ScorePick_UnknownPickType_Throws()
     {
         var group = Fixture.Build<PickemGroup>()

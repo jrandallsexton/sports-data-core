@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
 
@@ -7,20 +9,30 @@ namespace SportsData.Api.Application.Scoring;
 
 public class PickScoringService : IPickScoringService
 {
+    private readonly ILogger<PickScoringService> _logger;
+
+    public PickScoringService(ILogger<PickScoringService> logger)
+    {
+        _logger = logger;
+    }
+
     public void ScorePick(
         PickemGroup group,
         double? spread,
         PickemGroupUserPick pick,
         MatchupResult result)
     {
-        // Belt-and-suspenders: PickScoringProcessor already guards on this,
-        // but enforce at the service boundary too so a future caller cannot
-        // accidentally score against pre-enrichment data (Guid.Empty winner,
-        // 0-0 scores) and silently lock the pick as ScoredAt.
+        // PickScoringProcessor already guards on this; the early return here
+        // is observable defense-in-depth for any future caller that bypasses
+        // the processor. Log + return instead of throw — exceptions get
+        // swallowed by the processor's broad catch and surface as the
+        // misleading "Error scoring pick" message.
         if (result.FinalizedUtc is null)
         {
-            throw new InvalidOperationException(
-                $"Cannot score pick for unfinalized contest. ContestId={result.ContestId}, PickId={pick.Id}");
+            _logger.LogWarning(
+                "ScorePick called on unfinalized contest — skipping. ContestId={ContestId}, PickId={PickId}",
+                result.ContestId, pick.Id);
+            return;
         }
 
         var now = DateTime.UtcNow;

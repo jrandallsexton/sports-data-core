@@ -1,5 +1,6 @@
 using AutoFixture;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using SportsData.Api.Application;
 using SportsData.Api.Application.Scoring;
 using SportsData.Core.Dtos.Canonical;
@@ -11,7 +12,7 @@ namespace SportsData.Api.Tests.Unit.Application.Scoring;
 
 public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 {
-    private readonly PickScoringService _sut = new(); // no dependencies
+    private readonly PickScoringService _sut = new(NullLogger<PickScoringService>.Instance);
 
     #region StraightUp Tests
 
@@ -501,13 +502,14 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
     }
 
     [Fact]
-    public void ScorePick_WhenResultNotFinalized_Throws()
+    public void ScorePick_WhenResultNotFinalized_LogsAndReturns()
     {
         // Regression: 2026-06-16. PickScoringProcessor guards on
         // FinalizedUtc.HasValue, but this service-level guard catches any
         // future caller that bypasses the processor (admin endpoints, audit
         // jobs, etc.) before silently locking the pick with bogus IsCorrect /
-        // ScoredAt.
+        // ScoredAt. Early-return rather than throw so the processor's broad
+        // try/catch doesn't surface this as a misleading "Error scoring pick".
         var group = Fixture.Build<PickemGroup>()
             .With(g => g.PickType, PickType.StraightUp)
             .Create();
@@ -517,6 +519,8 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var pick = Fixture.Build<PickemGroupUserPick>()
             .With(p => p.FranchiseId, Guid.NewGuid())
             .With(p => p.ScoredAt, (DateTime?)null)
+            .With(p => p.IsCorrect, (bool?)null)
+            .With(p => p.PointsAwarded, 0)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -524,10 +528,11 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .Create();
 
         _sut.Invoking(s => s.ScorePick(group, matchup.HomeSpread, pick, result))
-            .Should().Throw<InvalidOperationException>()
-            .WithMessage("*Cannot score pick for unfinalized contest*");
+            .Should().NotThrow();
 
-        pick.ScoredAt.Should().BeNull("the throw must fire before ScoredAt is set");
+        pick.ScoredAt.Should().BeNull("the early return must fire before ScoredAt is set");
+        pick.IsCorrect.Should().BeNull("the early return must fire before IsCorrect is set");
+        pick.PointsAwarded.Should().Be(0, "the early return must fire before PointsAwarded is set");
     }
 
     [Fact]

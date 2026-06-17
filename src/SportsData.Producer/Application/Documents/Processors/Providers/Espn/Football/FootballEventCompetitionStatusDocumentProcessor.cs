@@ -55,6 +55,20 @@ public class FootballEventCompetitionStatusDocumentProcessor<TDataContext>
             return; // terminal failure — don't retry
         }
 
+        // Type / Type.Name are dereferenced unconditionally below in the
+        // "Updating" and "Creating" log lines. The dto-to-entity mapping is
+        // null-safe (uses `dto.Type?.Name ?? string.Empty`), but the log
+        // statements would NRE on a malformed payload. Bail with a useful
+        // log instead — mirrors the BaseballEventCompetitionStatusDocumentProcessor
+        // guard for the same scenario.
+        if (dto.Type is null || string.IsNullOrWhiteSpace(dto.Type.Name))
+        {
+            _logger.LogError(
+                "EspnEventCompetitionStatusDtoBase Type is missing or has empty Name. Ref={Ref}",
+                dto.Ref);
+            return; // terminal failure — don't retry
+        }
+
         var competitionId = TryGetOrDeriveParentId(
             command,
             EspnUriMapper.CompetitionStatusRefToCompetitionRef);

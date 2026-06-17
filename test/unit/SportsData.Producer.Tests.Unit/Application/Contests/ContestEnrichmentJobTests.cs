@@ -50,9 +50,10 @@ public class ContestEnrichmentJobTests : ProducerTestBase<ContestEnrichmentJob<F
         // Act
         await sut.ExecuteAsync();
 
-        // Assert
-        enqueued.Should().HaveCount(3);
-        enqueued.Should().BeEquivalentTo(ids);
+        // Assert — strict-equal so the OrderBy(StartDateUtc) contract is
+        // actually verified. Seed order matches ascending StartDateUtc
+        // (-30, -5, -1 days) so ids[] is already in the expected order.
+        enqueued.Should().Equal(ids);
     }
 
     [Fact]

@@ -181,6 +181,12 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         {
             Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
 
+            // Each caller has already set up IDateTimeProvider.UtcNow() with
+            // a fixed value before invoking this helper. Capture it once
+            // and reuse for every seeded entity's timestamp so the test
+            // doesn't accidentally depend on real wall-clock time.
+            var seededUtc = Mocker.Get<IDateTimeProvider>().UtcNow();
+
             var contest = new FootballContest
             {
                 Id = Guid.NewGuid(),
@@ -191,7 +197,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 StartDateUtc = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
                 HomeTeamFranchiseSeasonId = Guid.NewGuid(),
                 AwayTeamFranchiseSeasonId = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = seededUtc,
                 CreatedBy = Guid.NewGuid(),
                 CancelledUtc = contestCancelledUtc
             };
@@ -200,8 +206,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             {
                 Id = Guid.NewGuid(),
                 ContestId = contest.Id,
-                Date = DateTime.UtcNow,
-                CreatedUtc = DateTime.UtcNow,
+                Date = seededUtc,
+                CreatedUtc = seededUtc,
                 CreatedBy = Guid.NewGuid()
             };
 
@@ -222,7 +228,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                     StatusShortDetail = priorStatusTypeName,
                     IsCompleted = priorStatusTypeName == "STATUS_FINAL" || priorStatusTypeName == "STATUS_CANCELED",
                     CreatedBy = Guid.NewGuid(),
-                    CreatedUtc = DateTime.UtcNow
+                    CreatedUtc = seededUtc
                 };
                 await FootballDataContext.CompetitionStatuses.AddAsync(priorStatus);
             }

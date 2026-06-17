@@ -3,12 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
-using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -21,21 +21,24 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Ba
 /// Why a separate processor: ESPN's MLB status payload includes
 /// baseball-only fields (<c>halfInning</c>, <c>periodPrefix</c>) and a
 /// <c>featuredAthletes</c> child collection (winning/losing pitcher
-/// post-game; current batter/pitcher in-game) that the generic
-/// <see cref="Common.EventCompetitionStatusDocumentProcessor{TDataContext}"/>
+/// post-game; current batter/pitcher in-game) that the
+/// <see cref="Football.FootballEventCompetitionStatusDocumentProcessor{TDataContext}"/>
 /// would silently drop because it deserializes to the base DTO and
-/// constructs a base <c>CompetitionStatus</c>. This processor
+/// constructs a <c>FootballCompetitionStatus</c>. This processor
 /// deserializes to <see cref="EspnBaseballEventCompetitionStatusDto"/>
 /// and constructs <see cref="BaseballCompetitionStatus"/> — the
 /// sport-specific TPH subclass — so the MLB fields and the
 /// FeaturedAthletes children persist alongside the shared status row.
+///
+/// Shared sport-agnostic lifecycle (ContestStatusChanged /
+/// ContestCompleted publishes + CancelledUtc stamp) lives on
+/// <see cref="EventCompetitionStatusProcessorBase{TDataContext}"/>.
 /// </summary>
 [DocumentProcessor(SourceDataProvider.Espn, Sport.BaseballMlb, DocumentType.EventCompetitionStatus)]
-public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
+public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext>
+    : EventCompetitionStatusProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
-    private readonly IDateTimeProvider _dateTimeProvider;
-
     public BaseballEventCompetitionStatusDocumentProcessor(
         ILogger<BaseballEventCompetitionStatusDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
@@ -43,15 +46,12 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
         IGenerateResourceRefs refGenerator,
         IDateTimeProvider dateTimeProvider)
-        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator)
+        : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator, dateTimeProvider)
     {
-        _dateTimeProvider = dateTimeProvider;
     }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
     {
-        var publishEvent = false;
-
         var dto = command.Document.FromJson<EspnBaseballEventCompetitionStatusDto>();
 
         if (dto is null)
@@ -111,8 +111,6 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
 
         if (existing is not null)
         {
-            publishEvent = existing.StatusTypeName != dto.Type.Name;
-
             _logger.LogInformation(
                 "Updating MLB CompetitionStatus (hard replace). CompetitionId={CompId}, OldStatus={OldStatus}, NewStatus={NewStatus}, FeaturedAthleteCount={FeaturedAthleteCount}",
                 competitionIdValue,
@@ -134,101 +132,12 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
                 entity.FeaturedAthletes.Count);
         }
 
-        // ContestId is needed for ContestStatusChanged, ContestCompleted,
-        // and the cancellation lifecycle update. Fetch once with
-        // SeasonWeekId so the ContestCompleted payload doesn't require a
-        // second roundtrip. See matching block in
-        // EventCompetitionStatusDocumentProcessor (football variant).
-        var newStatusIsCanceled = entity.StatusTypeName == "STATUS_CANCELED";
-        var existedAsCanceled = existing?.StatusTypeName == "STATUS_CANCELED";
-        var newStatusIsFinal = entity.StatusTypeName == "STATUS_FINAL";
-        var existedAsFinal = existing?.StatusTypeName == "STATUS_FINAL";
-        var contestIdNeeded =
-            publishEvent || newStatusIsCanceled || existedAsCanceled || newStatusIsFinal;
-
-        Guid contestId = Guid.Empty;
-        Guid? seasonWeekId = null;
-        if (contestIdNeeded)
-        {
-            // ContestId is what crosses the service boundary — Competition
-            // is a Producer-internal sub-aggregate. SeasonWeekId comes off
-            // Contest via the Competition→Contest navigation.
-            var parent = await _dataContext.Competitions
-                .Where(c => c.Id == competitionIdValue)
-                .Select(c => new { c.ContestId, SeasonWeekId = c.Contest!.SeasonWeekId })
-                .FirstAsync();
-            contestId = parent.ContestId;
-            seasonWeekId = parent.SeasonWeekId;
-        }
-
-        if (publishEvent)
-        {
-            _logger.LogInformation(
-                "MLB Contest status changed, publishing event. ContestId={ContestId}, CompetitionId={CompId}, NewStatus={Status}",
-                contestId,
-                competitionIdValue,
-                entity.StatusTypeName);
-
-            await _publishEndpoint.Publish(new ContestStatusChanged(
-                contestId,
-                // See matching comment in EventCompetitionStatusDocumentProcessor.
-                entity.StatusTypeName,
-                entity.StatusDescription,
-                _refGenerator.ForCompetition(competitionIdValue),
-                command.Sport,
-                command.SeasonYear,
-                command.CorrelationId,
-                CausationId.Producer.EventCompetitionStatusDocumentProcessor
-            ));
-        }
-
-        // Defensive ContestCompleted fan-out. See matching block in
-        // EventCompetitionStatusDocumentProcessor (football variant) for
-        // rationale — closes the race where the streamer's
-        // ContestCompleted can fire before the status row write,
-        // causing the 30s-deferred enrichment to short-circuit. No
-        // Event-document re-source paired here to avoid a cascade.
-        if (newStatusIsFinal && !existedAsFinal)
-        {
-            _logger.LogInformation(
-                "Publishing ContestCompleted from MLB status processor (defensive). ContestId={ContestId}, CompetitionId={CompId}",
-                contestId, competitionIdValue);
-
-            await _publishEndpoint.Publish(new ContestCompleted(
-                ContestId: contestId,
-                CompetitionId: competitionIdValue,
-                SeasonWeekId: seasonWeekId,
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.SeasonYear,
-                CorrelationId: command.CorrelationId,
-                CausationId: CausationId.Producer.EventCompetitionStatusDocumentProcessor
-            ));
-        }
-
-        // CancelledUtc lifecycle: see matching comment in the football
-        // variant. Stamp on first STATUS_CANCELED observation; preserve
-        // on reversal. Treated as irrevocable.
-        if (newStatusIsCanceled || existedAsCanceled)
-        {
-            var contest = await _dataContext.Contests.FindAsync(contestId);
-            if (contest is not null)
-            {
-                if (newStatusIsCanceled && contest.CancelledUtc is null)
-                {
-                    contest.CancelledUtc = _dateTimeProvider.UtcNow();
-                    _logger.LogInformation(
-                        "MLB Contest cancelled — stamped CancelledUtc. ContestId={ContestId}, CancelledUtc={CancelledUtc}",
-                        contestId, contest.CancelledUtc);
-                }
-                else if (!newStatusIsCanceled && existedAsCanceled && contest.CancelledUtc is not null)
-                {
-                    _logger.LogWarning(
-                        "MLB Contest status moved away from STATUS_CANCELED but CancelledUtc is preserved (treated as irrevocable). ContestId={ContestId}, NewStatus={NewStatus}",
-                        contestId, entity.StatusTypeName);
-                }
-            }
-        }
+        await HandleStatusLifecycleAsync(
+            competitionId: competitionIdValue,
+            newStatusTypeName: entity.StatusTypeName,
+            newStatusDescription: entity.StatusDescription,
+            existingStatusTypeName: existing?.StatusTypeName,
+            command: command);
 
         await _dataContext.Set<BaseballCompetitionStatus>().AddAsync(entity);
         await _dataContext.SaveChangesAsync();

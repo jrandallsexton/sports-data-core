@@ -12,7 +12,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Producer.Application.Documents.Processors.Commands;
-using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
@@ -22,12 +22,12 @@ using Xunit;
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football
 {
     /// <summary>
-    /// Tests for EventCompetitionStatusDocumentProcessor.
+    /// Tests for FootballEventCompetitionStatusDocumentProcessor.
     /// Optimized to eliminate AutoFixture overhead.
     /// </summary>
     [Collection("Sequential")]
-    public class EventCompetitionStatusDocumentProcessorTests :
-        ProducerTestBase<EventCompetitionStatusDocumentProcessor<FootballDataContext>>
+    public class FootballEventCompetitionStatusDocumentProcessorTests :
+        ProducerTestBase<FootballEventCompetitionStatusDocumentProcessor<FootballDataContext>>
     {
         [Fact]
         public async Task WhenCompetitionExists_StatusIsAdded()
@@ -90,7 +90,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.ParentId, competition.Id.ToString())
                 .Create();
 
-            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionStatusDocumentProcessor<FootballDataContext>>();
 
             // Act
             await sut.ProcessAsync(command);
@@ -121,7 +121,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var (contest, competition, command) = await SeedAndBuildCommandAsync(
                 statusJsonName: "STATUS_CANCELED");
 
-            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionStatusDocumentProcessor<FootballDataContext>>();
 
             // Act
             await sut.ProcessAsync(command);
@@ -148,7 +148,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 priorStatusTypeName: "STATUS_CANCELED",
                 contestCancelledUtc: originalCancelledUtc);
 
-            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionStatusDocumentProcessor<FootballDataContext>>();
 
             await sut.ProcessAsync(command);
 
@@ -176,7 +176,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 priorStatusTypeName: "STATUS_CANCELED",
                 contestCancelledUtc: originalCancelledUtc);
 
-            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionStatusDocumentProcessor<FootballDataContext>>();
 
             await sut.ProcessAsync(command);
 
@@ -203,7 +203,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 priorStatusTypeName: "STATUS_IN_PROGRESS",
                 seasonWeekId: seasonWeekId);
 
-            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionStatusDocumentProcessor<FootballDataContext>>();
 
             // Act
             await sut.ProcessAsync(command);
@@ -235,7 +235,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 statusJsonName: "STATUS_FINAL",
                 priorStatusTypeName: "STATUS_FINAL");
 
-            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionStatusDocumentProcessor<FootballDataContext>>();
 
             await sut.ProcessAsync(command);
 
@@ -259,7 +259,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 statusJsonName: "STATUS_IN_PROGRESS",
                 priorStatusTypeName: "STATUS_SCHEDULED");
 
-            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionStatusDocumentProcessor<FootballDataContext>>();
 
             await sut.ProcessAsync(command);
 
@@ -283,7 +283,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var (contest, _, command) = await SeedAndBuildCommandAsync(
                 statusJsonName: "STATUS_FINAL");
 
-            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+            var sut = Mocker.CreateInstance<FootballEventCompetitionStatusDocumentProcessor<FootballDataContext>>();
 
             await sut.ProcessAsync(command);
 

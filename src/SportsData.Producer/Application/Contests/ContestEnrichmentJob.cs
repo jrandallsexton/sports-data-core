@@ -77,6 +77,7 @@ namespace SportsData.Producer.Application.Contests
                 .AsNoTracking()
                 .Where(c => c.FinalizedUtc == null
                          && c.CancelledUtc == null
+                         && c.SeasonYear == 2026 // TODO: Remove after testing
                          && c.StartDateUtc < nowUtc)
                 .OrderBy(c => c.StartDateUtc)
                 .ToListAsync();

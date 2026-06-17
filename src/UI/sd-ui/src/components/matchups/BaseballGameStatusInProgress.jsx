@@ -13,8 +13,10 @@ import { contestLink } from '../../utils/sportLinks';
  *
  * Each optional row suppresses when its source fields are absent.
  * The at-bat header per-slot suppression handles the partial-resolution
- * case (e.g., only the pitcher has been sourced yet). Team logo for
- * each slot derives from halfInning + away/homeLogoUri.
+ * case (e.g., only the pitcher has been sourced yet). Each slot renders
+ * just the player headshot — the headshot already uses the player's
+ * team colors as its background (player-avatar engine, PR #410), so a
+ * separate team mark next to it was redundant.
  *
  * Uses status-neutral class names (`.game-status-block`, `.score-display`,
  * etc.) — the broader rename of football's `.game-result` / `.final-score`
@@ -40,8 +42,6 @@ function BaseballGameStatusInProgress({
   pitchingShortName,
   pitchingPositionAbbreviation,
   pitchingHeadshotUrl,
-  awayLogoUri,
-  homeLogoUri,
   isScoringPlay,
   contestId,
   sport,
@@ -71,8 +71,6 @@ function BaseballGameStatusInProgress({
   const hasAtBatRow =
     (typeof atBatShortName === 'string' && atBatShortName.length > 0) ||
     (typeof pitchingShortName === 'string' && pitchingShortName.length > 0);
-  const batterLogoUri = awayIsBatting ? awayLogoUri : homeIsBatting ? homeLogoUri : null;
-  const pitcherLogoUri = awayIsBatting ? homeLogoUri : homeIsBatting ? awayLogoUri : null;
 
   const outsLabel = outs === 1 ? 'out' : 'outs';
   const formattedHalfInning = halfInning && inning
@@ -92,14 +90,6 @@ function BaseballGameStatusInProgress({
         <span className="live-state-atbat">
           {atBatShortName && (
             <span className="live-state-atbat-slot">
-              {batterLogoUri && (
-                <img
-                  src={batterLogoUri}
-                  alt=""
-                  aria-hidden="true"
-                  className="live-state-atbat-logo"
-                />
-              )}
               {atBatHeadshotUrl && (
                 <img
                   src={atBatHeadshotUrl}
@@ -116,14 +106,6 @@ function BaseballGameStatusInProgress({
           )}
           {pitchingShortName && (
             <span className="live-state-atbat-slot">
-              {pitcherLogoUri && (
-                <img
-                  src={pitcherLogoUri}
-                  alt=""
-                  aria-hidden="true"
-                  className="live-state-atbat-logo"
-                />
-              )}
               {pitchingHeadshotUrl && (
                 <img
                   src={pitchingHeadshotUrl}

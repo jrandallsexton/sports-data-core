@@ -299,13 +299,17 @@ function FootballInProgress({
           <>
             <View style={styles.liveDot} />
             <Text style={styles.liveText}>LIVE</Text>
-            {matchup.period && matchup.clock ? (
-              <Text style={[styles.clockText, { color: theme.textMuted }]}>
-                {matchup.period} – {matchup.clock}
-              </Text>
-            ) : null}
           </>
         )}
+        {/* Period + clock renders in both branches: for a delayed game
+            it's the meaningful "we paused at Q2 5:32" context. Mirrors
+            web's FootballGameStatusInProgress where the .game-clock
+            span is rendered outside the LIVE/delay-indicator ternary. */}
+        {matchup.period && matchup.clock ? (
+          <Text style={[styles.clockText, { color: theme.textMuted }]}>
+            {matchup.period} – {matchup.clock}
+          </Text>
+        ) : null}
       </View>
 
       <View style={[styles.scoreRow, matchup.isScoringPlay ? styles.scoreRowFlash : null]}>

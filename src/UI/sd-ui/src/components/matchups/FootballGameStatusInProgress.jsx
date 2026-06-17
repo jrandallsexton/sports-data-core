@@ -22,10 +22,16 @@ function FootballGameStatusInProgress({
   possessionFranchiseSeasonId,
   isScoringPlay,
   lastPlayDescription,
+  // See BaseballGameStatusInProgress isDelayed comment — same
+  // semantics, mirrors the LIVE → delay-status text swap.
+  isDelayed = false,
+  statusDescription,
+  status,
   contestId,
   sport,
   league,
 }) {
+  const delayLabel = (statusDescription || status || 'PAUSED').toUpperCase();
   // Guard against null/undefined possession — without the != null check,
   // a missing possessionFranchiseSeasonId could match a missing
   // awayFranchiseSeasonId / homeFranchiseSeasonId via `===` and falsely
@@ -42,7 +48,11 @@ function FootballGameStatusInProgress({
 
   const liveContent = (
     <>
-      <span className="result-label live-indicator">LIVE</span>
+      {isDelayed ? (
+        <span className="result-label delay-indicator">{delayLabel}</span>
+      ) : (
+        <span className="result-label live-indicator">LIVE</span>
+      )}
       {period && clock && (
         <span className="game-clock">{period} - {clock}</span>
       )}

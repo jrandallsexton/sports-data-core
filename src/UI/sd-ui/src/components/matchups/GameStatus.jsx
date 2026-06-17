@@ -181,6 +181,9 @@ function GameStatus({
         pitchingPositionAbbreviation={pitchingPositionAbbreviation}
         pitchingHeadshotUrl={pitchingHeadshotUrl}
         isScoringPlay={isScoringPlay}
+        isDelayed={isDelayed}
+        statusDescription={statusDescription}
+        status={status}
         contestId={contestId}
         sport={sport}
         league={league}
@@ -200,6 +203,9 @@ function GameStatus({
         homeFranchiseSeasonId={homeFranchiseSeasonId}
         possessionFranchiseSeasonId={possessionFranchiseSeasonId}
         isScoringPlay={isScoringPlay}
+        isDelayed={isDelayed}
+        statusDescription={statusDescription}
+        status={status}
         lastPlayDescription={lastPlayDescription}
         contestId={contestId}
         sport={sport}
@@ -207,16 +213,11 @@ function GameStatus({
       />
     );
 
-    if (isDelayed) {
-      return (
-        <>
-          <div className="game-delay-banner">
-            {(statusDescription || status || '').toUpperCase()}
-          </div>
-          {inProgressBlock}
-        </>
-      );
-    }
+    // Delay status (SUSPENDED / DELAYED / RAIN_DELAY) is now displayed
+    // inside the in-progress block itself — the LIVE slot is replaced
+    // with the status description, styled as a muted static indicator.
+    // The earlier separate .game-delay-banner above the block led to
+    // contradictory rendering (SUSPENDED above + pulsing LIVE below).
     return inProgressBlock;
   }
 

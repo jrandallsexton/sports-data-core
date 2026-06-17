@@ -335,20 +335,6 @@ function BaseballInProgress({
   const awayIsBatting = half === 'top';
   const homeIsBatting = half === 'bottom';
 
-  // Per-slot team logo: batter wears the batting team's logo, pitcher
-  // wears the defensive team's. Either may be null when halfInning is
-  // missing or when the team has no logo URL — slot tolerates absence.
-  const batterLogoUri = awayIsBatting
-    ? matchup.awayLogoUri
-    : homeIsBatting
-      ? matchup.homeLogoUri
-      : null;
-  const pitcherLogoUri = awayIsBatting
-    ? matchup.homeLogoUri
-    : homeIsBatting
-      ? matchup.awayLogoUri
-      : null;
-
   const hasInningRow =
     (typeof matchup.inning === 'number' && matchup.inning > 0) ||
     (typeof matchup.halfInning === 'string' && matchup.halfInning.length > 0);
@@ -385,14 +371,6 @@ function BaseballInProgress({
         <View style={styles.baseballAtBatRow}>
           {matchup.atBatShortName ? (
             <View style={styles.baseballAtBatSlot}>
-              {batterLogoUri ? (
-                <Image
-                  source={{ uri: batterLogoUri }}
-                  style={styles.baseballAtBatLogo}
-                  resizeMode="contain"
-                  accessibilityIgnoresInvertColors
-                />
-              ) : null}
               {matchup.atBatHeadshotUrl ? (
                 <Image
                   source={{ uri: matchup.atBatHeadshotUrl }}
@@ -410,14 +388,6 @@ function BaseballInProgress({
           ) : null}
           {matchup.pitchingShortName ? (
             <View style={styles.baseballAtBatSlot}>
-              {pitcherLogoUri ? (
-                <Image
-                  source={{ uri: pitcherLogoUri }}
-                  style={styles.baseballAtBatLogo}
-                  resizeMode="contain"
-                  accessibilityIgnoresInvertColors
-                />
-              ) : null}
               {matchup.pitchingHeadshotUrl ? (
                 <Image
                   source={{ uri: matchup.pitchingHeadshotUrl }}
@@ -603,10 +573,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-  },
-  baseballAtBatLogo: {
-    width: 18,
-    height: 18,
   },
   baseballAtBatHeadshot: {
     width: 24,

@@ -43,10 +43,20 @@ function BaseballGameStatusInProgress({
   pitchingPositionAbbreviation,
   pitchingHeadshotUrl,
   isScoringPlay,
+  // When the upstream status is SUSPENDED / DELAYED / RAIN_DELAY, the
+  // LIVE slot is replaced with the delay status text and styled as a
+  // static muted indicator rather than the red pulsing live indicator.
+  // The game isn't actively in play, so the red-pulse animation would
+  // be misleading. statusDescription is the ESPN-provided human label
+  // ("Suspended", "Rain Delay"); falls back to the raw status name.
+  isDelayed = false,
+  statusDescription,
+  status,
   contestId,
   sport,
   league,
 }) {
+  const delayLabel = (statusDescription || status || 'PAUSED').toUpperCase();
   // Top of the inning → away team is batting; Bottom → home batting.
   // Empty/unknown halfInning produces no indicator (graceful degrade).
   const half = (halfInning ?? '').toLowerCase();
@@ -79,7 +89,11 @@ function BaseballGameStatusInProgress({
 
   const liveContent = (
     <>
-      <span className="status-label live-indicator">LIVE</span>
+      {isDelayed ? (
+        <span className="status-label delay-indicator">{delayLabel}</span>
+      ) : (
+        <span className="status-label live-indicator">LIVE</span>
+      )}
       <span className={`score-display ${isScoringPlay ? 'score-flash' : ''}`}>
         {awayIsBatting && <span className="possession-indicator" aria-label="batting">⚾</span>}
         {awayShort} {awayScore} - {homeScore} {homeShort}

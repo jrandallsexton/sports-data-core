@@ -109,25 +109,23 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail, pickType }
           matchup={matchup}
           theme={theme}
           onPressGameDetail={onPressGameDetail}
+          isDelayed={isDelayed}
         />
       ) : (
         <FootballInProgress
           matchup={matchup}
           theme={theme}
           onPressGameDetail={onPressGameDetail}
+          isDelayed={isDelayed}
         />
       );
 
-    if (isDelayed) {
-      return (
-        <View>
-          <Text style={[styles.delayBanner, { color: theme.tint }]}>
-            {(matchup.statusDescription ?? matchup.status).toUpperCase()}
-          </Text>
-          {inProgressBlock}
-        </View>
-      );
-    }
+    // Delay status (SUSPENDED / DELAYED / RAIN_DELAY) is now displayed
+    // inside the in-progress block itself — the LIVE slot is replaced
+    // with the status description, styled as a muted static indicator.
+    // The earlier delayBanner above the block led to contradictory
+    // rendering (SUSPENDED above + pulsing LIVE below). Web mirrors
+    // this in GameStatus.jsx.
     return inProgressBlock;
   }
 
@@ -264,11 +262,20 @@ function FootballInProgress({
   matchup,
   theme,
   onPressGameDetail,
+  // When status is SUSPENDED / DELAYED / RAIN_DELAY, the LIVE slot is
+  // replaced with the delay status text and the red pulse dot is
+  // dropped — the game isn't actively in play, so the red-pulse cue
+  // would be misleading. Mirrors web's isDelayed prop.
+  isDelayed = false,
 }: {
   matchup: Matchup;
   theme: Theme;
   onPressGameDetail?: () => void;
+  isDelayed?: boolean;
 }) {
+  const delayLabel = (
+    matchup.statusDescription ?? matchup.status ?? 'PAUSED'
+  ).toUpperCase();
   const awayScore = matchup.awayScore ?? 0;
   const homeScore = matchup.homeScore ?? 0;
   const awayHasPossession =
@@ -284,8 +291,20 @@ function FootballInProgress({
   return (
     <View style={styles.statusSection}>
       <View style={styles.liveRow}>
-        <View style={styles.liveDot} />
-        <Text style={styles.liveText}>LIVE</Text>
+        {isDelayed ? (
+          <Text style={[styles.delayText, { color: theme.textMuted }]}>
+            {delayLabel}
+          </Text>
+        ) : (
+          <>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>LIVE</Text>
+          </>
+        )}
+        {/* Period + clock renders in both branches: for a delayed game
+            it's the meaningful "we paused at Q2 5:32" context. Mirrors
+            web's FootballGameStatusInProgress where the .game-clock
+            span is rendered outside the LIVE/delay-indicator ternary. */}
         {matchup.period && matchup.clock ? (
           <Text style={[styles.clockText, { color: theme.textMuted }]}>
             {matchup.period} – {matchup.clock}
@@ -323,11 +342,18 @@ function BaseballInProgress({
   matchup,
   theme,
   onPressGameDetail,
+  // See FootballInProgress isDelayed comment — same semantics,
+  // mirrors the web isDelayed prop.
+  isDelayed = false,
 }: {
   matchup: Matchup;
   theme: Theme;
   onPressGameDetail?: () => void;
+  isDelayed?: boolean;
 }) {
+  const delayLabel = (
+    matchup.statusDescription ?? matchup.status ?? 'PAUSED'
+  ).toUpperCase();
   const awayScore = matchup.awayScore ?? 0;
   const homeScore = matchup.homeScore ?? 0;
   // halfInning "Top" → away batting (gets the ⚾); "Bottom" → home batting.
@@ -355,8 +381,16 @@ function BaseballInProgress({
   return (
     <View style={styles.statusSection}>
       <View style={styles.liveRow}>
-        <View style={styles.liveDot} />
-        <Text style={styles.liveText}>LIVE</Text>
+        {isDelayed ? (
+          <Text style={[styles.delayText, { color: theme.textMuted }]}>
+            {delayLabel}
+          </Text>
+        ) : (
+          <>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>LIVE</Text>
+          </>
+        )}
       </View>
 
       <View style={[styles.scoreRow, matchup.isScoringPlay ? styles.scoreRowFlash : null]}>
@@ -461,20 +495,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  // Mid-game paused banner — sits above the InProgress block when status is
-  // Delayed / RainDelay / Suspended. The InProgress block below still shows
-  // the meaningful state (score, period, runners) — the banner just names
-  // why no play is happening.
-  delayBanner: {
-    textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 1,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    marginHorizontal: 12,
-    marginBottom: 2,
-  },
   struckThrough: {
     textDecorationLine: 'line-through',
     opacity: 0.7,
@@ -505,6 +525,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     color: '#DC2626',
+    letterSpacing: 1,
+  },
+  // Same slot as liveText — rendered when status is SUSPENDED /
+  // DELAYED / RAIN_DELAY. Color is applied at the call site from
+  // theme.textMuted; no animation. Distinguishes paused-but-not-final
+  // state from active live play.
+  delayText: {
+    fontSize: 12,
+    fontWeight: '800',
     letterSpacing: 1,
   },
   clockText: {

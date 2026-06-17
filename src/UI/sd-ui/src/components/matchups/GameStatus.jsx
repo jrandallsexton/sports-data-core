@@ -80,8 +80,6 @@ function GameStatus({
   pitchingShortName,
   pitchingPositionAbbreviation,
   pitchingHeadshotUrl,
-  awayLogoUri,
-  homeLogoUri,
   contestId,
   leagueSport,
   sport,
@@ -182,8 +180,6 @@ function GameStatus({
         pitchingShortName={pitchingShortName}
         pitchingPositionAbbreviation={pitchingPositionAbbreviation}
         pitchingHeadshotUrl={pitchingHeadshotUrl}
-        awayLogoUri={awayLogoUri}
-        homeLogoUri={homeLogoUri}
         isScoringPlay={isScoringPlay}
         contestId={contestId}
         sport={sport}

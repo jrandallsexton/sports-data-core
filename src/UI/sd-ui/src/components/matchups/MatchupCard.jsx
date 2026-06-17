@@ -256,8 +256,6 @@ function MatchupCard({
           pitchingShortName={matchup.pitchingShortName}
           pitchingPositionAbbreviation={matchup.pitchingPositionAbbreviation}
           pitchingHeadshotUrl={matchup.pitchingHeadshotUrl}
-          awayLogoUri={awayLogoSrc}
-          homeLogoUri={homeLogoSrc}
           contestId={matchup.contestId}
           // leagueSport drives the in-progress sport dispatch inside
           // GameStatus (e.g. "BaseballMlb" → BaseballGameStatusInProgress).

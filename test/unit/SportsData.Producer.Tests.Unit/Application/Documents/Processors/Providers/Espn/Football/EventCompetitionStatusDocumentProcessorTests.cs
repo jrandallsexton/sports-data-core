@@ -36,6 +36,13 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var identityGenerator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
 
+            // Deterministic clock for all seeded timestamps — matches the
+            // pattern the cancellation-lifecycle tests in this file use.
+            var fixedNow = new DateTime(2026, 6, 16, 14, 0, 0, DateTimeKind.Utc);
+            Mocker.GetMock<IDateTimeProvider>()
+                .Setup(p => p.UtcNow())
+                .Returns(fixedNow);
+
             var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionStatus.json");
 
             var competitionId = Guid.NewGuid();
@@ -51,10 +58,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 ShortName = "TC",
                 Sport = Sport.FootballNcaa,
                 SeasonYear = 2025,
-                StartDateUtc = DateTime.UtcNow,
+                StartDateUtc = fixedNow,
                 HomeTeamFranchiseSeasonId = Guid.NewGuid(),
                 AwayTeamFranchiseSeasonId = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = fixedNow,
                 CreatedBy = Guid.NewGuid()
             };
 
@@ -63,8 +70,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             {
                 Id = competitionId,
                 ContestId = contestId,
-                Date = DateTime.UtcNow,
-                CreatedUtc = DateTime.UtcNow,
+                Date = fixedNow,
+                CreatedUtc = fixedNow,
                 CreatedBy = Guid.NewGuid()
             };
 

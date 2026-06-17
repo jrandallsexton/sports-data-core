@@ -66,7 +66,7 @@ public class BaseballEventCompetitionStatusDocumentProcessorTests
     }
 
     private async Task<(BaseballContest contest, BaseballCompetition competition)>
-        SeedContestAndCompetitionAsync(Guid competitionId)
+        SeedContestAndCompetitionAsync(Guid competitionId, Guid? seasonWeekId = null)
     {
         var contest = new BaseballContest
         {
@@ -78,6 +78,7 @@ public class BaseballEventCompetitionStatusDocumentProcessorTests
             StartDateUtc = FixedNow,
             HomeTeamFranchiseSeasonId = Guid.NewGuid(),
             AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+            SeasonWeekId = seasonWeekId,
             CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         };
@@ -379,6 +380,124 @@ public class BaseballEventCompetitionStatusDocumentProcessorTests
             .FirstAsync(c => c.Id == contest.Id);
         refreshed.CancelledUtc.Should().Be(originalCancelledUtc,
             "cancellation is treated as irrevocable; only an admin override should clear it");
+    }
+
+    [Fact]
+    public async Task WhenStatusTransitionsToFinal_PublishesContestCompleted()
+    {
+        // Defensive fan-out (MLB variant). See matching test in the
+        // football processor for rationale.
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+
+        var compId = Guid.NewGuid();
+        var seasonWeekId = Guid.NewGuid();
+        var (contest, _) = await SeedContestAndCompetitionAsync(compId, seasonWeekId: seasonWeekId);
+
+        var existing = new BaseballCompetitionStatus
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = compId,
+            StatusTypeName = "STATUS_IN_PROGRESS",
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await _baseballDataContext.Set<BaseballCompetitionStatus>().AddAsync(existing);
+        await _baseballDataContext.SaveChangesAsync();
+
+        var cmd = await BuildCommandAsync(compId, statusTypeName: "STATUS_FINAL");
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionStatusDocumentProcessor<BaseballDataContext>>();
+
+        await sut.ProcessAsync(cmd);
+
+        Mocker.GetMock<IEventBus>().Verify(b => b.Publish(
+            It.Is<ContestCompleted>(e =>
+                e.ContestId == contest.Id &&
+                e.CompetitionId == compId &&
+                e.SeasonWeekId == seasonWeekId &&
+                e.Sport == Sport.BaseballMlb),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task WhenStatusIsAlreadyFinal_DoesNotRepublishContestCompleted()
+    {
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+
+        var compId = Guid.NewGuid();
+        await SeedContestAndCompetitionAsync(compId);
+
+        var existing = new BaseballCompetitionStatus
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = compId,
+            StatusTypeName = "STATUS_FINAL",
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await _baseballDataContext.Set<BaseballCompetitionStatus>().AddAsync(existing);
+        await _baseballDataContext.SaveChangesAsync();
+
+        var cmd = await BuildCommandAsync(compId, statusTypeName: "STATUS_FINAL");
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionStatusDocumentProcessor<BaseballDataContext>>();
+
+        await sut.ProcessAsync(cmd);
+
+        Mocker.GetMock<IEventBus>().Verify(b => b.Publish(
+            It.IsAny<ContestCompleted>(),
+            It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task WhenStatusTransitionsToInProgress_DoesNotPublishContestCompleted()
+    {
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+
+        var compId = Guid.NewGuid();
+        await SeedContestAndCompetitionAsync(compId);
+
+        var existing = new BaseballCompetitionStatus
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = compId,
+            StatusTypeName = "STATUS_SCHEDULED",
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        };
+        await _baseballDataContext.Set<BaseballCompetitionStatus>().AddAsync(existing);
+        await _baseballDataContext.SaveChangesAsync();
+
+        var cmd = await BuildCommandAsync(compId, statusTypeName: "STATUS_IN_PROGRESS");
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionStatusDocumentProcessor<BaseballDataContext>>();
+
+        await sut.ProcessAsync(cmd);
+
+        Mocker.GetMock<IEventBus>().Verify(b => b.Publish(
+            It.IsAny<ContestCompleted>(),
+            It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task WhenFirstObservationIsFinal_PublishesContestCompleted()
+    {
+        // Historical backfill: status doc arrives FINAL with no prior row.
+        // Defensive fan-out must still fire so enrichment gets triggered.
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+
+        var compId = Guid.NewGuid();
+        var (contest, _) = await SeedContestAndCompetitionAsync(compId);
+
+        var cmd = await BuildCommandAsync(compId, statusTypeName: "STATUS_FINAL");
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionStatusDocumentProcessor<BaseballDataContext>>();
+
+        await sut.ProcessAsync(cmd);
+
+        Mocker.GetMock<IEventBus>().Verify(b => b.Publish(
+            It.Is<ContestCompleted>(e => e.ContestId == contest.Id),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     private async Task<ProcessDocumentCommand> BuildCommandAsync(Guid compId, string statusTypeName)

@@ -104,23 +104,30 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
                 dto.Type.Name);
         }
 
-        // ContestId is needed for both the transition event and the
-        // cancellation lifecycle update. Fetch once. The publish/stamp
-        // branches each gate independently below.
+        // ContestId is needed for ContestStatusChanged, ContestCompleted,
+        // and the cancellation lifecycle update. Fetch once with SeasonWeekId
+        // so the ContestCompleted payload doesn't require a second roundtrip.
         var newStatusIsCanceled = entity.StatusTypeName == "STATUS_CANCELED";
         var existedAsCanceled = existing?.StatusTypeName == "STATUS_CANCELED";
-        var contestIdNeeded = publishEvent || newStatusIsCanceled || existedAsCanceled;
+        var newStatusIsFinal = entity.StatusTypeName == "STATUS_FINAL";
+        var existedAsFinal = existing?.StatusTypeName == "STATUS_FINAL";
+        var contestIdNeeded =
+            publishEvent || newStatusIsCanceled || existedAsCanceled || newStatusIsFinal;
 
         Guid contestId = Guid.Empty;
+        Guid? seasonWeekId = null;
         if (contestIdNeeded)
         {
             // ContestId is what crosses the service boundary — Competition
-            // is a Producer-internal sub-aggregate. Projected read so we
-            // don't pull the full Competition row.
-            contestId = await _dataContext.Competitions
+            // is a Producer-internal sub-aggregate. SeasonWeekId comes off
+            // Contest via the Competition→Contest navigation; EF translates
+            // this to a join so we still avoid pulling full rows.
+            var parent = await _dataContext.Competitions
                 .Where(c => c.Id == competitionIdValue)
-                .Select(c => c.ContestId)
+                .Select(c => new { c.ContestId, SeasonWeekId = c.Contest!.SeasonWeekId })
                 .FirstAsync();
+            contestId = parent.ContestId;
+            seasonWeekId = parent.SeasonWeekId;
         }
 
         if (publishEvent)
@@ -144,6 +151,37 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
                 command.SeasonYear,
                 command.CorrelationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
+            ));
+        }
+
+        // Defensive ContestCompleted fan-out. The streamer publishes this
+        // event at its STATUS_FINAL detection sites, but the streamer's
+        // ContestCompleted can race ahead of the status row write — if the
+        // 30s-deferred enrichment runs before this processor persists
+        // STATUS_FINAL, enrichment short-circuits on the non-FINAL status
+        // and never re-fires. Publishing here, AFTER the status row is
+        // definitely written, closes that gap. Consumer is idempotent
+        // (enrichment processor short-circuits on Contest.FinalizedUtc !=
+        // null), so a duplicate fire alongside the streamer is harmless.
+        //
+        // Skipping the paired Event-document re-source the streamer pairs
+        // with its publish — Provider has dedupe but a defensive cascade
+        // shouldn't risk a sourcing cycle.
+        if (newStatusIsFinal && !existedAsFinal)
+        {
+            _logger.LogInformation(
+                "Publishing ContestCompleted from status processor (defensive). ContestId={ContestId}, CompetitionId={CompId}",
+                contestId, competitionIdValue);
+
+            await _publishEndpoint.Publish(new ContestCompleted(
+                ContestId: contestId,
+                CompetitionId: competitionIdValue,
+                SeasonWeekId: seasonWeekId,
+                Ref: null,
+                Sport: command.Sport,
+                SeasonYear: command.SeasonYear,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ));
         }
 

@@ -9,6 +9,8 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -34,20 +36,46 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var identityGenerator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(identityGenerator);
 
+            // Deterministic clock for all seeded timestamps — matches the
+            // pattern the cancellation-lifecycle tests in this file use.
+            var fixedNow = new DateTime(2026, 6, 16, 14, 0, 0, DateTimeKind.Utc);
+            Mocker.GetMock<IDateTimeProvider>()
+                .Setup(p => p.UtcNow())
+                .Returns(fixedNow);
+
             var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionStatus.json");
 
             var competitionId = Guid.NewGuid();
-            
+            var contestId = Guid.NewGuid();
+
+            // Contest seeded too: the processor now navigates Competition→Contest
+            // (for SeasonWeekId on the ContestCompleted payload), so a Competition
+            // without a parent Contest row would fail .FirstAsync() on the join.
+            var contest = new FootballContest
+            {
+                Id = contestId,
+                Name = "Test Contest",
+                ShortName = "TC",
+                Sport = Sport.FootballNcaa,
+                SeasonYear = 2025,
+                StartDateUtc = fixedNow,
+                HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+                AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+                CreatedUtc = fixedNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
             // OPTIMIZATION: Direct instantiation
             var competition = new FootballCompetition
             {
                 Id = competitionId,
-                ContestId = Guid.NewGuid(),
-                Date = DateTime.UtcNow,
-                CreatedUtc = DateTime.UtcNow,
+                ContestId = contestId,
+                Date = fixedNow,
+                CreatedUtc = fixedNow,
                 CreatedBy = Guid.NewGuid()
             };
 
+            await FootballDataContext.Contests.AddAsync(contest);
             await FootballDataContext.Competitions.AddAsync(competition);
             await FootballDataContext.SaveChangesAsync();
 
@@ -158,6 +186,113 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 "cancellation is treated as irrevocable; only an admin override should clear it");
         }
 
+        [Fact]
+        public async Task WhenStatusTransitionsToFinal_PublishesContestCompleted()
+        {
+            // Arrange — Defensive fan-out: status processor publishes
+            // ContestCompleted on a FINAL transition so a 30s-deferred
+            // enrichment can't short-circuit on a not-yet-written status row.
+            var fixedNow = new DateTime(2026, 6, 16, 14, 0, 0, DateTimeKind.Utc);
+            var seasonWeekId = Guid.NewGuid();
+            Mocker.GetMock<IDateTimeProvider>()
+                .Setup(p => p.UtcNow())
+                .Returns(fixedNow);
+
+            var (contest, competition, command) = await SeedAndBuildCommandAsync(
+                statusJsonName: "STATUS_FINAL",
+                priorStatusTypeName: "STATUS_IN_PROGRESS",
+                seasonWeekId: seasonWeekId);
+
+            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+
+            // Act
+            await sut.ProcessAsync(command);
+
+            // Assert — exactly one ContestCompleted with the expected payload.
+            Mocker.GetMock<IEventBus>().Verify(b => b.Publish(
+                It.Is<ContestCompleted>(e =>
+                    e.ContestId == contest.Id &&
+                    e.CompetitionId == competition.Id &&
+                    e.SeasonWeekId == seasonWeekId &&
+                    e.Sport == command.Sport &&
+                    e.SeasonYear == command.SeasonYear),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task WhenStatusIsAlreadyFinal_DoesNotRepublishContestCompleted()
+        {
+            // Arrange — Idempotency: a redundant STATUS_FINAL refresh on an
+            // already-final game must not fire ContestCompleted again.
+            // Otherwise every status doc poll would re-enqueue enrichment.
+            var fixedNow = new DateTime(2026, 6, 16, 14, 0, 0, DateTimeKind.Utc);
+            Mocker.GetMock<IDateTimeProvider>()
+                .Setup(p => p.UtcNow())
+                .Returns(fixedNow);
+
+            var (_, _, command) = await SeedAndBuildCommandAsync(
+                statusJsonName: "STATUS_FINAL",
+                priorStatusTypeName: "STATUS_FINAL");
+
+            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+
+            await sut.ProcessAsync(command);
+
+            Mocker.GetMock<IEventBus>().Verify(b => b.Publish(
+                It.IsAny<ContestCompleted>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task WhenStatusTransitionsToInProgress_DoesNotPublishContestCompleted()
+        {
+            // Arrange — Non-FINAL transitions must not trigger
+            // ContestCompleted. Only STATUS_FINAL fires the defensive fan-out.
+            var fixedNow = new DateTime(2026, 6, 16, 14, 0, 0, DateTimeKind.Utc);
+            Mocker.GetMock<IDateTimeProvider>()
+                .Setup(p => p.UtcNow())
+                .Returns(fixedNow);
+
+            var (_, _, command) = await SeedAndBuildCommandAsync(
+                statusJsonName: "STATUS_IN_PROGRESS",
+                priorStatusTypeName: "STATUS_SCHEDULED");
+
+            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+
+            await sut.ProcessAsync(command);
+
+            Mocker.GetMock<IEventBus>().Verify(b => b.Publish(
+                It.IsAny<ContestCompleted>(),
+                It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
+        [Fact]
+        public async Task WhenFirstObservationIsFinal_PublishesContestCompleted()
+        {
+            // Arrange — Historical backfill scenario: status doc lands with
+            // STATUS_FINAL and no prior status row exists. The defensive
+            // fan-out must still fire so enrichment gets triggered.
+            var fixedNow = new DateTime(2026, 6, 16, 14, 0, 0, DateTimeKind.Utc);
+            Mocker.GetMock<IDateTimeProvider>()
+                .Setup(p => p.UtcNow())
+                .Returns(fixedNow);
+
+            var (contest, _, command) = await SeedAndBuildCommandAsync(
+                statusJsonName: "STATUS_FINAL");
+
+            var sut = Mocker.CreateInstance<EventCompetitionStatusDocumentProcessor<FootballDataContext>>();
+
+            await sut.ProcessAsync(command);
+
+            Mocker.GetMock<IEventBus>().Verify(b => b.Publish(
+                It.Is<ContestCompleted>(e => e.ContestId == contest.Id),
+                It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
         /// <summary>
         /// Builds a STATUS_FINAL-shaped JSON payload by string-replacing
         /// the type.name and type.description on the canonical test fixture.
@@ -177,7 +312,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             SeedAndBuildCommandAsync(
                 string statusJsonName,
                 string? priorStatusTypeName = null,
-                DateTime? contestCancelledUtc = null)
+                DateTime? contestCancelledUtc = null,
+                Guid? seasonWeekId = null)
         {
             Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
 
@@ -197,6 +333,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 StartDateUtc = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
                 HomeTeamFranchiseSeasonId = Guid.NewGuid(),
                 AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+                SeasonWeekId = seasonWeekId,
                 CreatedUtc = seededUtc,
                 CreatedBy = Guid.NewGuid(),
                 CancelledUtc = contestCancelledUtc

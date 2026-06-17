@@ -134,24 +134,31 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
                 entity.FeaturedAthletes.Count);
         }
 
-        // ContestId is needed for both the transition event and the
-        // cancellation lifecycle update. Fetch once. The publish/stamp
-        // branches each gate independently below. See matching block in
+        // ContestId is needed for ContestStatusChanged, ContestCompleted,
+        // and the cancellation lifecycle update. Fetch once with
+        // SeasonWeekId so the ContestCompleted payload doesn't require a
+        // second roundtrip. See matching block in
         // EventCompetitionStatusDocumentProcessor (football variant).
         var newStatusIsCanceled = entity.StatusTypeName == "STATUS_CANCELED";
         var existedAsCanceled = existing?.StatusTypeName == "STATUS_CANCELED";
-        var contestIdNeeded = publishEvent || newStatusIsCanceled || existedAsCanceled;
+        var newStatusIsFinal = entity.StatusTypeName == "STATUS_FINAL";
+        var existedAsFinal = existing?.StatusTypeName == "STATUS_FINAL";
+        var contestIdNeeded =
+            publishEvent || newStatusIsCanceled || existedAsCanceled || newStatusIsFinal;
 
         Guid contestId = Guid.Empty;
+        Guid? seasonWeekId = null;
         if (contestIdNeeded)
         {
             // ContestId is what crosses the service boundary — Competition
-            // is a Producer-internal sub-aggregate. Projected read so we
-            // don't pull the full Competition row.
-            contestId = await _dataContext.Competitions
+            // is a Producer-internal sub-aggregate. SeasonWeekId comes off
+            // Contest via the Competition→Contest navigation.
+            var parent = await _dataContext.Competitions
                 .Where(c => c.Id == competitionIdValue)
-                .Select(c => c.ContestId)
+                .Select(c => new { c.ContestId, SeasonWeekId = c.Contest!.SeasonWeekId })
                 .FirstAsync();
+            contestId = parent.ContestId;
+            seasonWeekId = parent.SeasonWeekId;
         }
 
         if (publishEvent)
@@ -172,6 +179,30 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
                 command.SeasonYear,
                 command.CorrelationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
+            ));
+        }
+
+        // Defensive ContestCompleted fan-out. See matching block in
+        // EventCompetitionStatusDocumentProcessor (football variant) for
+        // rationale — closes the race where the streamer's
+        // ContestCompleted can fire before the status row write,
+        // causing the 30s-deferred enrichment to short-circuit. No
+        // Event-document re-source paired here to avoid a cascade.
+        if (newStatusIsFinal && !existedAsFinal)
+        {
+            _logger.LogInformation(
+                "Publishing ContestCompleted from MLB status processor (defensive). ContestId={ContestId}, CompetitionId={CompId}",
+                contestId, competitionIdValue);
+
+            await _publishEndpoint.Publish(new ContestCompleted(
+                ContestId: contestId,
+                CompetitionId: competitionIdValue,
+                SeasonWeekId: seasonWeekId,
+                Ref: null,
+                Sport: command.Sport,
+                SeasonYear: command.SeasonYear,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ));
         }
 

@@ -25,14 +25,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
     public EventCompetitionStatusDocumentProcessor(
         ILogger<EventCompetitionStatusDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refGenerator)
+        IGenerateResourceRefs refGenerator,
+        IDateTimeProvider dateTimeProvider)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refGenerator)
     {
+        _dateTimeProvider = dateTimeProvider;
     }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
@@ -100,16 +104,27 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
                 dto.Type.Name);
         }
 
-        if (publishEvent)
+        // ContestId is needed for both the transition event and the
+        // cancellation lifecycle update. Fetch once. The publish/stamp
+        // branches each gate independently below.
+        var newStatusIsCanceled = entity.StatusTypeName == "STATUS_CANCELED";
+        var existedAsCanceled = existing?.StatusTypeName == "STATUS_CANCELED";
+        var contestIdNeeded = publishEvent || newStatusIsCanceled || existedAsCanceled;
+
+        Guid contestId = Guid.Empty;
+        if (contestIdNeeded)
         {
             // ContestId is what crosses the service boundary — Competition
             // is a Producer-internal sub-aggregate. Projected read so we
             // don't pull the full Competition row.
-            var contestId = await _dataContext.Competitions
+            contestId = await _dataContext.Competitions
                 .Where(c => c.Id == competitionIdValue)
                 .Select(c => c.ContestId)
                 .FirstAsync();
+        }
 
+        if (publishEvent)
+        {
             _logger.LogInformation(
                 "Contest status changed, publishing event. ContestId={ContestId}, CompetitionId={CompId}, NewStatus={Status}",
                 contestId,
@@ -130,6 +145,31 @@ public class EventCompetitionStatusDocumentProcessor<TDataContext> : DocumentPro
                 command.CorrelationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ));
+        }
+
+        // CancelledUtc lifecycle: stamp on first observation of
+        // STATUS_CANCELED (idempotent — preserves "first observed"
+        // timestamp). Log a warning if ESPN reverses a cancellation —
+        // treated as irrevocable. See docs/contest-enrichment-historical-sweep.md.
+        if (newStatusIsCanceled || existedAsCanceled)
+        {
+            var contest = await _dataContext.Contests.FindAsync(contestId);
+            if (contest is not null)
+            {
+                if (newStatusIsCanceled && contest.CancelledUtc is null)
+                {
+                    contest.CancelledUtc = _dateTimeProvider.UtcNow();
+                    _logger.LogInformation(
+                        "Contest cancelled — stamped CancelledUtc. ContestId={ContestId}, CancelledUtc={CancelledUtc}",
+                        contestId, contest.CancelledUtc);
+                }
+                else if (!newStatusIsCanceled && existedAsCanceled && contest.CancelledUtc is not null)
+                {
+                    _logger.LogWarning(
+                        "Contest status moved away from STATUS_CANCELED but CancelledUtc is preserved (treated as irrevocable). ContestId={ContestId}, NewStatus={NewStatus}",
+                        contestId, entity.StatusTypeName);
+                }
+            }
         }
 
         await _dataContext.Set<FootballCompetitionStatus>().AddAsync(entity);

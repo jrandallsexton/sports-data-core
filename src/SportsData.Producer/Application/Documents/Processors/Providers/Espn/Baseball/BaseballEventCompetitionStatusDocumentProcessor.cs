@@ -134,16 +134,28 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
                 entity.FeaturedAthletes.Count);
         }
 
-        if (publishEvent)
+        // ContestId is needed for both the transition event and the
+        // cancellation lifecycle update. Fetch once. The publish/stamp
+        // branches each gate independently below. See matching block in
+        // EventCompetitionStatusDocumentProcessor (football variant).
+        var newStatusIsCanceled = entity.StatusTypeName == "STATUS_CANCELED";
+        var existedAsCanceled = existing?.StatusTypeName == "STATUS_CANCELED";
+        var contestIdNeeded = publishEvent || newStatusIsCanceled || existedAsCanceled;
+
+        Guid contestId = Guid.Empty;
+        if (contestIdNeeded)
         {
             // ContestId is what crosses the service boundary — Competition
             // is a Producer-internal sub-aggregate. Projected read so we
             // don't pull the full Competition row.
-            var contestId = await _dataContext.Competitions
+            contestId = await _dataContext.Competitions
                 .Where(c => c.Id == competitionIdValue)
                 .Select(c => c.ContestId)
                 .FirstAsync();
+        }
 
+        if (publishEvent)
+        {
             _logger.LogInformation(
                 "MLB Contest status changed, publishing event. ContestId={ContestId}, CompetitionId={CompId}, NewStatus={Status}",
                 contestId,
@@ -161,6 +173,30 @@ public class BaseballEventCompetitionStatusDocumentProcessor<TDataContext> : Doc
                 command.CorrelationId,
                 CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ));
+        }
+
+        // CancelledUtc lifecycle: see matching comment in the football
+        // variant. Stamp on first STATUS_CANCELED observation; preserve
+        // on reversal. Treated as irrevocable.
+        if (newStatusIsCanceled || existedAsCanceled)
+        {
+            var contest = await _dataContext.Contests.FindAsync(contestId);
+            if (contest is not null)
+            {
+                if (newStatusIsCanceled && contest.CancelledUtc is null)
+                {
+                    contest.CancelledUtc = _dateTimeProvider.UtcNow();
+                    _logger.LogInformation(
+                        "MLB Contest cancelled — stamped CancelledUtc. ContestId={ContestId}, CancelledUtc={CancelledUtc}",
+                        contestId, contest.CancelledUtc);
+                }
+                else if (!newStatusIsCanceled && existedAsCanceled && contest.CancelledUtc is not null)
+                {
+                    _logger.LogWarning(
+                        "MLB Contest status moved away from STATUS_CANCELED but CancelledUtc is preserved (treated as irrevocable). ContestId={ContestId}, NewStatus={NewStatus}",
+                        contestId, entity.StatusTypeName);
+                }
+            }
         }
 
         await _dataContext.Set<BaseballCompetitionStatus>().AddAsync(entity);

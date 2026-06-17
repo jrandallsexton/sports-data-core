@@ -63,9 +63,19 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public DateTime? FinalizedUtc { get; set; }
 
+        // === Cancellation ===
+        // Stamped (once) by EventCompetitionStatusDocumentProcessor when
+        // ESPN reports StatusTypeName == "STATUS_CANCELED". Treated as
+        // terminal/irrevocable — ContestEnrichmentJob excludes these from
+        // future runs. See docs/contest-enrichment-historical-sweep.md.
+        public DateTime? CancelledUtc { get; set; }
+
         // === Helpers (not mapped to DB) ===
         [NotMapped]
         public bool IsFinal => FinalizedUtc.HasValue;
+
+        [NotMapped]
+        public bool IsCancelled => CancelledUtc.HasValue;
 
         [NotMapped]
         public int? TotalScore =>

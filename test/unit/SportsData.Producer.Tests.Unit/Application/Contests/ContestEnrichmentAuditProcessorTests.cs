@@ -127,14 +127,16 @@ public class ContestEnrichmentAuditProcessorTests
     }
 
     [Fact]
-    public async Task Process_WhenMaxScoresAreZeroZero_DefersAndLeavesContestUntouched()
+    public async Task Process_WhenMlbMaxScoresAreZeroZero_DefersAndLeavesContestUntouched()
     {
         // Bootstrap-only race — only the basic/manual placeholder rows exist
-        // (Value=0). Audit cannot verify a 0-0 state, so it defers; next
-        // sweep retries once the canonical feed lands.
+        // (Value=0). MLB cannot end 0-0 in regulation, so the audit cannot
+        // verify a 0-0 state and defers; next sweep retries once the
+        // canonical feed lands.
         var (contestId, _, away, home) = await SeedFinalizedContestAsync(
             currentAway: 0, currentHome: 0,
-            currentWinner: null);
+            currentWinner: null,
+            sport: Sport.BaseballMlb);
         await SeedScoreAsync(away.Id, value: 0);
         await SeedScoreAsync(home.Id, value: 0);
 
@@ -143,6 +145,32 @@ public class ContestEnrichmentAuditProcessorTests
         var contest = await FootballDataContext.Contests.AsNoTracking().FirstAsync(c => c.Id == contestId);
         contest.FinalizedUtc.Should().NotBeNull();
         contest.AuditedUtc.Should().BeNull();
+
+        Mocker.GetMock<IProvideBackgroundJobs>().Verify(
+            x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenNonMlbMaxScoresAreZeroZero_StampsAuditedUtc()
+    {
+        // Football is exempt from the MLB-specific 0-0 guard. A theoretical
+        // 0-0 football final passes through and gets audited normally — if
+        // current scores and (null) winner match expected, stamp AuditedUtc.
+        // Codifies the sport-scoped guard intent so a future change to
+        // tighten the universal check would be caught here.
+        var (contestId, _, away, home) = await SeedFinalizedContestAsync(
+            currentAway: 0, currentHome: 0,
+            currentWinner: null,
+            sport: Sport.FootballNcaa);
+        await SeedScoreAsync(away.Id, value: 0);
+        await SeedScoreAsync(home.Id, value: 0);
+
+        await _sut.Process(new AuditContestEnrichmentCommand(contestId, Guid.NewGuid()));
+
+        var contest = await FootballDataContext.Contests.AsNoTracking().FirstAsync(c => c.Id == contestId);
+        contest.FinalizedUtc.Should().NotBeNull();
+        contest.AuditedUtc.Should().Be(FixedNow);
 
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(
             x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
@@ -191,7 +219,8 @@ public class ContestEnrichmentAuditProcessorTests
         SeedFinalizedContestAsync(
             int? currentAway,
             int? currentHome,
-            Guid? currentWinner)
+            Guid? currentWinner,
+            Sport sport = Sport.FootballNcaa)
     {
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
@@ -201,7 +230,7 @@ public class ContestEnrichmentAuditProcessorTests
             Id = contestId,
             Name = $"Contest {Guid.NewGuid():N}",
             ShortName = "TC",
-            Sport = Sport.FootballNcaa,
+            Sport = sport,
             SeasonYear = 2025,
             StartDateUtc = FixedNow.AddDays(-1),
             HomeTeamFranchiseSeasonId = HomeFranchiseSeasonId,

@@ -114,11 +114,10 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
             .Select(s => (double?)s.Value)
             .MaxAsync();
 
-        // Stale-source guard. If either side has no score rows at all, OR
-        // both MAX values are 0 (bootstrap-only race, MLB cannot end 0-0,
-        // NFL has not had a 0-0 final since 1943), the canonical source
-        // cannot validate this contest. Don't stamp AuditedUtc — next
-        // sweep retries. Warning is the human-eyes signal if it persists.
+        // No-rows guard. If either side has no score rows at all, the
+        // canonical source cannot validate this contest. Don't stamp
+        // AuditedUtc — next sweep retries. Warning is the human-eyes signal
+        // if it persists.
         if (awayMaxScore is null || homeMaxScore is null)
         {
             _logger.LogWarning(
@@ -127,10 +126,19 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
             return;
         }
 
-        if (awayMaxScore.Value == 0 && homeMaxScore.Value == 0)
+        // MLB-specific 0-0 guard: extra innings until a side leads, so a
+        // 0-0 "final" can only mean bootstrap-only data hasn't been replaced
+        // by the canonical feed yet. Football is exempt: NFL hasn't had a
+        // 0-0 final since 1943 and NCAA OT rules guarantee a non-tie, so a
+        // football 0-0 audit candidate is effectively impossible to begin
+        // with (enrichment's D1 + D2 guards reject 0-0 too). Scoping this
+        // to MLB matches the underlying reasoning instead of relying on
+        // "essentially impossible" upstream.
+        if (contest.Sport == Sport.BaseballMlb
+            && awayMaxScore.Value == 0 && homeMaxScore.Value == 0)
         {
             _logger.LogWarning(
-                "Audit deferred — MAX competitor scores are 0-0 (canonical source still stale). ContestId={ContestId}, ContestName={ContestName}",
+                "Audit deferred — MLB MAX competitor scores are 0-0 (canonical source still stale). ContestId={ContestId}, ContestName={ContestName}",
                 command.ContestId, contest.Name);
             return;
         }

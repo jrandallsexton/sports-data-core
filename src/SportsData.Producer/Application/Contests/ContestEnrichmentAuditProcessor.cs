@@ -175,10 +175,20 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
             contest.AwayScore, contest.HomeScore, contest.WinnerFranchiseId,
             expectedAway, expectedHome, expectedWinner);
 
+        // Enqueue BEFORE SaveChangesAsync. If Enqueue throws, FinalizedUtc
+        // stays in its prior state and the next audit sweep retries cleanly.
+        // If Enqueue succeeds but SaveChangesAsync throws, the queued
+        // enrichment fires harmlessly — the processor's FinalizedUtc != null
+        // early-exit short-circuits it — and the next audit sweep re-attempts
+        // the pair. The reverse order would orphan the row in an unfinalized
+        // state with no re-enrichment queued; ContestEnrichmentJob would
+        // eventually catch it, but that's a weekly cadence — long lag for
+        // no benefit.
         contest.FinalizedUtc = null;
-        await _dataContext.SaveChangesAsync();
 
         var enrichCmd = new EnrichContestCommand(command.ContestId, command.CorrelationId);
         _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(enrichCmd));
+
+        await _dataContext.SaveChangesAsync();
     }
 }

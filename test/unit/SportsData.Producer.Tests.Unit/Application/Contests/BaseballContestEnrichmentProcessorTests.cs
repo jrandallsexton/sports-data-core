@@ -548,7 +548,13 @@ public class BaseballContestEnrichmentProcessorTests
         Value = value,
         DisplayValue = value.ToString(),
         Winner = false,
-        SourceId = "1",
+        // Derive SourceId from sourceDescription to match production semantics
+        // (SourceId="1" + "basic/manual" is the bootstrap; SourceId="2" + "feed"
+        // is the canonical ESPN feed value). Case-insensitive to cover the
+        // NCAAFB "Basic/Manual" variant.
+        SourceId = sourceDescription.Equals("basic/manual", StringComparison.OrdinalIgnoreCase)
+            ? "1"
+            : "2",
         SourceDescription = sourceDescription,
         CreatedUtc = createdUtc ?? DateTime.UtcNow
     };

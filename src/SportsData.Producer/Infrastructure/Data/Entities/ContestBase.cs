@@ -71,6 +71,16 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         // these from future runs. See docs/contest-enrichment-historical-sweep.md.
         public DateTime? CancelledUtc { get; set; }
 
+        // === Audit ===
+        // Stamped by ContestEnrichmentAuditJob after it verifies that the
+        // current Contest state (scores, winner) matches what re-running the
+        // enrichment processor would produce now. Acts as an idempotency
+        // flag so the nightly audit sweep does not re-check the same
+        // finalized contest forever once it has been validated.
+        // Cleared (null) means "needs audit" — either never audited, or
+        // a prior audit found a mismatch that triggered re-enrichment.
+        public DateTime? AuditedUtc { get; set; }
+
         // === Helpers (not mapped to DB) ===
         [NotMapped]
         public bool IsFinal => FinalizedUtc.HasValue;
@@ -120,6 +130,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 // Backfill paths in ContestUpdateJob/ContestEnrichmentJob filter
                 // by SeasonYear; index avoids a full Contest scan during runs.
                 builder.HasIndex(x => x.SeasonYear);
+
+                // Filtered index for ContestEnrichmentAuditJob's batch scan.
+                // Steady-state, the audit candidate set is tiny (yesterday's
+                // newly-finalized contests); the index keeps the nightly scan
+                // O(candidates) instead of scanning the whole Contest table.
+                builder.HasIndex(x => x.FinalizedUtc)
+                    .HasFilter("\"FinalizedUtc\" IS NOT NULL AND \"AuditedUtc\" IS NULL")
+                    .HasDatabaseName("IX_Contest_AuditedUtc_Pending");
 
                 builder.Property(x => x.SeasonPhaseId);
 

@@ -210,10 +210,14 @@ namespace SportsData.Producer.DependencyInjection
                 case Sport.FootballNfl:
                     services.AddScoped<IEnrichContests, FootballContestEnrichmentProcessor>();
                     services.AddScoped<IContestEnrichmentJob, ContestEnrichmentJob<FootballDataContext>>();
+                    services.AddScoped<IAuditContestEnrichment, ContestEnrichmentAuditProcessor<FootballDataContext>>();
+                    services.AddScoped<IContestEnrichmentAuditJob, ContestEnrichmentAuditJob<FootballDataContext>>();
                     break;
                 case Sport.BaseballMlb:
                     services.AddScoped<IEnrichContests, BaseballContestEnrichmentProcessor>();
                     services.AddScoped<IContestEnrichmentJob, ContestEnrichmentJob<BaseballDataContext>>();
+                    services.AddScoped<IAuditContestEnrichment, ContestEnrichmentAuditProcessor<BaseballDataContext>>();
+                    services.AddScoped<IContestEnrichmentAuditJob, ContestEnrichmentAuditJob<BaseballDataContext>>();
                     break;
             }
 
@@ -390,6 +394,15 @@ namespace SportsData.Producer.DependencyInjection
                     "ContestEnrichmentJob",
                     job => job.ExecuteAsync(),
                     Cron.Weekly);
+
+                // Nightly at 06:00 UTC — after all US prime-time games have
+                // ended and any post-game enrichment lag has resolved. Picks
+                // up corruption like the 2026-06-18 Rockies @ Cubs case
+                // (FinalizedUtc + null Winner from a stale-source race).
+                recurringJobManager.AddOrUpdate<IContestEnrichmentAuditJob>(
+                    "ContestEnrichmentAuditJob",
+                    job => job.ExecuteAsync(),
+                    "0 6 * * *");
             }
 
             if (mode is Sport.FootballNcaa or Sport.FootballNfl or Sport.BaseballMlb)

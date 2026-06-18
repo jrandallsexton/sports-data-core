@@ -85,6 +85,39 @@ public class ContestEnrichmentAuditJobTests : ProducerTestBase<ContestEnrichment
     }
 
     [Fact]
+    public async Task Execute_RespectsBatchSizeCap_EnqueuesOldestFiveHundredOnly()
+    {
+        // Regression lock on the BatchSize cap (500) — prevents the first-run
+        // historical backlog from enqueuing tens of thousands of Hangfire jobs
+        // at once. Seed 600 candidates with monotonically-increasing
+        // FinalizedUtc so the expected enqueue set is the oldest 500, and the
+        // 100 newest get deferred to the next firing.
+        const int totalCandidates = 600;
+        const int expectedBatchSize = 500;
+
+        var seededIds = new List<Guid>();
+        for (var i = 0; i < totalCandidates; i++)
+        {
+            var id = await SeedContestAsync(finalizedUtc: FixedNow.AddDays(-totalCandidates + i));
+            seededIds.Add(id);
+        }
+        var expectedOldest = seededIds.Take(expectedBatchSize).ToList();
+
+        var enqueued = new List<Guid>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IAuditContestEnrichment>(It.IsAny<Expression<Func<IAuditContestEnrichment, Task>>>()))
+            .Callback<Expression<Func<IAuditContestEnrichment, Task>>>(expr =>
+                enqueued.Add(AuditContestIdFromExpression(expr) ?? Guid.Empty));
+
+        var sut = Mocker.CreateInstance<ContestEnrichmentAuditJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync();
+
+        enqueued.Should().HaveCount(expectedBatchSize);
+        enqueued.Should().Equal(expectedOldest);
+    }
+
+    [Fact]
     public async Task Execute_NoCandidates_ReturnsCleanlyWithoutEnqueuing()
     {
         await SeedContestAsync(finalizedUtc: null);

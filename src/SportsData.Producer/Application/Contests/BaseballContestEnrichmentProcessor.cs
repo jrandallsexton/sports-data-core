@@ -92,57 +92,50 @@ namespace SportsData.Producer.Application.Contests
 
             var contest = competition.Contest;
 
-            // Exclude the bootstrap placeholder rows that get seeded for
-            // every competitor at season-start with Value=0 and
-            // SourceDescription="basic/manual" (SourceId="1"). The
-            // canonical ESPN feed records arrive later with
-            // SourceDescription="feed" (SourceId="2"). The original code's
-            // preference-then-fallback ordering would silently pick those
-            // bootstrap zeros when feed sourcing lagged STATUS_FINAL —
-            // producing a finalized 0-0 contest with null WinnerFranchiseId
-            // (the 0-0 != 0-0 branch is false). ContestEnrichmentJob cron
-            // sweep will retry once the feed rows land.
-            var awayFinalScore = await _dataContext.CompetitionCompetitorScores
+            // MAX(Value) per competitor. Cross-sport schema variance in
+            // CompetitionCompetitorScores prevents a SourceDescription-based
+            // filter (MLB inserts new "feed" rows alongside "basic/manual"
+            // bootstrap rows; NCAAFB updates the "Basic/Manual" bootstrap
+            // row in place — same SourceDescription before and after).
+            // MAX side-steps it: bootstrap rows have Value=0 and any real
+            // score exceeds them; in-game ticks only go up, so the highest
+            // recorded value per competitor is always the latest known
+            // cumulative score.
+            var awayMaxScore = await _dataContext.CompetitionCompetitorScores
                 .AsNoTracking()
-                .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id
-                            && s.SourceDescription != "basic/manual")
-                .OrderByDescending(s => s.CreatedUtc)
+                .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
                 .Select(s => (double?)s.Value)
-                .FirstOrDefaultAsync();
+                .MaxAsync();
 
-            var homeFinalScore = await _dataContext.CompetitionCompetitorScores
+            var homeMaxScore = await _dataContext.CompetitionCompetitorScores
                 .AsNoTracking()
-                .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id
-                            && s.SourceDescription != "basic/manual")
-                .OrderByDescending(s => s.CreatedUtc)
+                .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
                 .Select(s => (double?)s.Value)
-                .FirstOrDefaultAsync();
+                .MaxAsync();
 
-            if (awayFinalScore is null || homeFinalScore is null)
+            if (awayMaxScore is null || homeMaxScore is null)
             {
                 _logger.LogInformation(
-                    "Feed competitor scores not yet available for {ContestName} (only bootstrap rows). " +
-                    "AwayFeedPresent={AwayPresent}, HomeFeedPresent={HomePresent}. Deferring to cron sweep.",
-                    contest.Name,
-                    awayFinalScore.HasValue,
-                    homeFinalScore.HasValue);
-                return;
-            }
-
-            // MLB games cannot end 0-0 in regulation — would proceed to extras
-            // until a side leads. A 0-0 "Final" is corrupt ESPN data or a
-            // sourcing-window race; defer rather than lock in a finalized 0-0
-            // contest with null Winner.
-            if (awayFinalScore.Value == 0 && homeFinalScore.Value == 0)
-            {
-                _logger.LogWarning(
-                    "MLB Final scores read as 0-0 for {ContestName} — implausible. Deferring enrichment.",
+                    "No competitor score rows for {ContestName}. Deferring to cron sweep.",
                     contest.Name);
                 return;
             }
 
-            contest.AwayScore = (int)awayFinalScore.Value;
-            contest.HomeScore = (int)homeFinalScore.Value;
+            // MLB games cannot end 0-0 in regulation — would proceed to extras
+            // until a side leads. A 0-0 result here means only the bootstrap
+            // rows exist (feed hasn't sourced yet) or genuinely-corrupt data;
+            // defer rather than lock in a finalized 0-0 contest with null
+            // Winner.
+            if (awayMaxScore.Value == 0 && homeMaxScore.Value == 0)
+            {
+                _logger.LogWarning(
+                    "MLB MAX competitor scores read as 0-0 for {ContestName} — implausible. Deferring enrichment.",
+                    contest.Name);
+                return;
+            }
+
+            contest.AwayScore = (int)awayMaxScore.Value;
+            contest.HomeScore = (int)homeMaxScore.Value;
 
             var awayFranchiseSeasonId = awayCompetitor.FranchiseSeasonId;
             var homeFranchiseSeasonId = homeCompetitor.FranchiseSeasonId;

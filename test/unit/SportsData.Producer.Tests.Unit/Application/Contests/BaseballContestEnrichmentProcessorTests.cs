@@ -208,8 +208,11 @@ public class BaseballContestEnrichmentProcessorTests
     }
 
     [Fact]
-    public async Task Process_PrefersFinalScoreOverNonFinalRecords()
+    public async Task Process_PicksMaxValuePerCompetitor()
     {
+        // Earlier ticks (lower values) are ignored — MAX(Value) per
+        // competitor returns the highest recorded score, which is always
+        // the latest cumulative state because game scores only ever climb.
         var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
 
         var competition = await _baseballDataContext.Competitions
@@ -219,12 +222,11 @@ public class BaseballContestEnrichmentProcessorTests
         var away = competition.Competitors.First(c => c.HomeAway == "away");
         var home = competition.Competitors.First(c => c.HomeAway == "home");
 
-        // Mid-game ticks should be ignored in favor of the "Final" record.
         _baseballDataContext.CompetitionCompetitorScores.AddRange(
-            CreateScore(away.Id, value: 2, sourceDescription: "Live"),
-            CreateScore(away.Id, value: 5, sourceDescription: "Final"),
-            CreateScore(home.Id, value: 3, sourceDescription: "Live"),
-            CreateScore(home.Id, value: 6, sourceDescription: "Final"));
+            CreateScore(away.Id, value: 2, sourceDescription: "feed"),
+            CreateScore(away.Id, value: 5, sourceDescription: "feed"),
+            CreateScore(home.Id, value: 3, sourceDescription: "feed"),
+            CreateScore(home.Id, value: 6, sourceDescription: "feed"));
         await _baseballDataContext.SaveChangesAsync();
 
         var command = new EnrichContestCommand(contestId, Guid.NewGuid());
@@ -239,12 +241,11 @@ public class BaseballContestEnrichmentProcessorTests
     public async Task Process_WhenOnlyBootstrapRecords_DefersForCronRetry()
     {
         // Every competitor gets a SourceDescription="basic/manual" placeholder
-        // row at season-start (Value=0). The ESPN feed inserts the real
-        // SourceDescription="feed" rows when scores actually exist. Prior
-        // buggy behavior would happily pick the bootstrap zeros when feed
-        // sourcing lagged STATUS_FINAL — producing a finalized 0-0 contest
-        // with null Winner. Fix: skip bootstrap rows; defer if that leaves
-        // nothing. ContestEnrichmentJob cron sweep retries once feed lands.
+        // row at season-start with Value=0. The ESPN feed later inserts (MLB)
+        // or updates in place (NCAAFB) the real score. Before that lands,
+        // MAX(Value) per competitor returns 0/0 — the MLB 0-0 sanity guard
+        // catches this and defers (MLB cannot end 0-0 in regulation).
+        // ContestEnrichmentJob cron sweep retries once feed lands.
         var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
 
         var competition = await _baseballDataContext.Competitions

@@ -112,40 +112,46 @@ namespace SportsData.Producer.Application.Contests
                 }
                 else
                 {
-                    // D2 fallback when no scoring plays exist. Exclude the
-                    // season-start bootstrap rows (SourceDescription="basic/manual")
-                    // that would otherwise be silently picked as the "latest"
-                    // when ESPN feed sourcing has not caught up to STATUS_FINAL.
-                    // See the matching guard in BaseballContestEnrichmentProcessor.
-                    var awayFinalScore = await _dataContext.CompetitionCompetitorScores
+                    // D2 fallback when no scoring plays exist. MAX(Value) per
+                    // competitor — see the matching note in
+                    // BaseballContestEnrichmentProcessor. Bootstrap-row schema
+                    // differs across sports (NCAAFB updates "Basic/Manual"
+                    // in place; MLB inserts a separate "feed" row), but in
+                    // both cases MAX equals the latest known cumulative score.
+                    var awayMaxScore = await _dataContext.CompetitionCompetitorScores
                         .AsNoTracking()
-                        .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id
-                                    && s.SourceDescription != "basic/manual")
-                        .OrderByDescending(s => s.CreatedUtc)
+                        .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
                         .Select(s => (double?)s.Value)
-                        .FirstOrDefaultAsync();
+                        .MaxAsync();
 
-                    var homeFinalScore = await _dataContext.CompetitionCompetitorScores
+                    var homeMaxScore = await _dataContext.CompetitionCompetitorScores
                         .AsNoTracking()
-                        .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id
-                                    && s.SourceDescription != "basic/manual")
-                        .OrderByDescending(s => s.CreatedUtc)
+                        .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
                         .Select(s => (double?)s.Value)
-                        .FirstOrDefaultAsync();
+                        .MaxAsync();
 
-                    if (awayFinalScore is null || homeFinalScore is null)
+                    if (awayMaxScore is null || homeMaxScore is null)
                     {
                         _logger.LogInformation(
-                            "Feed competitor scores not yet available for {ContestName} (only bootstrap rows). " +
-                            "AwayFeedPresent={AwayPresent}, HomeFeedPresent={HomePresent}. Deferring to cron sweep.",
-                            contest.Name,
-                            awayFinalScore.HasValue,
-                            homeFinalScore.HasValue);
+                            "No scoring plays and no competitor score rows for {ContestName}. Deferring to cron sweep.",
+                            contest.Name);
                         return;
                     }
 
-                    contest.AwayScore = (int)awayFinalScore.Value;
-                    contest.HomeScore = (int)homeFinalScore.Value;
+                    // D2 path + 0-0 MAX = no scoring plays AND only bootstrap
+                    // rows exist. NFL hasn't had a 0-0 final since 1943 and
+                    // NCAA OT rules guarantee a non-tie; this state is
+                    // always stale data, never a legitimate final.
+                    if (awayMaxScore.Value == 0 && homeMaxScore.Value == 0)
+                    {
+                        _logger.LogWarning(
+                            "D2 MAX competitor scores read as 0-0 for {ContestName} (no scoring plays either) — implausible. Deferring enrichment.",
+                            contest.Name);
+                        return;
+                    }
+
+                    contest.AwayScore = (int)awayMaxScore.Value;
+                    contest.HomeScore = (int)homeMaxScore.Value;
                 }
 
                 var awayFranchiseSeasonId = awayCompetitor.FranchiseSeasonId;

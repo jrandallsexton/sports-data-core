@@ -236,8 +236,15 @@ public class BaseballContestEnrichmentProcessorTests
     }
 
     [Fact]
-    public async Task Process_WhenNoFinalRecord_FallsBackToMostRecent()
+    public async Task Process_WhenOnlyBootstrapRecords_DefersForCronRetry()
     {
+        // Every competitor gets a SourceDescription="basic/manual" placeholder
+        // row at season-start (Value=0). The ESPN feed inserts the real
+        // SourceDescription="feed" rows when scores actually exist. Prior
+        // buggy behavior would happily pick the bootstrap zeros when feed
+        // sourcing lagged STATUS_FINAL — producing a finalized 0-0 contest
+        // with null Winner. Fix: skip bootstrap rows; defer if that leaves
+        // nothing. ContestEnrichmentJob cron sweep retries once feed lands.
         var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
 
         var competition = await _baseballDataContext.Competitions
@@ -247,23 +254,55 @@ public class BaseballContestEnrichmentProcessorTests
         var away = competition.Competitors.First(c => c.HomeAway == "away");
         var home = competition.Competitors.First(c => c.HomeAway == "home");
 
-        var earlier = new DateTime(2026, 4, 27, 10, 0, 0, DateTimeKind.Utc);
-        var later = new DateTime(2026, 4, 27, 13, 0, 0, DateTimeKind.Utc);
-
         _baseballDataContext.CompetitionCompetitorScores.AddRange(
-            CreateScore(away.Id, value: 1, sourceDescription: "Live", createdUtc: earlier),
-            CreateScore(away.Id, value: 8, sourceDescription: "Live", createdUtc: later),
-            CreateScore(home.Id, value: 2, sourceDescription: "Live", createdUtc: earlier),
-            CreateScore(home.Id, value: 3, sourceDescription: "Live", createdUtc: later));
+            CreateScore(away.Id, value: 0, sourceDescription: "basic/manual"),
+            CreateScore(home.Id, value: 0, sourceDescription: "basic/manual"));
         await _baseballDataContext.SaveChangesAsync();
 
         var command = new EnrichContestCommand(contestId, Guid.NewGuid());
         await _sut.Process(command);
 
         var contest = await _baseballDataContext.Contests.FindAsync(contestId);
-        contest!.AwayScore.Should().Be(8);
-        contest.HomeScore.Should().Be(3);
-        contest.WinnerFranchiseId.Should().Be(AwayFranchiseSeasonId);
+        contest!.AwayScore.Should().BeNull();
+        contest.HomeScore.Should().BeNull();
+        contest.WinnerFranchiseId.Should().BeNull();
+        contest.FinalizedUtc.Should().BeNull();
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenMlbFinalScoresAreZeroZero_DefersForCronRetry()
+    {
+        // MLB games cannot end 0-0 in regulation — would proceed to extras.
+        // A 0-0 "Final" is corrupt ESPN data or a sourcing-window race;
+        // defer rather than lock in a finalized 0-0 contest with null Winner.
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        var competition = await _baseballDataContext.Competitions
+            .Include(c => c.Competitors)
+            .FirstAsync(c => c.Id == competitionId);
+
+        var away = competition.Competitors.First(c => c.HomeAway == "away");
+        var home = competition.Competitors.First(c => c.HomeAway == "home");
+
+        _baseballDataContext.CompetitionCompetitorScores.AddRange(
+            CreateScore(away.Id, value: 0, sourceDescription: "feed"),
+            CreateScore(home.Id, value: 0, sourceDescription: "feed"));
+        await _baseballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        var contest = await _baseballDataContext.Contests.FindAsync(contestId);
+        contest!.AwayScore.Should().BeNull();
+        contest.HomeScore.Should().BeNull();
+        contest.WinnerFranchiseId.Should().BeNull();
+        contest.FinalizedUtc.Should().BeNull();
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

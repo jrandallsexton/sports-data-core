@@ -112,28 +112,35 @@ namespace SportsData.Producer.Application.Contests
                 }
                 else
                 {
-                    // No scoring plays — check competitor scores (D2 fallback, project to score value only)
+                    // D2 fallback when no scoring plays exist. Exclude the
+                    // season-start bootstrap rows (SourceDescription="basic/manual")
+                    // that would otherwise be silently picked as the "latest"
+                    // when ESPN feed sourcing has not caught up to STATUS_FINAL.
+                    // See the matching guard in BaseballContestEnrichmentProcessor.
                     var awayFinalScore = await _dataContext.CompetitionCompetitorScores
                         .AsNoTracking()
-                        .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
-                        .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
-                        .ThenByDescending(s => s.CreatedUtc)
+                        .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id
+                                    && s.SourceDescription != "basic/manual")
+                        .OrderByDescending(s => s.CreatedUtc)
                         .Select(s => (double?)s.Value)
                         .FirstOrDefaultAsync();
 
                     var homeFinalScore = await _dataContext.CompetitionCompetitorScores
                         .AsNoTracking()
-                        .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
-                        .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
-                        .ThenByDescending(s => s.CreatedUtc)
+                        .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id
+                                    && s.SourceDescription != "basic/manual")
+                        .OrderByDescending(s => s.CreatedUtc)
                         .Select(s => (double?)s.Value)
                         .FirstOrDefaultAsync();
 
                     if (awayFinalScore is null || homeFinalScore is null)
                     {
                         _logger.LogInformation(
-                            "No plays or competitor scores available for {ContestName}. Data not ready for enrichment.",
-                            contest.Name);
+                            "Feed competitor scores not yet available for {ContestName} (only bootstrap rows). " +
+                            "AwayFeedPresent={AwayPresent}, HomeFeedPresent={HomePresent}. Deferring to cron sweep.",
+                            contest.Name,
+                            awayFinalScore.HasValue,
+                            homeFinalScore.HasValue);
                         return;
                     }
 

@@ -92,29 +92,51 @@ namespace SportsData.Producer.Application.Contests
 
             var contest = competition.Contest;
 
-            // Baseball plays don't carry a clock for tiebreak ordering. Use the
-            // canonical CompetitionCompetitorScore record as the source of final
-            // score: prefer SourceDescription = "Final", otherwise the most recent.
+            // Exclude the bootstrap placeholder rows that get seeded for
+            // every competitor at season-start with Value=0 and
+            // SourceDescription="basic/manual" (SourceId="1"). The
+            // canonical ESPN feed records arrive later with
+            // SourceDescription="feed" (SourceId="2"). The original code's
+            // preference-then-fallback ordering would silently pick those
+            // bootstrap zeros when feed sourcing lagged STATUS_FINAL —
+            // producing a finalized 0-0 contest with null WinnerFranchiseId
+            // (the 0-0 != 0-0 branch is false). ContestEnrichmentJob cron
+            // sweep will retry once the feed rows land.
             var awayFinalScore = await _dataContext.CompetitionCompetitorScores
                 .AsNoTracking()
-                .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
-                .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
-                .ThenByDescending(s => s.CreatedUtc)
+                .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id
+                            && s.SourceDescription != "basic/manual")
+                .OrderByDescending(s => s.CreatedUtc)
                 .Select(s => (double?)s.Value)
                 .FirstOrDefaultAsync();
 
             var homeFinalScore = await _dataContext.CompetitionCompetitorScores
                 .AsNoTracking()
-                .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
-                .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
-                .ThenByDescending(s => s.CreatedUtc)
+                .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id
+                            && s.SourceDescription != "basic/manual")
+                .OrderByDescending(s => s.CreatedUtc)
                 .Select(s => (double?)s.Value)
                 .FirstOrDefaultAsync();
 
             if (awayFinalScore is null || homeFinalScore is null)
             {
                 _logger.LogInformation(
-                    "No competitor scores available for {ContestName}. Data not ready for enrichment.",
+                    "Feed competitor scores not yet available for {ContestName} (only bootstrap rows). " +
+                    "AwayFeedPresent={AwayPresent}, HomeFeedPresent={HomePresent}. Deferring to cron sweep.",
+                    contest.Name,
+                    awayFinalScore.HasValue,
+                    homeFinalScore.HasValue);
+                return;
+            }
+
+            // MLB games cannot end 0-0 in regulation — would proceed to extras
+            // until a side leads. A 0-0 "Final" is corrupt ESPN data or a
+            // sourcing-window race; defer rather than lock in a finalized 0-0
+            // contest with null Winner.
+            if (awayFinalScore.Value == 0 && homeFinalScore.Value == 0)
+            {
+                _logger.LogWarning(
+                    "MLB Final scores read as 0-0 for {ContestName} — implausible. Deferring enrichment.",
                     contest.Name);
                 return;
             }

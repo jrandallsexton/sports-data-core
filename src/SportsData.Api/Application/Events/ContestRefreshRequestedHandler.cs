@@ -52,9 +52,8 @@ namespace SportsData.Api.Application.Events
                     case ResultStatus.Forbid:
                     case ResultStatus.Unauthorized:
                         _logger.LogWarning(
-                            "RefreshContest returned non-retryable status {Status} for ContestId={ContestId}; not retrying.",
-                            result.Status,
-                            msg.ContestId);
+                            "RefreshContest returned non-retryable status {Status}; not retrying.",
+                            result.Status);
                         return;
 
                     default:

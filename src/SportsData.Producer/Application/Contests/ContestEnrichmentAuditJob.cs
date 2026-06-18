@@ -70,8 +70,8 @@ public class ContestEnrichmentAuditJob<TDataContext> : IContestEnrichmentAuditJo
         });
 
         _logger.LogInformation(
-            "ContestEnrichmentAuditJob starting. JobRunId={JobRunId}, BatchSize={BatchSize}",
-            jobRunId, BatchSize);
+            "ContestEnrichmentAuditJob starting. BatchSize={BatchSize}",
+            BatchSize);
 
         // Order by FinalizedUtc so the oldest unverified finalizations are
         // audited first — keeps the backlog draining predictably during
@@ -85,8 +85,8 @@ public class ContestEnrichmentAuditJob<TDataContext> : IContestEnrichmentAuditJo
             .ToListAsync();
 
         _logger.LogInformation(
-            "ContestEnrichmentAuditJob: {ContestCount} pending audit candidate(s) in this batch. JobRunId={JobRunId}",
-            contestIds.Count, jobRunId);
+            "ContestEnrichmentAuditJob: {ContestCount} pending audit candidate(s) in this batch.",
+            contestIds.Count);
 
         if (contestIds.Count == 0)
         {
@@ -115,8 +115,7 @@ public class ContestEnrichmentAuditJob<TDataContext> : IContestEnrichmentAuditJo
         }
 
         _logger.LogInformation(
-            "ContestEnrichmentAuditJob completed. JobRunId={JobRunId}, " +
-            "TotalEnqueued={TotalEnqueued}, TotalSkipped={TotalSkipped}",
-            jobRunId, totalEnqueued, totalSkipped);
+            "ContestEnrichmentAuditJob completed. TotalEnqueued={TotalEnqueued}, TotalSkipped={TotalSkipped}",
+            totalEnqueued, totalSkipped);
     }
 }

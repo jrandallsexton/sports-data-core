@@ -59,9 +59,7 @@ namespace SportsData.Producer.Application.Contests
                        ["JobName"] = "ContestUpdateJob"
                    }))
             {
-                _logger.LogInformation(
-                    "🔄 JOB_STARTED: ContestUpdateJob started. CorrelationId={CorrelationId}",
-                    correlationId);
+                _logger.LogInformation("🔄 JOB_STARTED: ContestUpdateJob started.");
 
                 try
                 {
@@ -69,18 +67,16 @@ namespace SportsData.Producer.Application.Contests
                     
                     var duration = DateTime.UtcNow - startTime;
                     _logger.LogInformation(
-                        "✅ JOB_COMPLETED: ContestUpdateJob completed successfully. Duration={DurationSeconds}s, CorrelationId={CorrelationId}",
-                        duration.TotalSeconds,
-                        correlationId);
+                        "✅ JOB_COMPLETED: ContestUpdateJob completed successfully. Duration={DurationSeconds}s",
+                        duration.TotalSeconds);
                 }
                 catch (Exception ex)
                 {
                     var duration = DateTime.UtcNow - startTime;
                     _logger.LogError(
                         ex,
-                        "💥 JOB_FAILED: ContestUpdateJob failed. Duration={DurationSeconds}s, CorrelationId={CorrelationId}, Error={ErrorMessage}",
+                        "💥 JOB_FAILED: ContestUpdateJob failed. Duration={DurationSeconds}s, Error={ErrorMessage}",
                         duration.TotalSeconds,
-                        correlationId,
                         ex.Message);
                     throw;
                 }

@@ -41,9 +41,7 @@ public class PublishLoadTestEventsJob : IPublishLoadTestEventsJob
             ["BatchSize"] = batchSize
         }))
         {
-            _logger.LogInformation(
-                "[KEDA-Test] Starting background job to publish load test events. TestId={TestId}, Count={Count}, Target={Target}, BatchSize={BatchSize}",
-                testId, count, target, batchSize);
+            _logger.LogInformation("[KEDA-Test] Starting background job to publish load test events.");
 
             var totalBatches = (int)Math.Ceiling((double)count / batchSize);
 
@@ -96,12 +94,12 @@ public class PublishLoadTestEventsJob : IPublishLoadTestEventsJob
 
                 var totalEvents = target == LoadTestTarget.Both ? count * 2 : count;
                 _logger.LogInformation(
-                    "[KEDA-Test] Load test events published successfully. TestId={TestId}, EventsPublished={EventsPublished}",
-                    testId, totalEvents);
+                    "[KEDA-Test] Load test events published successfully. EventsPublished={EventsPublished}",
+                    totalEvents);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "[KEDA-Test] Failed to publish load test events. TestId={TestId}", testId);
+                _logger.LogError(ex, "[KEDA-Test] Failed to publish load test events.");
                 throw;
             }
         }

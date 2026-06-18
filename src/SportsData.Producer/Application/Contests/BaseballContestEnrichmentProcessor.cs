@@ -62,8 +62,8 @@ namespace SportsData.Producer.Application.Contests
             if (competition.Contest.FinalizedUtc != null)
             {
                 _logger.LogInformation(
-                    "Contest already finalized. Skipping. ContestId={ContestId}, FinalizedUtc={FinalizedUtc}",
-                    command.ContestId, competition.Contest.FinalizedUtc);
+                    "Contest already finalized. Skipping. FinalizedUtc={FinalizedUtc}",
+                    competition.Contest.FinalizedUtc);
                 return;
             }
 

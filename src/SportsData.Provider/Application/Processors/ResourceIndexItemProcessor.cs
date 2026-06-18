@@ -77,8 +77,8 @@ namespace SportsData.Provider.Application.Processors
             }))
             {
                 _logger.LogInformation(
-                    "Processing resource index item. Uri={Uri}, DocumentType={DocumentType}",
-                    command.Uri, command.DocumentType);
+                    "Processing resource index item. Uri={Uri}",
+                    command.Uri);
                 
                 await ProcessInternal(command, command.CorrelationId);
             }
@@ -126,9 +126,8 @@ namespace SportsData.Provider.Application.Processors
                 else
                 {
                     _logger.LogDebug(
-                        "Skipping ResourceIndexItem creation for ad-hoc request. Uri={Uri}, CorrelationId={CorrelationId}",
-                        command.Uri,
-                        correlationId);
+                        "Skipping ResourceIndexItem creation for ad-hoc request. Uri={Uri}",
+                        command.Uri);
                 }
 
                 await HandleValid(command, identity.UrlHash, correlationId);
@@ -218,15 +217,15 @@ namespace SportsData.Provider.Application.Processors
                                 IsWithinPublishCooldown(dbItem.LastPublishedUtc))
                             {
                                 _logger.LogInformation(
-                                    "ESPN {CacheResult} for {DocumentType}. Content unchanged and within cooldown, skipping. Url={Url}",
-                                    "HIT-SUPPRESSED", command.DocumentType, dbItem.Uri.OriginalString);
+                                    "ESPN {CacheResult}. Content unchanged and within cooldown, skipping. Url={Url}",
+                                    "HIT-SUPPRESSED", dbItem.Uri.OriginalString);
                                 return;
                             }
                         }
 
                         _logger.LogInformation(
-                            "ESPN {CacheResult} for {DocumentType}. UrlHash={UrlHash}",
-                            "HIT", command.DocumentType, urlHash);
+                            "ESPN {CacheResult}. UrlHash={UrlHash}",
+                            "HIT", urlHash);
 
                         // Publish DocumentCreated with cached data (NO ESPN call!)
                         await PublishDocumentCreatedAsync(command, urlHash, correlationId, dbItem.Data, command.NotifyOnCompletion, PublishSource.Cache);
@@ -239,9 +238,8 @@ namespace SportsData.Provider.Application.Processors
                     {
                         _logger.LogWarning(
                             ex,
-                            "Cached document has invalid JSON, falling back to ESPN fetch. UrlHash={UrlHash}, DocumentType={DocumentType}",
-                            urlHash,
-                            command.DocumentType);
+                            "Cached document has invalid JSON, falling back to ESPN fetch. UrlHash={UrlHash}",
+                            urlHash);
                     }
                 }
 
@@ -256,26 +254,25 @@ namespace SportsData.Provider.Application.Processors
                 // Hybrid resource index: ESPN's individual $ref returns 404, but the
                 // parent index response included the full item data inline.
                 _logger.LogDebug(
-                    "Using inline JSON from hybrid resource index. UrlHash={UrlHash}, DocumentType={DocumentType}",
-                    urlHash, command.DocumentType);
+                    "Using inline JSON from hybrid resource index. UrlHash={UrlHash}",
+                    urlHash);
                 itemJson = command.InlineJson;
             }
             else
             {
                 _espnLiveFetchCounter.Add(1);
                 _logger.LogInformation(
-                    "ESPN {CacheResult} for {DocumentType}. UrlHash={UrlHash}, Uri={Uri}",
-                    "LIVE", command.DocumentType, urlHash, command.Uri);
+                    "ESPN {CacheResult}. UrlHash={UrlHash}, Uri={Uri}",
+                    "LIVE", urlHash, command.Uri);
 
                 var result = await _espnApi.GetResource(command.Uri.ToCleanUri(), bypassCache: command.BypassCache);
 
                 if (!result.IsSuccess)
                 {
                     _logger.LogError(
-                        "ESPN request failed: Status={Status}, Uri={Uri}, DocumentType={DocumentType}",
+                        "ESPN request failed: Status={Status}, Uri={Uri}",
                         result.Status,
-                        command.Uri,
-                        command.DocumentType);
+                        command.Uri);
                     return; // Clean exit - ESPN client already logged details
                 }
 
@@ -305,9 +302,8 @@ namespace SportsData.Provider.Application.Processors
                     // path)". It must NOT force a write when the content is identical — doing so causes
                     // spurious "Mongo replaced document" log noise on every historical sourcing run.
                     _logger.LogDebug(
-                        "ESPN fetch returned unchanged content, skipping Mongo replace. " +
-                        "UrlHash={UrlHash}, DocumentType={DocumentType}, BypassCache={BypassCache}",
-                        urlHash, command.DocumentType, command.BypassCache);
+                        "ESPN fetch returned unchanged content, skipping Mongo replace. UrlHash={UrlHash}",
+                        urlHash);
 
                     await PublishDocumentCreatedAsync(command, urlHash, correlationId, itemJson, command.NotifyOnCompletion, PublishSource.EspnUnchanged);
                     await UpdateLastPublishedStateAsync(collectionName, urlHash, itemJson);
@@ -367,9 +363,7 @@ namespace SportsData.Provider.Application.Processors
             await _publisher.Publish(evt);
             await UpdateLastPublishedStateAsync(collectionName, urlHash, json);
 
-            _logger.LogInformation("DocumentCreated event published. UrlHash={UrlHash}, DocumentType={DocumentType}",
-                urlHash,
-                command.DocumentType);
+            _logger.LogInformation("DocumentCreated event published. UrlHash={UrlHash}", urlHash);
         }
 
         private async Task HandleUpdatedDocumentAsync(
@@ -423,9 +417,7 @@ namespace SportsData.Provider.Application.Processors
             await _publisher.Publish(evt);
             await UpdateLastPublishedStateAsync(collectionName, urlHash, json);
 
-            _logger.LogInformation("DocumentCreated event published (update). UrlHash={UrlHash}, DocumentType={DocumentType}",
-                urlHash,
-                command.DocumentType);
+            _logger.LogInformation("DocumentCreated event published (update). UrlHash={UrlHash}", urlHash);
         }
 
         private async Task PublishDocumentCreatedAsync(
@@ -468,10 +460,9 @@ namespace SportsData.Provider.Application.Processors
             // call), or an ESPN fetch that returned identical content (we still hit
             // ESPN, just skipped the Mongo replace). Without this, the old "(from cache)"
             // log misled investigators into thinking espn.cache.hit was wired wrong.
-            _logger.LogInformation("DocumentCreated event published ({PublishSource}). UrlHash={UrlHash}, DocumentType={DocumentType}",
+            _logger.LogInformation("DocumentCreated event published ({PublishSource}). UrlHash={UrlHash}",
                 source,
-                urlHash,
-                command.DocumentType);
+                urlHash);
         }
 
         /// <summary>

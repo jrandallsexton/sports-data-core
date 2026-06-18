@@ -418,10 +418,10 @@ namespace SportsData.Api
                 app.Services.ConfigureHangfireJobs(mode);
             }
 
-            app.UseHangfireDashboard("/dashboard", new DashboardOptions
-            {
-                Authorization = Array.Empty<IDashboardAuthorizationFilter>()
-            });
+            //app.UseHangfireDashboard("/dashboard", new DashboardOptions
+            //{
+            //    Authorization = Array.Empty<IDashboardAuthorizationFilter>()
+            //});
 
             await app.RunAsync();
         }

@@ -92,35 +92,50 @@ namespace SportsData.Producer.Application.Contests
 
             var contest = competition.Contest;
 
-            // Baseball plays don't carry a clock for tiebreak ordering. Use the
-            // canonical CompetitionCompetitorScore record as the source of final
-            // score: prefer SourceDescription = "Final", otherwise the most recent.
-            var awayFinalScore = await _dataContext.CompetitionCompetitorScores
+            // MAX(Value) per competitor. Cross-sport schema variance in
+            // CompetitionCompetitorScores prevents a SourceDescription-based
+            // filter (MLB inserts new "feed" rows alongside "basic/manual"
+            // bootstrap rows; NCAAFB updates the "Basic/Manual" bootstrap
+            // row in place — same SourceDescription before and after).
+            // MAX side-steps it: bootstrap rows have Value=0 and any real
+            // score exceeds them; in-game ticks only go up, so the highest
+            // recorded value per competitor is always the latest known
+            // cumulative score.
+            var awayMaxScore = await _dataContext.CompetitionCompetitorScores
                 .AsNoTracking()
                 .Where(s => s.CompetitionCompetitorId == awayCompetitor.Id)
-                .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
-                .ThenByDescending(s => s.CreatedUtc)
                 .Select(s => (double?)s.Value)
-                .FirstOrDefaultAsync();
+                .MaxAsync();
 
-            var homeFinalScore = await _dataContext.CompetitionCompetitorScores
+            var homeMaxScore = await _dataContext.CompetitionCompetitorScores
                 .AsNoTracking()
                 .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
-                .OrderByDescending(s => s.SourceDescription == "Final" ? 1 : 0)
-                .ThenByDescending(s => s.CreatedUtc)
                 .Select(s => (double?)s.Value)
-                .FirstOrDefaultAsync();
+                .MaxAsync();
 
-            if (awayFinalScore is null || homeFinalScore is null)
+            if (awayMaxScore is null || homeMaxScore is null)
             {
                 _logger.LogInformation(
-                    "No competitor scores available for {ContestName}. Data not ready for enrichment.",
+                    "No competitor score rows for {ContestName}. Deferring to cron sweep.",
                     contest.Name);
                 return;
             }
 
-            contest.AwayScore = (int)awayFinalScore.Value;
-            contest.HomeScore = (int)homeFinalScore.Value;
+            // MLB games cannot end 0-0 in regulation — would proceed to extras
+            // until a side leads. A 0-0 result here means only the bootstrap
+            // rows exist (feed hasn't sourced yet) or genuinely-corrupt data;
+            // defer rather than lock in a finalized 0-0 contest with null
+            // Winner.
+            if (awayMaxScore.Value == 0 && homeMaxScore.Value == 0)
+            {
+                _logger.LogWarning(
+                    "MLB MAX competitor scores read as 0-0 for {ContestName} — implausible. Deferring enrichment.",
+                    contest.Name);
+                return;
+            }
+
+            contest.AwayScore = (int)awayMaxScore.Value;
+            contest.HomeScore = (int)homeMaxScore.Value;
 
             var awayFranchiseSeasonId = awayCompetitor.FranchiseSeasonId;
             var homeFranchiseSeasonId = homeCompetitor.FranchiseSeasonId;

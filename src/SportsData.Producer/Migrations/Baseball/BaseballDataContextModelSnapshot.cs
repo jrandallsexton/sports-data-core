@@ -4636,6 +4636,9 @@ namespace SportsData.Producer.Migrations.Baseball
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("AuditedUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int?>("AwayScore")
                         .HasColumnType("integer");
 
@@ -4724,6 +4727,10 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("AwayTeamFranchiseSeasonId");
+
+                    b.HasIndex("FinalizedUtc")
+                        .HasDatabaseName("IX_Contest_AuditedUtc_Pending")
+                        .HasFilter("\"FinalizedUtc\" IS NOT NULL AND \"AuditedUtc\" IS NULL");
 
                     b.HasIndex("HomeTeamFranchiseSeasonId");
 

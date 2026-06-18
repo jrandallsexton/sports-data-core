@@ -2,6 +2,9 @@ using FirebaseAdmin;
 
 using Google.Apis.Auth.OAuth2;
 
+using Hangfire;
+using Hangfire.Dashboard;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
@@ -257,6 +260,14 @@ namespace SportsData.Api
             {
                 services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: apiHangfirePoolSize);
 
+                // IMPORTANT: any new consumer added below also needs a paired
+                // RabbitMQ shovel per Producer broker in sports-data-config under
+                // `app/base/rabbitmq/shovels/`. Producer publishes target per-sport
+                // brokers (rabbitmq-baseball-mlb, rabbitmq-football-ncaa, etc.);
+                // API consumes from rabbitmq-api. Without a shovel, the message is
+                // fanout-published into the void on the source broker and the
+                // handler below never fires. See shovels/README.md ("Adding a new
+                // shovel").
                 services.AddMessaging<AppDataContext>(config,
                 [
                     typeof(BaseballPlayCompletedHandler),
@@ -406,6 +417,11 @@ namespace SportsData.Api
 
                 app.Services.ConfigureHangfireJobs(mode);
             }
+
+            app.UseHangfireDashboard("/dashboard", new DashboardOptions
+            {
+                Authorization = Array.Empty<IDashboardAuthorizationFilter>()
+            });
 
             await app.RunAsync();
         }

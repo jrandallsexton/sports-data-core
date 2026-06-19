@@ -260,7 +260,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         await _sut.Process(command);
 
         var contest = await FootballDataContext.Contests.FindAsync(contestId);
-        contest!.WinnerFranchiseId.Should().Be(HomeFranchiseSeasonId);
+        contest!.WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
     }
 
     #endregion
@@ -310,7 +310,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         var contest = await FootballDataContext.Contests.FindAsync(contestId);
         contest!.AwayScore.Should().Be(17);
         contest.HomeScore.Should().Be(24);
-        contest.WinnerFranchiseId.Should().Be(HomeFranchiseSeasonId);
+        contest.WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
         contest.FinalizedUtc.Should().NotBeNull();
 
         Mock.Get(Mocker.Get<IEventBus>())

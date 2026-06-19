@@ -16,8 +16,8 @@ SELECT
   c."FinalizedUtc",
   c."AwayScore",
   c."HomeScore",
-  c."WinnerFranchiseId" AS "WinnerFranchiseSeasonId",
-  c."SpreadWinnerFranchiseId" AS "SpreadWinnerFranchiseSeasonId",
+  c."WinnerFranchiseSeasonId",
+  c."SpreadWinnerFranchiseSeasonId",
   c."OverUnder" AS "OverUnderResult",
   c."EndDateUtc" AS "CompletedUtc"
 FROM public."Contest" c

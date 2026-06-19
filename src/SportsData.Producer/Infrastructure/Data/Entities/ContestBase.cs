@@ -55,9 +55,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public int? AwayScore { get; set; }
 
-        public Guid? WinnerFranchiseId { get; set; }           // Straight-up
+        public Guid? WinnerFranchiseSeasonId { get; set; }           // Straight-up
 
-        public Guid? SpreadWinnerFranchiseId { get; set; }     // ATS winner
+        public Guid? SpreadWinnerFranchiseSeasonId { get; set; }     // ATS winner
 
         public OverUnderResult OverUnder { get; set; } = OverUnderResult.None;
 

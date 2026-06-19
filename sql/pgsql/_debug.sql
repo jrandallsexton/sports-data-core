@@ -138,8 +138,8 @@ select
   c."SeasonWeekId",
   c."AwayScore",
   c."HomeScore",
-  c."WinnerFranchiseId" as "WinnerFranchiseSeasonId",
-  c."SpreadWinnerFranchiseId" as "SpreadWinnerFranchiseSeasonId",
+  c."WinnerFranchiseSeasonId",
+  c."SpreadWinnerFranchiseSeasonId",
   c."FinalizedUtc"
 from public."Contest" c
 where c."Id" = '8a64dddf-0094-9a3a-2618-55c276296ef8'
@@ -196,10 +196,10 @@ select count(*) from public."CompetitionDrive"
 -- delete from public."CompetitionPlay"
 -- delete from public."CompetitionDrive"
 
---update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "Id" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
+--update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseSeasonId" = null, "WinnerFranchiseSeasonId" = null, "OverUnder" = 0 where "Id" = '24477be2-e202-7ce2-ef3b-4b71a9bc3b58'
 
 -- FIX DEV - 07 OCT 2025
--- update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseId" = null, "WinnerFranchiseId" = null, "OverUnder" = 0 where "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
+-- update public."Contest" set "FinalizedUtc" = null, "SpreadWinnerFranchiseSeasonId" = null, "WinnerFranchiseSeasonId" = null, "OverUnder" = 0 where "SeasonWeekId" = 'cda55a87-951b-0e56-f114-f0733280efda'
 
 select * from public."Contest" where "Id" = 'aa00bd58-a986-d3a3-d1e5-f166c92dbcd0'
 select * from public."Contest" where "SeasonWeekId" = '25fee87e-e0ee-ec63-4dfa-7bd98b787c7e'

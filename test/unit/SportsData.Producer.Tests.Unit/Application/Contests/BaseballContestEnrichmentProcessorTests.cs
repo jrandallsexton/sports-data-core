@@ -200,7 +200,7 @@ public class BaseballContestEnrichmentProcessorTests
         var contest = await _baseballDataContext.Contests.FindAsync(contestId);
         contest!.AwayScore.Should().Be(4);
         contest.HomeScore.Should().Be(7);
-        contest.WinnerFranchiseId.Should().Be(HomeFranchiseSeasonId);
+        contest.WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
         contest.FinalizedUtc.Should().NotBeNull();
 
         Mock.Get(Mocker.Get<IEventBus>())
@@ -266,7 +266,7 @@ public class BaseballContestEnrichmentProcessorTests
         var contest = await _baseballDataContext.Contests.FindAsync(contestId);
         contest!.AwayScore.Should().BeNull();
         contest.HomeScore.Should().BeNull();
-        contest.WinnerFranchiseId.Should().BeNull();
+        contest.WinnerFranchiseSeasonId.Should().BeNull();
         contest.FinalizedUtc.Should().BeNull();
 
         Mock.Get(Mocker.Get<IEventBus>())
@@ -299,7 +299,7 @@ public class BaseballContestEnrichmentProcessorTests
         var contest = await _baseballDataContext.Contests.FindAsync(contestId);
         contest!.AwayScore.Should().BeNull();
         contest.HomeScore.Should().BeNull();
-        contest.WinnerFranchiseId.Should().BeNull();
+        contest.WinnerFranchiseSeasonId.Should().BeNull();
         contest.FinalizedUtc.Should().BeNull();
 
         Mock.Get(Mocker.Get<IEventBus>())
@@ -369,7 +369,7 @@ public class BaseballContestEnrichmentProcessorTests
         var contest = await _baseballDataContext.Contests.FindAsync(contestId);
         contest!.AwayScore.Should().Be(5);
         contest.HomeScore.Should().Be(5);
-        contest.WinnerFranchiseId.Should().BeNull();
+        contest.WinnerFranchiseSeasonId.Should().BeNull();
         contest.FinalizedUtc.Should().NotBeNull();
     }
 

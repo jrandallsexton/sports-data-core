@@ -24,8 +24,8 @@ select
 	c."AwayScore" as "AwayScore",
 	c."HomeScore" as "HomeScore",
 	CASE
-        WHEN fAway."Slug" = 'lsu-tigers' AND c."WinnerFranchiseId" = fsAway."Id" THEN true
-		WHEN fHome."Slug" = 'lsu-tigers' AND c."WinnerFranchiseId" = fsHome."Id" THEN true
+        WHEN fAway."Slug" = 'lsu-tigers' AND c."WinnerFranchiseSeasonId" = fsAway."Id" THEN true
+		WHEN fHome."Slug" = 'lsu-tigers' AND c."WinnerFranchiseSeasonId" = fsHome."Id" THEN true
         ELSE null
     END AS "WasWinner"
 

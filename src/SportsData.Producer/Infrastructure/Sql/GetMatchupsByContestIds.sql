@@ -29,8 +29,8 @@ SELECT
   co."OverUnder" AS "OverUnderCurrent", co."TotalPointsOpen" AS "OverUnderOpen",
   co."OverOdds", co."UnderOdds",
   c."AwayScore", c."HomeScore",
-  c."WinnerFranchiseId" AS "WinnerFranchiseSeasonId",
-  c."SpreadWinnerFranchiseId" AS "SpreadWinnerFranchiseSeasonId",
+  c."WinnerFranchiseSeasonId",
+  c."SpreadWinnerFranchiseSeasonId",
   c."OverUnder" AS "OverUnderResult",
   c."EndDateUtc" AS "CompletedUtc"
 FROM public."Contest" c
@@ -216,6 +216,6 @@ GROUP BY
   fsHome."Wins", fsHome."Losses", fsHome."ConferenceWins", fsHome."ConferenceLosses",
   co."Details", co."Spread", co."OverUnder", co."OverOdds", co."UnderOdds",
   cto."SpreadPointsOpen", co."TotalPointsOpen",
-  c."AwayScore", c."HomeScore", c."WinnerFranchiseId", c."SpreadWinnerFranchiseId",
+  c."AwayScore", c."HomeScore", c."WinnerFranchiseSeasonId", c."SpreadWinnerFranchiseSeasonId",
   c."OverUnder", c."EndDateUtc"
 ORDER BY c."StartDateUtc", fHome."Slug"

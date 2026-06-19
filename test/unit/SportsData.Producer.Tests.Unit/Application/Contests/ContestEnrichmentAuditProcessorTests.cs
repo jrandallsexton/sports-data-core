@@ -88,7 +88,7 @@ public class ContestEnrichmentAuditProcessorTests
     public async Task Process_WhenScoresMatchButWinnerWrong_ClearsFinalizedUtcAndEnqueuesReenrichment()
     {
         // Catches the specific 6-8/null-Winner shape: Contest scores are
-        // already correct (consumer chain caught up), but WinnerFranchiseId
+        // already correct (consumer chain caught up), but WinnerFranchiseSeasonId
         // wasn't set because the original enrichment skipped the branch.
         var (contestId, _, away, home) = await SeedFinalizedContestAsync(
             currentAway: 6, currentHome: 8,
@@ -238,7 +238,7 @@ public class ContestEnrichmentAuditProcessorTests
             FinalizedUtc = FixedNow.AddHours(-12),
             AwayScore = currentAway,
             HomeScore = currentHome,
-            WinnerFranchiseId = currentWinner,
+            WinnerFranchiseSeasonId = currentWinner,
             CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         };

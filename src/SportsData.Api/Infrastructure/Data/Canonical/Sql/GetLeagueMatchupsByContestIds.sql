@@ -46,8 +46,8 @@
 
   c."AwayScore",
   c."HomeScore",
-  c."WinnerFranchiseId" as "WinnerFranchiseSeasonId",
-  c."SpreadWinnerFranchiseId" as "SpreadWinnerFranchiseSeasonId",
+  c."WinnerFranchiseSeasonId",
+  c."SpreadWinnerFranchiseSeasonId",
   c."OverUnder" as "OverUnderResult",
   c."EndDateUtc" as "CompletedUtc"
 
@@ -143,7 +143,7 @@ GROUP BY
 
   co."Details", co."Spread", co."OverUnder", co."OverOdds", co."UnderOdds",
   cto."SpreadPointsOpen", co."TotalPointsOpen",
-  c."AwayScore", c."HomeScore", c."WinnerFranchiseId", c."SpreadWinnerFranchiseId",
+  c."AwayScore", c."HomeScore", c."WinnerFranchiseSeasonId", c."SpreadWinnerFranchiseSeasonId",
   c."OverUnder", c."EndDateUtc"
 
 

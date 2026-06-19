@@ -161,7 +161,7 @@ namespace SportsData.Producer.Application.Contests
                 {
                     var homeWasWinner = contest.AwayScore < contest.HomeScore;
 
-                    contest.WinnerFranchiseId =
+                    contest.WinnerFranchiseSeasonId =
                         homeWasWinner ?
                         homeFranchiseSeasonId :
                         awayFranchiseSeasonId;
@@ -187,7 +187,7 @@ namespace SportsData.Producer.Application.Contests
                     if (primaryOdds != null)
                     {
                         contest.OverUnder = primaryOdds.OverUnderResult;
-                        contest.SpreadWinnerFranchiseId = primaryOdds.AtsWinnerFranchiseSeasonId;
+                        contest.SpreadWinnerFranchiseSeasonId = primaryOdds.AtsWinnerFranchiseSeasonId;
                     }
                 }
 

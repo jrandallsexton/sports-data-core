@@ -111,7 +111,7 @@ public class EnrichFranchiseSeasonHandlerTests :
             franchiseSeason.Id, opponentSeason.Id, seasonYear,
             homeScore: 28, awayScore: 14, winnerId: franchiseSeason.Id));
 
-        // Tie (WinnerFranchiseId = null)
+        // Tie (WinnerFranchiseSeasonId = null)
         await FootballDataContext.Contests.AddAsync(CreateContest(
             franchiseSeason.Id, opponentSeason.Id, seasonYear,
             homeScore: 21, awayScore: 21, winnerId: null));
@@ -232,7 +232,7 @@ public class EnrichFranchiseSeasonHandlerTests :
             franchiseSeason.Id, confOpponentSeason.Id, seasonYear,
             homeScore: 35, awayScore: 14, winnerId: franchiseSeason.Id));
 
-        // Conference Tie (WinnerFranchiseId = null)
+        // Conference Tie (WinnerFranchiseSeasonId = null)
         await FootballDataContext.Contests.AddAsync(CreateContest(
             franchiseSeason.Id, confOpponentSeason.Id, seasonYear,
             homeScore: 21, awayScore: 21, winnerId: null));
@@ -461,7 +461,7 @@ public class EnrichFranchiseSeasonHandlerTests :
             .With(x => x.SeasonYear, seasonYear)
             .With(x => x.HomeScore, homeScore)
             .With(x => x.AwayScore, awayScore)
-            .With(x => x.WinnerFranchiseId, winnerId)
+            .With(x => x.WinnerFranchiseSeasonId, winnerId)
             .With(x => x.FinalizedUtc, DateTime.UtcNow)
             .With(x => x.Name, "Test Contest")
             .With(x => x.ShortName, "Test")

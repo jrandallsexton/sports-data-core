@@ -6,8 +6,8 @@
   coo."Spread" as "Spread",
   c."AwayScore",
   c."HomeScore",
-  c."WinnerFranchiseId" as "WinnerFranchiseSeasonId",
-  c."SpreadWinnerFranchiseId" as "SpreadWinnerFranchiseSeasonId",
+  c."WinnerFranchiseSeasonId",
+  c."SpreadWinnerFranchiseSeasonId",
   c."FinalizedUtc"
 from public."Contest" c
 inner join public."Competition" co on co."ContestId" = c."Id"

@@ -68,8 +68,8 @@ public class PickScoringAuditJob
                 .ToListAsync();
 
             _logger.LogInformation(
-                "Found {Count} distinct contests to audit for {Sport}.",
-                contestIds.Count, sport);
+                "Found {Count} distinct contests to audit.",
+                contestIds.Count);
 
             var enqueuedCount = 0;
             foreach (var contestId in contestIds)

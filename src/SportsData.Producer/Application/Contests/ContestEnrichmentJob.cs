@@ -64,8 +64,8 @@ namespace SportsData.Producer.Application.Contests
             });
 
             _logger.LogInformation(
-                "ContestEnrichmentJob starting. JobRunId={JobRunId}, NowUtc={NowUtc}",
-                jobRunId, nowUtc);
+                "ContestEnrichmentJob starting. NowUtc={NowUtc}",
+                nowUtc);
 
             // Unbounded sweep — every contest past its start time that is
             // neither finalized nor terminally cancelled. After the initial
@@ -83,8 +83,8 @@ namespace SportsData.Producer.Application.Contests
                 .ToListAsync();
 
             _logger.LogInformation(
-                "ContestEnrichmentJob: {ContestCount} non-finalized, non-cancelled contest(s) with past start time. JobRunId={JobRunId}",
-                contests.Count, jobRunId);
+                "ContestEnrichmentJob: {ContestCount} non-finalized, non-cancelled contest(s) with past start time.",
+                contests.Count);
 
             if (contests.Count == 0)
             {
@@ -120,9 +120,8 @@ namespace SportsData.Producer.Application.Contests
             }
 
             _logger.LogInformation(
-                "ContestEnrichmentJob completed. JobRunId={JobRunId}, " +
-                "TotalEnqueued={TotalEnqueued}, TotalSkipped={TotalSkipped}",
-                jobRunId, totalEnqueued, totalSkipped);
+                "ContestEnrichmentJob completed. TotalEnqueued={TotalEnqueued}, TotalSkipped={TotalSkipped}",
+                totalEnqueued, totalSkipped);
         }
     }
 }

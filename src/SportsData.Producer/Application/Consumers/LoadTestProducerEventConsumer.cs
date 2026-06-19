@@ -37,17 +37,13 @@ public class LoadTestProducerEventConsumer : IConsumer<LoadTestProducerEvent>
             ["JobNumber"] = message.JobNumber
         }))
         {
-            _logger.LogDebug(
-                "[KEDA-Test] Received load test event. TestId={TestId}, Batch={BatchNumber}, Job={JobNumber}",
-                message.TestId, message.BatchNumber, message.JobNumber);
+            _logger.LogDebug("[KEDA-Test] Received load test event.");
 
             // Enqueue to Hangfire - this is what KEDA monitors
             _backgroundJobProvider.Enqueue<ProcessLoadTestJob>(job =>
                 job.ProcessAsync(message.TestId, message.BatchNumber, message.JobNumber, message.PublishedUtc));
 
-            _logger.LogInformation(
-                "[KEDA-Test] Enqueued load test job to Hangfire. TestId={TestId}, Batch={BatchNumber}, Job={JobNumber}",
-                message.TestId, message.BatchNumber, message.JobNumber);
+            _logger.LogInformation("[KEDA-Test] Enqueued load test job to Hangfire.");
         }
 
         return Task.CompletedTask;

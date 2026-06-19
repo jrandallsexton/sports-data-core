@@ -72,8 +72,8 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         }))
         {
             _logger.LogInformation(
-                "Starting historical season sourcing. Sport={Sport}, Provider={Provider}, Year={Year}",
-                _sport, request.SourceDataProvider, request.SeasonYear);
+                "Starting historical season sourcing. Year={Year}",
+                request.SeasonYear);
 
             var tierDelays = GetTierDelays(request);
             ValidateTierDelays(tierDelays);
@@ -642,8 +642,8 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
         }))
         {
             _logger.LogInformation(
-                "Creating NEW ResourceIndex entities for saga orchestration. Sport={Sport}, Provider={Provider}, Year={Year}",
-                _sport, request.SourceDataProvider, request.SeasonYear);
+                "Creating NEW ResourceIndex entities for saga orchestration. Year={Year}",
+                request.SeasonYear);
 
             // Define all 4 tiers (delays don't matter for saga - saga controls timing)
             // ResourceShape must match DefineTiers to ensure consistent execution paths

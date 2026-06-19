@@ -70,9 +70,7 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
 
         if (competition is null)
         {
-            _logger.LogWarning(
-                "Audit skipped — competition not found. ContestId={ContestId}",
-                command.ContestId);
+            _logger.LogWarning("Audit skipped — competition not found.");
             return;
         }
 
@@ -82,9 +80,7 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
         // the sweep's candidate scan and this per-contest run.
         if (contest.FinalizedUtc is null)
         {
-            _logger.LogInformation(
-                "Audit skipped — Contest no longer finalized. ContestId={ContestId}",
-                command.ContestId);
+            _logger.LogInformation("Audit skipped — Contest no longer finalized.");
             return;
         }
 
@@ -93,9 +89,7 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
 
         if (awayCompetitor is null || homeCompetitor is null)
         {
-            _logger.LogWarning(
-                "Audit skipped — Competition missing away or home competitor. ContestId={ContestId}",
-                command.ContestId);
+            _logger.LogWarning("Audit skipped — Competition missing away or home competitor.");
             return;
         }
 
@@ -121,8 +115,8 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
         if (awayMaxScore is null || homeMaxScore is null)
         {
             _logger.LogWarning(
-                "Audit deferred — no competitor score rows. ContestId={ContestId}, ContestName={ContestName}",
-                command.ContestId, contest.Name);
+                "Audit deferred — no competitor score rows. ContestName={ContestName}",
+                contest.Name);
             return;
         }
 
@@ -138,8 +132,8 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
             && awayMaxScore.Value == 0 && homeMaxScore.Value == 0)
         {
             _logger.LogWarning(
-                "Audit deferred — MLB MAX competitor scores are 0-0 (canonical source still stale). ContestId={ContestId}, ContestName={ContestName}",
-                command.ContestId, contest.Name);
+                "Audit deferred — MLB MAX competitor scores are 0-0 (canonical source still stale). ContestName={ContestName}",
+                contest.Name);
             return;
         }
 
@@ -165,8 +159,8 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(
-                "Audit passed — stamped AuditedUtc. ContestId={ContestId}, ContestName={ContestName}, AwayScore={Away}, HomeScore={Home}",
-                command.ContestId, contest.Name, expectedAway, expectedHome);
+                "Audit passed — stamped AuditedUtc. ContestName={ContestName}, AwayScore={Away}, HomeScore={Home}",
+                contest.Name, expectedAway, expectedHome);
             return;
         }
 
@@ -176,10 +170,10 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
         // stays null; next sweep validates after enrichment lands.
         _logger.LogWarning(
             "Audit mismatch — clearing FinalizedUtc and enqueuing re-enrichment. " +
-            "ContestId={ContestId}, ContestName={ContestName}, " +
+            "ContestName={ContestName}, " +
             "Current: Away={CurrentAway}, Home={CurrentHome}, Winner={CurrentWinner}; " +
             "Expected: Away={ExpectedAway}, Home={ExpectedHome}, Winner={ExpectedWinner}",
-            command.ContestId, contest.Name,
+            contest.Name,
             contest.AwayScore, contest.HomeScore, contest.WinnerFranchiseId,
             expectedAway, expectedHome, expectedWinner);
 

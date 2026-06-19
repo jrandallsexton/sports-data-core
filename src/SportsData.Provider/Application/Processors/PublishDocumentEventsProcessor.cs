@@ -55,10 +55,7 @@ namespace SportsData.Provider.Application.Processors
                    }))
             {
                 _logger.LogInformation(
-                    "PublishDocumentEventsProcessor started. Sport={Sport}, DocumentType={DocumentType}, Season={Season}, Provider={Provider}",
-                    command.Sport,
-                    command.DocumentType,
-                    command.Season,
+                    "PublishDocumentEventsProcessor started. Provider={Provider}",
                     command.SourceDataProvider);
 
                 if (command.IncludeLinkedDocumentTypes?.Count > 0)

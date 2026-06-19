@@ -89,9 +89,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             }
 
             _logger.LogInformation(
-                "DocumentRequested received. Uri={Uri}, DocumentType={DocumentType}, Sport={Sport}, Provider={Provider}, SeasonYear={SeasonYear}",
-                evt.Uri,
-                evt.DocumentType,
+                "DocumentRequested received. Sport={Sport}, Provider={Provider}, SeasonYear={SeasonYear}",
                 evt.Sport,
                 evt.SourceDataProvider,
                 evt.SeasonYear);
@@ -100,11 +98,11 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             {
                 await ConsumeInternal(evt);
 
-                _logger.LogInformation("DocumentRequested processed. Uri={Uri}", evt.Uri);
+                _logger.LogInformation("DocumentRequested processed.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "DocumentRequested processing failed. Uri={Uri}", evt.Uri);
+                _logger.LogError(ex, "DocumentRequested processing failed.");
                 throw;
             }
         }
@@ -166,18 +164,12 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         if (EspnResourceIndexClassifier.IsResourceIndex(uri, evt.Sport))
         {
-            _logger.LogInformation(
-                "Treating as resource index. Uri={Uri}, CorrelationId={CorrelationId}",
-                uri,
-                evt.CorrelationId);
+            _logger.LogInformation("Treating as resource index.");
             await ProcessResourceIndex(uri, evt);
         }
         else
         {
-            _logger.LogInformation(
-                "Treating as leaf document. Uri={Uri}, CorrelationId={CorrelationId}",
-                uri,
-                evt.CorrelationId);
+            _logger.LogInformation("Treating as leaf document.");
             ProcessResourceIndexItem(uri, evt);
         }
     }
@@ -211,10 +203,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes);
 
         _logger.LogInformation(
-            "Enqueuing ProcessResourceIndexItem. UrlHash={UrlHash}, DocumentType={DocumentType}, CorrelationId={CorrelationId}",
-            urlHash,
-            evt.DocumentType,
-            evt.CorrelationId);
+            "Enqueuing ProcessResourceIndexItem. UrlHash={UrlHash}",
+            urlHash);
             
         _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
     }
@@ -229,19 +219,17 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         while (uri is not null && seenPages.Add(uri.ToString()))
         {
             _logger.LogInformation(
-                "Fetching resource index page. Uri={Uri}, CorrelationId={CorrelationId}",
-                uri,
-                evt.CorrelationId);
+                "Fetching resource index page. PageUri={PageUri}",
+                uri);
 
             var result = await _espnApi.GetResource(uri, bypassCache: true, stripQuerystring: false);
 
             if (!result.IsSuccess)
             {
                 _logger.LogError(
-                    "Failed to fetch resource index: Status={Status}, Uri={Uri}, CorrelationId={CorrelationId}",
+                    "Failed to fetch resource index: Status={Status}, PageUri={PageUri}",
                     result.Status,
-                    uri,
-                    evt.CorrelationId);
+                    uri);
 
                 return; // Early exit on failure
             }
@@ -257,27 +245,24 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             {
                 _logger.LogWarning(
                     ex,
-                    "Failed to parse ResourceIndex JSON. Uri={Uri}, CorrelationId={CorrelationId}",
-                    uri,
-                    evt.CorrelationId);
+                    "Failed to parse ResourceIndex JSON. PageUri={PageUri}",
+                    uri);
                 break;
             }
 
             if (dto == null || dto.Items == null || dto.Items.Count == 0)
             {
                 _logger.LogInformation(
-                    "Empty ResourceIndex. Uri={Uri}, CorrelationId={CorrelationId}",
-                    uri,
-                    evt.CorrelationId);
+                    "Empty ResourceIndex. PageUri={PageUri}",
+                    uri);
                 break;
             }
 
             _logger.LogInformation(
-                "Found items in resource index page. Count={Count}, PageIndex={PageIndex}, PageCount={PageCount}, CorrelationId={CorrelationId}",
+                "Found items in resource index page. Count={Count}, PageIndex={PageIndex}, PageCount={PageCount}",
                 dto.Count,
                 dto.PageIndex,
-                dto.PageCount,
-                evt.CorrelationId);
+                dto.PageCount);
 
             // On first page, detect hybrid and probe first $ref to see if individual items resolve
             List<string>? rawItemJsonList = null;
@@ -295,8 +280,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             if (useInlineJson == true && (rawItemJsonList is null || rawItemJsonList.Count != dto.Items.Count))
             {
                 _logger.LogWarning(
-                    "Failed to extract inline JSON items (count mismatch). Falling back to $ref fetching. Uri={Uri}, CorrelationId={CorrelationId}",
-                    uri, evt.CorrelationId);
+                    "Failed to extract inline JSON items (count mismatch). Falling back to $ref fetching. PageUri={PageUri}",
+                    uri);
                 useInlineJson = false;
                 rawItemJsonList = null;
             }
@@ -312,9 +297,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     if (string.IsNullOrWhiteSpace(item.Id))
                     {
                         _logger.LogDebug(
-                            "Skipping item with null ref and no id. PageIndex={PageIndex}, CorrelationId={CorrelationId}",
-                            dto.PageIndex,
-                            evt.CorrelationId);
+                            "Skipping item with null ref and no id. PageIndex={PageIndex}",
+                            dto.PageIndex);
                         continue;
                     }
 
@@ -327,10 +311,9 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     refUri = new Uri($"{itemBaseUri}?{itemQueryString}");
 
                     _logger.LogDebug(
-                        "Item has no ref but has id. Constructed filtered URI. Id={ItemId}, Uri={Uri}, CorrelationId={CorrelationId}",
+                        "Item has no ref but has id. Constructed filtered URI. Id={ItemId}, RefUri={RefUri}",
                         item.Id,
-                        refUri,
-                        evt.CorrelationId);
+                        refUri);
                 }
                 else
                 {
@@ -368,10 +351,9 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             if (dto.PageIndex >= dto.PageCount)
             {
                 _logger.LogInformation(
-                    "Last page reached. PageIndex={PageIndex}, PageCount={PageCount}, CorrelationId={CorrelationId}",
+                    "Last page reached. PageIndex={PageIndex}, PageCount={PageCount}",
                     dto.PageIndex,
-                    dto.PageCount,
-                    evt.CorrelationId);
+                    dto.PageCount);
                 break;
             }
 
@@ -389,17 +371,12 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         if (enqueuedAnyRefs)
         {
             _logger.LogInformation(
-                "All resource index items enqueued. TotalItems={TotalItems}, DocumentType={DocumentType}, CorrelationId={CorrelationId}",
-                totalItemsEnqueued,
-                evt.DocumentType,
-                evt.CorrelationId);
+                "All resource index items enqueued. TotalItems={TotalItems}",
+                totalItemsEnqueued);
         }
         else
         {
-            _logger.LogInformation(
-                "No resource index items enqueued. DocumentType={DocumentType}, CorrelationId={CorrelationId}",
-                evt.DocumentType,
-                evt.CorrelationId);
+            _logger.LogInformation("No resource index items enqueued.");
         }
     }
 
@@ -430,36 +407,31 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
         // This looks like a hybrid (has inline data). Probe the first $ref to see if it resolves.
         _logger.LogInformation(
-            "Hybrid resource index detected (items have inline data). Probing first $ref to check if individual items resolve. Ref={Ref}, CorrelationId={CorrelationId}",
-            firstItem.Ref,
-            correlationId);
+            "Hybrid resource index detected (items have inline data). Probing first $ref to check if individual items resolve. Ref={Ref}",
+            firstItem.Ref);
 
         var probeUri = firstItem.Ref.ToCleanUri();
         var probeResult = await _espnApi.GetResource(probeUri, bypassCache: true);
 
         if (probeResult is null || probeResult.IsSuccess)
         {
-            _logger.LogInformation(
-                "Hybrid probe succeeded — individual $refs resolve. Will fetch each item individually. CorrelationId={CorrelationId}",
-                correlationId);
+            _logger.LogInformation("Hybrid probe succeeded — individual $refs resolve. Will fetch each item individually.");
             return (false, null);
         }
 
         if (probeResult.Status == ResultStatus.NotFound)
         {
             _logger.LogWarning(
-                "Hybrid probe returned 404 — individual $refs are broken. Will use inline JSON for all items. Ref={Ref}, CorrelationId={CorrelationId}",
-                firstItem.Ref,
-                correlationId);
+                "Hybrid probe returned 404 — individual $refs are broken. Will use inline JSON for all items. Ref={Ref}",
+                firstItem.Ref);
             return (true, rawItems);
         }
 
         // Non-404 failure (rate limited, server error, etc.) — don't assume broken, try normal path
         _logger.LogWarning(
-            "Hybrid probe returned {Status} — inconclusive, falling back to $ref fetching. Ref={Ref}, CorrelationId={CorrelationId}",
+            "Hybrid probe returned {Status} — inconclusive, falling back to $ref fetching. Ref={Ref}",
             probeResult.Status,
-            firstItem.Ref,
-            correlationId);
+            firstItem.Ref);
         return (false, null);
     }
 

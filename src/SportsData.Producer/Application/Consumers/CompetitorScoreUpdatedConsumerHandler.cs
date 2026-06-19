@@ -51,41 +51,49 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
             ["Sport"] = evt.Sport
         });
 
-        _logger.LogInformation(
-            "CompetitorScoreUpdatedConsumerHandler started. ContestId={ContestId}, FranchiseSeasonId={FranchiseSeasonId}, Score={Score}",
-            evt.ContestId, evt.FranchiseSeasonId, evt.Score);
+        _logger.LogInformation("CompetitorScoreUpdatedConsumerHandler started.");
 
         var contest = await _dataContext.Contests
             .FirstOrDefaultAsync(x => x.Id == evt.ContestId);
 
         if (contest is null)
         {
-            _logger.LogWarning(
-                "Contest not found for score update. ContestId={ContestId}",
-                evt.ContestId);
+            _logger.LogWarning("Contest not found for score update.");
             return;
         }
 
         if (contest.HomeTeamFranchiseSeasonId == evt.FranchiseSeasonId)
         {
+            // At-least-once redelivery short-circuit. The upstream score-doc
+            // processor only publishes when the persisted score actually
+            // changes, but MassTransit / broker retry can still re-deliver the
+            // same event. Without this guard, every redelivery would re-stamp
+            // ModifiedUtc and re-broadcast ContestScoreChanged to every
+            // SignalR-connected client.
+            if (contest.HomeScore == evt.Score)
+            {
+                _logger.LogInformation("HomeScore already current — redelivery no-op.");
+                return;
+            }
+
             contest.HomeScore = evt.Score;
-            _logger.LogInformation(
-                "Updated HomeScore. ContestId={ContestId}, HomeScore={HomeScore}",
-                contest.Id, evt.Score);
+            _logger.LogInformation("Updated HomeScore. HomeScore={HomeScore}", evt.Score);
         }
         else if (contest.AwayTeamFranchiseSeasonId == evt.FranchiseSeasonId)
         {
+            if (contest.AwayScore == evt.Score)
+            {
+                _logger.LogInformation("AwayScore already current — redelivery no-op.");
+                return;
+            }
+
             contest.AwayScore = evt.Score;
-            _logger.LogInformation(
-                "Updated AwayScore. ContestId={ContestId}, AwayScore={AwayScore}",
-                contest.Id, evt.Score);
+            _logger.LogInformation("Updated AwayScore. AwayScore={AwayScore}", evt.Score);
         }
         else
         {
             _logger.LogWarning(
-                "FranchiseSeasonId does not match home or away team. ContestId={ContestId}, " +
-                "FranchiseSeasonId={FranchiseSeasonId}, HomeTeam={HomeTeam}, AwayTeam={AwayTeam}",
-                evt.ContestId, evt.FranchiseSeasonId,
+                "FranchiseSeasonId does not match home or away team. HomeTeam={HomeTeam}, AwayTeam={AwayTeam}",
                 contest.HomeTeamFranchiseSeasonId, contest.AwayTeamFranchiseSeasonId);
             return;
         }
@@ -110,7 +118,7 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation(
-            "CompetitorScoreUpdatedConsumerHandler completed. ContestId={ContestId}, HomeScore={HomeScore}, AwayScore={AwayScore}",
-            contest.Id, contest.HomeScore, contest.AwayScore);
+            "CompetitorScoreUpdatedConsumerHandler completed. HomeScore={HomeScore}, AwayScore={AwayScore}",
+            contest.HomeScore, contest.AwayScore);
     }
 }

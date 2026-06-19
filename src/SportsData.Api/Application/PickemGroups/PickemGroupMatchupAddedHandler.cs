@@ -47,9 +47,7 @@ namespace SportsData.Api.Application.PickemGroups
 
             if (previewExists)
             {
-                _logger.LogInformation(
-                    "Preview already exists for ContestId={ContestId}. Skipping generation.",
-                    @event.ContestId);
+                _logger.LogInformation("Preview already exists. Skipping generation.");
                 return;
             }
 
@@ -61,9 +59,7 @@ namespace SportsData.Api.Application.PickemGroups
 
             _backgroundJobProvider.Enqueue<MatchupPreviewProcessor>(p => p.Process(cmd));
 
-            _logger.LogInformation(
-                "Enqueued AI preview generation for ContestId={ContestId}",
-                @event.ContestId);
+            _logger.LogInformation("Enqueued AI preview generation.");
         }
     }
 }

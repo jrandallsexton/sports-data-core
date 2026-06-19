@@ -89,19 +89,18 @@ namespace SportsData.Provider.Application.Jobs
                 }
                 
                 _logger.LogInformation(
-                    "TIER_STARTED: Tier={Tier}, SeasonYear={Season}, Shape={Shape}, ResourceIndexId={ResourceIndexId}",
-                    jobDefinition.DocumentType, jobDefinition.SeasonYear, 
-                    jobDefinition.Shape, jobDefinition.ResourceIndexId);
+                    "TIER_STARTED: Tier={Tier}, SeasonYear={Season}, Shape={Shape}",
+                    jobDefinition.DocumentType, jobDefinition.SeasonYear,
+                    jobDefinition.Shape);
                 
                 var startTime = DateTime.UtcNow;
                 await ExecuteInternal(jobDefinition, correlationId);
                 var duration = DateTime.UtcNow - startTime;
                 
                 _logger.LogInformation(
-                    "TIER_COMPLETED: Tier={Tier}, SeasonYear={Season}, DurationMin={DurationMin:F2}, " +
-                    "ResourceIndexId={ResourceIndexId}",
-                    jobDefinition.DocumentType, jobDefinition.SeasonYear, 
-                    duration.TotalMinutes, jobDefinition.ResourceIndexId);
+                    "TIER_COMPLETED: Tier={Tier}, SeasonYear={Season}, DurationMin={DurationMin:F2}",
+                    jobDefinition.DocumentType, jobDefinition.SeasonYear,
+                    duration.TotalMinutes);
             }
         }
 

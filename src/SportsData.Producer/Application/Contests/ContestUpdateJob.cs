@@ -35,23 +35,26 @@ namespace SportsData.Producer.Application.Contests
         private readonly TDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IAppMode _appMode;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public ContestUpdateJob(
             ILogger<ContestUpdateJob<TDataContext>> logger,
             TDataContext dataContext,
             IProvideBackgroundJobs backgroundJobProvider,
-            IAppMode appMode)
+            IAppMode appMode,
+            IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _backgroundJobProvider = backgroundJobProvider;
             _appMode = appMode;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task ExecuteAsync()
         {
             var correlationId = Guid.NewGuid();
-            var startTime = DateTime.UtcNow;
+            var startTime = _dateTimeProvider.UtcNow();
 
             using (_logger.BeginScope(new Dictionary<string, object>
                    {
@@ -59,28 +62,24 @@ namespace SportsData.Producer.Application.Contests
                        ["JobName"] = "ContestUpdateJob"
                    }))
             {
-                _logger.LogInformation(
-                    "🔄 JOB_STARTED: ContestUpdateJob started. CorrelationId={CorrelationId}",
-                    correlationId);
+                _logger.LogInformation("🔄 JOB_STARTED: ContestUpdateJob started.");
 
                 try
                 {
                     await ExecuteInternal(correlationId);
-                    
-                    var duration = DateTime.UtcNow - startTime;
+
+                    var duration = _dateTimeProvider.UtcNow() - startTime;
                     _logger.LogInformation(
-                        "✅ JOB_COMPLETED: ContestUpdateJob completed successfully. Duration={DurationSeconds}s, CorrelationId={CorrelationId}",
-                        duration.TotalSeconds,
-                        correlationId);
+                        "✅ JOB_COMPLETED: ContestUpdateJob completed successfully. Duration={DurationSeconds}s",
+                        duration.TotalSeconds);
                 }
                 catch (Exception ex)
                 {
-                    var duration = DateTime.UtcNow - startTime;
+                    var duration = _dateTimeProvider.UtcNow() - startTime;
                     _logger.LogError(
                         ex,
-                        "💥 JOB_FAILED: ContestUpdateJob failed. Duration={DurationSeconds}s, CorrelationId={CorrelationId}, Error={ErrorMessage}",
+                        "💥 JOB_FAILED: ContestUpdateJob failed. Duration={DurationSeconds}s, Error={ErrorMessage}",
                         duration.TotalSeconds,
-                        correlationId,
                         ex.Message);
                     throw;
                 }

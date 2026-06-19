@@ -151,7 +151,7 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
         }
 
         var scoresMatch = contest.AwayScore == expectedAway && contest.HomeScore == expectedHome;
-        var winnerMatches = contest.WinnerFranchiseId == expectedWinner;
+        var winnerMatches = contest.WinnerFranchiseSeasonId == expectedWinner;
 
         if (scoresMatch && winnerMatches)
         {
@@ -174,7 +174,7 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
             "Current: Away={CurrentAway}, Home={CurrentHome}, Winner={CurrentWinner}; " +
             "Expected: Away={ExpectedAway}, Home={ExpectedHome}, Winner={ExpectedWinner}",
             contest.Name,
-            contest.AwayScore, contest.HomeScore, contest.WinnerFranchiseId,
+            contest.AwayScore, contest.HomeScore, contest.WinnerFranchiseSeasonId,
             expectedAway, expectedHome, expectedWinner);
 
         // Enqueue BEFORE SaveChangesAsync. If Enqueue throws, FinalizedUtc

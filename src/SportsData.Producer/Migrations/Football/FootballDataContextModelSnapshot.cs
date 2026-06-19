@@ -4623,7 +4623,7 @@ namespace SportsData.Producer.Migrations.Football
                     b.Property<int>("Sport")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("SpreadWinnerFranchiseId")
+                    b.Property<Guid?>("SpreadWinnerFranchiseSeasonId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("StartDateUtc")
@@ -4635,7 +4635,7 @@ namespace SportsData.Producer.Migrations.Football
                     b.Property<int?>("Week")
                         .HasColumnType("integer");
 
-                    b.Property<Guid?>("WinnerFranchiseId")
+                    b.Property<Guid?>("WinnerFranchiseSeasonId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");

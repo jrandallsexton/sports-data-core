@@ -112,8 +112,8 @@ select * from public."Contest" where "HomeTeamFranchiseSeasonId" = 'f3c03a13-780
 update public."Contest" set
 "EndDateUtc" = '2025-08-29 01:09:03+00',
 "HomeScore" = 34, "AwayScore" = 7, "FinalizedUtc" = '2025-08-29 01:09:03+00',
-"SpreadWinnerFranchiseId" = '48a3a492-be81-ce45-2481-a4698868c5ef',
-"WinnerFranchiseId" = '48a3a492-be81-ce45-2481-a4698868c5ef'
+"SpreadWinnerFranchiseSeasonId" = '48a3a492-be81-ce45-2481-a4698868c5ef',
+"WinnerFranchiseSeasonId" = '48a3a492-be81-ce45-2481-a4698868c5ef'
 where "Id" = 'a2aaa942-51ff-f2c0-8b57-e396ceb8404e'
 */
 

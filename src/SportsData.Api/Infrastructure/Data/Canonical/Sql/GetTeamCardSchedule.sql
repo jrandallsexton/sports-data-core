@@ -24,8 +24,9 @@
 	c."AwayScore" as "AwayScore",
 	c."HomeScore" as "HomeScore",
 	CASE
-        WHEN fAway."Slug" = @Slug AND c."WinnerFranchiseId" = fsAway."Id" THEN true
-		WHEN fHome."Slug" = @Slug AND c."WinnerFranchiseId" = fsHome."Id" THEN true
+        WHEN fAway."Slug" = @Slug AND c."WinnerFranchiseSeasonId" = fsAway."Id" THEN true
+		WHEN fHome."Slug" = @Slug AND c."WinnerFranchiseSeasonId" = fsHome."Id" THEN true
+        WHEN c."WinnerFranchiseSeasonId" IS NOT NULL THEN false
         ELSE null
     END AS "WasWinner"
 

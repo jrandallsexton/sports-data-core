@@ -124,8 +124,8 @@ namespace SportsData.Producer.Application.Franchises.Commands
 
             foreach (var contest in contests)
             {
-                var isTie = contest.WinnerFranchiseId == null;
-                var wasWinner = !isTie && contest.WinnerFranchiseId == franchiseSeason.Id;
+                var isTie = contest.WinnerFranchiseSeasonId == null;
+                var wasWinner = !isTie && contest.WinnerFranchiseSeasonId == franchiseSeason.Id;
 
                 if (isTie)
                     ties++;
@@ -176,8 +176,8 @@ namespace SportsData.Producer.Application.Franchises.Commands
             foreach (var contest in contests)
             {
                 var isHome = contest.HomeTeamFranchiseSeasonId == franchiseSeason.Id;
-                var isTie = contest.WinnerFranchiseId == null;
-                var isWinner = !isTie && contest.WinnerFranchiseId == franchiseSeason.Id;
+                var isTie = contest.WinnerFranchiseSeasonId == null;
+                var isWinner = !isTie && contest.WinnerFranchiseSeasonId == franchiseSeason.Id;
 
                 var teamScore = isHome ? contest.HomeScore!.Value : contest.AwayScore!.Value;
                 var opponentScore = isHome ? contest.AwayScore!.Value : contest.HomeScore!.Value;

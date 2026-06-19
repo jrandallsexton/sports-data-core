@@ -6,8 +6,8 @@ SELECT
   coo."Spread" AS "Spread",
   c."AwayScore",
   c."HomeScore",
-  c."WinnerFranchiseId" AS "WinnerFranchiseSeasonId",
-  c."SpreadWinnerFranchiseId" AS "SpreadWinnerFranchiseSeasonId",
+  c."WinnerFranchiseSeasonId",
+  c."SpreadWinnerFranchiseSeasonId",
   c."FinalizedUtc"
 FROM public."Contest" c
 INNER JOIN public."Competition" co ON co."ContestId" = c."Id"
@@ -20,8 +20,8 @@ LEFT JOIN LATERAL (
   LIMIT 1
 ) coo ON TRUE
 WHERE c."Id" = @ContestId
-  -- Scoring callers cannot tolerate pre-enrichment rows. WinnerFranchiseId,
-  -- SpreadWinnerFranchiseId, and the final HomeScore/AwayScore are all
+  -- Scoring callers cannot tolerate pre-enrichment rows. WinnerFranchiseSeasonId,
+  -- SpreadWinnerFranchiseSeasonId, and the final HomeScore/AwayScore are all
   -- populated atomically by ContestEnrichmentProcessor alongside
   -- FinalizedUtc. Returning a row before that point produced silent
   -- Guid.Empty/0-0 scoring (PickScoringProcessor / PickScoringService).

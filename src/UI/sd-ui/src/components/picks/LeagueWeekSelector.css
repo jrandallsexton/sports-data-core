@@ -58,7 +58,8 @@
 
   /* Desktop-specific label alignment */
   .league-week-selector label,
-  .league-week-selector .league-selector label {
+  .league-week-selector .league-selector label,
+  .league-week-selector .week-label {
     text-align: right; /* Right-align labels on desktop for consistency */
     margin-right: 8px;
   }
@@ -86,7 +87,8 @@
   }
 
   .league-week-selector label,
-  .league-week-selector .league-selector label {
+  .league-week-selector .league-selector label,
+  .league-week-selector .week-label {
     min-width: 50px;
     text-align: left; /* Changed from right to left for mobile */
     margin-bottom: 0; /* Remove bottom margin to keep inline */
@@ -107,7 +109,8 @@
   }
 }
 
-.league-week-selector label {
+.league-week-selector label,
+.league-week-selector .week-label {
   font-size: 1rem;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -115,7 +118,8 @@
   min-width: 60px;  /* forces both labels to same width on desktop */
 }
 
-.league-week-selector .selector-block label {
+.league-week-selector .selector-block label,
+.league-week-selector .selector-block .week-label {
   min-width: 60px;
 }
 
@@ -155,4 +159,16 @@
 .league-week-selector .league-selector select option {
   background-color: var(--bg-card);
   color: var(--text-primary);
+}
+
+/* Single-week leagues render the week as static text rather than a
+   one-option dropdown. Match the select's vertical rhythm so the
+   League selector and the week value line up on the same baseline. */
+.league-week-selector .week-static {
+  font-size: 1rem;
+  color: var(--text-primary);
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
 }

@@ -26,6 +26,7 @@
 	CASE
         WHEN fAway."Slug" = @Slug AND c."WinnerFranchiseSeasonId" = fsAway."Id" THEN true
 		WHEN fHome."Slug" = @Slug AND c."WinnerFranchiseSeasonId" = fsHome."Id" THEN true
+        WHEN c."WinnerFranchiseSeasonId" IS NOT NULL THEN false
         ELSE null
     END AS "WasWinner"
 

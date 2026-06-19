@@ -33,25 +33,31 @@ function LeagueWeekSelector({
 
       {/* Week Select */}
       <div className="selector-block">
-        <label htmlFor="weekSelect">Week:</label>
         {isSingleWeek ? (
-          <span id="weekSelect" className="week-static">
-            {seasonWeeks[0]}
-          </span>
+          <>
+            {/* No <label htmlFor> here — <label> must point at a labelable
+                form control (input/select/textarea/etc.), not at a <span>.
+                Use a styled span for the visual "Week:" prefix instead. */}
+            <span className="week-label">Week:</span>
+            <span className="week-static">{seasonWeeks[0]}</span>
+          </>
         ) : (
-          <select
-            id="weekSelect"
-            value={selectedWeek ?? ""}
-            onChange={(e) => setSelectedWeek(e.target.value ? Number(e.target.value) : null)}
-            disabled={!hasWeeks}
-          >
-            {allowAll && <option value="">All Weeks</option>}
-            {hasWeeks && seasonWeeks.map((week) => (
-              <option key={week} value={week}>
-                Week {week}
-              </option>
-            ))}
-          </select>
+          <>
+            <label htmlFor="weekSelect">Week:</label>
+            <select
+              id="weekSelect"
+              value={selectedWeek ?? ""}
+              onChange={(e) => setSelectedWeek(e.target.value ? Number(e.target.value) : null)}
+              disabled={!hasWeeks}
+            >
+              {allowAll && <option value="">All Weeks</option>}
+              {hasWeeks && seasonWeeks.map((week) => (
+                <option key={week} value={week}>
+                  Week {week}
+                </option>
+              ))}
+            </select>
+          </>
         )}
       </div>
     </div>

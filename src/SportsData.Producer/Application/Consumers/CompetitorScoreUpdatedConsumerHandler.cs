@@ -64,11 +64,29 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
 
         if (contest.HomeTeamFranchiseSeasonId == evt.FranchiseSeasonId)
         {
+            // At-least-once redelivery short-circuit. The upstream score-doc
+            // processor only publishes when the persisted score actually
+            // changes, but MassTransit / broker retry can still re-deliver the
+            // same event. Without this guard, every redelivery would re-stamp
+            // ModifiedUtc and re-broadcast ContestScoreChanged to every
+            // SignalR-connected client.
+            if (contest.HomeScore == evt.Score)
+            {
+                _logger.LogInformation("HomeScore already current — redelivery no-op.");
+                return;
+            }
+
             contest.HomeScore = evt.Score;
             _logger.LogInformation("Updated HomeScore. HomeScore={HomeScore}", evt.Score);
         }
         else if (contest.AwayTeamFranchiseSeasonId == evt.FranchiseSeasonId)
         {
+            if (contest.AwayScore == evt.Score)
+            {
+                _logger.LogInformation("AwayScore already current — redelivery no-op.");
+                return;
+            }
+
             contest.AwayScore = evt.Score;
             _logger.LogInformation("Updated AwayScore. AwayScore={AwayScore}", evt.Score);
         }

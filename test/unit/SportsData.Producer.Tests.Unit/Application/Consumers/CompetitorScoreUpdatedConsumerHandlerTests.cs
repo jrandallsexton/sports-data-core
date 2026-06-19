@@ -106,6 +106,29 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
     }
 
     [Fact]
+    public async Task Process_WhenScoreUnchanged_NoOpsAndDoesNotPublish()
+    {
+        // At-least-once redelivery: the upstream score-doc processor only
+        // publishes when the persisted score actually changes, but MassTransit /
+        // broker retry can still re-deliver the same event. Without the guard,
+        // each redelivery would re-stamp ModifiedUtc and re-broadcast
+        // ContestScoreChanged to SignalR clients.
+        var contestId = Guid.NewGuid();
+        await SeedContest(contestId, homeScore: 14);
+
+        var evt = BuildEvent(contestId, franchiseSeasonId: HomeFranchiseSeasonId, score: 14);
+
+        await _sut.Process(evt);
+
+        var saved = await FootballDataContext.Contests.AsNoTracking().FirstAsync(c => c.Id == contestId);
+        saved.HomeScore.Should().Be(14);
+        saved.ModifiedUtc.Should().BeNull();
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestScoreChanged>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Process_StampsModifiedByWithCorrelationIdAndModifiedUtc()
     {
         var contestId = Guid.NewGuid();
@@ -154,7 +177,7 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
                 Times.Once);
     }
 
-    private async Task SeedContest(Guid contestId)
+    private async Task SeedContest(Guid contestId, int? homeScore = null, int? awayScore = null)
     {
         FootballDataContext.Contests.Add(new FootballContest
         {
@@ -165,7 +188,9 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
             Sport = Sport.FootballNcaa,
             SeasonYear = 2026,
             HomeTeamFranchiseSeasonId = HomeFranchiseSeasonId,
-            AwayTeamFranchiseSeasonId = AwayFranchiseSeasonId
+            AwayTeamFranchiseSeasonId = AwayFranchiseSeasonId,
+            HomeScore = homeScore,
+            AwayScore = awayScore
         });
         await FootballDataContext.SaveChangesAsync();
     }

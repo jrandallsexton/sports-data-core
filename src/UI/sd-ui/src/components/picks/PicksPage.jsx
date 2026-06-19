@@ -1,6 +1,6 @@
 import "./PicksPage.css";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useUserDto } from "../../contexts/UserContext";
 import { useLeagueContext } from "../../contexts/LeagueContext";
@@ -13,7 +13,7 @@ import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx";
 
 function PicksPage() {
-  const { userDto, loading: userLoading } = useUserDto();
+  const { userDto, loading: userLoading, refreshUserDto } = useUserDto();
   const {
     selectedLeagueId: globalLeagueId,
     setSelectedLeagueId: setGlobalLeagueId,
@@ -84,6 +84,28 @@ function PicksPage() {
   // ascending list). Custom-window leagues may only have a single entry.
   const latestSeasonWeek =
     seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
+
+  // Recovery for newly-created leagues. League creation publishes
+  // PickemGroupCreated via the outbox; the consumer that populates
+  // seasonWeeks runs asynchronously. LeagueCreatePage's refreshUserDto
+  // can fire before the consumer finishes, so the new league lands in
+  // userDto.leagues with an empty seasonWeeks array. By the time the
+  // user clicks "Make Your Picks" the consumer has typically finished
+  // — but the stale userDto blocks the fetch effects below. Re-fetch
+  // userDto once per leagueId when we see the gap. Guarded with a ref
+  // so a genuinely-still-in-flight consumer doesn't trigger a refresh
+  // loop; the next league navigation resets and tries again.
+  const weeksRefreshAttemptedFor = useRef(null);
+  useEffect(() => {
+    if (!selectedLeague) return;
+    if (seasonWeeks.length > 0) {
+      weeksRefreshAttemptedFor.current = null;
+      return;
+    }
+    if (weeksRefreshAttemptedFor.current === selectedLeague.id) return;
+    weeksRefreshAttemptedFor.current = selectedLeague.id;
+    refreshUserDto();
+  }, [selectedLeague, seasonWeeks.length, refreshUserDto]);
 
   // Get contest updates for live game data
   const { getContestUpdate, _instanceId: contestCtxInstanceId } = useContestUpdates();

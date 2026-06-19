@@ -156,3 +156,15 @@
   background-color: var(--bg-card);
   color: var(--text-primary);
 }
+
+/* Single-week leagues render the week as static text rather than a
+   one-option dropdown. Match the select's vertical rhythm so the
+   League selector and the week value line up on the same baseline. */
+.league-week-selector .week-static {
+  font-size: 1rem;
+  color: var(--text-primary);
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+}

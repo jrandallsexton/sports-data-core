@@ -12,6 +12,13 @@ function LeagueWeekSelector({
 }) {
   const hasWeeks = Array.isArray(seasonWeeks) && seasonWeeks.length > 0;
 
+  // Custom-window leagues (e.g. a one-week pool) only ever have a single
+  // entry — a dropdown there implies a selection to make when there isn't
+  // one. Render the value as static text instead so it stays informational.
+  // allowAll is the exception (admin view): even with one week, "All
+  // Weeks" is a meaningful alternative, so keep the dropdown.
+  const isSingleWeek = !allowAll && hasWeeks && seasonWeeks.length === 1;
+
   return (
     <div className="league-week-selector">
       {/* League Select */}
@@ -27,19 +34,25 @@ function LeagueWeekSelector({
       {/* Week Select */}
       <div className="selector-block">
         <label htmlFor="weekSelect">Week:</label>
-        <select
-          id="weekSelect"
-          value={selectedWeek ?? ""}
-          onChange={(e) => setSelectedWeek(e.target.value ? Number(e.target.value) : null)}
-          disabled={!hasWeeks}
-        >
-          {allowAll && <option value="">All Weeks</option>}
-          {hasWeeks && seasonWeeks.map((week) => (
-            <option key={week} value={week}>
-              Week {week}
-            </option>
-          ))}
-        </select>
+        {isSingleWeek ? (
+          <span id="weekSelect" className="week-static">
+            {seasonWeeks[0]}
+          </span>
+        ) : (
+          <select
+            id="weekSelect"
+            value={selectedWeek ?? ""}
+            onChange={(e) => setSelectedWeek(e.target.value ? Number(e.target.value) : null)}
+            disabled={!hasWeeks}
+          >
+            {allowAll && <option value="">All Weeks</option>}
+            {hasWeeks && seasonWeeks.map((week) => (
+              <option key={week} value={week}>
+                Week {week}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
     </div>
   );

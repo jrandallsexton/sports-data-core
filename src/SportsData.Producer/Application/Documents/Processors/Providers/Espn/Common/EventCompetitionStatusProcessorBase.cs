@@ -4,6 +4,8 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Eventing.Events.Documents;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
@@ -103,8 +105,8 @@ public abstract class EventCompetitionStatusProcessorBase<TDataContext> : Docume
         if (publishStatusChanged)
         {
             _logger.LogInformation(
-                "Contest status changed, publishing event. ContestId={ContestId}, CompetitionId={CompId}, NewStatus={Status}",
-                contestId, competitionId, newStatusTypeName);
+                "Contest status changed, publishing event. ContestId={ContestId}, CompetitionId={CompId}, OldStatus={OldStatus}, NewStatus={NewStatus}",
+                contestId, competitionId, existingStatusTypeName, newStatusTypeName);
 
             await _publishEndpoint.Publish(new ContestStatusChanged(
                 contestId,
@@ -122,18 +124,31 @@ public abstract class EventCompetitionStatusProcessorBase<TDataContext> : Docume
             ));
         }
 
-        // Defensive ContestCompleted fan-out. The streamer publishes
-        // this event at its STATUS_FINAL detection sites, but the
-        // streamer's publish can race ahead of the status row write —
-        // if the 30s-deferred enrichment runs before this processor
-        // persists STATUS_FINAL, enrichment short-circuits on the
-        // non-FINAL row and never re-fires. Publishing here, AFTER
-        // the row is definitely written, closes that gap. Consumer is
-        // idempotent (enrichment processor short-circuits on
-        // Contest.FinalizedUtc != null), so a duplicate fire alongside
-        // the streamer is harmless. No paired Event-document
-        // re-source — Provider has dedupe but a defensive cascade
-        // shouldn't risk a sourcing cycle.
+        // Defensive ContestCompleted fan-out + targeted per-competitor
+        // score-doc re-source. The streamer publishes ContestCompleted at
+        // its STATUS_FINAL detection sites, but the streamer's publish can
+        // race ahead of the status row write — if the 30s-deferred
+        // enrichment runs before this processor persists STATUS_FINAL,
+        // enrichment short-circuits on the non-FINAL row and never re-fires.
+        // Publishing here, AFTER the row is definitely written, closes that
+        // gap. Consumer is idempotent (enrichment processor short-circuits
+        // on Contest.FinalizedUtc != null), so a duplicate fire alongside
+        // the streamer is harmless.
+        //
+        // Score-doc re-source: enrichment reads MAX(CompetitionCompetitor-
+        // Scores.Value), so if ESPN's feed hasn't propagated the deciding
+        // inning into CCS by the time enrichment runs, we finalize with
+        // stale scores (the 2026-06-20 White Sox @ Tigers 2-2 corruption
+        // shape, repaired by the audit job but better prevented). Publish a
+        // targeted DocumentRequested per competitor score URI here so
+        // Provider re-fetches from ESPN immediately. Provider's
+        // ShouldBypassCache returns true for current-season requests, and
+        // the content-hash dedupe in ResourceIndexItemProcessor naturally
+        // suppresses the downstream publish if the score actually hasn't
+        // changed — so the worst case is two ESPN fetches per game-end
+        // (negligible against the rate-limit envelope). Restricted to the
+        // score docs only — NOT a re-source of the Event doc — to avoid a
+        // status → event → status sourcing cycle.
         if (newStatusIsFinal && !existedAsFinal)
         {
             _logger.LogInformation(
@@ -150,6 +165,8 @@ public abstract class EventCompetitionStatusProcessorBase<TDataContext> : Docume
                 CorrelationId: command.CorrelationId,
                 CausationId: CausationId.Producer.EventCompetitionStatusDocumentProcessor
             ));
+
+            await RequestCompetitorScoreResourceAsync(competitionId, command);
         }
 
         // CancelledUtc lifecycle: stamp on first observation of
@@ -176,6 +193,101 @@ public abstract class EventCompetitionStatusProcessorBase<TDataContext> : Docume
                         contestId, newStatusTypeName);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// On STATUS_FINAL transition, publish a DocumentRequested for each
+    /// per-competitor score URI so Provider re-fetches from ESPN before the
+    /// 30s-deferred enrichment runs. Without this, enrichment frequently
+    /// reads stale CCS values (the corruption shape PR #431 + the broader
+    /// MLB-tie guard ship after-the-fact, but better prevented).
+    ///
+    /// Loads CompetitionCompetitor.ExternalIds filtered to the Espn
+    /// provider — one round-trip — and derives the score URI from each
+    /// competitor's ref via EspnUriMapper. If a competitor has no Espn
+    /// external id (shouldn't happen for ESPN-sourced games but worth
+    /// guarding), it's skipped with a warning.
+    /// </summary>
+    private async Task RequestCompetitorScoreResourceAsync(
+        Guid competitionId,
+        ProcessDocumentCommand command)
+    {
+        var competitorRefs = await _dataContext.CompetitionCompetitors
+            .AsNoTracking()
+            .Where(cc => cc.CompetitionId == competitionId)
+            .Select(cc => new
+            {
+                cc.Id,
+                EspnRef = cc.ExternalIds
+                    .Where(x => x.Provider == SourceDataProvider.Espn)
+                    .Select(x => x.SourceUrl)
+                    .FirstOrDefault()
+            })
+            .ToListAsync();
+
+        foreach (var competitor in competitorRefs)
+        {
+            if (string.IsNullOrWhiteSpace(competitor.EspnRef))
+            {
+                _logger.LogWarning(
+                    "On-final score-doc re-source skipped — no Espn external id. CompetitionId={CompId}, CompetitorId={CompetitorId}",
+                    competitionId, competitor.Id);
+                continue;
+            }
+
+            // TryCreate over `new Uri(...)` so a malformed stored ref
+            // doesn't tank the fan-out for the OTHER competitor in this
+            // loop (or bubble up and kill the surrounding document
+            // processor pass). Malformed URIs in the external-id store
+            // are non-retryable contract violations — log loudly so the
+            // bad row is fixable, skip individually, and let the other
+            // competitor's request go through.
+            if (!Uri.TryCreate(competitor.EspnRef, UriKind.Absolute, out var competitorRef))
+            {
+                _logger.LogError(
+                    "On-final score-doc re-source skipped — competitor external ref is not a valid absolute URI. CompetitionId={CompId}, CompetitorId={CompetitorId}, EspnRef={EspnRef}",
+                    competitionId, competitor.Id, competitor.EspnRef);
+                continue;
+            }
+
+            // Same per-competitor fault-isolation reasoning as the
+            // TryCreate guard above. The URI parses, but ESPN's expected
+            // /events/{id}/competitions/{id}/competitors/{id} shape might
+            // not hold if the stored ref was corrupted or pointed at the
+            // wrong resource — BuildCompetitionCompetitorRefFrom throws
+            // ArgumentException in that case. Log + skip so the other
+            // competitor's publish still goes out.
+            Uri scoreRef;
+            try
+            {
+                scoreRef = EspnUriMapper.CompetitionCompetitorRefToCompetitionCompetitorScoreRef(competitorRef);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "On-final score-doc re-source skipped — competitor external ref did not match the expected ESPN shape. CompetitionId={CompId}, CompetitorId={CompetitorId}, EspnRef={EspnRef}",
+                    competitionId, competitor.Id, competitor.EspnRef);
+                continue;
+            }
+
+            _logger.LogInformation(
+                "Publishing on-final score-doc re-source. CompetitionId={CompId}, CompetitorId={CompetitorId}, ScoreUri={ScoreUri}",
+                competitionId, competitor.Id, scoreRef);
+
+            await _publishEndpoint.Publish(new DocumentRequested(
+                Id: Guid.NewGuid().ToString(),
+                ParentId: competitor.Id.ToString(),
+                Uri: scoreRef,
+                Ref: null,
+                Sport: command.Sport,
+                SeasonYear: command.SeasonYear,
+                DocumentType: DocumentType.EventCompetitionCompetitorScore,
+                SourceDataProvider: SourceDataProvider.Espn,
+                CorrelationId: command.CorrelationId,
+                CausationId: CausationId.Producer.EventCompetitionStatusDocumentProcessor
+            ));
         }
     }
 }

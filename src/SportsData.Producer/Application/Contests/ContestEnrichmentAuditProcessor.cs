@@ -120,20 +120,21 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
             return;
         }
 
-        // MLB-specific 0-0 guard: extra innings until a side leads, so a
-        // 0-0 "final" can only mean bootstrap-only data hasn't been replaced
-        // by the canonical feed yet. Football is exempt: NFL hasn't had a
-        // 0-0 final since 1943 and NCAA OT rules guarantee a non-tie, so a
-        // football 0-0 audit candidate is effectively impossible to begin
-        // with (enrichment's D1 + D2 guards reject 0-0 too). Scoping this
-        // to MLB matches the underlying reasoning instead of relying on
-        // "essentially impossible" upstream.
+        // MLB-specific tie guard: extras run until a side leads at the end
+        // of an inning, so a tied "final" — whether 0-0 (bootstrap-only,
+        // feed hasn't sourced yet) or non-zero (feed cut off mid-game) —
+        // can only mean stale data. Football is exempt: NFL hasn't had a
+        // 0-0 final since 1943 and ties are otherwise legitimate; NCAA OT
+        // rules guarantee a non-tie. Scoping this to MLB matches the
+        // underlying reasoning. Originally just the 0-0 case; broadened to
+        // all ties after 2026-06-20 Chicago White Sox @ Detroit Tigers
+        // finalized 2-2 with null Winner.
         if (contest.Sport == Sport.BaseballMlb
-            && awayMaxScore.Value == 0 && homeMaxScore.Value == 0)
+            && awayMaxScore.Value == homeMaxScore.Value)
         {
             _logger.LogWarning(
-                "Audit deferred — MLB MAX competitor scores are 0-0 (canonical source still stale). ContestName={ContestName}",
-                contest.Name);
+                "Audit deferred — MLB MAX competitor scores are tied ({Score}-{Score}) (canonical source still stale). ContestName={ContestName}",
+                awayMaxScore.Value, homeMaxScore.Value, contest.Name);
             return;
         }
 

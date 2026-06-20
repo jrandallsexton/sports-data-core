@@ -152,6 +152,34 @@ public class ContestEnrichmentAuditProcessorTests
     }
 
     [Fact]
+    public async Task Process_WhenMlbMaxScoresAreNonZeroTie_DefersAndLeavesContestUntouched()
+    {
+        // Mid-game feed cut-off race — the canonical feed sourced through
+        // a few innings and stopped, so MAX(CCS) reads as a non-zero tie
+        // (e.g. the 2026-06-20 White Sox @ Tigers incident: MAX returned
+        // 2-2 because the feed only had the first two innings sourced).
+        // MLB cannot end tied in regulation, so the audit cannot verify a
+        // tied state and defers; next sweep retries once the feed lands
+        // the deciding inning.
+        var (contestId, _, away, home) = await SeedFinalizedContestAsync(
+            currentAway: 2, currentHome: 2,
+            currentWinner: null,
+            sport: Sport.BaseballMlb);
+        await SeedScoreAsync(away.Id, value: 2);
+        await SeedScoreAsync(home.Id, value: 2);
+
+        await _sut.Process(new AuditContestEnrichmentCommand(contestId, Guid.NewGuid()));
+
+        var contest = await FootballDataContext.Contests.AsNoTracking().FirstAsync(c => c.Id == contestId);
+        contest.FinalizedUtc.Should().NotBeNull();
+        contest.AuditedUtc.Should().BeNull();
+
+        Mocker.GetMock<IProvideBackgroundJobs>().Verify(
+            x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task Process_WhenNonMlbMaxScoresAreZeroZero_StampsAuditedUtc()
     {
         // Football is exempt from the MLB-specific 0-0 guard. A theoretical

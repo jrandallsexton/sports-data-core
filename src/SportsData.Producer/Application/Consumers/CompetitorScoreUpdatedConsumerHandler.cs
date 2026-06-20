@@ -117,8 +117,12 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
 
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "CompetitorScoreUpdatedConsumerHandler completed. HomeScore={HomeScore}, AwayScore={AwayScore}",
-            contest.HomeScore, contest.AwayScore);
+        // Completion marker only. The event carries one team's score; the
+        // mid-flow "Updated HomeScore. HomeScore=X" / "Updated AwayScore.
+        // AwayScore=X" log line above already records which side changed
+        // and to what value. Including contest.HomeScore + contest.AwayScore
+        // here implied both sides were updated — leave the contest-wide
+        // scoreboard out of this log to avoid the misread.
+        _logger.LogInformation("CompetitorScoreUpdatedConsumerHandler completed.");
     }
 }

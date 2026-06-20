@@ -37,17 +37,21 @@ time they boot.
 using (var scope = app.Services.CreateScope())
 {
     var appServices = scope.ServiceProvider;
+
     switch (mode)
     {
         case Sport.GolfPga:
-            await appServices.GetRequiredService<GolfDataContext>().Database.MigrateAsync();
+            var golfContext = appServices.GetRequiredService<GolfDataContext>();
+            await golfContext.Database.MigrateAsync();
             break;
         case Sport.FootballNcaa:
         case Sport.FootballNfl:
-            await appServices.GetRequiredService<FootballDataContext>().Database.MigrateAsync();
+            var context = appServices.GetRequiredService<FootballDataContext>();
+            await context.Database.MigrateAsync();
             break;
         case Sport.BaseballMlb:
-            await appServices.GetRequiredService<BaseballDataContext>().Database.MigrateAsync();
+            var baseballContext = appServices.GetRequiredService<BaseballDataContext>();
+            await baseballContext.Database.MigrateAsync();
             break;
     }
 }
@@ -190,8 +194,8 @@ This is risk-free: the worst case is the Job runs successfully and pods
 - Pods now boot with the schema-assert path instead of `MigrateAsync`.
 - The lock-contention symptom disappears here.
 
-Can be done per-service (Api first, then Provider, then Producer) so
-the riskiest one (Producer, the most pods) is last.
+The cut-over can be done per-service (Api first, then Provider, then
+Producer) so the riskiest one (Producer, the most pods) is last.
 
 ### Phase 3 — Remove the dead code
 

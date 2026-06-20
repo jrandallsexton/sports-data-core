@@ -236,7 +236,21 @@ public abstract class EventCompetitionStatusProcessorBase<TDataContext> : Docume
                 continue;
             }
 
-            var competitorRef = new Uri(competitor.EspnRef);
+            // TryCreate over `new Uri(...)` so a malformed stored ref
+            // doesn't tank the fan-out for the OTHER competitor in this
+            // loop (or bubble up and kill the surrounding document
+            // processor pass). Malformed URIs in the external-id store
+            // are non-retryable contract violations — log loudly so the
+            // bad row is fixable, skip individually, and let the other
+            // competitor's request go through.
+            if (!Uri.TryCreate(competitor.EspnRef, UriKind.Absolute, out var competitorRef))
+            {
+                _logger.LogError(
+                    "On-final score-doc re-source skipped — competitor external ref is not a valid absolute URI. CompetitionId={CompId}, CompetitorId={CompetitorId}, EspnRef={EspnRef}",
+                    competitionId, competitor.Id, competitor.EspnRef);
+                continue;
+            }
+
             var scoreRef = EspnUriMapper.CompetitionCompetitorRefToCompetitionCompetitorScoreRef(competitorRef);
 
             _logger.LogInformation(

@@ -108,11 +108,14 @@ public static class EspnUriMapper
         if (competitionCompetitorRef is null)
             throw new ArgumentNullException(nameof(competitionCompetitorRef));
 
-        // Strip any existing query string and tail segments past the
-        // competitor id, then append /score. ESPN's URL structure for
-        // competitor scores is consistent across sports.
-        var path = competitionCompetitorRef.GetLeftPart(UriPartial.Path).TrimEnd('/');
-        return new Uri($"{path}/score");
+        // Normalize to the competitor root first — strips query string AND
+        // any tail segments past /competitors/{id} (e.g. /statistics, /score
+        // itself, /linescores). Without this, calling with a deeper URL
+        // would produce nonsense like .../competitors/29/statistics/score.
+        // Then append /score. ESPN's URL structure for competitor scores
+        // is consistent across sports.
+        var competitorRoot = BuildCompetitionCompetitorRefFrom(competitionCompetitorRef, nameof(competitionCompetitorRef));
+        return new Uri($"{competitorRoot.AbsoluteUri.TrimEnd('/')}/score");
     }
 
     public static Uri CompetitionLeadersRefToCompetitionRef(Uri competitionLeadersRef)

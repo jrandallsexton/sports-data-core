@@ -417,14 +417,24 @@ public abstract class EventDocumentProcessorBase<TDataContext> : DocumentProcess
 
         if (DateTime.TryParse(dto.Date, out var startDateTime))
         {
-            _logger.LogInformation(
-                "Updating Contest StartDateUtc. ContestId={ContestId}, OldDate={OldDate}, NewDate={NewDate}",
-                contest.Id,
-                contest.StartDateUtc,
-                startDateTime.ToUniversalTime());
-
-            contest.StartDateUtc = DateTime.Parse(dto.Date).ToUniversalTime();
-            await _dataContext.SaveChangesAsync();
+            // Gate the log + write on an actual change. ESPN re-publishes
+            // the Event document frequently with the same date; without
+            // this guard every republish emitted a misleading "Updating
+            // StartDateUtc" line where OldDate == NewDate, and EF rode the
+            // no-op write through to a SaveChangesAsync round-trip. The
+            // outer SaveChangesAsync at the end of ProcessUpdate already
+            // commits any genuine change alongside the child-document
+            // publishes — no need for the inner save here.
+            var newStartUtc = startDateTime.ToUniversalTime();
+            if (contest.StartDateUtc != newStartUtc)
+            {
+                _logger.LogInformation(
+                    "Updating Contest StartDateUtc. ContestId={ContestId}, OldDate={OldDate}, NewDate={NewDate}",
+                    contest.Id,
+                    contest.StartDateUtc,
+                    newStartUtc);
+                contest.StartDateUtc = newStartUtc;
+            }
         }
 
         _logger.LogInformation(

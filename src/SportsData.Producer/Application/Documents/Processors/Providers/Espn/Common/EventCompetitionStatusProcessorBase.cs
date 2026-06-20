@@ -103,8 +103,8 @@ public abstract class EventCompetitionStatusProcessorBase<TDataContext> : Docume
         if (publishStatusChanged)
         {
             _logger.LogInformation(
-                "Contest status changed, publishing event. ContestId={ContestId}, CompetitionId={CompId}, NewStatus={Status}",
-                contestId, competitionId, newStatusTypeName);
+                "Contest status changed, publishing event. ContestId={ContestId}, CompetitionId={CompId}, OldStatus={OldStatus}, NewStatus={NewStatus}",
+                contestId, competitionId, existingStatusTypeName, newStatusTypeName);
 
             await _publishEndpoint.Publish(new ContestStatusChanged(
                 contestId,

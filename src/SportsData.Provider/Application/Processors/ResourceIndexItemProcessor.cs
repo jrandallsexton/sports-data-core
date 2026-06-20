@@ -216,9 +216,25 @@ namespace SportsData.Provider.Application.Processors
                             if (contentHash == dbItem.LastPublishedContentHash &&
                                 IsWithinPublishCooldown(dbItem.LastPublishedUtc))
                             {
+                                // Surface enough timing context that "why
+                                // didn't Producer get this re-source?"
+                                // questions are answerable from Seq alone:
+                                // age of the prior publish + remaining
+                                // cooldown window. Both stored as numbers
+                                // (not durations) so Seq filter expressions
+                                // like CooldownRemainingMinutes > 30 work.
+                                var lastPublishedAgeMinutes = dbItem.LastPublishedUtc.HasValue
+                                    ? (_dateTimeProvider.UtcNow() - dbItem.LastPublishedUtc.Value).TotalMinutes
+                                    : (double?)null;
+                                var cooldownRemainingMinutes = GetCooldownRemainingMinutes(dbItem.LastPublishedUtc);
+
                                 _logger.LogInformation(
-                                    "ESPN {CacheResult}. Content unchanged and within cooldown, skipping. Url={Url}",
-                                    "HIT-SUPPRESSED", dbItem.Uri.OriginalString);
+                                    "ESPN {CacheResult}. Content unchanged and within cooldown, skipping. " +
+                                    "Url={Url}, LastPublishedAgeMinutes={LastPublishedAgeMinutes:F1}, CooldownRemainingMinutes={CooldownRemainingMinutes:F1}",
+                                    "HIT-SUPPRESSED",
+                                    dbItem.Uri.OriginalString,
+                                    lastPublishedAgeMinutes,
+                                    cooldownRemainingMinutes);
                                 return;
                             }
                         }
@@ -500,6 +516,34 @@ namespace SportsData.Provider.Application.Processors
                 return false; // cooldown disabled — always allow re-publish
 
             return (_dateTimeProvider.UtcNow() - lastPublishedUtc.Value).TotalMinutes < cooldownMinutes;
+        }
+
+        /// <summary>
+        /// Minutes remaining in the publish-suppression window for a
+        /// document with the given LastPublishedUtc. Caller has already
+        /// verified <see cref="IsWithinPublishCooldown"/> returned true.
+        /// Returns null when the cooldown is disabled, misconfigured, or
+        /// the document has never been published — the suppression
+        /// log site uses null to mean "not applicable" rather than zero,
+        /// so Seq filter expressions like
+        /// <c>CooldownRemainingMinutes &gt; 30</c> don't false-match
+        /// disabled-cooldown rows.
+        /// </summary>
+        private double? GetCooldownRemainingMinutes(DateTime? lastPublishedUtc)
+        {
+            if (!lastPublishedUtc.HasValue)
+                return null;
+
+            var cooldownStr = _commonConfig["SportsData.Provider:DocumentPublishCooldownMinutes"];
+            if (string.IsNullOrWhiteSpace(cooldownStr) || !int.TryParse(cooldownStr, out var cooldownMinutes))
+                return null;
+
+            if (cooldownMinutes <= 0)
+                return null;
+
+            var ageMinutes = (_dateTimeProvider.UtcNow() - lastPublishedUtc.Value).TotalMinutes;
+            var remaining = cooldownMinutes - ageMinutes;
+            return remaining > 0 ? remaining : 0;
         }
 
         private async Task UpdateLastPublishedStateAsync(string collectionName, string urlHash, string json)

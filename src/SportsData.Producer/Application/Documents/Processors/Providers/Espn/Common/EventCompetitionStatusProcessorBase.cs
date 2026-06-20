@@ -251,7 +251,26 @@ public abstract class EventCompetitionStatusProcessorBase<TDataContext> : Docume
                 continue;
             }
 
-            var scoreRef = EspnUriMapper.CompetitionCompetitorRefToCompetitionCompetitorScoreRef(competitorRef);
+            // Same per-competitor fault-isolation reasoning as the
+            // TryCreate guard above. The URI parses, but ESPN's expected
+            // /events/{id}/competitions/{id}/competitors/{id} shape might
+            // not hold if the stored ref was corrupted or pointed at the
+            // wrong resource — BuildCompetitionCompetitorRefFrom throws
+            // ArgumentException in that case. Log + skip so the other
+            // competitor's publish still goes out.
+            Uri scoreRef;
+            try
+            {
+                scoreRef = EspnUriMapper.CompetitionCompetitorRefToCompetitionCompetitorScoreRef(competitorRef);
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "On-final score-doc re-source skipped — competitor external ref did not match the expected ESPN shape. CompetitionId={CompId}, CompetitorId={CompetitorId}, EspnRef={EspnRef}",
+                    competitionId, competitor.Id, competitor.EspnRef);
+                continue;
+            }
 
             _logger.LogInformation(
                 "Publishing on-final score-doc re-source. CompetitionId={CompId}, CompetitorId={CompetitorId}, ScoreUri={ScoreUri}",

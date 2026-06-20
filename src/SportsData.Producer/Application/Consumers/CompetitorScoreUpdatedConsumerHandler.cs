@@ -76,8 +76,11 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
                 return;
             }
 
+            var previousHomeScore = contest.HomeScore;
             contest.HomeScore = evt.Score;
-            _logger.LogInformation("Updated HomeScore. HomeScore={HomeScore}", evt.Score);
+            _logger.LogInformation(
+                "Updated HomeScore. PreviousScore={PreviousScore}, NewScore={NewScore}",
+                previousHomeScore, evt.Score);
         }
         else if (contest.AwayTeamFranchiseSeasonId == evt.FranchiseSeasonId)
         {
@@ -87,8 +90,11 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
                 return;
             }
 
+            var previousAwayScore = contest.AwayScore;
             contest.AwayScore = evt.Score;
-            _logger.LogInformation("Updated AwayScore. AwayScore={AwayScore}", evt.Score);
+            _logger.LogInformation(
+                "Updated AwayScore. PreviousScore={PreviousScore}, NewScore={NewScore}",
+                previousAwayScore, evt.Score);
         }
         else
         {

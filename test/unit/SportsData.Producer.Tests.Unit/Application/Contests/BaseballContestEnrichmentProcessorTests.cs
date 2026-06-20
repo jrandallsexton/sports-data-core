@@ -347,8 +347,16 @@ public class BaseballContestEnrichmentProcessorTests
     }
 
     [Fact]
-    public async Task Process_WhenTie_DoesNotSetWinner()
+    public async Task Process_WhenMlbScoresAreNonZeroTie_DefersForCronRetry()
     {
+        // MLB cannot end tied — extras run until a side leads at the end of
+        // an inning. A non-zero tied "Final" (e.g. the 2026-06-20 White Sox
+        // @ Tigers incident: enrichment ran with MAX(CCS)=2-2 because the
+        // feed had only sourced through the early innings) means stale data,
+        // same root cause as the 0-0 case but with a non-bootstrap value.
+        // Defer rather than lock in a finalized tied contest with null
+        // Winner. Prior behavior here was "finalize tied with null winner",
+        // which was the corruption shape we're explicitly preventing.
         var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
 
         var competition = await _baseballDataContext.Competitions
@@ -359,18 +367,18 @@ public class BaseballContestEnrichmentProcessorTests
         var home = competition.Competitors.First(c => c.HomeAway == "home");
 
         _baseballDataContext.CompetitionCompetitorScores.AddRange(
-            CreateScore(away.Id, value: 5, sourceDescription: "Final"),
-            CreateScore(home.Id, value: 5, sourceDescription: "Final"));
+            CreateScore(away.Id, value: 2, sourceDescription: "feed"),
+            CreateScore(home.Id, value: 2, sourceDescription: "feed"));
         await _baseballDataContext.SaveChangesAsync();
 
         var command = new EnrichContestCommand(contestId, Guid.NewGuid());
         await _sut.Process(command);
 
         var contest = await _baseballDataContext.Contests.FindAsync(contestId);
-        contest!.AwayScore.Should().Be(5);
-        contest.HomeScore.Should().Be(5);
+        contest!.AwayScore.Should().BeNull();
+        contest.HomeScore.Should().BeNull();
         contest.WinnerFranchiseSeasonId.Should().BeNull();
-        contest.FinalizedUtc.Should().NotBeNull();
+        contest.FinalizedUtc.Should().BeNull();
     }
 
     #endregion

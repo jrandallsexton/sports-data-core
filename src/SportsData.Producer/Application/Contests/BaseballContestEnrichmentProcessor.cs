@@ -121,16 +121,22 @@ namespace SportsData.Producer.Application.Contests
                 return;
             }
 
-            // MLB games cannot end 0-0 in regulation — would proceed to extras
-            // until a side leads. A 0-0 result here means only the bootstrap
-            // rows exist (feed hasn't sourced yet) or genuinely-corrupt data;
-            // defer rather than lock in a finalized 0-0 contest with null
-            // Winner.
-            if (awayMaxScore.Value == 0 && homeMaxScore.Value == 0)
+            // MLB games cannot end tied in regulation — extras run until a
+            // side leads at the end of an inning. A tied result here means
+            // ESPN feed sourcing hasn't caught the deciding inning yet, or
+            // the row is genuinely corrupt. Defer rather than lock in a
+            // finalized tied contest with null Winner (the
+            // contest.AwayScore != contest.HomeScore branch below would be
+            // skipped, leaving WinnerFranchiseSeasonId unset). The
+            // statistically-negligible "officially-tied" cases (rain-
+            // shortened tie game, the historical 2002 All-Star Game) get
+            // deferred forever and surface via warning logs — acceptable
+            // cost vs. corrupting picks scoring for an entire league.
+            if (awayMaxScore.Value == homeMaxScore.Value)
             {
                 _logger.LogWarning(
-                    "MLB MAX competitor scores read as 0-0 for {ContestName} — implausible. Deferring enrichment.",
-                    contest.Name);
+                    "MLB MAX competitor scores are tied ({Score}-{Score}) for {ContestName} — implausible final. Deferring enrichment.",
+                    awayMaxScore.Value, homeMaxScore.Value, contest.Name);
                 return;
             }
 

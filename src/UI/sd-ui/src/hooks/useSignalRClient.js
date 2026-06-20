@@ -8,6 +8,7 @@ export default function useSignalRClient({
   leagueId,
   onPreviewCompleted,
   onContestStatusChanged,
+  onContestFinalized,
   onFootballPlayCompleted,
   onBaseballPlayCompleted,
 }) {
@@ -45,6 +46,15 @@ export default function useSignalRClient({
       connection.on("ContestStatusChanged", onContestStatusChanged);
     }
 
+    // ContestFinalized fires AFTER ContestStatusChanged(STATUS_FINAL) and
+    // carries the enriched result fields (winner, spread winner, over/under,
+    // final scores) that the status event can't. Without this handler the
+    // matchup card would sit on raw STATUS_FINAL (no cover line, no SU
+    // checkmark) until a page refresh re-fetched /ui/leagues/.../matchups.
+    if (onContestFinalized) {
+      connection.on("ContestFinalized", onContestFinalized);
+    }
+
     // Per-play merged events — sport-specific shapes carrying both the
     // play description and the scoreboard tick (period/clock/possession
     // for FB; inning/count/runners for MLB) in one message.
@@ -77,6 +87,7 @@ export default function useSignalRClient({
     leagueId,
     onPreviewCompleted,
     onContestStatusChanged,
+    onContestFinalized,
     onFootballPlayCompleted,
     onBaseballPlayCompleted,
   ]);

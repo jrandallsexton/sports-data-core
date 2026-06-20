@@ -143,6 +143,17 @@ function PicksPage() {
           statusDescription: liveUpdate.statusDescription ?? matchup.statusDescription,
           awayScore: liveUpdate.awayScore ?? matchup.awayScore,
           homeScore: liveUpdate.homeScore ?? matchup.homeScore,
+          // Enrichment-result fields land via handleContestFinalized.
+          // Pre-enrichment these are null on the matchups GET (the
+          // readiness contract documented in FinalScoreResult.jsx);
+          // the ContestFinalized SignalR broadcast fills them in
+          // without a refresh. Same nullish-fallback pattern as scores
+          // so a partial context state can't clobber a populated
+          // canonical field.
+          winnerFranchiseSeasonId: liveUpdate.winnerFranchiseSeasonId ?? matchup.winnerFranchiseSeasonId,
+          spreadWinnerFranchiseSeasonId: liveUpdate.spreadWinnerFranchiseSeasonId ?? matchup.spreadWinnerFranchiseSeasonId,
+          overUnderResult: liveUpdate.overUnderResult ?? matchup.overUnderResult,
+          completedUtc: liveUpdate.completedUtc ?? matchup.completedUtc,
           // Football-shaped
           period: liveUpdate.period ?? matchup.period,
           clock: liveUpdate.clock ?? matchup.clock,

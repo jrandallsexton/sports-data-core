@@ -180,12 +180,18 @@ namespace SportsData.Producer.Application.Contests
 
             await _bus.Publish(
                 new ContestFinalized(
-                    command.ContestId,
-                    null,
-                    contest.Sport,
-                    contest.SeasonYear,
-                    command.CorrelationId,
-                    Guid.NewGuid()));
+                    ContestId: command.ContestId,
+                    Ref: null,
+                    Sport: contest.Sport,
+                    SeasonYear: contest.SeasonYear,
+                    CorrelationId: command.CorrelationId,
+                    CausationId: Guid.NewGuid(),
+                    AwayScore: contest.AwayScore,
+                    HomeScore: contest.HomeScore,
+                    WinnerFranchiseSeasonId: contest.WinnerFranchiseSeasonId,
+                    SpreadWinnerFranchiseSeasonId: contest.SpreadWinnerFranchiseSeasonId,
+                    OverUnderResultRaw: (int)contest.OverUnder,
+                    CompletedUtc: contest.FinalizedUtc));
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(

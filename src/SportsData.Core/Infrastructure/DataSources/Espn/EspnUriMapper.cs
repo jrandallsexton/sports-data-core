@@ -93,6 +93,28 @@ public static class EspnUriMapper
         return BuildCompetitionCompetitorRefFrom(competitionCompetitorStatisticsRef, nameof(competitionCompetitorStatisticsRef));
     }
 
+    /// <summary>
+    /// Inverse of <see cref="CompetitionCompetitorScoreRefToCompetitionCompetitorRef"/>.
+    /// Used by the on-final score doc re-source path in
+    /// <c>EventCompetitionStatusProcessorBase.HandleStatusLifecycleAsync</c>:
+    /// the processor has the competitor ref loaded from
+    /// <c>CompetitionCompetitorExternalId.SourceUrl</c> and needs the per-
+    /// competitor score URI to publish a targeted <c>DocumentRequested</c>
+    /// that forces ESPN to expose the deciding-inning scores before the
+    /// 30s-deferred enrichment runs.
+    /// </summary>
+    public static Uri CompetitionCompetitorRefToCompetitionCompetitorScoreRef(Uri competitionCompetitorRef)
+    {
+        if (competitionCompetitorRef is null)
+            throw new ArgumentNullException(nameof(competitionCompetitorRef));
+
+        // Strip any existing query string and tail segments past the
+        // competitor id, then append /score. ESPN's URL structure for
+        // competitor scores is consistent across sports.
+        var path = competitionCompetitorRef.GetLeftPart(UriPartial.Path).TrimEnd('/');
+        return new Uri($"{path}/score");
+    }
+
     public static Uri CompetitionLeadersRefToCompetitionRef(Uri competitionLeadersRef)
     {
         if (competitionLeadersRef == null)

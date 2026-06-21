@@ -23,6 +23,8 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
 {
     private static readonly Guid SystemUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
 
+    private static readonly DateTime FixedNow = new(2024, 10, 15, 12, 0, 0, DateTimeKind.Utc);
+
     public GetMeQueryHandlerTests()
     {
         var apiConfig = new ApiConfig
@@ -33,6 +35,12 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         Mocker.GetMock<IOptions<ApiConfig>>()
             .Setup(x => x.Value)
             .Returns(apiConfig);
+
+        // Fixed "now" for the CurrentSeasonWeek projection. Tests that care
+        // about the field seed matchups relative to FixedNow.
+        Mocker.GetMock<IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(FixedNow);
     }
     [Fact]
     public async Task ExecuteAsync_ShouldReturnNotFound_WhenUserDoesNotExist()
@@ -266,6 +274,221 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         result.Value.Should().NotBeNull();
         result.Value.Leagues.Should().HaveCount(1);
         result.Value.Leagues.First().SeasonWeeks.Should().Equal(3, 5, 7);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReturnCurrentSeasonWeek_AsSmallestWeekWithUnstartedMatchup()
+    {
+        // Three weeks, each with one matchup. Week 3 is past, Week 5 is mid-window
+        // (already started), Week 7 is future. Expected CurrentSeasonWeek = 7 —
+        // the earliest week that still has an unstarted game from "now"'s vantage.
+        var userId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+
+        var user = new UserEntity
+        {
+            Id = userId,
+            FirebaseUid = "firebase-current-week",
+            Email = "currentweek@example.com",
+            DisplayName = "Current Week User",
+            SignInProvider = "password",
+            EmailVerified = false,
+            CreatedUtc = FixedNow.AddDays(-60),
+            LastLoginUtc = FixedNow
+        };
+
+        var group = new PickemGroup
+        {
+            Id = groupId,
+            Name = "Current Week League",
+            Sport = Sport.FootballNcaa,
+            League = League.NCAAF
+        };
+
+        var week3 = new PickemGroupWeek
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            SeasonYear = 2024,
+            SeasonWeek = 3,
+            SeasonWeekId = Guid.NewGuid(),
+            Group = group
+        };
+        var week5 = new PickemGroupWeek
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            SeasonYear = 2024,
+            SeasonWeek = 5,
+            SeasonWeekId = Guid.NewGuid(),
+            Group = group
+        };
+        var week7 = new PickemGroupWeek
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            SeasonYear = 2024,
+            SeasonWeek = 7,
+            SeasonWeekId = Guid.NewGuid(),
+            Group = group
+        };
+
+        var membership = new PickemGroupMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            PickemGroupId = groupId,
+            User = user,
+            Group = group
+        };
+
+        group.Weeks.Add(week3);
+        group.Weeks.Add(week5);
+        group.Weeks.Add(week7);
+        user.GroupMemberships.Add(membership);
+
+        await DataContext.Users.AddAsync(user);
+        await DataContext.PickemGroups.AddAsync(group);
+        await DataContext.PickemGroupWeeks.AddRangeAsync([week3, week5, week7]);
+        await DataContext.PickemGroupMembers.AddAsync(membership);
+
+        // One matchup per week, dated relative to FixedNow.
+        await DataContext.PickemGroupMatchups.AddRangeAsync([
+            new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                SeasonWeekId = week3.SeasonWeekId,
+                ContestId = Guid.NewGuid(),
+                StartDateUtc = FixedNow.AddDays(-21),
+                SeasonYear = 2024,
+                SeasonWeek = 3
+            },
+            new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                SeasonWeekId = week5.SeasonWeekId,
+                ContestId = Guid.NewGuid(),
+                StartDateUtc = FixedNow.AddHours(-2),
+                SeasonYear = 2024,
+                SeasonWeek = 5
+            },
+            new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                SeasonWeekId = week7.SeasonWeekId,
+                ContestId = Guid.NewGuid(),
+                StartDateUtc = FixedNow.AddDays(10),
+                SeasonYear = 2024,
+                SeasonWeek = 7
+            }
+        ]);
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetMeQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetMeQuery { UserId = userId });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Leagues.First().CurrentSeasonWeek.Should().Be(7);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldFallBackToMaxSeasonWeek_WhenAllMatchupsArePast()
+    {
+        // Season-over case — every matchup is in the past. CurrentSeasonWeek
+        // should land on MAX(SeasonWeek) (= 7) instead of null so the picks
+        // page has somewhere meaningful to display.
+        var userId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+
+        var user = new UserEntity
+        {
+            Id = userId,
+            FirebaseUid = "firebase-season-over",
+            Email = "seasonover@example.com",
+            DisplayName = "Season Over User",
+            SignInProvider = "password",
+            EmailVerified = false,
+            CreatedUtc = FixedNow.AddDays(-120),
+            LastLoginUtc = FixedNow
+        };
+
+        var group = new PickemGroup
+        {
+            Id = groupId,
+            Name = "Season Over League",
+            Sport = Sport.FootballNcaa,
+            League = League.NCAAF
+        };
+
+        var week3 = new PickemGroupWeek
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            SeasonYear = 2024,
+            SeasonWeek = 3,
+            SeasonWeekId = Guid.NewGuid(),
+            Group = group
+        };
+        var week7 = new PickemGroupWeek
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            SeasonYear = 2024,
+            SeasonWeek = 7,
+            SeasonWeekId = Guid.NewGuid(),
+            Group = group
+        };
+
+        var membership = new PickemGroupMember
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            PickemGroupId = groupId,
+            User = user,
+            Group = group
+        };
+
+        group.Weeks.Add(week3);
+        group.Weeks.Add(week7);
+        user.GroupMemberships.Add(membership);
+
+        await DataContext.Users.AddAsync(user);
+        await DataContext.PickemGroups.AddAsync(group);
+        await DataContext.PickemGroupWeeks.AddRangeAsync([week3, week7]);
+        await DataContext.PickemGroupMembers.AddAsync(membership);
+
+        await DataContext.PickemGroupMatchups.AddRangeAsync([
+            new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                SeasonWeekId = week3.SeasonWeekId,
+                ContestId = Guid.NewGuid(),
+                StartDateUtc = FixedNow.AddDays(-30),
+                SeasonYear = 2024,
+                SeasonWeek = 3
+            },
+            new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                SeasonWeekId = week7.SeasonWeekId,
+                ContestId = Guid.NewGuid(),
+                StartDateUtc = FixedNow.AddDays(-3),
+                SeasonYear = 2024,
+                SeasonWeek = 7
+            }
+        ]);
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetMeQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetMeQuery { UserId = userId });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Leagues.First().CurrentSeasonWeek.Should().Be(7);
     }
 
     [Fact]

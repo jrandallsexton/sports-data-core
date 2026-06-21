@@ -16,6 +16,7 @@ using SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests;
 using SportsData.Api.Application.Admin.Queries.GetMatchupForContest;
 using SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
 using SportsData.Api.Application.Admin.SignalRDebug;
+using SportsData.Api.Application.Admin.Commands.ReenrichContest;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
@@ -153,6 +154,39 @@ namespace SportsData.Api.Application.Admin
             var cmd = new ScorePicksCommand(contestId);
             _backgroundJobProvider.Enqueue<IScorePicks>(p => p.Process(cmd));
             return Accepted(new { cmd.CorrelationId });
+        }
+
+        /// <summary>
+        /// Admin re-enrichment path. Clears UserPick scoring fields for this
+        /// contest, then asks Producer to clear the derived/enriched fields on
+        /// its Contest row and re-invoke the enrichment processor synchronously.
+        /// Returns the CorrelationId Producer logged the work under so the
+        /// admin UI can surface it for Seq tracing.
+        ///
+        /// Manual recovery path for stuck WinnerFranchiseSeasonId /
+        /// SpreadWinnerFranchiseSeasonId — the case where the canonical
+        /// CompetitionCompetitorScores are correct but the derived fields are
+        /// wrong and the nightly audit hasn't reset them yet.
+        ///
+        /// Lives on the admin controller (AdminApiToken-gated) deliberately:
+        /// the operation rolls back UserPicks, so exposing it under the
+        /// general /ui/contest surface would let a logged-in non-admin
+        /// fire it (the UI's isAdmin check is presentational only — not a
+        /// trust boundary).
+        /// </summary>
+        [HttpPost]
+        [Route("contest/{contestId}/reenrich")]
+        public async Task<ActionResult<Guid>> ReenrichContest(
+            [FromRoute] Guid contestId,
+            [FromQuery] string sport = "football",
+            [FromQuery] string league = "ncaa",
+            [FromServices] IReenrichContestCommandHandler handler = default!,
+            CancellationToken cancellationToken = default)
+        {
+            var mode = ModeMapper.ResolveMode(sport, league);
+            var command = new ReenrichContestCommand { ContestId = contestId, Sport = mode };
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
         }
 
         [HttpPost]

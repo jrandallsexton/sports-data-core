@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useUserDto } from "../../contexts/UserContext";
-import toast from "react-hot-toast";
 import { useParams } from "react-router-dom";
 import apiWrapper from "../../api/apiWrapper";
 import "./ContestOverview.css";
@@ -12,6 +11,7 @@ import ContestOverviewWinProb from "./ContestOverviewWinProb";
 import ContestOverviewVideo from "./ContestOverviewVideo";
 import ContestOverviewInfo from "./ContestOverviewInfo";
 import ContestOverviewMetrics from "./ContestOverviewMetrics";
+import ContestOverviewAdmin from "./ContestOverviewAdmin";
 
 export default function ContestOverview() {
   const { sport, league, contestId } = useParams();
@@ -20,12 +20,6 @@ export default function ContestOverview() {
   const [error, setError] = useState(null);
   const { userDto } = useUserDto();
   const isAdmin = userDto?.isAdmin;
-  const [refreshing, setRefreshing] = useState(false);
-  const [refreshError, setRefreshError] = useState(null);
-  const [refreshingMedia, setRefreshingMedia] = useState(false);
-  const [refreshMediaError, setRefreshMediaError] = useState(null);
-  const [finalizing, setFinalizing] = useState(false);
-  const [finalizeError, setFinalizeError] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -50,45 +44,6 @@ export default function ContestOverview() {
   const { header, info, leaders, playLog, winProbability, homeMetrics, awayMetrics, mediaItems } = dto;
   const { homeTeam, awayTeam, quarterScores } = header;
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    setRefreshError(null);
-    try {
-      await apiWrapper.Contest.refresh(contestId, sport, league);
-      toast.success("Contest refresh request submitted.");
-    } catch (err) {
-      setRefreshError("Failed to refresh contest.");
-      toast.error("Failed to submit refresh request.");
-    }
-    setRefreshing(false);
-  };
-
-  const handleRefreshMedia = async () => {
-    setRefreshingMedia(true);
-    setRefreshMediaError(null);
-    try {
-      await apiWrapper.Contest.refreshMedia(contestId, sport, league);
-      toast.success("Media refresh request submitted.");
-    } catch (err) {
-      setRefreshMediaError("Failed to refresh media.");
-      toast.error("Failed to submit media refresh request.");
-    }
-    setRefreshingMedia(false);
-  };
-
-  const handleFinalize = async () => {
-    setFinalizing(true);
-    setFinalizeError(null);
-    try {
-      await apiWrapper.Contest.finalize(contestId, sport, league);
-      toast.success("Finalize contest request submitted.");
-    } catch (err) {
-      setFinalizeError("Failed to finalize contest.");
-      toast.error("Failed to submit finalize request.");
-    }
-    setFinalizing(false);
-  };
-
   return (
     <div className="contest-overview-container">
       <ContestOverviewHeader homeTeam={homeTeam} awayTeam={awayTeam} quarterScores={quarterScores} seasonYear={header.seasonYear} sport={sport} league={league} status={header.statusDescription ?? header.status} />
@@ -102,42 +57,17 @@ export default function ContestOverview() {
           {/* Win probability moved up until TeamStats is available */}
           <ContestOverviewWinProb winProbability={winProbability} homeTeam={homeTeam} awayTeam={awayTeam} sport={sport} />
           <ContestOverviewMetrics homeMetrics={homeMetrics} awayMetrics={awayMetrics} homeName={homeTeam?.displayName} awayName={awayTeam?.displayName} />
+          {/* Admin section slots into the second column immediately after
+              Metrics. Hidden from non-admins via the isAdmin gate. */}
+          {isAdmin && (
+            <ContestOverviewAdmin contestId={contestId} sport={sport} league={league} />
+          )}
           <ContestOverviewInfo info={info} />
         </div>
         <div className="contest-overview-col">
           <ContestOverviewPlaylog playLog={playLog} sport={sport} contestId={contestId} league={league} />
         </div>
       </div>
-      {isAdmin && (
-        <div style={{ marginTop: 32, textAlign: "center" }}>
-          <button
-            onClick={handleRefresh}
-            disabled={refreshing}
-            style={{ padding: "10px 24px", fontSize: 16, fontWeight: 600, borderRadius: 6, background: "#23272f", color: "#fff", border: "none", cursor: "pointer" }}
-          >
-            {refreshing ? "Refreshing..." : "Refresh Contest"}
-          </button>
-          {refreshError && <div style={{ color: "#d32f2f", marginTop: 8 }}>{refreshError}</div>}
-          
-          <button
-            onClick={handleRefreshMedia}
-            disabled={refreshingMedia}
-            style={{ padding: "10px 24px", fontSize: 16, fontWeight: 600, borderRadius: 6, background: "#23272f", color: "#fff", border: "none", cursor: "pointer", marginTop: 16 }}
-          >
-            {refreshingMedia ? "Refreshing..." : "Refresh Media"}
-          </button>
-          {refreshMediaError && <div style={{ color: "#d32f2f", marginTop: 8 }}>{refreshMediaError}</div>}
-
-          <button
-            onClick={handleFinalize}
-            disabled={finalizing}
-            style={{ padding: "10px 24px", fontSize: 16, fontWeight: 600, borderRadius: 6, background: "#23272f", color: "#fff", border: "none", cursor: "pointer", marginTop: 16 }}
-          >
-            {finalizing ? "Finalizing..." : "Finalize Contest"}
-          </button>
-          {finalizeError && <div style={{ color: "#d32f2f", marginTop: 8 }}>{finalizeError}</div>}
-        </div>
-      )}
     </div>
   );
 }

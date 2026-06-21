@@ -31,6 +31,7 @@ using SportsData.Api.Application.Venues.Queries.GetVenues;
 using SportsData.Api.Application.Venues.Queries.GetVenueById;
 using SportsData.Api.Application.UI.Conferences.Queries.GetConferenceNamesAndSlugs;
 using SportsData.Api.Infrastructure.Refs;
+using SportsData.Api.Application.Admin.Commands.ReenrichContest;
 using SportsData.Api.Application.UI.Contest.Commands.FinalizeContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContest;
 using SportsData.Api.Application.UI.Contest.Commands.RefreshContestMedia;
@@ -125,6 +126,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IBackfillLeagueScoresCommandHandler, BackfillLeagueScoresCommandHandler>();
             services.AddScoped<IGenerateGameRecapCommandHandler, GenerateGameRecapCommandHandler>();
             services.AddScoped<IGenerateLoadTestCommandHandler, GenerateLoadTestCommandHandler>();
+            services.AddScoped<IReenrichContestCommandHandler, ReenrichContestCommandHandler>();
             services.AddScoped<IRefreshAiExistenceCommandHandler, RefreshAiExistenceCommandHandler>();
             services.AddScoped<ISendTestPushNotificationCommandHandler, SendTestPushNotificationCommandHandler>();
             services.AddScoped<IUpsertMatchupPreviewCommandHandler, UpsertMatchupPreviewCommandHandler>();

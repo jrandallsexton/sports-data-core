@@ -33,6 +33,9 @@ export function useSignalRClient(): void {
   // store, so these selector subscriptions don't cause the effect below
   // to tear down + reconnect on every render.
   const handleStatusUpdate = useContestUpdatesStore((s) => s.handleStatusUpdate);
+  const handleContestFinalized = useContestUpdatesStore(
+    (s) => s.handleContestFinalized,
+  );
   const handleFootballPlayCompleted = useContestUpdatesStore(
     (s) => s.handleFootballPlayCompleted,
   );
@@ -59,6 +62,12 @@ export function useSignalRClient(): void {
     });
 
     connection.on('ContestStatusChanged', handleStatusUpdate);
+    // ContestFinalized fires AFTER ContestStatusChanged(STATUS_FINAL) and
+    // carries the enriched result fields (winner, spread winner, over/
+    // under, final scores) that the status event can't. Without this
+    // handler the matchup card would sit on raw STATUS_FINAL (no cover
+    // line, no SU checkmark) until the user pulls to refresh.
+    connection.on('ContestFinalized', handleContestFinalized);
     connection.on('FootballPlayCompleted', handleFootballPlayCompleted);
     connection.on('BaseballPlayCompleted', handleBaseballPlayCompleted);
 
@@ -101,6 +110,7 @@ export function useSignalRClient(): void {
     };
   }, [
     handleStatusUpdate,
+    handleContestFinalized,
     handleFootballPlayCompleted,
     handleBaseballPlayCompleted,
   ]);

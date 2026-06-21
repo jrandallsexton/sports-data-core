@@ -110,12 +110,13 @@ describe('useSignalRClient', () => {
     jest.restoreAllMocks();
   });
 
-  it('registers handlers for the three SignalR events', async () => {
+  it('registers handlers for the four SignalR events', async () => {
     render(<HookHarness />);
     // Allow the start() promise to resolve.
     await act(async () => { await Promise.resolve(); });
 
     expect(mockConnection.on).toHaveBeenCalledWith('ContestStatusChanged', expect.any(Function));
+    expect(mockConnection.on).toHaveBeenCalledWith('ContestFinalized', expect.any(Function));
     expect(mockConnection.on).toHaveBeenCalledWith('FootballPlayCompleted', expect.any(Function));
     expect(mockConnection.on).toHaveBeenCalledWith('BaseballPlayCompleted', expect.any(Function));
     expect(mockConnection.start).toHaveBeenCalledTimes(1);
@@ -131,6 +132,38 @@ describe('useSignalRClient', () => {
     });
 
     expect(useContestUpdatesStore.getState().contests[cid]?.status).toBe('STATUS_IN_PROGRESS');
+  });
+
+  it('dispatches incoming ContestFinalized into the store with enriched fields', async () => {
+    render(<HookHarness />);
+    await act(async () => { await Promise.resolve(); });
+
+    const cid = '00000000-0000-0000-0000-000000000def';
+    const winnerId = '11111111-1111-1111-1111-111111111111';
+    const spreadWinnerId = '22222222-2222-2222-2222-222222222222';
+
+    act(() => {
+      mockConnection.__invoke('ContestFinalized', {
+        contestId: cid,
+        awayScore: 1,
+        homeScore: 4,
+        winnerFranchiseSeasonId: winnerId,
+        spreadWinnerFranchiseSeasonId: spreadWinnerId,
+        overUnderResultRaw: 1, // Over
+        completedUtc: '2026-06-20T22:30:00Z',
+      });
+    });
+
+    const record = useContestUpdatesStore.getState().contests[cid];
+    expect(record?.status).toBe('STATUS_FINAL');
+    expect(record?.statusDescription).toBe('Final');
+    expect(record?.awayScore).toBe(1);
+    expect(record?.homeScore).toBe(4);
+    expect(record?.winnerFranchiseSeasonId).toBe(winnerId);
+    expect(record?.spreadWinnerFranchiseSeasonId).toBe(spreadWinnerId);
+    // Wire-format translation: int 1 → "Over" string for FinalScoreResult.
+    expect(record?.overUnderResult).toBe('Over');
+    expect(record?.completedUtc).toBe('2026-06-20T22:30:00Z');
   });
 
   it('stops the connection when AppState transitions to background', async () => {

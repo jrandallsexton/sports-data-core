@@ -205,6 +205,86 @@ describe('contestUpdatesStore', () => {
     });
   });
 
+  describe('handleContestFinalized', () => {
+    const finalizedPayload = (overrides?: Partial<{
+      contestId: string;
+      awayScore: number | null;
+      homeScore: number | null;
+      winnerFranchiseSeasonId: string | null;
+      spreadWinnerFranchiseSeasonId: string | null;
+      overUnderResultRaw: number | null;
+      completedUtc: string | null;
+    }>) => ({
+      contestId: CID,
+      awayScore: 1,
+      homeScore: 4,
+      winnerFranchiseSeasonId: '11111111-1111-1111-1111-111111111111',
+      spreadWinnerFranchiseSeasonId: '22222222-2222-2222-2222-222222222222',
+      overUnderResultRaw: 1, // Over
+      completedUtc: '2026-06-20T22:30:00Z',
+      ...overrides,
+    });
+
+    it('promotes status to STATUS_FINAL even if no prior status event arrived (self-heal)', () => {
+      useContestUpdatesStore.getState().handleContestFinalized(finalizedPayload());
+
+      const record = useContestUpdatesStore.getState().contests[CID];
+      expect(record.status).toBe('STATUS_FINAL');
+      expect(record.statusDescription).toBe('Final');
+    });
+
+    it('writes enrichment-result fields', () => {
+      useContestUpdatesStore.getState().handleContestFinalized(finalizedPayload());
+
+      const record = useContestUpdatesStore.getState().contests[CID];
+      expect(record.awayScore).toBe(1);
+      expect(record.homeScore).toBe(4);
+      expect(record.winnerFranchiseSeasonId).toBe('11111111-1111-1111-1111-111111111111');
+      expect(record.spreadWinnerFranchiseSeasonId).toBe('22222222-2222-2222-2222-222222222222');
+      expect(record.completedUtc).toBe('2026-06-20T22:30:00Z');
+    });
+
+    it.each([
+      [1, 'Over'],
+      [2, 'Under'],
+      [3, 'Push'],
+    ])('translates overUnderResultRaw %s to %s', (raw, expected) => {
+      useContestUpdatesStore.getState().handleContestFinalized(finalizedPayload({ overUnderResultRaw: raw }));
+
+      expect(useContestUpdatesStore.getState().contests[CID].overUnderResult).toBe(expected);
+    });
+
+    it.each([0, null, undefined])('leaves overUnderResult null when raw is %s (None / not enriched)', (raw) => {
+      useContestUpdatesStore.getState().handleContestFinalized(
+        finalizedPayload({ overUnderResultRaw: raw as number | null }),
+      );
+
+      expect(useContestUpdatesStore.getState().contests[CID].overUnderResult).toBeNull();
+    });
+
+    it('ignores payloads missing contestId', () => {
+      useContestUpdatesStore.getState().handleContestFinalized(finalizedPayload({ contestId: '' }));
+      expect(Object.keys(useContestUpdatesStore.getState().contests)).toHaveLength(0);
+    });
+
+    it('preserves prior live fields when finalizing (merges into existing record)', () => {
+      // Arrange: a live football play arrived earlier with possession +
+      // ball position; ContestFinalized should not clobber them.
+      useContestUpdatesStore.getState().handleFootballPlayCompleted(footballPayload({
+        possessionFranchiseSeasonId: '33333333-3333-3333-3333-333333333333',
+        ballOnYardLine: 42,
+      }));
+
+      useContestUpdatesStore.getState().handleContestFinalized(finalizedPayload());
+
+      const record = useContestUpdatesStore.getState().contests[CID];
+      expect(record.possessionFranchiseSeasonId).toBe('33333333-3333-3333-3333-333333333333');
+      expect(record.ballOnYardLine).toBe(42);
+      // And the new fields are present.
+      expect(record.winnerFranchiseSeasonId).toBe('11111111-1111-1111-1111-111111111111');
+    });
+  });
+
   describe('clearContestUpdate / clearAllUpdates', () => {
     it('clearContestUpdate removes a single record', () => {
       useContestUpdatesStore.getState().handleStatusUpdate(statusPayload());

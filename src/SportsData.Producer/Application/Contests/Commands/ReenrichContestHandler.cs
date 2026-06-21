@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -10,7 +11,7 @@ namespace SportsData.Producer.Application.Contests.Commands
 {
     public interface IReenrichContestHandler
     {
-        Task<Result<Guid>> ExecuteAsync(
+        Task<Result<ReenrichContestResponse>> ExecuteAsync(
             ReenrichContestCommand command,
             CancellationToken cancellationToken = default);
     }
@@ -55,14 +56,14 @@ namespace SportsData.Producer.Application.Contests.Commands
             _validator = validator;
         }
 
-        public async Task<Result<Guid>> ExecuteAsync(
+        public async Task<Result<ReenrichContestResponse>> ExecuteAsync(
             ReenrichContestCommand command,
             CancellationToken cancellationToken = default)
         {
             var validationResult = await _validator.ValidateAsync(command, cancellationToken);
             if (!validationResult.IsValid)
             {
-                return new Failure<Guid>(
+                return new Failure<ReenrichContestResponse>(
                     default!,
                     ResultStatus.Validation,
                     validationResult.Errors);
@@ -78,7 +79,7 @@ namespace SportsData.Producer.Application.Contests.Commands
             }
         }
 
-        private async Task<Result<Guid>> ExecuteInternalAsync(
+        private async Task<Result<ReenrichContestResponse>> ExecuteInternalAsync(
             ReenrichContestCommand command,
             CancellationToken cancellationToken = default)
         {
@@ -92,7 +93,7 @@ namespace SportsData.Producer.Application.Contests.Commands
                 if (contest is null)
                 {
                     _logger.LogWarning("ReenrichContest: contest not found.");
-                    return new Failure<Guid>(
+                    return new Failure<ReenrichContestResponse>(
                         default!,
                         ResultStatus.NotFound,
                         []);
@@ -103,6 +104,13 @@ namespace SportsData.Producer.Application.Contests.Commands
                 // / HomeScore get nulled too so they get re-written from
                 // MAX(CCS). AuditedUtc gets cleared so the next audit sweep
                 // verifies the newly-derived values.
+                //
+                // Persisted explicitly here BEFORE invoking enrichment.
+                // If enrichment subsequently fails, the contest is left
+                // in the reset state and the admin gets an error in the
+                // UI; re-clicking the button is idempotent and safe.
+                // Preferred over relying on EF's identity-map behavior
+                // to defer the flush — explicit > clever.
                 contest.FinalizedUtc = null;
                 contest.WinnerFranchiseSeasonId = null;
                 contest.SpreadWinnerFranchiseSeasonId = null;
@@ -120,12 +128,13 @@ namespace SportsData.Producer.Application.Contests.Commands
 
                 _logger.LogInformation("ReenrichContest completed.");
 
-                return new Success<Guid>(command.CorrelationId);
+                return new Success<ReenrichContestResponse>(
+                    new ReenrichContestResponse(command.CorrelationId, command.ContestId));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "ReenrichContest failed.");
-                return new Failure<Guid>(
+                return new Failure<ReenrichContestResponse>(
                     default!,
                     ResultStatus.Error,
                     []);

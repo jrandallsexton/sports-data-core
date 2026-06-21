@@ -1,3 +1,5 @@
+using FluentValidation;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
@@ -41,21 +43,33 @@ public class ReenrichContestCommandHandler : IReenrichContestCommandHandler
     private readonly ILogger<ReenrichContestCommandHandler> _logger;
     private readonly IContestClientFactory _contestClientFactory;
     private readonly AppDataContext _dataContext;
+    private readonly IValidator<ReenrichContestCommand> _validator;
 
     public ReenrichContestCommandHandler(
         ILogger<ReenrichContestCommandHandler> logger,
         IContestClientFactory contestClientFactory,
-        AppDataContext dataContext)
+        AppDataContext dataContext,
+        IValidator<ReenrichContestCommand> validator)
     {
         _logger = logger;
         _contestClientFactory = contestClientFactory;
         _dataContext = dataContext;
+        _validator = validator;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
         ReenrichContestCommand command,
         CancellationToken cancellationToken = default)
     {
+        var validationResult = await _validator.ValidateAsync(command, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return new Failure<Guid>(
+                Guid.Empty,
+                ResultStatus.Validation,
+                validationResult.Errors);
+        }
+
         var correlationId = ActivityExtensions.GetCorrelationId();
 
         _logger.LogInformation(

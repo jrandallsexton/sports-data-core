@@ -132,34 +132,20 @@ namespace SportsData.Producer.Application.Contests
         /// </summary>
         [HttpPost]
         [Route("{contestId}/admin/reenrich")]
-        public async Task<IActionResult> ReenrichContest(
+        public async Task<ActionResult<ReenrichContestResponse>> ReenrichContest(
             [FromRoute] Guid contestId,
             [FromServices] IReenrichContestHandler handler,
             CancellationToken cancellationToken)
         {
-            var correlationId = GetCorrelationIdFromRequest();
-
             var result = await handler.ExecuteAsync(
                 new ReenrichContestCommand
                 {
                     ContestId = contestId,
-                    CorrelationId = correlationId
+                    CorrelationId = GetCorrelationIdFromRequest()
                 },
                 cancellationToken);
 
-            return result switch
-            {
-                Success<Guid> success => Ok(new
-                {
-                    CorrelationId = success.Value,
-                    ContestId = contestId
-                }),
-                Failure<Guid> failure when failure.Status == ResultStatus.NotFound =>
-                    NotFound(new { ContestId = contestId, CorrelationId = correlationId }),
-                Failure<Guid> failure when failure.Status == ResultStatus.Validation =>
-                    BadRequest(new { CorrelationId = correlationId, Errors = failure.Errors }),
-                _ => StatusCode(500, new { CorrelationId = correlationId, ContestId = contestId })
-            };
+            return result.ToActionResult();
         }
 
         [HttpPost]

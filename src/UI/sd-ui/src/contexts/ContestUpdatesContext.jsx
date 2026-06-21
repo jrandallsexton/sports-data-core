@@ -163,6 +163,60 @@ export const ContestUpdatesProvider = ({ children }) => {
   }, [instanceId]);
 
   /**
+   * Handle ContestFinalized — fires AFTER ContestStatusChanged(STATUS_FINAL)
+   * once Producer's ContestEnrichmentProcessor has written the canonical
+   * Contest row with winner, spread winner, over/under result, and final
+   * scores. The status event can't carry these because it fires the moment
+   * STATUS_FINAL is detected (~30s before enrichment runs).
+   *
+   * Wire shape: int? OverUnderResultRaw maps to the Producer-side enum
+   * (None=0, Over=1, Under=2, Push=3). Translate to the string form
+   * FinalScoreResult expects ("Over"/"Under"/"Push") so the merge in
+   * PicksPage.enrichedMatchups can substitute it directly into the
+   * matchup record (which carries the same string shape from
+   * GetLeagueWeekMatchups).
+   */
+  const handleContestFinalized = useCallback((data) => {
+    if (!data?.contestId) {
+      console.warn('ContestFinalized event missing contestId', data);
+      return;
+    }
+
+    const overUnderResult =
+      data.overUnderResultRaw === 1 ? 'Over' :
+      data.overUnderResultRaw === 2 ? 'Under' :
+      data.overUnderResultRaw === 3 ? 'Push' :
+      null;
+
+    console.log(`[ContestCtx#${instanceId}] setContests (finalized)`, {
+      contestId: data.contestId,
+      awayScore: data.awayScore,
+      homeScore: data.homeScore,
+      winnerFranchiseSeasonId: data.winnerFranchiseSeasonId,
+    });
+    setContests(prev => ({
+      ...prev,
+      [data.contestId]: {
+        ...prev[data.contestId],
+        contestId: data.contestId,
+        // Flip lifecycle to Final in case ContestStatusChanged was
+        // missed (post-connect handshake gap, etc.) — matches the
+        // play-handler pattern of promoting to InProgress on first
+        // play.
+        status: 'STATUS_FINAL',
+        statusDescription: 'Final',
+        awayScore: data.awayScore,
+        homeScore: data.homeScore,
+        winnerFranchiseSeasonId: data.winnerFranchiseSeasonId,
+        spreadWinnerFranchiseSeasonId: data.spreadWinnerFranchiseSeasonId,
+        overUnderResult,
+        completedUtc: data.completedUtc,
+        lastUpdated: Date.now()
+      }
+    }));
+  }, [instanceId]);
+
+  /**
    * Get live update data for a specific contest
    * @param {string} contestId
    * @returns {object|null} Live update data or null if no updates available
@@ -202,6 +256,7 @@ export const ContestUpdatesProvider = ({ children }) => {
     _instanceId: instanceId, // DIAG: lets consumers log which Provider they're reading from
     contests,
     handleStatusUpdate,
+    handleContestFinalized,
     handleFootballPlayCompleted,
     handleBaseballPlayCompleted,
     getContestUpdate,

@@ -39,6 +39,39 @@ export interface FootballPlayCompletedPayload {
   ballOnYardLine: number | null;
 }
 
+/**
+ * Fires AFTER ContestStatusChanged(STATUS_FINAL), once Producer's
+ * ContestEnrichmentProcessor has written the canonical Contest row with
+ * winner, spread winner, over/under result, and final scores. The status
+ * event can't carry these because it fires the moment STATUS_FINAL is
+ * detected (~30s before enrichment runs).
+ *
+ * Result fields are nullable mirroring the wire contract:
+ *   - winnerFranchiseSeasonId is null on a tie (rare in football,
+ *     impossible in MLB per the tie guards).
+ *   - spreadWinnerFranchiseSeasonId is null on a true spread push
+ *     (game landed exactly on the line).
+ *   - overUnderResultRaw is null when no odds were enriched. Wire type
+ *     is int? mapping to the Producer-side OverUnderResult enum
+ *     (None=0, Over=1, Under=2, Push=3). FinalScoreResult / GameStatus
+ *     consume the string form ("Over"/"Under"/"Push"), so the store
+ *     handler translates before writing.
+ *   - awayScore / homeScore / completedUtc are always populated when
+ *     this event is published, but kept nullable so older Producer pods
+ *     publishing the prior shape during a rolling deploy don't fail
+ *     deserialization.
+ */
+export interface ContestFinalizedPayload {
+  contestId: string;
+  awayScore?: number | null;
+  homeScore?: number | null;
+  winnerFranchiseSeasonId?: string | null;
+  spreadWinnerFranchiseSeasonId?: string | null;
+  /** Producer-side OverUnderResult enum value: 0 None, 1 Over, 2 Under, 3 Push. */
+  overUnderResultRaw?: number | null;
+  completedUtc?: string | null;
+}
+
 export interface BaseballPlayCompletedPayload {
   contestId: string;
   competitionId: string;

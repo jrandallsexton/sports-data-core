@@ -90,6 +90,7 @@ function MainApp() {
   // in one message).
   const {
     handleStatusUpdate,
+    handleContestFinalized,
     handleFootballPlayCompleted,
     handleBaseballPlayCompleted,
   } = useContestUpdates();
@@ -109,6 +110,11 @@ function MainApp() {
     handleStatusUpdate(data);
   }, [handleStatusUpdate]);
 
+  const onContestFinalized = useCallback((data) => {
+    console.log('🏁 Contest finalized received:', data);
+    handleContestFinalized(data);
+  }, [handleContestFinalized]);
+
   const onFootballPlayCompleted = useCallback((data) => {
     console.log('🏈 Football play completed received:', data);
     handleFootballPlayCompleted(data);
@@ -122,6 +128,7 @@ function MainApp() {
   useSignalRClient({
     onPreviewCompleted,
     onContestStatusChanged,
+    onContestFinalized,
     onFootballPlayCompleted,
     onBaseballPlayCompleted,
   });

@@ -540,6 +540,18 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
       pitchingHeadshotUrl: live.pitchingHeadshotUrl ?? matchup.pitchingHeadshotUrl,
       lastPlayId: live.lastPlayId ?? matchup.lastPlayId,
       lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
+      // Enrichment-result fields, populated by handleContestFinalized.
+      // Pre-enrichment these are null on the wire from the matchups GET
+      // (the readiness contract documented in FinalScoreResult); the
+      // ContestFinalized SignalR broadcast fills them in without a
+      // refresh. Same nullish-fallback pattern as scores so a partial
+      // context state can't clobber a populated canonical field.
+      winnerFranchiseSeasonId:
+        live.winnerFranchiseSeasonId ?? matchup.winnerFranchiseSeasonId,
+      spreadWinnerFranchiseSeasonId:
+        live.spreadWinnerFranchiseSeasonId ?? matchup.spreadWinnerFranchiseSeasonId,
+      overUnderResult: live.overUnderResult ?? matchup.overUnderResult,
+      completedUtc: live.completedUtc ?? matchup.completedUtc,
     };
   }, [matchup, live]);
 

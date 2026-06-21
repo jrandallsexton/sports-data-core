@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type {
   BaseballPlayCompletedPayload,
+  ContestFinalizedPayload,
   ContestStatusChangedPayload,
   FootballPlayCompletedPayload,
 } from '@/src/types/signalR';
@@ -49,12 +50,25 @@ export interface ContestLiveRecord {
   lastPlayDescription?: string;
   lastPlayAt?: number;
   lastUpdated?: number;
+
+  // Enrichment-result fields, populated by handleContestFinalized when
+  // ContestFinalized fires. MatchupCard's enrichedMatchup merge picks
+  // these up so FinalScoreResult / GameStatus can render the cover line
+  // + SU checkmark without a refresh. overUnderResult is stored in the
+  // string form FinalScoreResult expects ("Over" / "Under" / "Push")
+  // even though the wire carries it as int? (overUnderResultRaw) — the
+  // handler translates.
+  winnerFranchiseSeasonId?: string | null;
+  spreadWinnerFranchiseSeasonId?: string | null;
+  overUnderResult?: 'Over' | 'Under' | 'Push' | null;
+  completedUtc?: string | null;
 }
 
 interface ContestUpdatesState {
   contests: Record<string, ContestLiveRecord>;
 
   handleStatusUpdate: (data: ContestStatusChangedPayload) => void;
+  handleContestFinalized: (data: ContestFinalizedPayload) => void;
   handleFootballPlayCompleted: (data: FootballPlayCompletedPayload) => void;
   handleBaseballPlayCompleted: (data: BaseballPlayCompletedPayload) => void;
   clearContestUpdate: (contestId: string) => void;
@@ -88,6 +102,40 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
           contestId: data.contestId,
           status: data.status,
           statusDescription: data.statusDescription,
+          lastUpdated: now,
+        },
+      },
+    }));
+  },
+
+  handleContestFinalized: (data) => {
+    if (!data?.contestId) return;
+    const now = Date.now();
+    // Translate the int? raw value to the display string FinalScoreResult
+    // expects. Producer-side enum: None=0, Over=1, Under=2, Push=3.
+    const overUnderResult: 'Over' | 'Under' | 'Push' | null =
+      data.overUnderResultRaw === 1 ? 'Over' :
+      data.overUnderResultRaw === 2 ? 'Under' :
+      data.overUnderResultRaw === 3 ? 'Push' :
+      null;
+    set((state) => ({
+      contests: {
+        ...state.contests,
+        [data.contestId]: {
+          ...state.contests[data.contestId],
+          contestId: data.contestId,
+          // Flip lifecycle to Final in case ContestStatusChanged was
+          // missed (post-connect handshake gap, etc.) — matches the
+          // play-handler pattern of promoting to InProgress on first
+          // play. (Web counterpart wires the same self-heal.)
+          status: 'STATUS_FINAL',
+          statusDescription: 'Final',
+          awayScore: data.awayScore ?? state.contests[data.contestId]?.awayScore,
+          homeScore: data.homeScore ?? state.contests[data.contestId]?.homeScore,
+          winnerFranchiseSeasonId: data.winnerFranchiseSeasonId,
+          spreadWinnerFranchiseSeasonId: data.spreadWinnerFranchiseSeasonId,
+          overUnderResult,
+          completedUtc: data.completedUtc,
           lastUpdated: now,
         },
       },

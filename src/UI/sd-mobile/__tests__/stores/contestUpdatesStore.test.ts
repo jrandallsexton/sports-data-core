@@ -1,6 +1,7 @@
 import { useContestUpdatesStore } from '@/src/stores/contestUpdatesStore';
 import type {
   BaseballPlayCompletedPayload,
+  ContestFinalizedPayload,
   ContestStatusChangedPayload,
   FootballPlayCompletedPayload,
 } from '@/src/types/signalR';
@@ -206,15 +207,7 @@ describe('contestUpdatesStore', () => {
   });
 
   describe('handleContestFinalized', () => {
-    const finalizedPayload = (overrides?: Partial<{
-      contestId: string;
-      awayScore: number | null;
-      homeScore: number | null;
-      winnerFranchiseSeasonId: string | null;
-      spreadWinnerFranchiseSeasonId: string | null;
-      overUnderResultRaw: number | null;
-      completedUtc: string | null;
-    }>) => ({
+    const finalizedPayload = (overrides?: Partial<ContestFinalizedPayload>): ContestFinalizedPayload => ({
       contestId: CID,
       awayScore: 1,
       homeScore: 4,
@@ -256,7 +249,7 @@ describe('contestUpdatesStore', () => {
 
     it.each([0, null, undefined])('leaves overUnderResult null when raw is %s (None / not enriched)', (raw) => {
       useContestUpdatesStore.getState().handleContestFinalized(
-        finalizedPayload({ overUnderResultRaw: raw as number | null }),
+        finalizedPayload({ overUnderResultRaw: raw }),
       );
 
       expect(useContestUpdatesStore.getState().contests[CID].overUnderResult).toBeNull();

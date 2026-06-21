@@ -113,6 +113,41 @@ namespace SportsData.Producer.Application.Contests
             return Accepted(new { CorrelationId = correlationId, ContestId = contestId });
         }
 
+        /// <summary>
+        /// Admin "re-run enrichment" path. Clears the derived/enriched fields
+        /// on the Contest row (FinalizedUtc, WinnerFranchiseSeasonId,
+        /// SpreadWinnerFranchiseSeasonId, OverUnder, AwayScore, HomeScore,
+        /// AuditedUtc) and re-invokes the sport-specific enrichment processor
+        /// SYNCHRONOUSLY in this request. Caller (the API admin endpoint) does
+        /// not need to poll Hangfire or follow a separate cron — once this
+        /// returns 200, enrichment has rerun, ContestFinalized has fired, and
+        /// the API's ContestFinalizedHandler has enqueued ScorePicksCommand.
+        ///
+        /// This is NOT a re-source. CompetitionCompetitorScores are not
+        /// touched. Enrichment reads MAX(CCS) and derives the result fields;
+        /// the bug class this endpoint is for is "derived fields are wrong
+        /// but the canonical scores are correct" — primarily a manual recovery
+        /// path for stuck WinnerFranchiseSeasonId / SpreadWinnerFranchiseSeasonId
+        /// values that the audit job hasn't caught yet.
+        /// </summary>
+        [HttpPost]
+        [Route("{contestId}/admin/reenrich")]
+        public async Task<ActionResult<ReenrichContestResponse>> ReenrichContest(
+            [FromRoute] Guid contestId,
+            [FromServices] IReenrichContestHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(
+                new ReenrichContestCommand
+                {
+                    ContestId = contestId,
+                    CorrelationId = GetCorrelationIdFromRequest()
+                },
+                cancellationToken);
+
+            return result.ToActionResult();
+        }
+
         [HttpPost]
         [Route("finalize")]
         public IActionResult FinalizeContestsBySeasonYear(

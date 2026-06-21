@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Core.Middleware.Health;
 
@@ -44,6 +45,19 @@ public interface IProvideContests : IProvideHealthChecks
     Task<Result<bool>> RefreshContestMediaByContestId(Guid contestId, CancellationToken cancellationToken = default);
 
     Task<Result<bool>> FinalizeContestByContestId(Guid contestId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Synchronous admin "re-run enrichment" call. Producer clears the
+    /// derived/enriched fields on the Contest row and re-invokes the
+    /// sport-specific enrichment processor inline before returning, so the
+    /// caller doesn't need a separate "is it done?" poll. Returns the
+    /// CorrelationId Producer logged the work under for tracing in Seq.
+    ///
+    /// NOT a re-source — CompetitionCompetitorScores are not touched.
+    /// Manual recovery path for stuck WinnerFranchiseSeasonId /
+    /// SpreadWinnerFranchiseSeasonId that the nightly audit hasn't caught.
+    /// </summary>
+    Task<Result<ReenrichContestResponse>> ReenrichContest(Guid contestId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Triggers a replay of a stored contest's plays through the bus →
@@ -229,6 +243,76 @@ public class ContestClient : ClientBase, IProvideContests
             $"contests/{contestId}/enrich",
             "FinalizeContest",
             cancellationToken);
+    }
+
+    public async Task<Result<ReenrichContestResponse>> ReenrichContest(Guid contestId, CancellationToken cancellationToken = default)
+    {
+        if (contestId == Guid.Empty)
+        {
+            return new Failure<ReenrichContestResponse>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+        }
+
+        // Bodyless POST that returns a typed JSON response. No shared helper
+        // exists for this shape (Result<T> + bodyless), so inline the
+        // pattern. Mirrors the bodyless PostWithResultAsync's correlation-
+        // header stamping so Producer logs the same id we trace from in
+        // Seq.
+        const string operationName = "ReenrichContest";
+        var url = $"contests/{contestId}/admin/reenrich";
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, url);
+            request.Headers.TryAddWithoutValidation(
+                "X-Correlation-Id",
+                ActivityExtensions.GetCorrelationId().ToString());
+
+            using var response = await HttpClient.SendAsync(request, cancellationToken);
+            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var body = responseContent.FromJson<ReenrichContestResponse>();
+                if (body is null)
+                {
+                    return new Failure<ReenrichContestResponse>(
+                        default!,
+                        ResultStatus.Error,
+                        [new ValidationFailure(operationName, $"{operationName} succeeded but response body did not deserialize")]);
+                }
+                return new Success<ReenrichContestResponse>(body);
+            }
+
+            // MapHttpStatusCode is private on ClientBase, so map the common
+            // shapes inline here. NotFound is the only response code that
+            // needs a distinct ResultStatus today (Producer 404s when the
+            // contest doesn't exist); everything else falls through to
+            // generic Error so the API surface stays consistent.
+            var status = response.StatusCode == System.Net.HttpStatusCode.NotFound
+                ? ResultStatus.NotFound
+                : ResultStatus.Error;
+            return new Failure<ReenrichContestResponse>(
+                default!,
+                status,
+                [new ValidationFailure(operationName, $"{operationName} failed with status {response.StatusCode}")]);
+        }
+        catch (HttpRequestException ex)
+        {
+            return new Failure<ReenrichContestResponse>(
+                default!,
+                ResultStatus.Error,
+                [new ValidationFailure(operationName, $"{operationName} failed: {ex.Message}")]);
+        }
+        catch (TaskCanceledException ex)
+        {
+            return new Failure<ReenrichContestResponse>(
+                default!,
+                ResultStatus.Error,
+                [new ValidationFailure(operationName, $"{operationName} timed out: {ex.Message}")]);
+        }
     }
 
     // ========== Matchup query methods (Phase 2) ==========

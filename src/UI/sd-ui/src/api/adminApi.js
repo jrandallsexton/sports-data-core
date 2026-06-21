@@ -36,6 +36,23 @@ const AdminApi = {
       params: league ? { league } : undefined,
     }),
 
+  // Re-run enrichment for a single contest. Clears UserPick scoring
+  // fields and asks Producer to clear the Contest derived fields and
+  // re-run enrichment inline. Response.data is the CorrelationId
+  // Producer logged the work under — surfaced in ContestOverviewAdmin
+  // so an operator can paste it into Seq for tracing.
+  //
+  // Lives here (AdminApi → /admin/...) deliberately. The earlier
+  // sibling actions on contestApi (Refresh / Refresh Media / Finalize)
+  // are exposed under the general /ui/contest surface gated only by
+  // [Authorize]. Re-enrich rolls back UserPicks, so it MUST be on the
+  // admin-token-gated controller — the UI's isAdmin check is
+  // presentational only, not a trust boundary.
+  reenrichContest: (contestId, sport, league) =>
+    apiClient.post(`/admin/contest/${contestId}/reenrich`, null, {
+      params: { sport, league }
+    }),
+
   // SignalR debug harness — see docs/signalr-debug-harness-plan.md.
   // Each call publishes a synthetic integration event through API's
   // MassTransit + own consumer + SignalR fan-out, exercising the same

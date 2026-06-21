@@ -19,8 +19,17 @@ function PicksPage() {
     setSelectedLeagueId: setGlobalLeagueId,
     initializeLeagueSelection,
   } = useLeagueContext();
-  const { leagueId: routeLeagueId } = useParams(); // optional route param
+  const { leagueId: routeLeagueId, week: routeWeekParam } = useParams();
   const navigate = useNavigate();
+
+  // Route param arrives as a string; parse once. Invalid values (negative,
+  // non-numeric, NaN) become null so the week-snap effect redirects to a
+  // valid week instead of trusting garbage in the URL.
+  const routeWeek = useMemo(() => {
+    if (routeWeekParam == null) return null;
+    const n = Number(routeWeekParam);
+    return Number.isInteger(n) && n > 0 ? n : null;
+  }, [routeWeekParam]);
 
   const [userPicks, setUserPicks] = useState({});
   const [isSubscribed] = useState(false);
@@ -40,12 +49,13 @@ function PicksPage() {
   const [leagueAsOfDate, setLeagueAsOfDate] = useState(null);
   const [loadingMatchups, setLoadingMatchups] = useState(true);
 
-  // Source of truth for the selected league is the route param
-  // (/app/picks/:leagueId?). The dropdown navigates instead of holding
-  // local state — this kills the prior fight between `selectedLeagueId`
-  // state, the URL sync effect, and the week-snap effect that was
-  // emitting 5 matchups XHRs per league switch.
-  const [selectedWeek, setSelectedWeek] = useState(null);
+  // Source of truth for both league AND week is the URL — the dropdowns
+  // navigate instead of holding local state. This kills the prior fight
+  // between `selectedLeagueId` state, the URL sync effect, and the
+  // week-snap effect that was emitting 5 matchups XHRs per league switch,
+  // AND fixes refresh-loses-week (selectedWeek used to reset to
+  // latestSeasonWeek on every mount).
+  const selectedWeek = routeWeek;
   const viewMode = "card";
 
   const [hidePicked, setHidePicked] = useState(false);
@@ -80,10 +90,17 @@ function PicksPage() {
     () => selectedLeague?.seasonWeeks ?? [],
     [selectedLeague]
   );
-  // Default to the latest week the league has (last element of the
-  // ascending list). Custom-window leagues may only have a single entry.
+  // Default landing week — prefer the backend-computed current week (the
+  // earliest week with an unstarted matchup, falling back to the last
+  // week of the season). Custom-window leagues may only have a single
+  // entry.
   const latestSeasonWeek =
     seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
+  const currentSeasonWeek = selectedLeague?.currentSeasonWeek ?? null;
+  const defaultLandingWeek =
+    currentSeasonWeek && seasonWeeks.includes(currentSeasonWeek)
+      ? currentSeasonWeek
+      : latestSeasonWeek;
 
   // Recovery for newly-created leagues. League creation publishes
   // PickemGroupCreated via the outbox; the consumer that populates
@@ -449,11 +466,10 @@ function PicksPage() {
     }
   }
 
-  // Switch league → ensure the URL changes (route is the source of
-  // truth) and persist the choice for cross-page memory. The week-snap
-  // effect below adjusts selectedWeek on the next render; the matchups
-  // fetch is gated on the new league's seasonWeeks so the brief
-  // (newLeagueId, oldWeek) window doesn't emit an XHR.
+  // Switch league → drop the `/weeks/:week` segment so the week-snap
+  // effect below can redirect to the new league's default landing week
+  // (current week, falling back to latest). Cross-page memory still
+  // tracks the league choice.
   const handleLeagueChange = useCallback(
     (newLeagueId) => {
       if (!newLeagueId || newLeagueId === routeLeagueId) return;
@@ -463,22 +479,39 @@ function PicksPage() {
     [routeLeagueId, navigate, setGlobalLeagueId]
   );
 
-  // Snap selectedWeek when the URL-driven league changes, or when the
-  // current week falls outside the new league's week list. Respects a
-  // user's manual mid-week selection (deps don't change on week
-  // selection alone, and we only re-snap when the current week is no
-  // longer valid for this league).
+  // Switch week → navigate to the canonical URL. `replace: true` so the
+  // back button returns to wherever the user came from rather than
+  // cycling through every week they clicked through.
+  const handleWeekChange = useCallback(
+    (newWeek) => {
+      if (!routeLeagueId || newWeek == null) return;
+      if (newWeek === routeWeek) return;
+      navigate(`/app/picks/${routeLeagueId}/weeks/${newWeek}`, {
+        replace: true,
+      });
+    },
+    [routeLeagueId, routeWeek, navigate]
+  );
+
+  // Redirect to the canonical URL when the route is missing the week
+  // segment or carries one that's not in the league's week list.
+  // Replaces the prior `setSelectedWeek(latestSeasonWeek)` snap which
+  // only updated local state — that's the refresh-loses-selection bug:
+  // every remount re-defaulted to the latest week regardless of what
+  // the user had picked.
   useEffect(() => {
     if (!routeLeagueId) return;
-    if (!latestSeasonWeek) {
-      if (selectedWeek !== null) setSelectedWeek(null);
-      return;
-    }
-    if (selectedWeek === null || !seasonWeeks.includes(selectedWeek)) {
-      setSelectedWeek(latestSeasonWeek);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeLeagueId, latestSeasonWeek, selectedLeague]);
+    if (seasonWeeks.length === 0) return; // user-dto still hydrating
+
+    const weekIsValid =
+      routeWeek != null && seasonWeeks.includes(routeWeek);
+    if (weekIsValid) return;
+
+    if (defaultLandingWeek == null) return;
+    navigate(`/app/picks/${routeLeagueId}/weeks/${defaultLandingWeek}`, {
+      replace: true,
+    });
+  }, [routeLeagueId, routeWeek, seasonWeeks, defaultLandingWeek, navigate]);
 
   if (userLoading) return <div>Loading user info...</div>;
 
@@ -515,7 +548,7 @@ function PicksPage() {
             selectedLeagueId={routeLeagueId}
             setSelectedLeagueId={handleLeagueChange}
             selectedWeek={selectedWeek}
-            setSelectedWeek={setSelectedWeek}
+            setSelectedWeek={handleWeekChange}
             seasonWeeks={seasonWeeks}
           />
           <div className="pick-status-toggle-row">

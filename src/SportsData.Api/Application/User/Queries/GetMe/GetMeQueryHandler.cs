@@ -21,15 +21,18 @@ public class GetMeQueryHandler : IGetMeQueryHandler
 {
     private readonly ApiConfig _config;
     private readonly AppDataContext _db;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<GetMeQueryHandler> _logger;
 
     public GetMeQueryHandler(
         IOptions<ApiConfig> config,
         AppDataContext db,
+        IDateTimeProvider dateTimeProvider,
         ILogger<GetMeQueryHandler> logger)
     {
         _config = config.Value;
         _db = db;
+        _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
 
@@ -38,6 +41,11 @@ public class GetMeQueryHandler : IGetMeQueryHandler
         CancellationToken cancellationToken = default)
     {
         _logger.LogDebug("Getting user details for UserId={UserId}", query.UserId);
+
+        // Captured once so the "current week" projection evaluates against a single
+        // point in time per request — and so IDateTimeProvider (not raw UtcNow) drives
+        // it, keeping the projection deterministic under unit-test mocks.
+        var nowUtc = _dateTimeProvider.UtcNow();
 
         var userDto = await _db.Users
             .AsNoTracking()
@@ -77,7 +85,22 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                             .Select(w => w.SeasonWeek)
                             .Distinct()
                             .OrderBy(w => w)
-                            .ToList()
+                            .ToList(),
+                        // "Current week" = smallest SeasonWeek that still has an unstarted
+                        // matchup. Picks-page UX intent: when the user opens the page mid-
+                        // season, drop them on the week they should be picking, not the
+                        // last week of the season. Coalesces to MAX(SeasonWeek) once every
+                        // matchup has kicked off so a season-over visit lands on the most
+                        // recent week instead of nothing.
+                        CurrentSeasonWeek = m.Group.Weeks
+                            .Where(w => w.Matchups.Any(mm => mm.StartDateUtc > nowUtc))
+                            .OrderBy(w => w.SeasonWeek)
+                            .Select(w => (int?)w.SeasonWeek)
+                            .FirstOrDefault()
+                            ?? m.Group.Weeks
+                                .OrderByDescending(w => w.SeasonWeek)
+                                .Select(w => (int?)w.SeasonWeek)
+                                .FirstOrDefault()
                     })
                     .ToList()
             })

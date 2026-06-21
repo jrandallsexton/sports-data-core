@@ -158,6 +158,7 @@ function MainApp() {
           <Routes>
             <Route index element={<HomePage />} />
             <Route path="/picks/:leagueId?" element={<PicksPage />} />
+            <Route path="/picks/:leagueId/weeks/:week" element={<PicksPage />} />
             <Route path="/warroom" element={<WarRoomPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/map" element={<GameMap />} />

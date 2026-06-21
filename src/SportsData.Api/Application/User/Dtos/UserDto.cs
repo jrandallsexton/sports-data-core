@@ -50,5 +50,14 @@ public class UserDto
         /// not a <c>1..N</c> upper bound. Populated by <c>GetMeQueryHandler</c>.
         /// </remarks>
         public IList<int> SeasonWeeks { get; set; } = [];
+
+        /// <summary>
+        /// The week the user should be picking right now. Smallest <see cref="SeasonWeeks"/>
+        /// entry whose matchups still have at least one unstarted game (StartDateUtc &gt; now).
+        /// Falls back to the maximum SeasonWeek when the season is fully past so the picks
+        /// page lands on the most recent week instead of an arbitrary default. Null only when
+        /// the league has no weeks at all.
+        /// </summary>
+        public int? CurrentSeasonWeek { get; set; }
     }
 }

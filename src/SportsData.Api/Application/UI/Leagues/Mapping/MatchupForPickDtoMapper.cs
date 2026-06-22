@@ -78,6 +78,8 @@ public static class MatchupForPickDtoMapper
             ? (decimal)Math.Round(canonical.OverUnderOpen.Value, 1, MidpointRounding.AwayFromZero)
             : null;
 
+        matchup.ProviderName = canonical.ProviderName;
+
         // Venue
         matchup.Venue = canonical.Venue ?? matchup.Venue;
         matchup.VenueCity = canonical.VenueCity ?? matchup.VenueCity;

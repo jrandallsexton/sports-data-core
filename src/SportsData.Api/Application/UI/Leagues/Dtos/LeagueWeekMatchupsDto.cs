@@ -95,6 +95,17 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
             public decimal? OverUnderCurrent { get; set; }
             public decimal? OverUnderOpen { get; set; }
 
+            /// <summary>
+            /// Sportsbook display name (e.g. "ESPN BET", "DraftKings") whose
+            /// spread / O/U values populated the odds fields above. Sourced
+            /// per-competition by Producer's preferred-then-fallback provider
+            /// selection. Null when no qualifying odds row exists. Future
+            /// "view all odds" expansion will surface a per-provider list;
+            /// this single field is the single-provider header in the
+            /// interim.
+            /// </summary>
+            public string? ProviderName { get; set; }
+
             // Venue
             public string Venue { get; set; } = default!;
             public string VenueCity { get; set; } = default!;

@@ -215,6 +215,7 @@ function MatchupCard({
           spreadOpen={matchup.spreadOpen}
           overUnder={matchup.overUnderCurrent}
           overUnderOpen={matchup.overUnderOpen}
+          providerName={matchup.providerName}
         />
 
         {/* Game Status */}

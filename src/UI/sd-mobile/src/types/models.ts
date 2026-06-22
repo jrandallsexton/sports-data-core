@@ -138,6 +138,13 @@ export interface Matchup {
   spreadCurrentDetails?: string | null;
   overUnderCurrent?: number | null;
   overUnderOpen?: number | null;
+  /**
+   * Sportsbook display name whose spread / O/U populated the values
+   * above (e.g. "ESPN BET", "DraftKings"). Selected per-competition by
+   * Producer's preferred-then-fallback provider ordering. Null when no
+   * qualifying odds row exists for this contest.
+   */
+  providerName?: string | null;
 
   // Venue (flat strings, not nested object)
   venue?: string | null;

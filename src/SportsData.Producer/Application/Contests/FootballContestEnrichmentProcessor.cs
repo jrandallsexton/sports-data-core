@@ -181,8 +181,8 @@ namespace SportsData.Producer.Application.Contests
 
                     // Maintain Contest-level denormalized fields from the primary provider
                     var primaryOdds = competition.Odds
-                        .FirstOrDefault(o => o.EnrichedUtc.HasValue && o.ProviderId == SportsBook.EspnBet.ToProviderId())
-                        ?? competition.Odds.FirstOrDefault(o => o.EnrichedUtc.HasValue);
+                        .FirstOrDefault(o => o.FinalizedUtc.HasValue && o.ProviderId == SportsBook.EspnBet.ToProviderId())
+                        ?? competition.Odds.FirstOrDefault(o => o.FinalizedUtc.HasValue);
 
                     if (primaryOdds != null)
                     {
@@ -248,7 +248,7 @@ namespace SportsData.Producer.Application.Contests
                         odds.Spread.Value);
                 }
 
-                odds.EnrichedUtc = _dateTimeProvider.UtcNow();
+                odds.FinalizedUtc = _dateTimeProvider.UtcNow();
 
                 _logger.LogInformation(
                     "Enriched CompetitionOdds {OddsId} for provider {ProviderName}. " +

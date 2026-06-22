@@ -48,7 +48,7 @@ SELECT
     o."ProviderId"                          AS "Odds_ProviderId",
     o."AtsWinnerFranchiseSeasonId"          AS "Odds_AtsWinner",
     o."OverUnderResult"                     AS "Odds_OverUnderResult",
-    o."EnrichedUtc"                         AS "Odds_EnrichedUtc"
+    o."FinalizedUtc"                         AS "Odds_FinalizedUtc"
 FROM public."Contest" con
 JOIN public."Competition" comp     ON comp."ContestId" = con."Id"
 JOIN fbs_competitions fc           ON fc."CompetitionId" = comp."Id"
@@ -56,6 +56,6 @@ JOIN public."CompetitionOdds" o    ON o."CompetitionId" = comp."Id"
 WHERE con."SeasonYear" = :seasonYear
   AND con."FinalizedUtc" IS NOT NULL
   AND con."SpreadWinnerFranchiseSeasonId" IS NULL
-  AND o."EnrichedUtc" IS NOT NULL
+  AND o."FinalizedUtc" IS NOT NULL
   AND o."AtsWinnerFranchiseSeasonId" IS NOT NULL
 ORDER BY con."StartDateUtc", o."ProviderId";

@@ -458,7 +458,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         foreach (var o in odds)
         {
             o.WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
-            o.EnrichedUtc.Should().NotBeNull();
+            o.FinalizedUtc.Should().NotBeNull();
         }
     }
 
@@ -519,7 +519,7 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         odds[0].WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
         odds[0].AtsWinnerFranchiseSeasonId.Should().BeNull();
         odds[0].OverUnderResult.Should().Be(OverUnderResult.None);
-        odds[0].EnrichedUtc.Should().NotBeNull();
+        odds[0].FinalizedUtc.Should().NotBeNull();
     }
 
     #endregion

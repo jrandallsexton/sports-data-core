@@ -168,8 +168,8 @@ namespace SportsData.Producer.Application.Contests
                     contest.HomeScore!.Value);
 
                 var primaryOdds = competition.Odds
-                    .FirstOrDefault(o => o.EnrichedUtc.HasValue && o.ProviderId == SportsBook.EspnBet.ToProviderId())
-                    ?? competition.Odds.FirstOrDefault(o => o.EnrichedUtc.HasValue);
+                    .FirstOrDefault(o => o.FinalizedUtc.HasValue && o.ProviderId == SportsBook.EspnBet.ToProviderId())
+                    ?? competition.Odds.FirstOrDefault(o => o.FinalizedUtc.HasValue);
 
                 if (primaryOdds != null)
                 {
@@ -204,7 +204,7 @@ namespace SportsData.Producer.Application.Contests
                 contest.HomeScore,
                 contest.WinnerFranchiseSeasonId,
                 contest.FinalizedUtc,
-                competition.Odds?.Count(o => o.EnrichedUtc.HasValue) ?? 0);
+                competition.Odds?.Count(o => o.FinalizedUtc.HasValue) ?? 0);
         }
 
         internal void EnrichOddsResults(
@@ -242,7 +242,7 @@ namespace SportsData.Producer.Application.Contests
                         odds.Spread.Value);
                 }
 
-                odds.EnrichedUtc = _dateTimeProvider.UtcNow();
+                odds.FinalizedUtc = _dateTimeProvider.UtcNow();
 
                 _logger.LogInformation(
                     "Enriched CompetitionOdds {OddsId} for provider {ProviderName}. " +

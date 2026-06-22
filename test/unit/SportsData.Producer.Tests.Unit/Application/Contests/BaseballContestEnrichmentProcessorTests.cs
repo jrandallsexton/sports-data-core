@@ -458,7 +458,7 @@ public class BaseballContestEnrichmentProcessorTests
         foreach (var o in odds)
         {
             o.WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
-            o.EnrichedUtc.Should().NotBeNull();
+            o.FinalizedUtc.Should().NotBeNull();
         }
     }
 

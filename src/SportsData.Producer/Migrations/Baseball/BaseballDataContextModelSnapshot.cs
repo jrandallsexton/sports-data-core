@@ -55,7 +55,7 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<DateTime?>("EnrichedUtc")
+                    b.Property<DateTime?>("FinalizedUtc")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("ModifiedBy")

@@ -258,42 +258,52 @@ function OddsRow({ matchup }: { matchup: Matchup }) {
   const showOuOpen = hasOu && ouOpen != null && ouOpen !== ou;
 
   return (
-    <View style={[styles.oddsRow, { borderColor: theme.separator }]}>
-      {/* Spread */}
-      {hasSpread && (
-        <View style={styles.oddsInline}>
-          <Text style={[styles.oddsLabel, { color: theme.textMuted }]}>Spread </Text>
-          {sArrow && (
-            <Text style={[styles.oddsArrow, { color: sArrow.color }]}>{sArrow.symbol}</Text>
-          )}
-          <Text style={[styles.oddsValue, { color: theme.tint }]}>{spreadVal}</Text>
-          {showSpreadOpen && (
-            <Text style={[styles.oddsOpen, { color: theme.textMuted }]}>
-              {' '}({spreadOpen! > 0 ? `+${spreadOpen}` : spreadOpen})
-            </Text>
-          )}
-        </View>
-      )}
+    <View style={styles.oddsBlock}>
+      <View style={[styles.oddsRow, { borderColor: theme.separator }]}>
+        {/* Spread */}
+        {hasSpread && (
+          <View style={styles.oddsInline}>
+            <Text style={[styles.oddsLabel, { color: theme.textMuted }]}>Spread </Text>
+            {sArrow && (
+              <Text style={[styles.oddsArrow, { color: sArrow.color }]}>{sArrow.symbol}</Text>
+            )}
+            <Text style={[styles.oddsValue, { color: theme.tint }]}>{spreadVal}</Text>
+            {showSpreadOpen && (
+              <Text style={[styles.oddsOpen, { color: theme.textMuted }]}>
+                {' '}({spreadOpen! > 0 ? `+${spreadOpen}` : spreadOpen})
+              </Text>
+            )}
+          </View>
+        )}
 
-      {/* Separator */}
-      {hasSpread && hasOu && (
-        <Text style={[styles.oddsSep, { color: theme.textMuted }]}> | </Text>
-      )}
+        {/* Separator */}
+        {hasSpread && hasOu && (
+          <Text style={[styles.oddsSep, { color: theme.textMuted }]}> | </Text>
+        )}
 
-      {/* O/U */}
-      {hasOu && (
-        <View style={styles.oddsInline}>
-          <Text style={[styles.oddsLabel, { color: theme.textMuted }]}>O/U </Text>
-          {oArrow && (
-            <Text style={[styles.oddsArrow, { color: oArrow.color }]}>{oArrow.symbol}</Text>
-          )}
-          <Text style={[styles.oddsValue, { color: theme.tint }]}>{ouVal}</Text>
-          {showOuOpen && (
-            <Text style={[styles.oddsOpen, { color: theme.textMuted }]}>
-              {' '}({ouOpen})
-            </Text>
-          )}
-        </View>
+        {/* O/U */}
+        {hasOu && (
+          <View style={styles.oddsInline}>
+            <Text style={[styles.oddsLabel, { color: theme.textMuted }]}>O/U </Text>
+            {oArrow && (
+              <Text style={[styles.oddsArrow, { color: oArrow.color }]}>{oArrow.symbol}</Text>
+            )}
+            <Text style={[styles.oddsValue, { color: theme.tint }]}>{ouVal}</Text>
+            {showOuOpen && (
+              <Text style={[styles.oddsOpen, { color: theme.textMuted }]}>
+                {' '}({ouOpen})
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* Provider attribution — centered below the odds line. Suppressed when
+          both spread and O/U are off (no values means no source to credit). */}
+      {matchup.providerName && (hasSpread || hasOu) && (
+        <Text style={[styles.oddsProvider, { color: theme.textMuted }]}>
+          {matchup.providerName}
+        </Text>
       )}
     </View>
   );
@@ -997,6 +1007,14 @@ const styles = StyleSheet.create({
   // Status styles live in GameStatus.tsx
 
   // Odds row
+  oddsBlock: {
+    alignItems: 'center',
+  },
+  oddsProvider: {
+    fontSize: 9,
+    marginTop: 2,
+    textAlign: 'center',
+  },
   oddsRow: {
     flexDirection: 'row',
     justifyContent: 'center',

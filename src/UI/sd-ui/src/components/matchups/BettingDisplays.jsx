@@ -55,8 +55,11 @@ export function OverUnderDisplay({ overUnder, overUnderOpen }) {
  * @param {number} props.spreadOpen - Opening spread value
  * @param {number|string} props.overUnder - Current O/U value
  * @param {number} props.overUnderOpen - Opening O/U value
+ * @param {string} [props.providerName] - Sportsbook name (e.g. "ESPN BET");
+ *   rendered as a small muted suffix when present. Hidden when both spread
+ *   and O/U are "Off" — no values means no source to attribute.
  */
-export function SpreadAndOverUnderDisplay({ spread, spreadOpen, overUnder, overUnderOpen }) {
+export function SpreadAndOverUnderDisplay({ spread, spreadOpen, overUnder, overUnderOpen, providerName }) {
   const spreadArrow = calculateSpreadArrow(spread, spreadOpen);
   const overUnderValue = (overUnder === null || overUnder === 0 || overUnder === 'TBD') ? 'Off' : overUnder;
   const ouArrow = calculateOverUnderArrow(overUnderValue, overUnderOpen);
@@ -87,6 +90,23 @@ export function SpreadAndOverUnderDisplay({ spread, spreadOpen, overUnder, overU
           </span>
         )}
       </span>
+      {providerName && (spreadValue !== 'Off' || overUnderValue !== 'Off') && (
+        <span
+          className="odds-provider"
+          style={{
+            color: '#adb5bd',
+            fontSize: '0.7em',
+            // .spread-ou is a CSS grid (1fr auto 1fr) — span all columns so
+            // textAlign: center is relative to the full row width, not the
+            // first 1fr track only.
+            gridColumn: '1 / -1',
+            textAlign: 'center',
+            marginTop: 2,
+          }}
+        >
+          {providerName}
+        </span>
+      )}
     </div>
   );
 }

@@ -89,6 +89,16 @@ public class LeagueMatchupDto
     public double? OverOdds { get; set; }
     public double? UnderOdds { get; set; }
 
+    /// <summary>
+    /// Display name of the sportsbook whose spread / O/U values populated
+    /// the odds fields above. Selected by Producer's SQL via the
+    /// preferred-then-fallback provider ordering on <c>CompetitionOdds</c>.
+    /// Null when no qualifying odds row exists for this competition.
+    /// Future per-league preferred-provider work will replace the global
+    /// preference baked into the SQL today.
+    /// </summary>
+    public string? ProviderName { get; set; }
+
     public int? AwayScore { get; set; }
     public int? HomeScore { get; set; }
     public Guid? WinnerFranchiseSeasonId { get; set; }

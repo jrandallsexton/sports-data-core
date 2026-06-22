@@ -45,7 +45,7 @@ public class CompetitionOdds : CanonicalEntityBase<Guid>, IHasExternalIds
     public Guid? WinnerFranchiseSeasonId { get; set; }
     public Guid? AtsWinnerFranchiseSeasonId { get; set; }
     public OverUnderResult OverUnderResult { get; set; } = OverUnderResult.None;
-    public DateTime? EnrichedUtc { get; set; }
+    public DateTime? FinalizedUtc { get; set; }
 
     public ICollection<CompetitionOddsLink> Links { get; set; } = [];
     public Uri? PropBetsRef { get; set; }

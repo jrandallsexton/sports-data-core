@@ -1,6 +1,7 @@
 using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 using Moq;
 
@@ -444,18 +445,49 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
             OverUnder = 50m,        // total 42 < 50 → Under
             FinalizedUtc = null
         };
+
+        // Regression guard: a SECOND odds row that's already finalized with
+        // distinct pre-computed values. If EnrichOddsResults were called
+        // against all odds (not just unfinalizedOdds), this row's
+        // FinalizedUtc would be re-stamped and its OverUnderResult would
+        // flip from Over → Under. The asserts below catch that.
+        var alreadyFinalizedUtc = new DateTime(2026, 3, 9, 20, 0, 0, DateTimeKind.Utc);
+        var oddsRowAlreadyFinalized = new CompetitionOdds
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            ProviderRef = new Uri("https://example.com/odds/fanduel"),
+            ProviderId = "fanduel",
+            ProviderName = "FanDuel",
+            Spread = -7m,
+            OverUnder = 40m,        // total 42 > 40 → Over (distinct from late row's Under)
+            FinalizedUtc = alreadyFinalizedUtc,
+            WinnerFranchiseSeasonId = HomeFranchiseSeasonId,
+            AtsWinnerFranchiseSeasonId = HomeFranchiseSeasonId,
+            OverUnderResult = OverUnderResult.Over
+        };
+
         FootballDataContext.CompetitionOdds.Add(oddsRowLate);
+        FootballDataContext.CompetitionOdds.Add(oddsRowAlreadyFinalized);
         await FootballDataContext.SaveChangesAsync();
 
         var command = new EnrichContestCommand(contestId, Guid.NewGuid());
         await _sut.Process(command);
 
-        // Odds row finalized with computed result fields.
-        var oddsAfter = await FootballDataContext.CompetitionOdds.FindAsync(oddsRowLate.Id);
-        oddsAfter!.FinalizedUtc.Should().NotBeNull();
-        oddsAfter.WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
-        oddsAfter.AtsWinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
-        oddsAfter.OverUnderResult.Should().Be(OverUnderResult.Under);
+        // Late row: finalized with computed result fields.
+        var lateAfter = await FootballDataContext.CompetitionOdds.FindAsync(oddsRowLate.Id);
+        lateAfter!.FinalizedUtc.Should().NotBeNull();
+        lateAfter.WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
+        lateAfter.AtsWinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
+        lateAfter.OverUnderResult.Should().Be(OverUnderResult.Under);
+
+        // Already-finalized row: every derived field unchanged. Verifies
+        // EnrichOddsResults was called only against the unfinalized subset.
+        var alreadyFinalizedAfter = await FootballDataContext.CompetitionOdds.FindAsync(oddsRowAlreadyFinalized.Id);
+        alreadyFinalizedAfter!.FinalizedUtc.Should().Be(alreadyFinalizedUtc);
+        alreadyFinalizedAfter.WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
+        alreadyFinalizedAfter.AtsWinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
+        alreadyFinalizedAfter.OverUnderResult.Should().Be(OverUnderResult.Over);
 
         // Contest.FinalizedUtc untouched (no double-stamp).
         var contestAfter = await FootballDataContext.Contests.FindAsync(contestId);
@@ -505,6 +537,21 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
 
         Mock.Get(Mocker.Get<IEventBus>())
             .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        // Warning emitted exactly once and references the null-score
+        // condition. Matches on a short, stable property-name fragment
+        // ("AwayScore") rather than the full message text so harmless
+        // wording tweaks don't break the test, while still confirming
+        // the warning describes the right scenario.
+        Mock.Get(Mocker.Get<ILogger<FootballContestEnrichmentProcessor>>())
+            .Verify(
+                x => x.Log(
+                    LogLevel.Warning,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, _) => v.ToString()!.Contains("AwayScore")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
     }
 
     #endregion

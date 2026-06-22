@@ -37,6 +37,7 @@ namespace SportsData.Producer.Application.Contests
         {
             using (_logger.BeginScope(new Dictionary<string, object>
                    {
+                       ["ContestId"] = command.ContestId,
                        ["CorrelationId"] = command.CorrelationId
                    }))
             {
@@ -154,6 +155,12 @@ namespace SportsData.Producer.Application.Contests
                     contest.HomeScore = (int)homeMaxScore.Value;
                 }
 
+                _logger.LogInformation(
+                    "Final score derived. Source={Source}, Away={AwayScore}, Home={HomeScore}",
+                    lastScoringPlay != null ? "ScoringPlay" : "CompetitorMaxScore",
+                    contest.AwayScore,
+                    contest.HomeScore);
+
                 var awayFranchiseSeasonId = awayCompetitor.FranchiseSeasonId;
                 var homeFranchiseSeasonId = homeCompetitor.FranchiseSeasonId;
 
@@ -166,6 +173,11 @@ namespace SportsData.Producer.Application.Contests
                         homeFranchiseSeasonId :
                         awayFranchiseSeasonId;
                 }
+
+                _logger.LogInformation(
+                    "Straight-up winner derived. WinnerFranchiseSeasonId={WinnerFranchiseSeasonId}, IsTie={IsTie}",
+                    contest.WinnerFranchiseSeasonId,
+                    contest.AwayScore == contest.HomeScore);
 
                 contest.FinalizedUtc = _dateTimeProvider.UtcNow();
 
@@ -188,7 +200,23 @@ namespace SportsData.Producer.Application.Contests
                     {
                         contest.OverUnder = primaryOdds.OverUnderResult;
                         contest.SpreadWinnerFranchiseSeasonId = primaryOdds.AtsWinnerFranchiseSeasonId;
+
+                        _logger.LogInformation(
+                            "Primary odds provider selected. ProviderName={ProviderName}, OverUnderResult={OverUnderResult}, AtsWinner={AtsWinnerFranchiseSeasonId}",
+                            primaryOdds.ProviderName,
+                            primaryOdds.OverUnderResult,
+                            primaryOdds.AtsWinnerFranchiseSeasonId);
                     }
+                    else
+                    {
+                        _logger.LogInformation(
+                            "No finalized odds row available; Contest-level ATS / OverUnder not denormalized.");
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "No CompetitionOdds rows present; skipping per-provider enrichment.");
                 }
 
                 await _bus.Publish(
@@ -206,6 +234,20 @@ namespace SportsData.Producer.Application.Contests
                         OverUnderResultRaw: (int)contest.OverUnder,
                         CompletedUtc: contest.FinalizedUtc));
                 await _dataContext.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Contest enrichment completed. ContestName={ContestName}, " +
+                    "AwayScore={AwayScore}, HomeScore={HomeScore}, WinnerFranchiseSeasonId={WinnerFranchiseSeasonId}, " +
+                    "SpreadWinnerFranchiseSeasonId={SpreadWinnerFranchiseSeasonId}, OverUnder={OverUnder}, " +
+                    "FinalizedUtc={FinalizedUtc}, OddsProvidersFinalized={OddsProvidersFinalized}",
+                    contest.Name,
+                    contest.AwayScore,
+                    contest.HomeScore,
+                    contest.WinnerFranchiseSeasonId,
+                    contest.SpreadWinnerFranchiseSeasonId,
+                    contest.OverUnder,
+                    contest.FinalizedUtc,
+                    competition.Odds?.Count(o => o.FinalizedUtc.HasValue) ?? 0);
             }
         }
 

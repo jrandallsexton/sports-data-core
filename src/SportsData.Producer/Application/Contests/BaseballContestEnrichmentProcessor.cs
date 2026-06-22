@@ -59,10 +59,14 @@ namespace SportsData.Producer.Application.Contests
                 return;
             }
 
-            if (competition.Contest.FinalizedUtc != null)
+            var contestAlreadyFinalized = competition.Contest.FinalizedUtc != null;
+            var unfinalizedOdds = competition.Odds?
+                .Where(o => o.FinalizedUtc == null).ToList() ?? new List<CompetitionOdds>();
+
+            if (contestAlreadyFinalized && unfinalizedOdds.Count == 0)
             {
                 _logger.LogInformation(
-                    "Contest already finalized. Skipping. FinalizedUtc={FinalizedUtc}",
+                    "Contest and all odds rows already finalized. Nothing to do. FinalizedUtc={FinalizedUtc}",
                     competition.Contest.FinalizedUtc);
                 return;
             }
@@ -78,6 +82,76 @@ namespace SportsData.Producer.Application.Contests
                 return;
             }
 
+            var contest = competition.Contest;
+
+            if (contestAlreadyFinalized)
+            {
+                // Odds-late path: Contest finalized earlier, but ≥1
+                // CompetitionOdds row arrived (or stayed unfinalized) after.
+                // Reuse the persisted Contest scores — do NOT re-derive
+                // from CompetitorScores so we don't drift from the values
+                // picks were scored against. Do NOT republish
+                // ContestFinalized — downstream picks scoring already ran;
+                // republishing would double-score.
+                if (contest.AwayScore is null || contest.HomeScore is null)
+                {
+                    _logger.LogWarning(
+                        "Contest finalized but missing AwayScore/HomeScore — cannot finalize {UnfinalizedOddsCount} late odds row(s). Manual intervention required.",
+                        unfinalizedOdds.Count);
+                    return;
+                }
+
+                _logger.LogInformation(
+                    "Contest already finalized; running odds-late finalization for {UnfinalizedOddsCount} provider(s).",
+                    unfinalizedOdds.Count);
+
+                EnrichOddsResults(
+                    unfinalizedOdds,
+                    awayCompetitor.FranchiseSeasonId,
+                    homeCompetitor.FranchiseSeasonId,
+                    contest.AwayScore.Value,
+                    contest.HomeScore.Value);
+
+                // Refresh Contest-level denorm if a higher-priority provider
+                // just landed (e.g. EspnBet missing before, now present —
+                // promote it).
+                var primaryOddsLate = competition.Odds!
+                    .FirstOrDefault(o => o.FinalizedUtc.HasValue && o.ProviderId == SportsBook.EspnBet.ToProviderId())
+                    ?? competition.Odds!.FirstOrDefault(o => o.FinalizedUtc.HasValue);
+
+                if (primaryOddsLate != null)
+                {
+                    var denormChanged =
+                        contest.OverUnder != primaryOddsLate.OverUnderResult
+                        || contest.SpreadWinnerFranchiseSeasonId != primaryOddsLate.AtsWinnerFranchiseSeasonId;
+
+                    contest.OverUnder = primaryOddsLate.OverUnderResult;
+                    contest.SpreadWinnerFranchiseSeasonId = primaryOddsLate.AtsWinnerFranchiseSeasonId;
+
+                    if (denormChanged)
+                    {
+                        _logger.LogWarning(
+                            "Contest denorm refreshed by late primary odds. ProviderName={ProviderName}, OverUnderResult={OverUnderResult}, AtsWinner={AtsWinnerFranchiseSeasonId}. Downstream picks NOT re-scored (per-provider scoring is a future refactor).",
+                            primaryOddsLate.ProviderName,
+                            primaryOddsLate.OverUnderResult,
+                            primaryOddsLate.AtsWinnerFranchiseSeasonId);
+                    }
+                    else
+                    {
+                        _logger.LogInformation(
+                            "Primary odds provider unchanged after odds-late finalization. ProviderName={ProviderName}",
+                            primaryOddsLate.ProviderName);
+                    }
+                }
+
+                await _dataContext.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Odds-late finalization completed. OddsProvidersFinalized={OddsProvidersFinalized}",
+                    competition.Odds!.Count(o => o.FinalizedUtc.HasValue));
+                return;
+            }
+
             var status = await _dataContext.CompetitionStatuses
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.CompetitionId == competition.Id);
@@ -86,11 +160,9 @@ namespace SportsData.Producer.Application.Contests
             {
                 _logger.LogInformation(
                     "Contest status is not yet final for {ContestName}. Current: {Status}. Skipping enrichment.",
-                    competition.Contest.Name, status?.StatusTypeName ?? "unknown");
+                    contest.Name, status?.StatusTypeName ?? "unknown");
                 return;
             }
-
-            var contest = competition.Contest;
 
             // MAX(Value) per competitor. Cross-sport schema variance in
             // CompetitionCompetitorScores prevents a SourceDescription-based

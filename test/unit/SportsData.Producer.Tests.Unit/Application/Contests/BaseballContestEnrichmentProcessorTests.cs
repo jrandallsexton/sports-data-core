@@ -383,6 +383,146 @@ public class BaseballContestEnrichmentProcessorTests
 
     #endregion
 
+    #region Process — odds-late path
+
+    [Fact]
+    public async Task Process_WhenContestFinalizedAndAllOddsFinalized_NoOp()
+    {
+        // Both Contest and every CompetitionOdds row carry FinalizedUtc.
+        // Three-state branch returns "Nothing to do" without touching odds
+        // (must not re-stamp already-final rows — that breaks the audit
+        // trail of when the odds row originally finalized).
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        var contest = await _baseballDataContext.Contests.FindAsync(contestId);
+        contest!.FinalizedUtc = new DateTime(2026, 4, 26, 23, 30, 0, DateTimeKind.Utc);
+        contest.AwayScore = 4;
+        contest.HomeScore = 7;
+        contest.WinnerFranchiseSeasonId = HomeFranchiseSeasonId;
+
+        var oddsFinalizedAt = new DateTime(2026, 4, 26, 23, 30, 0, DateTimeKind.Utc);
+        var oddsRow = new CompetitionOdds
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            ProviderRef = new Uri("https://example.com/odds/draftkings"),
+            ProviderId = "draftkings",
+            ProviderName = "DraftKings",
+            Spread = -1.5m,
+            OverUnder = 9.0m,
+            FinalizedUtc = oddsFinalizedAt,
+            WinnerFranchiseSeasonId = HomeFranchiseSeasonId,
+            AtsWinnerFranchiseSeasonId = HomeFranchiseSeasonId,
+            OverUnderResult = OverUnderResult.Over
+        };
+        _baseballDataContext.CompetitionOdds.Add(oddsRow);
+        await _baseballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        // FinalizedUtc unchanged — proves the early-return fired before
+        // EnrichOddsResults could re-stamp the row.
+        var oddsAfter = await _baseballDataContext.CompetitionOdds.FindAsync(oddsRow.Id);
+        oddsAfter!.FinalizedUtc.Should().Be(oddsFinalizedAt);
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenContestFinalizedAndOddsUnfinalized_FinalizesOddsOnly()
+    {
+        // Contest finalized earlier; a CompetitionOdds row arrived late with
+        // FinalizedUtc null. Odds-late path finalizes only the unfinalized
+        // row, reuses persisted Contest scores (no re-derivation), and does
+        // NOT republish ContestFinalized (downstream picks scoring already
+        // ran — republishing would double-score).
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        var contestPriorFinalizedUtc = new DateTime(2026, 4, 26, 23, 30, 0, DateTimeKind.Utc);
+        var contest = await _baseballDataContext.Contests.FindAsync(contestId);
+        contest!.FinalizedUtc = contestPriorFinalizedUtc;
+        contest.AwayScore = 4;
+        contest.HomeScore = 7;
+        contest.WinnerFranchiseSeasonId = HomeFranchiseSeasonId;
+
+        var oddsRowLate = new CompetitionOdds
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            ProviderRef = new Uri("https://example.com/odds/draftkings"),
+            ProviderId = "draftkings",
+            ProviderName = "DraftKings",
+            Spread = -1.5m,         // home favored — 7+(-1.5)=5.5 vs 4 → home covers
+            OverUnder = 12m,        // total 11 < 12 → Under
+            FinalizedUtc = null
+        };
+        _baseballDataContext.CompetitionOdds.Add(oddsRowLate);
+        await _baseballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        // Odds row finalized with computed result fields.
+        var oddsAfter = await _baseballDataContext.CompetitionOdds.FindAsync(oddsRowLate.Id);
+        oddsAfter!.FinalizedUtc.Should().NotBeNull();
+        oddsAfter.WinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
+        oddsAfter.AtsWinnerFranchiseSeasonId.Should().Be(HomeFranchiseSeasonId);
+        oddsAfter.OverUnderResult.Should().Be(OverUnderResult.Under);
+
+        // Contest.FinalizedUtc untouched (no double-stamp).
+        var contestAfter = await _baseballDataContext.Contests.FindAsync(contestId);
+        contestAfter!.FinalizedUtc.Should().Be(contestPriorFinalizedUtc);
+
+        // No republish — downstream picks scoring already ran for this Contest.
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenContestFinalizedButScoresNull_WarnsAndReturns()
+    {
+        // Stale partial-failure shape: Contest.FinalizedUtc set but
+        // AwayScore/HomeScore null. Odds-late path bails with a warning
+        // rather than feed nulls into EnrichOddsResults.
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        var contest = await _baseballDataContext.Contests.FindAsync(contestId);
+        contest!.FinalizedUtc = new DateTime(2026, 4, 26, 23, 30, 0, DateTimeKind.Utc);
+        // AwayScore and HomeScore stay null intentionally.
+        await _baseballDataContext.SaveChangesAsync();
+
+        var oddsRow = new CompetitionOdds
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            ProviderRef = new Uri("https://example.com/odds"),
+            ProviderId = "draftkings",
+            ProviderName = "DraftKings",
+            Spread = -1.5m,
+            OverUnder = 9.0m,
+            FinalizedUtc = null
+        };
+        _baseballDataContext.CompetitionOdds.Add(oddsRow);
+        await _baseballDataContext.SaveChangesAsync();
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        // Odds row stays unfinalized — bail fired before EnrichOddsResults.
+        var oddsAfter = await _baseballDataContext.CompetitionOdds.FindAsync(oddsRow.Id);
+        oddsAfter!.FinalizedUtc.Should().BeNull();
+        oddsAfter.WinnerFranchiseSeasonId.Should().BeNull();
+        oddsAfter.AtsWinnerFranchiseSeasonId.Should().BeNull();
+        oddsAfter.OverUnderResult.Should().Be(OverUnderResult.None);
+
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    #endregion
+
     #region GetOverUnderResult
 
     [Fact]

@@ -1,4 +1,7 @@
+using FluentValidation.Results;
+using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Application.UI.Map.Dtos;
+using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 
@@ -14,13 +17,16 @@ public interface IGetMapMatchupsQueryHandler
 public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
 {
     private readonly ILogger<GetMapMatchupsQueryHandler> _logger;
+    private readonly AppDataContext _dataContext;
     private readonly IContestClientFactory _contestClientFactory;
 
     public GetMapMatchupsQueryHandler(
         ILogger<GetMapMatchupsQueryHandler> logger,
+        AppDataContext dataContext,
         IContestClientFactory contestClientFactory)
     {
         _logger = logger;
+        _dataContext = dataContext;
         _contestClientFactory = contestClientFactory;
     }
 
@@ -34,11 +40,18 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
             query.SeasonYear,
             query.WeekNumber);
 
+        var league = await _dataContext.PickemGroups.FirstOrDefaultAsync(x => x.Id == query.LeagueId, cancellationToken);
+
+        if (league == null)
+        {
+            return new Failure<GetMapMatchupsResponse>(new GetMapMatchupsResponse(), ResultStatus.NotFound, [new ValidationFailure("LeagueId", "League Not Found")]);
+        }
+
         if (query.LeagueId is null && query.WeekNumber is null)
         {
             // TODO: Honor WeekNumber when LeagueId is provided
-            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForCurrentWeek();
-            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : new System.Collections.Generic.List<SportsData.Core.Dtos.Canonical.Matchup>();
+            var matchupsResult = await _contestClientFactory.Resolve(league.Sport).GetMatchupsForCurrentWeek(cancellationToken);
+            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : [];
 
             return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse
             {
@@ -49,8 +62,8 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
         {
             // we have a week, but no league
             var seasonYear = query.SeasonYear ?? DateTime.UtcNow.Year;
-            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForSeasonWeek(seasonYear, query.WeekNumber!.Value);
-            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : new System.Collections.Generic.List<SportsData.Core.Dtos.Canonical.Matchup>();
+            var matchupsResult = await _contestClientFactory.Resolve(league.Sport).GetMatchupsForSeasonWeek(seasonYear, query.WeekNumber!.Value, cancellationToken);
+            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : [];
 
             return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse
             {
@@ -60,8 +73,8 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
         else
         {
             // we have a league (and optionally a week)
-            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForCurrentWeek();
-            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : new System.Collections.Generic.List<SportsData.Core.Dtos.Canonical.Matchup>();
+            var matchupsResult = await _contestClientFactory.Resolve(league.Sport).GetMatchupsForCurrentWeek(cancellationToken);
+            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : [];
 
             return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse
             {

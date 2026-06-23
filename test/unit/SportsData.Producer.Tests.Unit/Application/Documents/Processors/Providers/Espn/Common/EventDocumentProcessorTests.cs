@@ -35,6 +35,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 [Collection("Sequential")]
 public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
+    // Deterministic seed timestamp for entity CreatedUtc — never asserted against,
+    // just satisfies NOT NULL. Avoids DateTime.UtcNow in tests per the project rule.
+    private static readonly DateTime FixedTestNow = new(2026, 5, 4, 12, 0, 0, DateTimeKind.Utc);
+
     // Helper method to setup common test data
     private async Task SetupSeasonDataAsync(ExternalRefIdentityGenerator generator, EspnEventDto dto)
     {
@@ -446,6 +450,12 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
 
         var staleStartDate = new DateTime(1999, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+        // The publish should carry the exact UTC value parsed from the JSON's Date field.
+        // Guard the parse — silent failure would default jsonDate to MinValue and mask a real bug.
+        DateTime.TryParse(dto!.Date, out var jsonDate)
+            .Should().BeTrue("the EspnFootballNcaaEvent.json fixture must contain a parseable Date");
+        var expectedNewStartTime = jsonDate.ToUniversalTime();
+
         var contest = new FootballContest
         {
             Id = Guid.NewGuid(),
@@ -456,7 +466,7 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
             StartDateUtc = staleStartDate,
             HomeTeamFranchiseSeasonId = Guid.NewGuid(),
             AwayTeamFranchiseSeasonId = Guid.NewGuid(),
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedTestNow,
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<ContestExternalId>
             {
@@ -487,14 +497,14 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
         // act
         await sut.ProcessAsync(command);
 
-        // assert — Contest.StartDateUtc moved off the sentinel, and the publish fired with the new value
+        // assert — Contest.StartDateUtc was overwritten with the JSON value, and the publish carries the same value
         var saved = await FootballDataContext.Contests.FirstAsync(c => c.Id == contest.Id);
-        saved.StartDateUtc.Should().NotBe(staleStartDate);
+        saved.StartDateUtc.Should().Be(expectedNewStartTime);
 
         bus.Verify(x => x.Publish(
             It.Is<ContestStartTimeUpdated>(e =>
                 e.ContestId == contest.Id &&
-                e.NewStartTime != staleStartDate &&
+                e.NewStartTime == expectedNewStartTime &&
                 e.CausationId == CausationId.Producer.EventDocumentProcessor),
             It.IsAny<CancellationToken>()),
             Times.Once);
@@ -525,7 +535,10 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
         var eventUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en";
 
         // Seed StartDateUtc with the exact value from the JSON so the gate trips.
-        DateTime.TryParse(dto!.Date, out var jsonDate);
+        // Guard the parse — silent failure would default jsonDate to MinValue, which would
+        // also become the seeded StartDateUtc, making the test pass for the wrong reason.
+        DateTime.TryParse(dto!.Date, out var jsonDate)
+            .Should().BeTrue("the EspnFootballNcaaEvent.json fixture must contain a parseable Date");
         var alreadyCurrentStartDate = jsonDate.ToUniversalTime();
 
         var contest = new FootballContest
@@ -538,7 +551,7 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
             StartDateUtc = alreadyCurrentStartDate,
             HomeTeamFranchiseSeasonId = Guid.NewGuid(),
             AwayTeamFranchiseSeasonId = Guid.NewGuid(),
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedTestNow,
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<ContestExternalId>
             {

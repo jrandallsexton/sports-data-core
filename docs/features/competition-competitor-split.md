@@ -1,18 +1,22 @@
 # CompetitionCompetitor — sport-specific subtype split
 
-Captured 2026-05-08. Plan to split the shared `CompetitionCompetitor`
-canonical entity into a base + per-sport subclasses, mirroring the
-pattern already used for `CompetitionBase` →
-`BaseballCompetition` / `FootballCompetition`. Scoped to Phase 1 of a
-multi-PR effort; downstream phases noted at the end.
+Captured 2026-05-08. Combines `competition-competitor-split.md`
+(Phase 1, the subtype split) and `competition-competitor-probables.md`
+(Phase 2, MLB probables ingestion), previously separate root-level docs.
+Together they document the multi-PR effort to retire the shared
+`CompetitionCompetitor` canonical entity in favor of sport-specific
+subclasses, then hang MLB's `probables[]` collection off the new
+baseball subtype.
 
-## Why
+## Overall effort
 
-Two pressure points have arrived at the same time:
+The canonical `CompetitionCompetitor` entity was originally shared
+across all sports. Two pressure points arrived at the same time and
+forced a split:
 
 1. **`CuratedRankCurrent` is on the shared base** — that column is
    NCAAFB-specific (poll ranks). It violates the
-   [sport-specific subtype split feedback memory](../memory/feedback_sport_specific_subtype_split.md):
+   [sport-specific subtype split feedback memory](../../memory/feedback_sport_specific_subtype_split.md):
    "when a sport adds fields to a `*Base`-hanging entity, model a
    sport-specific subclass; do NOT pile nullable columns on the
    shared parent."
@@ -40,7 +44,16 @@ ESPN payload shape comparison (live fixtures in the test data):
 | `curatedRank.current` | ✓ | – | **moves: base → football subtype** |
 | `probables[]` | – | ✓ | **adds: baseball subtype** (Phase 2) |
 
-## What changes (Phase 1 scope)
+The effort is sequenced as four phases. Phase 1 (the structural split)
+and Phase 2 (MLB probables ingestion) are documented in detail below.
+Phases 3 and 4 are scoped at the end.
+
+## Phase 1 — Sport-specific subtype split
+
+Phase 1 scope: rename the existing canonical entity to
+`CompetitionCompetitorBase`, make it abstract, and introduce
+sport-specific TPH subclasses, mirroring the pattern already used for
+`CompetitionBase` → `BaseballCompetition` / `FootballCompetition`.
 
 ### Entity model
 
@@ -117,7 +130,7 @@ no schema change for the child tables. Child C# code references the
 base type, which is fine since the children don't care about
 sport-specific fields.
 
-## Migration plan
+### Migration plan
 
 Two migrations, one per sport context.
 
@@ -135,10 +148,10 @@ Two migrations, one per sport context.
 - `CuratedRankCurrent` stays — but its conceptual home is now the
   football subtype. No DDL change for that column.
 
-Per the [test-migrations-locally feedback](../memory/feedback_test_migrations_locally.md),
+Per the [test-migrations-locally feedback](../../memory/feedback_test_migrations_locally.md),
 both migrations validated against a local prod copy before push.
 
-## Tests
+### Tests
 
 `CompetitionCompetitor` is referenced in:
 - DTO projection / extension tests
@@ -150,25 +163,112 @@ Mechanical update: change references from `CompetitionCompetitor` to
 construction is involved). No new test scenarios in Phase 1 — the
 split is a refactor, not a behavior change.
 
-## Out of scope (deferred phases)
+## Phase 2 — MLB probables ingestion
 
-**Phase 2 — MLB Probables ingestion (separate PR):**
-- New entity `CompetitionCompetitorProbable` (Baseball-only):
-  `Name`, `DisplayName`, `ShortDisplayName`, `Abbreviation`,
-  `EspnPlayerId`, `BaseballAthleteId` (FK to BaseballAthlete), audit.
-- 1:N collection on `BaseballCompetitionCompetitor` (today only the SP,
-  but ESPN's array shape suggests room for more roles).
-- Processor extends to read `probables[]`, resolves
-  `athlete.$ref` to `BaseballAthlete.Id`. **Per the established
-  not-sourced pattern, if the athlete cannot be resolved, request
-  athlete sourcing and throw `NotSourcedException` so Hangfire
-  retries — do not persist Probable rows with null athlete FKs.
-  An empty Probable is worthless on the matchup card.**
+Phase 2 hangs MLB's `probables[]` collection off the
+`BaseballCompetitionCompetitor` subtype created in Phase 1, and wires
+inline ingestion into the EventCompetitionCompetitor processor.
+
+### What ESPN ships
+
+The MLB EventCompetitionCompetitor payload carries an inline `probables`
+array. Today it contains a single entry — the probable starting pitcher
+— but the array shape leaves room for future roles (closer, etc.).
+
+```json
+"probables": [
+  {
+    "name": "probableStartingPitcher",
+    "displayName": "Probable Starting Pitcher",
+    "shortDisplayName": "Starter",
+    "abbreviation": "SP",
+    "playerId": 4311625,
+    "athlete": { "$ref": ".../seasons/2026/athletes/4311625?lang=en&region=us" },
+    "statistics": { "$ref": ".../seasons/2026/types/2/athletes/4311625/statistics/0?..." }
+  }
+]
+```
+
+Football has no analogue, so this lives entirely on the baseball side
+of the split.
+
+### Schema
+
+New canonical entity: `CompetitionCompetitorProbable` — a 1:N child of
+`BaseballCompetitionCompetitor`.
+
+| Column | Notes |
+|---|---|
+| `Id` (PK) | Deterministic Guid: `Combine("competitor-probable", competitorId, name)` |
+| `CompetitionCompetitorId` (FK, cascade) | Parent competitor row |
+| `AthleteSeasonId` (FK, restrict) | Resolved from `athlete.$ref` |
+| `EspnPlayerId` | Convenience copy of ESPN's int playerId |
+| `Name` | Role key (`probableStartingPitcher`) |
+| `DisplayName` / `ShortDisplayName` / `Abbreviation` | UI copy |
+
+Unique index on `(CompetitionCompetitorId, Name)` so the role-name is
+the natural key — reprocessing the same competitor with the same role
+upserts the same row.
+
+Cascade vs restrict choice:
+- **Cascade from competitor** — a probable row is meaningless without
+  its parent competitor; deleting the competitor takes its probables
+  with it.
+- **Restrict from athlete** — deleting an `AthleteSeason` should NOT
+  cascade-cull historical probable rows. The probable is a record of
+  what was advertised at game time; we want it to outlive the athlete's
+  season row if that ever gets pruned.
+
+### Ingestion path
+
+`BaseballEventCompetitionCompetitorDocumentProcessor` overrides two
+virtual hooks added to the base in this PR:
+
+1. **`DeserializeDto`** — returns the sport-specific
+   `EspnBaseballEventCompetitionCompetitorDto` so the base pipeline can
+   pass the full payload (including `Probables`) through to the
+   sport-specific hook.
+2. **`ProcessSportSpecificCompetitorData`** — runs after the competitor
+   entity is staged on the change tracker but before
+   `SaveChangesAsync`, so probable rows commit in the same transaction
+   as the competitor.
+
+Per probable:
+- Skip with a warning if `Name` or `Athlete.Ref` is missing.
+- Resolve `AthleteSeasonId` via `IGenerateExternalRefIdentities`.
+- If the AthleteSeason isn't in the DB yet:
+  - `PublishDependencyRequest(... DocumentType.AthleteSeason)`
+  - throw `ExternalDocumentNotSourcedException` so Hangfire retries
+    the competitor document. This is the established not-sourced
+    pattern; persisting a probable without a resolved athlete is
+    worthless on the matchup card, so we fail loud and retry.
+- Upsert by deterministic Id; the `(competitorId, role-name)` key
+  collapses repeat runs onto the same row and updates the audit fields.
+
+### Why not...
+
+- **...persist the probable with a null `AthleteSeasonId`?** An empty
+  probable is worthless on the matchup card. The not-sourced retry
+  pattern is the established convention here.
+- **...denormalize the pitcher's statistics onto the competitor?** ESPN
+  ships a `statistics.$ref` per probable but those numbers drift through
+  the season. Phase 3 will snapshot a small set of stats on the
+  probable row at game-start time (ERA, W-L, K, etc.) so the matchup
+  card renders the at-game-start view rather than today's rolled-up
+  numbers — same time-travel problem we already solved for series
+  state in PR #299. Out of scope here.
+- **...add a `Role` enum?** Today only `probableStartingPitcher`
+  exists. A string column with a unique-index discriminator keeps the
+  schema flexible if ESPN starts shipping additional roles. We can
+  promote to an enum once a second role appears and the closed set
+  stops being speculative.
+
+## Out of scope (later phases)
 
 **Phase 3 — Probable pitcher stats snapshot (separate PR, separate doc):**
 - Pitcher season stats (ERA, WHIP, K/9, etc.) are mutable and drift
   all season — same time-travel hazard as the
-  [series snapshot redesign](series-snapshot-redesign.md).
+  [series snapshot redesign](baseball-series-snapshot-redesign.md).
   Matchup cards from May should display May-era ERA, not September-era.
 - Likely shape: snapshot stat columns directly on
   `CompetitionCompetitorProbable`, locked on first non-null write.
@@ -183,12 +283,12 @@ split is a refactor, not a behavior change.
 
 ## Related
 
-- [`docs/series-snapshot-redesign.md`](series-snapshot-redesign.md) —
+- [`docs/features/baseball-series-snapshot-redesign.md`](baseball-series-snapshot-redesign.md) —
   same general shape (sport-specific data on a sport-specific entity,
   snapshot for time-travel correctness) we'll mirror in Phase 3.
-- [`memory/feedback_sport_specific_subtype_split.md`](../memory/feedback_sport_specific_subtype_split.md) —
+- [`memory/feedback_sport_specific_subtype_split.md`](../../memory/feedback_sport_specific_subtype_split.md) —
   the guardrail this PR honors.
-- [`memory/feedback_test_migrations_locally.md`](../memory/feedback_test_migrations_locally.md) —
+- [`memory/feedback_test_migrations_locally.md`](../../memory/feedback_test_migrations_locally.md) —
   applies to both migrations.
-- [`memory/feedback_design_doc_first.md`](../memory/feedback_design_doc_first.md) —
+- [`memory/feedback_design_doc_first.md`](../../memory/feedback_design_doc_first.md) —
   why this doc exists.

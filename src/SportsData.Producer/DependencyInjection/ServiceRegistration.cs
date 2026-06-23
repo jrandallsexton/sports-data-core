@@ -329,6 +329,7 @@ namespace SportsData.Producer.DependencyInjection
                 services.AddScoped<IFootballContestReplayService, FootballContestReplayService>();
                 services.AddScoped<ICompetitionBroadcastingJob, FootballCompetitionStreamer>();
                 services.AddScoped<CompetitionStreamScheduler>();
+                services.AddScoped<IContestStartTimeUpdatedConsumerHandler, ContestStartTimeUpdatedConsumerHandler>();
             }
 
             if (mode is Sport.BaseballMlb)
@@ -337,6 +338,7 @@ namespace SportsData.Producer.DependencyInjection
                 services.AddScoped<IBaseballContestReplayService, BaseballContestReplayService>();
                 services.AddScoped<ICompetitionBroadcastingJob, BaseballCompetitionStreamer>();
                 services.AddScoped<CompetitionStreamScheduler>();
+                services.AddScoped<IContestStartTimeUpdatedConsumerHandler, ContestStartTimeUpdatedConsumerHandler>();
             }
 
             // Season Queries

@@ -67,6 +67,65 @@ public class CompetitionStreamScheduler
     /// </summary>
     public Task Execute() => ExecuteAsync(CancellationToken.None);
 
+    /// <summary>
+    /// Event-driven single-contest reschedule path. Invoked from
+    /// <see cref="Consumers.ContestStartTimeUpdatedConsumerHandler"/> after
+    /// MassTransit delivers <c>ContestStartTimeUpdated</c>. Companion to the
+    /// recurring <see cref="ExecuteAsync"/> sweep — that one runs daily for
+    /// MLB and weekly for football, which is too sparse to catch mid-day ESPN
+    /// game-time changes (the failure mode this method exists to fix).
+    ///
+    /// Reuses <see cref="TryRescheduleAsync"/> for the actual reschedule logic
+    /// so the same drift threshold, about-to-fire guard, and crash-safe ordering
+    /// (schedule-new → save → delete-old) applies on both paths. Returns
+    /// <c>true</c> when a reschedule happened, <c>false</c> on any benign
+    /// no-op condition (contest finalized, no stream row yet, stream not in
+    /// Scheduled state, drift within threshold, etc.). Throws on hard failure
+    /// so Hangfire retries.
+    /// </summary>
+    public async Task<bool> RescheduleForContestAsync(Guid contestId, CancellationToken cancellationToken)
+    {
+        var now = _dateTimeProvider.UtcNow();
+
+        // Same filter as the recurring sweep: skip already-finalized contests.
+        // Also include the Contest navigation we'll need for the reschedule.
+        var competition = await _dataContext.Competitions
+            .Include(c => c.Contest)
+            .Where(c => c.ContestId == contestId && c.Contest.FinalizedUtc == null)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (competition == null)
+        {
+            _logger.LogInformation(
+                "No active competition found for ContestId {ContestId}; nothing to reschedule. " +
+                "(Contest may be finalized, deleted, or never sourced.)",
+                contestId);
+            return false;
+        }
+
+        // Single-row tracked load — TryRescheduleAsync mutates the row.
+        var existingStream = await _dataContext.CompetitionStreams
+            .FirstOrDefaultAsync(s => s.CompetitionId == competition.Id, cancellationToken);
+
+        if (existingStream == null)
+        {
+            // No stream scheduled yet — initial scheduling is the recurring
+            // sweep's responsibility, not the event path's. Returning false
+            // is correct: the next ExecuteAsync run will create the row using
+            // the current (updated) Competition.Date.
+            _logger.LogInformation(
+                "No CompetitionStream row for CompetitionId {CompetitionId} (ContestId {ContestId}); " +
+                "initial scheduling deferred to next recurring sweep.",
+                competition.Id, contestId);
+            return false;
+        }
+
+        var desiredScheduledTimeUtc = ComputeScheduledTimeUtc(competition.Date, now);
+
+        return await TryRescheduleAsync(
+            existingStream, competition, competition.Contest, desiredScheduledTimeUtc, now, cancellationToken);
+    }
+
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         var now = _dateTimeProvider.UtcNow();

@@ -152,6 +152,7 @@ public class Program
             {
                 typeof(CompetitorScoreUpdatedConsumer),
                 typeof(ContestCompletedHandler),
+                typeof(ContestStartTimeUpdatedConsumer),
                 typeof(DocumentCreatedHandler),
                 // typeof(DocumentDeadLetterConsumer), // DISABLED: Allow messages to accumulate for later replay
                 typeof(LoadTestProducerEventConsumer),

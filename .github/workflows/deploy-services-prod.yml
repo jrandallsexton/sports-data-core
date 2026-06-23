@@ -22,6 +22,10 @@ on:
         description: 'Jobs Dashboard image tag (e.g., 1350)'
         required: false
         type: string
+      notification_tag:
+        description: 'Notification image tag (e.g., 1351)'
+        required: false
+        type: string
 
 jobs:
   update-tags:
@@ -114,6 +118,23 @@ jobs:
           fi
           echo "Updated Jobs Dashboard to tag: $TAG"
 
+      - name: Update Notification image tag
+        if: ${{ inputs.notification_tag != '' }}
+        working-directory: sports-data-config
+        run: |
+          TAG='${{ inputs.notification_tag }}'
+          if [[ ! "$TAG" =~ ^[0-9]+$ ]]; then
+            echo "::error::notification_tag must be a numeric build tag"
+            exit 1
+          fi
+          # Update or add image to notification-patch.yaml
+          if grep -q "image:" app/overlays/04_prod/notification-patch.yaml; then
+            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdatanotification:${TAG}|g" app/overlays/04_prod/notification-patch.yaml
+          else
+            sed -i '/- name: notification/a\        image: sportdeets.azurecr.io/sportsdatanotification:'"$TAG" app/overlays/04_prod/notification-patch.yaml
+          fi
+          echo "Updated Notification to tag: $TAG"
+
       - name: Commit and push changes
         working-directory: sports-data-config
         run: |
@@ -130,6 +151,7 @@ jobs:
             [ -n "${{ inputs.producer_tag }}" ] && COMMIT_MSG="$COMMIT_MSG Producer=${{ inputs.producer_tag }}"
             [ -n "${{ inputs.provider_tag }}" ] && COMMIT_MSG="$COMMIT_MSG Provider=${{ inputs.provider_tag }}"
             [ -n "${{ inputs.jobs_dashboard_tag }}" ] && COMMIT_MSG="$COMMIT_MSG JobsDashboard=${{ inputs.jobs_dashboard_tag }}"
+            [ -n "${{ inputs.notification_tag }}" ] && COMMIT_MSG="$COMMIT_MSG Notification=${{ inputs.notification_tag }}"
             
             git commit -m "$COMMIT_MSG"
             git push

@@ -264,6 +264,162 @@ public class CompetitionStreamSchedulerTests : ProducerTestBase<CompetitionStrea
             .Verify(x => x.Delete("hf-locked"), Times.Once);
     }
 
+    [Fact]
+    public async Task RescheduleForContest_WhenCompetitionNotFound_ReturnsFalseAndDoesNothing()
+    {
+        // Event arrives for a contest that doesn't exist locally (race between
+        // ESPN sourcing and event delivery, or contest already deleted).
+        // Handler logs and no-ops — the recurring sweep will catch it later.
+
+        var result = await _sut.RescheduleForContestAsync(Guid.NewGuid(), CancellationToken.None);
+
+        result.Should().BeFalse();
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Schedule<ICompetitionBroadcastingJob>(
+                It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
+                It.IsAny<TimeSpan>()),
+                Times.Never);
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleForContest_WhenContestFinalized_ReturnsFalseAndDoesNothing()
+    {
+        // Filter mirrors the recurring sweep: finalized contests are excluded.
+        // No reschedule needed for a game that already ended.
+
+        await SeedSeasonWeekAsync();
+        var competitionId = await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(5));
+        var contestId = FootballDataContext.Competitions.Single(c => c.Id == competitionId).ContestId;
+
+        var contest = FootballDataContext.Contests.Single(c => c.Id == contestId);
+        contest.FinalizedUtc = FixedNow.AddHours(-1);
+        await FootballDataContext.SaveChangesAsync();
+
+        var result = await _sut.RescheduleForContestAsync(contestId, CancellationToken.None);
+
+        result.Should().BeFalse();
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Schedule<ICompetitionBroadcastingJob>(
+                It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
+                It.IsAny<TimeSpan>()),
+                Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleForContest_WhenNoCompetitionStreamRowExists_ReturnsFalse()
+    {
+        // The competition exists but has no stream row yet — initial scheduling
+        // is the recurring sweep's job, not the event path's. Event handler
+        // bails so we don't fight the sweep's insert logic.
+
+        await SeedSeasonWeekAsync();
+        var competitionId = await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(5));
+        var contestId = FootballDataContext.Competitions.Single(c => c.Id == competitionId).ContestId;
+
+        var result = await _sut.RescheduleForContestAsync(contestId, CancellationToken.None);
+
+        result.Should().BeFalse();
+        FootballDataContext.CompetitionStreams.Should().BeEmpty();
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Schedule<ICompetitionBroadcastingJob>(
+                It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
+                It.IsAny<TimeSpan>()),
+                Times.Never);
+    }
+
+    [Fact]
+    public async Task RescheduleForContest_WhenGameMovedBeyondThreshold_Reschedules()
+    {
+        // The bug this whole feature exists to fix: ESPN moves a game time
+        // mid-day, but the recurring sweep only runs daily (MLB) / weekly
+        // (football). Event-driven path catches it in near real time.
+
+        await SeedSeasonWeekAsync();
+        var competitionId = await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(3));
+        var contestId = FootballDataContext.Competitions.Single(c => c.Id == competitionId).ContestId;
+        var oldScheduledTime = FixedNow.AddHours(6) - TimeSpan.FromMinutes(10);
+        await SeedExistingStreamAsync(competitionId, oldScheduledTime, CompetitionStreamStatus.Scheduled, "hf-stale");
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Setup(x => x.Delete("hf-stale"))
+            .Returns(true);
+        SetupScheduleReturns("hf-rescheduled");
+
+        var result = await _sut.RescheduleForContestAsync(contestId, CancellationToken.None);
+
+        result.Should().BeTrue();
+
+        var stream = FootballDataContext.CompetitionStreams.Single();
+        stream.BackgroundJobId.Should().Be("hf-rescheduled");
+        stream.ScheduledTimeUtc.Should().Be(FixedNow.AddHours(3) - TimeSpan.FromMinutes(10));
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Delete("hf-stale"), Times.Once);
+    }
+
+    [Fact]
+    public async Task RescheduleForContest_WhenDriftWithinThreshold_ReturnsFalse()
+    {
+        // Small ESPN time noise — drift under the 5-minute threshold should
+        // not churn Hangfire. Same idempotency guarantee as the sweep path.
+
+        await SeedSeasonWeekAsync();
+        var competitionId = await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(3));
+        var contestId = FootballDataContext.Competitions.Single(c => c.Id == competitionId).ContestId;
+        var nearbyScheduledTime = (FixedNow.AddHours(3) - TimeSpan.FromMinutes(10)) + TimeSpan.FromMinutes(3);
+        await SeedExistingStreamAsync(competitionId, nearbyScheduledTime, CompetitionStreamStatus.Scheduled, "hf-near");
+
+        var result = await _sut.RescheduleForContestAsync(contestId, CancellationToken.None);
+
+        result.Should().BeFalse();
+        FootballDataContext.CompetitionStreams.Single().BackgroundJobId.Should().Be("hf-near");
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Schedule<ICompetitionBroadcastingJob>(
+                It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
+                It.IsAny<TimeSpan>()),
+                Times.Never);
+    }
+
+    [Theory]
+    [InlineData(CompetitionStreamStatus.AwaitingStart)]
+    [InlineData(CompetitionStreamStatus.Active)]
+    [InlineData(CompetitionStreamStatus.Completed)]
+    [InlineData(CompetitionStreamStatus.Failed)]
+    public async Task RescheduleForContest_WhenStreamNotInScheduledState_ReturnsFalse(CompetitionStreamStatus status)
+    {
+        // Same guard as the sweep: live or terminal streams are off-limits.
+        // Lifecycle from AwaitingStart onward belongs to the streamer.
+
+        await SeedSeasonWeekAsync();
+        var competitionId = await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(3));
+        var contestId = FootballDataContext.Competitions.Single(c => c.Id == competitionId).ContestId;
+        var staleScheduledTime = FixedNow.AddHours(6) - TimeSpan.FromMinutes(10);
+        await SeedExistingStreamAsync(competitionId, staleScheduledTime, status, "hf-untouchable");
+
+        var result = await _sut.RescheduleForContestAsync(contestId, CancellationToken.None);
+
+        result.Should().BeFalse();
+        FootballDataContext.CompetitionStreams.Single().BackgroundJobId.Should().Be("hf-untouchable");
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Schedule<ICompetitionBroadcastingJob>(
+                It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
+                It.IsAny<TimeSpan>()),
+                Times.Never);
+    }
+
     private async Task SeedSeasonWeekAsync()
     {
         FootballDataContext.SeasonWeeks.Add(new SeasonWeek

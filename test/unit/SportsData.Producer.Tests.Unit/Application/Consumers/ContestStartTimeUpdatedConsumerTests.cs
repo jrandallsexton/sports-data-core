@@ -32,7 +32,7 @@ public class ContestStartTimeUpdatedConsumerTests
     }
 
     [Fact]
-    public async Task Consume_EnqueuesHandlerWithMessage()
+    public async Task Consume_EnqueuesHandlerWithOriginalMessage()
     {
         var evt = new ContestStartTimeUpdated(
             ContestId: Guid.NewGuid(),
@@ -46,17 +46,25 @@ public class ContestStartTimeUpdatedConsumerTests
         var context = new Mock<ConsumeContext<ContestStartTimeUpdated>>();
         context.Setup(x => x.Message).Returns(evt);
 
+        // Capture the expression so we can compile + invoke it against a stand-in
+        // handler. This proves the consumer forwards the bus message rather than
+        // (e.g.) the wrong field, default(T), or null.
+        Expression<Func<IContestStartTimeUpdatedConsumerHandler, Task>> captured = null;
         Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
             .Setup(x => x.Enqueue<IContestStartTimeUpdatedConsumerHandler>(
                 It.IsAny<Expression<Func<IContestStartTimeUpdatedConsumerHandler, Task>>>()))
+            .Callback<Expression<Func<IContestStartTimeUpdatedConsumerHandler, Task>>>(expr => captured = expr)
             .Returns("hf-enqueued-1");
 
         await _sut.Consume(context.Object);
 
-        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
-            .Verify(x => x.Enqueue<IContestStartTimeUpdatedConsumerHandler>(
-                It.IsAny<Expression<Func<IContestStartTimeUpdatedConsumerHandler, Task>>>()),
-                Times.Once);
+        captured.Should().NotBeNull("consumer must enqueue a handler invocation");
+
+        var handler = new Mock<IContestStartTimeUpdatedConsumerHandler>();
+        handler.Setup(x => x.Process(It.IsAny<ContestStartTimeUpdated>())).Returns(Task.CompletedTask);
+        await captured.Compile().Invoke(handler.Object);
+
+        handler.Verify(x => x.Process(evt), Times.Once);
     }
 
     [Fact]

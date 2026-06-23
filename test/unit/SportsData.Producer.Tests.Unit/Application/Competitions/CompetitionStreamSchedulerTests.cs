@@ -304,6 +304,11 @@ public class CompetitionStreamSchedulerTests : ProducerTestBase<CompetitionStrea
 
         Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
             .Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Schedule<ICompetitionBroadcastingJob>(
+                It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
+                It.IsAny<TimeSpan>()),
+                Times.Never);
     }
 
     [Fact]
@@ -378,6 +383,11 @@ public class CompetitionStreamSchedulerTests : ProducerTestBase<CompetitionStrea
 
         Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
             .Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Schedule<ICompetitionBroadcastingJob>(
+                It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
+                It.IsAny<TimeSpan>()),
+                Times.Never);
     }
 
     [Theory]
@@ -403,6 +413,11 @@ public class CompetitionStreamSchedulerTests : ProducerTestBase<CompetitionStrea
 
         Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
             .Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Schedule<ICompetitionBroadcastingJob>(
+                It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
+                It.IsAny<TimeSpan>()),
+                Times.Never);
     }
 
     private async Task SeedSeasonWeekAsync()

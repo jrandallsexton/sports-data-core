@@ -27,9 +27,6 @@ namespace SportsData.Notification
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, Sport.All);
 
-            // Add Serilog
-            builder.UseCommon();
-
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.

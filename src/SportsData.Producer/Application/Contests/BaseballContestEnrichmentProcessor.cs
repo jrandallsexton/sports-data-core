@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -59,6 +61,12 @@ namespace SportsData.Producer.Application.Contests
                 return;
             }
 
+            _logger.LogInformation(
+                "Competition loaded. CompetitionId={CompetitionId}, Competitors={CompetitorsCount}, Odds={OddsCount}",
+                competition.Id,
+                competition.Competitors.Count,
+                competition.Odds?.Count ?? 0);
+
             var contestAlreadyFinalized = competition.Contest.FinalizedUtc != null;
             var unfinalizedOdds = competition.Odds?
                 .Where(o => o.FinalizedUtc == null).ToList() ?? new List<CompetitionOdds>();
@@ -104,6 +112,10 @@ namespace SportsData.Producer.Application.Contests
                 _logger.LogInformation(
                     "Contest already finalized; running odds-late finalization for {UnfinalizedOddsCount} provider(s).",
                     unfinalizedOdds.Count);
+
+                _logger.LogInformation(
+                    "Odds-late providers being finalized: {Providers}",
+                    string.Join(", ", unfinalizedOdds.Select(o => o.ProviderName)));
 
                 EnrichOddsResults(
                     unfinalizedOdds,
@@ -164,6 +176,10 @@ namespace SportsData.Producer.Application.Contests
                 return;
             }
 
+            _logger.LogInformation(
+                "Status loaded and final. StatusTypeName={Status}",
+                status.StatusTypeName);
+
             // MAX(Value) per competitor. Cross-sport schema variance in
             // CompetitionCompetitorScores prevents a SourceDescription-based
             // filter (MLB inserts new "feed" rows alongside "basic/manual"
@@ -184,6 +200,10 @@ namespace SportsData.Producer.Application.Contests
                 .Where(s => s.CompetitionCompetitorId == homeCompetitor.Id)
                 .Select(s => (double?)s.Value)
                 .MaxAsync();
+
+            _logger.LogInformation(
+                "MAX competitor scores fetched. AwayMax={AwayMax}, HomeMax={HomeMax}",
+                awayMaxScore, homeMaxScore);
 
             if (awayMaxScore is null || homeMaxScore is null)
             {
@@ -277,6 +297,17 @@ namespace SportsData.Producer.Application.Contests
                     "No CompetitionOdds rows present; skipping per-provider enrichment.");
             }
 
+            _logger.LogInformation(
+                "Publishing ContestFinalized. AwayScore={AwayScore}, HomeScore={HomeScore}, " +
+                "WinnerFranchiseSeasonId={WinnerFranchiseSeasonId}, SpreadWinnerFranchiseSeasonId={SpreadWinnerFranchiseSeasonId}, " +
+                "OverUnderResultRaw={OverUnderResultRaw}, CompletedUtc={CompletedUtc}",
+                contest.AwayScore,
+                contest.HomeScore,
+                contest.WinnerFranchiseSeasonId,
+                contest.SpreadWinnerFranchiseSeasonId,
+                (int)contest.OverUnder,
+                contest.FinalizedUtc);
+
             await _bus.Publish(
                 new ContestFinalized(
                     ContestId: command.ContestId,
@@ -291,7 +322,14 @@ namespace SportsData.Producer.Application.Contests
                     SpreadWinnerFranchiseSeasonId: contest.SpreadWinnerFranchiseSeasonId,
                     OverUnderResultRaw: (int)contest.OverUnder,
                     CompletedUtc: contest.FinalizedUtc));
+
+            _logger.LogInformation("Persisting contest enrichment. Starting SaveChangesAsync.");
+            var saveSw = Stopwatch.StartNew();
             await _dataContext.SaveChangesAsync();
+            saveSw.Stop();
+            _logger.LogInformation(
+                "SaveChangesAsync completed in {ElapsedMs}ms.",
+                saveSw.ElapsedMilliseconds);
 
             _logger.LogInformation(
                 "Contest enrichment completed. ContestName={ContestName}, " +

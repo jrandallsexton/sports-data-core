@@ -7,7 +7,6 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Jobs.Definitions;
 using SportsData.Provider.Infrastructure.Data;
-using SportsData.Provider.Infrastructure.Data.Entities;
 
 namespace SportsData.Provider.Application.Jobs
 {
@@ -51,7 +50,7 @@ namespace SportsData.Provider.Application.Jobs
             {
                 if (string.IsNullOrEmpty(resource.CronExpression) || !resource.CronExpression.IsValidCron())
                 {
-                    _logger.LogWarning("Skipping job registration: invalid cron '{Cron}' for ResourceIndex {Id} ({Name})",
+                    _logger.LogError("Skipping job registration: invalid cron '{Cron}' for ResourceIndex {Id} ({Name})",
                         resource.CronExpression, resource.Id, resource.Name);
                     continue;
                 }
@@ -107,7 +106,7 @@ namespace SportsData.Provider.Application.Jobs
 
             if (next is null)
             {
-                _logger.LogInformation("No non-recurring ResourceIndex jobs to schedule.");
+                _logger.LogDebug("No non-recurring ResourceIndex jobs to schedule.");
                 return;
             }
 

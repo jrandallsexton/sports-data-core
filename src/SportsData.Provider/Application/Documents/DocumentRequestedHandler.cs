@@ -98,7 +98,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             {
                 await ConsumeInternal(evt);
 
-                _logger.LogInformation("DocumentRequested processed.");
+                _logger.LogDebug("DocumentRequested processed.");
             }
             catch (Exception ex)
             {

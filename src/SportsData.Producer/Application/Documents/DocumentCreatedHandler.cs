@@ -86,16 +86,16 @@ namespace SportsData.Producer.Application.Documents
                 {
                     if (message.AttemptCount == 0)
                     {
-                        _logger.LogInformation(
+                        _logger.LogDebug(
                             "HANDLER_ENQUEUE_IMMEDIATE: First attempt - enqueueing background job immediately.");
                         
                         var jobId = _backgroundJobProvider.Enqueue<DocumentCreatedProcessor>(x => x.Process(message));
                         
-                        _logger.LogInformation(
+                        _logger.LogDebug(
                             "HANDLER_ENQUEUED: Background job enqueued successfully. {JobId}",
                             jobId);
                         
-                        _logger.LogInformation(
+                        _logger.LogDebug(
                             "HANDLER_EXIT: Handler completed successfully (immediate enqueue).");
                         
                         return;

@@ -421,6 +421,158 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
         bus.Verify(x => x.Publish(It.IsAny<ContestCreated>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [Fact]
+    public async Task WhenEntityAlreadyExists_AndStartDateChanged_ShouldPublishContestStartTimeUpdated()
+    {
+        // ProcessUpdate path: ESPN moved the game time. The Event-doc processor
+        // owns Contest.StartDateUtc, so it owns the ContestStartTimeUpdated publish
+        // that drives CompetitionStreamScheduler.RescheduleForContestAsync.
+
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<FootballEventDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEvent.json");
+
+        var dto = json.FromJson<EspnEventDto>();
+
+        await SetupFranchiseSeasonsAsync(generator, dto!);
+
+        var externalId = "401583027";
+        var eventUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en";
+
+        var staleStartDate = new DateTime(1999, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var contest = new FootballContest
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test Contest",
+            ShortName = "Test",
+            SeasonYear = 2024,
+            Sport = Sport.FootballNcaa,
+            StartDateUtc = staleStartDate,
+            HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+            AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<ContestExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    Value = externalId,
+                    SourceUrlHash = eventUrl.UrlHash(),
+                    SourceUrl = eventUrl
+                }
+            }
+        };
+
+        await FootballDataContext.Contests.AddAsync(contest);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Event)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.UrlHash, contest.ExternalIds.First().SourceUrlHash)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert — Contest.StartDateUtc moved off the sentinel, and the publish fired with the new value
+        var saved = await FootballDataContext.Contests.FirstAsync(c => c.Id == contest.Id);
+        saved.StartDateUtc.Should().NotBe(staleStartDate);
+
+        bus.Verify(x => x.Publish(
+            It.Is<ContestStartTimeUpdated>(e =>
+                e.ContestId == contest.Id &&
+                e.NewStartTime != staleStartDate &&
+                e.CausationId == CausationId.Producer.EventDocumentProcessor),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task WhenEntityAlreadyExists_AndStartDateUnchanged_ShouldNotPublishContestStartTimeUpdated()
+    {
+        // No-op refresh: ESPN re-publishes the Event doc constantly without
+        // changing the time. The gate at EventDocumentProcessorBase must
+        // suppress the publish here — otherwise every refresh would churn
+        // the CompetitionStream reschedule path with a duplicate event.
+
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<FootballEventDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEvent.json");
+
+        var dto = json.FromJson<EspnEventDto>();
+
+        await SetupFranchiseSeasonsAsync(generator, dto!);
+
+        var externalId = "401583027";
+        var eventUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en";
+
+        // Seed StartDateUtc with the exact value from the JSON so the gate trips.
+        DateTime.TryParse(dto!.Date, out var jsonDate);
+        var alreadyCurrentStartDate = jsonDate.ToUniversalTime();
+
+        var contest = new FootballContest
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test Contest",
+            ShortName = "Test",
+            SeasonYear = 2024,
+            Sport = Sport.FootballNcaa,
+            StartDateUtc = alreadyCurrentStartDate,
+            HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+            AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<ContestExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    Value = externalId,
+                    SourceUrlHash = eventUrl.UrlHash(),
+                    SourceUrl = eventUrl
+                }
+            }
+        };
+
+        await FootballDataContext.Contests.AddAsync(contest);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Event)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.UrlHash, contest.ExternalIds.First().SourceUrlHash)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert
+        bus.Verify(x => x.Publish(It.IsAny<ContestStartTimeUpdated>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact(Skip = "Requires BaseballDataContext test infrastructure")]
     public async Task WhenBaseballPreseason_NoWeekAvailable_ShouldCreateContestWithNullSeasonWeekId()
     {

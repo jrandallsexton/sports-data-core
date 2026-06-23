@@ -31,6 +31,11 @@ on:
         required: false
         type: boolean
         default: false
+      deploy_notification:
+        description: 'Deploy Notification with latest tag'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   deploy:
@@ -115,6 +120,25 @@ jobs:
           fi
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest Jobs Dashboard tag: $LATEST_TAG"
+
+      - name: Get latest Notification tag from ACR
+        if: ${{ inputs.deploy_notification }}
+        id: notification_tag
+        run: |
+          set -euo pipefail
+          LATEST_TAG=$(az acr repository show-tags \
+            --name sportdeets \
+            --repository sportsdatanotification \
+            --orderby time_desc \
+            --output tsv \
+            | grep -E '^[0-9]+$' \
+            | head -n 1)
+          if [ -z "$LATEST_TAG" ]; then
+            echo "::error::No numeric tags found for sportsdatanotification"
+            exit 1
+          fi
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest Notification tag: $LATEST_TAG"
 
       - name: Checkout sports-data-config repo
         uses: actions/checkout@v5
@@ -212,6 +236,18 @@ jobs:
           fi
           echo "Updated Jobs Dashboard to tag: ${{ steps.jobs_dashboard_tag.outputs.tag }}"
 
+      - name: Update Notification image tag
+        if: ${{ inputs.deploy_notification && steps.notification_tag.outputs.tag != '' }}
+        working-directory: sports-data-config
+        run: |
+          # Update or add image to notification-patch.yaml
+          if grep -q "image:" app/overlays/04_prod/notification-patch.yaml; then
+            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdatanotification:${{ steps.notification_tag.outputs.tag }}|g" app/overlays/04_prod/notification-patch.yaml
+          else
+            sed -i '/- name: notification/a\        image: sportdeets.azurecr.io/sportsdatanotification:${{ steps.notification_tag.outputs.tag }}' app/overlays/04_prod/notification-patch.yaml
+          fi
+          echo "Updated Notification to tag: ${{ steps.notification_tag.outputs.tag }}"
+
       - name: Commit and push changes
         working-directory: sports-data-config
         run: |
@@ -229,6 +265,7 @@ jobs:
             [ "${{ inputs.deploy_provider }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG Provider=${{ steps.provider_tag.outputs.tag }}"
             [ "${{ inputs.deploy_ui }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG UI=${{ steps.ui_tag.outputs.tag }}"
             [ "${{ inputs.deploy_jobs_dashboard }}" == "true" ] && [ -n "${{ steps.jobs_dashboard_tag.outputs.tag }}" ] && COMMIT_MSG="$COMMIT_MSG JobsDashboard=${{ steps.jobs_dashboard_tag.outputs.tag }}"
+            [ "${{ inputs.deploy_notification }}" == "true" ] && [ -n "${{ steps.notification_tag.outputs.tag }}" ] && COMMIT_MSG="$COMMIT_MSG Notification=${{ steps.notification_tag.outputs.tag }}"
             
             git commit -m "$COMMIT_MSG"
             git push

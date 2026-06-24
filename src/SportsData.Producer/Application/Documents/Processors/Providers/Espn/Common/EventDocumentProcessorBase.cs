@@ -434,6 +434,21 @@ public abstract class EventDocumentProcessorBase<TDataContext> : DocumentProcess
                     contest.StartDateUtc,
                     newStartUtc);
                 contest.StartDateUtc = newStartUtc;
+
+                // Publish from the Contest-owning processor (Event maps to Contest in
+                // our model). Drives CompetitionStreamScheduler.RescheduleForContestAsync
+                // via ContestStartTimeUpdatedConsumer so ESPN mid-day time changes
+                // reschedule the Hangfire stream job in near real time. Previously
+                // published from EventCompetitionDocumentProcessorBase — wrong aggregate.
+                await _publishEndpoint.Publish(
+                    new ContestStartTimeUpdated(
+                        contest.Id,
+                        newStartUtc,
+                        null,
+                        command.Sport,
+                        command.SeasonYear,
+                        command.CorrelationId,
+                        CausationId.Producer.EventDocumentProcessor));
             }
         }
 

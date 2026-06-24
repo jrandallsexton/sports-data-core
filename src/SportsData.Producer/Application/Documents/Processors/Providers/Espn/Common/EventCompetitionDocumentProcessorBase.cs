@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
-using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
@@ -192,22 +191,17 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
                 competition.Id,
                 string.Join(", ", changedProperties));
 
+            // Note: ContestStartTimeUpdated is published by EventDocumentProcessorBase
+            // (the Contest-owning processor). ESPN updates Event and EventCompetition
+            // in lockstep on a time change, so the Event-side publish covers this
+            // path. Keeping the date-change log here for diagnostic continuity —
+            // it confirms the EventCompetition cascade observed the same change.
             if (competition.Date != originalDate)
             {
                 _logger.LogInformation(
                     "Competition date changed. OldDate={OldDate}, NewDate={NewDate}",
                     originalDate,
                     competition.Date);
-
-                await _publishEndpoint.Publish(
-                    new ContestStartTimeUpdated(
-                        competition.ContestId,
-                        competition.Date,
-                        null,
-                        command.Sport,
-                        command.SeasonYear,
-                        command.CorrelationId,
-                        CausationId.Producer.EventCompetitionDocumentProcessor));
             }
 
             competition.ModifiedUtc = DateTime.UtcNow;

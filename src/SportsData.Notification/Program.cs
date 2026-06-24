@@ -36,8 +36,10 @@ namespace SportsData.Notification
             services.AddMessaging(config, [
                 typeof(ContestStartTimeUpdatedConsumer),
                 typeof(PickemGroupCreatedConsumer),
+                typeof(PickemGroupDataPublishedConsumer),
                 typeof(PickemGroupMatchupCreatedConsumer),
                 typeof(PickemGroupMemberAddedConsumer),
+                typeof(UserDataPublishedConsumer),
                 typeof(UserPickScoredConsumer)
             ]);
 

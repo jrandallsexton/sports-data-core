@@ -5,17 +5,30 @@ using SportsData.Notification.Infrastructure.Data.Entities;
 namespace SportsData.Notification.Infrastructure.Data
 {
     /// <summary>
-    /// Notification service's local read/write store. Per the design doc
-    /// (docs/architecture/notification-service-events-and-state.md §3),
-    /// Notification consumes fat events and projects only the state that
-    /// genuinely belongs to it: device tokens, user preferences, scheduled
-    /// job ids, and the audit log. It does NOT project User, League,
-    /// Membership, Contest, or Pick — those facts ride on the events.
+    /// Notification service's local read/write store. The original design
+    /// doc (docs/architecture/notification-service-events-and-state.md §3)
+    /// kept this to 4 tables — device tokens, user preferences, scheduled
+    /// job ids, audit log — and pushed everything else onto fat events.
+    ///
+    /// <para>
+    /// The <c>User</c>, <c>PickemGroup</c>, and <c>PickemGroupMember</c>
+    /// projections are deliberate expansions of that model for operational
+    /// queries: the backfill chains (<c>UsersRequested</c>/<c>UserDataPublished</c>
+    /// and <c>PickemGroupsRequested</c>/<c>PickemGroupDataPublished</c>) seed
+    /// them, and league-wide fan-out flows that need to look up entities
+    /// without round-tripping to API will read from them.
+    /// </para>
     /// </summary>
     public class AppDataContext : DbContext
     {
         public AppDataContext(DbContextOptions<AppDataContext> options)
             : base(options) { }
+
+        public DbSet<PickemGroup> PickemGroups => Set<PickemGroup>();
+
+        public DbSet<PickemGroupMember> PickemGroupMembers => Set<PickemGroupMember>();
+
+        public DbSet<User> Users => Set<User>();
 
         public DbSet<UserDevice> UserDevices => Set<UserDevice>();
 
@@ -54,6 +67,14 @@ namespace SportsData.Notification.Infrastructure.Data
             // insert race window that this constraint closes.
             modelBuilder.Entity<NotificationLog>()
                 .HasIndex(l => new { l.CorrelationId, l.UserId, l.Channel })
+                .IsUnique();
+
+            // League-wide fan-out is the dominant query against this join
+            // ("for every member of league X..."), so index on GroupId.
+            // Unique (PickemGroupId, UserId) catches duplicate memberships at
+            // the DB layer if a backfill ever races itself.
+            modelBuilder.Entity<PickemGroupMember>()
+                .HasIndex(m => new { m.PickemGroupId, m.UserId })
                 .IsUnique();
         }
     }

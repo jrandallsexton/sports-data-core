@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.PickemGroups;
 
 using SportsData.Api.Application.Common.Enums;
 
@@ -19,13 +21,16 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.JoinLeague
     {
         private readonly ILogger<JoinLeagueCommandHandler> _logger;
         private readonly AppDataContext _dbContext;
+        private readonly IEventBus _eventBus;
 
         public JoinLeagueCommandHandler(
             ILogger<JoinLeagueCommandHandler> logger,
-            AppDataContext dbContext)
+            AppDataContext dbContext,
+            IEventBus eventBus)
         {
             _logger = logger;
             _dbContext = dbContext;
+            _eventBus = eventBus;
         }
 
         public async Task<Result<Guid?>> ExecuteAsync(
@@ -64,6 +69,19 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.JoinLeague
             };
 
             await _dbContext.PickemGroupMembers.AddAsync(membership, cancellationToken);
+
+            // Publish BEFORE SaveChanges so the bus-outbox interceptor commits
+            // the event together with the membership row. SeasonYear is null —
+            // joining a league isn't season-scoped.
+            await _eventBus.Publish(new PickemGroupMemberAdded(
+                    league.Id,
+                    command.UserId,
+                    league.Sport,
+                    null,
+                    Guid.NewGuid(),
+                    Guid.NewGuid()),
+                cancellationToken);
+
             await _dbContext.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(

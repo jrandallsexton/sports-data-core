@@ -41,6 +41,8 @@ namespace SportsData.Notification
 
             var app = builder.Build();
 
+            await app.Services.ApplyMigrations<AppDataContext>();
+
             // Configure the HTTP request pipeline.
             app.UseHttpsRedirection();
 

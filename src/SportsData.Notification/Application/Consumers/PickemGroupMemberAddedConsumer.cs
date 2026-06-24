@@ -6,6 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
+using SportsData.Notification.Infrastructure.Notifications;
 
 namespace SportsData.Notification.Application.Consumers
 {
@@ -22,6 +23,12 @@ namespace SportsData.Notification.Application.Consumers
     /// </list>
     ///
     /// <para>
+    /// Idempotency uses the same atomic-claim pattern as
+    /// <see cref="UserPickScoredConsumer"/> — see its docstring for the
+    /// rationale (TOCTOU race, crash-vs-duplicate trade-off).
+    /// </para>
+    ///
+    /// <para>
     /// <b>Known fat-payload gap:</b> the current event carries
     /// <c>GroupId, UserId, Sport, SeasonYear</c> only. To send useful copy we
     /// also need <c>LeagueName</c>, <c>JoinedDisplayName</c>, and
@@ -33,18 +40,26 @@ namespace SportsData.Notification.Application.Consumers
     /// </summary>
     public class PickemGroupMemberAddedConsumer : IConsumer<PickemGroupMemberAdded>
     {
+        // NotificationLog.FailureReason is varchar(512); per-device detail
+        // stays in structured logs.
+        private const int FailureReasonMaxLength = 512;
+        private const string FailureReasonTruncationSuffix = "…(truncated)";
+
         private readonly ILogger<PickemGroupMemberAddedConsumer> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IPushNotificationSender _pushSender;
 
         public PickemGroupMemberAddedConsumer(
             ILogger<PickemGroupMemberAddedConsumer> logger,
             AppDataContext dataContext,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IPushNotificationSender pushSender)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
+            _pushSender = pushSender;
         }
 
         public async Task Consume(ConsumeContext<PickemGroupMemberAdded> context)
@@ -60,27 +75,28 @@ namespace SportsData.Notification.Application.Consumers
 
             _logger.LogInformation("PickemGroupMemberAdded received.");
 
-            // Idempotency: at-least-once delivery from RabbitMQ means we may
-            // see the same event twice. Dedupe on (CorrelationId, UserId, Channel)
-            // — same key the design doc §3 calls out for NotificationLog — and
-            // write a Skipped_Duplicate audit row instead of firing a second
-            // welcome push. Mirrors the guard in UserPickScoredConsumer.
-            var alreadyAttempted = await _dataContext.NotificationLog
-                .AsNoTracking()
-                .AnyAsync(l =>
-                    l.CorrelationId == msg.CorrelationId &&
-                    l.UserId == msg.UserId &&
-                    l.Channel == "Fcm");
-
-            if (alreadyAttempted)
+            // Atomic claim — see UserPickScoredConsumer for full rationale.
+            var claim = new NotificationLog
             {
-                // The first delivery's NotificationLog row IS the audit
-                // trail. Writing a second row here would collide with the
-                // unique (CorrelationId, UserId, Channel) index and throw.
-                // Log + return; redelivery is silently absorbed.
+                UserId = msg.UserId,
+                CorrelationId = msg.CorrelationId,
+                Category = "Membership",
+                Channel = "Fcm",
+                Result = "Dispatching",
+                AttemptedUtc = _dateTimeProvider.UtcNow()
+            };
+            _dataContext.NotificationLog.Add(claim);
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
                 _logger.LogInformation(
-                    "PickemGroupMemberAdded already dispatched for CorrelationId {CorrelationId}, UserId {UserId}; skipping duplicate.",
+                    "PickemGroupMemberAdded already claimed by another consumer for CorrelationId {CorrelationId}, UserId {UserId}; skipping.",
                     msg.CorrelationId, msg.UserId);
+                _dataContext.Entry(claim).State = EntityState.Detached;
                 return;
             }
 
@@ -94,8 +110,7 @@ namespace SportsData.Notification.Application.Consumers
                 _logger.LogInformation(
                     "Membership-category notifications disabled for UserId {UserId}; suppressing welcome push.",
                     msg.UserId);
-                // Still write a log row so suppression is auditable.
-                await LogSuppressedAsync(msg, "Suppressed_UserOptedOut");
+                await FinalizeAsync(claim, "Suppressed_UserOptedOut");
                 return;
             }
 
@@ -109,60 +124,68 @@ namespace SportsData.Notification.Application.Consumers
                 _logger.LogInformation(
                     "No active UserDevice rows for UserId {UserId}; suppressing welcome push.",
                     msg.UserId);
-                await LogSuppressedAsync(msg, "Suppressed_NoDevice");
+                await FinalizeAsync(claim, "Suppressed_NoDevice");
                 return;
             }
 
-            // 2. Send welcome push.
-            // TODO (FCM integration): inject IPushNotificationSender (or a
-            // Notification-local equivalent) and dispatch the "Welcome to
-            // {LeagueName}" push for each device. The sender owns FCM call,
-            // retry, and per-token failure mapping. This consumer just owns
-            // the orchestration + audit row.
+            // 2. Send welcome push. Body stays generic until the fat-payload
+            // pass adds LeagueName + JoinedDisplayName to the event.
+            const string title = "Welcome";
+            const string body = "You've joined a new league.";
+
+            // 3. Commissioner-side notification is deferred — the event
+            // doesn't carry CommissionerUserId today. Once fattened, repeat
+            // the prefs + device lookup against the commissioner here.
+
+            var successCount = 0;
+            var failureReasons = new List<string>();
             foreach (var device in devices)
             {
-                _logger.LogInformation(
-                    "TODO: send welcome FCM to DeviceId {DeviceId} for UserId {UserId}.",
-                    device.Id, msg.UserId);
+                var sendResult = await _pushSender.SendAsync(device.FcmToken, title, body);
+                if (sendResult is Success<string>)
+                {
+                    successCount++;
+                }
+                else if (sendResult is Failure<string> failure)
+                {
+                    var reason = failure.Errors.FirstOrDefault()?.ErrorMessage ?? "unknown";
+                    failureReasons.Add($"{device.Platform}:{reason}");
+                }
             }
 
-            // 3. Notify commissioner of new member.
-            // TODO (fat-payload work): the commissioner's UserId isn't on the
-            // event today — fattening required. Once available, run the same
-            // preference + device lookup against the commissioner and dispatch
-            // a "{JoinedDisplayName} joined {LeagueName}" push.
-
-            // 4. Append audit row. Result reflects the current TODO-only path:
-            // we resolved devices and would have dispatched, but the IPushNotificationSender
-            // wiring isn't here yet. Flip to "Sent" / "Failed_FcmError" once the
-            // dispatch loop above does real work — see FCM TODO at line ~130.
-            _dataContext.NotificationLog.Add(new NotificationLog
-            {
-                UserId = msg.UserId,
-                CorrelationId = msg.CorrelationId,
-                Category = "Membership",
-                Channel = "Fcm",
-                Title = "Welcome",
-                Body = "TODO: render with LeagueName once fattened",
-                Result = "Pending_FcmIntegration",
-                AttemptedUtc = _dateTimeProvider.UtcNow()
-            });
+            claim.Title = title;
+            claim.Body = body;
+            claim.Result = successCount > 0 ? "Sent" : "Failed_FcmError";
+            claim.FailureReason = ComposeFailureReason(failureReasons);
+            claim.ModifiedUtc = _dateTimeProvider.UtcNow();
 
             await _dataContext.SaveChangesAsync();
         }
 
-        private async Task LogSuppressedAsync(PickemGroupMemberAdded msg, string result)
+        private async Task FinalizeAsync(NotificationLog claim, string result)
         {
-            _dataContext.NotificationLog.Add(new NotificationLog
-            {
-                UserId = msg.UserId,
-                CorrelationId = msg.CorrelationId,
-                Category = "Membership",
-                Channel = "Fcm",
-                Result = result,
-                AttemptedUtc = _dateTimeProvider.UtcNow()
-            });
+            claim.Result = result;
+            claim.ModifiedUtc = _dateTimeProvider.UtcNow();
             await _dataContext.SaveChangesAsync();
+        }
+
+        private static string ComposeFailureReason(List<string> failureReasons)
+        {
+            if (failureReasons.Count == 0)
+                return null;
+
+            var joined = string.Join("; ", failureReasons);
+            if (joined.Length <= FailureReasonMaxLength)
+                return joined;
+
+            var cutoff = FailureReasonMaxLength - FailureReasonTruncationSuffix.Length;
+            return joined.Substring(0, cutoff) + FailureReasonTruncationSuffix;
+        }
+
+        private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+        {
+            // Npgsql surfaces unique-violation as SQLSTATE 23505.
+            return ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505";
         }
     }
 }

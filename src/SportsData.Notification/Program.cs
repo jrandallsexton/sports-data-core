@@ -1,7 +1,12 @@
+using FirebaseAdmin;
+
+using Google.Apis.Auth.OAuth2;
+
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Notification.Application.Consumers;
 using SportsData.Notification.Infrastructure.Data;
+using SportsData.Notification.Infrastructure.Notifications;
 
 namespace SportsData.Notification
 {
@@ -35,6 +40,45 @@ namespace SportsData.Notification
                 typeof(PickemGroupMemberAddedConsumer),
                 typeof(UserPickScoredConsumer)
             ]);
+
+            // Initialize FirebaseApp.DefaultInstance from CommonConfig:Firebase
+            // and register the real sender. When ProjectId is empty (local
+            // dev / tests without Firebase credentials) we register a no-op
+            // sender instead so consumers don't crash on resolution. The
+            // no-op returns Failure with an explicit "not configured" reason,
+            // which lands in NotificationLog as Failed_FcmError — easy to
+            // grep, makes the misconfiguration obvious without flooding
+            // dead-letter.
+            var firebaseSection = config.GetSection("CommonConfig:Firebase");
+            if (!string.IsNullOrWhiteSpace(firebaseSection["ProjectId"]))
+            {
+                var firebaseJson = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    type = firebaseSection["Type"],
+                    project_id = firebaseSection["ProjectId"],
+                    private_key_id = firebaseSection["PrivateKeyId"],
+                    private_key = firebaseSection["PrivateKey"],
+                    client_email = firebaseSection["ClientEmail"],
+                    client_id = firebaseSection["ClientId"],
+                    auth_uri = firebaseSection["AuthUri"],
+                    token_uri = firebaseSection["TokenUri"],
+                    auth_provider_x509_cert_url = firebaseSection["AuthProviderX509CertUrl"],
+                    client_x509_cert_url = firebaseSection["ClientX509CertUrl"],
+                    universe_domain = firebaseSection["UniverseDomain"]
+                });
+
+                FirebaseApp.Create(new AppOptions
+                {
+                    Credential = GoogleCredential.FromJson(firebaseJson)
+                });
+
+                services.AddScoped<IPushNotificationSender, FirebasePushNotificationSender>();
+            }
+            else
+            {
+                Console.WriteLine("WARN: CommonConfig:Firebase:ProjectId is not set; registering NoOpPushNotificationSender. FCM dispatches will no-op.");
+                services.AddScoped<IPushNotificationSender, NoOpPushNotificationSender>();
+            }
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, mode);

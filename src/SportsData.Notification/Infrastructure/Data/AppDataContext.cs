@@ -45,10 +45,16 @@ namespace SportsData.Notification.Infrastructure.Data
             modelBuilder.Entity<PendingScheduledJob>()
                 .HasIndex(j => new { j.UserId, j.JobKind, j.TargetId });
 
-            // Idempotency lookup on FCM dispatch: same correlation + user +
+            // Idempotency key on FCM dispatch: same correlation + user +
             // channel = same logical send, even on RabbitMQ redelivery.
+            // Unique so a race between concurrent consumers seeing the same
+            // redelivery is caught at the DB layer (DbUpdateException on the
+            // losing insert) rather than producing duplicate audit rows /
+            // duplicate pushes — the AnyAsync pre-check alone has a read-then-
+            // insert race window that this constraint closes.
             modelBuilder.Entity<NotificationLog>()
-                .HasIndex(l => new { l.CorrelationId, l.UserId, l.Channel });
+                .HasIndex(l => new { l.CorrelationId, l.UserId, l.Channel })
+                .IsUnique();
         }
     }
 }

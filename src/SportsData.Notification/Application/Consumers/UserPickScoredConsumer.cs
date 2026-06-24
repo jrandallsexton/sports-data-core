@@ -2,6 +2,7 @@ using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Picks;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
@@ -32,13 +33,16 @@ namespace SportsData.Notification.Application.Consumers
     {
         private readonly ILogger<UserPickScoredConsumer> _logger;
         private readonly AppDataContext _dataContext;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public UserPickScoredConsumer(
             ILogger<UserPickScoredConsumer> logger,
-            AppDataContext dataContext)
+            AppDataContext dataContext,
+            IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task Consume(ConsumeContext<UserPickScored> context)
@@ -77,7 +81,7 @@ namespace SportsData.Notification.Application.Consumers
                     Category = "PickResult",
                     Channel = "Fcm",
                     Result = "Skipped_Duplicate",
-                    AttemptedUtc = DateTime.UtcNow
+                    AttemptedUtc = _dateTimeProvider.UtcNow()
                 });
                 await _dataContext.SaveChangesAsync();
                 return;
@@ -117,6 +121,9 @@ namespace SportsData.Notification.Application.Consumers
                     device.Id, msg.UserId, title, body);
             }
 
+            // Result reflects the current TODO-only path: devices resolved,
+            // dispatch loop above just logs. Flip to "Sent" / "Failed_FcmError"
+            // once IPushNotificationSender is wired in — see FCM TODO above.
             _dataContext.NotificationLog.Add(new NotificationLog
             {
                 UserId = msg.UserId,
@@ -125,8 +132,8 @@ namespace SportsData.Notification.Application.Consumers
                 Channel = "Fcm",
                 Title = title,
                 Body = body,
-                Result = "Sent",
-                AttemptedUtc = DateTime.UtcNow
+                Result = "Pending_FcmIntegration",
+                AttemptedUtc = _dateTimeProvider.UtcNow()
             });
 
             await _dataContext.SaveChangesAsync();
@@ -156,7 +163,7 @@ namespace SportsData.Notification.Application.Consumers
                 Category = "PickResult",
                 Channel = "Fcm",
                 Result = result,
-                AttemptedUtc = DateTime.UtcNow
+                AttemptedUtc = _dateTimeProvider.UtcNow()
             });
             await _dataContext.SaveChangesAsync();
         }

@@ -78,7 +78,8 @@ namespace SportsData.Notification.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CorrelationId", "UserId", "Channel");
+                    b.HasIndex("CorrelationId", "UserId", "Channel")
+                        .IsUnique();
 
                     b.ToTable("NotificationLog");
                 });

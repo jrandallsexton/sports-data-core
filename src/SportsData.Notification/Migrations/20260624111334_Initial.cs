@@ -101,7 +101,8 @@ namespace SportsData.Notification.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_NotificationLog_CorrelationId_UserId_Channel",
                 table: "NotificationLog",
-                columns: new[] { "CorrelationId", "UserId", "Channel" });
+                columns: new[] { "CorrelationId", "UserId", "Channel" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_PendingScheduledJobs_UserId_JobKind_TargetId",

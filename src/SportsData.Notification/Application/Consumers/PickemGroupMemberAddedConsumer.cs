@@ -2,6 +2,7 @@ using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
@@ -34,13 +35,16 @@ namespace SportsData.Notification.Application.Consumers
     {
         private readonly ILogger<PickemGroupMemberAddedConsumer> _logger;
         private readonly AppDataContext _dataContext;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public PickemGroupMemberAddedConsumer(
             ILogger<PickemGroupMemberAddedConsumer> logger,
-            AppDataContext dataContext)
+            AppDataContext dataContext,
+            IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task Consume(ConsumeContext<PickemGroupMemberAdded> context)
@@ -55,6 +59,37 @@ namespace SportsData.Notification.Application.Consumers
             });
 
             _logger.LogInformation("PickemGroupMemberAdded received.");
+
+            // Idempotency: at-least-once delivery from RabbitMQ means we may
+            // see the same event twice. Dedupe on (CorrelationId, UserId, Channel)
+            // — same key the design doc §3 calls out for NotificationLog — and
+            // write a Skipped_Duplicate audit row instead of firing a second
+            // welcome push. Mirrors the guard in UserPickScoredConsumer.
+            var alreadyAttempted = await _dataContext.NotificationLog
+                .AsNoTracking()
+                .AnyAsync(l =>
+                    l.CorrelationId == msg.CorrelationId &&
+                    l.UserId == msg.UserId &&
+                    l.Channel == "Fcm");
+
+            if (alreadyAttempted)
+            {
+                _logger.LogInformation(
+                    "PickemGroupMemberAdded already dispatched for CorrelationId {CorrelationId}, UserId {UserId}; skipping duplicate.",
+                    msg.CorrelationId, msg.UserId);
+
+                _dataContext.NotificationLog.Add(new NotificationLog
+                {
+                    UserId = msg.UserId,
+                    CorrelationId = msg.CorrelationId,
+                    Category = "Membership",
+                    Channel = "Fcm",
+                    Result = "Skipped_Duplicate",
+                    AttemptedUtc = _dateTimeProvider.UtcNow()
+                });
+                await _dataContext.SaveChangesAsync();
+                return;
+            }
 
             // 1. Resolve the joining user's preferences + device(s).
             var prefs = await _dataContext.UserNotificationPreferences
@@ -104,7 +139,10 @@ namespace SportsData.Notification.Application.Consumers
             // preference + device lookup against the commissioner and dispatch
             // a "{JoinedDisplayName} joined {LeagueName}" push.
 
-            // 4. Append audit row.
+            // 4. Append audit row. Result reflects the current TODO-only path:
+            // we resolved devices and would have dispatched, but the IPushNotificationSender
+            // wiring isn't here yet. Flip to "Sent" / "Failed_FcmError" once the
+            // dispatch loop above does real work — see FCM TODO at line ~130.
             _dataContext.NotificationLog.Add(new NotificationLog
             {
                 UserId = msg.UserId,
@@ -113,8 +151,8 @@ namespace SportsData.Notification.Application.Consumers
                 Channel = "Fcm",
                 Title = "Welcome",
                 Body = "TODO: render with LeagueName once fattened",
-                Result = "Sent",
-                AttemptedUtc = DateTime.UtcNow
+                Result = "Pending_FcmIntegration",
+                AttemptedUtc = _dateTimeProvider.UtcNow()
             });
 
             await _dataContext.SaveChangesAsync();
@@ -129,7 +167,7 @@ namespace SportsData.Notification.Application.Consumers
                 Category = "Membership",
                 Channel = "Fcm",
                 Result = result,
-                AttemptedUtc = DateTime.UtcNow
+                AttemptedUtc = _dateTimeProvider.UtcNow()
             });
             await _dataContext.SaveChangesAsync();
         }

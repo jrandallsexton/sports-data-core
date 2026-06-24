@@ -12,7 +12,7 @@ using SportsData.Notification.Infrastructure.Data;
 namespace SportsData.Notification.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20260624103554_Initial")]
+    [Migration("20260624111334_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -81,7 +81,8 @@ namespace SportsData.Notification.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CorrelationId", "UserId", "Channel");
+                    b.HasIndex("CorrelationId", "UserId", "Channel")
+                        .IsUnique();
 
                     b.ToTable("NotificationLog");
                 });

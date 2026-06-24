@@ -23,6 +23,12 @@ namespace SportsData.Notification.Application.Consumers
     /// </list>
     ///
     /// <para>
+    /// Idempotency uses the same atomic-claim pattern as
+    /// <see cref="UserPickScoredConsumer"/> — see its docstring for the
+    /// rationale (TOCTOU race, crash-vs-duplicate trade-off).
+    /// </para>
+    ///
+    /// <para>
     /// <b>Known fat-payload gap:</b> the current event carries
     /// <c>GroupId, UserId, Sport, SeasonYear</c> only. To send useful copy we
     /// also need <c>LeagueName</c>, <c>JoinedDisplayName</c>, and
@@ -34,6 +40,11 @@ namespace SportsData.Notification.Application.Consumers
     /// </summary>
     public class PickemGroupMemberAddedConsumer : IConsumer<PickemGroupMemberAdded>
     {
+        // NotificationLog.FailureReason is varchar(512); per-device detail
+        // stays in structured logs.
+        private const int FailureReasonMaxLength = 512;
+        private const string FailureReasonTruncationSuffix = "…(truncated)";
+
         private readonly ILogger<PickemGroupMemberAddedConsumer> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
@@ -64,27 +75,28 @@ namespace SportsData.Notification.Application.Consumers
 
             _logger.LogInformation("PickemGroupMemberAdded received.");
 
-            // Idempotency: at-least-once delivery from RabbitMQ means we may
-            // see the same event twice. Dedupe on (CorrelationId, UserId, Channel)
-            // — same key the design doc §3 calls out for NotificationLog — and
-            // write a Skipped_Duplicate audit row instead of firing a second
-            // welcome push. Mirrors the guard in UserPickScoredConsumer.
-            var alreadyAttempted = await _dataContext.NotificationLog
-                .AsNoTracking()
-                .AnyAsync(l =>
-                    l.CorrelationId == msg.CorrelationId &&
-                    l.UserId == msg.UserId &&
-                    l.Channel == "Fcm");
-
-            if (alreadyAttempted)
+            // Atomic claim — see UserPickScoredConsumer for full rationale.
+            var claim = new NotificationLog
             {
-                // The first delivery's NotificationLog row IS the audit
-                // trail. Writing a second row here would collide with the
-                // unique (CorrelationId, UserId, Channel) index and throw.
-                // Log + return; redelivery is silently absorbed.
+                UserId = msg.UserId,
+                CorrelationId = msg.CorrelationId,
+                Category = "Membership",
+                Channel = "Fcm",
+                Result = "Dispatching",
+                AttemptedUtc = _dateTimeProvider.UtcNow()
+            };
+            _dataContext.NotificationLog.Add(claim);
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
                 _logger.LogInformation(
-                    "PickemGroupMemberAdded already dispatched for CorrelationId {CorrelationId}, UserId {UserId}; skipping duplicate.",
+                    "PickemGroupMemberAdded already claimed by another consumer for CorrelationId {CorrelationId}, UserId {UserId}; skipping.",
                     msg.CorrelationId, msg.UserId);
+                _dataContext.Entry(claim).State = EntityState.Detached;
                 return;
             }
 
@@ -98,8 +110,7 @@ namespace SportsData.Notification.Application.Consumers
                 _logger.LogInformation(
                     "Membership-category notifications disabled for UserId {UserId}; suppressing welcome push.",
                     msg.UserId);
-                // Still write a log row so suppression is auditable.
-                await LogSuppressedAsync(msg, "Suppressed_UserOptedOut");
+                await FinalizeAsync(claim, "Suppressed_UserOptedOut");
                 return;
             }
 
@@ -113,7 +124,7 @@ namespace SportsData.Notification.Application.Consumers
                 _logger.LogInformation(
                     "No active UserDevice rows for UserId {UserId}; suppressing welcome push.",
                     msg.UserId);
-                await LogSuppressedAsync(msg, "Suppressed_NoDevice");
+                await FinalizeAsync(claim, "Suppressed_NoDevice");
                 return;
             }
 
@@ -142,39 +153,39 @@ namespace SportsData.Notification.Application.Consumers
                 }
             }
 
-            var resultValue = successCount > 0 ? "Sent" : "Failed_FcmError";
-            var failureReason = failureReasons.Count > 0
-                ? string.Join("; ", failureReasons)
-                : null;
-
-            _dataContext.NotificationLog.Add(new NotificationLog
-            {
-                UserId = msg.UserId,
-                CorrelationId = msg.CorrelationId,
-                Category = "Membership",
-                Channel = "Fcm",
-                Title = title,
-                Body = body,
-                Result = resultValue,
-                FailureReason = failureReason,
-                AttemptedUtc = _dateTimeProvider.UtcNow()
-            });
+            claim.Title = title;
+            claim.Body = body;
+            claim.Result = successCount > 0 ? "Sent" : "Failed_FcmError";
+            claim.FailureReason = ComposeFailureReason(failureReasons);
+            claim.ModifiedUtc = _dateTimeProvider.UtcNow();
 
             await _dataContext.SaveChangesAsync();
         }
 
-        private async Task LogSuppressedAsync(PickemGroupMemberAdded msg, string result)
+        private async Task FinalizeAsync(NotificationLog claim, string result)
         {
-            _dataContext.NotificationLog.Add(new NotificationLog
-            {
-                UserId = msg.UserId,
-                CorrelationId = msg.CorrelationId,
-                Category = "Membership",
-                Channel = "Fcm",
-                Result = result,
-                AttemptedUtc = _dateTimeProvider.UtcNow()
-            });
+            claim.Result = result;
+            claim.ModifiedUtc = _dateTimeProvider.UtcNow();
             await _dataContext.SaveChangesAsync();
+        }
+
+        private static string ComposeFailureReason(List<string> failureReasons)
+        {
+            if (failureReasons.Count == 0)
+                return null;
+
+            var joined = string.Join("; ", failureReasons);
+            if (joined.Length <= FailureReasonMaxLength)
+                return joined;
+
+            var cutoff = FailureReasonMaxLength - FailureReasonTruncationSuffix.Length;
+            return joined.Substring(0, cutoff) + FailureReasonTruncationSuffix;
+        }
+
+        private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+        {
+            // Npgsql surfaces unique-violation as SQLSTATE 23505.
+            return ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505";
         }
     }
 }

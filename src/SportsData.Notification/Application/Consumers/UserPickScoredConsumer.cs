@@ -15,20 +15,37 @@ namespace SportsData.Notification.Application.Consumers
     /// Every member who picked a finalized contest gets one of these events.
     ///
     /// <para>
-    /// Orchestration: resolve prefs → resolve devices → dispatch via
-    /// <see cref="IPushNotificationSender"/> → append audit row reflecting
-    /// the outcome.
+    /// Orchestration: <b>atomic-claim</b> via NotificationLog insert
+    /// (relies on the unique <c>(CorrelationId, UserId, Channel)</c> index)
+    /// → resolve prefs → resolve devices → dispatch via
+    /// <see cref="IPushNotificationSender"/> → update the row with terminal outcome.
     /// </para>
     ///
     /// <para>
-    /// Idempotency: NotificationLog has a unique <c>(CorrelationId, UserId, Channel)</c>
-    /// index. MassTransit at-least-once delivery means we may consume the
-    /// same event twice; the second attempt hits the dedupe path and
-    /// returns without writing a second row or firing a second push.
+    /// The claim-first pattern closes a TOCTOU race the prior AnyAsync-then-insert
+    /// flow had: two concurrent redeliveries could both read "no row" and both
+    /// dispatch before either inserted. Now the first INSERT wins the unique
+    /// constraint; the loser gets <see cref="DbUpdateException"/> and returns
+    /// without dispatching.
+    /// </para>
+    ///
+    /// <para>
+    /// Failure mode: if the consumer crashes between claim and terminal update,
+    /// the row sits at <c>Result="Dispatching"</c> indefinitely and any
+    /// redelivery is suppressed by the unique constraint. We've chosen a
+    /// missing notification over a duplicate notification for v1 — duplicates
+    /// are worse UX than absences. A future cleanup job could rerun stale
+    /// Dispatching rows if needed.
     /// </para>
     /// </summary>
     public class UserPickScoredConsumer : IConsumer<UserPickScored>
     {
+        // NotificationLog.FailureReason is varchar(512). Truncate the joined
+        // per-device summary so we don't trip Postgres's length check on a
+        // user with many failing devices; per-device detail stays in logs.
+        private const int FailureReasonMaxLength = 512;
+        private const string FailureReasonTruncationSuffix = "…(truncated)";
+
         private readonly ILogger<UserPickScoredConsumer> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
@@ -60,34 +77,43 @@ namespace SportsData.Notification.Application.Consumers
 
             _logger.LogInformation("UserPickScored received.");
 
-            // Idempotency check: have we already attempted a Fcm send for this
-            // correlation + user? If so, append a Skipped_Duplicate row and bail.
-            var alreadyAttempted = await _dataContext.NotificationLog
-                .AsNoTracking()
-                .AnyAsync(l =>
-                    l.CorrelationId == msg.CorrelationId &&
-                    l.UserId == msg.UserId &&
-                    l.Channel == "Fcm");
-
-            if (alreadyAttempted)
+            // Atomic claim. Insert a NotificationLog row in Dispatching state
+            // BEFORE doing any work. If another consumer beat us to it, the
+            // unique constraint throws DbUpdateException and we bail without
+            // dispatching anything.
+            var claim = new NotificationLog
             {
-                // The first delivery's NotificationLog row IS the audit
-                // trail. Writing a second row here would collide with the
-                // unique (CorrelationId, UserId, Channel) index and throw.
-                // Log + return; redelivery is silently absorbed.
+                UserId = msg.UserId,
+                CorrelationId = msg.CorrelationId,
+                Category = "PickResult",
+                Channel = "Fcm",
+                Result = "Dispatching",
+                AttemptedUtc = _dateTimeProvider.UtcNow()
+            };
+            _dataContext.NotificationLog.Add(claim);
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
                 _logger.LogInformation(
-                    "UserPickScored already dispatched for CorrelationId {CorrelationId}, UserId {UserId}; skipping duplicate.",
+                    "UserPickScored already claimed by another consumer for CorrelationId {CorrelationId}, UserId {UserId}; skipping.",
                     msg.CorrelationId, msg.UserId);
+                _dataContext.Entry(claim).State = EntityState.Detached;
                 return;
             }
 
+            // From here on we own the dispatch. Any terminal state writes
+            // UPDATE the claim row rather than insert a new one.
             var prefs = await _dataContext.UserNotificationPreferences
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.UserId == msg.UserId);
 
             if (prefs is { PickResultEnabled: false })
             {
-                await LogAndSaveAsync(msg, "Suppressed_UserOptedOut");
+                await FinalizeAsync(claim, "Suppressed_UserOptedOut");
                 return;
             }
 
@@ -98,7 +124,7 @@ namespace SportsData.Notification.Application.Consumers
 
             if (devices.Count == 0)
             {
-                await LogAndSaveAsync(msg, "Suppressed_NoDevice");
+                await FinalizeAsync(claim, "Suppressed_NoDevice");
                 return;
             }
 
@@ -131,24 +157,19 @@ namespace SportsData.Notification.Application.Consumers
                 }
             }
 
-            var resultValue = successCount > 0 ? "Sent" : "Failed_FcmError";
-            var failureReason = failureReasons.Count > 0
-                ? string.Join("; ", failureReasons)
-                : null;
+            claim.Title = title;
+            claim.Body = body;
+            claim.Result = successCount > 0 ? "Sent" : "Failed_FcmError";
+            claim.FailureReason = ComposeFailureReason(failureReasons);
+            claim.ModifiedUtc = _dateTimeProvider.UtcNow();
 
-            _dataContext.NotificationLog.Add(new NotificationLog
-            {
-                UserId = msg.UserId,
-                CorrelationId = msg.CorrelationId,
-                Category = "PickResult",
-                Channel = "Fcm",
-                Title = title,
-                Body = body,
-                Result = resultValue,
-                FailureReason = failureReason,
-                AttemptedUtc = _dateTimeProvider.UtcNow()
-            });
+            await _dataContext.SaveChangesAsync();
+        }
 
+        private async Task FinalizeAsync(NotificationLog claim, string result)
+        {
+            claim.Result = result;
+            claim.ModifiedUtc = _dateTimeProvider.UtcNow();
             await _dataContext.SaveChangesAsync();
         }
 
@@ -167,18 +188,27 @@ namespace SportsData.Notification.Application.Consumers
                 : $"Your pick lost. Final {msg.AwayScore}–{msg.HomeScore}.";
         }
 
-        private async Task LogAndSaveAsync(UserPickScored msg, string result)
+        private static string ComposeFailureReason(List<string> failureReasons)
         {
-            _dataContext.NotificationLog.Add(new NotificationLog
-            {
-                UserId = msg.UserId,
-                CorrelationId = msg.CorrelationId,
-                Category = "PickResult",
-                Channel = "Fcm",
-                Result = result,
-                AttemptedUtc = _dateTimeProvider.UtcNow()
-            });
-            await _dataContext.SaveChangesAsync();
+            if (failureReasons.Count == 0)
+                return null;
+
+            var joined = string.Join("; ", failureReasons);
+            if (joined.Length <= FailureReasonMaxLength)
+                return joined;
+
+            // Reserve room for the suffix; full per-device detail stays in
+            // structured logs via FirebasePushNotificationSender.
+            var cutoff = FailureReasonMaxLength - FailureReasonTruncationSuffix.Length;
+            return joined.Substring(0, cutoff) + FailureReasonTruncationSuffix;
+        }
+
+        private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+        {
+            // Npgsql surfaces unique-violation as SQLSTATE 23505. Inspecting
+            // SqlState on the inner PostgresException is the load-bearing
+            // check; the EF-side DbUpdateException is too generic on its own.
+            return ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505";
         }
     }
 }

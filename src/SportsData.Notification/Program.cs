@@ -41,12 +41,14 @@ namespace SportsData.Notification
                 typeof(UserPickScoredConsumer)
             ]);
 
-            // Initialize FirebaseApp.DefaultInstance from CommonConfig:Firebase.
-            // FirebasePushNotificationSender depends on the global default
-            // instance — same pattern as API's Program.cs (single source of
-            // truth in CommonConfig means API + Notification point at the
-            // same Firebase project). Skipped if the config section is empty
-            // so local-dev / docker-compose pods boot without credentials.
+            // Initialize FirebaseApp.DefaultInstance from CommonConfig:Firebase
+            // and register the real sender. When ProjectId is empty (local
+            // dev / tests without Firebase credentials) we register a no-op
+            // sender instead so consumers don't crash on resolution. The
+            // no-op returns Failure with an explicit "not configured" reason,
+            // which lands in NotificationLog as Failed_FcmError — easy to
+            // grep, makes the misconfiguration obvious without flooding
+            // dead-letter.
             var firebaseSection = config.GetSection("CommonConfig:Firebase");
             if (!string.IsNullOrWhiteSpace(firebaseSection["ProjectId"]))
             {
@@ -69,9 +71,14 @@ namespace SportsData.Notification
                 {
                     Credential = GoogleCredential.FromJson(firebaseJson)
                 });
-            }
 
-            services.AddScoped<IPushNotificationSender, FirebasePushNotificationSender>();
+                services.AddScoped<IPushNotificationSender, FirebasePushNotificationSender>();
+            }
+            else
+            {
+                Console.WriteLine("WARN: CommonConfig:Firebase:ProjectId is not set; registering NoOpPushNotificationSender. FCM dispatches will no-op.");
+                services.AddScoped<IPushNotificationSender, NoOpPushNotificationSender>();
+            }
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, mode);

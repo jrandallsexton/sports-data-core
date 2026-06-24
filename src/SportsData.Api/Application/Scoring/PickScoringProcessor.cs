@@ -4,6 +4,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Picks;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Scoring
@@ -186,6 +187,34 @@ namespace SportsData.Api.Application.Scoring
 
                     pick.ModifiedUtc = _dateTimeProvider.UtcNow();
                     pick.ModifiedBy = CausationId.Api.PickScoringProcessor;
+
+                    // Fat-event for the Notification service (design doc §4 /
+                    // §5 v1). Publish BEFORE SaveChanges so the bus-outbox
+                    // interceptor commits this together with the pick update;
+                    // an at-least-once redelivery is fine — Notification's
+                    // NotificationLog dedupe on (CorrelationId, UserId, Channel)
+                    // absorbs it. Today's payload populates the cheap fields;
+                    // DisplayName, AwayName/HomeName, and PickValue require
+                    // additional joins (User + FranchiseSeason) and are
+                    // intentionally nullable in the contract until that
+                    // fattening pass lands.
+                    await _bus.Publish(new UserPickScored(
+                            pick.UserId,
+                            null,
+                            command.ContestId,
+                            null,
+                            null,
+                            result.AwayScore,
+                            result.HomeScore,
+                            null,
+                            pick.IsCorrect,
+                            group.Id,
+                            group.Name,
+                            group.Sport,
+                            matchup.SeasonYear,
+                            command.CorrelationId,
+                            CausationId.Api.PickScoringProcessor),
+                        CancellationToken.None);
 
                     await _dataContext.SaveChangesAsync();
                 }

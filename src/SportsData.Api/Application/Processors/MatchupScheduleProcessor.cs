@@ -100,6 +100,7 @@ namespace SportsData.Api.Application.Processors
             var matchupsResult = await _contestClientFactory
                 .Resolve(group.Sport)
                 .GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek);
+
             if (!matchupsResult.IsSuccess)
             {
                 _logger.LogWarning("Failed to retrieve matchups for season {Year} week {Week}. Skipping.", command.SeasonYear, command.SeasonWeek);
@@ -172,6 +173,7 @@ namespace SportsData.Api.Application.Processors
             var existingByContestId = groupWeek.Matchups
                 .ToDictionary(m => m.ContestId, m => m);
             var insertedCount = 0;
+            var insertedContestIds = new List<Guid>();
 
             foreach (var groupMatchup in groupMatchups)
             {
@@ -231,6 +233,7 @@ namespace SportsData.Api.Application.Processors
                         UnderOdds = groupMatchup.UnderOdds
                     });
                     insertedCount++;
+                    insertedContestIds.Add(groupMatchup.ContestId);
                 }
             }
 
@@ -282,6 +285,24 @@ namespace SportsData.Api.Application.Processors
             {
                 _logger.LogInformation("Skipping PickemGroupWeekMatchupsGenerated event for completed week. GroupId={GroupId}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}",
                     group.Id, command.SeasonYear, command.SeasonWeek);
+            }
+
+            // Per-matchup fan-out for the Notification service. Published BEFORE
+            // SaveChanges so the bus-outbox interceptor commits these together
+            // with the matchup inserts in the same transaction. One event per
+            // newly-inserted matchup (refresh-only updates are intentionally
+            // silent here — Notification cares about "this league now has this
+            // contest," not about line/rank churn on already-known matchups).
+            foreach (var contestId in insertedContestIds)
+            {
+                await _eventBus.Publish(new PickemGroupMatchupCreated(
+                        group.Id,
+                        contestId,
+                        group.Sport,
+                        command.SeasonYear,
+                        command.CorrelationId,
+                        Guid.NewGuid()),
+                    CancellationToken.None);
             }
 
             await _dataContext.SaveChangesAsync();

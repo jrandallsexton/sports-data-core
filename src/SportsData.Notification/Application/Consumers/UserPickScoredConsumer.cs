@@ -70,20 +70,13 @@ namespace SportsData.Notification.Application.Consumers
 
             if (alreadyAttempted)
             {
+                // The first delivery's NotificationLog row IS the audit
+                // trail. Writing a second row here would collide with the
+                // unique (CorrelationId, UserId, Channel) index and throw.
+                // Log + return; redelivery is silently absorbed.
                 _logger.LogInformation(
                     "UserPickScored already dispatched for CorrelationId {CorrelationId}, UserId {UserId}; skipping duplicate.",
                     msg.CorrelationId, msg.UserId);
-
-                _dataContext.NotificationLog.Add(new NotificationLog
-                {
-                    UserId = msg.UserId,
-                    CorrelationId = msg.CorrelationId,
-                    Category = "PickResult",
-                    Channel = "Fcm",
-                    Result = "Skipped_Duplicate",
-                    AttemptedUtc = _dateTimeProvider.UtcNow()
-                });
-                await _dataContext.SaveChangesAsync();
                 return;
             }
 

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Core.Eventing.Events.Users;
 using SportsData.Notification.Infrastructure.Auth;
 
@@ -60,6 +61,36 @@ namespace SportsData.Notification.Controllers
             using (_deliveryScope.Use(DeliveryMode.Direct))
             {
                 await _eventBus.Publish(new UsersRequested(
+                        Sport.All,
+                        null,
+                        correlationId,
+                        Guid.NewGuid()),
+                    cancellationToken);
+            }
+
+            return Accepted(new { correlationId });
+        }
+
+        /// <summary>
+        /// Triggers a full backfill of the local <c>PickemGroup</c> +
+        /// <c>PickemGroupMember</c> projections by publishing
+        /// <see cref="PickemGroupsRequested"/>. The API consumer responds with
+        /// one bundled <c>PickemGroupDataPublished</c> per league (members
+        /// embedded in the payload), and Notification's own consumer
+        /// upserts each group + replaces its member roster.
+        /// </summary>
+        [HttpPost("pickemgroups")]
+        public async Task<IActionResult> RequestPickemGroups(CancellationToken cancellationToken)
+        {
+            var correlationId = Guid.NewGuid();
+
+            _logger.LogInformation(
+                "Publishing PickemGroupsRequested. CorrelationId={CorrelationId}",
+                correlationId);
+
+            using (_deliveryScope.Use(DeliveryMode.Direct))
+            {
+                await _eventBus.Publish(new PickemGroupsRequested(
                         Sport.All,
                         null,
                         correlationId,

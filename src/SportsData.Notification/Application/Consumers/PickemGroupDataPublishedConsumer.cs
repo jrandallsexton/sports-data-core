@@ -95,39 +95,77 @@ namespace SportsData.Notification.Application.Consumers
                 groupChanged = ApplyGroupUpdateIfChanged(group, msg, now);
             }
 
-            // ---- Members: set-equality check before replace.
+            // ---- Members: diff/sync by UserId — modify survivors in place,
+            // only delete/insert for actual set changes. Avoids the
+            // delete-then-insert collision on the unique (PickemGroupId,
+            // UserId) index that a wholesale replace produces when two
+            // concurrent PickemGroupDataPublished events for the same group
+            // interleave. Role-only changes become a single UPDATE rather
+            // than a DELETE + INSERT of the same key.
             var existingMembers = await _dataContext.PickemGroupMembers
                 .Where(m => m.PickemGroupId == msg.GroupId)
                 .ToListAsync(context.CancellationToken);
 
-            var existingSet = existingMembers
-                .Select(m => (m.UserId, m.Role))
-                .ToHashSet();
-            var snapshotSet = msg.Members
-                .Select(m => (m.UserId, m.Role))
-                .ToHashSet();
+            var existingByUserId = existingMembers.ToDictionary(m => m.UserId);
+            var snapshotByUserId = msg.Members.ToDictionary(m => m.UserId);
 
-            var membersChanged = !existingSet.SetEquals(snapshotSet);
+            var membersChanged = false;
 
-            if (membersChanged)
+            // Removals: existing not in snapshot.
+            foreach (var (userId, member) in existingByUserId)
             {
-                _dataContext.PickemGroupMembers.RemoveRange(existingMembers);
-                foreach (var snapshot in msg.Members)
+                if (!snapshotByUserId.ContainsKey(userId))
+                {
+                    _dataContext.PickemGroupMembers.Remove(member);
+                    membersChanged = true;
+                }
+            }
+
+            // Inserts + in-place updates.
+            foreach (var (userId, snapshot) in snapshotByUserId)
+            {
+                if (existingByUserId.TryGetValue(userId, out var existing))
+                {
+                    if (existing.Role != snapshot.Role)
+                    {
+                        existing.Role = snapshot.Role;
+                        existing.ModifiedUtc = now;
+                        existing.ModifiedBy = msg.CausationId;
+                        membersChanged = true;
+                    }
+                }
+                else
                 {
                     _dataContext.PickemGroupMembers.Add(new PickemGroupMember
                     {
                         PickemGroupId = msg.GroupId,
-                        UserId = snapshot.UserId,
+                        UserId = userId,
                         Role = snapshot.Role,
                         CreatedUtc = now,
                         CreatedBy = msg.CausationId
                     });
+                    membersChanged = true;
                 }
             }
 
             if (groupChanged || membersChanged)
             {
-                await _dataContext.SaveChangesAsync(context.CancellationToken);
+                try
+                {
+                    await _dataContext.SaveChangesAsync(context.CancellationToken);
+                }
+                catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+                {
+                    // A concurrent consumer inserted one of the same new
+                    // members between our read and our save. Their write
+                    // won; ours is redundant. Log and treat as success —
+                    // the projection is now in the intended end-state.
+                    _logger.LogInformation(
+                        "PickemGroup member sync hit a concurrent insert race for GroupId {GroupId}; another consumer's write won. Projection is in target state.",
+                        msg.GroupId);
+                    return;
+                }
+
                 _logger.LogInformation(
                     "PickemGroup roster synced. GroupId={GroupId}, MemberCount={MemberCount}, GroupChanged={GroupChanged}, MembersChanged={MembersChanged}",
                     msg.GroupId, msg.Members.Count, groupChanged, membersChanged);

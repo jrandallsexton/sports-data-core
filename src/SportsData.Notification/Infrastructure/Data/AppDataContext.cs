@@ -5,17 +5,25 @@ using SportsData.Notification.Infrastructure.Data.Entities;
 namespace SportsData.Notification.Infrastructure.Data
 {
     /// <summary>
-    /// Notification service's local read/write store. Per the design doc
-    /// (docs/architecture/notification-service-events-and-state.md §3),
-    /// Notification consumes fat events and projects only the state that
-    /// genuinely belongs to it: device tokens, user preferences, scheduled
-    /// job ids, and the audit log. It does NOT project User, League,
-    /// Membership, Contest, or Pick — those facts ride on the events.
+    /// Notification service's local read/write store. The original design
+    /// doc (docs/architecture/notification-service-events-and-state.md §3)
+    /// kept this to 4 tables — device tokens, user preferences, scheduled
+    /// job ids, audit log — and pushed everything else onto fat events.
+    ///
+    /// <para>
+    /// The <c>User</c> projection added here is a deliberate expansion of
+    /// that model for operational queries: the backfill chain
+    /// (<c>UsersRequested</c> → <c>UserDataPublished</c>) seeds it, and
+    /// future broadcast / commissioner-side flows that need to look up
+    /// users without round-tripping to API will read from it.
+    /// </para>
     /// </summary>
     public class AppDataContext : DbContext
     {
         public AppDataContext(DbContextOptions<AppDataContext> options)
             : base(options) { }
+
+        public DbSet<User> Users => Set<User>();
 
         public DbSet<UserDevice> UserDevices => Set<UserDevice>();
 

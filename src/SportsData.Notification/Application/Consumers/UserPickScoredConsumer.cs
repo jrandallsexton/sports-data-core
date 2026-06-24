@@ -6,6 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Picks;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
+using SportsData.Notification.Infrastructure.Notifications;
 
 namespace SportsData.Notification.Application.Consumers
 {
@@ -14,19 +15,16 @@ namespace SportsData.Notification.Application.Consumers
     /// Every member who picked a finalized contest gets one of these events.
     ///
     /// <para>
-    /// Orchestration is the same shape as <see cref="PickemGroupMemberAddedConsumer"/>:
-    /// resolve prefs → resolve devices → suppress vs send → append audit row.
-    /// FCM dispatch itself is delegated to a future <c>IPushNotificationSender</c>
-    /// (today the only sender implementation lives in the API project; moving
-    /// or duplicating it into Notification is part of the FCM-integration TODO).
+    /// Orchestration: resolve prefs → resolve devices → dispatch via
+    /// <see cref="IPushNotificationSender"/> → append audit row reflecting
+    /// the outcome.
     /// </para>
     ///
     /// <para>
-    /// Idempotency: NotificationLog has a unique-ish index on
-    /// <c>(CorrelationId, UserId, Channel)</c>. Even though MassTransit at-least-once
-    /// delivery means we may consume the same event twice, the second attempt
-    /// hits the dedupe path and writes <c>Result = "Skipped_Duplicate"</c>
-    /// instead of firing a second push.
+    /// Idempotency: NotificationLog has a unique <c>(CorrelationId, UserId, Channel)</c>
+    /// index. MassTransit at-least-once delivery means we may consume the
+    /// same event twice; the second attempt hits the dedupe path and
+    /// returns without writing a second row or firing a second push.
     /// </para>
     /// </summary>
     public class UserPickScoredConsumer : IConsumer<UserPickScored>
@@ -34,15 +32,18 @@ namespace SportsData.Notification.Application.Consumers
         private readonly ILogger<UserPickScoredConsumer> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IPushNotificationSender _pushSender;
 
         public UserPickScoredConsumer(
             ILogger<UserPickScoredConsumer> logger,
             AppDataContext dataContext,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IPushNotificationSender pushSender)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
+            _pushSender = pushSender;
         }
 
         public async Task Consume(ConsumeContext<UserPickScored> context)
@@ -101,22 +102,40 @@ namespace SportsData.Notification.Application.Consumers
                 return;
             }
 
-            // TODO (FCM integration): inject IPushNotificationSender and dispatch
-            // per device. Body composition needs the team-name fields off the
-            // event — until the fat-payload pass lands, fall back to generic copy.
+            // Body composition needs the team-name fields off the event —
+            // until the fat-payload pass lands, fall back to generic copy.
             var title = msg.IsCorrect == true ? "Nice pick!" : "Tough loss";
             var body = ComposeBody(msg);
 
+            // Per-device dispatch. Single-token send rather than multicast
+            // because v1's IPushNotificationSender surface is one-at-a-time;
+            // multicast batching can come later if device counts per user
+            // grow past a handful. Aggregate outcome:
+            //   - any success → "Sent"
+            //   - all failures → "Failed_FcmError" with reasons captured
+            // Mixed outcomes still log "Sent" because the user did get the
+            // push; per-device failure reasons stay in the structured logs.
+            var successCount = 0;
+            var failureReasons = new List<string>();
             foreach (var device in devices)
             {
-                _logger.LogInformation(
-                    "TODO: send PickResult FCM to DeviceId {DeviceId} for UserId {UserId}. Title='{Title}', Body='{Body}'",
-                    device.Id, msg.UserId, title, body);
+                var result = await _pushSender.SendAsync(device.FcmToken, title, body);
+                if (result is Success<string>)
+                {
+                    successCount++;
+                }
+                else if (result is Failure<string> failure)
+                {
+                    var reason = failure.Errors.FirstOrDefault()?.ErrorMessage ?? "unknown";
+                    failureReasons.Add($"{device.Platform}:{reason}");
+                }
             }
 
-            // Result reflects the current TODO-only path: devices resolved,
-            // dispatch loop above just logs. Flip to "Sent" / "Failed_FcmError"
-            // once IPushNotificationSender is wired in — see FCM TODO above.
+            var resultValue = successCount > 0 ? "Sent" : "Failed_FcmError";
+            var failureReason = failureReasons.Count > 0
+                ? string.Join("; ", failureReasons)
+                : null;
+
             _dataContext.NotificationLog.Add(new NotificationLog
             {
                 UserId = msg.UserId,
@@ -125,7 +144,8 @@ namespace SportsData.Notification.Application.Consumers
                 Channel = "Fcm",
                 Title = title,
                 Body = body,
-                Result = "Pending_FcmIntegration",
+                Result = resultValue,
+                FailureReason = failureReason,
                 AttemptedUtc = _dateTimeProvider.UtcNow()
             });
 

@@ -6,6 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
+using SportsData.Notification.Infrastructure.Notifications;
 
 namespace SportsData.Notification.Application.Consumers
 {
@@ -36,15 +37,18 @@ namespace SportsData.Notification.Application.Consumers
         private readonly ILogger<PickemGroupMemberAddedConsumer> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IPushNotificationSender _pushSender;
 
         public PickemGroupMemberAddedConsumer(
             ILogger<PickemGroupMemberAddedConsumer> logger,
             AppDataContext dataContext,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IPushNotificationSender pushSender)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
+            _pushSender = pushSender;
         }
 
         public async Task Consume(ConsumeContext<PickemGroupMemberAdded> context)
@@ -113,38 +117,46 @@ namespace SportsData.Notification.Application.Consumers
                 return;
             }
 
-            // 2. Send welcome push.
-            // TODO (FCM integration): inject IPushNotificationSender (or a
-            // Notification-local equivalent) and dispatch the "Welcome to
-            // {LeagueName}" push for each device. The sender owns FCM call,
-            // retry, and per-token failure mapping. This consumer just owns
-            // the orchestration + audit row.
+            // 2. Send welcome push. Body stays generic until the fat-payload
+            // pass adds LeagueName + JoinedDisplayName to the event.
+            const string title = "Welcome";
+            const string body = "You've joined a new league.";
+
+            // 3. Commissioner-side notification is deferred — the event
+            // doesn't carry CommissionerUserId today. Once fattened, repeat
+            // the prefs + device lookup against the commissioner here.
+
+            var successCount = 0;
+            var failureReasons = new List<string>();
             foreach (var device in devices)
             {
-                _logger.LogInformation(
-                    "TODO: send welcome FCM to DeviceId {DeviceId} for UserId {UserId}.",
-                    device.Id, msg.UserId);
+                var sendResult = await _pushSender.SendAsync(device.FcmToken, title, body);
+                if (sendResult is Success<string>)
+                {
+                    successCount++;
+                }
+                else if (sendResult is Failure<string> failure)
+                {
+                    var reason = failure.Errors.FirstOrDefault()?.ErrorMessage ?? "unknown";
+                    failureReasons.Add($"{device.Platform}:{reason}");
+                }
             }
 
-            // 3. Notify commissioner of new member.
-            // TODO (fat-payload work): the commissioner's UserId isn't on the
-            // event today — fattening required. Once available, run the same
-            // preference + device lookup against the commissioner and dispatch
-            // a "{JoinedDisplayName} joined {LeagueName}" push.
+            var resultValue = successCount > 0 ? "Sent" : "Failed_FcmError";
+            var failureReason = failureReasons.Count > 0
+                ? string.Join("; ", failureReasons)
+                : null;
 
-            // 4. Append audit row. Result reflects the current TODO-only path:
-            // we resolved devices and would have dispatched, but the IPushNotificationSender
-            // wiring isn't here yet. Flip to "Sent" / "Failed_FcmError" once the
-            // dispatch loop above does real work — see FCM TODO at line ~130.
             _dataContext.NotificationLog.Add(new NotificationLog
             {
                 UserId = msg.UserId,
                 CorrelationId = msg.CorrelationId,
                 Category = "Membership",
                 Channel = "Fcm",
-                Title = "Welcome",
-                Body = "TODO: render with LeagueName once fattened",
-                Result = "Pending_FcmIntegration",
+                Title = title,
+                Body = body,
+                Result = resultValue,
+                FailureReason = failureReason,
                 AttemptedUtc = _dateTimeProvider.UtcNow()
             });
 

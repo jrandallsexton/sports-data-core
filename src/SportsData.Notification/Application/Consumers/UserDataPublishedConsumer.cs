@@ -16,6 +16,20 @@ namespace SportsData.Notification.Application.Consumers
     /// and post-backfill steady-state updates all converge on the same row.
     ///
     /// <para>
+    /// Two specific idempotency properties:
+    /// <list type="bullet">
+    ///   <item><b>Race-safe insert.</b> Two concurrent consumers seeing
+    ///   "doesn't exist" can both try to insert. The PK-unique constraint
+    ///   catches the loser via <see cref="DbUpdateException"/>; we detach
+    ///   the orphan entity and fall through to the update path.</item>
+    ///   <item><b>No-op redelivery.</b> If the snapshot's business fields
+    ///   match what's already in the projection, we don't touch
+    ///   <c>ModifiedUtc</c>/<c>ModifiedBy</c> and skip the SaveChanges
+    ///   round-trip entirely.</item>
+    /// </list>
+    /// </para>
+    ///
+    /// <para>
     /// No notification side effects here — this consumer's job is purely to
     /// keep the local projection fresh. Whether a notification fires on
     /// user creation / update is the responsibility of a future
@@ -48,37 +62,68 @@ namespace SportsData.Notification.Application.Consumers
                 ["UserId"] = msg.UserId
             });
 
+            var normalizedTimezone = string.IsNullOrEmpty(msg.Timezone) ? null : msg.Timezone;
+            var now = _dateTimeProvider.UtcNow();
+
             var existing = await _dataContext.Users
                 .FirstOrDefaultAsync(u => u.Id == msg.UserId, context.CancellationToken);
 
-            var now = _dateTimeProvider.UtcNow();
-
             if (existing is null)
             {
-                _dataContext.Users.Add(new User
+                var entity = new User
                 {
                     Id = msg.UserId,
                     DisplayName = msg.DisplayName,
                     Email = msg.Email,
-                    Timezone = string.IsNullOrEmpty(msg.Timezone) ? null : msg.Timezone,
+                    Timezone = normalizedTimezone,
                     CreatedUtc = now,
                     CreatedBy = msg.CausationId
-                });
+                };
+                _dataContext.Users.Add(entity);
 
-                _logger.LogInformation("User projection inserted. UserId={UserId}", msg.UserId);
+                try
+                {
+                    await _dataContext.SaveChangesAsync(context.CancellationToken);
+                    _logger.LogInformation("User projection inserted. UserId={UserId}", msg.UserId);
+                    return;
+                }
+                catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+                {
+                    // Race: another consumer inserted first. Detach our orphan
+                    // and fall through to the update path.
+                    _dataContext.Entry(entity).State = EntityState.Detached;
+                    existing = await _dataContext.Users
+                        .FirstAsync(u => u.Id == msg.UserId, context.CancellationToken);
+                }
             }
-            else
+
+            // Update path — only touch Modified* if a business field actually
+            // changed. Repeated identical deliveries leave the row stable.
+            var changed =
+                existing.DisplayName != msg.DisplayName
+                || existing.Email != msg.Email
+                || existing.Timezone != normalizedTimezone;
+
+            if (!changed)
             {
-                existing.DisplayName = msg.DisplayName;
-                existing.Email = msg.Email;
-                existing.Timezone = string.IsNullOrEmpty(msg.Timezone) ? null : msg.Timezone;
-                existing.ModifiedUtc = now;
-                existing.ModifiedBy = msg.CausationId;
-
-                _logger.LogInformation("User projection updated. UserId={UserId}", msg.UserId);
+                _logger.LogDebug("User projection unchanged. UserId={UserId}", msg.UserId);
+                return;
             }
+
+            existing.DisplayName = msg.DisplayName;
+            existing.Email = msg.Email;
+            existing.Timezone = normalizedTimezone;
+            existing.ModifiedUtc = now;
+            existing.ModifiedBy = msg.CausationId;
 
             await _dataContext.SaveChangesAsync(context.CancellationToken);
+            _logger.LogInformation("User projection updated. UserId={UserId}", msg.UserId);
+        }
+
+        private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+        {
+            // Npgsql surfaces unique-violation as SQLSTATE 23505.
+            return ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505";
         }
     }
 }

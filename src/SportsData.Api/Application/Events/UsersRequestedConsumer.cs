@@ -67,21 +67,30 @@ namespace SportsData.Api.Application.Events
                 "UsersRequested received; publishing UserDataPublished for {Count} users.",
                 users.Count);
 
+            // Batch via PublishBatch rather than foreach _eventBus.Publish.
+            // EventBus.Publish in Direct mode pays a 1-second Task.Delay per
+            // call (the "give consumers time to commit" hack at EventBus.cs:102)
+            // — fatal for batch fan-out: N users would mean N seconds of
+            // sleep. PublishBatch calls _bus.Publish directly in 256-chunk
+            // Task.WhenAll batches, bypassing the delay. Trade-off: PublishBatch
+            // doesn't auto-stamp the X-Correlation-Id header, but every event
+            // body already carries CorrelationId as a positional record field;
+            // consumers read from the body.
+            var events = users
+                .Select(user => new UserDataPublished(
+                    user.Id,
+                    user.DisplayName,
+                    user.Email,
+                    user.Timezone ?? string.Empty,
+                    msg.Sport,
+                    msg.SeasonYear,
+                    msg.CorrelationId,
+                    Guid.NewGuid()))
+                .ToList();
+
             using (_deliveryScope.Use(DeliveryMode.Direct))
             {
-                foreach (var user in users)
-                {
-                    await _eventBus.Publish(new UserDataPublished(
-                            user.Id,
-                            user.DisplayName,
-                            user.Email,
-                            user.Timezone ?? string.Empty,
-                            msg.Sport,
-                            msg.SeasonYear,
-                            msg.CorrelationId,
-                            Guid.NewGuid()),
-                        context.CancellationToken);
-                }
+                await _eventBus.PublishBatch(events, context.CancellationToken);
             }
 
             _logger.LogInformation(

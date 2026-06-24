@@ -11,11 +11,22 @@ namespace SportsData.Notification.Application.Consumers
 {
     /// <summary>
     /// Upserts the local <see cref="PickemGroup"/> projection from a backfill
-    /// snapshot. Member rows use replace-semantics: existing memberships for
-    /// the group are deleted and the event's bundled member list is inserted
-    /// fresh. That keeps the local roster a faithful mirror of API's
-    /// source-of-truth — including handling removed memberships that the
-    /// upstream might no longer carry.
+    /// snapshot. Member rows use replace-semantics: when the snapshot set
+    /// differs from the local set, existing rows for the group are deleted
+    /// and the snapshot's set is inserted fresh. Keeps the local roster a
+    /// faithful mirror of API's source-of-truth — including removals.
+    ///
+    /// <para>
+    /// Race-safe insert: two concurrent consumers seeing "doesn't exist"
+    /// can both try; the PK-unique constraint catches the loser via
+    /// <see cref="DbUpdateException"/> and we fall through to update.
+    /// </para>
+    ///
+    /// <para>
+    /// Churn-free redelivery: business fields are diffed before applying.
+    /// If neither the group row nor the member set differs, no writes
+    /// happen and <c>ModifiedUtc</c> stays put.
+    /// </para>
     /// </summary>
     public class PickemGroupDataPublishedConsumer : IConsumer<PickemGroupDataPublished>
     {
@@ -45,13 +56,14 @@ namespace SportsData.Notification.Application.Consumers
 
             var now = _dateTimeProvider.UtcNow();
 
-            // Upsert the group row.
+            // ---- Group row: upsert with race-safe insert + change detection.
             var group = await _dataContext.PickemGroups
                 .FirstOrDefaultAsync(g => g.Id == msg.GroupId, context.CancellationToken);
 
+            var groupChanged = false;
             if (group is null)
             {
-                _dataContext.PickemGroups.Add(new PickemGroup
+                var entity = new PickemGroup
                 {
                     Id = msg.GroupId,
                     Name = msg.Name,
@@ -59,44 +71,95 @@ namespace SportsData.Notification.Application.Consumers
                     CommissionerUserId = msg.CommissionerUserId,
                     CreatedUtc = now,
                     CreatedBy = msg.CausationId
-                });
-                _logger.LogInformation("PickemGroup projection inserted. GroupId={GroupId}", msg.GroupId);
+                };
+                _dataContext.PickemGroups.Add(entity);
+
+                try
+                {
+                    await _dataContext.SaveChangesAsync(context.CancellationToken);
+                    _logger.LogInformation("PickemGroup projection inserted. GroupId={GroupId}", msg.GroupId);
+                    group = entity;
+                }
+                catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+                {
+                    // Race: another consumer inserted first. Detach our
+                    // orphan and fall through to the update path.
+                    _dataContext.Entry(entity).State = EntityState.Detached;
+                    group = await _dataContext.PickemGroups
+                        .FirstAsync(g => g.Id == msg.GroupId, context.CancellationToken);
+                    groupChanged = ApplyGroupUpdateIfChanged(group, msg, now);
+                }
             }
             else
             {
-                group.Name = msg.Name;
-                group.Sport = msg.Sport;
-                group.CommissionerUserId = msg.CommissionerUserId;
-                group.ModifiedUtc = now;
-                group.ModifiedBy = msg.CausationId;
-                _logger.LogInformation("PickemGroup projection updated. GroupId={GroupId}", msg.GroupId);
+                groupChanged = ApplyGroupUpdateIfChanged(group, msg, now);
             }
 
-            // Replace members: delete existing rows for this group, then
-            // insert the snapshot's set. Keeps the local roster a faithful
-            // mirror including removals upstream.
+            // ---- Members: set-equality check before replace.
             var existingMembers = await _dataContext.PickemGroupMembers
                 .Where(m => m.PickemGroupId == msg.GroupId)
                 .ToListAsync(context.CancellationToken);
-            _dataContext.PickemGroupMembers.RemoveRange(existingMembers);
 
-            foreach (var snapshot in msg.Members)
+            var existingSet = existingMembers
+                .Select(m => (m.UserId, m.Role))
+                .ToHashSet();
+            var snapshotSet = msg.Members
+                .Select(m => (m.UserId, m.Role))
+                .ToHashSet();
+
+            var membersChanged = !existingSet.SetEquals(snapshotSet);
+
+            if (membersChanged)
             {
-                _dataContext.PickemGroupMembers.Add(new PickemGroupMember
+                _dataContext.PickemGroupMembers.RemoveRange(existingMembers);
+                foreach (var snapshot in msg.Members)
                 {
-                    PickemGroupId = msg.GroupId,
-                    UserId = snapshot.UserId,
-                    Role = snapshot.Role,
-                    CreatedUtc = now,
-                    CreatedBy = msg.CausationId
-                });
+                    _dataContext.PickemGroupMembers.Add(new PickemGroupMember
+                    {
+                        PickemGroupId = msg.GroupId,
+                        UserId = snapshot.UserId,
+                        Role = snapshot.Role,
+                        CreatedUtc = now,
+                        CreatedBy = msg.CausationId
+                    });
+                }
             }
 
-            await _dataContext.SaveChangesAsync(context.CancellationToken);
+            if (groupChanged || membersChanged)
+            {
+                await _dataContext.SaveChangesAsync(context.CancellationToken);
+                _logger.LogInformation(
+                    "PickemGroup roster synced. GroupId={GroupId}, MemberCount={MemberCount}, GroupChanged={GroupChanged}, MembersChanged={MembersChanged}",
+                    msg.GroupId, msg.Members.Count, groupChanged, membersChanged);
+            }
+            else
+            {
+                _logger.LogDebug("PickemGroup projection unchanged. GroupId={GroupId}", msg.GroupId);
+            }
+        }
 
-            _logger.LogInformation(
-                "PickemGroup roster synced. GroupId={GroupId}, MemberCount={MemberCount}",
-                msg.GroupId, msg.Members.Count);
+        private static bool ApplyGroupUpdateIfChanged(PickemGroup group, PickemGroupDataPublished msg, DateTime now)
+        {
+            var changed =
+                group.Name != msg.Name
+                || group.Sport != msg.Sport
+                || group.CommissionerUserId != msg.CommissionerUserId;
+
+            if (!changed)
+                return false;
+
+            group.Name = msg.Name;
+            group.Sport = msg.Sport;
+            group.CommissionerUserId = msg.CommissionerUserId;
+            group.ModifiedUtc = now;
+            group.ModifiedBy = msg.CausationId;
+            return true;
+        }
+
+        private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+        {
+            // Npgsql surfaces unique-violation as SQLSTATE 23505.
+            return ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505";
         }
     }
 }

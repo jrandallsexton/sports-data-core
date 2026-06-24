@@ -74,25 +74,29 @@ namespace SportsData.Api.Application.Events
                 "PickemGroupsRequested received; publishing PickemGroupDataPublished for {Count} groups.",
                 groups.Count);
 
+            // Batch via PublishBatch to dodge EventBus.Publish's per-call
+            // 1-second Direct-mode delay (EventBus.cs:102). At dozens of
+            // leagues that's already meaningful sleep time; per-call is
+            // strictly worse than batch. See sibling notes in
+            // UsersRequestedConsumer for the trade-off (no header-side
+            // X-Correlation-Id stamp; event body still carries it).
+            var events = groups
+                .Select(group => new PickemGroupDataPublished(
+                    group.Id,
+                    group.Name,
+                    group.CommissionerUserId,
+                    group.Members
+                        .Select(m => new PickemGroupMemberSnapshot(m.UserId, m.Role))
+                        .ToList(),
+                    group.Sport,
+                    msg.SeasonYear,
+                    msg.CorrelationId,
+                    Guid.NewGuid()))
+                .ToList();
+
             using (_deliveryScope.Use(DeliveryMode.Direct))
             {
-                foreach (var group in groups)
-                {
-                    var members = group.Members
-                        .Select(m => new PickemGroupMemberSnapshot(m.UserId, m.Role))
-                        .ToList();
-
-                    await _eventBus.Publish(new PickemGroupDataPublished(
-                            group.Id,
-                            group.Name,
-                            group.CommissionerUserId,
-                            members,
-                            group.Sport,
-                            msg.SeasonYear,
-                            msg.CorrelationId,
-                            Guid.NewGuid()),
-                        context.CancellationToken);
-                }
+                await _eventBus.PublishBatch(events, context.CancellationToken);
             }
 
             _logger.LogInformation(

@@ -7,6 +7,8 @@ namespace SportsData.Core.Eventing.Events.PickemGroups
     public record PickemGroupMatchupCreated(
         Guid GroupId,
         Guid ContestId,
+        DateTime StartDateUtc,
+        int SeasonWeek,
         Sport Sport,
         int? SeasonYear,
         Guid CorrelationId,

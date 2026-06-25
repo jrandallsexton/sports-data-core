@@ -281,6 +281,7 @@ namespace SportsData.Api
                     typeof(FootballPlayCompletedHandler),
                     typeof(PickemGroupCreatedHandler),
                     typeof(PickemGroupMatchupAddedHandler),
+                    typeof(PickemGroupMatchupsRequestedConsumer),
                     typeof(PickemGroupsRequestedConsumer),
                     typeof(PickemGroupWeekMatchupsGeneratedHandler),
                     typeof(PreviewGeneratedHandler),

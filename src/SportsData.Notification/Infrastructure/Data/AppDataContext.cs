@@ -26,6 +26,8 @@ namespace SportsData.Notification.Infrastructure.Data
 
         public DbSet<PickemGroup> PickemGroups => Set<PickemGroup>();
 
+        public DbSet<PickemGroupMatchup> PickemGroupMatchups => Set<PickemGroupMatchup>();
+
         public DbSet<PickemGroupMember> PickemGroupMembers => Set<PickemGroupMember>();
 
         public DbSet<User> Users => Set<User>();
@@ -76,6 +78,20 @@ namespace SportsData.Notification.Infrastructure.Data
             modelBuilder.Entity<PickemGroupMember>()
                 .HasIndex(m => new { m.PickemGroupId, m.UserId })
                 .IsUnique();
+
+            // Matchup uniqueness key — same contest can appear in many
+            // leagues, but no league should ever have the same contest
+            // twice. Lookup queries also hit by ContestId alone (e.g.,
+            // ContestStartTimeUpdated → update every matchup row for the
+            // contest) so the leading column is PickemGroupId for fan-out
+            // ("which contests are in this league this week") and a
+            // separate non-unique index on ContestId carries the per-
+            // contest update path.
+            modelBuilder.Entity<PickemGroupMatchup>()
+                .HasIndex(m => new { m.PickemGroupId, m.ContestId })
+                .IsUnique();
+            modelBuilder.Entity<PickemGroupMatchup>()
+                .HasIndex(m => m.ContestId);
         }
     }
 }

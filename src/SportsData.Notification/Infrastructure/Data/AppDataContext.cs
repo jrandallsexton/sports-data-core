@@ -55,10 +55,14 @@ namespace SportsData.Notification.Infrastructure.Data
                 .HasIndex(p => p.UserId)
                 .IsUnique();
 
-            // Quick lookup when an upstream event needs to find the prior
-            // Hangfire job to cancel/reschedule.
+            // Natural-key lookup when an upstream event needs to find the
+            // prior Hangfire job to cancel/reschedule. SeasonWeek included
+            // because PickDeadline rows are scoped per league per week —
+            // omitting it would collide when a league has matchups generated
+            // multiple weeks ahead. Null SeasonWeek (Kickoff jobs) still
+            // participates in the index per Postgres semantics.
             modelBuilder.Entity<PendingScheduledJob>()
-                .HasIndex(j => new { j.UserId, j.JobKind, j.TargetId });
+                .HasIndex(j => new { j.UserId, j.JobKind, j.TargetId, j.SeasonWeek });
 
             // Idempotency key on FCM dispatch: same correlation + user +
             // channel = same logical send, even on RabbitMQ redelivery.

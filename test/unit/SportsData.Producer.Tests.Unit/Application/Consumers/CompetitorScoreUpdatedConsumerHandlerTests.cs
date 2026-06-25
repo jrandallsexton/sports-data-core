@@ -21,6 +21,11 @@ namespace SportsData.Producer.Tests.Unit.Application.Consumers;
 public class CompetitorScoreUpdatedConsumerHandlerTests
     : ProducerTestBase<CompetitorScoreUpdatedConsumerHandler>
 {
+    // Deterministic seed timestamp for entity CreatedUtc / Date columns —
+    // never asserted against, just satisfies NOT NULL. Avoids DateTime.UtcNow
+    // in tests per the project rule.
+    private static readonly DateTime FixedTestNow = new(2026, 6, 24, 18, 0, 0, DateTimeKind.Utc);
+
     private static readonly Guid HomeFranchiseSeasonId = Guid.NewGuid();
     private static readonly Guid AwayFranchiseSeasonId = Guid.NewGuid();
 
@@ -268,9 +273,9 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
         {
             Id = competitionId,
             ContestId = contestId,
-            Date = DateTime.UtcNow,
+            Date = FixedTestNow,
             CreatedBy = Guid.Empty,
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = FixedTestNow
         });
         FootballDataContext.CompetitionStatuses.Add(new FootballCompetitionStatus
         {
@@ -282,7 +287,7 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
             StatusDescription = statusTypeName,
             StatusDetail = statusTypeName,
             CreatedBy = Guid.Empty,
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = FixedTestNow
         });
         await FootballDataContext.SaveChangesAsync();
     }

@@ -155,7 +155,7 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
                 .Select(x => x.StatusTypeName)
                 .FirstOrDefaultAsync();
 
-            if (statusTypeName == "STATUS_FINAL")
+            if (statusTypeName == ContestStatusValues.FinalRaw)
             {
                 var cmd = new EnrichContestCommand(contest.Id, evt.CorrelationId);
                 _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));

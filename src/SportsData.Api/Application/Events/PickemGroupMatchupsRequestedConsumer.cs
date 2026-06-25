@@ -32,6 +32,11 @@ namespace SportsData.Api.Application.Events
     /// </summary>
     public class PickemGroupMatchupsRequestedConsumer : IConsumer<PickemGroupMatchupsRequested>
     {
+        // Bounded page size so memory stays flat regardless of dataset size.
+        // Each page allocates ~PageSize event objects; PublishBatch will
+        // further chunk to 256 internally for Task.WhenAll fan-out.
+        private const int PageSize = 500;
+
         private readonly ILogger<PickemGroupMatchupsRequestedConsumer> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IEventBus _eventBus;
@@ -79,7 +84,18 @@ namespace SportsData.Api.Application.Events
                 query = query.Where(x => x.Sport == msg.Sport);
             }
 
-            var matchups = await query
+            // Honor SeasonYear when supplied so a future controller variant
+            // can scope a backfill (e.g., "just 2026"). Today the controller
+            // hardcodes null, which falls through here.
+            if (msg.SeasonYear is int seasonYear)
+            {
+                query = query.Where(x => x.Matchup.SeasonYear == seasonYear);
+            }
+
+            // Deterministic ordering needed for Skip/Take to page safely.
+            // PickemGroupMatchup.Id (PK) is stable and unique.
+            var pagedQuery = query
+                .OrderBy(x => x.Matchup.Id)
                 .Select(x => new
                 {
                     x.Matchup.GroupId,
@@ -88,33 +104,63 @@ namespace SportsData.Api.Application.Events
                     x.Matchup.SeasonYear,
                     x.Matchup.SeasonWeek,
                     x.Sport
-                })
-                .ToListAsync(context.CancellationToken);
+                });
 
             _logger.LogInformation(
-                "PickemGroupMatchupsRequested received; publishing PickemGroupMatchupDataPublished for {Count} future matchups.",
-                matchups.Count);
+                "PickemGroupMatchupsRequested received; paging through future matchups in chunks of {PageSize}.",
+                PageSize);
 
-            var events = matchups
-                .Select(m => new PickemGroupMatchupDataPublished(
-                    m.GroupId,
-                    m.ContestId,
-                    m.StartDateUtc,
-                    m.SeasonWeek,
-                    m.Sport,
-                    m.SeasonYear,
-                    msg.CorrelationId,
-                    Guid.NewGuid()))
-                .ToList();
-
+            // Hold the Direct scope across pages — same AsyncLocal value
+            // applies for the lifetime of the using block.
             using (_deliveryScope.Use(DeliveryMode.Direct))
             {
-                await _eventBus.PublishBatch(events, context.CancellationToken);
-            }
+                var totalPublished = 0;
+                var offset = 0;
 
-            _logger.LogInformation(
-                "PickemGroupMatchupsRequested backfill complete; published {Count} PickemGroupMatchupDataPublished events.",
-                matchups.Count);
+                while (true)
+                {
+                    var page = await pagedQuery
+                        .Skip(offset)
+                        .Take(PageSize)
+                        .ToListAsync(context.CancellationToken);
+
+                    if (page.Count == 0)
+                        break;
+
+                    var events = page
+                        .Select(m => new PickemGroupMatchupDataPublished(
+                            m.GroupId,
+                            m.ContestId,
+                            m.StartDateUtc,
+                            m.SeasonWeek,
+                            m.Sport,
+                            m.SeasonYear,
+                            msg.CorrelationId,
+                            Guid.NewGuid()))
+                        .ToList();
+
+                    await _eventBus.PublishBatch(events, context.CancellationToken);
+
+                    totalPublished += events.Count;
+                    offset += PageSize;
+
+                    _logger.LogDebug(
+                        "Published page of {Count} events; running total {Total}.",
+                        events.Count, totalPublished);
+
+                    // Last page detection — short-circuits one extra empty
+                    // query at the end. Safe under concurrent inserts: a new
+                    // matchup landing mid-backfill gets a higher Id and just
+                    // appears on a later page, never displaces a row we've
+                    // already paged.
+                    if (page.Count < PageSize)
+                        break;
+                }
+
+                _logger.LogInformation(
+                    "PickemGroupMatchupsRequested backfill complete; published {Count} PickemGroupMatchupDataPublished events.",
+                    totalPublished);
+            }
         }
     }
 }

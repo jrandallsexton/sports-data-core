@@ -64,23 +64,33 @@ namespace SportsData.Notification.Application.Consumers
             _logger.LogInformation("ContestStartTimeUpdated received.");
 
             // 1. Resync the local PickemGroupMatchup projection. Bulk
-            // ExecuteUpdateAsync avoids loading + tracking; ModifiedUtc and
-            // ModifiedBy stamped as part of the SET clause. Straight overwrite
-            // — no diff filter, the extra write on a no-op redelivery is
-            // cheaper than the extra read.
+            // ExecuteUpdateAsync avoids loading + tracking; ModifiedUtc /
+            // ModifiedBy / StartDateUpdatedAt stamped in the SET clause.
+            //
+            // Out-of-order delivery guard: only apply when the event's
+            // CreatedUtc is newer than the projection's last-applied stamp.
+            // Producer's CompetitionStreamScheduler solved this for itself
+            // by reading from DB (PR #457); we solve it here by versioning
+            // the projection field with the event's own monotonic timestamp.
+            // The check lives in the WHERE clause so stale events are
+            // filtered at the SQL layer with no read round-trip.
             var now = _dateTimeProvider.UtcNow();
+            var eventCreatedUtc = msg.CreatedUtc;
             var rowsAffected = await _dataContext.PickemGroupMatchups
-                .Where(m => m.ContestId == msg.ContestId)
+                .Where(m =>
+                    m.ContestId == msg.ContestId &&
+                    (m.StartDateUpdatedAt == null || m.StartDateUpdatedAt < eventCreatedUtc))
                 .ExecuteUpdateAsync(
                     s => s
                         .SetProperty(m => m.StartDateUtc, msg.NewStartTime)
+                        .SetProperty(m => m.StartDateUpdatedAt, (DateTime?)eventCreatedUtc)
                         .SetProperty(m => m.ModifiedUtc, (DateTime?)now)
                         .SetProperty(m => m.ModifiedBy, (Guid?)msg.CausationId),
                     context.CancellationToken);
 
             _logger.LogInformation(
-                "PickemGroupMatchup projection resynced. RowsAffected={RowsAffected}",
-                rowsAffected);
+                "PickemGroupMatchup projection resynced. RowsAffected={RowsAffected}, EventCreatedUtc={EventCreatedUtc}",
+                rowsAffected, eventCreatedUtc);
 
             // 2. Reschedule any kickoff-reminder Hangfire jobs already on the
             // calendar for this contest. Today this is TODO pending the

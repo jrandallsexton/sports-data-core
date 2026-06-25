@@ -42,5 +42,15 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
         [Required]
         [MaxLength(50)]
         public string StatusTypeName { get; set; }
+
+        /// <summary>
+        /// EventBase.CreatedUtc of the last event that wrote
+        /// <see cref="StartDateUtc"/>. Used as a monotonic version key to
+        /// reject stale <c>ContestStartTimeUpdated</c> events under
+        /// out-of-order delivery — only events with a newer CreatedUtc
+        /// can update StartDateUtc. Null on rows that haven't yet been
+        /// touched by an update event (first write sets this).
+        /// </summary>
+        public DateTime? StartDateUpdatedAt { get; set; }
     }
 }

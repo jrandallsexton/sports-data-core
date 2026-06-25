@@ -72,6 +72,9 @@ namespace SportsData.Notification.Application.Consumers
                     PickemGroupId = msg.GroupId,
                     ContestId = msg.ContestId,
                     StartDateUtc = msg.StartDateUtc,
+                    // See PickemGroupMatchupDataPublishedConsumer for the
+                    // rationale on stamping StartDateUpdatedAt on insert.
+                    StartDateUpdatedAt = msg.CreatedUtc,
                     SeasonYear = msg.SeasonYear ?? 0,
                     SeasonWeek = msg.SeasonWeek,
                     StatusTypeName = DefaultStatusTypeName,
@@ -113,7 +116,15 @@ namespace SportsData.Notification.Application.Consumers
                 return;
             }
 
+            // Refresh StartDateUpdatedAt only when StartDateUtc actually
+            // shifted — matches the seed consumer's discipline.
+            var startDateChanged = existing.StartDateUtc != msg.StartDateUtc;
+
             existing.StartDateUtc = msg.StartDateUtc;
+            if (startDateChanged)
+            {
+                existing.StartDateUpdatedAt = msg.CreatedUtc;
+            }
             existing.SeasonYear = msg.SeasonYear ?? 0;
             existing.SeasonWeek = msg.SeasonWeek;
             existing.ModifiedUtc = now;

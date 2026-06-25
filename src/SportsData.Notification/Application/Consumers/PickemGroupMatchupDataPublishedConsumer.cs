@@ -67,6 +67,12 @@ namespace SportsData.Notification.Application.Consumers
                     PickemGroupId = msg.PickemGroupId,
                     ContestId = msg.ContestId,
                     StartDateUtc = msg.StartDateUtc,
+                    // Seed event's CreatedUtc establishes the version
+                    // baseline. Subsequent ContestStartTimeUpdated events
+                    // with older CreatedUtc are rejected — they were
+                    // already reflected in API's data at the moment the
+                    // backfill responder published this seed.
+                    StartDateUpdatedAt = msg.CreatedUtc,
                     SeasonYear = msg.SeasonYear ?? 0,
                     SeasonWeek = msg.SeasonWeek,
                     StatusTypeName = DefaultStatusTypeName,
@@ -107,7 +113,15 @@ namespace SportsData.Notification.Application.Consumers
                 return;
             }
 
+            // Refresh StartDateUpdatedAt only when StartDateUtc actually
+            // shifted — keeps the version stable when other fields churn.
+            var startDateChanged = existing.StartDateUtc != msg.StartDateUtc;
+
             existing.StartDateUtc = msg.StartDateUtc;
+            if (startDateChanged)
+            {
+                existing.StartDateUpdatedAt = msg.CreatedUtc;
+            }
             existing.SeasonYear = msg.SeasonYear ?? 0;
             existing.SeasonWeek = msg.SeasonWeek;
             existing.ModifiedUtc = now;

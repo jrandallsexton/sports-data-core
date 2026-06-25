@@ -6,6 +6,8 @@ using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Notification.Application.Consumers;
+using SportsData.Notification.Application.Dispatching;
+using SportsData.Notification.Application.Scheduling;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Notifications;
 
@@ -94,6 +96,13 @@ namespace SportsData.Notification
             // auth, per the convention reasserted in #463.
             services.AddHangfire(config, builder.Environment.ApplicationName, mode);
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
+
+            // Phase 2c-main: pick-deadline reminder scheduling + dispatch.
+            // Dispatcher is the Hangfire-invoked target; scheduler is the
+            // helper consumers call after every projection write that could
+            // affect a league-week's deadline.
+            services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+            services.AddScoped<IPickDeadlineReminderScheduler, PickDeadlineReminderScheduler>();
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, mode);

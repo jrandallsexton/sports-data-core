@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Notification.Application.Scheduling;
 using SportsData.Notification.Infrastructure.Data;
 
 namespace SportsData.Notification.Application.Consumers
@@ -39,15 +40,18 @@ namespace SportsData.Notification.Application.Consumers
         private readonly ILogger<ContestStartTimeUpdatedConsumer> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IPickDeadlineReminderScheduler _reminderScheduler;
 
         public ContestStartTimeUpdatedConsumer(
             ILogger<ContestStartTimeUpdatedConsumer> logger,
             AppDataContext dataContext,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IPickDeadlineReminderScheduler reminderScheduler)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
+            _reminderScheduler = reminderScheduler;
         }
 
         public async Task Consume(ConsumeContext<ContestStartTimeUpdated> context)
@@ -92,10 +96,32 @@ namespace SportsData.Notification.Application.Consumers
                 "PickemGroupMatchup projection resynced. RowsAffected={RowsAffected}, EventCreatedUtc={EventCreatedUtc}",
                 rowsAffected, eventCreatedUtc);
 
-            // 2. Reschedule any kickoff-reminder Hangfire jobs already on the
+            // 2. Re-evaluate pick-deadline reminders for every (league, week)
+            // touched by this contest. The same contest can appear in many
+            // leagues; the contest's start time IS the candidate deadline
+            // for any league-week containing it, so a change requires a
+            // re-evaluation pass. We query the projection AFTER the resync
+            // above so MIN(StartDateUtc) uses the new value.
+            if (rowsAffected > 0)
+            {
+                var affectedScopes = await _dataContext.PickemGroupMatchups
+                    .AsNoTracking()
+                    .Where(m => m.ContestId == msg.ContestId)
+                    .Select(m => new { m.PickemGroupId, m.SeasonWeek })
+                    .Distinct()
+                    .ToListAsync(context.CancellationToken);
+
+                foreach (var scope in affectedScopes)
+                {
+                    await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
+                        scope.PickemGroupId, scope.SeasonWeek, context.CancellationToken);
+                }
+            }
+
+            // 3. Reschedule any kickoff-reminder Hangfire jobs already on the
             // calendar for this contest. Today this is TODO pending the
-            // Hangfire dispatcher (Phase 2c-main / 2d). For now we log the
-            // intent so the recovery path is auditable.
+            // Kickoff dispatcher (Phase 2d). For now we log the intent so
+            // the recovery path is auditable.
             var pendingJobs = await _dataContext.PendingScheduledJobs
                 .Where(j => j.JobKind == "Kickoff" && j.TargetId == msg.ContestId)
                 .ToListAsync(context.CancellationToken);

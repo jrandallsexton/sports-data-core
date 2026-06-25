@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.PickemGroups;
+using SportsData.Notification.Application.Scheduling;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
 
@@ -36,15 +37,18 @@ namespace SportsData.Notification.Application.Consumers
         private readonly ILogger<PickemGroupMatchupCreatedConsumer> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IPickDeadlineReminderScheduler _reminderScheduler;
 
         public PickemGroupMatchupCreatedConsumer(
             ILogger<PickemGroupMatchupCreatedConsumer> logger,
             AppDataContext dataContext,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IPickDeadlineReminderScheduler reminderScheduler)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
+            _reminderScheduler = reminderScheduler;
         }
 
         public async Task Consume(ConsumeContext<PickemGroupMatchupCreated> context)
@@ -87,6 +91,12 @@ namespace SportsData.Notification.Application.Consumers
                 {
                     await _dataContext.SaveChangesAsync(context.CancellationToken);
                     _logger.LogInformation("PickemGroupMatchup projection inserted from creation event.");
+
+                    // New matchup → re-evaluate the league-week's pick-deadline
+                    // reminders. First matchup will create them; later additions
+                    // may shift the deadline earlier.
+                    await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
+                        msg.GroupId, msg.SeasonWeek, context.CancellationToken);
                     return;
                 }
                 catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
@@ -116,9 +126,11 @@ namespace SportsData.Notification.Application.Consumers
                 return;
             }
 
-            // Refresh StartDateUpdatedAt only when StartDateUtc actually
-            // shifted — matches the seed consumer's discipline.
+            // Capture pre-update values for the reminder-rescheduling decision
+            // before the assignments below clobber them.
             var startDateChanged = existing.StartDateUtc != msg.StartDateUtc;
+            var weekChanged = existing.SeasonWeek != msg.SeasonWeek;
+            var priorSeasonWeek = existing.SeasonWeek;
 
             existing.StartDateUtc = msg.StartDateUtc;
             if (startDateChanged)
@@ -132,6 +144,22 @@ namespace SportsData.Notification.Application.Consumers
 
             await _dataContext.SaveChangesAsync(context.CancellationToken);
             _logger.LogInformation("PickemGroupMatchup projection updated from creation event.");
+
+            // Re-evaluate reminders only when StartDateUtc or SeasonWeek
+            // changed — other field churn doesn't affect the deadline.
+            if (startDateChanged || weekChanged)
+            {
+                // If the week itself shifted, both old and new league-weeks
+                // may need re-evaluation (the matchup left one bucket and
+                // entered another).
+                if (weekChanged)
+                {
+                    await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
+                        msg.GroupId, priorSeasonWeek, context.CancellationToken);
+                }
+                await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
+                    msg.GroupId, msg.SeasonWeek, context.CancellationToken);
+            }
         }
 
         private static bool IsUniqueConstraintViolation(DbUpdateException ex)

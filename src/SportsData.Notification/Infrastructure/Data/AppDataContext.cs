@@ -55,10 +55,29 @@ namespace SportsData.Notification.Infrastructure.Data
                 .HasIndex(p => p.UserId)
                 .IsUnique();
 
-            // Quick lookup when an upstream event needs to find the prior
-            // Hangfire job to cancel/reschedule.
+            // Natural-key lookup when an upstream event needs to find the
+            // prior Hangfire job to cancel/reschedule. SeasonWeek included
+            // because PickDeadline rows are scoped per league per week —
+            // omitting it would collide when a league has matchups generated
+            // multiple weeks ahead. Null SeasonWeek (Kickoff jobs) still
+            // participates in the index per Postgres semantics.
+            //
+            // Unique because the natural-key invariant is "one scheduled row
+            // per user per scope" — two consumer runs racing to schedule the
+            // same reminder would otherwise persist duplicates and break the
+            // scheduler's ToDictionaryAsync lookup. Race losers catch
+            // DbUpdateException(23505) and fall through to the reschedule
+            // path against the winner's row.
+            //
+            // AreNullsDistinct(false): Kickoff jobs leave SeasonWeek null,
+            // and Postgres treats nulls as distinct by default. Without this,
+            // duplicate Kickoff rows for the same (User, "Kickoff", ContestId)
+            // tuple would slip through the unique index. Requires Postgres 15+
+            // (the live cluster runs 16, so we're fine).
             modelBuilder.Entity<PendingScheduledJob>()
-                .HasIndex(j => new { j.UserId, j.JobKind, j.TargetId });
+                .HasIndex(j => new { j.UserId, j.JobKind, j.TargetId, j.SeasonWeek })
+                .IsUnique()
+                .AreNullsDistinct(false);
 
             // Idempotency key on FCM dispatch: same correlation + user +
             // channel = same logical send, even on RabbitMQ redelivery.

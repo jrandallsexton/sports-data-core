@@ -92,8 +92,16 @@ namespace SportsData.Api.Application.Events
                 query = query.Where(x => x.Matchup.SeasonYear == seasonYear);
             }
 
-            // Deterministic ordering needed for Skip/Take to page safely.
-            // PickemGroupMatchup.Id (PK) is stable and unique.
+            // OrderBy is purely so Skip/Take has deterministic results within
+            // a single page query — it does NOT guarantee stable paging
+            // across concurrent inserts/deletes (PK is a Guid, not a
+            // monotonic sequence; new rows can land at any position in the
+            // ordering). Duplicate or skipped rows are possible if the
+            // table mutates mid-backfill. Acceptable here because the
+            // downstream consumer is idempotent (race-safe upsert with
+            // change-detect), so a row seen twice is a no-op and a row
+            // missed will be picked up by the next backfill or by the
+            // steady-state PickemGroupMatchupCreated event.
             var pagedQuery = query
                 .OrderBy(x => x.Matchup.Id)
                 .Select(x => new

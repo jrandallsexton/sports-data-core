@@ -31,10 +31,20 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
 
         /// <summary>
         /// Logical target the reminder is about. For "Kickoff" this is the
-        /// ContestId; for "PickDeadline" this is the PickemGroupWeek row id
-        /// (one deadline reminder per user per league per week).
+        /// ContestId; for "PickDeadline" this is the PickemGroupId (paired
+        /// with <see cref="SeasonWeek"/> in the unique constraint so the
+        /// same league can have one row per week).
         /// </summary>
         public Guid TargetId { get; set; }
+
+        /// <summary>
+        /// Only meaningful for <c>JobKind = "PickDeadline"</c>. Null for
+        /// Kickoff jobs (those are scoped to a single contest, not a week).
+        /// Part of the natural key for PickDeadline rows so a league with
+        /// matchups generated weeks ahead can carry one scheduled-job row
+        /// per upcoming week without collisions.
+        /// </summary>
+        public int? SeasonWeek { get; set; }
 
         [Required]
         [MaxLength(64)]

@@ -246,8 +246,24 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
         switch (status.Type.Name)
         {
+            // STATUS_RAIN_DELAY and STATUS_DELAYED share the SCHEDULED branch's
+            // wait-and-poll semantics: ESPN will eventually flip the status
+            // back to STATUS_IN_PROGRESS (resume) or STATUS_FINAL (called).
+            // Falling to the default abort here would orphan the live pipeline
+            // — confirmed by the 2026-06-24 MLB stuck-Final incident where
+            // a rain-delayed game's streamer aborted at game start, no live
+            // sourcing ever attached, and the contest stuck at Live in the UI.
+            //
+            // STATUS_POSTPONED and STATUS_SUSPENDED are deliberately NOT folded
+            // in: postponed games typically reschedule to a different day, and
+            // suspended games may resume same-day or different-day. Waiting
+            // the full MaxStreamDuration on those would be wrong — better to
+            // abort and let the next-day cron re-pick them up. Add them here
+            // once we observe a case that justifies the wait semantics.
             case "STATUS_SCHEDULED":
-                _logger.LogInformation("Competition is scheduled. Waiting for competition to start...");
+            case "STATUS_RAIN_DELAY":
+            case "STATUS_DELAYED":
+                _logger.LogInformation("Competition status {Status}; waiting for next live transition...", status.Type.Name);
                 var startOutcome = await WaitForLiveStartAsync(statusUri, cancellationToken);
                 switch (startOutcome)
                 {

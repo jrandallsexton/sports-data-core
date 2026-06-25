@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Processing;
+using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Infrastructure.Data.Common;
 
 namespace SportsData.Producer.Application.Consumers;
@@ -19,6 +21,14 @@ public interface ICompetitorScoreUpdatedConsumerHandler
 ///
 /// Spawned by CompetitorScoreUpdatedConsumer (Ingest) and executed on Worker
 /// pods so Ingest stays thin.
+///
+/// <para>
+/// Also acts as the recovery trigger for stuck-Final contests: if scores
+/// arrive AFTER the canonical status flipped to STATUS_FINAL but enrichment
+/// hadn't yet completed (e.g., enrichment ran early and saw 0-0, then
+/// deferred), this handler re-enqueues <see cref="EnrichContestCommand"/>.
+/// See docs/ for the 2026-06-24 stuck-Final MLB incident.
+/// </para>
 /// </summary>
 public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedConsumerHandler
 {
@@ -26,17 +36,20 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
     private readonly TeamSportDataContext _dataContext;
     private readonly IEventBus _eventBus;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
     public CompetitorScoreUpdatedConsumerHandler(
         ILogger<CompetitorScoreUpdatedConsumerHandler> logger,
         TeamSportDataContext dataContext,
         IEventBus eventBus,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IProvideBackgroundJobs backgroundJobProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
         _eventBus = eventBus;
         _dateTimeProvider = dateTimeProvider;
+        _backgroundJobProvider = backgroundJobProvider;
     }
 
     public async Task Process(CompetitorScoreUpdated evt)
@@ -122,6 +135,36 @@ public class CompetitorScoreUpdatedConsumerHandler : ICompetitorScoreUpdatedCons
         ));
 
         await _dataContext.SaveChangesAsync();
+
+        // Stuck-Final recovery: if the contest already saw STATUS_FINAL on
+        // the canonical status row but FinalizedUtc never got stamped,
+        // enrichment must have deferred (e.g., 0-0 implausible-final guard
+        // before scores were sourced). The score we just persisted is the
+        // missing input — re-enqueue enrichment now. Idempotent at the
+        // enrichment side via the contestAlreadyFinalized && no-unfinalized-
+        // odds short-circuit, so multiple score arrivals don't churn.
+        if (contest.FinalizedUtc is null)
+        {
+            var statusTypeName = await _dataContext.CompetitionStatuses
+                .AsNoTracking()
+                .Join(_dataContext.Competitions,
+                      s => s.CompetitionId,
+                      c => c.Id,
+                      (s, c) => new { s.StatusTypeName, c.ContestId })
+                .Where(x => x.ContestId == contest.Id)
+                .Select(x => x.StatusTypeName)
+                .FirstOrDefaultAsync();
+
+            if (statusTypeName == ContestStatusValues.FinalRaw)
+            {
+                var cmd = new EnrichContestCommand(contest.Id, evt.CorrelationId);
+                _backgroundJobProvider.Enqueue<IEnrichContests>(p => p.Process(cmd));
+
+                _logger.LogInformation(
+                    "Re-enqueued EnrichContestCommand — contest status is STATUS_FINAL but FinalizedUtc is null. ContestId={ContestId}, CorrelationId={CorrelationId}",
+                    contest.Id, evt.CorrelationId);
+            }
+        }
 
         // Completion marker only. The event carries one team's score; the
         // mid-flow "Updated HomeScore. HomeScore=X" / "Updated AwayScore.

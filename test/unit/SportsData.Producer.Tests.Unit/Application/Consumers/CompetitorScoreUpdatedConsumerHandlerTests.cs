@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +9,9 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Processing;
 using SportsData.Producer.Application.Consumers;
+using SportsData.Producer.Application.Contests;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
@@ -177,7 +181,68 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
                 Times.Once);
     }
 
-    private async Task SeedContest(Guid contestId, int? homeScore = null, int? awayScore = null)
+    [Fact]
+    public async Task Process_WhenContestFinalAndFinalizedUtcIsNull_ReEnqueuesEnrichContestCommand()
+    {
+        // Stuck-Final recovery: ContestEnrichment ran early (e.g. saw 0-0,
+        // deferred), then scores arrived later. Score handler should re-kick
+        // enrichment so the deferred contest finalizes against the now-correct
+        // DB state. See 2026-06-24 MLB stuck-Final incident.
+        var contestId = Guid.NewGuid();
+        await SeedContest(contestId);
+        await SeedCompetitionWithStatus(contestId, statusTypeName: "STATUS_FINAL");
+
+        var evt = BuildEvent(contestId, franchiseSeasonId: HomeFranchiseSeasonId, score: 4);
+
+        await _sut.Process(evt);
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Enqueue<IEnrichContests>(
+                It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+                Times.Once);
+    }
+
+    [Fact]
+    public async Task Process_WhenContestAlreadyFinalized_DoesNotReEnqueueEnrichContestCommand()
+    {
+        // FinalizedUtc is already set — enrichment ran to completion. No
+        // reason to re-fire it on subsequent score-doc redelivery / late
+        // odds-only score writes.
+        var contestId = Guid.NewGuid();
+        await SeedContest(contestId, finalizedUtc: new DateTime(2026, 6, 24, 23, 0, 0, DateTimeKind.Utc));
+        await SeedCompetitionWithStatus(contestId, statusTypeName: "STATUS_FINAL");
+
+        var evt = BuildEvent(contestId, franchiseSeasonId: HomeFranchiseSeasonId, score: 4);
+
+        await _sut.Process(evt);
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Enqueue<IEnrichContests>(
+                It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+                Times.Never);
+    }
+
+    [Fact]
+    public async Task Process_WhenStatusIsLiveAndNotFinalized_DoesNotReEnqueueEnrichContestCommand()
+    {
+        // Steady-state live-game score update — status is STATUS_IN_PROGRESS
+        // (not FINAL), FinalizedUtc is null. Re-kicking enrichment here would
+        // churn the entire game.
+        var contestId = Guid.NewGuid();
+        await SeedContest(contestId);
+        await SeedCompetitionWithStatus(contestId, statusTypeName: "STATUS_IN_PROGRESS");
+
+        var evt = BuildEvent(contestId, franchiseSeasonId: HomeFranchiseSeasonId, score: 7);
+
+        await _sut.Process(evt);
+
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Enqueue<IEnrichContests>(
+                It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+                Times.Never);
+    }
+
+    private async Task SeedContest(Guid contestId, int? homeScore = null, int? awayScore = null, DateTime? finalizedUtc = null)
     {
         FootballDataContext.Contests.Add(new FootballContest
         {
@@ -190,7 +255,34 @@ public class CompetitorScoreUpdatedConsumerHandlerTests
             HomeTeamFranchiseSeasonId = HomeFranchiseSeasonId,
             AwayTeamFranchiseSeasonId = AwayFranchiseSeasonId,
             HomeScore = homeScore,
-            AwayScore = awayScore
+            AwayScore = awayScore,
+            FinalizedUtc = finalizedUtc
+        });
+        await FootballDataContext.SaveChangesAsync();
+    }
+
+    private async Task SeedCompetitionWithStatus(Guid contestId, string statusTypeName)
+    {
+        var competitionId = Guid.NewGuid();
+        FootballDataContext.Competitions.Add(new FootballCompetition
+        {
+            Id = competitionId,
+            ContestId = contestId,
+            Date = DateTime.UtcNow,
+            CreatedBy = Guid.Empty,
+            CreatedUtc = DateTime.UtcNow
+        });
+        FootballDataContext.CompetitionStatuses.Add(new FootballCompetitionStatus
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            StatusTypeName = statusTypeName,
+            StatusTypeId = "0",
+            StatusState = "post",
+            StatusDescription = statusTypeName,
+            StatusDetail = statusTypeName,
+            CreatedBy = Guid.Empty,
+            CreatedUtc = DateTime.UtcNow
         });
         await FootballDataContext.SaveChangesAsync();
     }

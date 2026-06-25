@@ -128,10 +128,21 @@ namespace SportsData.Notification.Application.Consumers
                 return;
             }
 
-            // Body composition needs the team-name fields off the event —
-            // until the fat-payload pass lands, fall back to generic copy.
+            // Body personalization via the local PickemGroup projection (seeded
+            // by the PickemGroupsRequested → PickemGroupDataPublished backfill
+            // chain). When the projection is missing — Notification booted
+            // before the backfill ran, or the league is brand-new and the
+            // projection hasn't caught up — fall back to the unscoped copy.
+            // Team names still ride on the event (nullable on the contract)
+            // and are absent when the publisher hasn't fattened them yet.
+            var leagueName = await _dataContext.PickemGroups
+                .AsNoTracking()
+                .Where(g => g.Id == msg.LeagueId)
+                .Select(g => g.Name)
+                .FirstOrDefaultAsync();
+
             var title = msg.IsCorrect == true ? "Nice pick!" : "Tough loss";
-            var body = ComposeBody(msg);
+            var body = ComposeBody(msg, leagueName);
 
             // Per-device dispatch. Single-token send rather than multicast
             // because v1's IPushNotificationSender surface is one-at-a-time;
@@ -173,19 +184,27 @@ namespace SportsData.Notification.Application.Consumers
             await _dataContext.SaveChangesAsync();
         }
 
-        private static string ComposeBody(UserPickScored msg)
+        private static string ComposeBody(UserPickScored msg, string leagueName)
         {
-            // Fat-payload fields not yet populated by the publisher fall back
-            // to a generic line. Once AwayName/HomeName/PickValue land, swap
-            // in: "{PickValue} {Won/Lost} — final {AwayName} {AwayScore} @ {HomeName} {HomeScore}"
-            if (msg.AwayName is not null && msg.HomeName is not null)
-            {
-                return $"Final: {msg.AwayName} {msg.AwayScore} @ {msg.HomeName} {msg.HomeScore}";
-            }
+            // Four shapes by what we have. League name comes from the local
+            // projection; team names are nullable on the event payload until
+            // publisher-side fattening lands (FranchiseSeason joins).
+            var outcome = msg.IsCorrect == true ? "Your pick won." : "Your pick lost.";
+            var scoreLine = $"Final {msg.AwayScore}–{msg.HomeScore}.";
 
-            return msg.IsCorrect == true
-                ? $"Your pick won. Final {msg.AwayScore}–{msg.HomeScore}."
-                : $"Your pick lost. Final {msg.AwayScore}–{msg.HomeScore}.";
+            var haveTeams = msg.AwayName is not null && msg.HomeName is not null;
+            var teamLine = haveTeams
+                ? $"{msg.AwayName} {msg.AwayScore} @ {msg.HomeName} {msg.HomeScore}"
+                : null;
+
+            if (leagueName is not null && haveTeams)
+                return $"{leagueName}: {outcome} {teamLine}.";
+            if (leagueName is not null)
+                return $"{leagueName}: {outcome} {scoreLine}";
+            if (haveTeams)
+                return $"Final: {teamLine}";
+
+            return $"{outcome} {scoreLine}";
         }
 
         private static string ComposeFailureReason(List<string> failureReasons)

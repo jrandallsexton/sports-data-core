@@ -128,14 +128,27 @@ namespace SportsData.Notification.Application.Consumers
                 return;
             }
 
-            // 2. Send welcome push. Body stays generic until the fat-payload
-            // pass adds LeagueName + JoinedDisplayName to the event.
-            const string title = "Welcome";
-            const string body = "You've joined a new league.";
+            // 2. Send welcome push. League name comes from the local
+            // PickemGroup projection (seeded by the backfill chain). When the
+            // projection is missing — Notification booted before backfill ran,
+            // or the league is brand-new and the projection hasn't caught up —
+            // fall back to the unscoped copy.
+            var leagueName = await _dataContext.PickemGroups
+                .AsNoTracking()
+                .Where(g => g.Id == msg.GroupId)
+                .Select(g => g.Name)
+                .FirstOrDefaultAsync();
 
-            // 3. Commissioner-side notification is deferred — the event
-            // doesn't carry CommissionerUserId today. Once fattened, repeat
-            // the prefs + device lookup against the commissioner here.
+            const string title = "Welcome";
+            var body = leagueName is not null
+                ? $"You've joined {leagueName}!"
+                : "You've joined a new league.";
+
+            // 3. Commissioner-side notification is deferred. We now have
+            // CommissionerUserId locally via the PickemGroup projection — the
+            // remaining missing piece is the joining user's DisplayName lookup
+            // and a second dispatch loop against the commissioner's prefs +
+            // devices. Layered in as a follow-up.
 
             var successCount = 0;
             var failureReasons = new List<string>();

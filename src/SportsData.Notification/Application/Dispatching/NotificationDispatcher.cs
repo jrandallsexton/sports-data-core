@@ -126,19 +126,39 @@ namespace SportsData.Notification.Application.Dispatching
 
             // Per-device dispatch. Aggregate outcome same as the other
             // consumers (any success → "Sent"; all failures → "Failed_FcmError").
+            //
+            // Per-device try/catch: an unhandled exception from SendAsync
+            // (e.g. network failure, TaskCanceledException, anything outside
+            // FirebaseMessagingException which FirebasePushNotificationSender
+            // already maps to Failure<string>) would otherwise escape before
+            // claim finalization. The row would sit at "Dispatching"
+            // permanently — Hangfire retries collide on the unique-constraint
+            // dedupe path and short-circuit. Catching here lets one failing
+            // device fail loudly in the audit log without blocking the
+            // remaining devices or the terminal save.
             var successCount = 0;
             var failureReasons = new List<string>();
             foreach (var device in devices)
             {
-                var result = await _pushSender.SendAsync(device.FcmToken, title, body);
-                if (result is Success<string>)
+                try
                 {
-                    successCount++;
+                    var result = await _pushSender.SendAsync(device.FcmToken, title, body);
+                    if (result is Success<string>)
+                    {
+                        successCount++;
+                    }
+                    else if (result is Failure<string> failure)
+                    {
+                        var reason = failure.Errors.FirstOrDefault()?.ErrorMessage ?? "unknown";
+                        failureReasons.Add($"{device.Platform}:{reason}");
+                    }
                 }
-                else if (result is Failure<string> failure)
+                catch (Exception ex)
                 {
-                    var reason = failure.Errors.FirstOrDefault()?.ErrorMessage ?? "unknown";
-                    failureReasons.Add($"{device.Platform}:{reason}");
+                    _logger.LogWarning(ex,
+                        "Unexpected exception sending FCM to DeviceId {DeviceId}.",
+                        device.Id);
+                    failureReasons.Add($"{device.Platform}:exception:{ex.GetType().Name}");
                 }
             }
 

@@ -189,7 +189,7 @@ namespace SportsData.Notification.Application.Scheduling
 
             if (existing is null)
             {
-                _dataContext.PendingScheduledJobs.Add(new PendingScheduledJob
+                var entity = new PendingScheduledJob
                 {
                     UserId = userId,
                     JobKind = JobKind,
@@ -199,8 +199,50 @@ namespace SportsData.Notification.Application.Scheduling
                     ScheduledFireUtc = fireTime,
                     CreatedUtc = now,
                     CreatedBy = Guid.Empty
-                });
-                await _dataContext.SaveChangesAsync(cancellationToken);
+                };
+                _dataContext.PendingScheduledJobs.Add(entity);
+
+                try
+                {
+                    await _dataContext.SaveChangesAsync(cancellationToken);
+                }
+                catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+                {
+                    // A peer scheduler run (concurrent consumer for the same
+                    // league-week) inserted first. Detach our orphan, fetch
+                    // the winner's row, and continue down the reschedule
+                    // branch — if the peer scheduled the same fireTime we
+                    // no-op below; otherwise we reschedule. The Hangfire job
+                    // we just scheduled becomes the orphan to delete.
+                    _dataContext.Entry(entity).State = EntityState.Detached;
+                    var winner = await _dataContext.PendingScheduledJobs
+                        .FirstAsync(j => j.UserId == userId
+                                         && j.JobKind == JobKind
+                                         && j.TargetId == pickemGroupId
+                                         && j.SeasonWeek == seasonWeek,
+                                    cancellationToken);
+
+                    if (winner.ScheduledFireUtc == fireTime)
+                    {
+                        // Same fireTime — peer already covered it. Clean up
+                        // our orphan and exit.
+                        TryDeleteHangfireJob(newJobId);
+                        return;
+                    }
+
+                    // Different fireTime — we take over the scheduling. Old
+                    // jobId is the winner's; new is ours.
+                    var winnerOldJobId = winner.HangfireJobId;
+                    winner.HangfireJobId = newJobId;
+                    winner.ScheduledFireUtc = fireTime;
+                    winner.ModifiedUtc = now;
+                    await _dataContext.SaveChangesAsync(cancellationToken);
+                    TryDeleteHangfireJob(winnerOldJobId);
+                    _logger.LogInformation(
+                        "Concurrent insert resolved; took over scheduling. UserId={UserId}, FireTime={FireTime}",
+                        userId, fireTime);
+                    return;
+                }
             }
             else
             {
@@ -210,25 +252,35 @@ namespace SportsData.Notification.Application.Scheduling
                 existing.ModifiedUtc = now;
                 await _dataContext.SaveChangesAsync(cancellationToken);
 
-                // Best-effort cancellation of the old Hangfire job. If it
-                // already fired or is already deleted, Delete returns false
-                // and we don't care — the dispatcher dedupe still protects
-                // against a double send.
-                try
-                {
-                    _backgroundJobProvider.Delete(oldJobId);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex,
-                        "Failed to delete old Hangfire job {OldJobId} after reschedule. Will be absorbed by dispatcher dedupe.",
-                        oldJobId);
-                }
+                TryDeleteHangfireJob(oldJobId);
             }
 
             _logger.LogInformation(
                 "Scheduled PickDeadline reminder. UserId={UserId}, FireTime={FireTime}, HangfireJobId={HangfireJobId}",
                 userId, fireTime, newJobId);
+        }
+
+        // Best-effort cancellation. Hangfire returns false if the job is
+        // already in a terminal state — the dispatcher's NotificationLog
+        // dedupe absorbs any duplicate fire from a missed delete.
+        private void TryDeleteHangfireJob(string jobId)
+        {
+            try
+            {
+                _backgroundJobProvider.Delete(jobId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "Failed to delete Hangfire job {JobId}. Absorbed by dispatcher dedupe.",
+                    jobId);
+            }
+        }
+
+        private static bool IsUniqueConstraintViolation(DbUpdateException ex)
+        {
+            // Npgsql surfaces unique-violation as SQLSTATE 23505.
+            return ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505";
         }
     }
 }

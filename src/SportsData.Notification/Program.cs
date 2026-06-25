@@ -4,6 +4,7 @@ using Google.Apis.Auth.OAuth2;
 
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Processing;
 using SportsData.Notification.Application.Consumers;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Notifications;
@@ -81,6 +82,17 @@ namespace SportsData.Notification
                 Console.WriteLine("WARN: CommonConfig:Firebase:ProjectId is not set; registering NoOpPushNotificationSender. FCM dispatches will no-op.");
                 services.AddScoped<IPushNotificationSender, NoOpPushNotificationSender>();
             }
+
+            // Hangfire — Notification hosts BOTH client (consumers schedule
+            // reminder dispatches) and server (those scheduled jobs run in-pod).
+            // Storage lives in its own database sdNotification.{mode}.Hangfire
+            // per the established AddHangfire helper convention; the DB must be
+            // pre-created (see PR description for the one-time provisioning
+            // step). No dashboard mounted — production dashboards aggregate
+            // via SportsData.JobsDashboard at jobs.sportdeets.com behind basic
+            // auth, per the convention reasserted in #463.
+            services.AddHangfire(config, builder.Environment.ApplicationName, mode);
+            services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, mode);

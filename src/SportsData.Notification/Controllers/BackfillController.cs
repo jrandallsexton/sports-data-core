@@ -100,5 +100,34 @@ namespace SportsData.Notification.Controllers
 
             return Accepted(new { correlationId });
         }
+
+        /// <summary>
+        /// Triggers a full backfill of the local <c>PickemGroupMatchup</c>
+        /// projection by publishing <see cref="PickemGroupMatchupsRequested"/>.
+        /// The API consumer responds with one <c>PickemGroupMatchupDataPublished</c>
+        /// per future matchup (StartDateUtc &gt; UtcNow filter — past games
+        /// excluded), and Notification's own consumer upserts each row.
+        /// </summary>
+        [HttpPost("pickemgroupmatchups")]
+        public async Task<IActionResult> RequestPickemGroupMatchups(CancellationToken cancellationToken)
+        {
+            var correlationId = Guid.NewGuid();
+
+            _logger.LogInformation(
+                "Publishing PickemGroupMatchupsRequested. CorrelationId={CorrelationId}",
+                correlationId);
+
+            using (_deliveryScope.Use(DeliveryMode.Direct))
+            {
+                await _eventBus.Publish(new PickemGroupMatchupsRequested(
+                        Sport.All,
+                        null,
+                        correlationId,
+                        Guid.NewGuid()),
+                    cancellationToken);
+            }
+
+            return Accepted(new { correlationId });
+        }
     }
 }

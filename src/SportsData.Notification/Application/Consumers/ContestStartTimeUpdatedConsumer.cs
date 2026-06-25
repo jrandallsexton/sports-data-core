@@ -2,42 +2,52 @@ using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Notification.Infrastructure.Data;
 
 namespace SportsData.Notification.Application.Consumers
 {
     /// <summary>
-    /// ESPN moved a game's start time. For every user who had a kickoff
-    /// reminder scheduled for this contest, cancel the existing Hangfire job
-    /// and schedule a new one at <c>NewStartTime - leadMinutes</c>.
+    /// ESPN moved a game's start time. Two responsibilities:
+    /// <list type="number">
+    ///   <item>Update the local <c>PickemGroupMatchup</c> projection — every
+    ///   row referencing the contest (a single contest can appear in many
+    ///   leagues) gets its <c>StartDateUtc</c> resynced via
+    ///   <c>ExecuteUpdateAsync</c>.</item>
+    ///   <item>Reschedule any <c>PendingScheduledJob</c> kickoff reminders
+    ///   already on the Hangfire calendar for this contest (TODO — Phase 2c-main
+    ///   / 2d when the Hangfire dispatcher exists).</item>
+    /// </list>
     ///
     /// <para>
-    /// Mirrors Producer's <c>CompetitionStreamScheduler.RescheduleForContestAsync</c>
-    /// pattern but operates on the Notification side: same drift threshold
-    /// logic, same crash-safe ordering (schedule-new → save → delete-old),
-    /// just against the local <see cref="Infrastructure.Data.Entities.PendingScheduledJob"/>
-    /// table instead of <c>CompetitionStream</c>.
+    /// Mirrors Producer's
+    /// <c>CompetitionStreamScheduler.RescheduleForContestAsync</c> pattern for
+    /// the Hangfire side: same drift threshold logic, same crash-safe ordering
+    /// (schedule-new → save → delete-old) once wired.
     /// </para>
     ///
     /// <para>
     /// Per the cross-broker shovel design, this event arrives via a shovel
     /// from each per-sport Producer broker (NCAA / NFL / MLB). The handler
-    /// itself is sport-agnostic — it operates entirely off
-    /// <c>PendingScheduledJob.TargetId == ContestId</c>.
+    /// itself is sport-agnostic — both the projection write and the future
+    /// Hangfire reschedule operate entirely off ContestId.
     /// </para>
     /// </summary>
     public class ContestStartTimeUpdatedConsumer : IConsumer<ContestStartTimeUpdated>
     {
         private readonly ILogger<ContestStartTimeUpdatedConsumer> _logger;
         private readonly AppDataContext _dataContext;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public ContestStartTimeUpdatedConsumer(
             ILogger<ContestStartTimeUpdatedConsumer> logger,
-            AppDataContext dataContext)
+            AppDataContext dataContext,
+            IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task Consume(ConsumeContext<ContestStartTimeUpdated> context)
@@ -53,20 +63,43 @@ namespace SportsData.Notification.Application.Consumers
 
             _logger.LogInformation("ContestStartTimeUpdated received.");
 
+            // 1. Resync the local PickemGroupMatchup projection. Bulk
+            // ExecuteUpdateAsync avoids loading + tracking; ModifiedUtc and
+            // ModifiedBy stamped as part of the SET clause. Straight overwrite
+            // — no diff filter, the extra write on a no-op redelivery is
+            // cheaper than the extra read.
+            var now = _dateTimeProvider.UtcNow();
+            var rowsAffected = await _dataContext.PickemGroupMatchups
+                .Where(m => m.ContestId == msg.ContestId)
+                .ExecuteUpdateAsync(
+                    s => s
+                        .SetProperty(m => m.StartDateUtc, msg.NewStartTime)
+                        .SetProperty(m => m.ModifiedUtc, (DateTime?)now)
+                        .SetProperty(m => m.ModifiedBy, (Guid?)msg.CausationId),
+                    context.CancellationToken);
+
+            _logger.LogInformation(
+                "PickemGroupMatchup projection resynced. RowsAffected={RowsAffected}",
+                rowsAffected);
+
+            // 2. Reschedule any kickoff-reminder Hangfire jobs already on the
+            // calendar for this contest. Today this is TODO pending the
+            // Hangfire dispatcher (Phase 2c-main / 2d). For now we log the
+            // intent so the recovery path is auditable.
             var pendingJobs = await _dataContext.PendingScheduledJobs
                 .Where(j => j.JobKind == "Kickoff" && j.TargetId == msg.ContestId)
-                .ToListAsync();
+                .ToListAsync(context.CancellationToken);
 
             if (pendingJobs.Count == 0)
             {
                 _logger.LogInformation(
-                    "No PendingScheduledJob rows for ContestId {ContestId}; nothing to reschedule.",
+                    "No PendingScheduledJob rows for ContestId {ContestId}; no kickoff reminders to reschedule.",
                     msg.ContestId);
                 return;
             }
 
             _logger.LogInformation(
-                "Rescheduling {Count} kickoff reminder(s) for ContestId {ContestId}.",
+                "TODO (Phase 2c-main / 2d): reschedule {Count} kickoff reminder(s) for ContestId {ContestId}.",
                 pendingJobs.Count, msg.ContestId);
 
             foreach (var job in pendingJobs)
@@ -75,7 +108,7 @@ namespace SportsData.Notification.Application.Consumers
                 //   1. Compute newFireTime = msg.NewStartTime - leadMinutes
                 //   2. newJobId = _backgroundJobProvider.Schedule<INotificationDispatcher>(
                 //          d => d.SendKickoffReminderAsync(job.UserId, msg.ContestId),
-                //          newFireTime - _dateTimeProvider.UtcNow());
+                //          newFireTime - now);
                 //   3. oldJobId = job.HangfireJobId
                 //   4. job.HangfireJobId = newJobId
                 //   5. job.ScheduledFireUtc = newFireTime
@@ -83,17 +116,14 @@ namespace SportsData.Notification.Application.Consumers
                 //   7. SaveChanges  (commits the swap)
                 //   8. _backgroundJobProvider.Delete(oldJobId)  (best-effort)
                 //
-                // Crash-safety: schedule-then-save-then-delete order means a
-                // crashed run leaks an orphan job rather than orphaning the row.
-                // FCM dedupe via NotificationLog (CorrelationId + UserId + Channel)
-                // absorbs the duplicate fire.
-
-                _logger.LogInformation(
-                    "TODO: reschedule Hangfire job {OldJobId} for UserId {UserId} (ContestId {ContestId}).",
-                    job.HangfireJobId, job.UserId, msg.ContestId);
+                // Crash-safety: schedule-then-save-then-delete order leaks an
+                // orphan job rather than orphaning the row on crash. FCM dedupe
+                // via NotificationLog (CorrelationId + UserId + Channel) absorbs
+                // the duplicate fire.
+                _logger.LogDebug(
+                    "Would reschedule Hangfire job {OldJobId} for UserId {UserId}.",
+                    job.HangfireJobId, job.UserId);
             }
-
-            await _dataContext.SaveChangesAsync();
         }
     }
 }

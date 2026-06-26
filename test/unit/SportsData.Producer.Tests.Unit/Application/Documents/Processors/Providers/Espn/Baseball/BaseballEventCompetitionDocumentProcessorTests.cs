@@ -210,6 +210,71 @@ public class BaseballEventCompetitionDocumentProcessorTests
         refreshed.SeasonSeriesSummary.Should().Be(locked.SeasonSeriesSummary);
     }
 
+    [Fact]
+    public async Task WhenReprocessed_WithNewNote_PersistsTheNoteOnUpdatePath()
+    {
+        // Regression: CurrentValues.SetValues copies scalar properties only;
+        // Notes is a navigation collection, so update-path note additions
+        // (e.g. "Inclement Weather - Makeup date July 23rd" when a rain-
+        // delayed game gets postponed) used to be silently dropped.
+        var (competitionId, _, cmd) = await SetupAndBuildCommand();
+
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionDocumentProcessor<BaseballDataContext>>();
+
+        // First pass: fixture has empty notes array — competition seeded
+        // with zero notes.
+        await sut.ProcessAsync(cmd);
+
+        var initialNoteCount = await _baseballDataContext.Set<CompetitionNote>()
+            .AsNoTracking()
+            .CountAsync(n => n.CompetitionId == competitionId);
+        initialNoteCount.Should().Be(0);
+
+        // Mutate the fixture: inject a postponement note as ESPN would
+        // when a game transitions Rain Delay → Postponed.
+        var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetition.json");
+        var dto = json.FromJson<EspnBaseballEventCompetitionDto>()!;
+        dto.Notes.Add(new SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common.EspnEventCompetitionNoteDto
+        {
+            Type = "event",
+            Headline = "Inclement Weather - Makeup date July 23rd"
+        });
+
+        var mutatedJson = dto.ToJson();
+        var mutatedCmd = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.ParentId, cmd.ParentId)
+            .With(x => x.SeasonYear, cmd.SeasonYear)
+            .With(x => x.SourceDataProvider, cmd.SourceDataProvider)
+            .With(x => x.Sport, cmd.Sport)
+            .With(x => x.DocumentType, cmd.DocumentType)
+            .With(x => x.Document, mutatedJson)
+            .With(x => x.UrlHash, cmd.UrlHash)
+            .With(x => x.IncludeLinkedDocumentTypes, cmd.IncludeLinkedDocumentTypes)
+            .OmitAutoProperties()
+            .Create();
+
+        // act: re-process via the update path.
+        await sut.ProcessAsync(mutatedCmd);
+
+        // assert: the note is persisted.
+        var notes = await _baseballDataContext.Set<CompetitionNote>()
+            .AsNoTracking()
+            .Where(n => n.CompetitionId == competitionId)
+            .ToListAsync();
+
+        notes.Should().HaveCount(1);
+        notes[0].Type.Should().Be("event");
+        notes[0].Headline.Should().Be("Inclement Weather - Makeup date July 23rd");
+
+        // Replay the same payload — dedupe should kick in, no duplicate row.
+        await sut.ProcessAsync(mutatedCmd);
+
+        var notesAfterReplay = await _baseballDataContext.Set<CompetitionNote>()
+            .AsNoTracking()
+            .CountAsync(n => n.CompetitionId == competitionId);
+        notesAfterReplay.Should().Be(1);
+    }
+
     private async Task<(Guid CompetitionId, Guid ContestId, ProcessDocumentCommand Cmd)> SetupAndBuildCommand()
     {
         var idGen = new ExternalRefIdentityGenerator();

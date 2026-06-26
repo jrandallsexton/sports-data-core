@@ -223,6 +223,15 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
             _logger.LogInformation("No property changes detected. CompetitionId={CompetitionId}", competition.Id);
         }
 
+        // Notes are a navigation collection; CurrentValues.SetValues above
+        // copies scalar properties only, so additions to the ESPN document's
+        // notes array (e.g. "Inclement Weather - Makeup date July 23rd" when
+        // a rain-delayed game gets postponed) were never persisted on the
+        // update path. Process them independently — happens whether or not
+        // any scalar property changed, since a status-driven note add does
+        // not require any scalar to shift.
+        await ProcessNotesOnUpdate(dto, competition);
+
         await ProcessChildDocuments(command, dto, competition, isNew: false);
     }
 
@@ -345,6 +354,72 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
                 CompetitionId = competition.Id
             };
             competition.Notes.Add(newNote);
+        }
+    }
+
+    /// <summary>
+    /// Dedupe-aware variant of <see cref="ProcessNotes"/> for the update path.
+    /// The tracked competition arrives without its Notes navigation populated
+    /// (per the no-Include rule documented at ProcessInternal), so we query
+    /// the persisted (Type, Headline) tuples directly and only insert notes
+    /// that aren't already there.
+    ///
+    /// <para>
+    /// Natural identity is (Type, Headline) — the DTO carries no other
+    /// identifier. If ESPN ever edits an existing note's headline (vs. adding
+    /// a new note), this treats it as a NEW note and the prior note stays
+    /// in place. Accepted trade-off for v1: a duplicate-ish row beats the
+    /// alternative (missing the update entirely, which is the bug this
+    /// method exists to fix).
+    /// </para>
+    /// </summary>
+    private async Task ProcessNotesOnUpdate(
+        EspnEventCompetitionDtoBase externalDto,
+        CompetitionBase competition)
+    {
+        if (externalDto.Notes is null || externalDto.Notes.Count == 0)
+        {
+            return;
+        }
+
+        // Read existing notes WITHOUT pulling them into the change tracker
+        // via the parent's Notes navigation. Loading the nav on the tracked
+        // competition would trigger EF's optimistic-concurrency check on
+        // the collection — same concern documented at the top of
+        // ProcessInternal for Competitors.
+        var existingTuples = await _dataContext.Set<CompetitionNote>()
+            .AsNoTracking()
+            .Where(n => n.CompetitionId == competition.Id)
+            .Select(n => new { n.Type, n.Headline })
+            .ToListAsync();
+
+        var existingSet = existingTuples
+            .Select(t => (t.Type, t.Headline))
+            .ToHashSet();
+
+        var addedCount = 0;
+        foreach (var note in externalDto.Notes)
+        {
+            if (existingSet.Contains((note.Type, note.Headline)))
+            {
+                continue;
+            }
+
+            _dataContext.Set<CompetitionNote>().Add(new CompetitionNote
+            {
+                Type = note.Type,
+                Headline = note.Headline,
+                CompetitionId = competition.Id
+            });
+            existingSet.Add((note.Type, note.Headline));
+            addedCount++;
+        }
+
+        if (addedCount > 0)
+        {
+            _logger.LogInformation(
+                "Added {Count} new CompetitionNote(s) on update. CompetitionId={CompetitionId}",
+                addedCount, competition.Id);
         }
     }
 

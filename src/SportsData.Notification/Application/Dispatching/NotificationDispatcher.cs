@@ -48,18 +48,17 @@ namespace SportsData.Notification.Application.Dispatching
             _pushSender = pushSender;
         }
 
-        public async Task SendPickDeadlineReminderAsync(Guid userId, Guid pickemGroupId, int seasonWeek, DateTime deadlineUtc)
+        public async Task SendPickDeadlineReminderAsync(Guid userId, Guid pickemGroupId, int seasonWeek, DateTime fireTimeUtc)
         {
-            // Qualifiers include deadlineUtc.Ticks as the version anchor for
-            // the same reason as ContestStart: a deadline shift (new matchup
-            // lands and pulls MIN(StartDateUtc) earlier, or
-            // ContestStartTimeUpdated moves the earliest game) reschedules
-            // the Hangfire job. If the old job's TryDelete fails and it
-            // fires first, the orphan would otherwise claim the
-            // NotificationLog slot and silently suppress the new
-            // correct-deadline reminder.
+            // fireTimeUtc IS the version anchor — what the scheduler intended
+            // this job to fire at. Used both for the deterministic dedupe
+            // key (a reschedule produces a different key per fire-time, so
+            // an orphan can't suppress the new fire) and for the stale-fire
+            // check below (an orphan reads the PendingScheduledJob row, sees
+            // the scheduler has since moved to a different ScheduledFireUtc,
+            // and aborts before sending the wrong-time push).
             var correlationId = DeterministicCorrelationId(
-                "PickDeadline", userId, pickemGroupId, seasonWeek, deadlineUtc.Ticks);
+                "PickDeadline", userId, pickemGroupId, seasonWeek, fireTimeUtc.Ticks);
 
             using var _ = _logger.BeginScope(new Dictionary<string, object>
             {
@@ -67,7 +66,7 @@ namespace SportsData.Notification.Application.Dispatching
                 ["UserId"] = userId,
                 ["PickemGroupId"] = pickemGroupId,
                 ["SeasonWeek"] = seasonWeek,
-                ["DeadlineUtc"] = deadlineUtc
+                ["FireTimeUtc"] = fireTimeUtc
             });
 
             _logger.LogInformation("SendPickDeadlineReminderAsync invoked.");
@@ -95,6 +94,17 @@ namespace SportsData.Notification.Application.Dispatching
                     "PickDeadline reminder already dispatched for CorrelationId {CorrelationId}; skipping (Hangfire retry).",
                     correlationId);
                 _dataContext.Entry(claim).State = EntityState.Detached;
+                return;
+            }
+
+            // Stale-fire check: am I still the scheduler's intended fire?
+            // Look up the PendingScheduledJob row by natural key. If the row
+            // is gone, or its ScheduledFireUtc no longer matches what I was
+            // called with, an orphan reschedule survived a failed best-
+            // effort TryDelete and I'm the wrong-time fire. Abort.
+            if (await IsStaleFireAsync(userId, "PickDeadline", pickemGroupId, seasonWeek, fireTimeUtc))
+            {
+                await FinalizeAsync(claim, "Suppressed_StaleFire");
                 return;
             }
 
@@ -180,27 +190,24 @@ namespace SportsData.Notification.Application.Dispatching
             await _dataContext.SaveChangesAsync();
         }
 
-        public async Task SendContestStartReminderAsync(Guid userId, Guid contestId, DateTime startDateUtc)
+        public async Task SendContestStartReminderAsync(Guid userId, Guid contestId, DateTime fireTimeUtc)
         {
-            // Qualifier is StartDateUtc.Ticks — the version anchor. Without
-            // it, a rescheduled contest (ESPN moves start time, scheduler
-            // creates a new Hangfire job, TryDelete of the old job fails)
-            // would have the orphan job fire FIRST with the same
-            // (category, userId, contestId) key, claim the NotificationLog
-            // row, and silently suppress the correct-time fire. Including
-            // Ticks gives each fire-time its own dedupe key so the new
-            // reminder can land even when the orphan races it. Hangfire
-            // retries of the SAME logical fire still dedupe correctly
-            // because the serialized DateTime arg is stable across retries.
+            // fireTimeUtc IS the version anchor — what the scheduler intended
+            // this job to fire at. Used both for the deterministic dedupe
+            // key (a reschedule produces a different key per fire-time) and
+            // for the stale-fire check below (an orphan reads the
+            // PendingScheduledJob row, sees the scheduler has since moved
+            // to a different ScheduledFireUtc, and aborts before sending
+            // the wrong-time push).
             var correlationId = DeterministicCorrelationId(
-                "ContestStart", userId, contestId, startDateUtc.Ticks);
+                "ContestStart", userId, contestId, fireTimeUtc.Ticks);
 
             using var _ = _logger.BeginScope(new Dictionary<string, object>
             {
                 ["CorrelationId"] = correlationId,
                 ["UserId"] = userId,
                 ["ContestId"] = contestId,
-                ["StartDateUtc"] = startDateUtc
+                ["FireTimeUtc"] = fireTimeUtc
             });
 
             _logger.LogInformation("SendContestStartReminderAsync invoked.");
@@ -226,6 +233,15 @@ namespace SportsData.Notification.Application.Dispatching
                     "ContestStart reminder already dispatched for CorrelationId {CorrelationId}; skipping (Hangfire retry).",
                     correlationId);
                 _dataContext.Entry(claim).State = EntityState.Detached;
+                return;
+            }
+
+            // Stale-fire check: am I still the scheduler's intended fire?
+            // ContestStart rows leave SeasonWeek null, included in the
+            // natural key.
+            if (await IsStaleFireAsync(userId, "ContestStart", contestId, seasonWeek: null, fireTimeUtc))
+            {
+                await FinalizeAsync(claim, "Suppressed_StaleFire");
                 return;
             }
 
@@ -307,6 +323,49 @@ namespace SportsData.Notification.Application.Dispatching
             claim.Result = result;
             claim.ModifiedUtc = _dateTimeProvider.UtcNow();
             await _dataContext.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Returns true when the currently-firing Hangfire job is no longer
+        /// the scheduler's intended fire for this scope — either the row is
+        /// gone (cancelled) or the scheduler has since rescheduled to a
+        /// different fire-time. Callers should treat this as a no-op,
+        /// finalize the claim as <c>Suppressed_StaleFire</c>, and return.
+        ///
+        /// <para>
+        /// Lookup hits the natural-key unique index
+        /// (UserId, JobKind, TargetId, SeasonWeek) — cheap, one indexed read
+        /// per dispatch.
+        /// </para>
+        /// </summary>
+        private async Task<bool> IsStaleFireAsync(
+            Guid userId, string jobKind, Guid targetId, int? seasonWeek, DateTime fireTimeUtc)
+        {
+            var row = await _dataContext.PendingScheduledJobs
+                .AsNoTracking()
+                .FirstOrDefaultAsync(j =>
+                    j.UserId == userId &&
+                    j.JobKind == jobKind &&
+                    j.TargetId == targetId &&
+                    j.SeasonWeek == seasonWeek);
+
+            if (row is null)
+            {
+                _logger.LogInformation(
+                    "Stale fire: no PendingScheduledJob row for ({JobKind}, {TargetId}, week={SeasonWeek}); aborting.",
+                    jobKind, targetId, seasonWeek);
+                return true;
+            }
+
+            if (row.ScheduledFireUtc != fireTimeUtc)
+            {
+                _logger.LogInformation(
+                    "Stale fire: scheduler has moved to FireTime={CurrentFireTime}; this job was scheduled for {OrphanFireTime}. Aborting.",
+                    row.ScheduledFireUtc, fireTimeUtc);
+                return true;
+            }
+
+            return false;
         }
 
         private static string ComposeFailureReason(List<string> failureReasons)

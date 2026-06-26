@@ -34,20 +34,20 @@ namespace SportsData.Notification.Application.Consumers
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IPickDeadlineReminderScheduler _reminderScheduler;
-        private readonly IKickoffReminderScheduler _kickoffScheduler;
+        private readonly IContestStartReminderScheduler _contestStartScheduler;
 
         public PickemGroupMatchupDataPublishedConsumer(
             ILogger<PickemGroupMatchupDataPublishedConsumer> logger,
             AppDataContext dataContext,
             IDateTimeProvider dateTimeProvider,
             IPickDeadlineReminderScheduler reminderScheduler,
-            IKickoffReminderScheduler kickoffScheduler)
+            IContestStartReminderScheduler contestStartScheduler)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
             _reminderScheduler = reminderScheduler;
-            _kickoffScheduler = kickoffScheduler;
+            _contestStartScheduler = contestStartScheduler;
         }
 
         public async Task Consume(ConsumeContext<PickemGroupMatchupDataPublished> context)
@@ -99,7 +99,7 @@ namespace SportsData.Notification.Application.Consumers
                     await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
                         msg.PickemGroupId, msg.SeasonWeek, context.CancellationToken);
 
-                    await _kickoffScheduler.EvaluateAndScheduleForContestAsync(
+                    await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
                         msg.ContestId, context.CancellationToken);
                     return;
                 }
@@ -160,7 +160,7 @@ namespace SportsData.Notification.Application.Consumers
 
             if (startDateChanged)
             {
-                await _kickoffScheduler.EvaluateAndScheduleForContestAsync(
+                await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
                     msg.ContestId, context.CancellationToken);
             }
         }

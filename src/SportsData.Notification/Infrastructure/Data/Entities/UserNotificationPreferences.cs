@@ -18,7 +18,7 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
 
         public bool PickDeadlineReminderEnabled { get; set; } = true;
 
-        public bool KickoffReminderEnabled { get; set; } = true;
+        public bool ContestStartReminderEnabled { get; set; } = true;
 
         public bool LeagueInviteEnabled { get; set; } = true;
 

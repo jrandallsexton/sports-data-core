@@ -171,13 +171,13 @@ namespace SportsData.Notification.Application.Dispatching
             await _dataContext.SaveChangesAsync();
         }
 
-        public async Task SendKickoffReminderAsync(Guid userId, Guid contestId)
+        public async Task SendContestStartReminderAsync(Guid userId, Guid contestId)
         {
-            // Qualifier is 0 because Kickoff is per-contest with no week/scope
-            // beyond ContestId — the (category, userId, contestId) triplet is
-            // already uniquely identifying for the dedupe key.
+            // Qualifier is 0 because ContestStart is per-contest with no
+            // week/scope beyond ContestId — the (category, userId, contestId)
+            // triplet is already uniquely identifying for the dedupe key.
             var correlationId = DeterministicCorrelationId(
-                "Kickoff", userId, contestId, 0);
+                "ContestStart", userId, contestId, 0);
 
             using var _ = _logger.BeginScope(new Dictionary<string, object>
             {
@@ -186,13 +186,13 @@ namespace SportsData.Notification.Application.Dispatching
                 ["ContestId"] = contestId
             });
 
-            _logger.LogInformation("SendKickoffReminderAsync invoked.");
+            _logger.LogInformation("SendContestStartReminderAsync invoked.");
 
             var claim = new NotificationLog
             {
                 UserId = userId,
                 CorrelationId = correlationId,
-                Category = "Kickoff",
+                Category = "ContestStart",
                 Channel = "Fcm",
                 Result = "Dispatching",
                 AttemptedUtc = _dateTimeProvider.UtcNow()
@@ -206,7 +206,7 @@ namespace SportsData.Notification.Application.Dispatching
             catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
             {
                 _logger.LogInformation(
-                    "Kickoff reminder already dispatched for CorrelationId {CorrelationId}; skipping (Hangfire retry).",
+                    "ContestStart reminder already dispatched for CorrelationId {CorrelationId}; skipping (Hangfire retry).",
                     correlationId);
                 _dataContext.Entry(claim).State = EntityState.Detached;
                 return;
@@ -216,7 +216,7 @@ namespace SportsData.Notification.Application.Dispatching
                 .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.UserId == userId);
 
-            if (prefs is { KickoffReminderEnabled: false })
+            if (prefs is { ContestStartReminderEnabled: false })
             {
                 await FinalizeAsync(claim, "Suppressed_UserOptedOut");
                 return;
@@ -233,14 +233,22 @@ namespace SportsData.Notification.Application.Dispatching
                 return;
             }
 
-            // Body stays generic for v1. A user can be in multiple leagues
-            // with the same contest, so naming one league in the body would
-            // be misleading (the dispatcher fires once per (UserId, ContestId)).
-            // FranchiseSeason team names aren't in the local projection —
-            // a richer body waits on either fattening the steady-state
-            // events or backfilling team data.
-            const string title = "Game starting soon";
-            const string body = "A game you've picked starts in about 30 minutes. Tap to follow live.";
+            // Resolve sport for the user-facing copy. A Contest is sport-
+            // specific, so every PickemGroup containing it shares one Sport
+            // value — any matchup row's PickemGroup is authoritative.
+            // Default to Sport.All when none found (defensive: sport lookup
+            // races membership deletion); the terminology helper falls back
+            // to generic "Game starting soon" copy in that case.
+            var sport = await _dataContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.ContestId == contestId)
+                .Join(_dataContext.PickemGroups,
+                    m => m.PickemGroupId,
+                    g => g.Id,
+                    (m, g) => g.Sport)
+                .FirstOrDefaultAsync();
+
+            var (title, body) = SportTerminology.GetContestStartCopy(sport);
 
             var successCount = 0;
             var failureReasons = new List<string>();

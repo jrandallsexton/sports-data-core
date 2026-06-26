@@ -59,7 +59,7 @@ namespace SportsData.Notification.Infrastructure.Data
             // prior Hangfire job to cancel/reschedule. SeasonWeek included
             // because PickDeadline rows are scoped per league per week —
             // omitting it would collide when a league has matchups generated
-            // multiple weeks ahead. Null SeasonWeek (Kickoff jobs) still
+            // multiple weeks ahead. Null SeasonWeek (ContestStart jobs) still
             // participates in the index per Postgres semantics.
             //
             // Unique because the natural-key invariant is "one scheduled row
@@ -69,11 +69,12 @@ namespace SportsData.Notification.Infrastructure.Data
             // DbUpdateException(23505) and fall through to the reschedule
             // path against the winner's row.
             //
-            // AreNullsDistinct(false): Kickoff jobs leave SeasonWeek null,
-            // and Postgres treats nulls as distinct by default. Without this,
-            // duplicate Kickoff rows for the same (User, "Kickoff", ContestId)
-            // tuple would slip through the unique index. Requires Postgres 15+
-            // (the live cluster runs 16, so we're fine).
+            // AreNullsDistinct(false): ContestStart jobs leave SeasonWeek
+            // null, and Postgres treats nulls as distinct by default. Without
+            // this, duplicate ContestStart rows for the same
+            // (User, "ContestStart", ContestId) tuple would slip through the
+            // unique index. Requires Postgres 15+ (the live cluster runs 16,
+            // so we're fine).
             modelBuilder.Entity<PendingScheduledJob>()
                 .HasIndex(j => new { j.UserId, j.JobKind, j.TargetId, j.SeasonWeek })
                 .IsUnique()

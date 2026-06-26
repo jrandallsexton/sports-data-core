@@ -26,7 +26,7 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
 
         /// <summary>
         /// Notification category — mirrors <see cref="UserNotificationPreferences"/>
-        /// flags. e.g. "PickResult", "PickDeadline", "Kickoff", "LeagueInvite",
+        /// flags. e.g. "PickResult", "PickDeadline", "ContestStart", "LeagueInvite",
         /// "Membership", "MatchupPreview", "ScheduleChange".
         /// </summary>
         [Required]

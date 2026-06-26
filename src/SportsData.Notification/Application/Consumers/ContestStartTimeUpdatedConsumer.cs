@@ -19,9 +19,9 @@ namespace SportsData.Notification.Application.Consumers
     ///   <item>Re-evaluate <c>PickDeadline</c> reminders for every
     ///   (league, week) touched by this contest — the contest's start time
     ///   IS the candidate deadline for any league-week containing it.</item>
-    ///   <item>Re-evaluate <c>Kickoff</c> reminders for the contest itself —
-    ///   one pass covers every user across every league with the contest, as
-    ///   the kickoff scope is per-contest.</item>
+    ///   <item>Re-evaluate <c>ContestStart</c> reminders for the contest
+    ///   itself — one pass covers every user across every league with the
+    ///   contest, as the contest-start scope is per-contest.</item>
     /// </list>
     ///
     /// <para>
@@ -44,20 +44,20 @@ namespace SportsData.Notification.Application.Consumers
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IPickDeadlineReminderScheduler _reminderScheduler;
-        private readonly IKickoffReminderScheduler _kickoffScheduler;
+        private readonly IContestStartReminderScheduler _contestStartScheduler;
 
         public ContestStartTimeUpdatedConsumer(
             ILogger<ContestStartTimeUpdatedConsumer> logger,
             AppDataContext dataContext,
             IDateTimeProvider dateTimeProvider,
             IPickDeadlineReminderScheduler reminderScheduler,
-            IKickoffReminderScheduler kickoffScheduler)
+            IContestStartReminderScheduler contestStartScheduler)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
             _reminderScheduler = reminderScheduler;
-            _kickoffScheduler = kickoffScheduler;
+            _contestStartScheduler = contestStartScheduler;
         }
 
         public async Task Consume(ConsumeContext<ContestStartTimeUpdated> context)
@@ -124,7 +124,7 @@ namespace SportsData.Notification.Application.Consumers
                 }
             }
 
-            // 3. Re-evaluate Kickoff reminders for every user across every
+            // 3. Re-evaluate ContestStart reminders for every user across every
             // league containing this contest. Single per-contest call covers
             // all of them — the scheduler's reschedule-or-noop branch handles
             // both "existing job moves" and "no row yet" cases. Gated on
@@ -132,7 +132,7 @@ namespace SportsData.Notification.Application.Consumers
             // PickDeadline gate above).
             if (rowsAffected > 0)
             {
-                await _kickoffScheduler.EvaluateAndScheduleForContestAsync(
+                await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
                     msg.ContestId, context.CancellationToken);
             }
         }

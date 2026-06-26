@@ -8,15 +8,20 @@ using SportsData.Notification.Infrastructure.Data.Entities;
 
 namespace SportsData.Notification.Application.Scheduling
 {
-    public interface IKickoffReminderScheduler
+    public interface IContestStartReminderScheduler
     {
         Task EvaluateAndScheduleForContestAsync(Guid contestId, CancellationToken cancellationToken);
     }
 
     /// <summary>
-    /// Decides whether to schedule (or reschedule, or no-op) a kickoff-soon
+    /// Decides whether to schedule (or reschedule, or no-op) a contest-start
     /// reminder for every user who has the given contest in at least one of
-    /// their leagues. Trigger points mirror the PickDeadline scheduler:
+    /// their leagues. The user-facing copy is sport-aware (kickoff / first
+    /// pitch / tip-off / etc.) and resolved by the dispatcher at fire time;
+    /// the scheduler is sport-agnostic.
+    ///
+    /// <para>
+    /// Trigger points mirror the PickDeadline scheduler:
     /// <list type="bullet">
     ///   <item><c>PickemGroupMatchupCreatedConsumer</c> after upserting a new
     ///   matchup from the steady-state event.</item>
@@ -25,35 +30,36 @@ namespace SportsData.Notification.Application.Scheduling
     ///   <item><c>ContestStartTimeUpdatedConsumer</c> after resyncing
     ///   <c>StartDateUtc</c> for matchups referencing the changed contest.</item>
     /// </list>
+    /// </para>
     ///
     /// <para>
     /// Scope is per-contest, not per-league-week: a user in three leagues that
-    /// each contain the same contest gets ONE kickoff reminder. The unique
-    /// index on (UserId, JobKind, TargetId, SeasonWeek=null) collapses
-    /// duplicates across leagues for free — the second insert hits 23505 and
-    /// falls through to the reschedule branch against the winner's row.
+    /// each contain the same contest gets ONE reminder. The unique index on
+    /// <c>(UserId, JobKind, TargetId, SeasonWeek=null)</c> collapses duplicates
+    /// across leagues for free — the second insert hits 23505 and falls
+    /// through to the reschedule branch against the winner's row.
     /// </para>
     ///
     /// <para>
     /// Lead time is 30 minutes, hardcoded for v1 (vs PickDeadline's 1 hour) —
-    /// kickoff is a "live-game prep" nudge, not a "pick your games" reminder.
+    /// this is a "live-game prep" nudge, not a "pick your games" reminder.
     /// </para>
     /// </summary>
-    public class KickoffReminderScheduler : IKickoffReminderScheduler
+    public class ContestStartReminderScheduler : IContestStartReminderScheduler
     {
         // Hardcoded for v1 — per the design discussion. Will become a
         // per-user pref later when we surface notification timing controls.
-        private static readonly TimeSpan KickoffLeadTime = TimeSpan.FromMinutes(30);
+        private static readonly TimeSpan ContestStartLeadTime = TimeSpan.FromMinutes(30);
 
-        private const string JobKind = "Kickoff";
+        private const string JobKind = "ContestStart";
 
-        private readonly ILogger<KickoffReminderScheduler> _logger;
+        private readonly ILogger<ContestStartReminderScheduler> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
-        public KickoffReminderScheduler(
-            ILogger<KickoffReminderScheduler> logger,
+        public ContestStartReminderScheduler(
+            ILogger<ContestStartReminderScheduler> logger,
             AppDataContext dataContext,
             IDateTimeProvider dateTimeProvider,
             IProvideBackgroundJobs backgroundJobProvider)
@@ -87,16 +93,16 @@ namespace SportsData.Notification.Application.Scheduling
                 return;
             }
 
-            var fireTime = startDate.Value - KickoffLeadTime;
+            var fireTime = startDate.Value - ContestStartLeadTime;
             var now = _dateTimeProvider.UtcNow();
 
             if (fireTime <= now)
             {
-                // Kickoff is past or within the 30-minute window. A "starts
-                // in 30 minutes" reminder fired 5 minutes pre-kickoff would
-                // be misleading; skip rather than send-immediate.
+                // Start is past or within the 30-minute window. A "starts in
+                // 30 minutes" reminder fired 5 minutes pre-start would be
+                // misleading; skip rather than send-immediate.
                 _logger.LogInformation(
-                    "Kickoff {StartDate} is past or within lead window from now {Now}; skipping schedule.",
+                    "Contest start {StartDate} is past or within lead window from now {Now}; skipping schedule.",
                     startDate, now);
                 return;
             }
@@ -122,17 +128,17 @@ namespace SportsData.Notification.Application.Scheduling
             }
 
             _logger.LogInformation(
-                "Evaluating Kickoff reminders for {MemberCount} distinct members. StartDate={StartDate}, FireTime={FireTime}",
+                "Evaluating ContestStart reminders for {MemberCount} distinct members. StartDate={StartDate}, FireTime={FireTime}",
                 memberIds.Count, startDate, fireTime);
 
-            // Existing kickoff jobs for this contest, across all users.
+            // Existing contest-start jobs for this contest, across all users.
             var existingByUser = await _dataContext.PendingScheduledJobs
                 .Where(j => j.JobKind == JobKind && j.TargetId == contestId)
                 .ToDictionaryAsync(j => j.UserId, cancellationToken);
 
             var optedOutUserIds = await _dataContext.UserNotificationPreferences
                 .AsNoTracking()
-                .Where(p => memberIds.Contains(p.UserId) && !p.KickoffReminderEnabled)
+                .Where(p => memberIds.Contains(p.UserId) && !p.ContestStartReminderEnabled)
                 .Select(p => p.UserId)
                 .ToListAsync(cancellationToken);
             var optedOut = optedOutUserIds.ToHashSet();
@@ -159,7 +165,7 @@ namespace SportsData.Notification.Application.Scheduling
         {
             if (existing is not null && existing.ScheduledFireUtc == fireTime)
             {
-                // Kickoff hasn't moved — no work.
+                // Start time hasn't moved — no work.
                 return;
             }
 
@@ -167,7 +173,7 @@ namespace SportsData.Notification.Application.Scheduling
             // Same crash-safe ordering as PickDeadlineReminderScheduler.
             var delay = fireTime - now;
             var newJobId = _backgroundJobProvider.Schedule<INotificationDispatcher>(
-                d => d.SendKickoffReminderAsync(userId, contestId),
+                d => d.SendContestStartReminderAsync(userId, contestId),
                 delay);
 
             if (existing is null)
@@ -192,9 +198,8 @@ namespace SportsData.Notification.Application.Scheduling
                 catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
                 {
                     // Peer-takeover branch — identical shape to PickDeadline.
-                    // Common cause for Kickoff: same contest is in N leagues
-                    // and we already scheduled this user from a sibling
-                    // matchup row.
+                    // Common cause here: same contest is in N leagues and we
+                    // already scheduled this user from a sibling matchup row.
                     _dataContext.Entry(entity).State = EntityState.Detached;
                     var winner = await _dataContext.PendingScheduledJobs
                         .FirstAsync(j => j.UserId == userId
@@ -233,7 +238,7 @@ namespace SportsData.Notification.Application.Scheduling
             }
 
             _logger.LogInformation(
-                "Scheduled Kickoff reminder. UserId={UserId}, FireTime={FireTime}, HangfireJobId={HangfireJobId}",
+                "Scheduled ContestStart reminder. UserId={UserId}, FireTime={FireTime}, HangfireJobId={HangfireJobId}",
                 userId, fireTime, newJobId);
         }
 

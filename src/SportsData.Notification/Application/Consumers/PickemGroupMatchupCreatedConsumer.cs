@@ -38,20 +38,20 @@ namespace SportsData.Notification.Application.Consumers
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IPickDeadlineReminderScheduler _reminderScheduler;
-        private readonly IKickoffReminderScheduler _kickoffScheduler;
+        private readonly IContestStartReminderScheduler _contestStartScheduler;
 
         public PickemGroupMatchupCreatedConsumer(
             ILogger<PickemGroupMatchupCreatedConsumer> logger,
             AppDataContext dataContext,
             IDateTimeProvider dateTimeProvider,
             IPickDeadlineReminderScheduler reminderScheduler,
-            IKickoffReminderScheduler kickoffScheduler)
+            IContestStartReminderScheduler contestStartScheduler)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
             _reminderScheduler = reminderScheduler;
-            _kickoffScheduler = kickoffScheduler;
+            _contestStartScheduler = contestStartScheduler;
         }
 
         public async Task Consume(ConsumeContext<PickemGroupMatchupCreated> context)
@@ -101,11 +101,11 @@ namespace SportsData.Notification.Application.Consumers
                     await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
                         msg.GroupId, msg.SeasonWeek, context.CancellationToken);
 
-                    // Kickoff reminders are per-contest, not per-league-week.
-                    // The unique index on (UserId, JobKind, ContestId, null)
-                    // collapses duplicates when the same contest is added to
-                    // multiple leagues for the same user.
-                    await _kickoffScheduler.EvaluateAndScheduleForContestAsync(
+                    // ContestStart reminders are per-contest, not per-league-
+                    // week. The unique index on (UserId, JobKind, ContestId,
+                    // null) collapses duplicates when the same contest is
+                    // added to multiple leagues for the same user.
+                    await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
                         msg.ContestId, context.CancellationToken);
                     return;
                 }
@@ -171,13 +171,14 @@ namespace SportsData.Notification.Application.Consumers
                     msg.GroupId, msg.SeasonWeek, context.CancellationToken);
             }
 
-            // Kickoff fires when StartDateUtc moved — week changes alone
-            // (different bucket, same kickoff time) don't shift the kickoff
-            // reminder. ContestStartTimeUpdated owns the cross-league bulk
-            // path; this consumer's role is the per-matchup mirror.
+            // ContestStart fires when StartDateUtc moved — week changes
+            // alone (different bucket, same start time) don't shift the
+            // contest-start reminder. ContestStartTimeUpdated owns the
+            // cross-league bulk path; this consumer's role is the per-
+            // matchup mirror.
             if (startDateChanged)
             {
-                await _kickoffScheduler.EvaluateAndScheduleForContestAsync(
+                await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
                     msg.ContestId, context.CancellationToken);
             }
         }

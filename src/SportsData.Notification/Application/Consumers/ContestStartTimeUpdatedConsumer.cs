@@ -108,32 +108,31 @@ namespace SportsData.Notification.Application.Consumers
             // for any league-week containing it, so a change requires a
             // re-evaluation pass. We query the projection AFTER the resync
             // above so MIN(StartDateUtc) uses the new value.
-            if (rowsAffected > 0)
-            {
-                var affectedScopes = await _dataContext.PickemGroupMatchups
-                    .AsNoTracking()
-                    .Where(m => m.ContestId == msg.ContestId)
-                    .Select(m => new { m.PickemGroupId, m.SeasonWeek })
-                    .Distinct()
-                    .ToListAsync(context.CancellationToken);
+            //
+            // Unconditional — NOT gated on rowsAffected. Same permanent-miss
+            // window as step 3: a crash between ExecuteUpdateAsync and this
+            // call would, on redelivery, see StartDateUpdatedAt already at
+            // msg.CreatedUtc, filter zero rows, and skip scheduling forever.
+            // The PickDeadline scheduler is idempotent (per-user
+            // ScheduledFireUtc == fireTime no-op, peer-takeover on 23505),
+            // so re-running against the current projection state is safe.
+            var affectedScopes = await _dataContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.ContestId == msg.ContestId)
+                .Select(m => new { m.PickemGroupId, m.SeasonWeek })
+                .Distinct()
+                .ToListAsync(context.CancellationToken);
 
-                foreach (var scope in affectedScopes)
-                {
-                    await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
-                        scope.PickemGroupId, scope.SeasonWeek, context.CancellationToken);
-                }
+            foreach (var scope in affectedScopes)
+            {
+                await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
+                    scope.PickemGroupId, scope.SeasonWeek, context.CancellationToken);
             }
 
             // 3. Re-evaluate ContestStart reminders for every user across every
-            // league containing this contest. Unconditional — NOT gated on
-            // rowsAffected. The crash window between ExecuteUpdateAsync and
-            // this call would otherwise be a permanent miss: on redelivery,
-            // the projection's StartDateUpdatedAt already equals
-            // msg.CreatedUtc, so rowsAffected=0, and the gate would skip the
-            // scheduler forever. The scheduler itself is idempotent (per-user
-            // ScheduledFireUtc == fireTime no-ops, peer-takeover on 23505),
-            // so calling on every delivery — including truly-stale events
-            // that filtered out at SQL — is safe and reads current state.
+            // league containing this contest. Unconditional for the same
+            // reason as step 2 — gating on rowsAffected would leak a
+            // permanent-miss window between ExecuteUpdateAsync and this call.
             await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
                 msg.ContestId, context.CancellationToken);
         }

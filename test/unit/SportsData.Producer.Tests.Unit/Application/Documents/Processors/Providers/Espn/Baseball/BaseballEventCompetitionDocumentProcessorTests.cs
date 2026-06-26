@@ -275,6 +275,81 @@ public class BaseballEventCompetitionDocumentProcessorTests
         notesAfterReplay.Should().Be(1);
     }
 
+    [Fact]
+    public async Task WhenReprocessed_WithNewLink_PersistsTheLinkOnUpdatePath()
+    {
+        // Parallel regression case to the notes fix (PR #468). Links is a
+        // navigation collection; CurrentValues.SetValues copies scalar
+        // properties only, so post-game link additions (boxscore, gamecast,
+        // recap) were silently dropped on the update path.
+        var (competitionId, _, cmd) = await SetupAndBuildCommand();
+
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionDocumentProcessor<BaseballDataContext>>();
+
+        // First pass: fixture has populated links — seeds the competition
+        // with the existing set.
+        await sut.ProcessAsync(cmd);
+
+        var initialLinkCount = await _baseballDataContext.Set<CompetitionLink>()
+            .AsNoTracking()
+            .CountAsync(l => l.CompetitionId == competitionId);
+        initialLinkCount.Should().BeGreaterThan(0);
+
+        // Mutate the fixture: inject a post-game-only link (e.g. recap)
+        // that wasn't there originally.
+        var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetition.json");
+        var dto = json.FromJson<EspnBaseballEventCompetitionDto>()!;
+
+        var newHref = new Uri("https://www.espn.com/mlb/recap/_/gameId/401814844-new-test");
+        dto.Links.Add(new SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common.EspnLinkFullDto
+        {
+            Language = "en-US",
+            Rel = ["recap", "desktop", "event"],
+            Href = newHref,
+            Text = "Recap",
+            ShortText = "Recap",
+            IsExternal = false,
+            IsPremium = false
+        });
+
+        var mutatedJson = dto.ToJson();
+        var mutatedCmd = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.ParentId, cmd.ParentId)
+            .With(x => x.SeasonYear, cmd.SeasonYear)
+            .With(x => x.SourceDataProvider, cmd.SourceDataProvider)
+            .With(x => x.Sport, cmd.Sport)
+            .With(x => x.DocumentType, cmd.DocumentType)
+            .With(x => x.Document, mutatedJson)
+            .With(x => x.UrlHash, cmd.UrlHash)
+            .With(x => x.IncludeLinkedDocumentTypes, cmd.IncludeLinkedDocumentTypes)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        await sut.ProcessAsync(mutatedCmd);
+
+        // assert: link is persisted, no duplicates of the existing ones.
+        var afterUpdateCount = await _baseballDataContext.Set<CompetitionLink>()
+            .AsNoTracking()
+            .CountAsync(l => l.CompetitionId == competitionId);
+        afterUpdateCount.Should().Be(initialLinkCount + 1);
+
+        var newHrefHash = SportsData.Core.Common.Hashing.HashProvider.GenerateHashFromUri(newHref);
+        var newLink = await _baseballDataContext.Set<CompetitionLink>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(l => l.CompetitionId == competitionId && l.SourceUrlHash == newHrefHash);
+        newLink.Should().NotBeNull();
+        newLink!.Text.Should().Be("Recap");
+
+        // Replay same payload — dedupe should keep the count stable.
+        await sut.ProcessAsync(mutatedCmd);
+
+        var afterReplayCount = await _baseballDataContext.Set<CompetitionLink>()
+            .AsNoTracking()
+            .CountAsync(l => l.CompetitionId == competitionId);
+        afterReplayCount.Should().Be(initialLinkCount + 1);
+    }
+
     private async Task<(Guid CompetitionId, Guid ContestId, ProcessDocumentCommand Cmd)> SetupAndBuildCommand()
     {
         var idGen = new ExternalRefIdentityGenerator();

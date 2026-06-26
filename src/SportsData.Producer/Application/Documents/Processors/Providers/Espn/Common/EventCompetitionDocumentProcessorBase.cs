@@ -232,6 +232,12 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
         // not require any scalar to shift.
         await ProcessNotesOnUpdate(dto, competition);
 
+        // Same bug class as Notes — Links is a navigation collection, so
+        // ESPN's link additions (e.g. boxscore, gamecast becoming
+        // available post-game) used to be silently dropped on the update
+        // path. Same dedupe-aware add pattern.
+        await ProcessLinksOnUpdate(dto, competition);
+
         await ProcessChildDocuments(command, dto, competition, isNew: false);
     }
 
@@ -419,6 +425,72 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
         {
             _logger.LogInformation(
                 "Added {Count} new CompetitionNote(s) on update. CompetitionId={CompetitionId}",
+                addedCount, competition.Id);
+        }
+    }
+
+    /// <summary>
+    /// Dedupe-aware variant of <see cref="ProcessLinks"/> for the update path.
+    /// Same rationale as <see cref="ProcessNotesOnUpdate"/>: CurrentValues.SetValues
+    /// only copies scalar properties, so the Links navigation never reached
+    /// the DB on the update path. ESPN adds links post-game (boxscore,
+    /// gamecast, recap) that would have been silently dropped.
+    ///
+    /// <para>
+    /// Natural identity is <c>(CompetitionId, SourceUrlHash)</c> — the URL
+    /// itself uniquely identifies a link's target. Text changes on the same
+    /// URL (e.g. "Box Score" → "Box Score (Final)") aren't surfaced here;
+    /// they'd require a richer diff. Accepted trade-off for the same reason
+    /// as the notes case: a stale-text row beats a missing link.
+    /// </para>
+    /// </summary>
+    private async Task ProcessLinksOnUpdate(
+        EspnEventCompetitionDtoBase externalDto,
+        CompetitionBase competition)
+    {
+        if (externalDto.Links is null || externalDto.Links.Count == 0)
+        {
+            return;
+        }
+
+        var existingHashes = await _dataContext.Set<CompetitionLink>()
+            .AsNoTracking()
+            .Where(l => l.CompetitionId == competition.Id)
+            .Select(l => l.SourceUrlHash)
+            .ToListAsync();
+
+        var existingSet = existingHashes.ToHashSet();
+
+        var addedCount = 0;
+        foreach (var link in externalDto.Links)
+        {
+            var sourceUrlHash = HashProvider.GenerateHashFromUri(link.Href);
+
+            if (existingSet.Contains(sourceUrlHash))
+            {
+                continue;
+            }
+
+            _dataContext.Set<CompetitionLink>().Add(new CompetitionLink
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competition.Id,
+                Rel = string.Join("|", link.Rel),
+                Href = link.Href.ToCleanUrl(),
+                Text = link.Text,
+                ShortText = link.ShortText,
+                IsExternal = link.IsExternal,
+                IsPremium = link.IsPremium,
+                SourceUrlHash = sourceUrlHash
+            });
+            existingSet.Add(sourceUrlHash);
+            addedCount++;
+        }
+
+        if (addedCount > 0)
+        {
+            _logger.LogInformation(
+                "Added {Count} new CompetitionLink(s) on update. CompetitionId={CompetitionId}",
                 addedCount, competition.Id);
         }
     }

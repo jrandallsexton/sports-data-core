@@ -48,7 +48,7 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
 
         /// <summary>
         /// Outcome. e.g. "Sent", "Suppressed_UserOptedOut", "Suppressed_NoDevice",
-        /// "Failed_FcmError", "Skipped_Duplicate".
+        /// "Suppressed_StaleFire", "Failed_FcmError", "Skipped_Duplicate".
         /// </summary>
         [Required]
         [MaxLength(64)]

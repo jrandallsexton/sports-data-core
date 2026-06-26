@@ -158,7 +158,8 @@ namespace SportsData.Notification.Application.Scheduling
                 }
 
                 existingByUser.TryGetValue(userId, out var existing);
-                await ScheduleOrRescheduleAsync(userId, pickemGroupId, seasonWeek, fireTime, existing, now, cancellationToken);
+                await ScheduleOrRescheduleAsync(
+                    userId, pickemGroupId, seasonWeek, deadline.Value, fireTime, existing, now, cancellationToken);
             }
         }
 
@@ -166,6 +167,7 @@ namespace SportsData.Notification.Application.Scheduling
             Guid userId,
             Guid pickemGroupId,
             int seasonWeek,
+            DateTime deadlineUtc,
             DateTime fireTime,
             PendingScheduledJob existing,
             DateTime now,
@@ -182,9 +184,14 @@ namespace SportsData.Notification.Application.Scheduling
             // an orphan Hangfire job (benign — dispatcher's dedupe absorbs
             // it). The alternative (delete-old first) could leave a row
             // pointing at a deleted job, silently missing the reminder.
+            // deadlineUtc is forwarded so the dispatcher's deterministic
+            // CorrelationId can include the version anchor. A deadline shift
+            // (new earliest matchup) yields a different key per fire-time,
+            // so an orphan from a failed best-effort TryDelete can't claim
+            // the NotificationLog slot and suppress the new reminder.
             var delay = fireTime - now;
             var newJobId = _backgroundJobProvider.Schedule<INotificationDispatcher>(
-                d => d.SendPickDeadlineReminderAsync(userId, pickemGroupId, seasonWeek),
+                d => d.SendPickDeadlineReminderAsync(userId, pickemGroupId, seasonWeek, deadlineUtc),
                 delay);
 
             if (existing is null)

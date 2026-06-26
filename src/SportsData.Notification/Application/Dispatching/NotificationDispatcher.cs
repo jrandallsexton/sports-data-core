@@ -48,17 +48,26 @@ namespace SportsData.Notification.Application.Dispatching
             _pushSender = pushSender;
         }
 
-        public async Task SendPickDeadlineReminderAsync(Guid userId, Guid pickemGroupId, int seasonWeek)
+        public async Task SendPickDeadlineReminderAsync(Guid userId, Guid pickemGroupId, int seasonWeek, DateTime deadlineUtc)
         {
+            // Qualifiers include deadlineUtc.Ticks as the version anchor for
+            // the same reason as ContestStart: a deadline shift (new matchup
+            // lands and pulls MIN(StartDateUtc) earlier, or
+            // ContestStartTimeUpdated moves the earliest game) reschedules
+            // the Hangfire job. If the old job's TryDelete fails and it
+            // fires first, the orphan would otherwise claim the
+            // NotificationLog slot and silently suppress the new
+            // correct-deadline reminder.
             var correlationId = DeterministicCorrelationId(
-                "PickDeadline", userId, pickemGroupId, seasonWeek);
+                "PickDeadline", userId, pickemGroupId, seasonWeek, deadlineUtc.Ticks);
 
             using var _ = _logger.BeginScope(new Dictionary<string, object>
             {
                 ["CorrelationId"] = correlationId,
                 ["UserId"] = userId,
                 ["PickemGroupId"] = pickemGroupId,
-                ["SeasonWeek"] = seasonWeek
+                ["SeasonWeek"] = seasonWeek,
+                ["DeadlineUtc"] = deadlineUtc
             });
 
             _logger.LogInformation("SendPickDeadlineReminderAsync invoked.");
@@ -328,10 +337,21 @@ namespace SportsData.Notification.Application.Dispatching
         private static Guid DeterministicCorrelationId(string category, Guid userId, Guid scopeId, long qualifier)
         {
             // Qualifier is long so callers can pass a DateTime.Ticks version
-            // anchor (ContestStart). int qualifiers (PickDeadline's
-            // seasonWeek) implicitly widen and format identically — no hash
-            // drift for existing callers.
+            // anchor (ContestStart).
             var input = $"{category}|{userId:N}|{scopeId:N}|{qualifier}";
+            var hash = MD5.HashData(Encoding.UTF8.GetBytes(input));
+            return new Guid(hash);
+        }
+
+        private static Guid DeterministicCorrelationId(string category, Guid userId, Guid scopeId, long q1, long q2)
+        {
+            // Two-qualifier overload for callers that need both a scope
+            // discriminator (e.g. PickDeadline's seasonWeek) AND a fire-time
+            // version anchor (deadline Ticks) in the same key. Keeping
+            // seasonWeek in the input means two different weeks of the same
+            // league with the same deadline (rare but theoretically
+            // possible across year boundaries) still hash distinctly.
+            var input = $"{category}|{userId:N}|{scopeId:N}|{q1}|{q2}";
             var hash = MD5.HashData(Encoding.UTF8.GetBytes(input));
             return new Guid(hash);
         }

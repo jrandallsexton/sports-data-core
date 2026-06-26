@@ -125,16 +125,17 @@ namespace SportsData.Notification.Application.Consumers
             }
 
             // 3. Re-evaluate ContestStart reminders for every user across every
-            // league containing this contest. Single per-contest call covers
-            // all of them — the scheduler's reschedule-or-noop branch handles
-            // both "existing job moves" and "no row yet" cases. Gated on
-            // rowsAffected to skip stale-event passes (consistent with the
-            // PickDeadline gate above).
-            if (rowsAffected > 0)
-            {
-                await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
-                    msg.ContestId, context.CancellationToken);
-            }
+            // league containing this contest. Unconditional — NOT gated on
+            // rowsAffected. The crash window between ExecuteUpdateAsync and
+            // this call would otherwise be a permanent miss: on redelivery,
+            // the projection's StartDateUpdatedAt already equals
+            // msg.CreatedUtc, so rowsAffected=0, and the gate would skip the
+            // scheduler forever. The scheduler itself is idempotent (per-user
+            // ScheduledFireUtc == fireTime no-ops, peer-takeover on 23505),
+            // so calling on every delivery — including truly-stale events
+            // that filtered out at SQL — is safe and reads current state.
+            await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
+                msg.ContestId, context.CancellationToken);
         }
     }
 }

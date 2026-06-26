@@ -19,6 +19,6 @@ namespace SportsData.Notification.Application.Dispatching
     {
         Task SendPickDeadlineReminderAsync(Guid userId, Guid pickemGroupId, int seasonWeek);
 
-        Task SendContestStartReminderAsync(Guid userId, Guid contestId);
+        Task SendContestStartReminderAsync(Guid userId, Guid contestId, DateTime startDateUtc);
     }
 }

@@ -151,13 +151,15 @@ namespace SportsData.Notification.Application.Scheduling
                 }
 
                 existingByUser.TryGetValue(userId, out var existing);
-                await ScheduleOrRescheduleAsync(userId, contestId, fireTime, existing, now, cancellationToken);
+                await ScheduleOrRescheduleAsync(
+                    userId, contestId, startDate.Value, fireTime, existing, now, cancellationToken);
             }
         }
 
         private async Task ScheduleOrRescheduleAsync(
             Guid userId,
             Guid contestId,
+            DateTime startDateUtc,
             DateTime fireTime,
             PendingScheduledJob existing,
             DateTime now,
@@ -172,8 +174,14 @@ namespace SportsData.Notification.Application.Scheduling
             // Schedule the new job FIRST, then persist, then delete the old.
             // Same crash-safe ordering as PickDeadlineReminderScheduler.
             var delay = fireTime - now;
+            // startDateUtc is forwarded to the dispatcher so its
+            // deterministic CorrelationId can include the version anchor.
+            // A reschedule (different StartDateUtc) yields a different
+            // CorrelationId, so an orphan Hangfire job that survived a
+            // failed best-effort delete can't claim the NotificationLog
+            // slot and suppress the new fire.
             var newJobId = _backgroundJobProvider.Schedule<INotificationDispatcher>(
-                d => d.SendContestStartReminderAsync(userId, contestId),
+                d => d.SendContestStartReminderAsync(userId, contestId, startDateUtc),
                 delay);
 
             if (existing is null)

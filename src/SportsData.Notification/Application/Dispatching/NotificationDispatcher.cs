@@ -171,19 +171,27 @@ namespace SportsData.Notification.Application.Dispatching
             await _dataContext.SaveChangesAsync();
         }
 
-        public async Task SendContestStartReminderAsync(Guid userId, Guid contestId)
+        public async Task SendContestStartReminderAsync(Guid userId, Guid contestId, DateTime startDateUtc)
         {
-            // Qualifier is 0 because ContestStart is per-contest with no
-            // week/scope beyond ContestId — the (category, userId, contestId)
-            // triplet is already uniquely identifying for the dedupe key.
+            // Qualifier is StartDateUtc.Ticks — the version anchor. Without
+            // it, a rescheduled contest (ESPN moves start time, scheduler
+            // creates a new Hangfire job, TryDelete of the old job fails)
+            // would have the orphan job fire FIRST with the same
+            // (category, userId, contestId) key, claim the NotificationLog
+            // row, and silently suppress the correct-time fire. Including
+            // Ticks gives each fire-time its own dedupe key so the new
+            // reminder can land even when the orphan races it. Hangfire
+            // retries of the SAME logical fire still dedupe correctly
+            // because the serialized DateTime arg is stable across retries.
             var correlationId = DeterministicCorrelationId(
-                "ContestStart", userId, contestId, 0);
+                "ContestStart", userId, contestId, startDateUtc.Ticks);
 
             using var _ = _logger.BeginScope(new Dictionary<string, object>
             {
                 ["CorrelationId"] = correlationId,
                 ["UserId"] = userId,
-                ["ContestId"] = contestId
+                ["ContestId"] = contestId,
+                ["StartDateUtc"] = startDateUtc
             });
 
             _logger.LogInformation("SendContestStartReminderAsync invoked.");
@@ -317,8 +325,12 @@ namespace SportsData.Notification.Application.Dispatching
         /// Guid, which makes the NotificationLog unique constraint catch
         /// Hangfire retries.
         /// </summary>
-        private static Guid DeterministicCorrelationId(string category, Guid userId, Guid scopeId, int qualifier)
+        private static Guid DeterministicCorrelationId(string category, Guid userId, Guid scopeId, long qualifier)
         {
+            // Qualifier is long so callers can pass a DateTime.Ticks version
+            // anchor (ContestStart). int qualifiers (PickDeadline's
+            // seasonWeek) implicitly widen and format identically — no hash
+            // drift for existing callers.
             var input = $"{category}|{userId:N}|{scopeId:N}|{qualifier}";
             var hash = MD5.HashData(Encoding.UTF8.GetBytes(input));
             return new Guid(hash);

@@ -68,6 +68,10 @@ public class Program
         var apiStorage = new PostgreSqlStorage($"{cleanBase};Database=sdApi.All.Hangfire;{poolOpts}");
         app.UseHangfireDashboard("/api", dashboardOptions, apiStorage);
 
+        // Notification (shared across all sports)
+        var notificationStorage = new PostgreSqlStorage($"{cleanBase};Database=sdNotification.All.Hangfire;{poolOpts}");
+        app.UseHangfireDashboard("/notifications", dashboardOptions, notificationStorage);
+
         // Root landing page with links to all dashboards
         app.MapGet("/", () => Results.Content(
             """
@@ -92,6 +96,7 @@ public class Program
             <h3>Shared</h3>
             <ul>
               <li><a href="/api">API</a></li>
+              <li><a href="/notifications">Notification</a></li>
             </ul>
             </body></html>
             """, "text/html"));

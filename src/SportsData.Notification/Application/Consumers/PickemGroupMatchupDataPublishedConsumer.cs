@@ -34,17 +34,20 @@ namespace SportsData.Notification.Application.Consumers
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IPickDeadlineReminderScheduler _reminderScheduler;
+        private readonly IKickoffReminderScheduler _kickoffScheduler;
 
         public PickemGroupMatchupDataPublishedConsumer(
             ILogger<PickemGroupMatchupDataPublishedConsumer> logger,
             AppDataContext dataContext,
             IDateTimeProvider dateTimeProvider,
-            IPickDeadlineReminderScheduler reminderScheduler)
+            IPickDeadlineReminderScheduler reminderScheduler,
+            IKickoffReminderScheduler kickoffScheduler)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
             _reminderScheduler = reminderScheduler;
+            _kickoffScheduler = kickoffScheduler;
         }
 
         public async Task Consume(ConsumeContext<PickemGroupMatchupDataPublished> context)
@@ -95,6 +98,9 @@ namespace SportsData.Notification.Application.Consumers
                     // creation consumer.
                     await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
                         msg.PickemGroupId, msg.SeasonWeek, context.CancellationToken);
+
+                    await _kickoffScheduler.EvaluateAndScheduleForContestAsync(
+                        msg.ContestId, context.CancellationToken);
                     return;
                 }
                 catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
@@ -150,6 +156,12 @@ namespace SportsData.Notification.Application.Consumers
                 }
                 await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
                     msg.PickemGroupId, msg.SeasonWeek, context.CancellationToken);
+            }
+
+            if (startDateChanged)
+            {
+                await _kickoffScheduler.EvaluateAndScheduleForContestAsync(
+                    msg.ContestId, context.CancellationToken);
             }
         }
 

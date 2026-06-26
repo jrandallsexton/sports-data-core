@@ -171,6 +171,112 @@ namespace SportsData.Notification.Application.Dispatching
             await _dataContext.SaveChangesAsync();
         }
 
+        public async Task SendKickoffReminderAsync(Guid userId, Guid contestId)
+        {
+            // Qualifier is 0 because Kickoff is per-contest with no week/scope
+            // beyond ContestId — the (category, userId, contestId) triplet is
+            // already uniquely identifying for the dedupe key.
+            var correlationId = DeterministicCorrelationId(
+                "Kickoff", userId, contestId, 0);
+
+            using var _ = _logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = correlationId,
+                ["UserId"] = userId,
+                ["ContestId"] = contestId
+            });
+
+            _logger.LogInformation("SendKickoffReminderAsync invoked.");
+
+            var claim = new NotificationLog
+            {
+                UserId = userId,
+                CorrelationId = correlationId,
+                Category = "Kickoff",
+                Channel = "Fcm",
+                Result = "Dispatching",
+                AttemptedUtc = _dateTimeProvider.UtcNow()
+            };
+            _dataContext.NotificationLog.Add(claim);
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
+                _logger.LogInformation(
+                    "Kickoff reminder already dispatched for CorrelationId {CorrelationId}; skipping (Hangfire retry).",
+                    correlationId);
+                _dataContext.Entry(claim).State = EntityState.Detached;
+                return;
+            }
+
+            var prefs = await _dataContext.UserNotificationPreferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.UserId == userId);
+
+            if (prefs is { KickoffReminderEnabled: false })
+            {
+                await FinalizeAsync(claim, "Suppressed_UserOptedOut");
+                return;
+            }
+
+            var devices = await _dataContext.UserDevices
+                .AsNoTracking()
+                .Where(d => d.UserId == userId && d.NotificationsEnabled)
+                .ToListAsync();
+
+            if (devices.Count == 0)
+            {
+                await FinalizeAsync(claim, "Suppressed_NoDevice");
+                return;
+            }
+
+            // Body stays generic for v1. A user can be in multiple leagues
+            // with the same contest, so naming one league in the body would
+            // be misleading (the dispatcher fires once per (UserId, ContestId)).
+            // FranchiseSeason team names aren't in the local projection —
+            // a richer body waits on either fattening the steady-state
+            // events or backfilling team data.
+            const string title = "Game starting soon";
+            const string body = "A game you've picked starts in about 30 minutes. Tap to follow live.";
+
+            var successCount = 0;
+            var failureReasons = new List<string>();
+            foreach (var device in devices)
+            {
+                try
+                {
+                    var result = await _pushSender.SendAsync(device.FcmToken, title, body);
+                    if (result is Success<string>)
+                    {
+                        successCount++;
+                    }
+                    else if (result is Failure<string> failure)
+                    {
+                        var reason = failure.Errors.FirstOrDefault()?.ErrorMessage ?? "unknown";
+                        failureReasons.Add($"{device.Platform}:{reason}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Unexpected exception sending FCM to DeviceId {DeviceId}.",
+                        device.Id);
+                    failureReasons.Add($"{device.Platform}:exception:{ex.GetType().Name}");
+                }
+            }
+
+            claim.Title = title;
+            claim.Body = body;
+            claim.Result = successCount > 0 ? "Sent" : "Failed_FcmError";
+            claim.FailureReason = ComposeFailureReason(failureReasons);
+            claim.ModifiedUtc = _dateTimeProvider.UtcNow();
+
+            await _dataContext.SaveChangesAsync();
+        }
+
         private async Task FinalizeAsync(NotificationLog claim, string result)
         {
             claim.Result = result;

@@ -10,29 +10,32 @@ using SportsData.Notification.Infrastructure.Data;
 namespace SportsData.Notification.Application.Consumers
 {
     /// <summary>
-    /// ESPN moved a game's start time. Two responsibilities:
+    /// ESPN moved a game's start time. Three responsibilities:
     /// <list type="number">
     ///   <item>Update the local <c>PickemGroupMatchup</c> projection — every
     ///   row referencing the contest (a single contest can appear in many
     ///   leagues) gets its <c>StartDateUtc</c> resynced via
     ///   <c>ExecuteUpdateAsync</c>.</item>
-    ///   <item>Reschedule any <c>PendingScheduledJob</c> kickoff reminders
-    ///   already on the Hangfire calendar for this contest (TODO — Phase 2c-main
-    ///   / 2d when the Hangfire dispatcher exists).</item>
+    ///   <item>Re-evaluate <c>PickDeadline</c> reminders for every
+    ///   (league, week) touched by this contest — the contest's start time
+    ///   IS the candidate deadline for any league-week containing it.</item>
+    ///   <item>Re-evaluate <c>ContestStart</c> reminders for the contest
+    ///   itself — one pass covers every user across every league with the
+    ///   contest, as the contest-start scope is per-contest.</item>
     /// </list>
     ///
     /// <para>
     /// Mirrors Producer's
     /// <c>CompetitionStreamScheduler.RescheduleForContestAsync</c> pattern for
     /// the Hangfire side: same drift threshold logic, same crash-safe ordering
-    /// (schedule-new → save → delete-old) once wired.
+    /// (schedule-new → save → delete-old).
     /// </para>
     ///
     /// <para>
     /// Per the cross-broker shovel design, this event arrives via a shovel
     /// from each per-sport Producer broker (NCAA / NFL / MLB). The handler
-    /// itself is sport-agnostic — both the projection write and the future
-    /// Hangfire reschedule operate entirely off ContestId.
+    /// itself is sport-agnostic — both the projection write and the Hangfire
+    /// reschedule operate entirely off ContestId.
     /// </para>
     /// </summary>
     public class ContestStartTimeUpdatedConsumer : IConsumer<ContestStartTimeUpdated>
@@ -41,17 +44,20 @@ namespace SportsData.Notification.Application.Consumers
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IPickDeadlineReminderScheduler _reminderScheduler;
+        private readonly IContestStartReminderScheduler _contestStartScheduler;
 
         public ContestStartTimeUpdatedConsumer(
             ILogger<ContestStartTimeUpdatedConsumer> logger,
             AppDataContext dataContext,
             IDateTimeProvider dateTimeProvider,
-            IPickDeadlineReminderScheduler reminderScheduler)
+            IPickDeadlineReminderScheduler reminderScheduler,
+            IContestStartReminderScheduler contestStartScheduler)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
             _reminderScheduler = reminderScheduler;
+            _contestStartScheduler = contestStartScheduler;
         }
 
         public async Task Consume(ConsumeContext<ContestStartTimeUpdated> context)
@@ -102,64 +108,33 @@ namespace SportsData.Notification.Application.Consumers
             // for any league-week containing it, so a change requires a
             // re-evaluation pass. We query the projection AFTER the resync
             // above so MIN(StartDateUtc) uses the new value.
-            if (rowsAffected > 0)
-            {
-                var affectedScopes = await _dataContext.PickemGroupMatchups
-                    .AsNoTracking()
-                    .Where(m => m.ContestId == msg.ContestId)
-                    .Select(m => new { m.PickemGroupId, m.SeasonWeek })
-                    .Distinct()
-                    .ToListAsync(context.CancellationToken);
-
-                foreach (var scope in affectedScopes)
-                {
-                    await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
-                        scope.PickemGroupId, scope.SeasonWeek, context.CancellationToken);
-                }
-            }
-
-            // 3. Reschedule any kickoff-reminder Hangfire jobs already on the
-            // calendar for this contest. Today this is TODO pending the
-            // Kickoff dispatcher (Phase 2d). For now we log the intent so
-            // the recovery path is auditable.
-            var pendingJobs = await _dataContext.PendingScheduledJobs
-                .Where(j => j.JobKind == "Kickoff" && j.TargetId == msg.ContestId)
+            //
+            // Unconditional — NOT gated on rowsAffected. Same permanent-miss
+            // window as step 3: a crash between ExecuteUpdateAsync and this
+            // call would, on redelivery, see StartDateUpdatedAt already at
+            // msg.CreatedUtc, filter zero rows, and skip scheduling forever.
+            // The PickDeadline scheduler is idempotent (per-user
+            // ScheduledFireUtc == fireTime no-op, peer-takeover on 23505),
+            // so re-running against the current projection state is safe.
+            var affectedScopes = await _dataContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.ContestId == msg.ContestId)
+                .Select(m => new { m.PickemGroupId, m.SeasonWeek })
+                .Distinct()
                 .ToListAsync(context.CancellationToken);
 
-            if (pendingJobs.Count == 0)
+            foreach (var scope in affectedScopes)
             {
-                _logger.LogInformation(
-                    "No PendingScheduledJob rows for ContestId {ContestId}; no kickoff reminders to reschedule.",
-                    msg.ContestId);
-                return;
+                await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
+                    scope.PickemGroupId, scope.SeasonWeek, context.CancellationToken);
             }
 
-            _logger.LogInformation(
-                "TODO (Phase 2c-main / 2d): reschedule {Count} kickoff reminder(s) for ContestId {ContestId}.",
-                pendingJobs.Count, msg.ContestId);
-
-            foreach (var job in pendingJobs)
-            {
-                // TODO (Hangfire integration):
-                //   1. Compute newFireTime = msg.NewStartTime - leadMinutes
-                //   2. newJobId = _backgroundJobProvider.Schedule<INotificationDispatcher>(
-                //          d => d.SendKickoffReminderAsync(job.UserId, msg.ContestId),
-                //          newFireTime - now);
-                //   3. oldJobId = job.HangfireJobId
-                //   4. job.HangfireJobId = newJobId
-                //   5. job.ScheduledFireUtc = newFireTime
-                //   6. job.ModifiedUtc = now
-                //   7. SaveChanges  (commits the swap)
-                //   8. _backgroundJobProvider.Delete(oldJobId)  (best-effort)
-                //
-                // Crash-safety: schedule-then-save-then-delete order leaks an
-                // orphan job rather than orphaning the row on crash. FCM dedupe
-                // via NotificationLog (CorrelationId + UserId + Channel) absorbs
-                // the duplicate fire.
-                _logger.LogDebug(
-                    "Would reschedule Hangfire job {OldJobId} for UserId {UserId}.",
-                    job.HangfireJobId, job.UserId);
-            }
+            // 3. Re-evaluate ContestStart reminders for every user across every
+            // league containing this contest. Unconditional for the same
+            // reason as step 2 — gating on rowsAffected would leak a
+            // permanent-miss window between ExecuteUpdateAsync and this call.
+            await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
+                msg.ContestId, context.CancellationToken);
         }
     }
 }

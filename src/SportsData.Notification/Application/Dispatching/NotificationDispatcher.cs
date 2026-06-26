@@ -48,17 +48,26 @@ namespace SportsData.Notification.Application.Dispatching
             _pushSender = pushSender;
         }
 
-        public async Task SendPickDeadlineReminderAsync(Guid userId, Guid pickemGroupId, int seasonWeek)
+        public async Task SendPickDeadlineReminderAsync(Guid userId, Guid pickemGroupId, int seasonWeek, DateTime deadlineUtc)
         {
+            // Qualifiers include deadlineUtc.Ticks as the version anchor for
+            // the same reason as ContestStart: a deadline shift (new matchup
+            // lands and pulls MIN(StartDateUtc) earlier, or
+            // ContestStartTimeUpdated moves the earliest game) reschedules
+            // the Hangfire job. If the old job's TryDelete fails and it
+            // fires first, the orphan would otherwise claim the
+            // NotificationLog slot and silently suppress the new
+            // correct-deadline reminder.
             var correlationId = DeterministicCorrelationId(
-                "PickDeadline", userId, pickemGroupId, seasonWeek);
+                "PickDeadline", userId, pickemGroupId, seasonWeek, deadlineUtc.Ticks);
 
             using var _ = _logger.BeginScope(new Dictionary<string, object>
             {
                 ["CorrelationId"] = correlationId,
                 ["UserId"] = userId,
                 ["PickemGroupId"] = pickemGroupId,
-                ["SeasonWeek"] = seasonWeek
+                ["SeasonWeek"] = seasonWeek,
+                ["DeadlineUtc"] = deadlineUtc
             });
 
             _logger.LogInformation("SendPickDeadlineReminderAsync invoked.");
@@ -171,6 +180,128 @@ namespace SportsData.Notification.Application.Dispatching
             await _dataContext.SaveChangesAsync();
         }
 
+        public async Task SendContestStartReminderAsync(Guid userId, Guid contestId, DateTime startDateUtc)
+        {
+            // Qualifier is StartDateUtc.Ticks — the version anchor. Without
+            // it, a rescheduled contest (ESPN moves start time, scheduler
+            // creates a new Hangfire job, TryDelete of the old job fails)
+            // would have the orphan job fire FIRST with the same
+            // (category, userId, contestId) key, claim the NotificationLog
+            // row, and silently suppress the correct-time fire. Including
+            // Ticks gives each fire-time its own dedupe key so the new
+            // reminder can land even when the orphan races it. Hangfire
+            // retries of the SAME logical fire still dedupe correctly
+            // because the serialized DateTime arg is stable across retries.
+            var correlationId = DeterministicCorrelationId(
+                "ContestStart", userId, contestId, startDateUtc.Ticks);
+
+            using var _ = _logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = correlationId,
+                ["UserId"] = userId,
+                ["ContestId"] = contestId,
+                ["StartDateUtc"] = startDateUtc
+            });
+
+            _logger.LogInformation("SendContestStartReminderAsync invoked.");
+
+            var claim = new NotificationLog
+            {
+                UserId = userId,
+                CorrelationId = correlationId,
+                Category = "ContestStart",
+                Channel = "Fcm",
+                Result = "Dispatching",
+                AttemptedUtc = _dateTimeProvider.UtcNow()
+            };
+            _dataContext.NotificationLog.Add(claim);
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+            {
+                _logger.LogInformation(
+                    "ContestStart reminder already dispatched for CorrelationId {CorrelationId}; skipping (Hangfire retry).",
+                    correlationId);
+                _dataContext.Entry(claim).State = EntityState.Detached;
+                return;
+            }
+
+            var prefs = await _dataContext.UserNotificationPreferences
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.UserId == userId);
+
+            if (prefs is { ContestStartReminderEnabled: false })
+            {
+                await FinalizeAsync(claim, "Suppressed_UserOptedOut");
+                return;
+            }
+
+            var devices = await _dataContext.UserDevices
+                .AsNoTracking()
+                .Where(d => d.UserId == userId && d.NotificationsEnabled)
+                .ToListAsync();
+
+            if (devices.Count == 0)
+            {
+                await FinalizeAsync(claim, "Suppressed_NoDevice");
+                return;
+            }
+
+            // Resolve sport for the user-facing copy. A Contest is sport-
+            // specific, so every PickemGroup containing it shares one Sport
+            // value — any matchup row's PickemGroup is authoritative.
+            // Default to Sport.All when none found (defensive: sport lookup
+            // races membership deletion); the terminology helper falls back
+            // to generic "Game starting soon" copy in that case.
+            var sport = await _dataContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.ContestId == contestId)
+                .Join(_dataContext.PickemGroups,
+                    m => m.PickemGroupId,
+                    g => g.Id,
+                    (m, g) => g.Sport)
+                .FirstOrDefaultAsync();
+
+            var (title, body) = SportTerminology.GetContestStartCopy(sport);
+
+            var successCount = 0;
+            var failureReasons = new List<string>();
+            foreach (var device in devices)
+            {
+                try
+                {
+                    var result = await _pushSender.SendAsync(device.FcmToken, title, body);
+                    if (result is Success<string>)
+                    {
+                        successCount++;
+                    }
+                    else if (result is Failure<string> failure)
+                    {
+                        var reason = failure.Errors.FirstOrDefault()?.ErrorMessage ?? "unknown";
+                        failureReasons.Add($"{device.Platform}:{reason}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "Unexpected exception sending FCM to DeviceId {DeviceId}.",
+                        device.Id);
+                    failureReasons.Add($"{device.Platform}:exception:{ex.GetType().Name}");
+                }
+            }
+
+            claim.Title = title;
+            claim.Body = body;
+            claim.Result = successCount > 0 ? "Sent" : "Failed_FcmError";
+            claim.FailureReason = ComposeFailureReason(failureReasons);
+            claim.ModifiedUtc = _dateTimeProvider.UtcNow();
+
+            await _dataContext.SaveChangesAsync();
+        }
+
         private async Task FinalizeAsync(NotificationLog claim, string result)
         {
             claim.Result = result;
@@ -203,9 +334,24 @@ namespace SportsData.Notification.Application.Dispatching
         /// Guid, which makes the NotificationLog unique constraint catch
         /// Hangfire retries.
         /// </summary>
-        private static Guid DeterministicCorrelationId(string category, Guid userId, Guid scopeId, int qualifier)
+        private static Guid DeterministicCorrelationId(string category, Guid userId, Guid scopeId, long qualifier)
         {
+            // Qualifier is long so callers can pass a DateTime.Ticks version
+            // anchor (ContestStart).
             var input = $"{category}|{userId:N}|{scopeId:N}|{qualifier}";
+            var hash = MD5.HashData(Encoding.UTF8.GetBytes(input));
+            return new Guid(hash);
+        }
+
+        private static Guid DeterministicCorrelationId(string category, Guid userId, Guid scopeId, long q1, long q2)
+        {
+            // Two-qualifier overload for callers that need both a scope
+            // discriminator (e.g. PickDeadline's seasonWeek) AND a fire-time
+            // version anchor (deadline Ticks) in the same key. Keeping
+            // seasonWeek in the input means two different weeks of the same
+            // league with the same deadline (rare but theoretically
+            // possible across year boundaries) still hash distinctly.
+            var input = $"{category}|{userId:N}|{scopeId:N}|{q1}|{q2}";
             var hash = MD5.HashData(Encoding.UTF8.GetBytes(input));
             return new Guid(hash);
         }

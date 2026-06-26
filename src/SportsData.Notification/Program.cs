@@ -98,11 +98,14 @@ namespace SportsData.Notification
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
 
             // Phase 2c-main: pick-deadline reminder scheduling + dispatch.
-            // Dispatcher is the Hangfire-invoked target; scheduler is the
-            // helper consumers call after every projection write that could
-            // affect a league-week's deadline.
+            // Phase 2d: contest-start reminder scheduling — same dispatcher,
+            // per-contest scope, sport-aware copy at fire time. Dispatcher is
+            // the Hangfire-invoked target; each scheduler is the helper
+            // consumers call after a projection write that could affect its
+            // respective scope.
             services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
             services.AddScoped<IPickDeadlineReminderScheduler, PickDeadlineReminderScheduler>();
+            services.AddScoped<IContestStartReminderScheduler, ContestStartReminderScheduler>();
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, mode);

@@ -59,11 +59,13 @@ public class DeviceCommandValidatorsTests
         result.IsValid.Should().BeTrue();
     }
 
-    [Fact]
-    public void Unregister_Rejects_BlankInstallationId()
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Unregister_Rejects_BlankInstallationId(string installationId)
     {
         var result = new UnregisterDeviceCommandValidator()
-            .Validate(new UnregisterDeviceCommand { UserId = Guid.NewGuid(), InstallationId = "" });
+            .Validate(new UnregisterDeviceCommand { UserId = Guid.NewGuid(), InstallationId = installationId });
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(UnregisterDeviceCommand.InstallationId));

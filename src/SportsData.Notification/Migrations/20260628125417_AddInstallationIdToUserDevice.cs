@@ -21,13 +21,16 @@ namespace SportsData.Notification.Migrations
                 name: "IX_UserDevices_UserId_FcmToken",
                 table: "UserDevices");
 
+            // No defaultValue: the DELETE above empties the table, so the NOT NULL
+            // column adds cleanly without one. Omitting it means any future insert
+            // that fails to supply InstallationId errors loudly (NOT NULL) instead
+            // of silently landing an empty string on the unique natural key.
             migrationBuilder.AddColumn<string>(
                 name: "InstallationId",
                 table: "UserDevices",
                 type: "character varying(128)",
                 maxLength: 128,
-                nullable: false,
-                defaultValue: "");
+                nullable: false);
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserDevices_InstallationId",

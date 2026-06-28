@@ -23,6 +23,7 @@ import 'react-native-reanimated';
 
 import { queryClient } from '@/src/lib/queryClient';
 import { useAuthInit, useAuth } from '@/src/hooks/useAuth';
+import { useRegisterPushDevice } from '@/src/hooks/useRegisterPushDevice';
 import { ThemeProvider, useThemeMode } from '@/src/lib/theme/ThemeContext';
 import { TextSizeProvider, useTextSize } from '@/src/lib/textSize/TextSizeContext';
 import { SignalRGate } from '@/src/components/signalR/SignalRGate';
@@ -203,6 +204,17 @@ function NativePushDiagnostics() {
   return null;
 }
 
+/**
+ * Native-only side-effect component: silently registers this device's FCM
+ * token with the API once the user is authenticated and permission is already
+ * granted. Rendered (not just hook-called) so it sits alongside the other
+ * native-only push surfaces and never executes on web.
+ */
+function PushDeviceRegistrar() {
+  useRegisterPushDevice();
+  return null;
+}
+
 function RootLayoutNav() {
   // Feed the user-resolved scheme into React Navigation so native header
   // transitions and focus rings match the chosen theme.
@@ -228,7 +240,12 @@ function RootLayoutNav() {
       </Stack>
       <AuthGuard />
       <SignalRGate />
-      {Platform.OS !== 'web' ? <NativePushDiagnostics /> : null}
+      {Platform.OS !== 'web' ? (
+        <>
+          <NativePushDiagnostics />
+          <PushDeviceRegistrar />
+        </>
+      ) : null}
     </NavThemeProvider>
   );
 }

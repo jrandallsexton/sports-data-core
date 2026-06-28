@@ -1,0 +1,22 @@
+info:
+  name: devices-register
+  type: http
+  seq: 100
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/ui/devices"
+  body:
+    type: json
+    data: |-
+      {
+        "fcmToken": "REPLACE_WITH_DEVICE_TOKEN",
+        "platform": "ios"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

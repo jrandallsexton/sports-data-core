@@ -91,3 +91,30 @@ export async function getFcmToken(): Promise<FcmTokenResult> {
     return { token: null, permissionStatus, error: message };
   }
 }
+
+/**
+ * Like {@link getFcmToken}, but NEVER prompts. Returns the FCM token only
+ * when notification permission has ALREADY been granted; returns null
+ * otherwise (denied / undetermined / web / error).
+ *
+ * Used for silent automatic device registration at sign-in so we don't fire
+ * an unsolicited iOS permission prompt on launch. Permission is requested
+ * explicitly elsewhere (the admin push-token screen today; a priming flow in
+ * the future), and once granted this picks the token up on the next sign-in.
+ */
+export async function getFcmTokenIfGranted(): Promise<string | null> {
+  if (Platform.OS === 'web') return null;
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') return null;
+
+    if (Platform.OS === 'ios') {
+      await messaging().registerDeviceForRemoteMessages();
+    }
+
+    const token = await messaging().getToken();
+    return token || null;
+  } catch {
+    return null;
+  }
+}

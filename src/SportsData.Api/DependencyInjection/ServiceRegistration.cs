@@ -129,6 +129,9 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IReenrichContestCommandHandler, ReenrichContestCommandHandler>();
             services.AddScoped<IRefreshAiExistenceCommandHandler, RefreshAiExistenceCommandHandler>();
             services.AddScoped<ISendTestPushNotificationCommandHandler, SendTestPushNotificationCommandHandler>();
+            services.AddScoped<
+                SportsData.Api.Application.UI.Devices.Commands.RegisterDevice.IRegisterDeviceCommandHandler,
+                SportsData.Api.Application.UI.Devices.Commands.RegisterDevice.RegisterDeviceCommandHandler>();
             services.AddScoped<IUpsertMatchupPreviewCommandHandler, UpsertMatchupPreviewCommandHandler>();
 
             // Notifications

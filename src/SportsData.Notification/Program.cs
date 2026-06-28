@@ -37,6 +37,7 @@ namespace SportsData.Notification
             services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
 
             services.AddMessaging(config, [
+                typeof(ContestOddsUpdatedConsumer),
                 typeof(ContestStartTimeUpdatedConsumer),
                 typeof(PickemGroupCreatedConsumer),
                 typeof(PickemGroupDataPublishedConsumer),
@@ -46,6 +47,7 @@ namespace SportsData.Notification
                 typeof(UserDataPublishedConsumer),
                 typeof(UserDeviceRegisteredConsumer),
                 typeof(UserDeviceUnregisteredConsumer),
+                typeof(UserPickMadeConsumer),
                 typeof(UserPickScoredConsumer)
             ]);
 

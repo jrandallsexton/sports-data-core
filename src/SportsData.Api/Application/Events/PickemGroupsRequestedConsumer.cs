@@ -64,6 +64,7 @@ namespace SportsData.Api.Application.Events
                     g.Name,
                     g.Sport,
                     g.CommissionerUserId,
+                    g.PickType,
                     Members = g.Members
                         .Select(m => new { m.UserId, Role = m.Role.ToString() })
                         .ToList()
@@ -85,6 +86,7 @@ namespace SportsData.Api.Application.Events
                     group.Id,
                     group.Name,
                     group.CommissionerUserId,
+                    group.PickType.ToString(),
                     group.Members
                         .Select(m => new PickemGroupMemberSnapshot(m.UserId, m.Role))
                         .ToList(),

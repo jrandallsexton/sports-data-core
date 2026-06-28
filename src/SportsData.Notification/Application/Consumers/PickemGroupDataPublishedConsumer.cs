@@ -69,6 +69,7 @@ namespace SportsData.Notification.Application.Consumers
                     Name = msg.Name,
                     Sport = msg.Sport,
                     CommissionerUserId = msg.CommissionerUserId,
+                    PickType = msg.PickType,
                     CreatedUtc = now,
                     CreatedBy = msg.CausationId
                 };
@@ -181,7 +182,8 @@ namespace SportsData.Notification.Application.Consumers
             var changed =
                 group.Name != msg.Name
                 || group.Sport != msg.Sport
-                || group.CommissionerUserId != msg.CommissionerUserId;
+                || group.CommissionerUserId != msg.CommissionerUserId
+                || group.PickType != msg.PickType;
 
             if (!changed)
                 return false;
@@ -189,6 +191,7 @@ namespace SportsData.Notification.Application.Consumers
             group.Name = msg.Name;
             group.Sport = msg.Sport;
             group.CommissionerUserId = msg.CommissionerUserId;
+            group.PickType = msg.PickType;
             group.ModifiedUtc = now;
             group.ModifiedBy = msg.CausationId;
             return true;

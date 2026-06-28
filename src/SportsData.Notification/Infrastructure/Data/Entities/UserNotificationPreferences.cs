@@ -27,5 +27,7 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
         public bool MatchupPreviewEnabled { get; set; } = true;
 
         public bool ScheduleChangeEnabled { get; set; } = true;
+
+        public bool OddsChangedEnabled { get; set; } = true;
     }
 }

@@ -1,4 +1,4 @@
-using FluentValidation.Results;
+using FluentValidation;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
@@ -28,19 +28,20 @@ public interface IRegisterDeviceCommandHandler
 /// </summary>
 public class RegisterDeviceCommandHandler : IRegisterDeviceCommandHandler
 {
-    private static readonly string[] AllowedPlatforms = { "ios", "android" };
-
     private readonly IEventBus _eventBus;
     private readonly IMessageDeliveryScope _deliveryScope;
+    private readonly IValidator<RegisterDeviceCommand> _validator;
     private readonly ILogger<RegisterDeviceCommandHandler> _logger;
 
     public RegisterDeviceCommandHandler(
         IEventBus eventBus,
         IMessageDeliveryScope deliveryScope,
+        IValidator<RegisterDeviceCommand> validator,
         ILogger<RegisterDeviceCommandHandler> logger)
     {
         _eventBus = eventBus;
         _deliveryScope = deliveryScope;
+        _validator = validator;
         _logger = logger;
     }
 
@@ -48,23 +49,13 @@ public class RegisterDeviceCommandHandler : IRegisterDeviceCommandHandler
         RegisterDeviceCommand command,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(command.FcmToken))
+        var validation = await _validator.ValidateAsync(command, cancellationToken);
+        if (!validation.IsValid)
         {
-            return new Failure<bool>(
-                false,
-                ResultStatus.BadRequest,
-                [new ValidationFailure(nameof(command.FcmToken), "FcmToken is required")]);
+            return new Failure<bool>(false, ResultStatus.BadRequest, validation.Errors);
         }
 
-        var platform = command.Platform?.Trim().ToLowerInvariant();
-        if (string.IsNullOrEmpty(platform) || !AllowedPlatforms.Contains(platform))
-        {
-            return new Failure<bool>(
-                false,
-                ResultStatus.BadRequest,
-                [new ValidationFailure(nameof(command.Platform), "Platform must be 'ios' or 'android'")]);
-        }
-
+        var platform = command.Platform.Trim().ToLowerInvariant();
         var correlationId = Guid.NewGuid();
 
         _logger.LogInformation(

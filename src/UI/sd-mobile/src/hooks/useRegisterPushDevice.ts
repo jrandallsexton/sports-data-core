@@ -42,6 +42,12 @@ export function useRegisterPushDevice(): void {
       return;
     }
 
+    // Fresh start for this sign-in. The effect also re-runs on a direct
+    // account switch (user?.uid A -> B with no intermediate sign-out); since
+    // the device's FCM token is the same across accounts, a stale cached token
+    // would otherwise suppress the new user's registration POST.
+    registeredTokensRef.current.clear();
+
     let cancelled = false;
     const platform = Platform.OS === 'ios' ? 'ios' : 'android';
 

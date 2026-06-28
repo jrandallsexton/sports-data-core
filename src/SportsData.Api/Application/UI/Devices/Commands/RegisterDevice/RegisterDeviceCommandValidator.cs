@@ -1,0 +1,33 @@
+using FluentValidation;
+
+namespace SportsData.Api.Application.UI.Devices.Commands.RegisterDevice;
+
+public class RegisterDeviceCommandValidator : AbstractValidator<RegisterDeviceCommand>
+{
+    // Mirrors the Notification UserDevices.FcmToken column (varchar(256)) so an
+    // overlong token fails fast here instead of blowing up the consumer's
+    // insert and dead-lettering the UserDeviceRegistered event.
+    private const int FcmTokenMaxLength = 256;
+
+    private static readonly string[] AllowedPlatforms = { "ios", "android" };
+
+    public RegisterDeviceCommandValidator()
+    {
+        RuleFor(x => x.FcmToken)
+            .NotEmpty().WithMessage("FcmToken is required")
+            .MaximumLength(FcmTokenMaxLength)
+            .WithMessage($"FcmToken must not exceed {FcmTokenMaxLength} characters.");
+
+        RuleFor(x => x.Platform)
+            .Must(BeAnAllowedPlatform)
+            .WithMessage("Platform must be 'ios' or 'android'");
+    }
+
+    private static bool BeAnAllowedPlatform(string? platform)
+    {
+        if (string.IsNullOrWhiteSpace(platform))
+            return false;
+
+        return AllowedPlatforms.Contains(platform.Trim().ToLowerInvariant());
+    }
+}

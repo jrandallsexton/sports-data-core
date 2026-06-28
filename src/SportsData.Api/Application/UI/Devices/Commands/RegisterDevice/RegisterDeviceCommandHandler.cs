@@ -52,7 +52,7 @@ public class RegisterDeviceCommandHandler : IRegisterDeviceCommandHandler
         var validation = await _validator.ValidateAsync(command, cancellationToken);
         if (!validation.IsValid)
         {
-            return new Failure<bool>(false, ResultStatus.BadRequest, validation.Errors);
+            return new Failure<bool>(default!, ResultStatus.BadRequest, validation.Errors);
         }
 
         var platform = command.Platform.Trim().ToLowerInvariant();

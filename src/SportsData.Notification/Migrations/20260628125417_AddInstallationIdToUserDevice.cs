@@ -34,6 +34,11 @@ namespace SportsData.Notification.Migrations
                 table: "UserDevices",
                 column: "InstallationId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserDevices_UserId",
+                table: "UserDevices",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -41,6 +46,10 @@ namespace SportsData.Notification.Migrations
         {
             migrationBuilder.DropIndex(
                 name: "IX_UserDevices_InstallationId",
+                table: "UserDevices");
+
+            migrationBuilder.DropIndex(
+                name: "IX_UserDevices_UserId",
                 table: "UserDevices");
 
             migrationBuilder.DropColumn(

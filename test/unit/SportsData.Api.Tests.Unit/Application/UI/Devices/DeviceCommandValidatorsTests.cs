@@ -68,4 +68,14 @@ public class DeviceCommandValidatorsTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == nameof(UnregisterDeviceCommand.InstallationId));
     }
+
+    [Fact]
+    public void Unregister_Rejects_OverlongInstallationId()
+    {
+        var result = new UnregisterDeviceCommandValidator()
+            .Validate(new UnregisterDeviceCommand { UserId = Guid.NewGuid(), InstallationId = new string('a', 129) });
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(UnregisterDeviceCommand.InstallationId));
+    }
 }

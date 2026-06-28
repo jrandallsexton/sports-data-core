@@ -340,6 +340,8 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("InstallationId")
                         .IsUnique();
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("UserDevices");
                 });
 

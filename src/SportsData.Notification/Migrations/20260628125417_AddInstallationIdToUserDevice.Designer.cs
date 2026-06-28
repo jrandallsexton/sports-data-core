@@ -12,7 +12,7 @@ using SportsData.Notification.Infrastructure.Data;
 namespace SportsData.Notification.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20260628112244_AddInstallationIdToUserDevice")]
+    [Migration("20260628125417_AddInstallationIdToUserDevice")]
     partial class AddInstallationIdToUserDevice
     {
         /// <inheritdoc />
@@ -342,6 +342,8 @@ namespace SportsData.Notification.Migrations
 
                     b.HasIndex("InstallationId")
                         .IsUnique();
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("UserDevices");
                 });

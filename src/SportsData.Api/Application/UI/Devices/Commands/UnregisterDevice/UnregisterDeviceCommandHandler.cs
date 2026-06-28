@@ -62,7 +62,7 @@ public class UnregisterDeviceCommandHandler : IUnregisterDeviceCommandHandler
             await _eventBus.Publish(
                 new UserDeviceUnregistered(
                     UserId: command.UserId,
-                    InstallationId: command.InstallationId.Trim(),
+                    InstallationId: InstallationIdNormalizer.Normalize(command.InstallationId),
                     CorrelationId: correlationId,
                     CausationId: Guid.NewGuid()),
                 cancellationToken);

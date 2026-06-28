@@ -70,7 +70,7 @@ public class RegisterDeviceCommandHandler : IRegisterDeviceCommandHandler
             await _eventBus.Publish(
                 new UserDeviceRegistered(
                     UserId: command.UserId,
-                    InstallationId: command.InstallationId.Trim(),
+                    InstallationId: InstallationIdNormalizer.Normalize(command.InstallationId),
                     FcmToken: command.FcmToken.Trim(),
                     Platform: platform,
                     CorrelationId: correlationId,

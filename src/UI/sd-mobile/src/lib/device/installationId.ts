@@ -14,18 +14,31 @@ import * as Crypto from 'expo-crypto';
 const STORAGE_KEY = 'device-installation-id';
 
 let cached: string | null = null;
+// Single-flight guard. Without it, two concurrent first-time callers (e.g. the
+// initial sign-in registration and an onTokenRefresh firing together on a fresh
+// install) could both miss the cache + AsyncStorage and mint different UUIDs,
+// double-registering the device. All concurrent callers await the same promise.
+let inFlight: Promise<string> | null = null;
 
-export async function getOrCreateInstallationId(): Promise<string> {
-  if (cached) return cached;
+export function getOrCreateInstallationId(): Promise<string> {
+  if (cached) return Promise.resolve(cached);
 
-  const existing = await AsyncStorage.getItem(STORAGE_KEY);
-  if (existing) {
-    cached = existing;
-    return existing;
+  if (!inFlight) {
+    inFlight = (async () => {
+      try {
+        const existing = await AsyncStorage.getItem(STORAGE_KEY);
+        const id = existing ?? Crypto.randomUUID();
+        if (!existing) {
+          await AsyncStorage.setItem(STORAGE_KEY, id);
+        }
+        cached = id;
+        return id;
+      } finally {
+        // Reset so a failed attempt can be retried; success is served from cache.
+        inFlight = null;
+      }
+    })();
   }
 
-  const id = Crypto.randomUUID();
-  await AsyncStorage.setItem(STORAGE_KEY, id);
-  cached = id;
-  return id;
+  return inFlight;
 }

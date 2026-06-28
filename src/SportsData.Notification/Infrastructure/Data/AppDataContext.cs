@@ -52,6 +52,14 @@ namespace SportsData.Notification.Infrastructure.Data
                 .HasIndex(d => d.InstallationId)
                 .IsUnique();
 
+            // The dominant read is the send flow ("all of user U's devices"):
+            // NotificationDispatcher and the per-event consumers all filter
+            // WHERE UserId == u && NotificationsEnabled. The unique InstallationId
+            // index doesn't serve that, so keep a UserId-prefixed access path
+            // (previously provided by the old (UserId, FcmToken) unique index).
+            modelBuilder.Entity<UserDevice>()
+                .HasIndex(d => d.UserId);
+
             // One preferences row per user.
             modelBuilder.Entity<UserNotificationPreferences>()
                 .HasIndex(p => p.UserId)

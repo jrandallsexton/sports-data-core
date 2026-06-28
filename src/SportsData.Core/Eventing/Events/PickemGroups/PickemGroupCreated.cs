@@ -21,7 +21,7 @@ namespace SportsData.Core.Eventing.Events.PickemGroups
         Guid GroupId,
         string Name,
         Guid CommissionerUserId,
-        string PickType,
+        string? PickType,
         Uri? Ref,
         Sport Sport,
         int? SeasonYear,

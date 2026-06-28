@@ -17,11 +17,17 @@ namespace SportsData.Core.Eventing.Events.PickemGroups
     /// semantics) — repeated backfills converge on the same projection rows.
     /// </para>
     /// </summary>
+    /// <remarks>
+    /// <c>PickType</c> is nullable on the contract: a message published before
+    /// the field existed (in-flight in a queue during rollout) deserializes
+    /// with no value, so consumers must treat null as the safe odds-agnostic
+    /// default rather than persisting null into a required column.
+    /// </remarks>
     public record PickemGroupDataPublished(
         Guid GroupId,
         string Name,
         Guid CommissionerUserId,
-        string PickType,
+        string? PickType,
         IReadOnlyList<PickemGroupMemberSnapshot> Members,
         Sport Sport,
         int? SeasonYear,

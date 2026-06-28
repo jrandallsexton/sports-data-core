@@ -56,6 +56,12 @@ namespace SportsData.Notification.Application.Consumers
 
             var now = _dateTimeProvider.UtcNow();
 
+            // Backward-compat: a message published before PickType existed (in
+            // flight during rollout) deserializes with null. Treat null as the
+            // safe odds-agnostic default so we never write null into the
+            // required column or over-notify on a line move.
+            var pickType = msg.PickType ?? LeaguePickType.StraightUp;
+
             // ---- Group row: upsert with race-safe insert + change detection.
             var group = await _dataContext.PickemGroups
                 .FirstOrDefaultAsync(g => g.Id == msg.GroupId, context.CancellationToken);
@@ -69,7 +75,7 @@ namespace SportsData.Notification.Application.Consumers
                     Name = msg.Name,
                     Sport = msg.Sport,
                     CommissionerUserId = msg.CommissionerUserId,
-                    PickType = msg.PickType,
+                    PickType = pickType,
                     CreatedUtc = now,
                     CreatedBy = msg.CausationId
                 };
@@ -88,12 +94,25 @@ namespace SportsData.Notification.Application.Consumers
                     _dataContext.Entry(entity).State = EntityState.Detached;
                     group = await _dataContext.PickemGroups
                         .FirstAsync(g => g.Id == msg.GroupId, context.CancellationToken);
-                    groupChanged = ApplyGroupUpdateIfChanged(group, msg, now);
+                    groupChanged = ApplyGroupUpdateIfChanged(group, msg, pickType, now);
                 }
             }
             else
             {
-                groupChanged = ApplyGroupUpdateIfChanged(group, msg, now);
+                groupChanged = ApplyGroupUpdateIfChanged(group, msg, pickType, now);
+            }
+
+            // Persist any group-level change (e.g. PickType, which drives
+            // line-move targeting) on its own, BEFORE the member sync. The
+            // member sync can hit a unique-constraint race on a concurrent
+            // member insert, and EF's SaveChanges is atomic — folding the group
+            // update into that same save would roll it back together with the
+            // racy insert, leaving the group stale while we report success.
+            // The group update is a pure UPDATE by PK with no unique index in
+            // play, so it carries no race of its own.
+            if (groupChanged)
+            {
+                await _dataContext.SaveChangesAsync(context.CancellationToken);
             }
 
             // ---- Members: diff/sync by UserId — modify survivors in place,
@@ -149,7 +168,7 @@ namespace SportsData.Notification.Application.Consumers
                 }
             }
 
-            if (groupChanged || membersChanged)
+            if (membersChanged)
             {
                 try
                 {
@@ -159,8 +178,8 @@ namespace SportsData.Notification.Application.Consumers
                 {
                     // A concurrent consumer inserted one of the same new
                     // members between our read and our save. Their write
-                    // won; ours is redundant. Log and treat as success —
-                    // the projection is now in the intended end-state.
+                    // won; ours is redundant. The group update is already
+                    // committed above, so the projection is in target state.
                     _logger.LogInformation(
                         "PickemGroup member sync hit a concurrent insert race for GroupId {GroupId}; another consumer's write won. Projection is in target state.",
                         msg.GroupId);
@@ -171,19 +190,23 @@ namespace SportsData.Notification.Application.Consumers
                     "PickemGroup roster synced. GroupId={GroupId}, MemberCount={MemberCount}, GroupChanged={GroupChanged}, MembersChanged={MembersChanged}",
                     msg.GroupId, msg.Members.Count, groupChanged, membersChanged);
             }
+            else if (groupChanged)
+            {
+                _logger.LogInformation("PickemGroup group fields updated. GroupId={GroupId}", msg.GroupId);
+            }
             else
             {
                 _logger.LogDebug("PickemGroup projection unchanged. GroupId={GroupId}", msg.GroupId);
             }
         }
 
-        private static bool ApplyGroupUpdateIfChanged(PickemGroup group, PickemGroupDataPublished msg, DateTime now)
+        private static bool ApplyGroupUpdateIfChanged(PickemGroup group, PickemGroupDataPublished msg, string pickType, DateTime now)
         {
             var changed =
                 group.Name != msg.Name
                 || group.Sport != msg.Sport
                 || group.CommissionerUserId != msg.CommissionerUserId
-                || group.PickType != msg.PickType;
+                || group.PickType != pickType;
 
             if (!changed)
                 return false;
@@ -191,7 +214,7 @@ namespace SportsData.Notification.Application.Consumers
             group.Name = msg.Name;
             group.Sport = msg.Sport;
             group.CommissionerUserId = msg.CommissionerUserId;
-            group.PickType = msg.PickType;
+            group.PickType = pickType;
             group.ModifiedUtc = now;
             group.ModifiedBy = msg.CausationId;
             return true;

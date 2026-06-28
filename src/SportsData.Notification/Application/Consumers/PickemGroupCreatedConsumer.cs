@@ -58,6 +58,12 @@ namespace SportsData.Notification.Application.Consumers
 
             var now = _dateTimeProvider.UtcNow();
 
+            // Backward-compat: a message published before PickType existed (in
+            // flight during rollout) deserializes with null. Treat null as the
+            // safe odds-agnostic default so we never write null into the
+            // required column or over-notify on a line move.
+            var pickType = msg.PickType ?? LeaguePickType.StraightUp;
+
             var group = await _dataContext.PickemGroups
                 .FirstOrDefaultAsync(g => g.Id == msg.GroupId, context.CancellationToken);
 
@@ -69,7 +75,7 @@ namespace SportsData.Notification.Application.Consumers
                     Name = msg.Name,
                     Sport = msg.Sport,
                     CommissionerUserId = msg.CommissionerUserId,
-                    PickType = msg.PickType,
+                    PickType = pickType,
                     CreatedUtc = now,
                     CreatedBy = msg.CausationId
                 });
@@ -95,7 +101,7 @@ namespace SportsData.Notification.Application.Consumers
                 group.Name != msg.Name
                 || group.Sport != msg.Sport
                 || group.CommissionerUserId != msg.CommissionerUserId
-                || group.PickType != msg.PickType;
+                || group.PickType != pickType;
 
             if (!changed)
             {
@@ -106,7 +112,7 @@ namespace SportsData.Notification.Application.Consumers
             group.Name = msg.Name;
             group.Sport = msg.Sport;
             group.CommissionerUserId = msg.CommissionerUserId;
-            group.PickType = msg.PickType;
+            group.PickType = pickType;
             group.ModifiedUtc = now;
             group.ModifiedBy = msg.CausationId;
 

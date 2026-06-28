@@ -154,6 +154,14 @@ namespace SportsData.Notification.Application.Consumers
             }
             catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
             {
+                // A prior attempt already claimed this (CorrelationId, UserId,
+                // Channel). We skip unconditionally — including when that row is
+                // still "Dispatching" from a crashed attempt. This is the same
+                // deliberate v1 tradeoff as UserPickScoredConsumer: a missing
+                // notification beats a duplicate one (a crash can land after the
+                // FCM send but before the terminal update, so resuming a stale
+                // claim risks re-sending). Stale Dispatching rows are left for a
+                // future cleanup job shared across consumers, not recovered here.
                 _logger.LogInformation(
                     "Line-move notification already claimed for CorrelationId {CorrelationId}, UserId {UserId}; skipping.",
                     msg.CorrelationId, userId);

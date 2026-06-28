@@ -4,6 +4,7 @@ using SportsData.Api.Application.UI.Map.Dtos;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
+using SportsData.Core.Dtos.Canonical;
 
 namespace SportsData.Api.Application.UI.Map.Queries.GetMapMatchups;
 
@@ -19,15 +20,18 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
     private readonly ILogger<GetMapMatchupsQueryHandler> _logger;
     private readonly AppDataContext _dataContext;
     private readonly IContestClientFactory _contestClientFactory;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetMapMatchupsQueryHandler(
         ILogger<GetMapMatchupsQueryHandler> logger,
         AppDataContext dataContext,
-        IContestClientFactory contestClientFactory)
+        IContestClientFactory contestClientFactory,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
         _contestClientFactory = contestClientFactory;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<GetMapMatchupsResponse>> ExecuteAsync(
@@ -40,46 +44,36 @@ public class GetMapMatchupsQueryHandler : IGetMapMatchupsQueryHandler
             query.SeasonYear,
             query.WeekNumber);
 
-        var league = await _dataContext.PickemGroups.FirstOrDefaultAsync(x => x.Id == query.LeagueId, cancellationToken);
+        // The map is league-scoped: the league determines which sport's
+        // Producer to query. Without a resolvable league we can't pick a
+        // ContestClient, so a missing/unknown LeagueId is NotFound.
+        var league = await _dataContext.PickemGroups
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == query.LeagueId, cancellationToken);
 
         if (league == null)
         {
             return new Failure<GetMapMatchupsResponse>(new GetMapMatchupsResponse(), ResultStatus.NotFound, [new ValidationFailure("LeagueId", "League Not Found")]);
         }
 
-        if (query.LeagueId is null && query.WeekNumber is null)
-        {
-            // TODO: Honor WeekNumber when LeagueId is provided
-            var matchupsResult = await _contestClientFactory.Resolve(league.Sport).GetMatchupsForCurrentWeek(cancellationToken);
-            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : [];
+        var client = _contestClientFactory.Resolve(league.Sport);
 
-            return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse
-            {
-                Matchups = matchups
-            });
-        }
-        else if (query.LeagueId is null)
+        Result<List<Matchup>> matchupsResult;
+        if (query.WeekNumber is not null)
         {
-            // we have a week, but no league
-            var seasonYear = query.SeasonYear ?? DateTime.UtcNow.Year;
-            var matchupsResult = await _contestClientFactory.Resolve(league.Sport).GetMatchupsForSeasonWeek(seasonYear, query.WeekNumber!.Value, cancellationToken);
-            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : [];
-
-            return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse
-            {
-                Matchups = matchups
-            });
+            var seasonYear = query.SeasonYear ?? _dateTimeProvider.UtcNow().Year;
+            matchupsResult = await client.GetMatchupsForSeasonWeek(seasonYear, query.WeekNumber.Value, cancellationToken);
         }
         else
         {
-            // we have a league (and optionally a week)
-            var matchupsResult = await _contestClientFactory.Resolve(league.Sport).GetMatchupsForCurrentWeek(cancellationToken);
-            var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : [];
-
-            return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse
-            {
-                Matchups = matchups
-            });
+            matchupsResult = await client.GetMatchupsForCurrentWeek(cancellationToken);
         }
+
+        var matchups = matchupsResult.IsSuccess ? matchupsResult.Value : [];
+
+        return new Success<GetMapMatchupsResponse>(new GetMapMatchupsResponse
+        {
+            Matchups = matchups
+        });
     }
 }

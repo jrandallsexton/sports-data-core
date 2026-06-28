@@ -16,6 +16,18 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
     {
         public Guid UserId { get; set; }
 
+        /// <summary>
+        /// Stable per-install device identifier minted by the mobile client and
+        /// persisted across launches. Unlike <see cref="FcmToken"/> (which rotates)
+        /// or the signed-in <see cref="UserId"/> (which changes on account switch),
+        /// this is the device's identity: it is the natural key, so a device has
+        /// exactly one current owner. Re-registration by a different user reassigns
+        /// the row rather than creating a duplicate pointing at the same token.
+        /// </summary>
+        [Required]
+        [MaxLength(128)]
+        public string InstallationId { get; set; }
+
         [Required]
         [MaxLength(256)]
         public string FcmToken { get; set; }

@@ -20,6 +20,8 @@ import { useAuthStore } from '@/src/stores/authStore';
 import { useCurrentUser, standingsKeys } from '@/src/hooks/useStandings';
 import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 import { usersApi } from '@/src/services/api/usersApi';
+import { devicesApi } from '@/src/services/api/devicesApi';
+import { getOrCreateInstallationId } from '@/src/lib/device/installationId';
 import { DEFAULT_TIMEZONE } from '@/src/utils/timeUtils';
 import { TimezonePickerModal } from '@/src/components/features/settings/TimezonePickerModal';
 
@@ -148,6 +150,18 @@ export default function ProfileScreen() {
         '[ProfileScreen] Google sign-out failed (continuing to Firebase sign-out)',
         err,
       );
+    }
+    // Unregister this device so the signed-out account stops receiving pushes
+    // on it. Best-effort and native-only (web never registers a device): the
+    // JWT is still valid here, and a failure must not block sign-out. Done
+    // before signOut(auth) so the Authorization header still attaches.
+    if (Platform.OS !== 'web') {
+      try {
+        const installationId = await getOrCreateInstallationId();
+        await devicesApi.unregisterDevice(installationId);
+      } catch (err) {
+        console.log('[ProfileScreen] device unregister failed (continuing to sign-out)', err);
+      }
     }
     try {
       await signOut(auth);

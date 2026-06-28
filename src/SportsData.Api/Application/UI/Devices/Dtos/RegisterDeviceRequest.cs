@@ -7,6 +7,12 @@ namespace SportsData.Api.Application.UI.Devices.Dtos;
 /// </summary>
 public class RegisterDeviceRequest
 {
+    /// <summary>
+    /// Stable per-install device identifier minted and persisted by the client.
+    /// Identifies the device across token rotation and account switches.
+    /// </summary>
+    public required string InstallationId { get; set; }
+
     /// <summary>The FCM registration token from the device install.</summary>
     public required string FcmToken { get; set; }
 

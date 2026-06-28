@@ -16,13 +16,17 @@ namespace SportsData.Core.Eventing.Events.Users
     ///
     /// <para>
     /// Consumer must be idempotent. At-least-once delivery means the same
-    /// <c>(UserId, FcmToken)</c> may arrive twice, and re-registration on
-    /// every app launch / token refresh republishes the same pair. Upsert on
-    /// the <c>(UserId, FcmToken)</c> natural key.
+    /// registration may arrive twice, and re-registration on every app launch
+    /// / token refresh republishes it. <see cref="InstallationId"/> is the
+    /// stable per-install device identifier (survives FCM token rotation and
+    /// account switches); the consumer upserts on it so a device has exactly
+    /// one current owner — re-registration by a different user reassigns the
+    /// device rather than creating a second row pointing at the same token.
     /// </para>
     /// </summary>
     public record UserDeviceRegistered(
         Guid UserId,
+        string InstallationId,
         string FcmToken,
         string Platform,
         Guid CorrelationId,

@@ -8,6 +8,8 @@ public class RegisterDeviceCommand
 {
     public Guid UserId { get; set; }
 
+    public required string InstallationId { get; set; }
+
     public required string FcmToken { get; set; }
 
     public required string Platform { get; set; }

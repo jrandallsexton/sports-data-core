@@ -4,40 +4,34 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Users;
 
-namespace SportsData.Api.Application.UI.Devices.Commands.RegisterDevice;
+namespace SportsData.Api.Application.UI.Devices.Commands.UnregisterDevice;
 
-public interface IRegisterDeviceCommandHandler
+public interface IUnregisterDeviceCommandHandler
 {
     Task<Result<bool>> ExecuteAsync(
-        RegisterDeviceCommand command,
+        UnregisterDeviceCommand command,
         CancellationToken cancellationToken = default);
 }
 
 /// <summary>
-/// Resolves nothing about identity itself (the controller already mapped the
-/// JWT to <see cref="RegisterDeviceCommand.UserId"/>) — it validates the
-/// payload and publishes <see cref="UserDeviceRegistered"/> for the
-/// Notification service to project into its UserDevices table.
-///
-/// <para>
-/// Stateless publish: no API-side entity write, so we publish with
-/// <see cref="DeliveryMode.Direct"/> rather than injecting a DbContext just to
-/// flush the outbox. Notification owns the device store; API only resolves the
-/// user and announces the registration.
-/// </para>
+/// Validates the request and publishes <see cref="UserDeviceUnregistered"/> for
+/// the Notification service to drop the device's row. Mirrors
+/// <see cref="RegisterDevice.RegisterDeviceCommandHandler"/>: stateless publish
+/// with <see cref="DeliveryMode.Direct"/> (no API-side DbContext write to
+/// bundle). Notification owns the device store.
 /// </summary>
-public class RegisterDeviceCommandHandler : IRegisterDeviceCommandHandler
+public class UnregisterDeviceCommandHandler : IUnregisterDeviceCommandHandler
 {
     private readonly IEventBus _eventBus;
     private readonly IMessageDeliveryScope _deliveryScope;
-    private readonly IValidator<RegisterDeviceCommand> _validator;
-    private readonly ILogger<RegisterDeviceCommandHandler> _logger;
+    private readonly IValidator<UnregisterDeviceCommand> _validator;
+    private readonly ILogger<UnregisterDeviceCommandHandler> _logger;
 
-    public RegisterDeviceCommandHandler(
+    public UnregisterDeviceCommandHandler(
         IEventBus eventBus,
         IMessageDeliveryScope deliveryScope,
-        IValidator<RegisterDeviceCommand> validator,
-        ILogger<RegisterDeviceCommandHandler> logger)
+        IValidator<UnregisterDeviceCommand> validator,
+        ILogger<UnregisterDeviceCommandHandler> logger)
     {
         _eventBus = eventBus;
         _deliveryScope = deliveryScope;
@@ -46,7 +40,7 @@ public class RegisterDeviceCommandHandler : IRegisterDeviceCommandHandler
     }
 
     public async Task<Result<bool>> ExecuteAsync(
-        RegisterDeviceCommand command,
+        UnregisterDeviceCommand command,
         CancellationToken cancellationToken = default)
     {
         var validation = await _validator.ValidateAsync(command, cancellationToken);
@@ -55,24 +49,20 @@ public class RegisterDeviceCommandHandler : IRegisterDeviceCommandHandler
             return new Failure<bool>(default!, ResultStatus.BadRequest, validation.Errors);
         }
 
-        var platform = command.Platform.Trim().ToLowerInvariant();
         var correlationId = Guid.NewGuid();
 
         _logger.LogInformation(
-            "Publishing UserDeviceRegistered. UserId={UserId}, Platform={Platform}, CorrelationId={CorrelationId}",
+            "Publishing UserDeviceUnregistered. UserId={UserId}, CorrelationId={CorrelationId}",
             command.UserId,
-            platform,
             correlationId);
 
         // Direct delivery — stateless publish, no DbContext write to bundle.
         using (_deliveryScope.Use(DeliveryMode.Direct))
         {
             await _eventBus.Publish(
-                new UserDeviceRegistered(
+                new UserDeviceUnregistered(
                     UserId: command.UserId,
                     InstallationId: InstallationIdNormalizer.Normalize(command.InstallationId),
-                    FcmToken: command.FcmToken.Trim(),
-                    Platform: platform,
                     CorrelationId: correlationId,
                     CausationId: Guid.NewGuid()),
                 cancellationToken);

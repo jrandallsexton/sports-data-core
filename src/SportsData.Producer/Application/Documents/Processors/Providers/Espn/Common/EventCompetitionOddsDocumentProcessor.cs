@@ -173,6 +173,12 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
             await _publishEndpoint.Publish(new ContestOddsUpdated(
                 competition.Contest.Id,
                 "ContestOddsUpdated",
+                incoming.ProviderId,
+                incoming.ProviderName,
+                existing.Spread,
+                incoming.Spread,
+                existing.OverUnder,
+                incoming.OverUnder,
                 null,
                 command.Sport,
                 command.SeasonYear,

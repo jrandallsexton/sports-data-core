@@ -6,6 +6,8 @@ using SportsData.Api.Extensions;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Picks;
 
 using SportsData.Api.Application.Common.Enums;
 
@@ -22,13 +24,16 @@ public class SubmitPickCommandHandler : ISubmitPickCommandHandler
 {
     private readonly ILogger<SubmitPickCommandHandler> _logger;
     private readonly AppDataContext _dataContext;
+    private readonly IEventBus _eventBus;
 
     public SubmitPickCommandHandler(
         ILogger<SubmitPickCommandHandler> logger,
-        AppDataContext dataContext)
+        AppDataContext dataContext,
+        IEventBus eventBus)
     {
         _logger = logger;
         _dataContext = dataContext;
+        _eventBus = eventBus;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -116,6 +121,23 @@ public class SubmitPickCommandHandler : ISubmitPickCommandHandler
 
             await _dataContext.UserPicks.AddAsync(pick, cancellationToken);
         }
+
+        // Announce the active pick so Notification can project who picked this
+        // contest (and target line-move / reminder notifications at pickers).
+        // Published BEFORE the commit: with the EF outbox, Publish enqueues into
+        // the DbContext tracker and SaveChangesAsync persists the pick and the
+        // outbox row atomically. Publishing after SaveChangesAsync would lose
+        // the event when the DI scope disposes.
+        await _eventBus.Publish(
+            new UserPickMade(
+                UserId: command.UserId,
+                ContestId: command.ContestId,
+                PickemGroupId: command.PickemGroupId,
+                Sport: group.Sport,
+                SeasonYear: matchup.SeasonYear,
+                CorrelationId: Guid.NewGuid(),
+                CausationId: Guid.NewGuid()),
+            cancellationToken);
 
         await _dataContext.SaveChangesAsync(cancellationToken);
 

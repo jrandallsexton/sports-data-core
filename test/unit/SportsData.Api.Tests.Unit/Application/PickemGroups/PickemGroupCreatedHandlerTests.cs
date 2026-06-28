@@ -40,7 +40,8 @@ public class PickemGroupCreatedHandlerTests : ApiTestBase<PickemGroupCreatedHand
     {
         var sut = Mocker.CreateInstance<PickemGroupCreatedHandler>();
         var context = ConsumeContextFor(new PickemGroupCreated(
-            Guid.NewGuid(), null, Sport.BaseballMlb, 2026, Guid.NewGuid(), Guid.NewGuid()));
+            Guid.NewGuid(), "Test", Guid.NewGuid(), PickType.StraightUp.ToString(),
+            null, Sport.BaseballMlb, 2026, Guid.NewGuid(), Guid.NewGuid()));
 
         var act = async () => await sut.Consume(context);
 
@@ -68,7 +69,8 @@ public class PickemGroupCreatedHandlerTests : ApiTestBase<PickemGroupCreatedHand
 
         var sut = Mocker.CreateInstance<PickemGroupCreatedHandler>();
         var context = ConsumeContextFor(new PickemGroupCreated(
-            groupId, null, Sport.BaseballMlb, 2026, correlationId, Guid.NewGuid()));
+            groupId, "Test", Guid.NewGuid(), PickType.StraightUp.ToString(),
+            null, Sport.BaseballMlb, 2026, correlationId, Guid.NewGuid()));
 
         await sut.Consume(context);
 

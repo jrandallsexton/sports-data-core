@@ -199,6 +199,9 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
         // SaveChangesAsync silently loses the event when the DI scope disposes.
         var evt = new PickemGroupCreated(
             group.Id,
+            group.Name,
+            group.CommissionerUserId,
+            group.PickType.ToString(),
             null,
             group.Sport,
             seasonYear,

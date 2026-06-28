@@ -34,6 +34,8 @@ namespace SportsData.Notification.Infrastructure.Data
 
         public DbSet<UserDevice> UserDevices => Set<UserDevice>();
 
+        public DbSet<UserPick> UserPicks => Set<UserPick>();
+
         public DbSet<UserNotificationPreferences> UserNotificationPreferences => Set<UserNotificationPreferences>();
 
         public DbSet<PendingScheduledJob> PendingScheduledJobs => Set<PendingScheduledJob>();
@@ -59,6 +61,16 @@ namespace SportsData.Notification.Infrastructure.Data
             // (previously provided by the old (UserId, FcmToken) unique index).
             modelBuilder.Entity<UserDevice>()
                 .HasIndex(d => d.UserId);
+
+            // One pick row per (user, contest, league); the consumer upserts on
+            // it. The dominant read is "who picked contest C" (odds/line-move
+            // fan-out), so ContestId leads a second index.
+            modelBuilder.Entity<UserPick>()
+                .HasIndex(p => new { p.UserId, p.ContestId, p.PickemGroupId })
+                .IsUnique();
+
+            modelBuilder.Entity<UserPick>()
+                .HasIndex(p => p.ContestId);
 
             // One preferences row per user.
             modelBuilder.Entity<UserNotificationPreferences>()

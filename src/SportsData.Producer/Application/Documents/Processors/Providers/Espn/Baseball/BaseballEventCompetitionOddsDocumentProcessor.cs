@@ -242,10 +242,21 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
         // contest's odds changed; per-provider granularity isn't useful yet.
         if (hadExisting)
         {
+            // Old/new line deltas are left null on the MLB path: this processor
+            // replaces a set of per-provider odds rows per wrapper document, so
+            // there's no single old->new spread/total pair to report. Football
+            // (single existing->incoming) populates them. Revisit if MLB needs a
+            // representative-provider delta.
             await _publishEndpoint.Publish(new ContestOddsUpdated(
                 competition.Contest.Id,
                 "ContestOddsUpdated",
-                null,
+                ProviderId: null,
+                ProviderName: null,
+                OldSpread: null,
+                NewSpread: null,
+                OldOverUnder: null,
+                NewOverUnder: null,
+                Ref: null,
                 command.Sport,
                 command.SeasonYear,
                 command.CorrelationId,

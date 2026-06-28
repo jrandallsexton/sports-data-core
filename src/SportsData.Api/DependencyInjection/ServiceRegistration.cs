@@ -132,6 +132,9 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<
                 SportsData.Api.Application.UI.Devices.Commands.RegisterDevice.IRegisterDeviceCommandHandler,
                 SportsData.Api.Application.UI.Devices.Commands.RegisterDevice.RegisterDeviceCommandHandler>();
+            services.AddScoped<
+                SportsData.Api.Application.UI.Devices.Commands.UnregisterDevice.IUnregisterDeviceCommandHandler,
+                SportsData.Api.Application.UI.Devices.Commands.UnregisterDevice.UnregisterDeviceCommandHandler>();
             services.AddScoped<IUpsertMatchupPreviewCommandHandler, UpsertMatchupPreviewCommandHandler>();
 
             // Notifications

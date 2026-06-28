@@ -4,6 +4,7 @@ import messaging from '@react-native-firebase/messaging';
 
 import { useAuth } from './useAuth';
 import { getFcmTokenIfGranted } from '@/src/lib/notifications/pushNotifications';
+import { getOrCreateInstallationId } from '@/src/lib/device/installationId';
 import { devicesApi } from '@/src/services/api/devicesApi';
 
 /**
@@ -56,7 +57,8 @@ export function useRegisterPushDevice(): void {
       if (registeredTokensRef.current.has(token)) return;
 
       try {
-        await devicesApi.registerDevice({ fcmToken: token, platform });
+        const installationId = await getOrCreateInstallationId();
+        await devicesApi.registerDevice({ installationId, fcmToken: token, platform });
         registeredTokensRef.current.add(token);
       } catch (err) {
         // Non-fatal: reminders just won't reach this device until a later

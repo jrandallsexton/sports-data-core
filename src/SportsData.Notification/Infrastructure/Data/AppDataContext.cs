@@ -44,10 +44,12 @@ namespace SportsData.Notification.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // One row per (user, device) — token is a stable per-install identifier
-            // from FCM; the same token must not double-register for one user.
+            // One row per physical install. InstallationId is the device's stable
+            // identity, so a device has exactly one current owner; re-registration
+            // by a different user reassigns the row (UserId + FcmToken) rather than
+            // creating a second row pointing at the same FCM token.
             modelBuilder.Entity<UserDevice>()
-                .HasIndex(d => new { d.UserId, d.FcmToken })
+                .HasIndex(d => d.InstallationId)
                 .IsUnique();
 
             // One preferences row per user.

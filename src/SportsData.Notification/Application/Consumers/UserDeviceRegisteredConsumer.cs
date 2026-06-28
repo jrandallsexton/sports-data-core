@@ -16,18 +16,21 @@ namespace SportsData.Notification.Application.Consumers
     /// <see cref="UserDataPublishedConsumer"/> projection pattern.
     ///
     /// <para>
-    /// Idempotent on the <c>(UserId, FcmToken)</c> natural key (unique index):
-    /// re-registration on every app launch / token refresh and at-least-once
-    /// redelivery all converge on one row. Race-safe insert — a concurrent
-    /// consumer losing the unique-constraint insert falls through to the
-    /// update path.
+    /// Idempotent on the <c>InstallationId</c> natural key (unique index): a
+    /// device has exactly one row regardless of how many accounts sign in on
+    /// it. Re-registration by the same user refreshes the row; re-registration
+    /// by a <em>different</em> user reassigns ownership (UserId + FcmToken), so
+    /// the prior owner stops receiving on that device. Race-safe insert — a
+    /// concurrent consumer losing the unique-constraint insert falls through to
+    /// the update path.
     /// </para>
     ///
     /// <para>
-    /// On re-registration we refresh <c>LastSeenUtc</c> and <c>Platform</c>
+    /// On a same-owner re-registration we refresh <c>LastSeenUtc</c>/<c>Platform</c>
     /// but deliberately do NOT reset <see cref="UserDevice.NotificationsEnabled"/>
     /// — that's the user's per-device opt-out and a token refresh must not
-    /// silently re-enable a device they turned off.
+    /// silently re-enable a device they turned off. On an owner change the flag
+    /// resets to the default (the new owner starts with notifications on).
     /// </para>
     /// </summary>
     public class UserDeviceRegisteredConsumer : IConsumer<UserDeviceRegistered>
@@ -60,7 +63,7 @@ namespace SportsData.Notification.Application.Consumers
 
             var existing = await _dataContext.UserDevices
                 .FirstOrDefaultAsync(
-                    d => d.UserId == msg.UserId && d.FcmToken == msg.FcmToken,
+                    d => d.InstallationId == msg.InstallationId,
                     context.CancellationToken);
 
             if (existing is null)
@@ -69,6 +72,7 @@ namespace SportsData.Notification.Application.Consumers
                 {
                     Id = Guid.NewGuid(),
                     UserId = msg.UserId,
+                    InstallationId = msg.InstallationId,
                     FcmToken = msg.FcmToken,
                     Platform = msg.Platform,
                     NotificationsEnabled = true,
@@ -86,17 +90,27 @@ namespace SportsData.Notification.Application.Consumers
                 }
                 catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
                 {
-                    // Race: another consumer inserted the same (UserId, FcmToken)
+                    // Race: another consumer inserted the same InstallationId
                     // first. Detach our orphan and fall through to update.
                     _dataContext.Entry(entity).State = EntityState.Detached;
                     existing = await _dataContext.UserDevices
                         .FirstAsync(
-                            d => d.UserId == msg.UserId && d.FcmToken == msg.FcmToken,
+                            d => d.InstallationId == msg.InstallationId,
                             context.CancellationToken);
                 }
             }
 
-            // Refresh liveness + platform; preserve the user's opt-out.
+            // Owner change (a different account signed in on this device): reassign
+            // the device and reset the opt-out to default for the new owner. On a
+            // same-owner re-register we preserve NotificationsEnabled so a token
+            // refresh doesn't silently re-enable a device the user turned off.
+            if (existing.UserId != msg.UserId)
+            {
+                existing.UserId = msg.UserId;
+                existing.NotificationsEnabled = true;
+            }
+
+            existing.FcmToken = msg.FcmToken;
             existing.LastSeenUtc = now;
             existing.Platform = msg.Platform;
             existing.ModifiedUtc = now;

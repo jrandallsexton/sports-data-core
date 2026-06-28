@@ -97,7 +97,7 @@ The build profiles live in `eas.json` at the project root. A typical setup:
 {
   "cli": {
     "version": ">= 10.0.0",
-    "appVersionSource": "local"
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -246,7 +246,13 @@ From `src/UI/sd-mobile/`:
    ```bash
    eas build --platform ios --profile production
    ```
-   The `production` profile in `eas.json` already has `autoIncrement: true`, so the build number bumps automatically — Apple requires every TestFlight upload to have a unique, monotonically increasing build number.
+   The `production` profile in `eas.json` has `autoIncrement: true` and `cli.appVersionSource` is `remote`, so EAS tracks the build number server-side and bumps it on each production build — Apple requires every TestFlight upload to have a unique, monotonically increasing build number. `app.json`'s `ios.buildNumber` is a fallback and is ignored for production builds.
+
+   > **One-time bootstrap when switching to / re-initializing `remote`**: EAS seeds the remote build number from `app.json` the first time, which can collide with a number already on App Store Connect. Before the first production build, pin the remote value explicitly so the next `autoIncrement` is unique:
+   > ```bash
+   > eas build:version:set    # choose production / iOS, set to the last number ASC used
+   > ```
+   > Verify with `eas build:version:get`. This only needs to be done once (or any time the remote counter desyncs from App Store Connect).
 
 2. **Submit to TestFlight**:
    ```bash
@@ -279,5 +285,5 @@ Existing TestFlight installs pick up the update on next app launch. Native code 
 - **90-day build expiry**: TestFlight builds stop launching after 90 days. If a build sits unused that long, ship a new one before re-engaging testers.
 - **Export compliance**: `ITSAppUsesNonExemptEncryption: false` is already in `app.json` — keeps Apple from prompting on every upload. If the app ever adds custom crypto (beyond HTTPS), this has to change.
 - **Privacy nutrition labels**: TestFlight upload will warn if these are missing but won't block. The actual App Store submission will block — easier to fill them in once when creating the app record.
-- **Build numbers can't go backward**: if `autoIncrement` ever desynchronizes (e.g., you build outside EAS), App Store Connect rejects the upload. Fix is `eas build:version:set` to a number above the highest one already uploaded.
+- **Build numbers can't go backward**: with `appVersionSource: remote`, EAS owns the counter, but it can still desync from App Store Connect (e.g., a build uploaded outside EAS, or the first build after switching to `remote` — see the bootstrap note above). If ASC rejects an upload as a duplicate/stale build number, fix it with `eas build:version:set` to a number above the highest one already uploaded. Do **not** rely on bumping `app.json` — it's ignored under `remote`.
 - **Tester invite emails go to spam**: if a friend says they didn't get the email, point them at the public link instead — it always works.

@@ -87,21 +87,31 @@ atomic-claim pattern the dispatcher already uses.
 
 `NativePushDiagnostics` already captures taps for both cold-start
 (`Notifications.useLastNotificationResponse()`) and foreground
-(`addNotificationResponseReceivedListener`), with per-id dedupe. Today it only
-logs `data.kind`. Replace the log with navigation:
+(`addNotificationResponseReceivedListener`), with per-id dedupe. Today it logs a
+deliberately **non-content** breadcrumb — only `data.kind` and
+`actionIdentifier`, never payload content. **Keep that log** (it's the
+privacy-safe tap diagnostic) and add the `router.push` navigation *alongside*
+it, rather than replacing it:
 
 ```tsx
-const data = response.notification.request.content.data ?? {};
-if (data.kind === 'KickoffReminder' && data.leagueId) {
-  router.push({
-    pathname: '/(tabs)/picks',
-    params: {
-      leagueId: data.leagueId,
-      week: data.week,
-      ...(data.target === 'matchup' ? { contestId: data.contestId } : {}),
-    },
-  });
-}
+const handleTap = (response: Notifications.NotificationResponse) => {
+  const data = response.notification.request.content.data ?? {};
+
+  // Existing non-content breadcrumb — keep it.
+  console.log('[push] tapped', { id: response.notification.request.identifier, kind: data.kind });
+
+  // Added: navigate for KickoffReminder taps.
+  if (data.kind === 'KickoffReminder' && data.leagueId) {
+    router.push({
+      pathname: '/(tabs)/picks',
+      params: {
+        leagueId: data.leagueId,
+        week: data.week,
+        ...(data.target === 'matchup' ? { contestId: data.contestId } : {}),
+      },
+    });
+  }
+};
 ```
 
 **Cold-start gotcha:** if the app was killed, the router/tab tree and the auth

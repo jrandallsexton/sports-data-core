@@ -130,6 +130,7 @@ public class CreateFootballNcaaLeagueCommandHandlerTests : ApiTestBase<CreateFoo
         // Seed a synthetic user so the synthetic-member branch is exercised.
         var synthetic = new UserEntity
         {
+            Username = "test_user_2",
             Id = Guid.NewGuid(),
             FirebaseUid = "synthetic",
             Email = "synthetic@sportdeets.test",

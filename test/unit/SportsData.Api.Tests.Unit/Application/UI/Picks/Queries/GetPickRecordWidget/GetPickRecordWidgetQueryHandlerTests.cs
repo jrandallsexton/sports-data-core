@@ -64,6 +64,7 @@ public class GetPickRecordWidgetQueryHandlerTests : ApiTestBase<GetPickRecordWid
 
         var user = new UserEntity
         {
+            Username = "test_user_12",
             Id = userId,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "test@test.com",
@@ -139,6 +140,7 @@ public class GetPickRecordWidgetQueryHandlerTests : ApiTestBase<GetPickRecordWid
 
         var user = new UserEntity
         {
+            Username = "test_user_13",
             Id = userId,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "test@test.com",
@@ -199,6 +201,7 @@ public class GetPickRecordWidgetQueryHandlerTests : ApiTestBase<GetPickRecordWid
 
         var user = new UserEntity
         {
+            Username = "test_user_14",
             Id = userId,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "test@test.com",

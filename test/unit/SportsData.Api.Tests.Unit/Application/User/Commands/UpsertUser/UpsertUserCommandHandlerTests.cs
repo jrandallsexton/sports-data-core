@@ -2,6 +2,7 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.User;
 using SportsData.Api.Application.User.Commands.UpsertUser;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -38,6 +39,23 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         result.Status.Should().Be(ResultStatus.BadRequest);
         result.Should().BeOfType<Failure<Guid>>();
         ((Failure<Guid>)result).Errors.Should().Contain(e => e.PropertyName == "FirebaseUid");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_MintsNonReservedUsername_WhenEmailSeedIsReserved()
+    {
+        // "admin@..." seeds the reserved handle "admin"; the mint must skip it.
+        var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
+
+        var result = await handler.ExecuteAsync(
+            new UpsertUserCommand { Email = "admin@example.com" },
+            "firebase-reserved-seed",
+            "password");
+
+        result.IsSuccess.Should().BeTrue();
+        var user = await DataContext.Users.FirstAsync(u => u.FirebaseUid == "firebase-reserved-seed");
+        user.Username.Should().NotBe("admin");
+        UsernameNormalizer.IsReserved(user.Username).Should().BeFalse();
     }
 
     [Fact]
@@ -149,6 +167,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
 
         var existingUser = new UserEntity
         {
+            Username = "test_user_19",
             Id = userId,
             FirebaseUid = firebaseUid,
             Email = "old@example.com",
@@ -198,6 +217,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
 
         var existingUser = new UserEntity
         {
+            Username = "test_user_20",
             Id = userId,
             FirebaseUid = firebaseUid,
             Email = "old@example.com",
@@ -241,6 +261,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
 
         var existingUser = new UserEntity
         {
+            Username = "test_user_21",
             Id = userId,
             FirebaseUid = firebaseUid,
             Email = "old@example.com",
@@ -285,6 +306,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
 
         var existingUser = new UserEntity
         {
+            Username = "test_user_22",
             Id = userId,
             FirebaseUid = firebaseUid,
             Email = "test@example.com",
@@ -386,6 +408,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         // First, create a user directly in the database (simulating it was created by another request)
         var existingUser = new UserEntity
         {
+            Username = "test_user_23",
             Id = Guid.NewGuid(),
             FirebaseUid = firebaseUid,
             Email = "original@example.com",
@@ -540,6 +563,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         
         var existingUser = new UserEntity
         {
+            Username = "test_user_24",
             Id = Guid.NewGuid(),
             FirebaseUid = firebaseUid,
             Email = "original@example.com",

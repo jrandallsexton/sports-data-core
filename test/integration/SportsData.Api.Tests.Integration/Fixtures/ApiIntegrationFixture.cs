@@ -102,6 +102,7 @@ public sealed class ApiIntegrationFixture : IAsyncLifetime
             EmailVerified = true,
             SignInProvider = "test",
             DisplayName = TestIdentity.DisplayName,
+            Username = "integration_test_user",
             IsAdmin = true,
             LastLoginUtc = clock.UtcNow(),
         };

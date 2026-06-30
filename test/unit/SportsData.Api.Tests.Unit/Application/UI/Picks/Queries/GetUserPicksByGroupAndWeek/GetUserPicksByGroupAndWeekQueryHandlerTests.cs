@@ -44,6 +44,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
 
         var user = new UserEntity
         {
+            Username = "test_user_15",
             Id = userId,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "test@test.com",
@@ -101,6 +102,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
 
         var user = new UserEntity
         {
+            Username = "test_user_16",
             Id = userId,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "test@test.com",
@@ -160,6 +162,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
 
         var user1 = new UserEntity
         {
+            Username = "test_user_17",
             Id = userId1,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "test1@test.com",
@@ -169,6 +172,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
         };
         var user2 = new UserEntity
         {
+            Username = "test_user_18",
             Id = userId2,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "test2@test.com",

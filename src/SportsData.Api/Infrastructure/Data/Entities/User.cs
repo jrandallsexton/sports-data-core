@@ -23,6 +23,15 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public required string DisplayName { get; set; }
 
+        /// <summary>
+        /// Stable, unique, lowercase handle (e.g. "jrandallsexton") for search,
+        /// invite-by-username, and @-mentions. Distinct from <see cref="DisplayName"/>,
+        /// which stays a mutable, non-unique label. Charset [a-z0-9_], 3–30 chars,
+        /// case-insensitive unique (stored already-lowercased). See
+        /// docs/username-identity-foundation.md.
+        /// </summary>
+        public required string Username { get; set; }
+
         public string? Timezone { get; set; }
 
         public bool IsSynthetic { get; set; }
@@ -64,6 +73,15 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
                 builder.Property(u => u.DisplayName)
                     .HasMaxLength(100);
+
+                builder.Property(u => u.Username)
+                    .IsRequired()
+                    .HasMaxLength(30);
+
+                // Case-insensitive uniqueness is achieved by storing Username
+                // already-lowercased (see UsernameNormalizer) and indexing the
+                // stored value directly.
+                builder.HasIndex(u => u.Username).IsUnique();
 
                 builder.Property(u => u.Timezone)
                     .HasMaxLength(100);

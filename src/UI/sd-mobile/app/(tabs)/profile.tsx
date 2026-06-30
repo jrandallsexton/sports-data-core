@@ -3,6 +3,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   Alert,
   Platform,
   ScrollView,
@@ -122,6 +123,11 @@ export default function ProfileScreen() {
   const [tzPickerOpen, setTzPickerOpen] = useState(false);
   const [tzMessage, setTzMessage] = useState('');
 
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameInput, setUsernameInput] = useState('');
+  const [usernameSaving, setUsernameSaving] = useState(false);
+  const [usernameMessage, setUsernameMessage] = useState('');
+
   // The zone the user has saved, or the device default if nothing saved yet.
   // The picker uses this to highlight the current selection. The user-set
   // value is what the API persists; the device value is purely a sensible
@@ -203,6 +209,32 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const beginEditUsername = () => {
+    setUsernameInput(me?.username ?? '');
+    setUsernameMessage('');
+    setEditingUsername(true);
+  };
+
+  const handleUsernameSave = async () => {
+    const next = usernameInput.trim();
+    if (!next || next.toLowerCase() === (me?.username ?? '').toLowerCase()) {
+      setEditingUsername(false);
+      return;
+    }
+    setUsernameSaving(true);
+    setUsernameMessage('');
+    try {
+      await usersApi.updateUsername(next);
+      await queryClient.invalidateQueries({ queryKey: standingsKeys.me });
+      setEditingUsername(false);
+    } catch (err) {
+      console.warn('[ProfileScreen] username update failed', err);
+      setUsernameMessage('That username is taken or invalid. Try another.');
+    } finally {
+      setUsernameSaving(false);
+    }
+  };
+
   const handleTimezoneSelect = async (newTz: string) => {
     if (!newTz) return;
     setTzMessage('');
@@ -245,6 +277,11 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <Text style={[styles.heroName, { color: theme.textOnAccent }]}>{displayName}</Text>
+        {me?.username ? (
+          <Text style={[styles.heroEmail, { color: theme.textOnAccent, opacity: 0.85 }]}>
+            @{me.username}
+          </Text>
+        ) : null}
         <Text style={[styles.heroEmail, { color: theme.textOnAccent, opacity: 0.7 }]}>
           {user?.email}
         </Text>
@@ -294,12 +331,59 @@ export default function ProfileScreen() {
       {/* Account */}
       <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Account</Text>
+        {editingUsername ? (
+          <View style={[styles.usernameEditor, { borderBottomColor: theme.separator }]}>
+            <Text style={[styles.settingsLabel, { color: theme.text }]}>Username</Text>
+            <View style={styles.usernameEditRow}>
+              <TextInput
+                value={usernameInput}
+                onChangeText={setUsernameInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={30}
+                editable={!usernameSaving}
+                placeholder="username"
+                placeholderTextColor={theme.textMuted}
+                accessibilityLabel="Username"
+                style={[styles.usernameInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+              />
+              <TouchableOpacity
+                onPress={handleUsernameSave}
+                disabled={usernameSaving}
+                accessibilityRole="button"
+                accessibilityLabel="Save username"
+                accessibilityState={{ disabled: usernameSaving }}
+              >
+                <Text style={[styles.usernameAction, { color: theme.tint }]}>
+                  {usernameSaving ? 'Saving…' : 'Save'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setEditingUsername(false)}
+                disabled={usernameSaving}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel username edit"
+                accessibilityState={{ disabled: usernameSaving }}
+              >
+                <Text style={[styles.usernameAction, { color: theme.textMuted }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            {usernameMessage ? (
+              <Text style={[styles.usernameError, { color: theme.error }]}>{usernameMessage}</Text>
+            ) : null}
+          </View>
+        ) : (
+          <SettingsRow
+            label="Username"
+            value={me?.username ? `@${me.username}` : 'Set username'}
+            onPress={beginEditUsername}
+          />
+        )}
         <SettingsRow
           label="Timezone"
           value={isUserSet ? effectiveTimezone : `${effectiveTimezone} (device)`}
           onPress={() => setTzPickerOpen(true)}
         />
-        <SettingsRow label="Edit Profile" onPress={() => {}} />
         <SettingsRow label="Notifications" onPress={() => {}} />
         <SettingsRow label="Sign Out" onPress={handleSignOut} destructive />
       </View>
@@ -405,4 +489,25 @@ const styles = StyleSheet.create({
   settingsLabel: { fontSize: 16 },
   settingsValue: { fontSize: 14 },
   destructive: { fontWeight: '600' },
+  usernameEditor: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 8,
+  },
+  usernameEditRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  usernameInput: {
+    flex: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 16,
+  },
+  usernameAction: { fontSize: 15, fontWeight: '600' },
+  usernameError: { fontSize: 13 },
 });

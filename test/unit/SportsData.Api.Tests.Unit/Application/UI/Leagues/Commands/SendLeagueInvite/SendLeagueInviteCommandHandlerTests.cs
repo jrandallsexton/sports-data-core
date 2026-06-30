@@ -53,7 +53,8 @@ public class SendLeagueInviteCommandHandlerTests : ApiTestBase<SendLeagueInviteC
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = email,
             SignInProvider = "password",
-            DisplayName = "Invitee"
+            DisplayName = "Invitee",
+            Username = email.Split('@')[0]
         };
         await DataContext.Users.AddAsync(user);
         await DataContext.SaveChangesAsync();

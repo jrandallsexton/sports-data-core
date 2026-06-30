@@ -62,6 +62,77 @@
   background-color: var(--accent-hover);
 }
 
+.invite-search-section {
+  border-top: 1px solid var(--border-strong);
+  padding-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.invite-search-status {
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.invite-search-results {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.invite-search-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.invite-search-result:last-child {
+  border-bottom: none;
+}
+
+.invite-search-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.invite-search-username {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.invite-search-displayname {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.invite-user-button {
+  padding: 0.4rem 1rem;
+  background-color: var(--accent);
+  color: var(--bg-modal);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  white-space: nowrap;
+}
+
+.invite-user-button:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+
+.invite-user-button:disabled {
+  background-color: var(--text-muted);
+  cursor: not-allowed;
+}
+
 .invite-form {
   border-top: 1px solid var(--border-strong);
   padding-top: 1.5rem;

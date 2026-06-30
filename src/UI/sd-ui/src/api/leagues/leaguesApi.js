@@ -86,6 +86,33 @@ const sendInvite = async (leagueId, email, inviteeName = null) => {
 };
 
 /**
+ * Searches registered users (by username or display name) who can be invited to
+ * a league — excludes self, existing members, and synthetic users. No email is
+ * returned.
+ * @param {string} leagueId - League GUID
+ * @param {string} q - Search term (min 2 chars on the BE)
+ * @returns {Promise<{userId: string, username: string, displayName: string}[]>}
+ */
+const searchInviteableUsers = async (leagueId, q) => {
+  const response = await apiClient.get(
+    `${BASE_PATH}/${leagueId}/invite/search`,
+    { params: { q } }
+  );
+  return response.data;
+};
+
+/**
+ * Invites a registered user (picked from search) to a league. Triggers a push
+ * notification; no email.
+ * @param {string} leagueId - League GUID
+ * @param {string} userId - Invitee's user GUID
+ * @returns {Promise<void>}
+ */
+const inviteUser = async (leagueId, userId) => {
+  await apiClient.post(`${BASE_PATH}/${leagueId}/invite/user`, { userId });
+};
+
+/**
  * Fetches all public leagues the current user is not already a member of.
  * @returns {Promise<PublicLeagueDto[]>} Array of public leagues
  */
@@ -119,6 +146,8 @@ const LeaguesApi = {
   joinLeague,
   deleteLeague,
   sendInvite,
+  searchInviteableUsers,
+  inviteUser,
   getPublicLeagues,
   getLeagueWeekOverview,
   getLeagueScores

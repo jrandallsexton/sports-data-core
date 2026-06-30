@@ -10,9 +10,11 @@ using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague.Dtos;
 using SportsData.Api.Application.UI.Leagues.Commands.DeleteLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
+using SportsData.Api.Application.UI.Leagues.Commands.InviteUserToLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.SendLeagueInvite;
 using SportsData.Api.Application.UI.Leagues.Dtos;
+using SportsData.Api.Application.UI.Leagues.Queries.GetInviteableUsers;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueById;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueScoresByWeek;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
@@ -213,6 +215,44 @@ public class LeagueController : ApiControllerBase
             ResultStatus.NotFound => NotFound(),
             _ => BadRequest()
         };
+    }
+
+    [HttpGet("{id}/invite/search")]
+    [Authorize]
+    public async Task<ActionResult<List<InviteableUserDto>>> SearchInviteableUsers(
+        Guid id,
+        [FromQuery] string? q,
+        [FromServices] IGetInviteableUsersQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetInviteableUsersQuery
+        {
+            LeagueId = id,
+            RequestingUserId = HttpContext.GetCurrentUserId(),
+            Q = q
+        };
+
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+        return result.ToActionResult();
+    }
+
+    [HttpPost("{id}/invite/user")]
+    [Authorize]
+    public async Task<ActionResult<bool>> InviteUser(
+        Guid id,
+        [FromBody] InviteUserRequest request,
+        [FromServices] IInviteUserToLeagueCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var command = new InviteUserToLeagueCommand
+        {
+            LeagueId = id,
+            InviteeUserId = request.UserId,
+            InvitedByUserId = HttpContext.GetCurrentUserId()
+        };
+
+        var result = await handler.ExecuteAsync(command, cancellationToken);
+        return result.ToActionResult();
     }
 
     [HttpGet("discover")]

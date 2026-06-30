@@ -1,12 +1,89 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import LeaguesApi from "../../api/leagues/leaguesApi";
 import "./LeagueInvitation.css";
+
+// Success/error styling for a status message, keyed on a per-message error
+// marker (e.g. "Failed", "Could not").
+const messageClass = (text, errorMarker) =>
+  `confirmation-message ${
+    text.includes(errorMarker) ? "confirmation-error" : "confirmation-success"
+  }`;
 
 const LeagueInvitation = ({ leagueId, leagueName }) => {
   const [inviteeName, setInviteeName] = useState("");
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [confirmation, setConfirmation] = useState("");
+
+  // Username/display-name autocomplete for inviting already-registered users.
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [invitingUserId, setInvitingUserId] = useState(null);
+  const [userInviteMessage, setUserInviteMessage] = useState("");
+  const searchSeq = useRef(0);
+  const mountedRef = useRef(true);
+  // User ids invited this session. Held in a ref so the search effect's async
+  // callback reads the current set (a state value would be stale in that
+  // closure), keeping invited users excluded across subsequent searches even
+  // though the BE has no record of an in-flight invite.
+  const invitedRef = useRef(new Set());
+
+  // Track mount state so async resolutions after unmount don't write state.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Debounced search: the BE requires >= 2 chars and excludes self/members.
+  useEffect(() => {
+    const term = search.trim();
+    if (term.length < 2) {
+      setResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const seq = ++searchSeq.current;
+    const timer = setTimeout(async () => {
+      try {
+        const users = await LeaguesApi.searchInviteableUsers(leagueId, term);
+        // Ignore out-of-order responses from earlier keystrokes, and any
+        // resolution after the component unmounted. Drop anyone already
+        // invited this session so a refetch can't reintroduce them.
+        if (mountedRef.current && seq === searchSeq.current)
+          setResults(users.filter((u) => !invitedRef.current.has(u.userId)));
+      } catch (err) {
+        console.error("User search failed:", err);
+        if (mountedRef.current && seq === searchSeq.current) setResults([]);
+      } finally {
+        if (mountedRef.current && seq === searchSeq.current) setIsSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search, leagueId]);
+
+  const handleInviteUser = async (user) => {
+    setInvitingUserId(user.userId);
+    setUserInviteMessage("");
+    try {
+      await LeaguesApi.inviteUser(leagueId, user.userId);
+      setUserInviteMessage(`Invited @${user.username}.`);
+      // Remember the invite for this session and drop them from the list so a
+      // later search for the same term can't reintroduce them.
+      invitedRef.current.add(user.userId);
+      setResults((prev) => prev.filter((u) => u.userId !== user.userId));
+    } catch (error) {
+      console.error("Failed to invite user:", error);
+      setUserInviteMessage("Could not send invite. Please try again.");
+    } finally {
+      setInvitingUserId(null);
+    }
+  };
 
   // Generate dashless invite code
   const inviteCode = leagueId.replace(/-/g, "");
@@ -59,6 +136,47 @@ const LeagueInvitation = ({ leagueId, leagueName }) => {
         </button>
       </div>
 
+      <div className="invite-search-section">
+        <p>Or invite an existing member by username:</p>
+        <input
+          type="text"
+          placeholder="Search by username or name"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="form-input"
+          aria-label="Search users to invite"
+        />
+        {isSearching && <div className="invite-search-status">Searching…</div>}
+        {!isSearching && search.trim().length >= 2 && results.length === 0 && (
+          <div className="invite-search-status">No matching users.</div>
+        )}
+        {results.length > 0 && (
+          <ul className="invite-search-results">
+            {results.map((user) => (
+              <li key={user.userId} className="invite-search-result">
+                <span className="invite-search-identity">
+                  <span className="invite-search-username">@{user.username}</span>
+                  <span className="invite-search-displayname">{user.displayName}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleInviteUser(user)}
+                  disabled={invitingUserId === user.userId}
+                  className="invite-user-button"
+                >
+                  {invitingUserId === user.userId ? "Inviting…" : "Invite"}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {userInviteMessage && (
+          <div className={messageClass(userInviteMessage, "Could not")}>
+            {userInviteMessage}
+          </div>
+        )}
+      </div>
+
       <form onSubmit={handleSendInvite} className="invite-form">
         <div className="form-group">
           <input
@@ -86,11 +204,7 @@ const LeagueInvitation = ({ leagueId, leagueName }) => {
         </button>
         
         {confirmation && (
-          <div
-            className={`confirmation-message ${
-              confirmation.includes("Failed") ? "confirmation-error" : "confirmation-success"
-            }`}
-          >
+          <div className={messageClass(confirmation, "Failed")}>
             {confirmation}
           </div>
         )}

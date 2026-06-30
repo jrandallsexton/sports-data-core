@@ -50,6 +50,22 @@ export interface CreateLeagueResponse {
   id: string;
 }
 
+export interface LeagueMember {
+  userId: string;
+  username: string;
+  role: string;
+}
+
+// Subset of the BE LeagueDetailDto the invite preview needs.
+export interface LeagueDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  pickType: PickType;
+  isPublic: boolean;
+  members: LeagueMember[];
+}
+
 export const leaguesApi = {
   // POST /ui/leagues/football/ncaa
   createFootballNcaaLeague: (payload: CreateFootballNcaaLeagueRequest) =>
@@ -62,4 +78,12 @@ export const leaguesApi = {
   // POST /ui/leagues/baseball/mlb — admin-gated on the BE.
   createBaseballMlbLeague: (payload: CreateBaseballMlbLeagueRequest) =>
     apiClient.post<CreateLeagueResponse>('/ui/leagues/baseball/mlb', payload),
+
+  // GET /ui/leagues/{id} — league detail for the invite preview.
+  getLeagueById: (id: string) =>
+    apiClient.get<LeagueDetail>(`/ui/leagues/${id}`),
+
+  // POST /ui/leagues/{id}/join — join a league by id.
+  joinLeague: (id: string) =>
+    apiClient.post<void>(`/ui/leagues/${id}/join`),
 };

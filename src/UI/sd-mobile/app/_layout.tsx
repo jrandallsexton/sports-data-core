@@ -15,7 +15,7 @@ import { Poppins_400Regular, Poppins_700Bold_Italic } from '@expo-google-fonts/p
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react-native';
@@ -141,10 +141,10 @@ function RootLayout() {
 export default Sentry.wrap(RootLayout);
 
 /**
- * Native-only push notification receive + tap diagnostics. v1 just
- * logs — actual deep-link routing (notification → /(tabs)/picks?
- * leagueId=…&contestId=…) lands in a follow-up once the test-push
- * round-trip is proven.
+ * Native-only push notification receive + tap handling. Logs a privacy-safe
+ * breadcrumb and dispatches deep-links by notification "kind". The first
+ * wired kind is LeagueInvite → the league-invite preview (see
+ * docs/mobile/league-invite-deep-link.md).
  *
  * Cold-start coverage: useLastNotificationResponse resolves to the
  * response that launched the app when the user tapped a notification
@@ -155,6 +155,12 @@ export default Sentry.wrap(RootLayout);
  * against any later listener delivery of the same response so the tap
  * handler doesn't run twice for a single user action.
  *
+ * Navigation is deferred through pendingLeagueId rather than fired inline:
+ * on cold start the launching tap can resolve before AuthGuard has settled
+ * the initial route, so a direct router.push would race (and lose to) the
+ * sign-in redirect. The auth-gated effect below flushes the route once the
+ * user is authenticated and the nav tree is mounted.
+ *
  * Rendered only when Platform.OS !== 'web' (see RootLayoutNav). The
  * hooks here all touch expo-notifications native modules that aren't
  * implemented on web.
@@ -162,26 +168,35 @@ export default Sentry.wrap(RootLayout);
 function NativePushDiagnostics() {
   const lastResponse = Notifications.useLastNotificationResponse();
   const handledTapIdsRef = useRef<Set<string>>(new Set());
+  const router = useRouter();
+  const { user, isInitialized } = useAuth();
+  const [pendingLeagueId, setPendingLeagueId] = useState<string | null>(null);
 
   useEffect(() => {
     // Privacy: log only non-content fields. console.log feeds Sentry
     // breadcrumbs through Sentry's console integration, so anything we
     // emit here ships with crash reports. notification title / body /
-    // arbitrary data payload may carry user-specific content (future
-    // LeagueInvite / CommissionerAnnouncement kinds, contestId /
-    // leagueId UUIDs tied to the recipient). The notification
-    // identifier is a system-generated UUID — anonymous on its own —
-    // and "kind" is a category label from our wire contract, not user
-    // state. Keep both for correlation, drop the rest.
+    // arbitrary data payload may carry user-specific content (LeagueInvite
+    // leagueId, future contestId UUIDs tied to the recipient). The
+    // notification identifier is a system-generated UUID — anonymous on
+    // its own — and "kind" is a category label from our wire contract, not
+    // user state. Keep both for correlation, drop the rest.
     const handleTap = (response: Notifications.NotificationResponse) => {
       const id = response.notification.request.identifier;
       if (handledTapIdsRef.current.has(id)) return;
       handledTapIdsRef.current.add(id);
+      const data = response.notification.request.content.data ?? {};
       console.log('[push] tapped', {
         id,
-        kind: response.notification.request.content.data?.kind,
+        kind: data.kind,
         actionIdentifier: response.actionIdentifier,
       });
+
+      // Deep-link dispatch. Stash the target; the auth-gated effect below
+      // navigates once the router/auth tree is ready.
+      if (data.kind === 'LeagueInvite' && typeof data.leagueId === 'string') {
+        setPendingLeagueId(data.leagueId);
+      }
     };
 
     if (lastResponse) {
@@ -200,6 +215,18 @@ function NativePushDiagnostics() {
       responseSub.remove();
     };
   }, [lastResponse]);
+
+  // Flush a pending deep-link once the user is authenticated and the nav
+  // tree is ready — guards the cold-start race described above.
+  useEffect(() => {
+    if (!pendingLeagueId || !isInitialized || !user) return;
+    const leagueId = pendingLeagueId;
+    setPendingLeagueId(null);
+    router.push({
+      pathname: '/league-invite/[leagueId]',
+      params: { leagueId },
+    } as never);
+  }, [pendingLeagueId, isInitialized, user, router]);
 
   return null;
 }
@@ -235,6 +262,7 @@ function RootLayoutNav() {
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="create-league" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="league-invite/[leagueId]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="admin/push-token" options={{ title: 'Push Token' }} />
         <Stack.Screen name="+not-found" />
       </Stack>

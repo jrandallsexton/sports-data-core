@@ -14,4 +14,9 @@ export const usersApi = {
   // Backend validates via TimeZoneInfo.TryFindSystemTimeZoneById.
   updateTimezone: (timezone: string | null) =>
     apiClient.patch('/user/me/timezone', { timezone }),
+
+  // PATCH /user/me/username — unique handle ([a-z0-9_], 3–30, case-insensitive).
+  // Backend rejects invalid/taken handles with a 4xx.
+  updateUsername: (username: string) =>
+    apiClient.patch('/user/me/username', { username }),
 };

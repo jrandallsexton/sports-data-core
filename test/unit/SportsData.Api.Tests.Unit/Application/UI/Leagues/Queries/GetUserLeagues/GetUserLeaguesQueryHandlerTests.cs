@@ -23,6 +23,7 @@ public class GetUserLeaguesQueryHandlerTests : ApiTestBase<GetUserLeaguesQueryHa
 
         var user = new UserEntity
         {
+            Username = "test_user_6",
             Id = userId,
             FirebaseUid = "firebase-dead-league",
             Email = "u@example.com",

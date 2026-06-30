@@ -148,6 +148,7 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
                 EmailVerified = false,
                 SignInProvider = signInProvider,
                 DisplayName = command.DisplayName ?? DisplayNameGenerator.Generate(),
+                Username = await ResolveUniqueUsernameAsync(command.Email, command.DisplayName, cancellationToken),
                 LastLoginUtc = DateTime.UtcNow,
                 CreatedUtc = DateTime.UtcNow
             };
@@ -199,5 +200,30 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
         _logger.LogInformation("User upserted successfully. UserId={UserId}", user.Id);
 
         return new Success<Guid>(user.Id);
+    }
+
+    /// <summary>
+    /// Mints a unique username for a brand-new user: a seed from the email
+    /// local-part (or display name), then the shortest numeric suffix not
+    /// already taken. A concurrent mint of the identical seed is theoretically
+    /// possible and would surface as the unique-constraint violation the caller
+    /// already handles; for this user base it's vanishingly unlikely.
+    /// </summary>
+    private async Task<string> ResolveUniqueUsernameAsync(
+        string email,
+        string? displayName,
+        CancellationToken cancellationToken)
+    {
+        var seed = UsernameGenerator.BuildSeed(email, displayName);
+
+        if (!await _db.Users.AnyAsync(u => u.Username == seed, cancellationToken))
+            return seed;
+
+        for (var n = 2; ; n++)
+        {
+            var candidate = UsernameGenerator.WithSuffix(seed, n);
+            if (!await _db.Users.AnyAsync(u => u.Username == candidate, cancellationToken))
+                return candidate;
+        }
     }
 }

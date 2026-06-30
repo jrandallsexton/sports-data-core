@@ -110,6 +110,7 @@ public class CreateFootballNflLeagueCommandHandlerTests : ApiTestBase<CreateFoot
 
         var synthetic = new UserEntity
         {
+            Username = "test_user_3",
             Id = Guid.NewGuid(),
             FirebaseUid = "synthetic",
             Email = "synthetic@sportdeets.test",

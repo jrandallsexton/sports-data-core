@@ -198,6 +198,7 @@ public class GetLeagueScoresByWeekQueryHandlerTests : ApiTestBase<GetLeagueScore
     {
         return new UserEntity
         {
+            Username = "test_user_4",
             Id = Guid.NewGuid(),
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = $"{displayName.Replace(" ", "").ToLowerInvariant()}@test.com",

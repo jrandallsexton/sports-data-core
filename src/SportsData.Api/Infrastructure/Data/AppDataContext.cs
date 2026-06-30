@@ -59,7 +59,8 @@ public class AppDataContext : DbContext
             SignInProvider = "password",
             CreatedUtc = seedTime,
             LastLoginUtc = seedTime,
-            DisplayName = "sportDeets"
+            DisplayName = "sportDeets",
+            Username = "sportdeets"
         });
 
         modelBuilder.AddInboxStateEntity(cfg =>

@@ -21,6 +21,7 @@ public class GetPickAccuracyByWeekQueryHandlerTests : ApiTestBase<GetPickAccurac
         var userId = Guid.NewGuid();
         var user = new UserEntity
         {
+            Username = "test_user_7",
             Id = userId,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "test@test.com",
@@ -55,6 +56,7 @@ public class GetPickAccuracyByWeekQueryHandlerTests : ApiTestBase<GetPickAccurac
 
         var user = new UserEntity
         {
+            Username = "test_user_8",
             Id = userId,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "test@test.com",
@@ -179,6 +181,7 @@ public class GetPickAccuracyByWeekQueryHandlerTests : ApiTestBase<GetPickAccurac
 
         var syntheticUser = new UserEntity
         {
+            Username = "test_user_9",
             Id = syntheticUserId,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "synthetic@test.com",
@@ -248,6 +251,7 @@ public class GetPickAccuracyByWeekQueryHandlerTests : ApiTestBase<GetPickAccurac
 
         var syntheticUser = new UserEntity
         {
+            Username = "test_user_10",
             Id = syntheticUserId,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "synthetic@test.com",
@@ -331,6 +335,7 @@ public class GetPickAccuracyByWeekQueryHandlerTests : ApiTestBase<GetPickAccurac
 
         var syntheticUser = new UserEntity
         {
+            Username = "test_user_11",
             Id = syntheticUserId,
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = "synthetic@test.com",

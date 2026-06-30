@@ -295,6 +295,7 @@ export interface UserDto {
   firebaseUid?: string | null;
   email: string;
   displayName?: string | null;
+  username?: string | null;
   photoUrl?: string | null;
   timezone?: string | null;
   lastLoginUtc: string;

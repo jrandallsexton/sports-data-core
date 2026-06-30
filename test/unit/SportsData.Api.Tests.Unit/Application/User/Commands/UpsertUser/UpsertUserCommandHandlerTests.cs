@@ -149,6 +149,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
 
         var existingUser = new UserEntity
         {
+            Username = "test_user_19",
             Id = userId,
             FirebaseUid = firebaseUid,
             Email = "old@example.com",
@@ -198,6 +199,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
 
         var existingUser = new UserEntity
         {
+            Username = "test_user_20",
             Id = userId,
             FirebaseUid = firebaseUid,
             Email = "old@example.com",
@@ -241,6 +243,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
 
         var existingUser = new UserEntity
         {
+            Username = "test_user_21",
             Id = userId,
             FirebaseUid = firebaseUid,
             Email = "old@example.com",
@@ -285,6 +288,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
 
         var existingUser = new UserEntity
         {
+            Username = "test_user_22",
             Id = userId,
             FirebaseUid = firebaseUid,
             Email = "test@example.com",
@@ -386,6 +390,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         // First, create a user directly in the database (simulating it was created by another request)
         var existingUser = new UserEntity
         {
+            Username = "test_user_23",
             Id = Guid.NewGuid(),
             FirebaseUid = firebaseUid,
             Email = "original@example.com",
@@ -540,6 +545,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         
         var existingUser = new UserEntity
         {
+            Username = "test_user_24",
             Id = Guid.NewGuid(),
             FirebaseUid = firebaseUid,
             Email = "original@example.com",

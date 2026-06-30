@@ -66,6 +66,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         var userId = Guid.NewGuid();
         var user = new UserEntity
         {
+            Username = "test_user_25",
             Id = userId,
             FirebaseUid = "firebase-123",
             Email = "test@example.com",
@@ -109,6 +110,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
 
         var user = new UserEntity
         {
+            Username = "test_user_26",
             Id = userId,
             FirebaseUid = "firebase-456",
             Email = "league@example.com",
@@ -179,6 +181,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
 
         var user = new UserEntity
         {
+            Username = "test_user_27",
             Id = userId,
             FirebaseUid = "firebase-789",
             Email = "weeks@example.com",
@@ -287,6 +290,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
 
         var user = new UserEntity
         {
+            Username = "test_user_28",
             Id = userId,
             FirebaseUid = "firebase-current-week",
             Email = "currentweek@example.com",
@@ -405,6 +409,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
 
         var user = new UserEntity
         {
+            Username = "test_user_29",
             Id = userId,
             FirebaseUid = "firebase-season-over",
             Email = "seasonover@example.com",
@@ -498,6 +503,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         var adminId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var user = new UserEntity
         {
+            Username = "test_user_30",
             Id = adminId,
             FirebaseUid = "firebase-admin",
             Email = "admin@example.com",
@@ -532,6 +538,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         var userId = Guid.NewGuid();
         var user = new UserEntity
         {
+            Username = "test_user_31",
             Id = userId,
             FirebaseUid = "firebase-admin2",
             Email = "admin2@example.com",

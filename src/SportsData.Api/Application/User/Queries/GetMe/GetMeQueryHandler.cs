@@ -57,6 +57,7 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                 FirebaseUid = user.FirebaseUid,
                 Email = user.Email,
                 DisplayName = user.DisplayName,
+                Username = user.Username,
                 Timezone = user.Timezone,
                 LastLoginUtc = user.LastLoginUtc,
                 IsAdmin = user.IsAdmin || user.Id == _config.UserIdSystem,

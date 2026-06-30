@@ -314,6 +314,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
     {
         return new UserEntity
         {
+            Username = "test_user_5",
             Id = Guid.NewGuid(),
             FirebaseUid = Guid.NewGuid().ToString(),
             Email = $"{displayName.Replace(" ", "").ToLowerInvariant()}@test.com",

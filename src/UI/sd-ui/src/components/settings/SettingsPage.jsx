@@ -48,6 +48,10 @@ function SettingsPage() {
   const [tzSaving, setTzSaving] = useState(false);
   const [tzMessage, setTzMessage] = useState("");
 
+  const [usernameInput, setUsernameInput] = useState("");
+  const [usernameSaving, setUsernameSaving] = useState(false);
+  const [usernameMessage, setUsernameMessage] = useState("");
+
   const allZones = useMemo(() => getAllIanaZones(), []);
   const browserTz = useMemo(() => detectBrowserTimezone(), []);
 
@@ -59,6 +63,7 @@ function SettingsPage() {
         const response = await apiWrapper.Users.getCurrentUser();
         if (isMounted) {
           setUser(response.data);
+          setUsernameInput(response.data?.username || "");
           setIsLoading(false);
         }
       } catch (err) {
@@ -83,6 +88,29 @@ function SettingsPage() {
 
   const effectiveTimezone = user?.timezone || browserTz;
   const isCurated = CURATED_TIMEZONES.some((z) => z.value === effectiveTimezone);
+
+  const handleUsernameSave = async () => {
+    const next = usernameInput.trim();
+    if (!next || next.toLowerCase() === (user?.username || "").toLowerCase()) return;
+    setUsernameSaving(true);
+    setUsernameMessage("");
+    try {
+      await apiWrapper.Users.updateUsername(next);
+      const lowered = next.toLowerCase();
+      setUser((prev) => (prev ? { ...prev, username: lowered } : prev));
+      setUsernameInput(lowered);
+      await refreshUserDto();
+      setUsernameMessage("Saved.");
+    } catch (err) {
+      console.error("Failed to update username:", err);
+      const serverMsg =
+        err?.response?.data?.errors?.Username?.[0] ||
+        err?.response?.data?.title;
+      setUsernameMessage(serverMsg || "Could not save username (it may be taken or invalid).");
+    } finally {
+      setUsernameSaving(false);
+    }
+  };
 
   const handleTimezoneChange = async (newTz) => {
     if (!newTz) return;
@@ -121,6 +149,25 @@ function SettingsPage() {
           <div className="settings-item">
             <span className="label">Display Name:</span>
             <span>{user?.displayName || "Not set"}</span>
+          </div>
+          <div className="settings-item">
+            <span className="label">Username:</span>
+            <span>
+              <input
+                type="text"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                disabled={usernameSaving}
+                maxLength={30}
+                style={{ marginRight: 8 }}
+              />
+              <button onClick={handleUsernameSave} disabled={usernameSaving}>
+                {usernameSaving ? "Saving…" : "Save"}
+              </button>
+              {usernameMessage && (
+                <span style={{ marginLeft: 8, fontSize: "0.85em" }}>{usernameMessage}</span>
+              )}
+            </span>
           </div>
           <div className="settings-item">
             <span className="label">Timezone:</span>

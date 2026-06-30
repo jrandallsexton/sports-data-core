@@ -199,7 +199,8 @@ public class LeagueController : ApiControllerBase
         {
             LeagueId = id,
             Email = request.Email,
-            InviteeName = request.InviteeName
+            InviteeName = request.InviteeName,
+            InvitedByUserId = HttpContext.GetCurrentUserId()
         };
 
         var result = await handler.ExecuteAsync(command, cancellationToken);

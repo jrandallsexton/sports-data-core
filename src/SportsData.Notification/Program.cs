@@ -47,6 +47,7 @@ namespace SportsData.Notification
                 typeof(UserDataPublishedConsumer),
                 typeof(UserDeviceRegisteredConsumer),
                 typeof(UserDeviceUnregisteredConsumer),
+                typeof(UserInvitedToPickemGroupConsumer),
                 typeof(UserPickMadeConsumer),
                 typeof(UserPickScoredConsumer)
             ]);

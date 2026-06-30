@@ -23,6 +23,11 @@ const LeagueInvitation = ({ leagueId, leagueName }) => {
   const [userInviteMessage, setUserInviteMessage] = useState("");
   const searchSeq = useRef(0);
   const mountedRef = useRef(true);
+  // User ids invited this session. Held in a ref so the search effect's async
+  // callback reads the current set (a state value would be stale in that
+  // closure), keeping invited users excluded across subsequent searches even
+  // though the BE has no record of an in-flight invite.
+  const invitedRef = useRef(new Set());
 
   // Track mount state so async resolutions after unmount don't write state.
   useEffect(() => {
@@ -47,8 +52,10 @@ const LeagueInvitation = ({ leagueId, leagueName }) => {
       try {
         const users = await LeaguesApi.searchInviteableUsers(leagueId, term);
         // Ignore out-of-order responses from earlier keystrokes, and any
-        // resolution after the component unmounted.
-        if (mountedRef.current && seq === searchSeq.current) setResults(users);
+        // resolution after the component unmounted. Drop anyone already
+        // invited this session so a refetch can't reintroduce them.
+        if (mountedRef.current && seq === searchSeq.current)
+          setResults(users.filter((u) => !invitedRef.current.has(u.userId)));
       } catch (err) {
         console.error("User search failed:", err);
         if (mountedRef.current && seq === searchSeq.current) setResults([]);
@@ -66,7 +73,9 @@ const LeagueInvitation = ({ leagueId, leagueName }) => {
     try {
       await LeaguesApi.inviteUser(leagueId, user.userId);
       setUserInviteMessage(`Invited @${user.username}.`);
-      // Drop the invited user from the list so they can't be double-invited.
+      // Remember the invite for this session and drop them from the list so a
+      // later search for the same term can't reintroduce them.
+      invitedRef.current.add(user.userId);
       setResults((prev) => prev.filter((u) => u.userId !== user.userId));
     } catch (error) {
       console.error("Failed to invite user:", error);

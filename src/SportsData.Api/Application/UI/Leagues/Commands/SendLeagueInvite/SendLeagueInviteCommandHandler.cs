@@ -86,28 +86,43 @@ public class SendLeagueInviteCommandHandler : ISendLeagueInviteCommandHandler
 
             if (!alreadyMember)
             {
+                // Best-effort: the invite email has already been sent (and is
+                // non-idempotent — a retry re-sends it), so a broker outage must
+                // not fail the request. Swallow + log publish errors; losing the
+                // push is acceptable, re-emailing on retry is not.
+                //
                 // No DbContext write here, so bypass the MassTransit outbox and
                 // publish straight to the broker (UseBusOutbox would otherwise
                 // require a SaveChangesAsync to flush, which we have nothing to
                 // save).
-                using (_deliveryScope.Use(DeliveryMode.Direct))
+                try
                 {
-                    await _eventBus.Publish(
-                        new UserInvitedToPickemGroup(
-                            InviteeUserId: invitee.Id,
-                            GroupId: league.Id,
-                            LeagueName: league.Name,
-                            InvitedByUserId: command.InvitedByUserId,
-                            Sport: league.Sport,
-                            SeasonYear: null,
-                            CorrelationId: Guid.NewGuid(),
-                            CausationId: Guid.NewGuid()),
-                        cancellationToken);
-                }
+                    using (_deliveryScope.Use(DeliveryMode.Direct))
+                    {
+                        await _eventBus.Publish(
+                            new UserInvitedToPickemGroup(
+                                InviteeUserId: invitee.Id,
+                                GroupId: league.Id,
+                                LeagueName: league.Name,
+                                InvitedByUserId: command.InvitedByUserId,
+                                Sport: league.Sport,
+                                SeasonYear: null,
+                                CorrelationId: Guid.NewGuid(),
+                                CausationId: Guid.NewGuid()),
+                            cancellationToken);
+                    }
 
-                _logger.LogInformation(
-                    "Published UserInvitedToPickemGroup for registered invitee. LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",
-                    league.Id, invitee.Id);
+                    _logger.LogInformation(
+                        "Published UserInvitedToPickemGroup for registered invitee. LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",
+                        league.Id, invitee.Id);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Failed to publish UserInvitedToPickemGroup; invite email already sent so continuing. LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",
+                        league.Id, invitee.Id);
+                }
             }
         }
 

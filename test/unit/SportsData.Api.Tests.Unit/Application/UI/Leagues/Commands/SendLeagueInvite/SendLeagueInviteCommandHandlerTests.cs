@@ -103,13 +103,14 @@ public class SendLeagueInviteCommandHandlerTests : ApiTestBase<SendLeagueInviteC
     {
         var league = await SeedLeagueAsync();
         var invitee = await SeedUserAsync("friend@x.com");
+        var invitedBy = Guid.NewGuid();
         var handler = Mocker.CreateInstance<SendLeagueInviteCommandHandler>();
 
         var result = await handler.ExecuteAsync(new SendLeagueInviteCommand
         {
             LeagueId = league.Id,
             Email = "friend@x.com",
-            InvitedByUserId = Guid.NewGuid()
+            InvitedByUserId = invitedBy
         });
 
         result.IsSuccess.Should().BeTrue();
@@ -118,7 +119,10 @@ public class SendLeagueInviteCommandHandlerTests : ApiTestBase<SendLeagueInviteC
                 It.Is<UserInvitedToPickemGroup>(e =>
                     e.InviteeUserId == invitee.Id &&
                     e.GroupId == league.Id &&
-                    e.LeagueName == league.Name),
+                    e.LeagueName == league.Name &&
+                    e.InvitedByUserId == invitedBy &&
+                    e.Sport == league.Sport &&
+                    e.SeasonYear == null),
                 It.IsAny<CancellationToken>()),
             Times.Once());
     }

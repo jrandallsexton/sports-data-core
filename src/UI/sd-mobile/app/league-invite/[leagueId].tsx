@@ -10,6 +10,11 @@ import { getTheme } from '@/constants/Colors';
 import { leaguesApi } from '@/src/services/api/leaguesApi';
 import { standingsKeys } from '@/src/hooks/useStandings';
 
+// League ids are GUIDs. Used to reject malformed/array-like route params
+// before any request is built.
+const GUID_RE =
+  /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 /**
  * League-invite preview. Reached by tapping a LeagueInvite push (see
  * docs/mobile/league-invite-deep-link.md). Shows the league and a single Join
@@ -22,7 +27,15 @@ export default function LeagueInviteScreen() {
   const theme = getTheme(scheme);
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { leagueId } = useLocalSearchParams<{ leagueId?: string }>();
+  const params = useLocalSearchParams<{ leagueId?: string | string[] }>();
+  // Route params can arrive as undefined or an array (duplicate keys); only a
+  // single, GUID-shaped string is a real league id. Anything else stays
+  // undefined, which disables the query (so league is never populated) and
+  // renders the existing "Invite unavailable" path — no API request is built.
+  const leagueId =
+    typeof params.leagueId === 'string' && GUID_RE.test(params.leagueId)
+      ? params.leagueId
+      : undefined;
 
   const {
     data: league,

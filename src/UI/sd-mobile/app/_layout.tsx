@@ -169,6 +169,7 @@ function NativePushDiagnostics() {
   const lastResponse = Notifications.useLastNotificationResponse();
   const handledTapIdsRef = useRef<Set<string>>(new Set());
   const router = useRouter();
+  const segments = useSegments();
   const { user, isInitialized } = useAuth();
   const [pendingLeagueId, setPendingLeagueId] = useState<string | null>(null);
 
@@ -217,16 +218,22 @@ function NativePushDiagnostics() {
   }, [lastResponse]);
 
   // Flush a pending deep-link once the user is authenticated and the nav
-  // tree is ready — guards the cold-start race described above.
+  // tree is ready — guards the cold-start race described above. Also wait
+  // until AuthGuard has finished leaving the (auth) group: while the user is
+  // still in (auth) right after sign-in, AuthGuard's router.replace('/(tabs)')
+  // fires on the same render and would clobber our push. segments is the same
+  // signal AuthGuard keys off, so once it's no longer '(auth)' the redirect
+  // has settled. Keep pendingLeagueId cached until then.
   useEffect(() => {
     if (!pendingLeagueId || !isInitialized || !user) return;
+    if (segments[0] === '(auth)') return;
     const leagueId = pendingLeagueId;
     setPendingLeagueId(null);
     router.push({
       pathname: '/league-invite/[leagueId]',
       params: { leagueId },
     } as never);
-  }, [pendingLeagueId, isInitialized, user, router]);
+  }, [pendingLeagueId, isInitialized, user, router, segments]);
 
   return null;
 }

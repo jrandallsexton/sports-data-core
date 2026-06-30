@@ -1,15 +1,16 @@
 using FluentAssertions;
 
-using SportsData.Api.Application.UI.Leagues.Queries.SearchInviteableUsers;
+using SportsData.Api.Application.UI.Leagues.Queries.GetInviteableUsers;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
 
 using Xunit;
 
 using UserEntity = SportsData.Api.Infrastructure.Data.Entities.User;
 
-namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Queries.SearchInviteableUsers;
+namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Queries.GetInviteableUsers;
 
-public class SearchInviteableUsersQueryHandlerTests : ApiTestBase<SearchInviteableUsersQueryHandler>
+public class GetInviteableUsersQueryHandlerTests : ApiTestBase<GetInviteableUsersQueryHandler>
 {
     private readonly Guid _leagueId = Guid.NewGuid();
     private readonly Guid _searcherId = Guid.NewGuid();
@@ -42,14 +43,28 @@ public class SearchInviteableUsersQueryHandlerTests : ApiTestBase<SearchInviteab
         await DataContext.SaveChangesAsync();
     }
 
-    private SearchInviteableUsersQuery Query(string? q) =>
+    private GetInviteableUsersQuery Query(string? q) =>
         new() { LeagueId = _leagueId, RequestingUserId = _searcherId, Q = q };
+
+    [Fact]
+    public async Task Search_Forbidden_WhenRequesterNotAMember()
+    {
+        // Searcher is NOT a member of the league.
+        await SeedUserAsync("matchme_real", "Real");
+        var sut = Mocker.CreateInstance<GetInviteableUsersQueryHandler>();
+
+        var result = await sut.ExecuteAsync(Query("matchme"));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.Forbid);
+    }
 
     [Fact]
     public async Task Search_MatchesByUsername()
     {
+        await AddMemberAsync(_searcherId);
         await SeedUserAsync("jrandallsexton", "Randall");
-        var sut = Mocker.CreateInstance<SearchInviteableUsersQueryHandler>();
+        var sut = Mocker.CreateInstance<GetInviteableUsersQueryHandler>();
 
         var result = await sut.ExecuteAsync(Query("jrandall"));
 
@@ -59,8 +74,9 @@ public class SearchInviteableUsersQueryHandlerTests : ApiTestBase<SearchInviteab
     [Fact]
     public async Task Search_MatchesByDisplayName_CaseInsensitive()
     {
+        await AddMemberAsync(_searcherId);
         await SeedUserAsync("handle1", "YouWillAllLose");
-        var sut = Mocker.CreateInstance<SearchInviteableUsersQueryHandler>();
+        var sut = Mocker.CreateInstance<GetInviteableUsersQueryHandler>();
 
         var result = await sut.ExecuteAsync(Query("youwill"));
 
@@ -70,6 +86,8 @@ public class SearchInviteableUsersQueryHandlerTests : ApiTestBase<SearchInviteab
     [Fact]
     public async Task Search_ExcludesSelf_Members_AndSynthetic()
     {
+        await AddMemberAsync(_searcherId);
+
         // Self
         await DataContext.Users.AddAsync(new UserEntity
         {
@@ -88,7 +106,7 @@ public class SearchInviteableUsersQueryHandlerTests : ApiTestBase<SearchInviteab
         await SeedUserAsync("matchme_bot", "Bot", synthetic: true);
         await SeedUserAsync("matchme_real", "Real");
 
-        var sut = Mocker.CreateInstance<SearchInviteableUsersQueryHandler>();
+        var sut = Mocker.CreateInstance<GetInviteableUsersQueryHandler>();
 
         var result = await sut.ExecuteAsync(Query("matchme"));
 
@@ -98,8 +116,9 @@ public class SearchInviteableUsersQueryHandlerTests : ApiTestBase<SearchInviteab
     [Fact]
     public async Task Search_ShortTerm_ReturnsEmpty()
     {
+        await AddMemberAsync(_searcherId);
         await SeedUserAsync("aardvark", "A");
-        var sut = Mocker.CreateInstance<SearchInviteableUsersQueryHandler>();
+        var sut = Mocker.CreateInstance<GetInviteableUsersQueryHandler>();
 
         var result = await sut.ExecuteAsync(Query("a"));
 
@@ -109,10 +128,11 @@ public class SearchInviteableUsersQueryHandlerTests : ApiTestBase<SearchInviteab
     [Fact]
     public async Task Search_CapsAtTenResults()
     {
+        await AddMemberAsync(_searcherId);
         for (var i = 0; i < 15; i++)
             await SeedUserAsync($"capper{i:00}", $"Capper {i}");
 
-        var sut = Mocker.CreateInstance<SearchInviteableUsersQueryHandler>();
+        var sut = Mocker.CreateInstance<GetInviteableUsersQueryHandler>();
 
         var result = await sut.ExecuteAsync(Query("capper"));
 

@@ -1,33 +1,48 @@
+using FluentValidation.Results;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.UI.Leagues.Queries.SearchInviteableUsers;
+namespace SportsData.Api.Application.UI.Leagues.Queries.GetInviteableUsers;
 
-public interface ISearchInviteableUsersQueryHandler
+public interface IGetInviteableUsersQueryHandler
 {
     Task<Result<List<InviteableUserDto>>> ExecuteAsync(
-        SearchInviteableUsersQuery query,
+        GetInviteableUsersQuery query,
         CancellationToken cancellationToken = default);
 }
 
-public class SearchInviteableUsersQueryHandler : ISearchInviteableUsersQueryHandler
+public class GetInviteableUsersQueryHandler : IGetInviteableUsersQueryHandler
 {
     private const int MinTermLength = 2;
     private const int MaxResults = 10;
 
     private readonly AppDataContext _dbContext;
 
-    public SearchInviteableUsersQueryHandler(AppDataContext dbContext)
+    public GetInviteableUsersQueryHandler(AppDataContext dbContext)
     {
         _dbContext = dbContext;
     }
 
     public async Task<Result<List<InviteableUserDto>>> ExecuteAsync(
-        SearchInviteableUsersQuery query,
+        GetInviteableUsersQuery query,
         CancellationToken cancellationToken = default)
     {
+        // Authorization: only a member of the league may search for users to
+        // invite. Checked before any user query so a non-member can't enumerate
+        // the user base through this endpoint.
+        var requesterIsMember = await _dbContext.PickemGroupMembers
+            .AsNoTracking()
+            .AnyAsync(m => m.PickemGroupId == query.LeagueId && m.UserId == query.RequestingUserId, cancellationToken);
+
+        if (!requesterIsMember)
+            return new Failure<List<InviteableUserDto>>(
+                default!,
+                ResultStatus.Forbid,
+                [new ValidationFailure(nameof(query.RequestingUserId), "Only league members can search for users to invite.")]);
+
         var term = query.Q?.Trim();
         if (string.IsNullOrWhiteSpace(term) || term.Length < MinTermLength)
             return new Success<List<InviteableUserDto>>([]);

@@ -14,8 +14,8 @@ using SportsData.Api.Application.UI.Leagues.Commands.InviteUserToLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.SendLeagueInvite;
 using SportsData.Api.Application.UI.Leagues.Dtos;
+using SportsData.Api.Application.UI.Leagues.Queries.GetInviteableUsers;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueById;
-using SportsData.Api.Application.UI.Leagues.Queries.SearchInviteableUsers;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueScoresByWeek;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
@@ -222,10 +222,10 @@ public class LeagueController : ApiControllerBase
     public async Task<ActionResult<List<InviteableUserDto>>> SearchInviteableUsers(
         Guid id,
         [FromQuery] string? q,
-        [FromServices] ISearchInviteableUsersQueryHandler handler,
+        [FromServices] IGetInviteableUsersQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        var query = new SearchInviteableUsersQuery
+        var query = new GetInviteableUsersQuery
         {
             LeagueId = id,
             RequestingUserId = HttpContext.GetCurrentUserId(),
@@ -238,7 +238,7 @@ public class LeagueController : ApiControllerBase
 
     [HttpPost("{id}/invite/user")]
     [Authorize]
-    public async Task<IActionResult> InviteUser(
+    public async Task<ActionResult<bool>> InviteUser(
         Guid id,
         [FromBody] InviteUserRequest request,
         [FromServices] IInviteUserToLeagueCommandHandler handler,
@@ -252,15 +252,7 @@ public class LeagueController : ApiControllerBase
         };
 
         var result = await handler.ExecuteAsync(command, cancellationToken);
-
-        if (result.IsSuccess)
-            return Ok(new { Message = "Invite sent." });
-
-        return result.Status switch
-        {
-            ResultStatus.NotFound => NotFound(),
-            _ => BadRequest()
-        };
+        return result.ToActionResult();
     }
 
     [HttpGet("discover")]

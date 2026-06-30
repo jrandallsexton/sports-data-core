@@ -46,6 +46,17 @@ public class InviteUserToLeagueCommandHandlerTests : ApiTestBase<InviteUserToLea
         return id;
     }
 
+    private async Task AddMemberAsync(Guid leagueId, Guid userId)
+    {
+        await DataContext.PickemGroupMembers.AddAsync(new PickemGroupMember
+        {
+            Id = Guid.NewGuid(),
+            PickemGroupId = leagueId,
+            UserId = userId
+        });
+        await DataContext.SaveChangesAsync();
+    }
+
     private void VerifyPublish(Times times) =>
         Mocker.GetMock<IEventBus>().Verify(
             b => b.Publish(It.IsAny<UserInvitedToPickemGroup>(), It.IsAny<CancellationToken>()), times);
@@ -56,6 +67,7 @@ public class InviteUserToLeagueCommandHandlerTests : ApiTestBase<InviteUserToLea
         var league = await SeedLeagueAsync();
         var inviteeId = await SeedUserAsync();
         var invitedBy = Guid.NewGuid();
+        await AddMemberAsync(league.Id, invitedBy);
         var handler = Mocker.CreateInstance<InviteUserToLeagueCommandHandler>();
 
         var result = await handler.ExecuteAsync(new InviteUserToLeagueCommand
@@ -100,13 +112,15 @@ public class InviteUserToLeagueCommandHandlerTests : ApiTestBase<InviteUserToLea
     public async Task Execute_NotFound_WhenUserMissing()
     {
         var league = await SeedLeagueAsync();
+        var invitedBy = Guid.NewGuid();
+        await AddMemberAsync(league.Id, invitedBy);
         var handler = Mocker.CreateInstance<InviteUserToLeagueCommandHandler>();
 
         var result = await handler.ExecuteAsync(new InviteUserToLeagueCommand
         {
             LeagueId = league.Id,
             InviteeUserId = Guid.NewGuid(),
-            InvitedByUserId = Guid.NewGuid()
+            InvitedByUserId = invitedBy
         });
 
         result.IsSuccess.Should().BeFalse();
@@ -119,13 +133,9 @@ public class InviteUserToLeagueCommandHandlerTests : ApiTestBase<InviteUserToLea
     {
         var league = await SeedLeagueAsync();
         var inviteeId = await SeedUserAsync();
-        await DataContext.PickemGroupMembers.AddAsync(new PickemGroupMember
-        {
-            Id = Guid.NewGuid(),
-            PickemGroupId = league.Id,
-            UserId = inviteeId
-        });
-        await DataContext.SaveChangesAsync();
+        await AddMemberAsync(league.Id, inviteeId);
+        var invitedBy = Guid.NewGuid();
+        await AddMemberAsync(league.Id, invitedBy);
 
         var handler = Mocker.CreateInstance<InviteUserToLeagueCommandHandler>();
 
@@ -133,11 +143,30 @@ public class InviteUserToLeagueCommandHandlerTests : ApiTestBase<InviteUserToLea
         {
             LeagueId = league.Id,
             InviteeUserId = inviteeId,
-            InvitedByUserId = Guid.NewGuid()
+            InvitedByUserId = invitedBy
         });
 
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.Validation);
+        VerifyPublish(Times.Never());
+    }
+
+    [Fact]
+    public async Task Execute_Forbids_WhenInviterNotAMember()
+    {
+        var league = await SeedLeagueAsync();
+        var inviteeId = await SeedUserAsync();
+        var handler = Mocker.CreateInstance<InviteUserToLeagueCommandHandler>();
+
+        var result = await handler.ExecuteAsync(new InviteUserToLeagueCommand
+        {
+            LeagueId = league.Id,
+            InviteeUserId = inviteeId,
+            InvitedByUserId = Guid.NewGuid() // not a member of the league
+        });
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.Forbid);
         VerifyPublish(Times.Never());
     }
 }

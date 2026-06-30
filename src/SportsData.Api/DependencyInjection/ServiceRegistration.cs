@@ -49,8 +49,8 @@ using SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
 using SportsData.Api.Application.UI.Leagues.Commands.InviteUserToLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.JoinLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.SendLeagueInvite;
+using SportsData.Api.Application.UI.Leagues.Queries.GetInviteableUsers;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueById;
-using SportsData.Api.Application.UI.Leagues.Queries.SearchInviteableUsers;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueScoresByWeek;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
@@ -115,7 +115,7 @@ namespace SportsData.Api.DependencyInjection
 
             // League Queries
             services.AddScoped<IGetLeagueByIdQueryHandler, GetLeagueByIdQueryHandler>();
-            services.AddScoped<ISearchInviteableUsersQueryHandler, SearchInviteableUsersQueryHandler>();
+            services.AddScoped<IGetInviteableUsersQueryHandler, GetInviteableUsersQueryHandler>();
             services.AddScoped<IGetLeagueScoresByWeekQueryHandler, GetLeagueScoresByWeekQueryHandler>();
             services.AddScoped<IGetLeagueWeekMatchupsQueryHandler, GetLeagueWeekMatchupsQueryHandler>();
             services.AddScoped<IGetLeagueWeekOverviewQueryHandler, GetLeagueWeekOverviewQueryHandler>();

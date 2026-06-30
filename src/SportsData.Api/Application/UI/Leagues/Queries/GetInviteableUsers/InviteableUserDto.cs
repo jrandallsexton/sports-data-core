@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.UI.Leagues.Queries.SearchInviteableUsers;
+namespace SportsData.Api.Application.UI.Leagues.Queries.GetInviteableUsers;
 
 /// <summary>
 /// A registered user surfaced by the invite-by-username autocomplete. Carries

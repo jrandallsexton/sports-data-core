@@ -54,6 +54,19 @@ public class InviteUserToLeagueCommandHandler : IInviteUserToLeagueCommandHandle
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(command.LeagueId), $"League with ID {command.LeagueId} not found.")]);
 
+        // Authorization: only a member of the league may invite others. Checked
+        // before any further work so a non-member can't probe membership or
+        // trigger a notification.
+        var inviterIsMember = await _dbContext.PickemGroupMembers
+            .AsNoTracking()
+            .AnyAsync(m => m.PickemGroupId == league.Id && m.UserId == command.InvitedByUserId, cancellationToken);
+
+        if (!inviterIsMember)
+            return new Failure<bool>(
+                false,
+                ResultStatus.Forbid,
+                [new ValidationFailure(nameof(command.InvitedByUserId), "Only league members can invite others.")]);
+
         var invitee = await _dbContext.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == command.InviteeUserId, cancellationToken);

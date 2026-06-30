@@ -2,6 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import LeaguesApi from "../../api/leagues/leaguesApi";
 import "./LeagueInvitation.css";
 
+// Success/error styling for a status message, keyed on a per-message error
+// marker (e.g. "Failed", "Could not").
+const messageClass = (text, errorMarker) =>
+  `confirmation-message ${
+    text.includes(errorMarker) ? "confirmation-error" : "confirmation-success"
+  }`;
+
 const LeagueInvitation = ({ leagueId, leagueName }) => {
   const [inviteeName, setInviteeName] = useState("");
   const [email, setEmail] = useState("");
@@ -15,6 +22,15 @@ const LeagueInvitation = ({ leagueId, leagueName }) => {
   const [invitingUserId, setInvitingUserId] = useState(null);
   const [userInviteMessage, setUserInviteMessage] = useState("");
   const searchSeq = useRef(0);
+  const mountedRef = useRef(true);
+
+  // Track mount state so async resolutions after unmount don't write state.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Debounced search: the BE requires >= 2 chars and excludes self/members.
   useEffect(() => {
@@ -30,13 +46,14 @@ const LeagueInvitation = ({ leagueId, leagueName }) => {
     const timer = setTimeout(async () => {
       try {
         const users = await LeaguesApi.searchInviteableUsers(leagueId, term);
-        // Ignore out-of-order responses from earlier keystrokes.
-        if (seq === searchSeq.current) setResults(users);
+        // Ignore out-of-order responses from earlier keystrokes, and any
+        // resolution after the component unmounted.
+        if (mountedRef.current && seq === searchSeq.current) setResults(users);
       } catch (err) {
         console.error("User search failed:", err);
-        if (seq === searchSeq.current) setResults([]);
+        if (mountedRef.current && seq === searchSeq.current) setResults([]);
       } finally {
-        if (seq === searchSeq.current) setIsSearching(false);
+        if (mountedRef.current && seq === searchSeq.current) setIsSearching(false);
       }
     }, 300);
 
@@ -145,11 +162,7 @@ const LeagueInvitation = ({ leagueId, leagueName }) => {
           </ul>
         )}
         {userInviteMessage && (
-          <div
-            className={`confirmation-message ${
-              userInviteMessage.includes("Could not") ? "confirmation-error" : "confirmation-success"
-            }`}
-          >
+          <div className={messageClass(userInviteMessage, "Could not")}>
             {userInviteMessage}
           </div>
         )}
@@ -182,11 +195,7 @@ const LeagueInvitation = ({ leagueId, leagueName }) => {
         </button>
         
         {confirmation && (
-          <div
-            className={`confirmation-message ${
-              confirmation.includes("Failed") ? "confirmation-error" : "confirmation-success"
-            }`}
-          >
+          <div className={messageClass(confirmation, "Failed")}>
             {confirmation}
           </div>
         )}

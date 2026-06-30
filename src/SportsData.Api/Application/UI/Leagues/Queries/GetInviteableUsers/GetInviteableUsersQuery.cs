@@ -1,6 +1,6 @@
-namespace SportsData.Api.Application.UI.Leagues.Queries.SearchInviteableUsers;
+namespace SportsData.Api.Application.UI.Leagues.Queries.GetInviteableUsers;
 
-public class SearchInviteableUsersQuery
+public class GetInviteableUsersQuery
 {
     public required Guid LeagueId { get; init; }
 

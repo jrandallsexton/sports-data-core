@@ -2,6 +2,7 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.User;
 using SportsData.Api.Application.User.Commands.UpsertUser;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -38,6 +39,23 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         result.Status.Should().Be(ResultStatus.BadRequest);
         result.Should().BeOfType<Failure<Guid>>();
         ((Failure<Guid>)result).Errors.Should().Contain(e => e.PropertyName == "FirebaseUid");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_MintsNonReservedUsername_WhenEmailSeedIsReserved()
+    {
+        // "admin@..." seeds the reserved handle "admin"; the mint must skip it.
+        var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
+
+        var result = await handler.ExecuteAsync(
+            new UpsertUserCommand { Email = "admin@example.com" },
+            "firebase-reserved-seed",
+            "password");
+
+        result.IsSuccess.Should().BeTrue();
+        var user = await DataContext.Users.FirstAsync(u => u.FirebaseUid == "firebase-reserved-seed");
+        user.Username.Should().NotBe("admin");
+        UsernameNormalizer.IsReserved(user.Username).Should().BeFalse();
     }
 
     [Fact]

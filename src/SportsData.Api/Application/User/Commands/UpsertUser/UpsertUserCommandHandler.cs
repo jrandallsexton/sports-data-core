@@ -205,9 +205,13 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
     /// <summary>
     /// Mints a unique username for a brand-new user: a seed from the email
     /// local-part (or display name), then the shortest numeric suffix not
-    /// already taken. A concurrent mint of the identical seed is theoretically
-    /// possible and would surface as the unique-constraint violation the caller
-    /// already handles; for this user base it's vanishingly unlikely.
+    /// already taken. Reserved handles (e.g. an "admin@" email seeding "admin")
+    /// are rejected too, so a suffixed alternative is used instead — the
+    /// reserved list contains no numbered entries, so a candidate like "admin2"
+    /// clears the guard. A concurrent mint of the identical seed is
+    /// theoretically possible and would surface as the unique-constraint
+    /// violation the caller already handles; for this user base it's vanishingly
+    /// unlikely.
     /// </summary>
     private async Task<string> ResolveUniqueUsernameAsync(
         string email,
@@ -216,14 +220,22 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
     {
         var seed = UsernameGenerator.BuildSeed(email, displayName);
 
-        if (!await _db.Users.AnyAsync(u => u.Username == seed, cancellationToken))
+        if (await IsUsernameAvailableAsync(seed, cancellationToken))
             return seed;
 
         for (var n = 2; ; n++)
         {
             var candidate = UsernameGenerator.WithSuffix(seed, n);
-            if (!await _db.Users.AnyAsync(u => u.Username == candidate, cancellationToken))
+            if (await IsUsernameAvailableAsync(candidate, cancellationToken))
                 return candidate;
         }
+    }
+
+    private async Task<bool> IsUsernameAvailableAsync(string candidate, CancellationToken cancellationToken)
+    {
+        if (UsernameNormalizer.IsReserved(candidate))
+            return false;
+
+        return !await _db.Users.AnyAsync(u => u.Username == candidate, cancellationToken);
     }
 }

@@ -155,6 +155,7 @@ function SettingsPage() {
             <span>
               <input
                 type="text"
+                aria-label="Username"
                 value={usernameInput}
                 onChange={(e) => setUsernameInput(e.target.value)}
                 disabled={usernameSaving}

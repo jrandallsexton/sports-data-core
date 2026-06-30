@@ -344,14 +344,27 @@ export default function ProfileScreen() {
                 editable={!usernameSaving}
                 placeholder="username"
                 placeholderTextColor={theme.textMuted}
+                accessibilityLabel="Username"
                 style={[styles.usernameInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
               />
-              <TouchableOpacity onPress={handleUsernameSave} disabled={usernameSaving}>
+              <TouchableOpacity
+                onPress={handleUsernameSave}
+                disabled={usernameSaving}
+                accessibilityRole="button"
+                accessibilityLabel="Save username"
+                accessibilityState={{ disabled: usernameSaving }}
+              >
                 <Text style={[styles.usernameAction, { color: theme.tint }]}>
                   {usernameSaving ? 'Saving…' : 'Save'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setEditingUsername(false)} disabled={usernameSaving}>
+              <TouchableOpacity
+                onPress={() => setEditingUsername(false)}
+                disabled={usernameSaving}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel username edit"
+                accessibilityState={{ disabled: usernameSaving }}
+              >
                 <Text style={[styles.usernameAction, { color: theme.textMuted }]}>Cancel</Text>
               </TouchableOpacity>
             </View>

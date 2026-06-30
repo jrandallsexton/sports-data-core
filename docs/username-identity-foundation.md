@@ -20,7 +20,7 @@ PR2 (invite-by-username autocomplete) builds on it.
 
 ## Model
 
-```
+```text
 User (API, canonical):
   Username     string, required, UNIQUE (case-insensitive), 3–30, [a-z0-9_]
   DisplayName  string, required, NON-unique   (unchanged)
@@ -54,7 +54,7 @@ unique constraint can't be switched on directly. Three-step migration:
 
 ### Seed algorithm (per user)
 
-```
+```text
 seed = localPart(email)                 // text before '@'
 seed = lower(seed)
 seed = stripFrom('+', seed)             // drop plus-addressing tag

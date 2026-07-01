@@ -213,6 +213,7 @@ public class LeagueController : ApiControllerBase
         return result.Status switch
         {
             ResultStatus.NotFound => NotFound(),
+            ResultStatus.Forbid => Forbid(),
             _ => BadRequest()
         };
     }

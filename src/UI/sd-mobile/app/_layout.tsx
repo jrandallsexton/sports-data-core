@@ -15,6 +15,10 @@ import { Poppins_400Regular, Poppins_700Bold_Italic } from '@expo-google-fonts/p
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
+// Type-only import — erased at compile time. The runtime module is loaded via a
+// gated dynamic import below so it never enters the web bundle (RNFirebase has
+// no web implementation).
+import { type FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -233,6 +237,52 @@ function NativePushDiagnostics() {
       responseSub.remove();
     };
   }, [lastResponse]);
+
+  // Deep-link dispatch via @react-native-firebase/messaging. On iOS RNFirebase
+  // owns the FCM message, so the custom `data` payload lands in
+  // remoteMessage.data — NOT expo-notifications' content.data (which arrives
+  // EMPTY, confirmed via Sentry). Drive navigation from RNFirebase's open
+  // handlers: onNotificationOpenedApp (tap from background) and
+  // getInitialNotification (tap from a quit/cold start). Both funnel into the
+  // same pendingLeagueId + auth-gated flush below.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const handleOpen = (
+      remoteMessage: FirebaseMessagingTypes.RemoteMessage | null,
+      source: string,
+    ) => {
+      if (!remoteMessage) return;
+      const data = remoteMessage.data ?? {};
+      // TEMP diagnostic — remove with the expo one once confirmed. Shows what
+      // RNFirebase actually delivered vs. expo's empty content.data.
+      Sentry.captureMessage('[push] rnfb open (diag)', {
+        level: 'info',
+        tags: { source },
+        extra: {
+          dataKeys: Object.keys(data),
+          kind: typeof data.kind === 'string' ? data.kind : null,
+          hasLeagueId: typeof data.leagueId === 'string',
+        },
+      });
+      if (data.kind === 'LeagueInvite' && typeof data.leagueId === 'string') {
+        setPendingLeagueId(data.leagueId);
+      }
+    };
+
+    let unsubscribe: (() => void) | undefined;
+    // Gated dynamic import keeps RNFirebase out of the web bundle.
+    void (async () => {
+      const messaging = (await import('@react-native-firebase/messaging')).default;
+      // Tap while the app is backgrounded.
+      unsubscribe = messaging().onNotificationOpenedApp((m) => handleOpen(m, 'background'));
+      // Tap that cold-started the app from a quit state.
+      const initial = await messaging().getInitialNotification();
+      handleOpen(initial, 'quit');
+    })();
+
+    return () => unsubscribe?.();
+  }, []);
 
   // Flush a pending deep-link once the user is authenticated and the nav
   // tree is ready — guards the cold-start race described above. Also wait

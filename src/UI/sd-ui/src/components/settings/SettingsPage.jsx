@@ -48,9 +48,9 @@ function SettingsPage() {
   const [tzSaving, setTzSaving] = useState(false);
   const [tzMessage, setTzMessage] = useState("");
 
-  const [usernameInput, setUsernameInput] = useState("");
-  const [usernameSaving, setUsernameSaving] = useState(false);
-  const [usernameMessage, setUsernameMessage] = useState("");
+  const [displayNameInput, setDisplayNameInput] = useState("");
+  const [displayNameSaving, setDisplayNameSaving] = useState(false);
+  const [displayNameMessage, setDisplayNameMessage] = useState("");
 
   const allZones = useMemo(() => getAllIanaZones(), []);
   const browserTz = useMemo(() => detectBrowserTimezone(), []);
@@ -63,7 +63,7 @@ function SettingsPage() {
         const response = await apiWrapper.Users.getCurrentUser();
         if (isMounted) {
           setUser(response.data);
-          setUsernameInput(response.data?.username || "");
+          setDisplayNameInput(response.data?.displayName || "");
           setIsLoading(false);
         }
       } catch (err) {
@@ -89,26 +89,29 @@ function SettingsPage() {
   const effectiveTimezone = user?.timezone || browserTz;
   const isCurated = CURATED_TIMEZONES.some((z) => z.value === effectiveTimezone);
 
-  const handleUsernameSave = async () => {
-    const next = usernameInput.trim();
-    if (!next || next.toLowerCase() === (user?.username || "").toLowerCase()) return;
-    setUsernameSaving(true);
-    setUsernameMessage("");
+  const handleDisplayNameSave = async () => {
+    const next = displayNameInput.trim();
+    if (!next || next === (user?.displayName || "")) return;
+    setDisplayNameSaving(true);
+    setDisplayNameMessage("");
     try {
-      await apiWrapper.Users.updateUsername(next);
-      const lowered = next.toLowerCase();
-      setUser((prev) => (prev ? { ...prev, username: lowered } : prev));
-      setUsernameInput(lowered);
+      await apiWrapper.Users.updateDisplayName(next);
+      setUser((prev) => (prev ? { ...prev, displayName: next } : prev));
+      setDisplayNameInput(next);
       await refreshUserDto();
-      setUsernameMessage("Saved.");
+      setDisplayNameMessage("Saved.");
     } catch (err) {
-      console.error("Failed to update username:", err);
+      console.error("Failed to update display name:", err);
+      // ToActionResult() returns validation failures as an array:
+      // { errors: [ { propertyName, errorMessage }, ... ] }.
       const serverMsg =
-        err?.response?.data?.errors?.Username?.[0] ||
+        err?.response?.data?.errors?.find?.(
+          (e) => e.propertyName === "DisplayName"
+        )?.errorMessage ||
         err?.response?.data?.title;
-      setUsernameMessage(serverMsg || "Could not save username (it may be taken or invalid).");
+      setDisplayNameMessage(serverMsg || "Could not save display name.");
     } finally {
-      setUsernameSaving(false);
+      setDisplayNameSaving(false);
     }
   };
 
@@ -147,26 +150,26 @@ function SettingsPage() {
             <span>{user?.email || "Not set"}</span>
           </div>
           <div className="settings-item">
-            <span className="label">Display Name:</span>
-            <span>{user?.displayName || "Not set"}</span>
+            <span className="label">Username:</span>
+            <span>{user?.username ? `@${user.username}` : "Not set"}</span>
           </div>
           <div className="settings-item">
-            <span className="label">Username:</span>
+            <span className="label">Display Name:</span>
             <span>
               <input
                 type="text"
-                aria-label="Username"
-                value={usernameInput}
-                onChange={(e) => setUsernameInput(e.target.value)}
-                disabled={usernameSaving}
-                maxLength={30}
+                aria-label="Display Name"
+                value={displayNameInput}
+                onChange={(e) => setDisplayNameInput(e.target.value)}
+                disabled={displayNameSaving}
+                maxLength={25}
                 style={{ marginRight: 8 }}
               />
-              <button onClick={handleUsernameSave} disabled={usernameSaving}>
-                {usernameSaving ? "Saving…" : "Save"}
+              <button onClick={handleDisplayNameSave} disabled={displayNameSaving}>
+                {displayNameSaving ? "Saving…" : "Save"}
               </button>
-              {usernameMessage && (
-                <span style={{ marginLeft: 8, fontSize: "0.85em" }}>{usernameMessage}</span>
+              {displayNameMessage && (
+                <span style={{ marginLeft: 8, fontSize: "0.85em" }}>{displayNameMessage}</span>
               )}
             </span>
           </div>

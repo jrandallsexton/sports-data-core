@@ -123,10 +123,10 @@ export default function ProfileScreen() {
   const [tzPickerOpen, setTzPickerOpen] = useState(false);
   const [tzMessage, setTzMessage] = useState('');
 
-  const [editingUsername, setEditingUsername] = useState(false);
-  const [usernameInput, setUsernameInput] = useState('');
-  const [usernameSaving, setUsernameSaving] = useState(false);
-  const [usernameMessage, setUsernameMessage] = useState('');
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [displayNameInput, setDisplayNameInput] = useState('');
+  const [displayNameSaving, setDisplayNameSaving] = useState(false);
+  const [displayNameMessage, setDisplayNameMessage] = useState('');
 
   // The zone the user has saved, or the device default if nothing saved yet.
   // The picker uses this to highlight the current selection. The user-set
@@ -209,29 +209,35 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const beginEditUsername = () => {
-    setUsernameInput(me?.username ?? '');
-    setUsernameMessage('');
-    setEditingUsername(true);
+  const beginEditDisplayName = () => {
+    setDisplayNameInput(me?.displayName ?? '');
+    setDisplayNameMessage('');
+    setEditingDisplayName(true);
   };
 
-  const handleUsernameSave = async () => {
-    const next = usernameInput.trim();
-    if (!next || next.toLowerCase() === (me?.username ?? '').toLowerCase()) {
-      setEditingUsername(false);
+  const handleDisplayNameSave = async () => {
+    const next = displayNameInput.trim();
+    if (!next) {
+      // Don't discard the edit silently — tell the user and keep the editor open.
+      setDisplayNameMessage('Display name is required.');
       return;
     }
-    setUsernameSaving(true);
-    setUsernameMessage('');
+    if (next === (me?.displayName ?? '')) {
+      // No change — nothing to save; just close.
+      setEditingDisplayName(false);
+      return;
+    }
+    setDisplayNameSaving(true);
+    setDisplayNameMessage('');
     try {
-      await usersApi.updateUsername(next);
+      await usersApi.updateDisplayName(next);
       await queryClient.invalidateQueries({ queryKey: standingsKeys.me });
-      setEditingUsername(false);
+      setEditingDisplayName(false);
     } catch (err) {
-      console.warn('[ProfileScreen] username update failed', err);
-      setUsernameMessage('That username is taken or invalid. Try another.');
+      console.warn('[ProfileScreen] display name update failed', err);
+      setDisplayNameMessage('Could not save display name. Try again.');
     } finally {
-      setUsernameSaving(false);
+      setDisplayNameSaving(false);
     }
   };
 
@@ -331,52 +337,55 @@ export default function ProfileScreen() {
       {/* Account */}
       <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Account</Text>
-        {editingUsername ? (
-          <View style={[styles.usernameEditor, { borderBottomColor: theme.separator }]}>
-            <Text style={[styles.settingsLabel, { color: theme.text }]}>Username</Text>
-            <View style={styles.usernameEditRow}>
+        {/* Username is a stable handle — shown read-only. */}
+        <SettingsRow
+          label="Username"
+          value={me?.username ? `@${me.username}` : '—'}
+        />
+        {editingDisplayName ? (
+          <View style={[styles.fieldEditor, { borderBottomColor: theme.separator }]}>
+            <Text style={[styles.settingsLabel, { color: theme.text }]}>Display Name</Text>
+            <View style={styles.fieldEditRow}>
               <TextInput
-                value={usernameInput}
-                onChangeText={setUsernameInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={30}
-                editable={!usernameSaving}
-                placeholder="username"
+                value={displayNameInput}
+                onChangeText={setDisplayNameInput}
+                maxLength={25}
+                editable={!displayNameSaving}
+                placeholder="display name"
                 placeholderTextColor={theme.textMuted}
-                accessibilityLabel="Username"
-                style={[styles.usernameInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
+                accessibilityLabel="Display name"
+                style={[styles.fieldInput, { color: theme.text, borderColor: theme.border, backgroundColor: theme.background }]}
               />
               <TouchableOpacity
-                onPress={handleUsernameSave}
-                disabled={usernameSaving}
+                onPress={handleDisplayNameSave}
+                disabled={displayNameSaving}
                 accessibilityRole="button"
-                accessibilityLabel="Save username"
-                accessibilityState={{ disabled: usernameSaving }}
+                accessibilityLabel="Save display name"
+                accessibilityState={{ disabled: displayNameSaving }}
               >
-                <Text style={[styles.usernameAction, { color: theme.tint }]}>
-                  {usernameSaving ? 'Saving…' : 'Save'}
+                <Text style={[styles.fieldAction, { color: theme.tint }]}>
+                  {displayNameSaving ? 'Saving…' : 'Save'}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setEditingUsername(false)}
-                disabled={usernameSaving}
+                onPress={() => setEditingDisplayName(false)}
+                disabled={displayNameSaving}
                 accessibilityRole="button"
-                accessibilityLabel="Cancel username edit"
-                accessibilityState={{ disabled: usernameSaving }}
+                accessibilityLabel="Cancel display name edit"
+                accessibilityState={{ disabled: displayNameSaving }}
               >
-                <Text style={[styles.usernameAction, { color: theme.textMuted }]}>Cancel</Text>
+                <Text style={[styles.fieldAction, { color: theme.textMuted }]}>Cancel</Text>
               </TouchableOpacity>
             </View>
-            {usernameMessage ? (
-              <Text style={[styles.usernameError, { color: theme.error }]}>{usernameMessage}</Text>
+            {displayNameMessage ? (
+              <Text style={[styles.fieldError, { color: theme.error }]}>{displayNameMessage}</Text>
             ) : null}
           </View>
         ) : (
           <SettingsRow
-            label="Username"
-            value={me?.username ? `@${me.username}` : 'Set username'}
-            onPress={beginEditUsername}
+            label="Display Name"
+            value={me?.displayName ?? 'Set display name'}
+            onPress={beginEditDisplayName}
           />
         )}
         <SettingsRow
@@ -489,18 +498,18 @@ const styles = StyleSheet.create({
   settingsLabel: { fontSize: 16 },
   settingsValue: { fontSize: 14 },
   destructive: { fontWeight: '600' },
-  usernameEditor: {
+  fieldEditor: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 8,
   },
-  usernameEditRow: {
+  fieldEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  usernameInput: {
+  fieldInput: {
     flex: 1,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 8,
@@ -508,6 +517,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     fontSize: 16,
   },
-  usernameAction: { fontSize: 15, fontWeight: '600' },
-  usernameError: { fontSize: 13 },
+  fieldAction: { fontSize: 15, fontWeight: '600' },
+  fieldError: { fontSize: 13 },
 });

@@ -16,7 +16,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
 import { useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react-native';
 import 'react-native-reanimated';
@@ -193,6 +193,23 @@ function NativePushDiagnostics() {
         actionIdentifier: response.actionIdentifier,
       });
 
+      // TEMP diagnostic — remove once the deep-link is confirmed. Store builds
+      // have no console, so surface what the payload actually contains on-device
+      // (which keys arrived, whether `kind`/`leagueId` are present, app state)
+      // to Sentry. leagueId is a non-sensitive GUID; title/body are not captured.
+      Sentry.captureMessage('[push] tapped (diag)', {
+        level: 'info',
+        tags: { pushKind: String(data.kind ?? 'none') },
+        extra: {
+          dataKeys: Object.keys(data),
+          kind: data.kind ?? null,
+          hasLeagueId: typeof data.leagueId === 'string',
+          leagueId: typeof data.leagueId === 'string' ? data.leagueId : null,
+          actionIdentifier: response.actionIdentifier,
+          appState: AppState.currentState,
+        },
+      });
+
       // Deep-link dispatch. Stash the target; the auth-gated effect below
       // navigates once the router/auth tree is ready.
       if (data.kind === 'LeagueInvite' && typeof data.leagueId === 'string') {
@@ -225,7 +242,21 @@ function NativePushDiagnostics() {
   // signal AuthGuard keys off, so once it's no longer '(auth)' the redirect
   // has settled. Keep pendingLeagueId cached until then.
   useEffect(() => {
-    if (!pendingLeagueId || !isInitialized || !user) return;
+    if (!pendingLeagueId) return;
+
+    // TEMP diagnostic — remove with the tap one. Shows whether the flush is
+    // blocked (and by which guard) vs. actually navigating.
+    Sentry.captureMessage('[push] flush check (diag)', {
+      level: 'info',
+      extra: {
+        isInitialized,
+        hasUser: !!user,
+        segment0: segments[0] ?? null,
+        willNavigate: isInitialized && !!user && segments[0] !== '(auth)',
+      },
+    });
+
+    if (!isInitialized || !user) return;
     if (segments[0] === '(auth)') return;
     const leagueId = pendingLeagueId;
     setPendingLeagueId(null);

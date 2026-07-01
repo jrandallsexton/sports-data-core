@@ -102,8 +102,12 @@ function SettingsPage() {
       setDisplayNameMessage("Saved.");
     } catch (err) {
       console.error("Failed to update display name:", err);
+      // ToActionResult() returns validation failures as an array:
+      // { errors: [ { propertyName, errorMessage }, ... ] }.
       const serverMsg =
-        err?.response?.data?.errors?.DisplayName?.[0] ||
+        err?.response?.data?.errors?.find?.(
+          (e) => e.propertyName === "DisplayName"
+        )?.errorMessage ||
         err?.response?.data?.title;
       setDisplayNameMessage(serverMsg || "Could not save display name.");
     } finally {
@@ -158,7 +162,7 @@ function SettingsPage() {
                 value={displayNameInput}
                 onChange={(e) => setDisplayNameInput(e.target.value)}
                 disabled={displayNameSaving}
-                maxLength={100}
+                maxLength={25}
                 style={{ marginRight: 8 }}
               />
               <button onClick={handleDisplayNameSave} disabled={displayNameSaving}>

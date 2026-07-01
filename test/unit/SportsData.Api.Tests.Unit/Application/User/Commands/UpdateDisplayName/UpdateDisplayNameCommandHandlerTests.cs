@@ -60,6 +60,19 @@ public class UpdateDisplayNameCommandHandlerTests : ApiTestBase<UpdateDisplayNam
     }
 
     [Fact]
+    public async Task Execute_Rejects_WhenTooLong()
+    {
+        var userId = await SeedUserAsync();
+        var handler = Mocker.CreateInstance<UpdateDisplayNameCommandHandler>();
+        var tooLong = new string('a', UpdateDisplayNameCommandValidator.MaxLength + 1);
+
+        var result = await handler.ExecuteAsync(userId, new UpdateDisplayNameCommand { DisplayName = tooLong });
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.BadRequest);
+    }
+
+    [Fact]
     public async Task Execute_NotFound_WhenUserMissing()
     {
         var handler = Mocker.CreateInstance<UpdateDisplayNameCommandHandler>();

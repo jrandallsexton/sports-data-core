@@ -217,7 +217,13 @@ export default function ProfileScreen() {
 
   const handleDisplayNameSave = async () => {
     const next = displayNameInput.trim();
-    if (!next || next === (me?.displayName ?? '')) {
+    if (!next) {
+      // Don't discard the edit silently — tell the user and keep the editor open.
+      setDisplayNameMessage('Display name is required.');
+      return;
+    }
+    if (next === (me?.displayName ?? '')) {
+      // No change — nothing to save; just close.
       setEditingDisplayName(false);
       return;
     }
@@ -343,7 +349,7 @@ export default function ProfileScreen() {
               <TextInput
                 value={displayNameInput}
                 onChangeText={setDisplayNameInput}
-                maxLength={100}
+                maxLength={25}
                 editable={!displayNameSaving}
                 placeholder="display name"
                 placeholderTextColor={theme.textMuted}

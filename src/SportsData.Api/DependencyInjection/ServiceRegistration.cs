@@ -80,6 +80,7 @@ using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamFinalizedGames;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Api.Application.User;
+using SportsData.Api.Application.User.Commands.UpdateDisplayName;
 using SportsData.Api.Application.User.Commands.UpdateUsername;
 using SportsData.Api.Application.User.Commands.UpdateUserTimezone;
 using SportsData.Api.Application.User.Commands.UpsertUser;
@@ -248,6 +249,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IUpsertUserCommandHandler, UpsertUserCommandHandler>();
             services.AddScoped<IUpdateUserTimezoneCommandHandler, UpdateUserTimezoneCommandHandler>();
             services.AddScoped<IUpdateUsernameCommandHandler, UpdateUsernameCommandHandler>();
+            services.AddScoped<IUpdateDisplayNameCommandHandler, UpdateDisplayNameCommandHandler>();
             
             // User Validators
             services.AddValidatorsFromAssemblyContaining<Program>();

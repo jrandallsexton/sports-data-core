@@ -19,4 +19,8 @@ export const usersApi = {
   // Backend rejects invalid/taken handles with a 4xx.
   updateUsername: (username: string) =>
     apiClient.patch('/user/me/username', { username }),
+
+  // PATCH /user/me/displayname — free-text label (non-unique, max 100).
+  updateDisplayName: (displayName: string) =>
+    apiClient.patch('/user/me/displayname', { displayName }),
 };

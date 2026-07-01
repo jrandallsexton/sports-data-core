@@ -61,9 +61,24 @@ public class SendLeagueInviteCommandHandlerTests : ApiTestBase<SendLeagueInviteC
         return user;
     }
 
+    private async Task AddMemberAsync(Guid leagueId, Guid userId)
+    {
+        await DataContext.PickemGroupMembers.AddAsync(new PickemGroupMember
+        {
+            Id = Guid.NewGuid(),
+            PickemGroupId = leagueId,
+            UserId = userId
+        });
+        await DataContext.SaveChangesAsync();
+    }
+
     private void VerifyPublish(Times times) =>
         Mocker.GetMock<IEventBus>().Verify(
             b => b.Publish(It.IsAny<UserInvitedToPickemGroup>(), It.IsAny<CancellationToken>()), times);
+
+    private void VerifyEmailSent(Times times) =>
+        Mocker.GetMock<INotificationService>().Verify(
+            n => n.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()), times);
 
     [Fact]
     public async Task ExecuteAsync_ReturnsNotFound_WhenLeagueMissing()
@@ -86,16 +101,19 @@ public class SendLeagueInviteCommandHandlerTests : ApiTestBase<SendLeagueInviteC
     public async Task ExecuteAsync_UnregisteredEmail_SendsEmailOnly_NoEvent()
     {
         var league = await SeedLeagueAsync();
+        var invitedBy = Guid.NewGuid();
+        await AddMemberAsync(league.Id, invitedBy);
         var handler = Mocker.CreateInstance<SendLeagueInviteCommandHandler>();
 
         var result = await handler.ExecuteAsync(new SendLeagueInviteCommand
         {
             LeagueId = league.Id,
             Email = "stranger@x.com",
-            InvitedByUserId = Guid.NewGuid()
+            InvitedByUserId = invitedBy
         });
 
         result.IsSuccess.Should().BeTrue();
+        VerifyEmailSent(Times.Once());
         VerifyPublish(Times.Never());
     }
 
@@ -105,6 +123,7 @@ public class SendLeagueInviteCommandHandlerTests : ApiTestBase<SendLeagueInviteC
         var league = await SeedLeagueAsync();
         var invitee = await SeedUserAsync("friend@x.com");
         var invitedBy = Guid.NewGuid();
+        await AddMemberAsync(league.Id, invitedBy);
         var handler = Mocker.CreateInstance<SendLeagueInviteCommandHandler>();
 
         var result = await handler.ExecuteAsync(new SendLeagueInviteCommand
@@ -133,13 +152,9 @@ public class SendLeagueInviteCommandHandlerTests : ApiTestBase<SendLeagueInviteC
     {
         var league = await SeedLeagueAsync();
         var invitee = await SeedUserAsync("member@x.com");
-        await DataContext.PickemGroupMembers.AddAsync(new PickemGroupMember
-        {
-            Id = Guid.NewGuid(),
-            PickemGroupId = league.Id,
-            UserId = invitee.Id
-        });
-        await DataContext.SaveChangesAsync();
+        await AddMemberAsync(league.Id, invitee.Id);
+        var invitedBy = Guid.NewGuid();
+        await AddMemberAsync(league.Id, invitedBy);
 
         var handler = Mocker.CreateInstance<SendLeagueInviteCommandHandler>();
 
@@ -147,10 +162,29 @@ public class SendLeagueInviteCommandHandlerTests : ApiTestBase<SendLeagueInviteC
         {
             LeagueId = league.Id,
             Email = "member@x.com",
-            InvitedByUserId = Guid.NewGuid()
+            InvitedByUserId = invitedBy
         });
 
         result.IsSuccess.Should().BeTrue();
+        VerifyPublish(Times.Never());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Forbids_WhenInviterNotAMember()
+    {
+        var league = await SeedLeagueAsync();
+        var handler = Mocker.CreateInstance<SendLeagueInviteCommandHandler>();
+
+        var result = await handler.ExecuteAsync(new SendLeagueInviteCommand
+        {
+            LeagueId = league.Id,
+            Email = "stranger@x.com",
+            InvitedByUserId = Guid.NewGuid() // not a member of the league
+        });
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.Forbid);
+        VerifyEmailSent(Times.Never());
         VerifyPublish(Times.Never());
     }
 }

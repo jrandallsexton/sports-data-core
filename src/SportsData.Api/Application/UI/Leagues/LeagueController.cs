@@ -188,7 +188,7 @@ public class LeagueController : ApiControllerBase
 
     [HttpPost("{id}/invite")]
     [Authorize]
-    public async Task<IActionResult> SendInvite(
+    public async Task<ActionResult<bool>> SendInvite(
         Guid id,
         [FromBody] SendLeagueInviteRequest request,
         [FromServices] ISendLeagueInviteCommandHandler handler,
@@ -206,15 +206,7 @@ public class LeagueController : ApiControllerBase
         };
 
         var result = await handler.ExecuteAsync(command, cancellationToken);
-
-        if (result.IsSuccess)
-            return Ok(new { Message = "Invite sent." });
-
-        return result.Status switch
-        {
-            ResultStatus.NotFound => NotFound(),
-            _ => BadRequest()
-        };
+        return result.ToActionResult();
     }
 
     [HttpGet("{id}/invite/search")]

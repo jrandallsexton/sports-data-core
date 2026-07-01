@@ -57,6 +57,19 @@ public class SendLeagueInviteCommandHandler : ISendLeagueInviteCommandHandler
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(command.LeagueId), $"League with ID {command.LeagueId} not found.")]);
 
+        // Authorization: only a member of the league may invite others. Checked
+        // before the email is sent so a non-member can't blast invites into a
+        // league they don't belong to. Mirrors InviteUserToLeagueCommandHandler.
+        var inviterIsMember = await _dbContext.PickemGroupMembers
+            .AsNoTracking()
+            .AnyAsync(m => m.PickemGroupId == league.Id && m.UserId == command.InvitedByUserId, cancellationToken);
+
+        if (!inviterIsMember)
+            return new Failure<bool>(
+                false,
+                ResultStatus.Forbid,
+                [new ValidationFailure(nameof(command.InvitedByUserId), "Only league members can invite others.")]);
+
         // TODO: Dynamically set the domain based on environment
         var inviteUrl = $"https://{_notificationConfig.Email.UrlBase}/app/join/{league.Id.ToString().Replace("-", string.Empty)}";
 

@@ -440,7 +440,7 @@ export default function ProfileScreen() {
           value={isUserSet ? effectiveTimezone : `${effectiveTimezone} (device)`}
           onPress={() => setTzPickerOpen(true)}
         />
-        <SettingsRow label="Notifications" onPress={() => {}} />
+        <SettingsRow label="Notifications" onPress={() => router.push('/settings/notifications')} />
         <SettingsRow label="Sign Out" onPress={handleSignOut} destructive />
         <SettingsRow label="Delete Account" onPress={handleDeleteAccount} destructive />
       </View>

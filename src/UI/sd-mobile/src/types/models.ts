@@ -304,6 +304,23 @@ export interface UserDto {
   isReadOnly?: boolean;
 }
 
+/**
+ * Per-category push-notification opt-in flags. Mirrors the API's
+ * NotificationPreferencesDto — every field defaults to `true` (a user with no
+ * saved row is treated as fully opted-in). The settings screen holds the whole
+ * set in state and PATCHes it back as a full replacement.
+ */
+export interface NotificationPreferences {
+  pickResultEnabled: boolean;
+  pickDeadlineReminderEnabled: boolean;
+  contestStartReminderEnabled: boolean;
+  leagueInviteEnabled: boolean;
+  membershipEnabled: boolean;
+  matchupPreviewEnabled: boolean;
+  scheduleChangeEnabled: boolean;
+  oddsChangedEnabled: boolean;
+}
+
 // ─── Contest Overview ─────────────────────────────────────────────────────────
 
 export interface ContestOverviewTeam {

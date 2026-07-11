@@ -7,6 +7,22 @@ import { DEFAULT_TIMEZONE } from "../../utils/timeUtils";
 import "./SettingsPage.css";
 import BadgesPanel from "../../components/badges/BadgesPanel.tsx";
 
+// Notification categories, in the same order as the mobile settings screen.
+// The API owns these flags (canonical) and projects changes to the Notification
+// service, which gates sends. Six are actively enforced today; matchup previews
+// and schedule changes are projected-but-not-yet-gated (exposed for parity).
+// See docs/mobile/notification-preferences.md.
+const NOTIFICATION_CATEGORIES = [
+  { key: "pickResultEnabled", label: "Pick results" },
+  { key: "pickDeadlineReminderEnabled", label: "Pick deadline reminders" },
+  { key: "contestStartReminderEnabled", label: "Kickoff reminders" },
+  { key: "leagueInviteEnabled", label: "League invites" },
+  { key: "membershipEnabled", label: "League membership updates" },
+  { key: "matchupPreviewEnabled", label: "Matchup previews" },
+  { key: "scheduleChangeEnabled", label: "Schedule changes" },
+  { key: "oddsChangedEnabled", label: "Line moves" },
+];
+
 const CURATED_TIMEZONES = [
   { value: "America/New_York",    label: "Eastern (New York)" },
   { value: "America/Chicago",     label: "Central (Chicago)" },
@@ -52,6 +68,11 @@ function SettingsPage() {
   const [displayNameSaving, setDisplayNameSaving] = useState(false);
   const [displayNameMessage, setDisplayNameMessage] = useState("");
 
+  const [prefs, setPrefs] = useState(null);
+  const [prefsError, setPrefsError] = useState("");
+  const [prefsSaving, setPrefsSaving] = useState(false);
+  const [prefsMessage, setPrefsMessage] = useState("");
+
   const allZones = useMemo(() => getAllIanaZones(), []);
   const browserTz = useMemo(() => detectBrowserTimezone(), []);
 
@@ -86,6 +107,28 @@ function SettingsPage() {
     };
   }, [navigate]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchPrefs = async () => {
+      try {
+        const response = await apiWrapper.Users.getNotificationPreferences();
+        if (isMounted) setPrefs(response.data);
+      } catch (err) {
+        console.error("Failed to load notification preferences:", err);
+        // Leave prefs null so the section shows an error rather than a
+        // misleading all-on state the user might accidentally save over.
+        if (isMounted) setPrefsError("Could not load notification settings.");
+      }
+    };
+
+    fetchPrefs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const effectiveTimezone = user?.timezone || browserTz;
   const isCurated = CURATED_TIMEZONES.some((z) => z.value === effectiveTimezone);
 
@@ -112,6 +155,26 @@ function SettingsPage() {
       setDisplayNameMessage(serverMsg || "Could not save display name.");
     } finally {
       setDisplayNameSaving(false);
+    }
+  };
+
+  const handleToggleNotification = async (key) => {
+    if (!prefs || prefsSaving) return;
+    const previous = prefs;
+    // Full-replacement PATCH — send the whole set with this one flag flipped.
+    const next = { ...prefs, [key]: !prefs[key] };
+    setPrefs(next); // optimistic
+    setPrefsSaving(true);
+    setPrefsMessage("");
+    try {
+      await apiWrapper.Users.updateNotificationPreferences(next);
+      setPrefsMessage("Saved.");
+    } catch (err) {
+      console.error("Failed to update notification preferences:", err);
+      setPrefs(previous); // revert
+      setPrefsMessage("Could not save. Please try again.");
+    } finally {
+      setPrefsSaving(false);
     }
   };
 
@@ -237,14 +300,32 @@ function SettingsPage() {
 
         <section className="settings-section">
           <h2>Notifications</h2>
-          <div className="settings-item">
-            <span className="label">Email Alerts:</span>
-            <input type="checkbox" disabled />
-          </div>
-          <div className="settings-item">
-            <span className="label">Push Notifications:</span>
-            <input type="checkbox" disabled />
-          </div>
+          <p style={{ fontSize: "0.85em", opacity: 0.7, marginTop: 0 }}>
+            Choose which push notifications you receive on your devices.
+          </p>
+          {prefsError ? (
+            <p className="error">{prefsError}</p>
+          ) : !prefs ? (
+            <p style={{ fontSize: "0.85em", opacity: 0.7 }}>Loading…</p>
+          ) : (
+            <>
+              {NOTIFICATION_CATEGORIES.map(({ key, label }) => (
+                <div className="settings-item" key={key}>
+                  <span className="label">{label}:</span>
+                  <input
+                    type="checkbox"
+                    aria-label={label}
+                    checked={!!prefs[key]}
+                    disabled={prefsSaving}
+                    onChange={() => handleToggleNotification(key)}
+                  />
+                </div>
+              ))}
+              {prefsMessage && (
+                <span style={{ fontSize: "0.85em" }}>{prefsMessage}</span>
+              )}
+            </>
+          )}
         </section>
       </div>
 

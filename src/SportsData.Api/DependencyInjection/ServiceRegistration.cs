@@ -82,10 +82,12 @@ using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Api.Application.User;
 using SportsData.Api.Application.User.Commands.DeleteAccount;
 using SportsData.Api.Application.User.Commands.UpdateDisplayName;
+using SportsData.Api.Application.User.Commands.UpdateNotificationPreferences;
 using SportsData.Api.Application.User.Commands.UpdateUsername;
 using SportsData.Api.Application.User.Commands.UpdateUserTimezone;
 using SportsData.Api.Application.User.Commands.UpsertUser;
 using SportsData.Api.Application.User.Queries.GetMe;
+using SportsData.Api.Application.User.Queries.GetNotificationPreferences;
 using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Auth;
 using SportsData.Api.Infrastructure.Data.Canonical;
@@ -253,6 +255,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IUpdateUsernameCommandHandler, UpdateUsernameCommandHandler>();
             services.AddScoped<IUpdateDisplayNameCommandHandler, UpdateDisplayNameCommandHandler>();
             services.AddScoped<IDeleteAccountCommandHandler, DeleteAccountCommandHandler>();
+            services.AddScoped<IUpdateNotificationPreferencesCommandHandler, UpdateNotificationPreferencesCommandHandler>();
             services.AddSingleton<IFirebaseUserAdmin, FirebaseUserAdmin>();
 
             // User Validators
@@ -260,6 +263,7 @@ namespace SportsData.Api.DependencyInjection
 
             // User Queries
             services.AddScoped<IGetMeQueryHandler, GetMeQueryHandler>();
+            services.AddScoped<IGetNotificationPreferencesQueryHandler, GetNotificationPreferencesQueryHandler>();
 
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<MatchupPreviewGenerator>();

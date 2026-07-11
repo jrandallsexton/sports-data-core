@@ -86,6 +86,13 @@ public class UserDeletedConsumerTests : NotificationTestBase<UserDeletedConsumer
         var act = async () => await sut.Consume(ContextFor(msg));
         await act.Should().NotThrowAsync();
 
+        // Every purged table stays empty for the user after the redelivery.
+        (await DataContext.Users.AnyAsync(x => x.Id == userId)).Should().BeFalse();
         (await DataContext.UserDevices.AnyAsync(x => x.UserId == userId)).Should().BeFalse();
+        (await DataContext.UserNotificationPreferences.AnyAsync(x => x.UserId == userId)).Should().BeFalse();
+        (await DataContext.UserPicks.AnyAsync(x => x.UserId == userId)).Should().BeFalse();
+        (await DataContext.PendingScheduledJobs.AnyAsync(x => x.UserId == userId)).Should().BeFalse();
+        (await DataContext.NotificationLog.AnyAsync(x => x.UserId == userId)).Should().BeFalse();
+        (await DataContext.PickemGroupMembers.AnyAsync(x => x.UserId == userId)).Should().BeFalse();
     }
 }

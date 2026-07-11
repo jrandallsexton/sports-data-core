@@ -43,6 +43,19 @@ export const unstable_settings = {
 
 SplashScreen.preventAutoHideAsync();
 
+/**
+ * Wire contract for a LeagueInvite deep-link: kind === 'LeagueInvite' with a
+ * string leagueId. Shared by the expo (Android content.data) and RNFirebase
+ * (iOS remoteMessage.data) tap paths so the payload shape lives in one place.
+ * Returns the validated leagueId, or null when it's not a LeagueInvite.
+ */
+function getLeagueInviteId(data: Record<string, unknown> | null | undefined): string | null {
+  if (!data) return null;
+  return data.kind === 'LeagueInvite' && typeof data.leagueId === 'string'
+    ? data.leagueId
+    : null;
+}
+
 // Notification handler — controls what happens when a push arrives
 // while the app is in the foreground. iOS does not show foreground
 // notifications by default; this config opts in to a banner + sound
@@ -216,9 +229,8 @@ function NativePushDiagnostics() {
 
       // Deep-link dispatch. Stash the target; the auth-gated effect below
       // navigates once the router/auth tree is ready.
-      if (data.kind === 'LeagueInvite' && typeof data.leagueId === 'string') {
-        setPendingLeagueId(data.leagueId);
-      }
+      const inviteLeagueId = getLeagueInviteId(data);
+      if (inviteLeagueId) setPendingLeagueId(inviteLeagueId);
     };
 
     if (lastResponse) {
@@ -265,9 +277,8 @@ function NativePushDiagnostics() {
           hasLeagueId: typeof data.leagueId === 'string',
         },
       });
-      if (data.kind === 'LeagueInvite' && typeof data.leagueId === 'string') {
-        setPendingLeagueId(data.leagueId);
-      }
+      const inviteLeagueId = getLeagueInviteId(data);
+      if (inviteLeagueId) setPendingLeagueId(inviteLeagueId);
     };
 
     let cancelled = false;

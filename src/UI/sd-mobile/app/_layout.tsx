@@ -15,6 +15,10 @@ import { Poppins_400Regular, Poppins_700Bold_Italic } from '@expo-google-fonts/p
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Notifications from 'expo-notifications';
+// Type-only import — erased at compile time. The runtime module is loaded via a
+// gated dynamic import below so it never enters the web bundle (RNFirebase has
+// no web implementation).
+import { type FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -38,6 +42,19 @@ export const unstable_settings = {
 };
 
 SplashScreen.preventAutoHideAsync();
+
+/**
+ * Wire contract for a LeagueInvite deep-link: kind === 'LeagueInvite' with a
+ * string leagueId. Shared by the expo (Android content.data) and RNFirebase
+ * (iOS remoteMessage.data) tap paths so the payload shape lives in one place.
+ * Returns the validated leagueId, or null when it's not a LeagueInvite.
+ */
+function getLeagueInviteId(data: Record<string, unknown> | null | undefined): string | null {
+  if (!data) return null;
+  return data.kind === 'LeagueInvite' && typeof data.leagueId === 'string'
+    ? data.leagueId
+    : null;
+}
 
 // Notification handler — controls what happens when a push arrives
 // while the app is in the foreground. iOS does not show foreground
@@ -212,9 +229,8 @@ function NativePushDiagnostics() {
 
       // Deep-link dispatch. Stash the target; the auth-gated effect below
       // navigates once the router/auth tree is ready.
-      if (data.kind === 'LeagueInvite' && typeof data.leagueId === 'string') {
-        setPendingLeagueId(data.leagueId);
-      }
+      const inviteLeagueId = getLeagueInviteId(data);
+      if (inviteLeagueId) setPendingLeagueId(inviteLeagueId);
     };
 
     if (lastResponse) {
@@ -233,6 +249,64 @@ function NativePushDiagnostics() {
       responseSub.remove();
     };
   }, [lastResponse]);
+
+  // Deep-link dispatch via @react-native-firebase/messaging. On iOS RNFirebase
+  // owns the FCM message, so the custom `data` payload lands in
+  // remoteMessage.data — NOT expo-notifications' content.data (which arrives
+  // EMPTY, confirmed via Sentry). Drive navigation from RNFirebase's open
+  // handlers: onNotificationOpenedApp (tap from background) and
+  // getInitialNotification (tap from a quit/cold start). Both funnel into the
+  // same pendingLeagueId + auth-gated flush below.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const handleOpen = (
+      remoteMessage: FirebaseMessagingTypes.RemoteMessage | null,
+      source: string,
+    ) => {
+      if (!remoteMessage) return;
+      const data = remoteMessage.data ?? {};
+      // TEMP diagnostic — remove with the expo one once confirmed. Shows what
+      // RNFirebase actually delivered vs. expo's empty content.data.
+      Sentry.captureMessage('[push] rnfb open (diag)', {
+        level: 'info',
+        tags: { source },
+        extra: {
+          dataKeys: Object.keys(data),
+          kind: typeof data.kind === 'string' ? data.kind : null,
+          hasLeagueId: typeof data.leagueId === 'string',
+        },
+      });
+      const inviteLeagueId = getLeagueInviteId(data);
+      if (inviteLeagueId) setPendingLeagueId(inviteLeagueId);
+    };
+
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    // Gated dynamic import keeps RNFirebase out of the web bundle. Guard every
+    // await against unmount so a late resolution can't subscribe or dispatch
+    // after cleanup has run.
+    void (async () => {
+      try {
+        const messaging = (await import('@react-native-firebase/messaging')).default;
+        if (cancelled) return;
+        // Tap while the app is backgrounded.
+        unsubscribe = messaging().onNotificationOpenedApp((m) => handleOpen(m, 'background'));
+        // Tap that cold-started the app from a quit state.
+        const initial = await messaging().getInitialNotification();
+        if (cancelled) return;
+        handleOpen(initial, 'quit');
+      } catch (e) {
+        // Don't leave the import/native calls as an unhandled rejection.
+        Sentry.captureException(e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, []);
 
   // Flush a pending deep-link once the user is authenticated and the nav
   // tree is ready — guards the cold-start race described above. Also wait

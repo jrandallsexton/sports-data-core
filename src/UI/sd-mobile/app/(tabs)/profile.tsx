@@ -209,6 +209,48 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const performAccountDeletion = async () => {
+    try {
+      await usersApi.deleteAccount();
+    } catch (err) {
+      console.error('[ProfileScreen] account deletion failed', err);
+      Alert.alert(
+        'Deletion Failed',
+        'We could not delete your account. Please check your connection and try again.',
+      );
+      return;
+    }
+    // The account (including the Firebase login) is gone server-side; clear the
+    // local session so AuthGuard redirects to the welcome screen.
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('[ProfileScreen] sign-out after deletion failed (already gone)', err);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    const message =
+      'This permanently deletes your account and removes your personal data. '
+      + 'Your league history stays (anonymized). This cannot be undone.';
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(message)) {
+        void performAccountDeletion();
+      }
+      return;
+    }
+    Alert.alert('Delete Account?', message, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void performAccountDeletion();
+        },
+      },
+    ]);
+  };
+
   const beginEditDisplayName = () => {
     setDisplayNameInput(me?.displayName ?? '');
     setDisplayNameMessage('');
@@ -395,6 +437,7 @@ export default function ProfileScreen() {
         />
         <SettingsRow label="Notifications" onPress={() => {}} />
         <SettingsRow label="Sign Out" onPress={handleSignOut} destructive />
+        <SettingsRow label="Delete Account" onPress={handleDeleteAccount} destructive />
       </View>
 
       {/* Developer — admin-only diagnostics. Gated on isAdmin so it

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.User.Commands.DeleteAccount;
 using SportsData.Api.Application.User.Commands.UpdateDisplayName;
 using SportsData.Api.Application.User.Commands.UpdateUsername;
 using SportsData.Api.Application.User.Commands.UpdateUserTimezone;
@@ -87,6 +88,17 @@ public class UserController : ApiControllerBase
     {
         var userId = HttpContext.GetCurrentUserId();
         var result = await handler.ExecuteAsync(userId, command, cancellationToken);
+        return result.ToActionResult();
+    }
+
+    [HttpDelete("me")]
+    [Authorize]
+    public async Task<ActionResult<bool>> DeleteMe(
+        [FromServices] IDeleteAccountCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+        var result = await handler.ExecuteAsync(userId, cancellationToken);
         return result.ToActionResult();
     }
 }

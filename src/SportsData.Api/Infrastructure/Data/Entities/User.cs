@@ -47,6 +47,14 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public bool IsReadOnly { get; set; }
 
+        /// <summary>
+        /// Set when the user deletes their account. The row is retained but
+        /// anonymized (PII stripped, login removed) so league history/standings
+        /// stay intact; this stamp marks it deleted for filtering (e.g. excluded
+        /// from invite search). Null = active. See docs/mobile/account-deletion.md.
+        /// </summary>
+        public DateTime? DeletedUtc { get; set; }
+
         public ICollection<PickemGroupMember> GroupMemberships { get; set; } = [];
 
         public class EntityConfiguration : IEntityTypeConfiguration<User>

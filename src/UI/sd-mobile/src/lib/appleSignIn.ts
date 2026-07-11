@@ -3,6 +3,10 @@ import * as Crypto from 'expo-crypto';
 import { OAuthProvider, signInWithCredential } from 'firebase/auth';
 import { Platform } from 'react-native';
 import { auth } from './firebase';
+import {
+  AccountExistsWithDifferentCredentialError,
+  isAccountExistsWithDifferentCredential,
+} from './authErrors';
 
 /**
  * Generates an OIDC nonce pair for the Apple sign-in flow:
@@ -105,5 +109,12 @@ export async function signInWithApple(): Promise<void> {
     idToken: identityToken,
     rawNonce,
   });
-  await signInWithCredential(auth, firebaseCredential);
+  try {
+    await signInWithCredential(auth, firebaseCredential);
+  } catch (err) {
+    if (isAccountExistsWithDifferentCredential(err)) {
+      throw new AccountExistsWithDifferentCredentialError();
+    }
+    throw err;
+  }
 }

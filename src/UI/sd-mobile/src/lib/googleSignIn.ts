@@ -7,6 +7,10 @@ import {
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { Platform } from 'react-native';
 import { auth } from './firebase';
+import {
+  AccountExistsWithDifferentCredentialError,
+  isAccountExistsWithDifferentCredential,
+} from './authErrors';
 
 // Native-module-only library: @react-native-google-signin doesn't have a
 // web implementation. On web, any call into GoogleSignin throws (or
@@ -96,7 +100,14 @@ export async function signInWithGoogle(): Promise<void> {
   }
 
   const credential = GoogleAuthProvider.credential(idToken);
-  await signInWithCredential(auth, credential);
+  try {
+    await signInWithCredential(auth, credential);
+  } catch (err) {
+    if (isAccountExistsWithDifferentCredential(err)) {
+      throw new AccountExistsWithDifferentCredentialError();
+    }
+    throw err;
+  }
 }
 
 /**

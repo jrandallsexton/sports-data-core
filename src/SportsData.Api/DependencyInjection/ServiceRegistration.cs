@@ -80,12 +80,14 @@ using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamMetrics;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamFinalizedGames;
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamStatistics;
 using SportsData.Api.Application.User;
+using SportsData.Api.Application.User.Commands.DeleteAccount;
 using SportsData.Api.Application.User.Commands.UpdateDisplayName;
 using SportsData.Api.Application.User.Commands.UpdateUsername;
 using SportsData.Api.Application.User.Commands.UpdateUserTimezone;
 using SportsData.Api.Application.User.Commands.UpsertUser;
 using SportsData.Api.Application.User.Queries.GetMe;
 using SportsData.Api.Config;
+using SportsData.Api.Infrastructure.Auth;
 using SportsData.Api.Infrastructure.Data.Canonical;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Api.Infrastructure.Prompts;
@@ -250,7 +252,9 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IUpdateUserTimezoneCommandHandler, UpdateUserTimezoneCommandHandler>();
             services.AddScoped<IUpdateUsernameCommandHandler, UpdateUsernameCommandHandler>();
             services.AddScoped<IUpdateDisplayNameCommandHandler, UpdateDisplayNameCommandHandler>();
-            
+            services.AddScoped<IDeleteAccountCommandHandler, DeleteAccountCommandHandler>();
+            services.AddSingleton<IFirebaseUserAdmin, FirebaseUserAdmin>();
+
             // User Validators
             services.AddValidatorsFromAssemblyContaining<Program>();
 

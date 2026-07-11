@@ -173,7 +173,9 @@ export default function ProfileScreen() {
       await signOut(auth);
       // Success path: useAuthInit's onAuthStateChanged listener observes
       // the auth flip → AuthGuard handles the redirect to /(auth)/welcome.
-      // No local state cleanup required.
+      // Drop all cached queries (current user, leagues, picks, …) so the next
+      // login can't flash the previous user's cached identity before refetch.
+      queryClient.clear();
     } catch (err) {
       console.error('[ProfileScreen] Firebase sign-out failed', err);
       Alert.alert(
@@ -204,6 +206,51 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: () => {
           void performSignOut();
+        },
+      },
+    ]);
+  };
+
+  const performAccountDeletion = async () => {
+    try {
+      await usersApi.deleteAccount();
+    } catch (err) {
+      console.error('[ProfileScreen] account deletion failed', err);
+      Alert.alert(
+        'Deletion Failed',
+        'We could not delete your account. Please check your connection and try again.',
+      );
+      return;
+    }
+    // The account (including the Firebase login) is gone server-side; clear the
+    // local session so AuthGuard redirects to the welcome screen.
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('[ProfileScreen] sign-out after deletion failed (already gone)', err);
+    }
+    // Always drop cached queries — the account is gone regardless of the signOut
+    // result, so no cached identity/data may survive into the next login.
+    queryClient.clear();
+  };
+
+  const handleDeleteAccount = () => {
+    const message =
+      'This permanently deletes your account and removes your personal data. '
+      + 'Your league history stays (anonymized). This cannot be undone.';
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(message)) {
+        void performAccountDeletion();
+      }
+      return;
+    }
+    Alert.alert('Delete Account?', message, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          void performAccountDeletion();
         },
       },
     ]);
@@ -395,6 +442,7 @@ export default function ProfileScreen() {
         />
         <SettingsRow label="Notifications" onPress={() => {}} />
         <SettingsRow label="Sign Out" onPress={handleSignOut} destructive />
+        <SettingsRow label="Delete Account" onPress={handleDeleteAccount} destructive />
       </View>
 
       {/* Developer — admin-only diagnostics. Gated on isAdmin so it

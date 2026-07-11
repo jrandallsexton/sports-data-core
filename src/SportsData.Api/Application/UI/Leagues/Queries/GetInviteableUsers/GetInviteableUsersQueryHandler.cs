@@ -61,6 +61,7 @@ public class GetInviteableUsersQueryHandler : IGetInviteableUsersQueryHandler
             .AsNoTracking()
             .Where(u => u.Id != query.RequestingUserId
                 && !u.IsSynthetic
+                && u.DeletedUtc == null
                 && !memberIds.Contains(u.Id)
                 && (u.Username.Contains(lowered) || u.DisplayName.ToLower().Contains(lowered)))
             .OrderBy(u => u.Username)

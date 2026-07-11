@@ -20,7 +20,11 @@ export const usersApi = {
   updateUsername: (username: string) =>
     apiClient.patch('/user/me/username', { username }),
 
-  // PATCH /user/me/displayname — free-text label (non-unique, max 100).
+  // PATCH /user/me/displayname — free-text label (non-unique, max 25).
   updateDisplayName: (displayName: string) =>
     apiClient.patch('/user/me/displayname', { displayName }),
+
+  // DELETE /user/me — deletes the account. Server anonymizes the record and
+  // removes the Firebase login; caller signs out afterward.
+  deleteAccount: () => apiClient.delete('/user/me'),
 };

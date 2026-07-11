@@ -270,18 +270,26 @@ function NativePushDiagnostics() {
       }
     };
 
+    let cancelled = false;
     let unsubscribe: (() => void) | undefined;
-    // Gated dynamic import keeps RNFirebase out of the web bundle.
+    // Gated dynamic import keeps RNFirebase out of the web bundle. Guard every
+    // await against unmount so a late resolution can't subscribe or dispatch
+    // after cleanup has run.
     void (async () => {
       const messaging = (await import('@react-native-firebase/messaging')).default;
+      if (cancelled) return;
       // Tap while the app is backgrounded.
       unsubscribe = messaging().onNotificationOpenedApp((m) => handleOpen(m, 'background'));
       // Tap that cold-started the app from a quit state.
       const initial = await messaging().getInitialNotification();
+      if (cancelled) return;
       handleOpen(initial, 'quit');
     })();
 
-    return () => unsubscribe?.();
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 
   // Flush a pending deep-link once the user is authenticated and the nav

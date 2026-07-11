@@ -8,6 +8,7 @@ using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Users;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Api.Application.User.Commands.UpdateNotificationPreferences;
 
@@ -73,7 +74,8 @@ public class UpdateNotificationPreferencesCommandHandler : IUpdateNotificationPr
         var prefs = await _db.UserNotificationPreferences
             .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
 
-        if (prefs is null)
+        var isInsert = prefs is null;
+        if (isInsert)
         {
             prefs = new UserNotificationPreferences
             {
@@ -81,22 +83,15 @@ public class UpdateNotificationPreferencesCommandHandler : IUpdateNotificationPr
                 CreatedUtc = now,
                 CreatedBy = userId
             };
+            Apply(prefs, command);
             await _db.UserNotificationPreferences.AddAsync(prefs, cancellationToken);
         }
         else
         {
-            prefs.ModifiedUtc = now;
+            Apply(prefs!, command);
+            prefs!.ModifiedUtc = now;
             prefs.ModifiedBy = userId;
         }
-
-        prefs.PickResultEnabled = command.PickResultEnabled;
-        prefs.PickDeadlineReminderEnabled = command.PickDeadlineReminderEnabled;
-        prefs.ContestStartReminderEnabled = command.ContestStartReminderEnabled;
-        prefs.LeagueInviteEnabled = command.LeagueInviteEnabled;
-        prefs.MembershipEnabled = command.MembershipEnabled;
-        prefs.MatchupPreviewEnabled = command.MatchupPreviewEnabled;
-        prefs.ScheduleChangeEnabled = command.ScheduleChangeEnabled;
-        prefs.OddsChangedEnabled = command.OddsChangedEnabled;
 
         // Publish before SaveChanges so the outbox row persists atomically with the
         // preference write (EF bus outbox flushes on save).
@@ -115,10 +110,45 @@ public class UpdateNotificationPreferencesCommandHandler : IUpdateNotificationPr
                 Guid.NewGuid()),
             cancellationToken);
 
-        await _db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (isInsert && ex.IsUniqueConstraintViolation())
+        {
+            // Race: a concurrent first-time request inserted this user's row between
+            // our FirstOrDefault check and SaveChanges. The unique index on UserId
+            // rejects our insert. Detach the orphan, re-query the winner's row, apply
+            // the requested flags, and retry as an update. The outbox message stays
+            // tracked (Added), so the event still fires exactly once on the retry.
+            _logger.LogWarning(ex,
+                "Concurrent insert of notification preferences. UserId={UserId}. Retrying as update.", userId);
+
+            _db.Entry(prefs!).State = EntityState.Detached;
+
+            var existing = await _db.UserNotificationPreferences
+                .FirstAsync(p => p.UserId == userId, cancellationToken);
+            Apply(existing, command);
+            existing.ModifiedUtc = now;
+            existing.ModifiedBy = userId;
+
+            await _db.SaveChangesAsync(cancellationToken);
+        }
 
         _logger.LogInformation("Notification preferences updated. UserId={UserId}", userId);
 
         return new Success<Guid>(userId);
+    }
+
+    private static void Apply(UserNotificationPreferences prefs, UpdateNotificationPreferencesCommand command)
+    {
+        prefs.PickResultEnabled = command.PickResultEnabled;
+        prefs.PickDeadlineReminderEnabled = command.PickDeadlineReminderEnabled;
+        prefs.ContestStartReminderEnabled = command.ContestStartReminderEnabled;
+        prefs.LeagueInviteEnabled = command.LeagueInviteEnabled;
+        prefs.MembershipEnabled = command.MembershipEnabled;
+        prefs.MatchupPreviewEnabled = command.MatchupPreviewEnabled;
+        prefs.ScheduleChangeEnabled = command.ScheduleChangeEnabled;
+        prefs.OddsChangedEnabled = command.OddsChangedEnabled;
     }
 }

@@ -44,18 +44,48 @@ public class UpdateNotificationPreferencesCommandHandlerTests
         return id;
     }
 
-    private static UpdateNotificationPreferencesCommand AllOff()
+    // A deliberately asymmetric flag pattern (T F T T F T F T). Because no two
+    // adjacent flags share a value in the same way, a mis-mapped line in the
+    // handler's Apply() (e.g. copying command.ScheduleChange into
+    // OddsChangedEnabled) flips at least one assertion.
+    private static UpdateNotificationPreferencesCommand DistinctFlags()
         => new()
         {
-            PickResultEnabled = false,
+            PickResultEnabled = true,
             PickDeadlineReminderEnabled = false,
-            ContestStartReminderEnabled = false,
-            LeagueInviteEnabled = false,
+            ContestStartReminderEnabled = true,
+            LeagueInviteEnabled = true,
             MembershipEnabled = false,
-            MatchupPreviewEnabled = false,
+            MatchupPreviewEnabled = true,
             ScheduleChangeEnabled = false,
-            OddsChangedEnabled = false
+            OddsChangedEnabled = true
         };
+
+    // Assert all eight flags on the persisted entity match the command.
+    private static void AssertFlags(PrefsEntity prefs, UpdateNotificationPreferencesCommand c)
+    {
+        prefs.PickResultEnabled.Should().Be(c.PickResultEnabled);
+        prefs.PickDeadlineReminderEnabled.Should().Be(c.PickDeadlineReminderEnabled);
+        prefs.ContestStartReminderEnabled.Should().Be(c.ContestStartReminderEnabled);
+        prefs.LeagueInviteEnabled.Should().Be(c.LeagueInviteEnabled);
+        prefs.MembershipEnabled.Should().Be(c.MembershipEnabled);
+        prefs.MatchupPreviewEnabled.Should().Be(c.MatchupPreviewEnabled);
+        prefs.ScheduleChangeEnabled.Should().Be(c.ScheduleChangeEnabled);
+        prefs.OddsChangedEnabled.Should().Be(c.OddsChangedEnabled);
+    }
+
+    // All eight flags on the published event match the command (plus UserId).
+    private static bool EventMatches(
+        UserNotificationPreferencesUpdated e, Guid userId, UpdateNotificationPreferencesCommand c)
+        => e.UserId == userId
+           && e.PickResultEnabled == c.PickResultEnabled
+           && e.PickDeadlineReminderEnabled == c.PickDeadlineReminderEnabled
+           && e.ContestStartReminderEnabled == c.ContestStartReminderEnabled
+           && e.LeagueInviteEnabled == c.LeagueInviteEnabled
+           && e.MembershipEnabled == c.MembershipEnabled
+           && e.MatchupPreviewEnabled == c.MatchupPreviewEnabled
+           && e.ScheduleChangeEnabled == c.ScheduleChangeEnabled
+           && e.OddsChangedEnabled == c.OddsChangedEnabled;
 
     [Fact]
     public async Task Execute_CreatesRow_WhenNoneExists_AndPublishes()
@@ -63,25 +93,22 @@ public class UpdateNotificationPreferencesCommandHandlerTests
         var userId = await SeedUserAsync();
         var handler = Mocker.CreateInstance<UpdateNotificationPreferencesCommandHandler>();
 
-        var command = AllOff();
+        var command = DistinctFlags();
 
         var result = await handler.ExecuteAsync(userId, command);
 
         result.IsSuccess.Should().BeTrue();
 
+        // Event carries the complete flag set + userId, published exactly once.
         Mocker.GetMock<IEventBus>().Verify(
             b => b.Publish(
-                It.Is<UserNotificationPreferencesUpdated>(e =>
-                    e.UserId == userId &&
-                    e.PickResultEnabled == false &&
-                    e.OddsChangedEnabled == false),
+                It.Is<UserNotificationPreferencesUpdated>(e => EventMatches(e, userId, command)),
                 It.IsAny<CancellationToken>()),
             Times.Once());
 
         DataContext.ChangeTracker.Clear();
         var prefs = DataContext.UserNotificationPreferences.Single(p => p.UserId == userId);
-        prefs.PickResultEnabled.Should().BeFalse();
-        prefs.OddsChangedEnabled.Should().BeFalse();
+        AssertFlags(prefs, command);
         prefs.CreatedUtc.Should().Be(FixedNow);
         prefs.CreatedBy.Should().Be(userId);
     }
@@ -102,29 +129,24 @@ public class UpdateNotificationPreferencesCommandHandlerTests
 
         var handler = Mocker.CreateInstance<UpdateNotificationPreferencesCommandHandler>();
 
-        var command = new UpdateNotificationPreferencesCommand
-        {
-            PickResultEnabled = true,
-            PickDeadlineReminderEnabled = false,
-            ContestStartReminderEnabled = true,
-            LeagueInviteEnabled = true,
-            MembershipEnabled = true,
-            MatchupPreviewEnabled = true,
-            ScheduleChangeEnabled = true,
-            OddsChangedEnabled = false
-        };
+        var command = DistinctFlags();
 
         var result = await handler.ExecuteAsync(userId, command);
 
         result.IsSuccess.Should().BeTrue();
 
+        // Update path still publishes the complete flag set exactly once.
+        Mocker.GetMock<IEventBus>().Verify(
+            b => b.Publish(
+                It.Is<UserNotificationPreferencesUpdated>(e => EventMatches(e, userId, command)),
+                It.IsAny<CancellationToken>()),
+            Times.Once());
+
         DataContext.ChangeTracker.Clear();
         var rows = DataContext.UserNotificationPreferences.Where(p => p.UserId == userId).ToList();
         rows.Should().HaveCount(1); // updated, not duplicated
         var prefs = rows.Single();
-        prefs.PickDeadlineReminderEnabled.Should().BeFalse();
-        prefs.OddsChangedEnabled.Should().BeFalse();
-        prefs.PickResultEnabled.Should().BeTrue();
+        AssertFlags(prefs, command);
         prefs.ModifiedUtc.Should().Be(FixedNow);
         prefs.ModifiedBy.Should().Be(userId);
     }

@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { UserDto } from '@/src/types/models';
+import type { NotificationPreferences, UserDto } from '@/src/types/models';
 
 /**
  * Wrapper for /user/* endpoints. Mirrors the web app's `src/api/usersApi.js`.
@@ -27,4 +27,13 @@ export const usersApi = {
   // DELETE /user/me — deletes the account. Server anonymizes the record and
   // removes the Firebase login; caller signs out afterward.
   deleteAccount: () => apiClient.delete('/user/me'),
+
+  // GET /user/me/notification-preferences → full flag set (all-enabled defaults
+  // when the user has never changed a setting).
+  getNotificationPreferences: () =>
+    apiClient.get<NotificationPreferences>('/user/me/notification-preferences'),
+
+  // PATCH /user/me/notification-preferences — full replacement; send every flag.
+  updateNotificationPreferences: (prefs: NotificationPreferences) =>
+    apiClient.patch('/user/me/notification-preferences', prefs),
 };

@@ -15,6 +15,8 @@ public class AppDataContext : DbContext
 
     public DbSet<User> Users { get; set; }
 
+    public DbSet<UserNotificationPreferences> UserNotificationPreferences { get; set; }
+
     public DbSet<ContestPrediction> ContestPredictions { get; set; }
 
     public DbSet<PickemGroup> PickemGroups { get; set; }

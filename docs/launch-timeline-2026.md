@@ -8,30 +8,33 @@ Last updated: 2026-07-11
 | Event | Date | Days out (from 2026-07-11) |
 |-------|------|-----------|
 | **Today** | 2026-07-11 | — |
-| **Start Android closed test** (14-day clock) | **ASAP / this week** | 0–5 |
-| iOS blockers complete | 2026-08-01 | 21 |
-| iOS code freeze + final build | 2026-08-03 | 23 |
-| **Submit iOS to Apple** | **~2026-08-04** | **24** |
-| Target: **iOS live** | **~2026-08-14** | **34** |
-| Android closed test clears (14 days) → apply for production | **~2026-08-01** | 21 |
-| Target: **Android live** (fast-follow) | **late-Aug / early-Sept** | ~45–55 |
+| **Start Android closed test** (12 testers, 14-day clock) | **this week** | 0–5 |
+| Android closed test complete (14 days) | ~2026-07-28 | ~17 |
+| Mobile blockers complete | 2026-08-01 | 21 |
+| Code freeze + final builds | 2026-08-03 | 23 |
+| **Submit iOS + apply for Android production** | **~2026-08-04** | **24** |
+| Target: **live on both stores** | **~2026-08-14** | **34** |
 | **NCAAFB kickoff** | **2026-09-05** | **56** |
 | **NFL kickoff** | **2026-09-10** | **61** |
 
-Guiding constraint (founder's ask): live on the stores ~2+ weeks before NCAAFB.
-Founder pulled the submission **earlier** for more buffer — sound, because the
+Guiding constraint (founder's ask): live on the stores ~2+ weeks before NCAAFB,
+**on both platforms**. Submission pulled **earlier** for buffer — sound, because the
 first approval is the slow/risky one and everything after is cheap (Apple updates
 < 48 h; most fixes ship via **EAS OTA with no review at all** — only native changes
 need a new store build).
 
-### Two launch lanes (decoupled)
-- **iOS = the launch vehicle.** No tester gate; on-time. Submit ~Aug 4, live ~Aug 14.
-- **Android = fast-follow.** The Play account is **personal (post-Nov-2023)**, so
-  Google requires a **closed test with ≥20 testers for ≥14 continuous days** before
-  production access. This is a serial gate — **start it this week**; Android ships
-  when the test + production review clear (late-Aug/early-Sept). If it slips just
-  past kickoff, iOS covers the opener. (No LLC / org-account path — 20 testers is
-  faster. Testers: pick'em-league friends, family, r/androiddev tester-swap.)
+### Both platforms are launch-critical — Android is primary
+Most of the founder's launch cohort (the pick'em-league friends) is on **Android**,
+so Android is **not** a fast-follow — both stores must be live by kickoff.
+
+- **Google Play gate:** personal (post-Nov-2023) account → **closed test with 12
+  testers, opted-in ≥14 continuous days**, before applying for production. This is
+  the **critical path** → start this week. The league friends *are* the 12 testers
+  (= the launch cohort). No LLC / org-account path.
+- **Decoupled from the blocker sprint:** the 14 days is a *track-duration* clock, not
+  a build gate — upload a **functional** build now to start the clock, keep polishing
+  in parallel, push the final build for production after the 14 days.
+- **iOS** has no tester gate; submit in the same window (~Aug 4), live ~Aug 14.
 
 ### Review-latency assumptions
 - **Apple**: typically < 24–48 h, no new-developer penalty; budget for **one
@@ -52,11 +55,11 @@ Ordered so the App Store gates (Apple Sign-In, account deletion) get device
 time first. **[F] = founder / portal task, [C] = code.**
 
 ### Week of Jul 13 — gates + config cluster
-- [ ] **[F] Start the Android closed test** — upload the first `.aab` (also
-  initializes Play App Signing), create a Closed testing track, add ≥20 testers
-  (pick'em friends / family / r/androiddev swap), share the opt-in link. *The
-  14-day clock is serial — starting it this week is the single most time-critical
-  action.*
+- [ ] **[F] Start the Android closed test** — upload a **functional** `.aab` (also
+  initializes Play App Signing), create a Closed testing track, add **12 testers**
+  (the Android league friends = the launch cohort), share the opt-in link. *The
+  14-day clock is serial and the whole launch's critical path — start this week.
+  The build need not be final; update it during the window.*
 - [ ] **[F] Apple Sign-In config** (Apple Dev portal: App ID capability, Services
   ID, .p8 key; Firebase Console: enable Apple provider). *Do first — it gates the
   iOS build and needs device testing.* (checklist in chat / PR #489)
@@ -132,12 +135,14 @@ Can land closer to kickoff than the mobile binary. Target **done by Aug 29**
 - EAS free tier build queue ~20–30 min; a paid tier is a later call.
 
 ## Resolved decisions (2026-07-11)
-- **Submission:** pulled earlier for buffer — iOS submit **~Aug 4**, live ~Aug 14.
-- **Launch lanes:** iOS on-time; Android fast-follow behind the 14-day closed test.
+- **Submission:** pulled earlier for buffer — submit ~Aug 4, live ~Aug 14.
+- **Both platforms launch-critical; Android is primary** (most league friends are on
+  Android). Not a fast-follow — both live by kickoff.
+- **Google gate = critical path:** 12-tester / 14-day closed test; start this week.
 - **Notification preferences:** in scope for v1 (wire real per-category prefs).
 - **iPad/tablet:** polished responsive layout in scope for v1 (not just phone-style).
-- **No LLC / org account** — recruit 20 testers instead.
+- **No LLC / org account** — use the 12 league-friend testers.
 
 ## Still open
-- Exact tester roster for the Android closed test (need ≥20).
+- Confirm the 12-tester roster is opted in and the closed test has started.
 - NFL live-readiness: verify it's actually in place (founder ~99% sure).

@@ -1,5 +1,7 @@
 using FluentAssertions;
 
+using FluentValidation;
+
 using Moq;
 
 using SportsData.Api.Application.User.Commands.DeleteAccount;
@@ -21,6 +23,7 @@ public class DeleteAccountCommandHandlerTests : ApiTestBase<DeleteAccountCommand
     public DeleteAccountCommandHandlerTests()
     {
         Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(FixedNow);
+        Mocker.Use<IValidator<DeleteAccountCommand>>(new DeleteAccountCommandValidator());
     }
 
     private async Task<Guid> SeedUserAsync()
@@ -46,7 +49,7 @@ public class DeleteAccountCommandHandlerTests : ApiTestBase<DeleteAccountCommand
         var userId = await SeedUserAsync();
         var handler = Mocker.CreateInstance<DeleteAccountCommandHandler>();
 
-        var result = await handler.ExecuteAsync(userId);
+        var result = await handler.ExecuteAsync(new DeleteAccountCommand { UserId = userId });
 
         result.IsSuccess.Should().BeTrue();
 
@@ -59,6 +62,9 @@ public class DeleteAccountCommandHandlerTests : ApiTestBase<DeleteAccountCommand
             b => b.Publish(It.Is<UserDeleted>(e => e.UserId == userId), It.IsAny<CancellationToken>()),
             Times.Once());
 
+        // Reload from the store (not the tracked instance the handler mutated)
+        // so these assertions validate persisted state, i.e. that SaveChanges ran.
+        DataContext.ChangeTracker.Clear();
         var user = await DataContext.Users.FindAsync(userId);
         user!.DeletedUtc.Should().Be(FixedNow);
         user.Email.Should().NotBe("real@person.com");
@@ -75,7 +81,7 @@ public class DeleteAccountCommandHandlerTests : ApiTestBase<DeleteAccountCommand
     {
         var handler = Mocker.CreateInstance<DeleteAccountCommandHandler>();
 
-        var result = await handler.ExecuteAsync(Guid.NewGuid());
+        var result = await handler.ExecuteAsync(new DeleteAccountCommand { UserId = Guid.NewGuid() });
 
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.NotFound);
@@ -86,21 +92,36 @@ public class DeleteAccountCommandHandlerTests : ApiTestBase<DeleteAccountCommand
     }
 
     [Fact]
-    public async Task Execute_Idempotent_WhenAlreadyDeleted()
+    public async Task Execute_Idempotent_WhenAlreadyDeleted_LeavesRowUntouched()
     {
+        // Seed an already-deleted (anonymized) account.
         var userId = await SeedUserAsync();
+        var deletedAt = FixedNow.AddDays(-1);
         var user = await DataContext.Users.FindAsync(userId);
-        user!.DeletedUtc = FixedNow.AddDays(-1);
+        user!.DeletedUtc = deletedAt;
+        user.Email = "deleted-prior@deleted.invalid";
+        user.Username = "del_prior";
+        user.DisplayName = "Deleted user";
+        user.FirebaseUid = "deleted-prior";
         await DataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<DeleteAccountCommandHandler>();
 
-        var result = await handler.ExecuteAsync(userId);
+        var result = await handler.ExecuteAsync(new DeleteAccountCommand { UserId = userId });
 
         result.IsSuccess.Should().BeTrue();
         Mocker.GetMock<IFirebaseUserAdmin>().Verify(
             x => x.DeleteUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never());
         Mocker.GetMock<IEventBus>().Verify(
             b => b.Publish(It.IsAny<UserDeleted>(), It.IsAny<CancellationToken>()), Times.Never());
+
+        // The idempotent retry must not re-touch the row — reload from the store.
+        DataContext.ChangeTracker.Clear();
+        var reloaded = await DataContext.Users.FindAsync(userId);
+        reloaded!.DeletedUtc.Should().Be(deletedAt);
+        reloaded.Email.Should().Be("deleted-prior@deleted.invalid");
+        reloaded.Username.Should().Be("del_prior");
+        reloaded.DisplayName.Should().Be("Deleted user");
+        reloaded.FirebaseUid.Should().Be("deleted-prior");
     }
 }

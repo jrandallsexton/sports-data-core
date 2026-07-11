@@ -97,8 +97,8 @@ public class UserController : ApiControllerBase
         [FromServices] IDeleteAccountCommandHandler handler,
         CancellationToken cancellationToken)
     {
-        var userId = HttpContext.GetCurrentUserId();
-        var result = await handler.ExecuteAsync(userId, cancellationToken);
+        var command = new DeleteAccountCommand { UserId = HttpContext.GetCurrentUserId() };
+        var result = await handler.ExecuteAsync(command, cancellationToken);
         return result.ToActionResult();
     }
 }

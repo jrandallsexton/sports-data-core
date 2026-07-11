@@ -173,7 +173,9 @@ export default function ProfileScreen() {
       await signOut(auth);
       // Success path: useAuthInit's onAuthStateChanged listener observes
       // the auth flip → AuthGuard handles the redirect to /(auth)/welcome.
-      // No local state cleanup required.
+      // Drop all cached queries (current user, leagues, picks, …) so the next
+      // login can't flash the previous user's cached identity before refetch.
+      queryClient.clear();
     } catch (err) {
       console.error('[ProfileScreen] Firebase sign-out failed', err);
       Alert.alert(
@@ -227,6 +229,9 @@ export default function ProfileScreen() {
     } catch (err) {
       console.warn('[ProfileScreen] sign-out after deletion failed (already gone)', err);
     }
+    // Always drop cached queries — the account is gone regardless of the signOut
+    // result, so no cached identity/data may survive into the next login.
+    queryClient.clear();
   };
 
   const handleDeleteAccount = () => {

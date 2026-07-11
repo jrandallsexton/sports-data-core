@@ -1,3 +1,4 @@
+using FluentValidation;
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ namespace SportsData.Api.Application.User.Commands.DeleteAccount;
 
 public interface IDeleteAccountCommandHandler
 {
-    Task<Result<bool>> ExecuteAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<Result<bool>> ExecuteAsync(DeleteAccountCommand command, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -28,6 +29,7 @@ public class DeleteAccountCommandHandler : IDeleteAccountCommandHandler
     private readonly IFirebaseUserAdmin _firebase;
     private readonly IEventBus _eventBus;
     private readonly IDateTimeProvider _clock;
+    private readonly IValidator<DeleteAccountCommand> _validator;
     private readonly ILogger<DeleteAccountCommandHandler> _logger;
 
     public DeleteAccountCommandHandler(
@@ -35,24 +37,34 @@ public class DeleteAccountCommandHandler : IDeleteAccountCommandHandler
         IFirebaseUserAdmin firebase,
         IEventBus eventBus,
         IDateTimeProvider clock,
+        IValidator<DeleteAccountCommand> validator,
         ILogger<DeleteAccountCommandHandler> logger)
     {
         _db = db;
         _firebase = firebase;
         _eventBus = eventBus;
         _clock = clock;
+        _validator = validator;
         _logger = logger;
     }
 
-    public async Task<Result<bool>> ExecuteAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<Result<bool>> ExecuteAsync(DeleteAccountCommand command, CancellationToken cancellationToken = default)
     {
+        var validation = await _validator.ValidateAsync(command, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return new Failure<bool>(false, ResultStatus.BadRequest, validation.Errors);
+        }
+
+        var userId = command.UserId;
+
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
         if (user is null)
         {
             return new Failure<bool>(
                 false,
                 ResultStatus.NotFound,
-                [new ValidationFailure(nameof(userId), $"User with ID {userId} not found.")]);
+                [new ValidationFailure(nameof(command.UserId), $"User with ID {userId} not found.")]);
         }
 
         // Idempotent: already deleted → nothing to do.

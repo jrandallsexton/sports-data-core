@@ -32,18 +32,22 @@ public class UpdateNotificationPreferencesCommandHandlerTests
             new UpdateNotificationPreferencesCommandValidator());
     }
 
+    // Single source for the User required-field shape, shared by SeedUserAsync
+    // (ApiTestBase's DataContext) and the race test's sidecar seed (its own options).
+    private static UserEntity NewUser(Guid id) => new()
+    {
+        Id = id,
+        FirebaseUid = $"uid-{id:N}",
+        Email = "real@person.com",
+        SignInProvider = "apple.com",
+        DisplayName = "Real Person",
+        Username = $"user{id:N}"[..12]
+    };
+
     private async Task<Guid> SeedUserAsync()
     {
         var id = Guid.NewGuid();
-        await DataContext.Users.AddAsync(new UserEntity
-        {
-            Id = id,
-            FirebaseUid = $"uid-{id:N}",
-            Email = "real@person.com",
-            SignInProvider = "apple.com",
-            DisplayName = "Real Person",
-            Username = $"user{id:N}"[..12]
-        });
+        await DataContext.Users.AddAsync(NewUser(id));
         await DataContext.SaveChangesAsync();
         return id;
     }
@@ -235,15 +239,7 @@ public class UpdateNotificationPreferencesCommandHandlerTests
         var userId = Guid.NewGuid();
         await using (var seed = new AppDataContext(options))
         {
-            seed.Users.Add(new UserEntity
-            {
-                Id = userId,
-                FirebaseUid = $"uid-{userId:N}",
-                Email = "real@person.com",
-                SignInProvider = "apple.com",
-                DisplayName = "Real Person",
-                Username = $"user{userId:N}"[..12]
-            });
+            seed.Users.Add(NewUser(userId));
             await seed.SaveChangesAsync();
         }
 

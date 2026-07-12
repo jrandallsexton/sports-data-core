@@ -378,13 +378,17 @@ function SettingsPage() {
                 data. Your league history stays (anonymized). This cannot be undone.
               </p>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <button onClick={() => setDeleteConfirming(false)} disabled={deleting}>
+                <button
+                  className="settings-button-secondary"
+                  onClick={() => setDeleteConfirming(false)}
+                  disabled={deleting}
+                >
                   Cancel
                 </button>
                 <button
+                  className="settings-button-danger"
                   onClick={handleDeleteAccount}
                   disabled={deleting}
-                  style={{ background: "#b00020", color: "#fff" }}
                 >
                   {deleting ? "Deleting…" : "Yes, delete my account"}
                 </button>

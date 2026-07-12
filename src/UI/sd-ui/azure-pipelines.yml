@@ -56,7 +56,7 @@ stages:
 
           - script: |
               cd $(Build.SourcesDirectory)/src/UI/sd-ui
-              npm ci
+              npm ci --legacy-peer-deps
             displayName: 'Install dependencies'
 
           - script: |
@@ -73,33 +73,34 @@ stages:
               REACT_APP_ENVIRONMENT: production
               REACT_APP_PROD_URL: https://sportdeets.com
 
-  # Jest/react-scripts tests. Runs on Node 18 (NOT 20): react-scripts@5 pulls
-  # jest@27 -> jsdom@16 -> http-proxy-agent@4, which throws ERR_REQUIRE_ESM on
-  # Node >=20. The lint+build stage above stays on Node 20 (build is unaffected).
-  # Runs in parallel with BuildAndTest (dependsOn: []) and deliberately does NOT
-  # gate the image push yet — the suite has never run in CI, so we surface its
-  # status first and can make the push depend on it once it's trusted.
+  # Vitest suite. The app is on React 19 + react-router 7, which react-scripts@5
+  # / jest 27 can't test (jest's resolver chokes on RRD7's exports map, and
+  # jsdom 16's http-proxy-agent breaks require() on modern Node). Vitest handles
+  # all of that natively on Node 20. --legacy-peer-deps is required for install
+  # (React 19 vs react-scripts@5's React 18 peer). Runs in parallel with
+  # BuildAndTest (dependsOn: []) and does NOT gate the image push yet — once the
+  # suite is trusted, a one-line change makes the push depend on it.
   - stage: Test
     displayName: 'Test: sd-ui'
     dependsOn: []
     jobs:
-      - job: JestTest
-        displayName: 'Jest test'
+      - job: VitestTest
+        displayName: 'Vitest'
         steps:
           - task: NodeTool@0
-            displayName: 'Use Node.js 18'
+            displayName: 'Use Node.js 20'
             inputs:
-              versionSpec: '18.x'
+              versionSpec: '20.x'
 
           - script: |
               cd $(Build.SourcesDirectory)/src/UI/sd-ui
-              npm ci
+              npm ci --legacy-peer-deps
             displayName: 'Install dependencies'
 
           - script: |
               cd $(Build.SourcesDirectory)/src/UI/sd-ui
-              npx react-scripts test --watchAll=false
-            displayName: 'Run tests (react-scripts / jest)'
+              npx vitest run
+            displayName: 'Run tests (vitest)'
             env:
               CI: 'true'
 

@@ -8,44 +8,51 @@ import apiWrapper from "../../api/apiWrapper";
 // are simple display/edit fields). We mock every collaborator the delete handler
 // touches so we can assert the success/failure branches in isolation.
 
-jest.mock("../../api/apiWrapper", () => ({
-  Users: {
-    getCurrentUser: jest.fn(),
-    getNotificationPreferences: jest.fn(),
-    deleteAccount: jest.fn(),
-  },
-  Auth: {
-    clearToken: jest.fn(),
+// vi.mock is hoisted above imports, so factory-referenced vars are hoisted too.
+const { mockNavigate, mockSignOut, mockToastSuccess } = vi.hoisted(() => ({
+  mockNavigate: vi.fn(),
+  mockSignOut: vi.fn(),
+  mockToastSuccess: vi.fn(),
+}));
+
+// apiWrapper is a default export → wrap in { default }.
+vi.mock("../../api/apiWrapper", () => ({
+  default: {
+    Users: {
+      getCurrentUser: vi.fn(),
+      getNotificationPreferences: vi.fn(),
+      deleteAccount: vi.fn(),
+    },
+    Auth: {
+      clearToken: vi.fn(),
+    },
   },
 }));
 
-const mockNavigate = jest.fn();
-jest.mock("react-router-dom", () => ({
-  ...jest.requireActual("react-router-dom"),
+vi.mock("react-router-dom", async (importOriginal) => ({
+  ...(await importOriginal()),
   useNavigate: () => mockNavigate,
 }));
 
-const mockSignOut = jest.fn();
-jest.mock("firebase/auth", () => ({
-  getAuth: jest.fn(() => ({})),
+vi.mock("firebase/auth", () => ({
+  getAuth: vi.fn(() => ({})),
   signOut: (...args) => mockSignOut(...args),
 }));
 
-const mockToastSuccess = jest.fn();
-jest.mock("react-hot-toast", () => ({
+vi.mock("react-hot-toast", () => ({
   toast: { success: (...args) => mockToastSuccess(...args) },
 }));
 
-jest.mock("../../contexts/ThemeContext", () => ({
-  useTheme: () => ({ theme: "dark", toggleTheme: jest.fn() }),
+vi.mock("../../contexts/ThemeContext", () => ({
+  useTheme: () => ({ theme: "dark", toggleTheme: vi.fn() }),
 }));
 
-jest.mock("../../contexts/UserContext", () => ({
-  useUserDto: () => ({ refreshUserDto: jest.fn() }),
+vi.mock("../../contexts/UserContext", () => ({
+  useUserDto: () => ({ refreshUserDto: vi.fn() }),
 }));
 
-// BadgesPanel pulls its own data; irrelevant to these tests.
-jest.mock("../../components/badges/BadgesPanel.tsx", () => () => null);
+// BadgesPanel (default export) pulls its own data; irrelevant to these tests.
+vi.mock("../../components/badges/BadgesPanel.tsx", () => ({ default: () => null }));
 
 const mockUser = {
   email: "real@person.com",
@@ -82,7 +89,7 @@ async function openDeleteConfirm() {
 
 describe("SettingsPage — account deletion", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     apiWrapper.Users.getCurrentUser.mockResolvedValue({ data: mockUser });
     apiWrapper.Users.getNotificationPreferences.mockResolvedValue({ data: allPrefsOn });
   });

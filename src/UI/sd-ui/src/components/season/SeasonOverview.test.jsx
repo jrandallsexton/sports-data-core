@@ -4,20 +4,22 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import SeasonOverview from "./SeasonOverview";
 import apiWrapper from "../../api/apiWrapper";
 
-// Mock apiWrapper
-jest.mock("../../api/apiWrapper", () => ({
-  Season: {
-    getSeasonOverview: jest.fn(),
-  },
-  Rankings: {
-    getRankingsByWeekId: jest.fn(),
+// apiWrapper is a default export → wrap the mock in { default }.
+vi.mock("../../api/apiWrapper", () => ({
+  default: {
+    Season: {
+      getSeasonOverview: vi.fn(),
+    },
+    Rankings: {
+      getRankingsByWeekId: vi.fn(),
+    },
   },
 }));
 
-// Mock useNavigate
-const mockNavigate = jest.fn();
-jest.mock("react-router-dom", () => ({
-  ...jest.requireActual("react-router-dom"),
+// vi.mock is hoisted above imports, so factory-referenced vars must be hoisted too.
+const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
+vi.mock("react-router-dom", async (importOriginal) => ({
+  ...(await importOriginal()),
   useNavigate: () => mockNavigate,
 }));
 
@@ -74,7 +76,7 @@ const mockRankingsData = {
 
 describe("SeasonOverview", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("renders loading state initially", () => {

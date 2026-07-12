@@ -1,21 +1,20 @@
 import { render, screen, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../../contexts/AuthContext';
-import { onAuthStateChanged} from 'firebase/auth';
-import apiClient from '../../api/apiClient';
+import { onAuthStateChanged } from 'firebase/auth';
 
-// Mock Firebase auth
-jest.mock('firebase/auth', () => ({
-  getAuth: jest.fn(),
-  onAuthStateChanged: jest.fn(),
-  signOut: jest.fn()
+// Mock Firebase auth. onAuthStateChanged / onIdTokenChanged return an
+// unsubscribe fn (AuthContext calls both and cleans them up on unmount).
+// AuthContext no longer performs token set/clear itself — that moved to the
+// apiClient request interceptor — so these tests only cover the user/loading
+// state it derives from onAuthStateChanged.
+vi.mock('firebase/auth', () => ({
+  getAuth: vi.fn(),
+  onAuthStateChanged: vi.fn(() => vi.fn()),
+  onIdTokenChanged: vi.fn(() => vi.fn()),
+  signOut: vi.fn()
 }));
 
-// Mock API client
-jest.mock('../../api/apiClient', () => ({
-  post: jest.fn()
-}));
-
-// Test component to use the auth context
+// Test component to read the auth context.
 function TestComponent() {
   const { user, loading } = useAuth();
   return (
@@ -28,7 +27,9 @@ function TestComponent() {
 
 describe('AuthContext', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    // Default: subscribed but no emission yet → still loading.
+    onAuthStateChanged.mockImplementation(() => vi.fn());
   });
 
   it('initializes with loading state', () => {
@@ -42,16 +43,11 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('user')).toHaveTextContent('No User');
   });
 
-  it('handles user authentication', async () => {
-    const mockUser = {
-      uid: 'test-uid',
-      getIdToken: jest.fn().mockResolvedValue('test-token')
-    };
-
-    // Mock onAuthStateChanged to call the callback with a user
+  it('reflects an authenticated user', async () => {
+    const mockUser = { uid: 'test-uid' };
     onAuthStateChanged.mockImplementation((auth, callback) => {
       callback(mockUser);
-      return jest.fn(); // Return unsubscribe function
+      return vi.fn();
     });
 
     render(
@@ -60,21 +56,18 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    // Wait for state updates
     await act(async () => {
       await Promise.resolve();
     });
 
     expect(screen.getByTestId('loading')).toHaveTextContent('Not Loading');
     expect(screen.getByTestId('user')).toHaveTextContent('User Present');
-    expect(apiClient.post).toHaveBeenCalledWith('/auth/set-token', { token: 'test-token' });
   });
 
-  it('handles user sign out', async () => {
-    // Mock onAuthStateChanged to call the callback with null (no user)
+  it('reflects a signed-out user', async () => {
     onAuthStateChanged.mockImplementation((auth, callback) => {
       callback(null);
-      return jest.fn(); // Return unsubscribe function
+      return vi.fn();
     });
 
     render(
@@ -83,35 +76,6 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    // Wait for state updates
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    expect(screen.getByTestId('loading')).toHaveTextContent('Not Loading');
-    expect(screen.getByTestId('user')).toHaveTextContent('No User');
-    expect(apiClient.post).toHaveBeenCalledWith('/auth/clear-token');
-  });
-
-  it('handles token setup failure', async () => {
-    const mockUser = {
-      uid: 'test-uid',
-      getIdToken: jest.fn().mockRejectedValue(new Error('Token error'))
-    };
-
-    // Mock onAuthStateChanged to call the callback with a user
-    onAuthStateChanged.mockImplementation((auth, callback) => {
-      callback(mockUser);
-      return jest.fn(); // Return unsubscribe function
-    });
-
-    render(
-      <AuthProvider>
-        <TestComponent />
-      </AuthProvider>
-    );
-
-    // Wait for state updates
     await act(async () => {
       await Promise.resolve();
     });
@@ -119,4 +83,4 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('loading')).toHaveTextContent('Not Loading');
     expect(screen.getByTestId('user')).toHaveTextContent('No User');
   });
-}); 
+});

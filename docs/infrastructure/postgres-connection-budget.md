@@ -127,12 +127,14 @@ smallest first):
 
 This is the only fix that needs live-pipeline validation; sequence it last.
 
-### 4. Raise `max_connections` 500 → 700 (cheap insurance)
+### 4. Raise `max_connections` 500 → 700 (cheap insurance) — ✅ DONE 2026-07-12
 
 Memory-safe on the current 24 GB (see budget). Gives spike margin while 1–3 roll
 out. **`max_connections` is a `postmaster`-context setting — it cannot be changed
 at runtime; a full restart is required** (a reload / `pg_reload_conf()` is NOT
-enough).
+enough). Also: `ALTER SYSTEM` does not itself reload the config, so
+`pending_restart` stays `false` until you run `SELECT pg_reload_conf();` — but the
+restart is what actually applies the value regardless of that flag.
 
 Run on the VM as a superuser (e.g. `postgres`):
 
@@ -186,34 +188,71 @@ blank and incident attribution falls back to `client_addr` (pod IP). Add
 (`Core/DependencyInjection/ServiceRegistration.cs`). Small, high-value for the
 next incident. Can ship independently.
 
-## Connection budget
+## Connection budget (real numbers)
 
-Goal: prove steady-state + realistic peak stays **< 500** (with 700 as margin).
-Per-pod pool sizes are known; **peak pod counts must be confirmed against the
-cluster (sports-data-config repo) before implementing** — the counts below are
-conservative estimates, flagged.
+Confirmed from code + AppConfig manifest + Flux config:
 
-| Service (role) | Pools × size (after fix) | Peak pods* | Connections |
-|---|---|---|---|
-| Producer Ingest | data 5 + HF 5 | 4 | 40 |
-| Producer Worker | data 32 + HF 32 | 4 | 256 → **see note** |
-| Producer Daemon | data 10 + HF 10 | 1 | 20 |
-| Provider Worker | data 22 + HF 22 | 4 | 176 |
-| Api | data 20 + HF 30 | 2 | 100 |
-| Notification | data 15 + HF 15 | 2 | 60 |
-| Contest/Franchise/Player/Season/Venue | data 10 | 1 each | 50 |
-| JobsDashboard | 6 × 5 | 1 | 30 |
+**Per-pod cost = 2 × role pool size** — every pod opens a **data** pool
+(`AddDataPersistence(...maxPoolSize)`) *and* a **Hangfire** pool
+(`AddHangfire(...maxPoolSize)`), each capped at the role's size (`Include Error
+Detail` DBs: `sd{svc}.{sport}` + `sd{svc}.{sport}.Hangfire`). No `ConnectionPool`
+keys exist in AppConfig, so the **code defaults apply**:
 
-\* estimates — confirm against actual KEDA `maxReplicaCount` / replica counts.
+| Role (Producer/Provider) | Pool size | Per-pod (data+HF) |
+|---|---|---|
+| Worker | 22 | **44** |
+| Daemon (Producer) | 10 | 20 |
+| Ingest | 5 | 10 |
+| Api | 5 | 10 |
 
-The Worker rows dominate and are the reason **fix #2 matters more than the leaf
-clamps for the peak**: at 30-worker pools × several pods, Worker alone can
-approach the cap. The realistic plan is fewer workers (e.g. 12–16) × more pods,
-keeping each Worker pool ~16–18 and the per-pod cost bounded. The exact numbers
-get pinned during implementation against real replica counts; the framework:
+Hangfire worker counts (AppConfig PROD `BackgroundProcessor:MinWorkers`):
+**Api=30, Producer=25, Provider=25.**
 
-> Σ over (service, role) of (peak_pods × pools_per_pod × pool_size) < 450
-> (leaving ~50 headroom under 500; ~250 under 700).
+Topology (Flux `sports-data-config`): per **sport × role** deployments.
+`*-worker` deployments are KEDA-scaled on `hangfire.jobqueue` depth; MLB Producer
+worker **max 6** (already reduced from 15 for this exact issue), NCAA/NFL
+worker max 4; Provider worker max 4 per sport. `*-ingest`/`*-api` are static 1–2.
+
+Leaf/other services (default pool 100, `Min Pool Size 0` so this is a **ceiling**,
+not steady-state):
+
+| Service | Pools × ceiling | Per pod |
+|---|---|---|
+| Api | data 20 + HF 30 | 50 |
+| Notification | data 100 + HF 100 | **200** |
+| Contest/Franchise/Player/Season/Venue | data 100 | **100** each |
+| JobsDashboard | 6 × 5 | 30 |
+
+### Two findings the numbers expose
+
+**1. `Worker` pool 22 < 25 workers → guaranteed mode-2 starvation** (matches the
+Seq "job parameter … pool exhausted (22)"). Fix: set `MinWorkers ≤ 20` **and/or**
+Worker pool ≥ worker count.
+
+**2. Worker pods are the structural multiplier.** At full KEDA scale the worker
+*ceiling* is Producer (6+4+4) + Provider (4+4+4) = **26 worker pods × 44 = 1,144**
+— and even two sports scaling concurrently on a fall weekend is ~800, over the
+700 cap. The leaf services add a **620-connection unguarded ceiling** on top
+(5×100 + Notification 200). Idle they hold little, but a traffic burst lets each
+race toward its ceiling — which is how the transient 53300 spikes happen.
+
+### Target after fixes
+
+| Change | Ceiling reclaimed |
+|---|---|
+| Clamp Contest/Franchise/Player/Season/Venue 100 → 12 | −440 |
+| Clamp Notification 100/100 → 15/15 | −170 |
+| Worker: `MinWorkers` 25 → 18, pool 22 → 20 (per-pod 44 → 40) | −4/pod × worker pods |
+
+Immediate (MLB-only now): clamps + worker fix keep the realistic ceiling well
+under 500. **Fall multi-sport is the real constraint** — 2–3 sports of workers
+scaling at once still approaches/exceeds 700 even at 40/pod. That is the case
+for **PgBouncer** (deferred below): it collapses ~1,000+ client connections to
+50–100 server-side and removes the pod-count multiplier entirely. Recommend:
+ship the immediate fixes now; stand up PgBouncer before NCAA/NFL kickoff (Sept).
+
+> Budget rule: Σ (peak_pods × 2 × pool_size) over all (service, role) < 450 for
+> ~50 headroom under 500, or < 650 under 700.
 
 ## Rollout order
 

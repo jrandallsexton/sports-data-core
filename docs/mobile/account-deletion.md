@@ -1,7 +1,7 @@
 # Account Deletion (anonymize model)
 
-Status: implemented
-Last updated: 2026-07-11
+Status: implemented (mobile + web)
+Last updated: 2026-07-12
 
 ## Why
 
@@ -46,6 +46,14 @@ Notification UserDeletedConsumer:
   purge UserDevice, UserNotificationPreferences, User projection,
   PendingScheduledJob, NotificationLog for that UserId
 ```
+
+The **web app** (`sd-ui`) offers the same deletion from Settings → Account. It
+hits the identical `DELETE /user/me` endpoint (server logic is unchanged), then
+tears the local session down exactly like web sign-out — `Auth.clearToken()` →
+Firebase `signOut()` → toast → redirect to `/`. The confirmation is a two-step
+inline confirm (deliberately **not** the shared `ConfirmationDialog`, whose
+"Do not ask me again" option is unsafe for a permanent, irreversible action).
+Web registers no push devices, so there is nothing device-side to unregister.
 
 ### Anonymization sentinels (canonical `User`)
 - `FirebaseUid` → `deleted-{id:N}` (keeps the unique index satisfied; login already gone)

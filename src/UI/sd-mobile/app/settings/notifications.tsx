@@ -151,7 +151,10 @@ export default function NotificationSettingsScreen() {
   });
 
   const toggle = (key: PrefKey) => {
-    if (!prefs) return;
+    // Ignore taps while a save is in flight — each PATCH is a full replacement,
+    // so a second toggle built from a stale `prefs` could clobber the pending
+    // change. The switches are also disabled below; this guards the race in code.
+    if (!prefs || mutation.isPending) return;
     // Full-replacement PATCH — send the whole set with this one flag flipped.
     mutation.mutate({ ...prefs, [key]: !prefs[key] });
   };
@@ -227,6 +230,7 @@ export default function NotificationSettingsScreen() {
                       <Switch
                         value={effective[item.key]}
                         onValueChange={() => toggle(item.key)}
+                        disabled={mutation.isPending}
                         trackColor={{ true: theme.tint, false: theme.border }}
                         accessibilityLabel={item.label}
                       />

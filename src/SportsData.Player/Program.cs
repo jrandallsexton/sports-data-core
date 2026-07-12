@@ -31,9 +31,7 @@ namespace SportsData.Player
 
             services.AddClients(config);
             // Clamp the connection pool — see docs/infrastructure/postgres-connection-budget.md.
-            var poolSize = Core.DependencyInjection.ServiceRegistration.ResolvePoolSize(
-                config, builder.Environment.ApplicationName, "Default", defaultPoolSize: 10);
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, poolSize);
+            services.AddDataPersistenceWithClampedPool<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddMessaging(config, null);
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, mode);

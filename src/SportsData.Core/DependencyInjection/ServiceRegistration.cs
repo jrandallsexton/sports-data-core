@@ -79,9 +79,14 @@ namespace SportsData.Core.DependencyInjection
         private static string ApplyApplicationName(string connString, string applicationName, string? role, string poolKind)
         {
             var svc = applicationName.Replace("SportsData.", string.Empty);
-            var tag = string.IsNullOrWhiteSpace(role)
-                ? $"sd{svc}.{poolKind}"
-                : $"sd{svc}.{role}.{poolKind}";
+            // Omit the role segment when it just repeats the service name (e.g. the
+            // Api service with role "Api") — produces sd{svc}.{poolKind} rather than
+            // sd{svc}.{svc}.{poolKind}.
+            var includeRole = !string.IsNullOrWhiteSpace(role)
+                && !string.Equals(role, svc, StringComparison.OrdinalIgnoreCase);
+            var tag = includeRole
+                ? $"sd{svc}.{role}.{poolKind}"
+                : $"sd{svc}.{poolKind}";
 
             // Drop any Application Name already on the base connection string, then set ours.
             connString = System.Text.RegularExpressions.Regex.Replace(
@@ -167,6 +172,26 @@ namespace SportsData.Core.DependencyInjection
             });
 
             return services;
+        }
+
+        /// <summary>
+        /// Convenience wrapper for the single-pool services: resolves a clamped pool
+        /// size (App Config key <c>{applicationName}:ConnectionPool:{poolConfigKey}</c>,
+        /// falling back to <paramref name="defaultPoolSize"/>) and registers the
+        /// DbContext with it. Keeps the leaf services from repeating the
+        /// ResolvePoolSize + AddDataPersistence boilerplate.
+        /// </summary>
+        public static IServiceCollection AddDataPersistenceWithClampedPool<T>(
+            this IServiceCollection services,
+            IConfiguration configuration,
+            string applicationName,
+            Sport mode,
+            string poolConfigKey = "Default",
+            int defaultPoolSize = 10,
+            string? role = null) where T : DbContext
+        {
+            var poolSize = ResolvePoolSize(configuration, applicationName, poolConfigKey, defaultPoolSize);
+            return services.AddDataPersistence<T>(configuration, applicationName, mode, poolSize, role);
         }
 
         /// <summary>

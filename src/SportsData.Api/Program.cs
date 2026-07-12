@@ -252,13 +252,13 @@ namespace SportsData.Api
 
             if (!isTestingEnv)
             {
-                services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, apiAppDataPoolSize, role: "Api");
+                services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, apiAppDataPoolSize);
             }
 
             string? sigRConnString = null;
             if (!isTestingEnv)
             {
-                services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: apiHangfirePoolSize, role: "Api");
+                services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: apiHangfirePoolSize);
 
                 // IMPORTANT: any new consumer added below also needs a paired
                 // RabbitMQ shovel per Producer broker in sports-data-config under

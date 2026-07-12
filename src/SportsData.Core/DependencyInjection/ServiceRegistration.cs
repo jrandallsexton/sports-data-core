@@ -61,9 +61,13 @@ namespace SportsData.Core.DependencyInjection
             int defaultPoolSize)
         {
             var configValue = configuration[$"{applicationName}:ConnectionPool:{roleName}"];
-            return int.TryParse(configValue, out var parsed) && parsed > 0
-                ? Math.Min(parsed, MaxAllowedPoolSize)
+            // Clamp both the App Config value AND the hardcoded fallback — otherwise
+            // a default above the ceiling (e.g. the All role's 60) slips through
+            // when no App Config key is set, violating the documented cap.
+            var resolved = int.TryParse(configValue, out var parsed) && parsed > 0
+                ? parsed
                 : defaultPoolSize;
+            return Math.Min(resolved, MaxAllowedPoolSize);
         }
 
         public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration config)

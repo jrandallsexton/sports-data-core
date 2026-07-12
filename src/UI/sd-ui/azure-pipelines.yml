@@ -78,8 +78,7 @@ stages:
   # jsdom 16's http-proxy-agent breaks require() on modern Node). Vitest handles
   # all of that natively on Node 20. --legacy-peer-deps is required for install
   # (React 19 vs react-scripts@5's React 18 peer). Runs in parallel with
-  # BuildAndTest (dependsOn: []) and does NOT gate the image push yet — once the
-  # suite is trusted, a one-line change makes the push depend on it.
+  # BuildAndTest and now gates the image push (see BuildImagePushACR.dependsOn).
   - stage: Test
     displayName: 'Test: sd-ui'
     dependsOn: []
@@ -106,7 +105,9 @@ stages:
 
   - stage: BuildImagePushACR
     displayName: 'Build UI Image & Push to ACR'
-    dependsOn: BuildAndTest
+    dependsOn:
+      - BuildAndTest
+      - Test
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - job: BuildImage

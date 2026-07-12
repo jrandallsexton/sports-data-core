@@ -30,7 +30,8 @@ namespace SportsData.Season
             builder.UseCommon();
 
             services.AddClients(config);
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
+            // Clamp the connection pool — see docs/infrastructure/postgres-connection-budget.md.
+            services.AddDataPersistenceWithClampedPool<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddMessaging(config, null);
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, mode);

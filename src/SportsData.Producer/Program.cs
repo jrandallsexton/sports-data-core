@@ -96,11 +96,11 @@ public class Program
         switch (mode)
         {
             case Sport.GolfPga:
-                services.AddDataPersistence<GolfDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize);
+                services.AddDataPersistence<GolfDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize, role: roleName);
                 break;
             case Sport.FootballNcaa:
             case Sport.FootballNfl:
-                services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize);
+                services.AddDataPersistence<FootballDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize, role: roleName);
 
                 // Abstract type registrations needed for services that inject them directly
                 // Note: These are NOT used by document processors (factories inject FootballDataContext)
@@ -109,7 +109,7 @@ public class Program
                 services.AddScoped<BaseDataContext, FootballDataContext>();
                 break;
             case Sport.BaseballMlb:
-                services.AddDataPersistence<BaseballDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize);
+                services.AddDataPersistence<BaseballDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize, role: roleName);
                 services.AddScoped<TeamSportDataContext, BaseballDataContext>();
                 services.AddScoped<BaseDataContext, BaseballDataContext>();
                 break;
@@ -143,7 +143,7 @@ public class Program
             _ => null
         };
         services.AddHangfire(config, builder.Environment.ApplicationName, mode,
-            includeServer: needsHangfireServer, maxPoolSize: maxPoolSize, queues: hangfireQueues);
+            includeServer: needsHangfireServer, maxPoolSize: maxPoolSize, queues: hangfireQueues, role: roleName);
 
         // MassTransit consumers — only for Ingest role
         if (role.HasFlag(ProducerRole.Ingest))

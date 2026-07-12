@@ -34,7 +34,13 @@ namespace SportsData.Notification
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
+            // Clamp the data + Hangfire pools — default leaves Npgsql at 100 each
+            // (200/pod). See docs/infrastructure/postgres-connection-budget.md.
+            var dataPoolSize = Core.DependencyInjection.ServiceRegistration.ResolvePoolSize(
+                config, builder.Environment.ApplicationName, "AppData", defaultPoolSize: 15);
+            var hangfirePoolSize = Core.DependencyInjection.ServiceRegistration.ResolvePoolSize(
+                config, builder.Environment.ApplicationName, "Hangfire", defaultPoolSize: 15);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, dataPoolSize);
 
             services.AddMessaging(config, [
                 typeof(ContestOddsUpdatedConsumer),
@@ -101,7 +107,7 @@ namespace SportsData.Notification
             // step). No dashboard mounted — production dashboards aggregate
             // via SportsData.JobsDashboard at jobs.sportdeets.com behind basic
             // auth, per the convention reasserted in #463.
-            services.AddHangfire(config, builder.Environment.ApplicationName, mode);
+            services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: hangfirePoolSize);
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
 
             // Phase 2c-main: pick-deadline reminder scheduling + dispatch.

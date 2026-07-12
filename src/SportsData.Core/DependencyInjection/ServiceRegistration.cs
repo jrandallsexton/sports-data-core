@@ -70,6 +70,33 @@ namespace SportsData.Core.DependencyInjection
             return Math.Min(resolved, MaxAllowedPoolSize);
         }
 
+        /// <summary>
+        /// Sets the connection's <c>Application Name</c> to <c>sd{Service}[.{role}].{poolKind}</c>
+        /// so <c>pg_stat_activity.application_name</c> distinguishes each service's data vs
+        /// Hangfire pool (and, where a role is supplied, Worker vs Ingest pods).
+        /// See docs/infrastructure/postgres-connection-budget.md §6.
+        /// </summary>
+        private static string ApplyApplicationName(string connString, string applicationName, string? role, string poolKind)
+        {
+            var svc = applicationName.Replace("SportsData.", string.Empty);
+            // Omit the role segment when it just repeats the service name (e.g. the
+            // Api service with role "Api") — produces sd{svc}.{poolKind} rather than
+            // sd{svc}.{svc}.{poolKind}.
+            var includeRole = !string.IsNullOrWhiteSpace(role)
+                && !string.Equals(role, svc, StringComparison.OrdinalIgnoreCase);
+            var tag = includeRole
+                ? $"sd{svc}.{role}.{poolKind}"
+                : $"sd{svc}.{poolKind}";
+
+            // Drop any Application Name already on the base connection string, then set ours.
+            connString = System.Text.RegularExpressions.Regex.Replace(
+                connString,
+                @"Application Name=[^;]*;?",
+                string.Empty,
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            return $"{connString.TrimEnd(';')};Application Name={tag};";
+        }
+
         public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration config)
         {
             var redisConnectionString = config[CommonConfigKeys.CacheServiceUri];
@@ -102,7 +129,8 @@ namespace SportsData.Core.DependencyInjection
             IConfiguration configuration,
             string applicationName,
             Sport mode,
-            int? maxPoolSize = null) where T : DbContext
+            int? maxPoolSize = null,
+            string? role = null) where T : DbContext
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
@@ -117,6 +145,10 @@ namespace SportsData.Core.DependencyInjection
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 connString = $"{connString.TrimEnd(';')};Maximum Pool Size={maxPoolSize.Value};";
             }
+
+            // Tag the data pool so pg_stat_activity.application_name distinguishes
+            // it from the Hangfire pool (and, with role, Worker vs Ingest pods).
+            connString = ApplyApplicationName(connString, applicationName, role, "Data");
 
             Console.WriteLine($"PostgreSQL: {connString}");
 
@@ -140,6 +172,26 @@ namespace SportsData.Core.DependencyInjection
             });
 
             return services;
+        }
+
+        /// <summary>
+        /// Convenience wrapper for the single-pool services: resolves a clamped pool
+        /// size (App Config key <c>{applicationName}:ConnectionPool:{poolConfigKey}</c>,
+        /// falling back to <paramref name="defaultPoolSize"/>) and registers the
+        /// DbContext with it. Keeps the leaf services from repeating the
+        /// ResolvePoolSize + AddDataPersistence boilerplate.
+        /// </summary>
+        public static IServiceCollection AddDataPersistenceWithClampedPool<T>(
+            this IServiceCollection services,
+            IConfiguration configuration,
+            string applicationName,
+            Sport mode,
+            string poolConfigKey = "Default",
+            int defaultPoolSize = 10,
+            string? role = null) where T : DbContext
+        {
+            var poolSize = ResolvePoolSize(configuration, applicationName, poolConfigKey, defaultPoolSize);
+            return services.AddDataPersistence<T>(configuration, applicationName, mode, poolSize, role);
         }
 
         /// <summary>
@@ -214,7 +266,8 @@ namespace SportsData.Core.DependencyInjection
             Sport mode,
             bool includeServer = true,
             int? maxPoolSize = null,
-            string[]? queues = null)
+            string[]? queues = null,
+            string? role = null)
         {
             // TODO: Clean up this hacky mess
             var cc = configuration.GetSection("CommonConfig")["SqlBaseConnectionString"];
@@ -229,6 +282,9 @@ namespace SportsData.Core.DependencyInjection
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                 connString = $"{connString.TrimEnd(';')};Maximum Pool Size={maxPoolSize.Value};";
             }
+
+            // Tag the Hangfire pool distinctly from the data pool (see AddDataPersistence).
+            connString = ApplyApplicationName(connString, applicationName, role, "Hangfire");
 
             var minWorkersConfigValue = configuration[$"{applicationName}:BackgroundProcessor:MinWorkers"];
             var minWorkers = int.TryParse(minWorkersConfigValue, out var parsedMinWorkers)

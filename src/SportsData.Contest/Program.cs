@@ -32,7 +32,10 @@ namespace SportsData.Contest
             builder.UseCommon();
 
             services.AddClients(config);
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode);
+            // Clamp the connection pool — default leaves Npgsql at 100/pool, which
+            // summed across services can exceed PG max_connections.
+            // See docs/infrastructure/postgres-connection-budget.md.
+            services.AddDataPersistenceWithClampedPool<AppDataContext>(config, builder.Environment.ApplicationName, mode);
             services.AddMessaging(config, null);
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, mode);

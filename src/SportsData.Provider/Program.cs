@@ -84,13 +84,13 @@ namespace SportsData.Provider
             };
             int? maxPoolSize = Core.DependencyInjection.ServiceRegistration.ResolvePoolSize(config, builder.Environment.ApplicationName, roleName, defaultPoolSize);
             Console.WriteLine($"Role: {roleName}, ConnectionPool MaxSize: {maxPoolSize}");
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, mode, maxPoolSize, role: roleName);
 
             // Hangfire — Worker gets client + server; Ingest and Api get client only
             // Api needs client so controllers can enqueue jobs; Ingest needs it to enqueue from MassTransit consumers
             var needsHangfireServer = role.HasFlag(ProviderRole.Worker);
             services.AddHangfire(config, builder.Environment.ApplicationName, mode,
-                includeServer: needsHangfireServer, maxPoolSize: maxPoolSize);
+                includeServer: needsHangfireServer, maxPoolSize: maxPoolSize, role: roleName);
 
             // MassTransit consumers — only for Ingest role
             if (role.HasFlag(ProviderRole.Ingest))

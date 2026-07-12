@@ -107,3 +107,50 @@ select {
   background-color: var(--accent);
   color: var(--text-on-accent);
 }
+
+/* No shared button class exists app-wide, so scope a themed default to the
+   settings page — matching the accent-primary look of the MatchupCard pick
+   buttons and the confirmation dialog. Covers the Profile "Save" button, the
+   delete trigger, and the confirm/cancel buttons. (The theme toggle is a
+   <div role="button">, so it's unaffected.) */
+.settings-page button {
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-page button:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+
+.settings-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Neutral secondary action (e.g. Cancel). */
+.settings-page button.settings-button-secondary {
+  background-color: var(--border-strong);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.settings-page button.settings-button-secondary:hover:not(:disabled) {
+  background-color: var(--active-bg);
+}
+
+/* Destructive action (delete account confirm). */
+.settings-page button.settings-button-danger {
+  background-color: var(--error);
+  color: #fff;
+}
+
+.settings-page button.settings-button-danger:hover:not(:disabled) {
+  opacity: 0.9;
+}

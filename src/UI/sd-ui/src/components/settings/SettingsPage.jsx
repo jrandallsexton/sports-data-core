@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAuth, signOut } from "firebase/auth";
+import { toast } from "react-hot-toast";
 import { useTheme } from "../../contexts/ThemeContext";
 import { useUserDto } from "../../contexts/UserContext";
 import apiWrapper from "../../api/apiWrapper";
@@ -72,6 +74,10 @@ function SettingsPage() {
   const [prefsError, setPrefsError] = useState("");
   const [prefsSaving, setPrefsSaving] = useState(false);
   const [prefsMessage, setPrefsMessage] = useState("");
+
+  const [deleteConfirming, setDeleteConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const allZones = useMemo(() => getAllIanaZones(), []);
   const browserTz = useMemo(() => detectBrowserTimezone(), []);
@@ -193,6 +199,35 @@ function SettingsPage() {
     } finally {
       setTzSaving(false);
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await apiWrapper.Users.deleteAccount();
+    } catch (err) {
+      console.error("Account deletion failed:", err);
+      setDeleteError("We could not delete your account. Please try again.");
+      setDeleting(false);
+      return;
+    }
+    // The account (including the Firebase login) is gone server-side. Tear the
+    // local session down the same way sign-out does. clear-token is best-effort;
+    // it must not block the load-bearing Firebase sign-out, so each runs in its
+    // own try/catch.
+    try {
+      await apiWrapper.Auth.clearToken();
+    } catch (err) {
+      console.warn("clear-token after deletion failed (continuing to sign-out):", err);
+    }
+    try {
+      await signOut(getAuth());
+    } catch (err) {
+      console.warn("Firebase sign-out after deletion failed (account already gone):", err);
+    }
+    toast.success("Your account has been deleted.");
+    navigate("/");
   };
 
   if (isLoading) {
@@ -325,6 +360,49 @@ function SettingsPage() {
                 <span style={{ fontSize: "0.85em" }}>{prefsMessage}</span>
               )}
             </>
+          )}
+        </section>
+
+        <section className="settings-section">
+          <h2>Account</h2>
+          {!deleteConfirming ? (
+            <div className="settings-item">
+              <span className="label">Delete Account:</span>
+              <button
+                onClick={() => {
+                  setDeleteError("");
+                  setDeleteConfirming(true);
+                }}
+              >
+                Delete…
+              </button>
+            </div>
+          ) : (
+            <div>
+              <p style={{ fontSize: "0.85em", marginTop: 0 }}>
+                This permanently deletes your account and removes your personal
+                data. Your league history stays (anonymized). This cannot be undone.
+              </p>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button
+                  className="settings-button-secondary"
+                  onClick={() => setDeleteConfirming(false)}
+                  disabled={deleting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="settings-button-danger"
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting…" : "Yes, delete my account"}
+                </button>
+              </div>
+              {deleteError && (
+                <p className="error" style={{ marginTop: 8 }}>{deleteError}</p>
+              )}
+            </div>
           )}
         </section>
       </div>

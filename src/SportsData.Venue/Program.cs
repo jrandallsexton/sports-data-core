@@ -59,7 +59,10 @@ namespace SportsData.Venue
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
             services.AddClients(config);
-            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
+            // Clamp the connection pool — see docs/infrastructure/postgres-connection-budget.md.
+            var poolSize = Core.DependencyInjection.ServiceRegistration.ResolvePoolSize(
+                config, builder.Environment.ApplicationName, "Default", defaultPoolSize: 10);
+            services.AddDataPersistence<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All, poolSize);
             services.AddMessaging(config, [typeof(VenueCreatedHandler)]);
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddCaching(config);

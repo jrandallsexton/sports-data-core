@@ -6,8 +6,11 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies (including devDependencies needed for build)
-RUN npm ci
+# Install all dependencies (including devDependencies needed for build).
+# --legacy-peer-deps is required: the app is on React 19 while react-scripts@5
+# declares a React 18 peer, so the lockfile is resolved (and must be installed)
+# in legacy-peer mode. Matches the pipeline's npm ci steps.
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .

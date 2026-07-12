@@ -269,15 +269,15 @@ race toward its ceiling — which is how the transient 53300 spikes happen.
 
 | Change | Ceiling reclaimed |
 |---|---|
-| Clamp Contest/Franchise/Player/Season/Venue 100 → 12 | −440 |
+| Clamp Contest/Franchise/Player/Season/Venue 100 → 10 (§1 target) | −450 |
 | Clamp Notification 100/100 → 15/15 | −170 |
 | Worker: `MinWorkers` 25 → 18, pool 22 → 20 (per-pod 44 → 40) | −4/pod × worker pods |
 
 Immediate (MLB-only now), after the clamps + worker fix — MLB workers at max
 KEDA (Producer 6 + Provider 4 = 10 pods × 40 = **400**) plus the fixed
 non-worker/shared ceilings (MLB Ingest+Api 4×10 = 40, Producer Daemon ~20, Api
-service 50, clamped Notification 30, clamped leaf 5×12 = 60, JobsDashboard 30 ≈
-**230**) ≈ **~630**. That's **under the new 700 cap but over the 500 goal** —
+service 50, clamped Notification 30, clamped leaf 5×10 = 50, JobsDashboard 30 ≈
+**220**) ≈ **~620**. That's **under the new 700 cap but over the 500 goal** —
 which is exactly why `max_connections` was raised to 700 (§4). Concurrent
 NCAA/NFL backlog workers eat further into that. **Fall multi-sport is the real
 constraint** — 2–3 sports of workers scaling at once still approaches/exceeds 700
@@ -306,7 +306,9 @@ before NCAA/NFL kickoff (Sept).
 - After each change: watch Seq for `53300` and `pool has been exhausted` during
   the next MLB window; both should trend to zero.
 - `pg_stat_activity` grouped by `client_addr` + `datname` (the `sd*.Hangfire`
-  DBs are the tell) during a spike — peak total should stay well under 500.
+  DBs are the tell) during a spike — peak total should stay **under 700**, and
+  trend toward the 500 goal as §1–§3 land (the estimated post-fix MLB ceiling is
+  ~620; see "Target after fixes").
 - Once §6 lands, group by **`application_name`** to see the data-vs-Hangfire
   split per service/role directly:
   ```sql

@@ -213,12 +213,18 @@ function SettingsPage() {
       return;
     }
     // The account (including the Firebase login) is gone server-side. Tear the
-    // local session down the same way sign-out does, then leave the authed app.
+    // local session down the same way sign-out does. clear-token is best-effort;
+    // it must not block the load-bearing Firebase sign-out, so each runs in its
+    // own try/catch.
     try {
       await apiWrapper.Auth.clearToken();
+    } catch (err) {
+      console.warn("clear-token after deletion failed (continuing to sign-out):", err);
+    }
+    try {
       await signOut(getAuth());
     } catch (err) {
-      console.warn("Sign-out after deletion failed (account already gone):", err);
+      console.warn("Firebase sign-out after deletion failed (account already gone):", err);
     }
     toast.success("Your account has been deleted.");
     navigate("/");

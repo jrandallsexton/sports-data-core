@@ -45,8 +45,14 @@ function MainApp() {
 
   const handleSignOut = async () => {
     const auth = getAuth();
+    // Best-effort server-side token clear; it must not block the actual
+    // sign-out, so it runs in its own try/catch.
     try {
       await apiWrapper.Auth.clearToken();
+    } catch (error) {
+      console.warn("clear-token failed (continuing to sign-out):", error);
+    }
+    try {
       await signOut(auth);
       toast.success("Signed out successfully 👋");
       navigate("/");

@@ -27,6 +27,7 @@ import 'react-native-reanimated';
 
 import { queryClient } from '@/src/lib/queryClient';
 import { useAuthInit, useAuth } from '@/src/hooks/useAuth';
+import { useOtaUpdates } from '@/src/hooks/useOtaUpdates';
 import { useRegisterPushDevice } from '@/src/hooks/useRegisterPushDevice';
 import { ThemeProvider, useThemeMode } from '@/src/lib/theme/ThemeContext';
 import { TextSizeProvider, useTextSize } from '@/src/lib/textSize/TextSizeContext';
@@ -114,6 +115,9 @@ function RootLayout() {
 
   // Kick off Firebase auth listener immediately.
   useAuthInit();
+
+  // Apply OTA updates while the app is running (users rarely force-quit).
+  useOtaUpdates();
 
   // Tag every Sentry event with the signed-in user (or clear on sign-out).
   // The store is the source of truth — useAuthInit already syncs Firebase

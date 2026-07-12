@@ -56,7 +56,7 @@ stages:
 
           - script: |
               cd $(Build.SourcesDirectory)/src/UI/sd-ui
-              npm ci
+              npm ci --legacy-peer-deps
             displayName: 'Install dependencies'
 
           - script: |
@@ -72,6 +72,37 @@ stages:
               REACT_APP_API_BASE_URL: https://api.sportdeets.com
               REACT_APP_ENVIRONMENT: production
               REACT_APP_PROD_URL: https://sportdeets.com
+
+  # Vitest suite. The app is on React 19 + react-router 7, which react-scripts@5
+  # / jest 27 can't test (jest's resolver chokes on RRD7's exports map, and
+  # jsdom 16's http-proxy-agent breaks require() on modern Node). Vitest handles
+  # all of that natively on Node 20. --legacy-peer-deps is required for install
+  # (React 19 vs react-scripts@5's React 18 peer). Runs in parallel with
+  # BuildAndTest (dependsOn: []) and does NOT gate the image push yet — once the
+  # suite is trusted, a one-line change makes the push depend on it.
+  - stage: Test
+    displayName: 'Test: sd-ui'
+    dependsOn: []
+    jobs:
+      - job: VitestTest
+        displayName: 'Vitest'
+        steps:
+          - task: NodeTool@0
+            displayName: 'Use Node.js 20'
+            inputs:
+              versionSpec: '20.x'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/UI/sd-ui
+              npm ci --legacy-peer-deps
+            displayName: 'Install dependencies'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/UI/sd-ui
+              npx vitest run
+            displayName: 'Run tests (vitest)'
+            env:
+              CI: 'true'
 
   - stage: BuildImagePushACR
     displayName: 'Build UI Image & Push to ACR'

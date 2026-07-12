@@ -57,11 +57,30 @@ rebuild.
    eas channel:edit production --branch production
    ```
 
-4. **On the device: relaunch TWICE.** ⚠️ This is the #1 gotcha.
+4. **To verify immediately, relaunch TWICE.** ⚠️ This is the classic gotcha.
    `expo-updates` **downloads** the update in the background on one launch and
    **applies** it on the *next* launch. Fully quit the app (swipe it away) and
    reopen — then quit and reopen a **second** time. Opening once and seeing no
-   change does **not** mean OTA failed.
+   change does **not** mean OTA failed. (Real users don't have to do this — see
+   below.)
+
+## Automatic runtime updates (what real users get)
+
+Most users never force-quit the app, so relying on the cold-start check alone
+would leave them on stale JS for days. The `useOtaUpdates` hook (wired in
+`app/_layout.tsx`) fixes that:
+
+- On every foreground (and at launch) it **checks + silently downloads** any
+  available update in the background.
+- It **applies** the update (reloads the JS) only when the user returns after
+  being backgrounded a few minutes — a real "left and came back", which already
+  feels like a fresh open, so the reload is invisible. A quick app-switch never
+  interrupts an active session (e.g. mid-pick).
+
+So after you publish, real users pick it up automatically within a session or
+two without doing anything. The manual double-relaunch above is just for
+verifying a publish right away on your own device. The hook is inert in dev /
+Expo Go (`Updates.isEnabled` is false there); test it in a real build.
 
 ## Verify / diagnose a no-show
 

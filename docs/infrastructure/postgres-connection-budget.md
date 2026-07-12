@@ -75,10 +75,26 @@ Live settings on the 24 GB / 6-vCPU VM:
 - CPU: 6 vCPUs want only ~12–24 *active* connections for throughput; the rest
   should be idle-pooled. At 3% CPU we're nowhere near it.
 
-**Conclusion:** 24 GB comfortably supports ~800 connections for this workload.
-`500` is an arbitrary cap. The fix is the client-pool demand side; raising the
-cap is cheap insurance, not a requirement. **32 GB is optional headroom, not a
-fix** (the config is already correct for 24 GB).
+**Conclusion (estimate — validate before relying on it):** on the *assumption of
+mostly-idle backends*, 24 GB should support ~700–800 connections for this
+workload, so `500` looks like an arbitrary cap rather than a hardware limit, and
+the real fix is the client-pool demand side. **This is a back-of-envelope
+estimate, not a measurement** — `work_mem`, parallel workers, and hash/sort
+operations each allocate memory *per operation*, so a shift toward more active,
+heavier queries can multiply per-backend usage well beyond the ~5–10 MB idle
+figure. Before treating 700–800 as safe, confirm against runtime telemetry:
+
+- **peak backend RSS / cgroup memory** on the PG VM under real MLB-burst load
+  (not idle),
+- **active-session count and burst concurrency** (`pg_stat_activity` sampled at
+  high frequency, since the damage is sub-minute), and
+- **temp-file volume and any OOM/kill events** (`log_temp_files`,
+  `pg_stat_database.temp_bytes`, dmesg/journal OOM lines).
+
+If those stay comfortably within 24 GB at the target connection count, the
+estimate holds; if temp-file spill or RSS climbs under load, trim `work_mem` (§5)
+or cap the connection target. **32 GB is optional headroom, not a fix** (the
+config is already correct for 24 GB).
 
 Caveat: `work_mem=80MB` is the one variable that could bite if `max_connections`
 is raised high *and* active concurrency ever spikes with real sorts. Optional
@@ -149,8 +165,13 @@ WHERE name = 'max_connections';
 -- Expect: setting=500, pending_restart=true
 ```
 
-Then restart PostgreSQL **on the VM** (not via SQL). A restart briefly drops all
-connections; Npgsql pools reconnect automatically. Do it in a quiet window.
+Then restart PostgreSQL **on the VM** (not via SQL). A restart **drops all active
+sessions**; Npgsql doesn't reconnect eagerly — a pooled connection is only
+re-established when it's next *borrowed*, so recovery is lazy and spread across
+subsequent requests. EF Core's retrying execution strategy will absorb most of
+the transient failures, but **any in-flight transaction at the moment of restart
+still fails** (and surfaces to the caller / gets redelivered). Do it in a **quiet
+or drained window**.
 
 ```sh
 # systemd (adjust unit name to your install; Debian/Ubuntu often:
@@ -183,10 +204,18 @@ SELECT pg_reload_conf();   -- takes effect for new statements
 ### 6. (Observability) set `Application Name` in connection strings
 
 `Application Name` is currently unset, so `pg_stat_activity.application_name` is
-blank and incident attribution falls back to `client_addr` (pod IP). Add
-`Application Name=sd{Service}.{Role}` where the connection string is built
-(`Core/DependencyInjection/ServiceRegistration.cs`). Small, high-value for the
-next incident. Can ship independently.
+blank and incident attribution falls back to `client_addr` (pod IP). Set it where
+each connection string is built (`Core/DependencyInjection/ServiceRegistration.cs`)
+— and because every pod runs **two pools**, tag them **distinctly by pool** so
+data vs. Hangfire connections stay separable:
+
+- data pool (`AddDataPersistence`): `Application Name=sd{Service}.{Role}.Data`
+- Hangfire pool (`AddHangfire`): `Application Name=sd{Service}.{Role}.Hangfire`
+
+Then the validation queries below group by `application_name` (see §Validation),
+so `pg_stat_activity` shows, per service/role, exactly how many connections are
+data vs. Hangfire — which is the split this whole incident turned on. Small,
+high-value for the next incident. Can ship independently.
 
 ## Connection budget (real numbers)
 
@@ -244,12 +273,18 @@ race toward its ceiling — which is how the transient 53300 spikes happen.
 | Clamp Notification 100/100 → 15/15 | −170 |
 | Worker: `MinWorkers` 25 → 18, pool 22 → 20 (per-pod 44 → 40) | −4/pod × worker pods |
 
-Immediate (MLB-only now): clamps + worker fix keep the realistic ceiling well
-under 500. **Fall multi-sport is the real constraint** — 2–3 sports of workers
-scaling at once still approaches/exceeds 700 even at 40/pod. That is the case
-for **PgBouncer** (deferred below): it collapses ~1,000+ client connections to
-50–100 server-side and removes the pod-count multiplier entirely. Recommend:
-ship the immediate fixes now; stand up PgBouncer before NCAA/NFL kickoff (Sept).
+Immediate (MLB-only now), after the clamps + worker fix — MLB workers at max
+KEDA (Producer 6 + Provider 4 = 10 pods × 40 = **400**) plus the fixed
+non-worker/shared ceilings (MLB Ingest+Api 4×10 = 40, Producer Daemon ~20, Api
+service 50, clamped Notification 30, clamped leaf 5×12 = 60, JobsDashboard 30 ≈
+**230**) ≈ **~630**. That's **under the new 700 cap but over the 500 goal** —
+which is exactly why `max_connections` was raised to 700 (§4). Concurrent
+NCAA/NFL backlog workers eat further into that. **Fall multi-sport is the real
+constraint** — 2–3 sports of workers scaling at once still approaches/exceeds 700
+even at 40/pod. That is the case for **PgBouncer** (deferred below): it collapses
+~1,000+ client connections to 50–100 server-side and removes the pod-count
+multiplier entirely. Recommend: ship the immediate fixes now; stand up PgBouncer
+before NCAA/NFL kickoff (Sept).
 
 > Budget rule: Σ (peak_pods × 2 × pool_size) over all (service, role) < 450 for
 > ~50 headroom under 500, or < 650 under 700.
@@ -272,13 +307,33 @@ ship the immediate fixes now; stand up PgBouncer before NCAA/NFL kickoff (Sept).
   the next MLB window; both should trend to zero.
 - `pg_stat_activity` grouped by `client_addr` + `datname` (the `sd*.Hangfire`
   DBs are the tell) during a spike — peak total should stay well under 500.
-- Add an alert: active connections > 80% of `max_connections`.
+- Once §6 lands, group by **`application_name`** to see the data-vs-Hangfire
+  split per service/role directly:
+  ```sql
+  SELECT application_name, count(*) AS conns
+  FROM pg_stat_activity
+  WHERE backend_type = 'client backend'
+  GROUP BY application_name ORDER BY conns DESC;
+  -- rows like sd{Service}.{Role}.Data / .Hangfire
+  ```
+- Add an alert on **total** sessions > 80% of `max_connections` — the cap counts
+  every backend, and in this incident nearly all are idle, so an `active`-only
+  alert would never fire:
+  ```sql
+  SELECT count(*) FROM pg_stat_activity;   -- vs max_connections (no state filter)
+  ```
+  (Keep a separate active-query/saturation alert if you want one — but it's not
+  the thing that trips 53300.)
 
 ## Deferred / not now
 
-- **PgBouncer** (`5-postgresql-tuning.md` §Connection Pooling) — biggest lever
-  (240 → 50–100 real connections) but needs Hangfire distributed-lock
-  compatibility testing. Revisit if the above doesn't hold under NFL/NCAA load.
+- **PgBouncer** (`5-postgresql-tuning.md` §Connection Pooling) — biggest lever.
+  The tuning doc's **240** is a *per-service* figure (its 12 pods × 20 workers
+  scenario), **not** the whole platform; the aggregate across all services/roles
+  is the **~1,000+** total computed above. PgBouncer collapses *either* down to
+  **50–100** real PostgreSQL connections — that's why it removes the pod-count
+  multiplier entirely. Needs Hangfire distributed-lock compatibility testing.
+  Revisit if the above doesn't hold under NFL/NCAA load.
 - **32 GB RAM bump** — optional headroom / match the NUC; not required for this
   problem.
 

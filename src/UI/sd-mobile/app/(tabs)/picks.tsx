@@ -5,6 +5,7 @@ import {
   StyleSheet,
   RefreshControl,
   Pressable,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/src/components/ui/AppText';
@@ -133,6 +134,35 @@ export default function PicksScreen() {
     [entries, hidePicked, allPicked],
   );
 
+  // Responsive columns: phones stay single-column; tablets get a multi-column
+  // grid like the web app. Recomputes on rotation via useWindowDimensions, and
+  // the FlatList remounts (key) when the count changes — RN requires that.
+  const { width } = useWindowDimensions();
+  const numColumns = width >= 1100 ? 3 : width >= 680 ? 2 : 1;
+
+  // Pad the final row with invisible slots so a lone last card doesn't stretch
+  // to the full row width under flex:1. Each row (real or placeholder) carries a
+  // stable key; placeholders have a null matchup.
+  type PicksGridItem = {
+    matchup: (typeof entries)[number]['matchup'] | null;
+    pick: (typeof entries)[number]['pick'];
+    key: string;
+  };
+  const gridData = useMemo<PicksGridItem[]>(() => {
+    const rows: PicksGridItem[] = visibleEntries.map((e) => ({
+      matchup: e.matchup,
+      pick: e.pick,
+      key: e.matchup.contestId,
+    }));
+    if (numColumns === 1) return rows;
+    const remainder = rows.length % numColumns;
+    if (remainder === 0) return rows;
+    for (let i = 0; i < numColumns - remainder; i++) {
+      rows.push({ matchup: null, pick: null, key: `placeholder-${i}` });
+    }
+    return rows;
+  }, [visibleEntries, numColumns]);
+
   // Pick-mode badge label. Mirrors web's pill in PicksPage.jsx; suppressed
   // when pickType is missing or unrecognized so a misconfigured league
   // doesn't render a stray "?".
@@ -225,11 +255,20 @@ export default function PicksScreen() {
         <LoadingSpinner message="Loading picks…" />
       ) : (
         <FlatList
-          data={visibleEntries}
-          keyExtractor={(item) => item.matchup.contestId}
-          renderItem={({ item }) => (
+          // Remount when the column count changes (RN requires it for numColumns).
+          key={`cols-${numColumns}`}
+          data={gridData}
+          numColumns={numColumns}
+          columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
+          keyExtractor={(item) => item.key}
+          renderItem={({ item }) => {
+            // Invisible slot filling the last row so real cards keep their width.
+            if (item.matchup === null) return <View style={styles.cardSlot} />;
+            const matchup = item.matchup;
+            return (
+            <View style={styles.cardSlot}>
             <MatchupCard
-              matchup={item.matchup}
+              matchup={matchup}
               pick={item.pick}
               leagueSport={matchupsResponse?.sport ?? null}
               leagueAsOfDate={matchupsResponse?.asOfDate ?? null}
@@ -254,7 +293,7 @@ export default function PicksScreen() {
                     params: {
                       sport: sportLeague.sport,
                       league: sportLeague.league,
-                      id: item.matchup.contestId,
+                      id: matchup.contestId,
                       leagueId: leagueId ?? '',
                       week: String(selectedWeek ?? 1),
                       backTitle: 'Games',
@@ -275,7 +314,7 @@ export default function PicksScreen() {
                   return;
                 }
                 const slug =
-                  side === 'home' ? item.matchup.homeSlug : item.matchup.awaySlug;
+                  side === 'home' ? matchup.homeSlug : matchup.awaySlug;
                 router.push(
                   {
                     pathname: '/sport/[sport]/[league]/team/[slug]',
@@ -301,7 +340,9 @@ export default function PicksScreen() {
                 });
               }}
             />
-          )}
+            </View>
+            );
+          }}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -311,7 +352,6 @@ export default function PicksScreen() {
               tintColor={theme.tint}
             />
           }
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           ListEmptyComponent={
             <EmptyState
               title="No games this week"
@@ -328,7 +368,12 @@ export default function PicksScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  // gap = vertical spacing between rows (replaces the old ItemSeparator).
   list: { padding: 14, paddingBottom: 24, gap: 10 },
+  // Horizontal spacing between columns in a multi-column row.
+  columnWrapper: { gap: 10 },
+  // Each card fills its share of the row so columns stay equal width.
+  cardSlot: { flex: 1 },
 });
 
 const headerStyles = StyleSheet.create({

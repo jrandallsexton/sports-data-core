@@ -43,17 +43,21 @@ rebuild.
    `git checkout main && git pull`.
 
 2. **Publish to the production channel's branch:**
-   ```
+
+   ```sh
    eas update --branch production --message "<what changed>"
    ```
 
 3. **Confirm the channel points at that branch** (silent failure if not):
-   ```
+
+   ```sh
    eas channel:view production
    ```
+
    It should show branch **production** receiving 100%. If it shows no branch or
    a different one, link it once:
-   ```
+
+   ```sh
    eas channel:edit production --branch production
    ```
 

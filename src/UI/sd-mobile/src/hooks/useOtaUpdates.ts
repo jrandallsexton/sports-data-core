@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as Updates from 'expo-updates';
+import * as Sentry from '@sentry/react-native';
 
 /**
  * Applies EAS OTA updates while the app is *running*, so users who never
@@ -53,8 +54,14 @@ export function useOtaUpdates() {
           updateReady.current = true;
         }
       } catch (err) {
-        // Offline / server hiccup — retry on the next foreground.
+        // Usually a transient offline/server hiccup — retry on the next
+        // foreground. Reported at warning level (not error) so it's queryable
+        // without alerting on every offline check.
         console.log('[OTA] check failed (will retry next foreground)', err);
+        Sentry.captureException(err, {
+          level: 'warning',
+          tags: { area: 'ota', phase: 'check' },
+        });
       } finally {
         checking.current = false;
       }
@@ -66,15 +73,18 @@ export function useOtaUpdates() {
         // Restarts the JS with the new bundle; does not return.
         await Updates.reloadAsync();
       } catch (err) {
+        // A downloaded update failing to reload is unexpected — surface it.
         console.warn('[OTA] reload failed', err);
+        Sentry.captureException(err, {
+          tags: { area: 'ota', phase: 'reload' },
+        });
       }
     };
 
-    // Launch pass: fetch a just-published update, but don't reload — the user
-    // just opened the app, and the cold start already applied any prior update
-    // before JS ran.
-    void fetchIfAvailable();
-
+    // No check on mount: expo-updates' native launch check already checks and
+    // applies a pending update at cold start (before JS runs), so an initial
+    // fetch here would just duplicate it. This hook only covers the warm case —
+    // updates published while the app is already running.
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
       if (next === 'background' || next === 'inactive') {
         // Record only the first transition away — iOS fires inactive→background.

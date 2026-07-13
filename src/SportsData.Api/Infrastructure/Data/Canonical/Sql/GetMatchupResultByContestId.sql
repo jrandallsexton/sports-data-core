@@ -8,9 +8,16 @@
   c."HomeScore",
   c."WinnerFranchiseSeasonId",
   c."SpreadWinnerFranchiseSeasonId",
-  c."FinalizedUtc"
+  c."FinalizedUtc",
+  afs."Abbreviation" as "AwayAbbreviation",
+  afs."FranchiseId" as "AwayFranchiseId",
+  hfs."Abbreviation" as "HomeAbbreviation",
+  hfs."FranchiseId" as "HomeFranchiseId"
 from public."Contest" c
 inner join public."Competition" co on co."ContestId" = c."Id"
+-- Team abbreviations + franchise ids for notification copy / picked-side resolution.
+left join public."FranchiseSeason" afs on afs."Id" = c."AwayTeamFranchiseSeasonId"
+left join public."FranchiseSeason" hfs on hfs."Id" = c."HomeTeamFranchiseSeasonId"
 
 -- Use LATERAL join to prioritize ESPN (58) over DraftKings (100)
 LEFT JOIN LATERAL (

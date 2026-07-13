@@ -109,6 +109,31 @@ public class NotificationDispatcherTests : NotificationTestBase<NotificationDisp
     }
 
     [Fact]
+    public async Task PickDeadline_OptedOut_SuppressedAndDoesNotNotify()
+    {
+        var userId = Guid.NewGuid();
+        var leagueId = Guid.NewGuid();
+        await SeedDeviceAsync(userId);
+        await SeedScheduleAsync(userId, "PickDeadline", leagueId, seasonWeek: 3, FireTime);
+        DataContext.UserNotificationPreferences.Add(new UserNotificationPreferences
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            PickDeadlineReminderEnabled = false,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        await DataContext.SaveChangesAsync();
+
+        var sut = Mocker.CreateInstance<NotificationDispatcher>();
+        await sut.SendPickDeadlineReminderAsync(userId, leagueId, 3, FireTime);
+
+        VerifySendCount(Times.Never());
+        var row = await DataContext.NotificationPickDeadlines.SingleAsync();
+        row.Result.Should().Be("Suppressed_UserOptedOut");
+    }
+
+    [Fact]
     public async Task ContestStart_MatchingScheduleAndDevice_NotifiesAndPersistsRow()
     {
         var userId = Guid.NewGuid();
@@ -151,5 +176,21 @@ public class NotificationDispatcherTests : NotificationTestBase<NotificationDisp
         VerifySendCount(Times.Never());
         var row = await DataContext.NotificationContestStarts.SingleAsync();
         row.Result.Should().Be("Suppressed_UserOptedOut");
+    }
+
+    [Fact]
+    public async Task ContestStart_NoScheduleRow_SuppressedStaleFire()
+    {
+        // No PendingScheduledJob → the fire is an orphan; suppress before sending.
+        var userId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        await SeedDeviceAsync(userId);
+
+        var sut = Mocker.CreateInstance<NotificationDispatcher>();
+        await sut.SendContestStartReminderAsync(userId, contestId, FireTime);
+
+        VerifySendCount(Times.Never());
+        var row = await DataContext.NotificationContestStarts.SingleAsync();
+        row.Result.Should().Be("Suppressed_StaleFire");
     }
 }

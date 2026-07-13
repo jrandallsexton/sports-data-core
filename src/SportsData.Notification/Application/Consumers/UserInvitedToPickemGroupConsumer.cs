@@ -24,10 +24,10 @@ namespace SportsData.Notification.Application.Consumers
     /// </para>
     ///
     /// <para>
-    /// Single-recipient dispatch mirrors <see cref="ContestOddsUpdatedConsumer"/>:
-    /// atomic NotificationLog claim on the unique
-    /// <c>(CorrelationId, UserId, Channel)</c> index (idempotent across
-    /// redelivery) → prefs → devices → send → terminal update.
+    /// Single-recipient dispatch: atomic <see cref="NotificationLeagueInvitation"/>
+    /// claim on the unique <c>(UserId, LeagueId, CorrelationId)</c> index
+    /// (idempotent across redelivery of one invite; a re-invite re-notifies) →
+    /// prefs → devices → send → terminal update.
     /// </para>
     /// </summary>
     public class UserInvitedToPickemGroupConsumer : IConsumer<UserInvitedToPickemGroup>
@@ -61,18 +61,20 @@ namespace SportsData.Notification.Application.Consumers
 
             _logger.LogInformation("UserInvitedToPickemGroup received.");
 
-            // Atomic claim keyed on (CorrelationId, UserId, Channel): idempotent
-            // across redelivery of the same invite.
-            var claim = new NotificationLog
+            // Atomic claim keyed on (UserId, LeagueId, CorrelationId): idempotent
+            // across redelivery of the same invite, while a genuine re-invite
+            // (new CorrelationId) re-notifies.
+            var claim = new NotificationLeagueInvitation
             {
                 UserId = msg.InviteeUserId,
+                LeagueId = msg.GroupId,
+                InvitedByUserId = msg.InvitedByUserId,
                 CorrelationId = msg.CorrelationId,
-                Category = "LeagueInvite",
                 Channel = "Fcm",
                 Result = "Dispatching",
                 AttemptedUtc = _dateTimeProvider.UtcNow()
             };
-            _dataContext.NotificationLog.Add(claim);
+            _dataContext.NotificationLeagueInvitations.Add(claim);
 
             try
             {
@@ -86,8 +88,8 @@ namespace SportsData.Notification.Application.Consumers
                 // notification beats a duplicate. Stale rows are a future cleanup
                 // job, not recovered here.
                 _logger.LogInformation(
-                    "League-invite notification already claimed for CorrelationId {CorrelationId}, UserId {UserId}; skipping.",
-                    msg.CorrelationId, msg.InviteeUserId);
+                    "League-invite notification already claimed for UserId {UserId}, LeagueId {LeagueId} (CorrelationId {CorrelationId}); skipping.",
+                    msg.InviteeUserId, msg.GroupId, msg.CorrelationId);
                 _dataContext.Entry(claim).State = EntityState.Detached;
                 return;
             }
@@ -139,7 +141,7 @@ namespace SportsData.Notification.Application.Consumers
             await _dataContext.SaveChangesAsync(context.CancellationToken);
         }
 
-        private async Task FinalizeAsync(NotificationLog claim, string result, CancellationToken cancellationToken)
+        private async Task FinalizeAsync(NotificationLeagueInvitation claim, string result, CancellationToken cancellationToken)
         {
             claim.Result = result;
             claim.ModifiedUtc = _dateTimeProvider.UtcNow();

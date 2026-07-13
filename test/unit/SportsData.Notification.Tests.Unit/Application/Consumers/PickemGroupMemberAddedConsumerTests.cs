@@ -16,17 +16,17 @@ using Xunit;
 
 namespace SportsData.Notification.Tests.Unit.Application.Consumers;
 
-public class UserInvitedToPickemGroupConsumerTests : NotificationTestBase<UserInvitedToPickemGroupConsumer>
+// Covers the membership (welcome) push claiming/dispatching into the typed
+// NotificationMembership table via the public Consume path.
+public class PickemGroupMemberAddedConsumerTests : NotificationTestBase<PickemGroupMemberAddedConsumer>
 {
-    private static readonly DateTime FixedNow = new(2026, 6, 30, 12, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime FixedNow = new(2026, 7, 13, 12, 0, 0, DateTimeKind.Utc);
 
     private readonly Mock<IPushNotificationSender> _pushSender;
 
-    public UserInvitedToPickemGroupConsumerTests()
+    public PickemGroupMemberAddedConsumerTests()
     {
-        Mocker.GetMock<IDateTimeProvider>()
-            .Setup(x => x.UtcNow())
-            .Returns(FixedNow);
+        Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(FixedNow);
 
         _pushSender = Mocker.GetMock<IPushNotificationSender>();
         _pushSender
@@ -35,17 +35,16 @@ public class UserInvitedToPickemGroupConsumerTests : NotificationTestBase<UserIn
             .ReturnsAsync(new Success<string>("msg-id"));
     }
 
-    private static ConsumeContext<UserInvitedToPickemGroup> ContextFor(UserInvitedToPickemGroup msg)
+    private static ConsumeContext<PickemGroupMemberAdded> ContextFor(PickemGroupMemberAdded msg)
     {
-        var ctx = new Mock<ConsumeContext<UserInvitedToPickemGroup>>();
+        var ctx = new Mock<ConsumeContext<PickemGroupMemberAdded>>();
         ctx.SetupGet(x => x.Message).Returns(msg);
         ctx.SetupGet(x => x.CancellationToken).Returns(CancellationToken.None);
         return ctx.Object;
     }
 
-    private static UserInvitedToPickemGroup Msg(Guid inviteeUserId, Guid groupId)
-        => new(inviteeUserId, groupId, "Saturday Smackdown", Guid.NewGuid(),
-            Sport.FootballNcaa, 2026, Guid.NewGuid(), Guid.NewGuid());
+    private static PickemGroupMemberAdded Msg(Guid userId, Guid groupId)
+        => new(groupId, userId, Sport.FootballNcaa, 2026, Guid.NewGuid(), Guid.NewGuid());
 
     private async Task SeedDeviceAsync(Guid userId, bool enabled = true)
     {
@@ -65,16 +64,15 @@ public class UserInvitedToPickemGroupConsumerTests : NotificationTestBase<UserIn
     }
 
     private void VerifySendCount(Times times) =>
-        _pushSender.Verify(x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()), times);
+        _pushSender.Verify(x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), times);
 
     [Fact]
-    public async Task Consume_RegisteredInviteeWithDevice_Notifies()
+    public async Task Consume_MemberWithDevice_Notifies()
     {
         var userId = Guid.NewGuid();
         await SeedDeviceAsync(userId);
 
-        var sut = Mocker.CreateInstance<UserInvitedToPickemGroupConsumer>();
+        var sut = Mocker.CreateInstance<PickemGroupMemberAddedConsumer>();
         await sut.Consume(ContextFor(Msg(userId, Guid.NewGuid())));
 
         VerifySendCount(Times.Once());
@@ -89,13 +87,13 @@ public class UserInvitedToPickemGroupConsumerTests : NotificationTestBase<UserIn
         {
             Id = Guid.NewGuid(),
             UserId = userId,
-            LeagueInviteEnabled = false,
+            MembershipEnabled = false,
             CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         });
         await DataContext.SaveChangesAsync();
 
-        var sut = Mocker.CreateInstance<UserInvitedToPickemGroupConsumer>();
+        var sut = Mocker.CreateInstance<PickemGroupMemberAddedConsumer>();
         await sut.Consume(ContextFor(Msg(userId, Guid.NewGuid())));
 
         VerifySendCount(Times.Never());
@@ -107,55 +105,26 @@ public class UserInvitedToPickemGroupConsumerTests : NotificationTestBase<UserIn
         var userId = Guid.NewGuid();
         await SeedDeviceAsync(userId, enabled: false);
 
-        var sut = Mocker.CreateInstance<UserInvitedToPickemGroupConsumer>();
+        var sut = Mocker.CreateInstance<PickemGroupMemberAddedConsumer>();
         await sut.Consume(ContextFor(Msg(userId, Guid.NewGuid())));
 
         VerifySendCount(Times.Never());
     }
 
     [Fact]
-    public async Task Consume_PopulatesDeepLinkDataPayload()
+    public async Task Consume_PersistsTypedRow_WithMembershipMetadata()
     {
         var userId = Guid.NewGuid();
         var groupId = Guid.NewGuid();
         await SeedDeviceAsync(userId);
 
-        IReadOnlyDictionary<string, string> captured = null;
-        _pushSender
-            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, string, string, IReadOnlyDictionary<string, string>, CancellationToken>(
-                (_, _, _, data, _) => captured = data)
-            .ReturnsAsync(new Success<string>("msg-id"));
-
-        var sut = Mocker.CreateInstance<UserInvitedToPickemGroupConsumer>();
-        await sut.Consume(ContextFor(Msg(userId, groupId)));
-
-        captured.Should().NotBeNull();
-        captured["kind"].Should().Be("LeagueInvite");
-        captured["target"].Should().Be("invite-preview");
-        captured["leagueId"].Should().Be(groupId.ToString());
-    }
-
-    [Fact]
-    public async Task Consume_PersistsTypedRow_WithInviteMetadata()
-    {
-        // The typed table carries the invite's subject (LeagueId, InvitedByUserId)
-        // as real columns instead of the catch-all NotificationLog.
-        var userId = Guid.NewGuid();
-        var groupId = Guid.NewGuid();
-        var invitedBy = Guid.NewGuid();
-        await SeedDeviceAsync(userId);
-
-        var msg = new UserInvitedToPickemGroup(userId, groupId, "Saturday Smackdown",
-            invitedBy, Sport.FootballNcaa, 2026, Guid.NewGuid(), Guid.NewGuid());
-        var sut = Mocker.CreateInstance<UserInvitedToPickemGroupConsumer>();
+        var msg = Msg(userId, groupId);
+        var sut = Mocker.CreateInstance<PickemGroupMemberAddedConsumer>();
         await sut.Consume(ContextFor(msg));
 
-        var row = await DataContext.NotificationLeagueInvitations.SingleAsync();
+        var row = await DataContext.NotificationMemberships.SingleAsync();
         row.UserId.Should().Be(userId);
         row.LeagueId.Should().Be(groupId);
-        row.InvitedByUserId.Should().Be(invitedBy);
         row.CorrelationId.Should().Be(msg.CorrelationId);
         row.Channel.Should().Be("Fcm");
         row.Result.Should().Be("Sent");

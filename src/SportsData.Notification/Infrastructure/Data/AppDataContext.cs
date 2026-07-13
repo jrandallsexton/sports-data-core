@@ -44,6 +44,10 @@ namespace SportsData.Notification.Infrastructure.Data
 
         public DbSet<NotificationUserPick> NotificationUserPicks => Set<NotificationUserPick>();
 
+        public DbSet<NotificationLeagueInvitation> NotificationLeagueInvitations => Set<NotificationLeagueInvitation>();
+
+        public DbSet<NotificationMembership> NotificationMemberships => Set<NotificationMembership>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -125,6 +129,23 @@ namespace SportsData.Notification.Infrastructure.Data
             // See docs/architecture/notification-log-table-per-type.md.
             modelBuilder.Entity<NotificationUserPick>()
                 .HasIndex(l => new { l.UserId, l.PickId })
+                .IsUnique();
+
+            // Typed league-invite idempotency key. Unlike the pick-result table,
+            // CorrelationId IS part of the key here: each invite action has its
+            // own CorrelationId, so redelivery of one invite collides (suppressed)
+            // while a genuine re-invite has a new CorrelationId and re-notifies
+            // (decided — the user may have missed the first). Replaces the
+            // NotificationLog claim for the LeagueInvite path.
+            // See docs/architecture/notification-log-table-per-type.md.
+            modelBuilder.Entity<NotificationLeagueInvitation>()
+                .HasIndex(l => new { l.UserId, l.LeagueId, l.CorrelationId })
+                .IsUnique();
+
+            // Typed membership idempotency key: one welcome per user per league.
+            // Replaces the NotificationLog claim for the Membership path.
+            modelBuilder.Entity<NotificationMembership>()
+                .HasIndex(l => new { l.UserId, l.LeagueId })
                 .IsUnique();
 
             // League-wide fan-out is the dominant query against this join

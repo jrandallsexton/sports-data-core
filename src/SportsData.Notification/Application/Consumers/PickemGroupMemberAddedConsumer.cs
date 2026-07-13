@@ -40,7 +40,7 @@ namespace SportsData.Notification.Application.Consumers
     /// </summary>
     public class PickemGroupMemberAddedConsumer : IConsumer<PickemGroupMemberAdded>
     {
-        // NotificationLog.FailureReason is varchar(512); per-device detail
+        // NotificationMembership.FailureReason is varchar(512); per-device detail
         // stays in structured logs.
         private const int FailureReasonMaxLength = 512;
         private const string FailureReasonTruncationSuffix = "…(truncated)";
@@ -75,17 +75,18 @@ namespace SportsData.Notification.Application.Consumers
 
             _logger.LogInformation("PickemGroupMemberAdded received.");
 
-            // Atomic claim — see UserPickScoredConsumer for full rationale.
-            var claim = new NotificationLog
+            // Atomic claim keyed on (UserId, LeagueId) — one welcome per user per
+            // league. See UserPickScoredConsumer for the claim-first rationale.
+            var claim = new NotificationMembership
             {
                 UserId = msg.UserId,
+                LeagueId = msg.GroupId,
                 CorrelationId = msg.CorrelationId,
-                Category = "Membership",
                 Channel = "Fcm",
                 Result = "Dispatching",
                 AttemptedUtc = _dateTimeProvider.UtcNow()
             };
-            _dataContext.NotificationLog.Add(claim);
+            _dataContext.NotificationMemberships.Add(claim);
 
             try
             {
@@ -94,8 +95,8 @@ namespace SportsData.Notification.Application.Consumers
             catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
             {
                 _logger.LogInformation(
-                    "PickemGroupMemberAdded already claimed by another consumer for CorrelationId {CorrelationId}, UserId {UserId}; skipping.",
-                    msg.CorrelationId, msg.UserId);
+                    "PickemGroupMemberAdded already claimed for UserId {UserId}, LeagueId {LeagueId} (CorrelationId {CorrelationId}); skipping.",
+                    msg.UserId, msg.GroupId, msg.CorrelationId);
                 _dataContext.Entry(claim).State = EntityState.Detached;
                 return;
             }
@@ -175,7 +176,7 @@ namespace SportsData.Notification.Application.Consumers
             await _dataContext.SaveChangesAsync();
         }
 
-        private async Task FinalizeAsync(NotificationLog claim, string result)
+        private async Task FinalizeAsync(NotificationMembership claim, string result)
         {
             claim.Result = result;
             claim.ModifiedUtc = _dateTimeProvider.UtcNow();

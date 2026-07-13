@@ -217,14 +217,17 @@ namespace SportsData.Api.Application.Scoring
                     // §5 v1). Publish BEFORE SaveChanges so the bus-outbox
                     // interceptor commits this together with the pick update;
                     // an at-least-once redelivery is fine — Notification's
-                    // NotificationLog dedupe on (CorrelationId, UserId, Channel)
-                    // absorbs it. Structured facts only (abbreviations,
+                    // NotificationUserPick dedupe on (UserId, PickId) absorbs it,
+                    // and a re-score from a different correlation chain (cron
+                    // backstop) collides on the same PickId too. Structured facts
+                    // only (abbreviations,
                     // PickedIsHome, PickedSpread); the consumer composes the copy.
                     // DisplayName and full AwayName/HomeName stay null (unused).
                     await _bus.Publish(new UserPickScored(
                             pick.UserId,
                             null,
                             command.ContestId,
+                            pick.Id,
                             null,
                             null,
                             result.AwayAbbreviation,

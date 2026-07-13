@@ -17,8 +17,8 @@ namespace SportsData.Notification.Application.Consumers
     /// Every member who picked a finalized contest gets one of these events.
     ///
     /// <para>
-    /// Orchestration: <b>atomic-claim</b> via NotificationLog insert
-    /// (relies on the unique <c>(CorrelationId, UserId, Channel)</c> index)
+    /// Orchestration: <b>atomic-claim</b> via NotificationUserPick insert
+    /// (relies on the unique <c>(UserId, PickId)</c> index)
     /// → resolve prefs → resolve devices → dispatch via
     /// <see cref="IPushNotificationSender"/> → update the row with terminal outcome.
     /// </para>
@@ -42,7 +42,7 @@ namespace SportsData.Notification.Application.Consumers
     /// </summary>
     public class UserPickScoredConsumer : IConsumer<UserPickScored>
     {
-        // NotificationLog.FailureReason is varchar(512). Truncate the joined
+        // NotificationUserPick.FailureReason is varchar(512). Truncate the joined
         // per-device summary so we don't trip Postgres's length check on a
         // user with many failing devices; per-device detail stays in logs.
         private const int FailureReasonMaxLength = 512;
@@ -79,20 +79,25 @@ namespace SportsData.Notification.Application.Consumers
 
             _logger.LogInformation("UserPickScored received.");
 
-            // Atomic claim. Insert a NotificationLog row in Dispatching state
-            // BEFORE doing any work. If another consumer beat us to it, the
-            // unique constraint throws DbUpdateException and we bail without
-            // dispatching anything.
-            var claim = new NotificationLog
+            // Atomic claim. Insert a NotificationUserPick row in Dispatching
+            // state BEFORE doing any work. The (UserId, PickId) unique index is
+            // the idempotency key — one push per pick, ever. If another consumer
+            // (redelivery, or a re-score from the cron backstop on a different
+            // correlation chain) beat us to it, the unique constraint throws
+            // DbUpdateException and we bail without dispatching anything.
+            // CorrelationId is carried for tracing only, not part of the key.
+            var claim = new NotificationUserPick
             {
                 UserId = msg.UserId,
+                PickId = msg.PickId,
+                ContestId = msg.ContestId,
+                LeagueId = msg.LeagueId,
                 CorrelationId = msg.CorrelationId,
-                Category = "PickResult",
                 Channel = "Fcm",
                 Result = "Dispatching",
                 AttemptedUtc = _dateTimeProvider.UtcNow()
             };
-            _dataContext.NotificationLog.Add(claim);
+            _dataContext.NotificationUserPicks.Add(claim);
 
             try
             {
@@ -101,8 +106,8 @@ namespace SportsData.Notification.Application.Consumers
             catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
             {
                 _logger.LogInformation(
-                    "UserPickScored already claimed by another consumer for CorrelationId {CorrelationId}, UserId {UserId}; skipping.",
-                    msg.CorrelationId, msg.UserId);
+                    "UserPickScored already claimed for PickId {PickId}, UserId {UserId} (CorrelationId {CorrelationId}); skipping.",
+                    msg.PickId, msg.UserId, msg.CorrelationId);
                 _dataContext.Entry(claim).State = EntityState.Detached;
                 return;
             }
@@ -179,7 +184,7 @@ namespace SportsData.Notification.Application.Consumers
             await _dataContext.SaveChangesAsync();
         }
 
-        private async Task FinalizeAsync(NotificationLog claim, string result)
+        private async Task FinalizeAsync(NotificationUserPick claim, string result)
         {
             claim.Result = result;
             claim.ModifiedUtc = _dateTimeProvider.UtcNow();

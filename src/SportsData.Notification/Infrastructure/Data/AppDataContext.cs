@@ -42,6 +42,8 @@ namespace SportsData.Notification.Infrastructure.Data
 
         public DbSet<NotificationLog> NotificationLog => Set<NotificationLog>();
 
+        public DbSet<NotificationUserPick> NotificationUserPicks => Set<NotificationUserPick>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -111,6 +113,18 @@ namespace SportsData.Notification.Infrastructure.Data
             // insert race window that this constraint closes.
             modelBuilder.Entity<NotificationLog>()
                 .HasIndex(l => new { l.CorrelationId, l.UserId, l.Channel })
+                .IsUnique();
+
+            // Typed pick-result idempotency key: one push per pick, ever. A pick
+            // is scored exactly once, so (UserId, PickId) both stops the cross-run
+            // duplicate the old CorrelationId-based key let through AND preserves
+            // the per-league notifications it wrongly collapsed (a user in N
+            // leagues who picked one game has N distinct PickIds). CorrelationId
+            // is a tracing column here, not part of the key. Replaces the
+            // NotificationLog claim for the PickResult path.
+            // See docs/architecture/notification-log-table-per-type.md.
+            modelBuilder.Entity<NotificationUserPick>()
+                .HasIndex(l => new { l.UserId, l.PickId })
                 .IsUnique();
 
             // League-wide fan-out is the dominant query against this join

@@ -27,6 +27,10 @@ namespace SportsData.Core.Eventing.Events.Picks
         Guid UserId,
         string? DisplayName,
         Guid ContestId,
+        // The scored pick (PickemGroupUserPick.Id). The Notification service's
+        // typed pick-result table dedupes on (UserId, PickId) — one push per
+        // pick — so this must be the real pick id, not defaulted.
+        Guid PickId,
         string? AwayName,
         string? HomeName,
         string? AwayAbbreviation,

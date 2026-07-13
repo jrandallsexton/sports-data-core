@@ -15,7 +15,9 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
     /// Same crash-safe pattern as Producer's CompetitionStream: persist the
     /// new Hangfire job id, save, then delete the old job. If delete fails
     /// the orphan job becomes a benign duplicate — the FCM send path is
-    /// idempotent via the NotificationLog dedupe key.
+    /// idempotent via the reminder tables' natural keys
+    /// (NotificationPickDeadline / NotificationContestStart), whose FireTimeUtc
+    /// component also lets a reschedule re-fire while a retry does not.
     /// </summary>
     public class PendingScheduledJob : CanonicalEntityBase<Guid>
     {

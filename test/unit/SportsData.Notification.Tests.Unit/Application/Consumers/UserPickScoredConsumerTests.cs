@@ -2,6 +2,8 @@ using FluentAssertions;
 
 using MassTransit;
 
+using Microsoft.EntityFrameworkCore;
+
 using Moq;
 
 using SportsData.Core.Common;
@@ -72,13 +74,17 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
         bool? isCorrect,
         bool? pickedIsHome,
         double? pickedSpread,
-        string leagueName = "Sluggers")
+        string leagueName = "Sluggers",
+        Guid? pickId = null,
+        Guid? contestId = null,
+        Guid? leagueId = null,
+        Guid? correlationId = null)
         => new(
-            userId, null, Guid.NewGuid(), null, null,
+            userId, null, contestId ?? Guid.NewGuid(), pickId ?? Guid.NewGuid(), null, null,
             awayAbbr, homeAbbr, awayScore, homeScore,
             isCorrect, pickedIsHome, pickedSpread,
-            Guid.NewGuid(), leagueName, Sport.BaseballMlb, 2026,
-            Guid.NewGuid(), Guid.NewGuid());
+            leagueId ?? Guid.NewGuid(), leagueName, Sport.BaseballMlb, 2026,
+            correlationId ?? Guid.NewGuid(), Guid.NewGuid());
 
     private async Task<string> RunAndCaptureBodyAsync(UserPickScored msg)
     {
@@ -145,4 +151,67 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
         body.Should().Contain("Your pick won.");
         body.Should().NotContain("you picked");
     }
+
+    [Fact]
+    public async Task Consume_PersistsTypedRow_WithPickMetadata()
+    {
+        // The whole point of the typed table: the audit row carries the
+        // notification's subject (PickId/ContestId/LeagueId) as real columns.
+        var userId = Guid.NewGuid();
+        var pickId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        var leagueId = Guid.NewGuid();
+
+        await RunAndCaptureBodyAsync(
+            Msg(userId, "BOS", "NYY", awayScore: 3, homeScore: 2,
+                isCorrect: true, pickedIsHome: false, pickedSpread: null,
+                pickId: pickId, contestId: contestId, leagueId: leagueId));
+
+        var row = await DataContext.NotificationUserPicks.SingleAsync();
+        row.UserId.Should().Be(userId);
+        row.PickId.Should().Be(pickId);
+        row.ContestId.Should().Be(contestId);
+        row.LeagueId.Should().Be(leagueId);
+        row.Channel.Should().Be("Fcm");
+        row.Result.Should().Be("Sent");
+        row.Title.Should().Be("Nice pick!");
+        row.Body.Should().Be("Sluggers: BOS 3, NYY 2 — you picked BOS ✓");
+    }
+
+    [Fact]
+    public async Task Consume_SameUserAndContest_DistinctPicks_EachNotifies()
+    {
+        // A user in three leagues who picked the same game has three distinct
+        // PickIds — but all three events come from ONE scoring run and therefore
+        // share ONE CorrelationId. The old (CorrelationId, UserId, Channel) key
+        // collapsed them to a single push; (UserId, PickId) preserves all three.
+        // The shared CorrelationId is the whole point: it's exactly what the old
+        // key keyed on. One device, three picks → three rows and three sends.
+        var userId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        var correlationId = Guid.NewGuid();
+        await SeedDeviceAsync(userId);
+
+        foreach (var _ in Enumerable.Range(0, 3))
+        {
+            var msg = Msg(userId, "BOS", "NYY", awayScore: 3, homeScore: 2,
+                isCorrect: true, pickedIsHome: false, pickedSpread: null,
+                pickId: Guid.NewGuid(), contestId: contestId, leagueId: Guid.NewGuid(),
+                correlationId: correlationId);
+            var sut = Mocker.CreateInstance<UserPickScoredConsumer>();
+            await sut.Consume(ContextFor(msg));
+        }
+
+        (await DataContext.NotificationUserPicks.CountAsync()).Should().Be(3);
+        _pushSender.Verify(
+            x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(3));
+    }
+
+    // Note: the duplicate-suppression path (a re-scored pick / redelivery on a
+    // different CorrelationId colliding on the (UserId, PickId) unique index and
+    // hitting the "already claimed" branch) relies on Postgres raising 23505.
+    // The InMemory provider does not enforce unique indexes, so that branch is
+    // validated against the local migration DB rather than here.
 }

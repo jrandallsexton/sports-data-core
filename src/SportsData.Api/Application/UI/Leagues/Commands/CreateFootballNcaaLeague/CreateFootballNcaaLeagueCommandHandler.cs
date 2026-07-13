@@ -6,6 +6,7 @@ using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
@@ -27,9 +28,10 @@ public class CreateFootballNcaaLeagueCommandHandler
         AppDataContext dbContext,
         IEventBus eventBus,
         IFranchiseClientFactory franchiseClientFactory,
+        IContestClientFactory contestClientFactory,
         IValidator<CreateFootballNcaaLeagueRequest> validator,
         IDateTimeProvider dateTimeProvider)
-        : base(logger, dbContext, eventBus, franchiseClientFactory, validator, dateTimeProvider)
+        : base(logger, dbContext, eventBus, franchiseClientFactory, contestClientFactory, validator, dateTimeProvider)
     {
     }
 

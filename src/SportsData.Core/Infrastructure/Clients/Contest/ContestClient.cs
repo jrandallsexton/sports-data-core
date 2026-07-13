@@ -71,6 +71,14 @@ public interface IProvideContests : IProvideHealthChecks
     // Matchup query endpoints (Phase 2)
     Task<Result<List<Matchup>>> GetMatchupsForCurrentWeek(CancellationToken ct = default);
     Task<Result<List<Matchup>>> GetMatchupsForSeasonWeek(int year, int week, CancellationToken ct = default);
+
+    /// <summary>
+    /// Distinct calendar dates (US Eastern) that have at least one scheduled game
+    /// in the [from, to] window. Either bound may be null for an open-ended
+    /// range. Backs the create-league blackout-date picker and the create-time
+    /// zero-game guard.
+    /// </summary>
+    Task<Result<List<DateOnly>>> GetGameDates(DateTime? from, DateTime? to, CancellationToken ct = default);
     Task<Result<Matchup>> GetMatchupByContestId(Guid contestId, CancellationToken ct = default);
     Task<Result<List<LeagueMatchupDto>>> GetMatchupsByContestIds(List<Guid> contestIds, MarkDirection direction, CancellationToken ct = default);
     Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default);
@@ -329,6 +337,20 @@ public class ContestClient : ClientBase, IProvideContests
         return await GetAsync<List<Matchup>>(
             $"contests/matchups/by-season-week?year={year}&week={week}",
             new List<Matchup>(), "Matchups for season week", ResultStatus.NotFound, ct);
+    }
+
+    public async Task<Result<List<DateOnly>>> GetGameDates(DateTime? from, DateTime? to, CancellationToken ct = default)
+    {
+        var query = new List<string>();
+        if (from.HasValue)
+            query.Add($"from={Uri.EscapeDataString(from.Value.ToString("o"))}");
+        if (to.HasValue)
+            query.Add($"to={Uri.EscapeDataString(to.Value.ToString("o"))}");
+        var queryString = query.Count > 0 ? "?" + string.Join("&", query) : string.Empty;
+
+        return await GetAsync<List<DateOnly>>(
+            $"contests/game-dates{queryString}",
+            new List<DateOnly>(), "Game dates", ResultStatus.NotFound, ct);
     }
 
     public async Task<Result<Matchup>> GetMatchupByContestId(Guid contestId, CancellationToken ct = default)

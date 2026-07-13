@@ -9,6 +9,7 @@ using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands;
@@ -52,6 +53,7 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
     private readonly AppDataContext _dbContext;
     private readonly IEventBus _eventBus;
     private readonly IFranchiseClientFactory _franchiseClientFactory;
+    private readonly IContestClientFactory _contestClientFactory;
     private readonly IValidator<TRequest> _validator;
     private readonly IDateTimeProvider _dateTimeProvider;
 
@@ -60,6 +62,7 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
         AppDataContext dbContext,
         IEventBus eventBus,
         IFranchiseClientFactory franchiseClientFactory,
+        IContestClientFactory contestClientFactory,
         IValidator<TRequest> validator,
         IDateTimeProvider dateTimeProvider)
     {
@@ -67,6 +70,7 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
         _dbContext = dbContext;
         _eventBus = eventBus;
         _franchiseClientFactory = franchiseClientFactory;
+        _contestClientFactory = contestClientFactory;
         _validator = validator;
         _dateTimeProvider = dateTimeProvider;
     }
@@ -112,6 +116,36 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
         var validation = await _validator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
             return new Failure<Guid>(default!, ResultStatus.Validation, validation.Errors);
+
+        // Blackout guard: a windowed league whose date range contains no games
+        // bootstraps to zero matchups (e.g. an MLB league created on the
+        // All-Star break). Reject up front so we never create an empty league.
+        // Full-season leagues (both bounds null) always cover games, so skip the
+        // round-trip. See docs/architecture/league-creation-blackout-dates.md.
+        if (request.StartsOn.HasValue || request.EndsOn.HasValue)
+        {
+            var gameDates = await _contestClientFactory
+                .Resolve(SportMode)
+                .GetGameDates(request.StartsOn, request.EffectiveEndsOn, cancellationToken);
+
+            // Fail OPEN on a client/dependency error: don't block a user-facing
+            // create on a transient Producer outage. Only reject on a
+            // confirmed-empty window — the actual bug this guards against. The
+            // daily MatchupScheduler still backfills if games exist.
+            if (gameDates.IsSuccess && gameDates.Value.Count == 0)
+            {
+                _logger.LogInformation(
+                    "Rejecting create-league: no {Sport} games in window {StartsOn:o}..{EndsOn:o}.",
+                    SportMode, request.StartsOn, request.EffectiveEndsOn);
+
+                return new Failure<Guid>(
+                    default!,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(request.StartsOn),
+                        $"No {SportMode} games are scheduled in the selected date range. " +
+                        "Choose a range that includes at least one game day.")]);
+            }
+        }
 
         // Enum parsing is guaranteed by the validator above.
         var pickType = Enum.Parse<PickType>(request.PickType, ignoreCase: true);

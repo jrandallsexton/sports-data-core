@@ -403,6 +403,25 @@ namespace SportsData.Producer.Application.Contests
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Distinct calendar dates (US Eastern) that have at least one scheduled
+        /// game in the [from, to] window. Backs the create-league blackout-date
+        /// picker and the create-time zero-game guard. Sport is implicit (this
+        /// per-sport Producer answers for its own sport). Either bound may be
+        /// omitted for an open-ended range.
+        /// </summary>
+        [HttpGet("game-dates")]
+        public async Task<ActionResult<List<DateOnly>>> GetGameDates(
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to,
+            [FromServices] Queries.GameDates.IGetGameDatesQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(
+                new Queries.GameDates.GetGameDatesQuery(from, to), cancellationToken);
+            return result.ToActionResult();
+        }
+
         [HttpGet("{contestId}/matchup")]
         public async Task<ActionResult<Dtos.Canonical.Matchup>> GetMatchupByContestId(
             [FromRoute] Guid contestId,

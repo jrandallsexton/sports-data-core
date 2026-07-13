@@ -24,6 +24,7 @@ using SportsData.Api.Application.UI.Leagues.Queries.GetUserLeagues;
 using SportsData.Api.Extensions;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.UI.Leagues;
 
@@ -89,6 +90,50 @@ public class LeagueController : ApiControllerBase
             return CreatedAtAction(nameof(GetById), new { id = result.Value }, new { id = result.Value });
 
         return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Distinct calendar dates (US Eastern) that have at least one scheduled game
+    /// for the given sport/league within [from, to]. Backs the create-league
+    /// date picker's blackout-date logic — the FE enables these dates and treats
+    /// the rest of the range as no-game days. Either bound may be omitted.
+    /// </summary>
+    [HttpGet("{sport}/{league}/game-dates")]
+    [Authorize]
+    public async Task<ActionResult<object>> GetGameDates(
+        [FromRoute] string sport,
+        [FromRoute] string league,
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromServices] IContestClientFactory contestClientFactory,
+        CancellationToken cancellationToken)
+    {
+        if (!TryResolveSport(sport, league, out var resolvedSport))
+            return BadRequest($"Unsupported sport/league '{sport}/{league}'.");
+
+        var result = await contestClientFactory
+            .Resolve(resolvedSport)
+            .GetGameDates(from, to, cancellationToken);
+
+        if (result.IsSuccess)
+            return Ok(new { gameDates = result.Value });
+
+        return result.ToActionResult();
+    }
+
+    // Maps the create-league route slugs (mirrors POST /ui/leagues/{sport}/{league})
+    // to the Sport enum. Kept local — there's no shared slug→Sport resolver yet.
+    private static bool TryResolveSport(string sport, string league, out Sport resolved)
+    {
+        resolved = (sport?.ToLowerInvariant(), league?.ToLowerInvariant()) switch
+        {
+            ("baseball", "mlb") => Sport.BaseballMlb,
+            ("football", "nfl") => Sport.FootballNfl,
+            ("football", "ncaa") => Sport.FootballNcaa,
+            _ => Sport.All
+        };
+        // Sport.All (== 0) is the "unresolved" sentinel — not a valid single sport here.
+        return resolved != Sport.All;
     }
 
     [HttpGet("{id}")]

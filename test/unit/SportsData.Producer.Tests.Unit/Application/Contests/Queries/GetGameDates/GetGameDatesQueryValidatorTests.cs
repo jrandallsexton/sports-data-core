@@ -1,10 +1,10 @@
 using FluentAssertions;
 
-using SportsData.Producer.Application.Contests.Queries.GameDates;
+using SportsData.Producer.Application.Contests.Queries.GetGameDates;
 
 using Xunit;
 
-namespace SportsData.Producer.Tests.Unit.Application.Contests.Queries.GameDates;
+namespace SportsData.Producer.Tests.Unit.Application.Contests.Queries.GetGameDates;
 
 // The validator gates GetGameDatesQueryHandler before it touches the DB. The
 // handler itself runs raw Dapper (not InMemory-testable), but the validation

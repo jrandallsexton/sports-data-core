@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace SportsData.Producer.Application.Contests.Queries.GameDates;
+namespace SportsData.Producer.Application.Contests.Queries.GetGameDates;
 
 public class GetGameDatesQueryValidator : AbstractValidator<GetGameDatesQuery>
 {

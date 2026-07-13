@@ -1,4 +1,4 @@
-namespace SportsData.Producer.Application.Contests.Queries.GameDates;
+namespace SportsData.Producer.Application.Contests.Queries.GetGameDates;
 
 /// <summary>
 /// Distinct calendar dates (US Eastern) that have at least one scheduled game in

@@ -8,7 +8,7 @@ using SportsData.Core.Common;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Sql;
 
-namespace SportsData.Producer.Application.Contests.Queries.GameDates;
+namespace SportsData.Producer.Application.Contests.Queries.GetGameDates;
 
 public interface IGetGameDatesQueryHandler
 {

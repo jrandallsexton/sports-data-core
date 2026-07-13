@@ -414,11 +414,11 @@ namespace SportsData.Producer.Application.Contests
         public async Task<ActionResult<List<DateOnly>>> GetGameDates(
             [FromQuery] DateTime? from,
             [FromQuery] DateTime? to,
-            [FromServices] Queries.GameDates.IGetGameDatesQueryHandler handler,
+            [FromServices] Queries.GetGameDates.IGetGameDatesQueryHandler handler,
             CancellationToken cancellationToken = default)
         {
             var result = await handler.ExecuteAsync(
-                new Queries.GameDates.GetGameDatesQuery(from, to), cancellationToken);
+                new Queries.GetGameDates.GetGameDatesQuery(from, to), cancellationToken);
             return result.ToActionResult();
         }
 

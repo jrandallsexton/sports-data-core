@@ -1,5 +1,7 @@
 using Dapper;
 
+using FluentValidation;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -19,19 +21,26 @@ public class GetGameDatesQueryHandler : IGetGameDatesQueryHandler
 {
     private readonly TeamSportDataContext _dbContext;
     private readonly ProducerSqlQueryProvider _sqlProvider;
+    private readonly IValidator<GetGameDatesQuery> _validator;
 
     public GetGameDatesQueryHandler(
         TeamSportDataContext dbContext,
-        ProducerSqlQueryProvider sqlProvider)
+        ProducerSqlQueryProvider sqlProvider,
+        IValidator<GetGameDatesQuery> validator)
     {
         _dbContext = dbContext;
         _sqlProvider = sqlProvider;
+        _validator = validator;
     }
 
     public async Task<Result<List<DateOnly>>> ExecuteAsync(
         GetGameDatesQuery query,
         CancellationToken cancellationToken = default)
     {
+        var validationResult = await _validator.ValidateAsync(query, cancellationToken);
+        if (!validationResult.IsValid)
+            return new Failure<List<DateOnly>>(default!, ResultStatus.Validation, validationResult.Errors);
+
         var sql = _sqlProvider.GetGameDates();
 
         var connection = _dbContext.Database.GetDbConnection();

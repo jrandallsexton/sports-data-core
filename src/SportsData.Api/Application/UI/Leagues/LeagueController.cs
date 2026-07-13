@@ -16,6 +16,7 @@ using SportsData.Api.Application.UI.Leagues.Commands.SendLeagueInvite;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.Queries.GetInviteableUsers;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueById;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueGameDates;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueScoresByWeek;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
@@ -24,7 +25,6 @@ using SportsData.Api.Application.UI.Leagues.Queries.GetUserLeagues;
 using SportsData.Api.Extensions;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
-using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.UI.Leagues;
 
@@ -100,40 +100,18 @@ public class LeagueController : ApiControllerBase
     /// </summary>
     [HttpGet("{sport}/{league}/game-dates")]
     [Authorize]
-    public async Task<ActionResult<object>> GetGameDates(
+    public async Task<ActionResult<GameDatesDto>> GetGameDates(
         [FromRoute] string sport,
         [FromRoute] string league,
         [FromQuery] DateTime? from,
         [FromQuery] DateTime? to,
-        [FromServices] IContestClientFactory contestClientFactory,
+        [FromServices] IGetLeagueGameDatesQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        if (!TryResolveSport(sport, league, out var resolvedSport))
-            return BadRequest($"Unsupported sport/league '{sport}/{league}'.");
-
-        var result = await contestClientFactory
-            .Resolve(resolvedSport)
-            .GetGameDates(from, to, cancellationToken);
-
-        if (result.IsSuccess)
-            return Ok(new { gameDates = result.Value });
+        var query = new GetLeagueGameDatesQuery(sport, league, from, to);
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
-    }
-
-    // Maps the create-league route slugs (mirrors POST /ui/leagues/{sport}/{league})
-    // to the Sport enum. Kept local — there's no shared slug→Sport resolver yet.
-    private static bool TryResolveSport(string sport, string league, out Sport resolved)
-    {
-        resolved = (sport?.ToLowerInvariant(), league?.ToLowerInvariant()) switch
-        {
-            ("baseball", "mlb") => Sport.BaseballMlb,
-            ("football", "nfl") => Sport.FootballNfl,
-            ("football", "ncaa") => Sport.FootballNcaa,
-            _ => Sport.All
-        };
-        // Sport.All (== 0) is the "unresolved" sentinel — not a valid single sport here.
-        return resolved != Sport.All;
     }
 
     [HttpGet("{id}")]

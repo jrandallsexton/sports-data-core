@@ -27,5 +27,17 @@ using System;
         // Nullable: NULL until enrichment runs. PickScoringProcessor/Service
         // gate on this — the canonical "is this contest scoreable" signal.
         public DateTime? FinalizedUtc { get; set; }
+
+        // Team abbreviations + franchise ids (from the FranchiseSeason join).
+        // Used to compose the pick-result notification and to resolve which side
+        // the user picked — UserPick stores FranchiseId, not FranchiseSeasonId.
+        // Nullable — a franchise-season without an abbreviation degrades gracefully.
+        public string? AwayAbbreviation { get; set; }
+
+        public string? HomeAbbreviation { get; set; }
+
+        public Guid? AwayFranchiseId { get; set; }
+
+        public Guid? HomeFranchiseId { get; set; }
     }
 }

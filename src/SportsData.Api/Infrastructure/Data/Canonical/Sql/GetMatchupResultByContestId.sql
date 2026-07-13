@@ -8,9 +8,16 @@
   c."HomeScore",
   c."WinnerFranchiseSeasonId",
   c."SpreadWinnerFranchiseSeasonId",
-  c."FinalizedUtc"
+  c."FinalizedUtc",
+  afs."Abbreviation" as "AwayAbbreviation",
+  afs."FranchiseId" as "AwayFranchiseId",
+  hfs."Abbreviation" as "HomeAbbreviation",
+  hfs."FranchiseId" as "HomeFranchiseId"
 from public."Contest" c
 inner join public."Competition" co on co."ContestId" = c."Id"
+-- Team abbreviations + franchise ids for notification copy / picked-side resolution.
+left join public."FranchiseSeason" afs on afs."Id" = c."AwayTeamFranchiseSeasonId"
+left join public."FranchiseSeason" hfs on hfs."Id" = c."HomeTeamFranchiseSeasonId"
 
 -- Use LATERAL join to prioritize ESPN (58) over DraftKings (100)
 LEFT JOIN LATERAL (
@@ -23,3 +30,9 @@ LEFT JOIN LATERAL (
 ) coo ON TRUE
 
 where c."Id" = @ContestId
+  -- Scoring callers cannot tolerate pre-enrichment rows. WinnerFranchiseSeasonId,
+  -- SpreadWinnerFranchiseSeasonId, and the final HomeScore/AwayScore are all
+  -- populated atomically by ContestEnrichmentProcessor alongside
+  -- FinalizedUtc. Returning a row before that point produced silent
+  -- Guid.Empty/0-0 scoring (PickScoringProcessor / PickScoringService).
+  and c."FinalizedUtc" is not null

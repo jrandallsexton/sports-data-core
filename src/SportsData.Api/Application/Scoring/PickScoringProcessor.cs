@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
@@ -188,26 +189,51 @@ namespace SportsData.Api.Application.Scoring
                     pick.ModifiedUtc = _dateTimeProvider.UtcNow();
                     pick.ModifiedBy = CausationId.Api.PickScoringProcessor;
 
+                    // Which side did the user pick? UserPick stores FranchiseId
+                    // (SU/ATS); the matchup result carries the per-side FranchiseId.
+                    // Null for Over/Under picks (no FranchiseId) or an unresolved
+                    // match — the consumer falls back to the generic copy.
+                    bool? pickedIsHome = pick.FranchiseId.HasValue
+                        ? pick.FranchiseId == result.HomeFranchiseId ? true
+                          : pick.FranchiseId == result.AwayFranchiseId ? false
+                          : (bool?)null
+                        : null;
+
+                    // Structured spread for the picked side (ATS only): home =
+                    // matchup spread, away = its negation. Uses result.Spread —
+                    // the same value scoring ran on — so the consumer's rendered
+                    // line reconciles with the ✓/✗. Null for straight-up picks
+                    // (or ATS with no/zero spread); the consumer omits the spread
+                    // then. The consumer owns all string formatting.
+                    double? pickedSpread = null;
+                    if (pickedIsHome.HasValue
+                        && group.PickType == PickType.AgainstTheSpread
+                        && result.Spread is not null && result.Spread.Value != 0)
+                    {
+                        pickedSpread = pickedIsHome.Value ? result.Spread.Value : -result.Spread.Value;
+                    }
+
                     // Fat-event for the Notification service (design doc §4 /
                     // §5 v1). Publish BEFORE SaveChanges so the bus-outbox
                     // interceptor commits this together with the pick update;
                     // an at-least-once redelivery is fine — Notification's
                     // NotificationLog dedupe on (CorrelationId, UserId, Channel)
-                    // absorbs it. Today's payload populates the cheap fields;
-                    // DisplayName, AwayName/HomeName, and PickValue require
-                    // additional joins (User + FranchiseSeason) and are
-                    // intentionally nullable in the contract until that
-                    // fattening pass lands.
+                    // absorbs it. Structured facts only (abbreviations,
+                    // PickedIsHome, PickedSpread); the consumer composes the copy.
+                    // DisplayName and full AwayName/HomeName stay null (unused).
                     await _bus.Publish(new UserPickScored(
                             pick.UserId,
                             null,
                             command.ContestId,
                             null,
                             null,
+                            result.AwayAbbreviation,
+                            result.HomeAbbreviation,
                             result.AwayScore,
                             result.HomeScore,
-                            null,
                             pick.IsCorrect,
+                            pickedIsHome,
+                            pickedSpread,
                             group.Id,
                             group.Name,
                             group.Sport,

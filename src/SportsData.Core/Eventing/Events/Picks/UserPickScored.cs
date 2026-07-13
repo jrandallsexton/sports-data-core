@@ -13,11 +13,14 @@ namespace SportsData.Core.Eventing.Events.Picks
     ///
     /// <para>
     /// Fat-event by design: Notification doesn't project User, Contest, or
-    /// League, so the publisher carries the display facts that compose the
-    /// notification copy. Today's publisher (<c>PickScoringProcessor</c>)
-    /// populates the cheap fields; the team-name fields and
-    /// <see cref="DisplayName"/> are <c>null</c> pending fat-payload joins.
-    /// Consumers must degrade gracefully on the nullable fields.
+    /// League, so the publisher carries the <b>structured display facts</b> and
+    /// the Notification consumer composes the copy. <c>PickScoringProcessor</c>
+    /// populates the team abbreviations, <see cref="PickedIsHome"/>, and
+    /// <see cref="PickedSpread"/> (via the FranchiseSeason join on the matchup
+    /// result); the full team-name fields and <see cref="DisplayName"/> remain
+    /// <c>null</c> (unused by current copy). The publisher deliberately sends no
+    /// pre-composed strings — formatting lives in the consumer. Consumers must
+    /// degrade gracefully on the nullable fields.
     /// </para>
     /// </summary>
     public record UserPickScored(
@@ -26,10 +29,20 @@ namespace SportsData.Core.Eventing.Events.Picks
         Guid ContestId,
         string? AwayName,
         string? HomeName,
+        string? AwayAbbreviation,
+        string? HomeAbbreviation,
         int AwayScore,
         int HomeScore,
-        string? PickValue,
         bool? IsCorrect,
+        // Which side the user picked, resolved publisher-side (UserPick stores
+        // FranchiseId; the matchup result carries the per-side FranchiseId).
+        // Null for Over/Under picks or when it can't be resolved — the consumer
+        // falls back to the generic copy.
+        bool? PickedIsHome,
+        // The picked side's spread as a signed number (home = matchup spread,
+        // away = its negation), the same value scoring ran on. Null for straight-
+        // up picks (or ATS with no/zero spread). The consumer formats it.
+        double? PickedSpread,
         Guid LeagueId,
         string LeagueName,
         Sport Sport,

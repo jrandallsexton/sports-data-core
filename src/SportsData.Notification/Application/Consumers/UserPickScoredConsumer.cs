@@ -1,3 +1,5 @@
+using System.Globalization;
+
 using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
@@ -184,9 +186,49 @@ namespace SportsData.Notification.Application.Consumers
             await _dataContext.SaveChangesAsync();
         }
 
+        // "BOS" for a straight-up pick; "BOS +2.5" / "BOS -3" for ATS. The spread
+        // is a signed number from the picked team's perspective (negative =
+        // favored). Invariant formatting so a comma-decimal server locale can't
+        // render "2,5".
+        private static string FormatPickLabel(string abbreviation, double? pickedSpread)
+        {
+            if (pickedSpread is not { } spread)
+                return abbreviation;
+
+            var sign = spread > 0 ? "+" : string.Empty;
+            return $"{abbreviation} {sign}{spread.ToString("0.#", CultureInfo.InvariantCulture)}";
+        }
+
         private static string ComposeBody(UserPickScored msg, string leagueName)
         {
-            // Four shapes by what we have. League name comes from the local
+            // Preferred shape (scoreline + mark), picked team first. This service
+            // owns the copy: the event carries structured facts (abbreviations,
+            // PickedIsHome, PickedSpread) and we format here. The "you picked"
+            // clause appends the picked side's spread for ATS so a covered loss /
+            // uncovered win reads correctly:
+            //   "{League}: BOS 3, NYY 2 — you picked BOS ✓"          (SU win)
+            //   "{League}: BOS 2, NYY 3 — you picked BOS +2.5 ✓"     (ATS, covered loss)
+            // Requires the fattened fields; falls through to the generic shapes
+            // below for Over/Under picks or older/unfattened events.
+            if (msg.AwayAbbreviation is not null
+                && msg.HomeAbbreviation is not null
+                && msg.PickedIsHome is not null)
+            {
+                var pickedIsHome = msg.PickedIsHome.Value;
+                var pickedAbbr = pickedIsHome ? msg.HomeAbbreviation : msg.AwayAbbreviation;
+                var oppAbbr = pickedIsHome ? msg.AwayAbbreviation : msg.HomeAbbreviation;
+                var pickedScore = pickedIsHome ? msg.HomeScore : msg.AwayScore;
+                var oppScore = pickedIsHome ? msg.AwayScore : msg.HomeScore;
+                var mark = msg.IsCorrect == true ? "✓" : "✗";
+                var pickLabel = FormatPickLabel(pickedAbbr, msg.PickedSpread);
+
+                // League always present: prefer the local projection, fall back
+                // to the name carried on the event.
+                var league = leagueName ?? msg.LeagueName;
+                return $"{league}: {pickedAbbr} {pickedScore}, {oppAbbr} {oppScore} — you picked {pickLabel} {mark}";
+            }
+
+            // Fallback shapes by what we have. League name comes from the local
             // projection; team names are nullable on the event payload until
             // publisher-side fattening lands (FranchiseSeason joins).
             var outcome = msg.IsCorrect == true ? "Your pick won." : "Your pick lost.";

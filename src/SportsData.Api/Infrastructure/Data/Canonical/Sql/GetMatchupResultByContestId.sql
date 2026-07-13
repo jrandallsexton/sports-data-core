@@ -30,3 +30,9 @@ LEFT JOIN LATERAL (
 ) coo ON TRUE
 
 where c."Id" = @ContestId
+  -- Scoring callers cannot tolerate pre-enrichment rows. WinnerFranchiseSeasonId,
+  -- SpreadWinnerFranchiseSeasonId, and the final HomeScore/AwayScore are all
+  -- populated atomically by ContestEnrichmentProcessor alongside
+  -- FinalizedUtc. Returning a row before that point produced silent
+  -- Guid.Empty/0-0 scoring (PickScoringProcessor / PickScoringService).
+  and c."FinalizedUtc" is not null

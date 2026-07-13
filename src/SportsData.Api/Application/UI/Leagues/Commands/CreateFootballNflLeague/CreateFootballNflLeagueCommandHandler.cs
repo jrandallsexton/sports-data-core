@@ -5,6 +5,7 @@ using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague.Dto
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague;
@@ -26,9 +27,10 @@ public class CreateFootballNflLeagueCommandHandler
         AppDataContext dbContext,
         IEventBus eventBus,
         IFranchiseClientFactory franchiseClientFactory,
+        IContestClientFactory contestClientFactory,
         IValidator<CreateFootballNflLeagueRequest> validator,
         IDateTimeProvider dateTimeProvider)
-        : base(logger, dbContext, eventBus, franchiseClientFactory, validator, dateTimeProvider)
+        : base(logger, dbContext, eventBus, franchiseClientFactory, contestClientFactory, validator, dateTimeProvider)
     {
     }
 

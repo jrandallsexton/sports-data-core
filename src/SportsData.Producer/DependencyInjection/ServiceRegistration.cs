@@ -319,6 +319,9 @@ namespace SportsData.Producer.DependencyInjection
             // Contest Query Validators
             services.AddScoped<FluentValidation.IValidator<GetContestOverviewQuery>, GetContestOverviewQueryValidator>();
             services.AddScoped<FluentValidation.IValidator<GetContestPlayLogQuery>, GetContestPlayLogQueryValidator>();
+            services.AddScoped<
+                FluentValidation.IValidator<Application.Contests.Queries.GetGameDates.GetGameDatesQuery>,
+                Application.Contests.Queries.GetGameDates.GetGameDatesQueryValidator>();
 
             services.AddScoped<IGroupSeasonsService, GroupSeasonsService>();
             services.AddScoped<ILogoSelectionService, LogoSelectionService>();
@@ -352,6 +355,9 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IGetMatchupsForCurrentWeekQueryHandler, GetMatchupsForCurrentWeekQueryHandler>();
             services.AddScoped<IGetMatchupsForSeasonWeekQueryHandler, GetMatchupsForSeasonWeekQueryHandler>();
             services.AddScoped<IGetMatchupByContestIdQueryHandler, GetMatchupByContestIdQueryHandler>();
+            services.AddScoped<
+                Application.Contests.Queries.GetGameDates.IGetGameDatesQueryHandler,
+                Application.Contests.Queries.GetGameDates.GetGameDatesQueryHandler>();
             services.AddScoped<IGetMatchupsByContestIdsQueryHandler, GetMatchupsByContestIdsQueryHandler>();
             services.AddScoped<IGetMatchupForPreviewQueryHandler, GetMatchupForPreviewQueryHandler>();
             services.AddScoped<IGetMatchupResultQueryHandler, GetMatchupResultQueryHandler>();

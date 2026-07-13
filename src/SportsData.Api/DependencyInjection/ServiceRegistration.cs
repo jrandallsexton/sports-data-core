@@ -120,6 +120,9 @@ namespace SportsData.Api.DependencyInjection
 
             // League Queries
             services.AddScoped<IGetLeagueByIdQueryHandler, GetLeagueByIdQueryHandler>();
+            services.AddScoped<
+                Application.UI.Leagues.Queries.GetLeagueGameDates.IGetLeagueGameDatesQueryHandler,
+                Application.UI.Leagues.Queries.GetLeagueGameDates.GetLeagueGameDatesQueryHandler>();
             services.AddScoped<IGetInviteableUsersQueryHandler, GetInviteableUsersQueryHandler>();
             services.AddScoped<IGetLeagueScoresByWeekQueryHandler, GetLeagueScoresByWeekQueryHandler>();
             services.AddScoped<IGetLeagueWeekMatchupsQueryHandler, GetLeagueWeekMatchupsQueryHandler>();

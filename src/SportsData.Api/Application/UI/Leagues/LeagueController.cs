@@ -16,6 +16,7 @@ using SportsData.Api.Application.UI.Leagues.Commands.SendLeagueInvite;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.Queries.GetInviteableUsers;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueById;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueGameDates;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueScoresByWeek;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
@@ -87,6 +88,28 @@ public class LeagueController : ApiControllerBase
 
         if (result.IsSuccess)
             return CreatedAtAction(nameof(GetById), new { id = result.Value }, new { id = result.Value });
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Distinct calendar dates (US Eastern) that have at least one scheduled game
+    /// for the given sport/league within [from, to]. Backs the create-league
+    /// date picker's blackout-date logic — the FE enables these dates and treats
+    /// the rest of the range as no-game days. Either bound may be omitted.
+    /// </summary>
+    [HttpGet("{sport}/{league}/game-dates")]
+    [Authorize]
+    public async Task<ActionResult<GameDatesDto>> GetGameDates(
+        [FromRoute] string sport,
+        [FromRoute] string league,
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromServices] IGetLeagueGameDatesQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetLeagueGameDatesQuery(sport, league, from, to);
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }

@@ -13,6 +13,7 @@ using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
+using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 
 using Xunit;
@@ -27,6 +28,7 @@ public class CreateBaseballMlbLeagueCommandHandlerTests : ApiTestBase<CreateBase
 {
     private readonly Mock<IFranchiseClientFactory> _franchiseClientFactoryMock;
     private readonly Mock<IProvideFranchises> _franchiseClientMock;
+    private readonly Mock<IProvideContests> _contestClientMock;
 
     public CreateBaseballMlbLeagueCommandHandlerTests()
     {
@@ -35,6 +37,17 @@ public class CreateBaseballMlbLeagueCommandHandlerTests : ApiTestBase<CreateBase
         _franchiseClientFactoryMock
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_franchiseClientMock.Object);
+
+        // Contest client backs the blackout-date guard. Default: the window has
+        // games (guard passes) so non-guard tests are unaffected. Guard tests
+        // override GetGameDates per case.
+        _contestClientMock = new Mock<IProvideContests>();
+        _contestClientMock
+            .Setup(x => x.GetGameDates(It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<DateOnly>>(new List<DateOnly> { new(2026, 7, 15) }));
+        Mocker.GetMock<IContestClientFactory>()
+            .Setup(x => x.Resolve(It.IsAny<Sport>()))
+            .Returns(_contestClientMock.Object);
 
         // Fixed clock far enough in the past that the validator's
         // EndsOn-in-future rule doesn't fire for the (null EndsOn) test requests.
@@ -176,5 +189,73 @@ public class CreateBaseballMlbLeagueCommandHandlerTests : ApiTestBase<CreateBase
         var result = await sut.ExecuteAsync(request, currentUserId);
 
         result.IsSuccess.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ShouldFail_WhenWindowedRangeHasNoGames_AndPublishNothing()
+    {
+        // The reported bug: a windowed league (here a single day) whose range has
+        // no games must be rejected, and no PickemGroupCreated should be published.
+        var request = BuildValidRequest();
+        request.SeasonYear = 2026;
+        request.StartsOn = new DateTime(2026, 7, 14, 0, 0, 0, DateTimeKind.Utc);
+        request.EndsOn = new DateTime(2026, 7, 14, 0, 0, 0, DateTimeKind.Utc);
+
+        _contestClientMock
+            .Setup(x => x.GetGameDates(It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<DateOnly>>(new List<DateOnly>()));
+
+        var eventBusMock = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<CreateBaseballMlbLeagueCommandHandler>();
+
+        var result = await sut.ExecuteAsync(request, Guid.NewGuid());
+
+        result.IsSuccess.Should().BeFalse();
+        eventBusMock.Verify(
+            x => x.Publish(It.IsAny<PickemGroupCreated>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ShouldCreateLeague_WhenWindowedRangeHasGames()
+    {
+        // A windowed league whose range DOES contain games proceeds normally.
+        const int SeasonYear = 2026;
+        var currentUserId = Guid.NewGuid();
+        var divisionId = Guid.NewGuid();
+
+        var request = BuildValidRequest();
+        request.SeasonYear = SeasonYear;
+        request.DivisionSlugs = ["american-league-east"];
+        request.StartsOn = new DateTime(2026, 7, 15, 0, 0, 0, DateTimeKind.Utc);
+        request.EndsOn = new DateTime(2026, 7, 20, 0, 0, 0, DateTimeKind.Utc);
+
+        _contestClientMock
+            .Setup(x => x.GetGameDates(It.IsAny<DateTime?>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<DateOnly>>(new List<DateOnly> { new(2026, 7, 15), new(2026, 7, 16) }));
+
+        _franchiseClientMock
+            .Setup(x => x.GetConferenceIdsBySlugs(SeasonYear, request.DivisionSlugs, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string> { [divisionId] = "american-league-east" });
+
+        var synthetic = new UserEntity
+        {
+            Username = "test_user_2",
+            Id = Guid.NewGuid(),
+            FirebaseUid = "synthetic",
+            Email = "synthetic2@sportdeets.test",
+            SignInProvider = "synthetic",
+            DisplayName = "Synthetic",
+            IsSynthetic = true,
+            CreatedBy = Guid.Empty,
+        };
+        await DataContext.Users.AddAsync(synthetic);
+        await DataContext.SaveChangesAsync();
+
+        var sut = Mocker.CreateInstance<CreateBaseballMlbLeagueCommandHandler>();
+
+        var result = await sut.ExecuteAsync(request, currentUserId);
+
+        result.IsSuccess.Should().BeTrue();
     }
 }

@@ -77,13 +77,14 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
         string leagueName = "Sluggers",
         Guid? pickId = null,
         Guid? contestId = null,
-        Guid? leagueId = null)
+        Guid? leagueId = null,
+        Guid? correlationId = null)
         => new(
             userId, null, contestId ?? Guid.NewGuid(), pickId ?? Guid.NewGuid(), null, null,
             awayAbbr, homeAbbr, awayScore, homeScore,
             isCorrect, pickedIsHome, pickedSpread,
             leagueId ?? Guid.NewGuid(), leagueName, Sport.BaseballMlb, 2026,
-            Guid.NewGuid(), Guid.NewGuid());
+            correlationId ?? Guid.NewGuid(), Guid.NewGuid());
 
     private async Task<string> RunAndCaptureBodyAsync(UserPickScored msg)
     {
@@ -181,18 +182,22 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
     public async Task Consume_SameUserAndContest_DistinctPicks_EachNotifies()
     {
         // A user in three leagues who picked the same game has three distinct
-        // PickIds. The old (CorrelationId, UserId, Channel) key collapsed these
-        // to one push; (UserId, PickId) preserves all three. One device, three
-        // picks → three rows and three sends.
+        // PickIds — but all three events come from ONE scoring run and therefore
+        // share ONE CorrelationId. The old (CorrelationId, UserId, Channel) key
+        // collapsed them to a single push; (UserId, PickId) preserves all three.
+        // The shared CorrelationId is the whole point: it's exactly what the old
+        // key keyed on. One device, three picks → three rows and three sends.
         var userId = Guid.NewGuid();
         var contestId = Guid.NewGuid();
+        var correlationId = Guid.NewGuid();
         await SeedDeviceAsync(userId);
 
         foreach (var _ in Enumerable.Range(0, 3))
         {
             var msg = Msg(userId, "BOS", "NYY", awayScore: 3, homeScore: 2,
                 isCorrect: true, pickedIsHome: false, pickedSpread: null,
-                pickId: Guid.NewGuid(), contestId: contestId, leagueId: Guid.NewGuid());
+                pickId: Guid.NewGuid(), contestId: contestId, leagueId: Guid.NewGuid(),
+                correlationId: correlationId);
             var sut = Mocker.CreateInstance<UserPickScoredConsumer>();
             await sut.Consume(ContextFor(msg));
         }

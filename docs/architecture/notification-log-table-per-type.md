@@ -1,6 +1,8 @@
 # Notification logging: table-per-type
 
-**Status:** Draft — awaiting sign-off before implementation.
+**Status:** Approved. **PR1 (PickResult → `NotificationUserPick`) implemented in
+the PR that introduces this doc.** PRs 2–5 (see "Migration & rollout") are
+planned and not yet started.
 **Owner:** Randall.
 **Scope:** `SportsData.Notification` service (+ one additive field on a `SportsData.Core` event).
 
@@ -130,6 +132,7 @@ Naming follows the pattern the two named examples set (`NotificationUserPick`,
 `NotificationLeagueInvitation`): `Notification` + subject.
 
 ### 1. `NotificationUserPick` — PickResult
+
 Source: `UserPickScored`. **Requires an event change** — add `PickId` (see below).
 
 | Metadata column | Type   | Source                        |
@@ -151,6 +154,7 @@ three distinct `PickId`s), which the current key wrongly drops.
 > contest?"), not a schema change. We are **not** deciding this now.
 
 ### 2. `NotificationLeagueInvitation` — LeagueInvite
+
 Source: `UserInvitedToPickemGroup` (`InviteeUserId`, `GroupId`, `InvitedByUserId`).
 
 | Metadata column   | Type   | Source                                |
@@ -168,6 +172,7 @@ and sends. If an explicit `InvitationId` is ever added to the event, prefer it
 over `CorrelationId` in the key.
 
 ### 3. `NotificationMembership` — Membership
+
 Source: `PickemGroupMemberAdded` (`UserId`, `GroupId` — minimal payload; the
 consumer docstring already flags this event as under-fattened).
 
@@ -182,6 +187,7 @@ consumer docstring already flags this event as under-fattened).
 > the dedup key only needs `(UserId, GroupId)`.
 
 ### 4. `NotificationOddsChange` — OddsChanged
+
 Source: `ContestOddsUpdated` — **broadcast, fanned out per user** at dispatch
 (consumer joins `UserPicks ⋈ PickemGroups`, filtered to the movement type). Event
 carries `ContestId` only.
@@ -200,6 +206,7 @@ carries `ContestId` only.
 > dedup may be *intentional*.
 
 ### 5. `NotificationPickDeadline` — PickDeadline (reminder)
+
 Source: `NotificationDispatcher.SendPickDeadlineReminderAsync(userId,
 pickemGroupId, seasonWeek, fireTimeUtc)`. Already deterministic.
 
@@ -214,6 +221,7 @@ pickemGroupId, seasonWeek, fireTimeUtc)`. Already deterministic.
 reminder re-fires; a Hangfire retry of the same fire does not).
 
 ### 6. `NotificationContestStart` — ContestStart (reminder)
+
 Source: `NotificationDispatcher.SendContestStartReminderAsync(userId, contestId,
 fireTimeUtc)`. Already deterministic.
 

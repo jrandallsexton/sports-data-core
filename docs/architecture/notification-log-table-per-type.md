@@ -1,9 +1,10 @@
 # Notification logging: table-per-type
 
-**Status:** Approved, in progress. **PR1 (PickResult → `NotificationUserPick`)
-and PR2 (LeagueInvite → `NotificationLeagueInvitation`, Membership →
-`NotificationMembership`) implemented.** PRs 3–5 (see "Migration & rollout") are
-planned and not yet started.
+**Status:** Approved, in progress. **PR1 (PickResult → `NotificationUserPick`),
+PR2 (LeagueInvite → `NotificationLeagueInvitation`, Membership →
+`NotificationMembership`), and PR3 (PickDeadline → `NotificationPickDeadline`,
+ContestStart → `NotificationContestStart`) implemented.** PR4 (OddsChange) and
+PR5 (retire `NotificationLog`) are planned and not yet started.
 **Owner:** Randall.
 **Scope:** `SportsData.Notification` service (+ one additive field on a `SportsData.Core` event).
 

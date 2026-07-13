@@ -16,14 +16,14 @@ namespace SportsData.Notification.Application.Dispatching
     /// (<see cref="Consumers.UserPickScoredConsumer"/> etc.).
     ///
     /// <para>
-    /// Deterministic CorrelationId: each method derives a stable Guid from
-    /// its parameters via MD5(input bytes). Hangfire retrying the same call
-    /// produces the same CorrelationId and collides on the
-    /// <c>NotificationLog (CorrelationId, UserId, Channel)</c> unique
-    /// constraint — Postgres rejects the second insert, the consumer falls
-    /// through to the "already claimed" branch, and no duplicate push goes
-    /// out. MD5 is fine here: this is a dedupe key, not a cryptographic
-    /// signature.
+    /// Idempotency now rides on each reminder's typed table and its natural
+    /// key — <c>NotificationPickDeadline (UserId, LeagueId, SeasonWeek,
+    /// FireTimeUtc)</c> and <c>NotificationContestStart (UserId, ContestId,
+    /// FireTimeUtc)</c>. The <c>FireTimeUtc</c> component is the version anchor:
+    /// a Hangfire retry of the same fire collides and is suppressed, while a
+    /// reschedule (new fire-time) is a new row and re-fires. The deterministic
+    /// CorrelationId (stable MD5 over the parameters) is retained as a trace id
+    /// for log correlation but no longer participates in dedup.
     /// </para>
     /// </summary>
     public class NotificationDispatcher : INotificationDispatcher
@@ -71,18 +71,23 @@ namespace SportsData.Notification.Application.Dispatching
 
             _logger.LogInformation("SendPickDeadlineReminderAsync invoked.");
 
-            // Atomic claim — see UserPickScoredConsumer for the full
-            // rationale (TOCTOU race, crash-vs-duplicate trade-off).
-            var claim = new NotificationLog
+            // Atomic claim on (UserId, LeagueId, SeasonWeek, FireTimeUtc) — the
+            // natural key now does what the deterministic CorrelationId did
+            // against NotificationLog: a Hangfire retry of the same fire collides
+            // (suppressed) while a reschedule (new FireTimeUtc) re-fires.
+            // See UserPickScoredConsumer for the claim-first rationale.
+            var claim = new NotificationPickDeadline
             {
                 UserId = userId,
+                LeagueId = pickemGroupId,
+                SeasonWeek = seasonWeek,
+                FireTimeUtc = fireTimeUtc,
                 CorrelationId = correlationId,
-                Category = "PickDeadline",
                 Channel = "Fcm",
                 Result = "Dispatching",
                 AttemptedUtc = _dateTimeProvider.UtcNow()
             };
-            _dataContext.NotificationLog.Add(claim);
+            _dataContext.NotificationPickDeadlines.Add(claim);
 
             try
             {
@@ -212,16 +217,19 @@ namespace SportsData.Notification.Application.Dispatching
 
             _logger.LogInformation("SendContestStartReminderAsync invoked.");
 
-            var claim = new NotificationLog
+            // Atomic claim on (UserId, ContestId, FireTimeUtc) — natural-key dedup
+            // with fire-time versioning, same as PickDeadline.
+            var claim = new NotificationContestStart
             {
                 UserId = userId,
+                ContestId = contestId,
+                FireTimeUtc = fireTimeUtc,
                 CorrelationId = correlationId,
-                Category = "ContestStart",
                 Channel = "Fcm",
                 Result = "Dispatching",
                 AttemptedUtc = _dateTimeProvider.UtcNow()
             };
-            _dataContext.NotificationLog.Add(claim);
+            _dataContext.NotificationContestStarts.Add(claim);
 
             try
             {
@@ -318,7 +326,17 @@ namespace SportsData.Notification.Application.Dispatching
             await _dataContext.SaveChangesAsync();
         }
 
-        private async Task FinalizeAsync(NotificationLog claim, string result)
+        // Terminal-state writes. Two overloads because the reminder tables are
+        // independent (no shared base) — each dispatch method finalizes its own
+        // typed claim.
+        private async Task FinalizeAsync(NotificationPickDeadline claim, string result)
+        {
+            claim.Result = result;
+            claim.ModifiedUtc = _dateTimeProvider.UtcNow();
+            await _dataContext.SaveChangesAsync();
+        }
+
+        private async Task FinalizeAsync(NotificationContestStart claim, string result)
         {
             claim.Result = result;
             claim.ModifiedUtc = _dateTimeProvider.UtcNow();
@@ -388,10 +406,11 @@ namespace SportsData.Notification.Application.Dispatching
         }
 
         /// <summary>
-        /// MD5 over a canonical parameter encoding. Used only as a dedupe key —
-        /// not cryptographic. Two calls with the same inputs produce the same
-        /// Guid, which makes the NotificationLog unique constraint catch
-        /// Hangfire retries.
+        /// MD5 over a canonical parameter encoding — a stable trace id, not
+        /// cryptographic. Two calls with the same inputs produce the same Guid,
+        /// giving a deterministic CorrelationId for log correlation across a
+        /// reminder's retries. Dedup itself is handled by the typed table's
+        /// natural key, not this value.
         /// </summary>
         private static Guid DeterministicCorrelationId(string category, Guid userId, Guid scopeId, long qualifier)
         {

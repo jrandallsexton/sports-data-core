@@ -48,6 +48,10 @@ namespace SportsData.Notification.Infrastructure.Data
 
         public DbSet<NotificationMembership> NotificationMemberships => Set<NotificationMembership>();
 
+        public DbSet<NotificationPickDeadline> NotificationPickDeadlines => Set<NotificationPickDeadline>();
+
+        public DbSet<NotificationContestStart> NotificationContestStarts => Set<NotificationContestStart>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -146,6 +150,22 @@ namespace SportsData.Notification.Infrastructure.Data
             // Replaces the NotificationLog claim for the Membership path.
             modelBuilder.Entity<NotificationMembership>()
                 .HasIndex(l => new { l.UserId, l.LeagueId })
+                .IsUnique();
+
+            // Typed pick-deadline reminder idempotency key. FireTimeUtc is the
+            // version anchor: a Hangfire retry of the same fire collides
+            // (suppressed) while a reschedule (new fire-time) re-fires. Replaces
+            // the deterministic-CorrelationId trick against NotificationLog.
+            // SeasonWeek is non-null here (PickDeadline always scopes a week), so
+            // no nulls-distinct concern like the shared PendingScheduledJob index.
+            modelBuilder.Entity<NotificationPickDeadline>()
+                .HasIndex(l => new { l.UserId, l.LeagueId, l.SeasonWeek, l.FireTimeUtc })
+                .IsUnique();
+
+            // Typed contest-start reminder idempotency key. Same fire-time
+            // versioning as PickDeadline. Replaces the NotificationLog claim.
+            modelBuilder.Entity<NotificationContestStart>()
+                .HasIndex(l => new { l.UserId, l.ContestId, l.FireTimeUtc })
                 .IsUnique();
 
             // League-wide fan-out is the dominant query against this join

@@ -18,9 +18,9 @@ public class DeadDevicePruningTests
 {
     private static readonly DateTime FixedNow = new(2026, 7, 14, 12, 0, 0, DateTimeKind.Utc);
 
-    private static AppDataContext NewContext() =>
+    private static AppDataContext NewContext(string? dbName = null) =>
         new(new DbContextOptionsBuilder<AppDataContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString()[..8])
+            .UseInMemoryDatabase(dbName ?? Guid.NewGuid().ToString()[..8])
             .Options);
 
     private static async Task<Guid> SeedDeviceAsync(AppDataContext ctx)
@@ -60,9 +60,17 @@ public class DeadDevicePruningTests
     [Fact]
     public async Task MarkDeadDeviceForRemovalAsync_NotFound_DeletesRow()
     {
-        await using var ctx = NewContext();
-        var deviceId = await SeedDeviceAsync(ctx);
+        // Seed in one context and dispose it, then operate on a fresh context over
+        // the same in-memory DB — so the device is NOT tracked, exercising the
+        // untracked-stub delete path the AsNoTracking send loops actually hit.
+        var dbName = Guid.NewGuid().ToString()[..8];
+        Guid deviceId;
+        await using (var seedCtx = NewContext(dbName))
+        {
+            deviceId = await SeedDeviceAsync(seedCtx);
+        }
 
+        await using var ctx = NewContext(dbName);
         var pruned = await ctx.MarkDeadDeviceForRemovalAsync(
             new Failure<string>(string.Empty, ResultStatus.NotFound, new List<ValidationFailure>()),
             deviceId,

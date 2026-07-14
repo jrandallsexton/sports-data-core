@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useUserDto } from "../../contexts/UserContext";
 import apiWrapper from "../../api/apiWrapper";
 import "./TeamCard.css";
 import TeamSchedule from "./TeamSchedule";
@@ -14,6 +15,10 @@ function TeamCard() {
   const { sport = 'football', league = 'ncaa', slug, seasonYear } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
+  // Logos is an admin-only diagnostic tab (drives dark-bg logo selection);
+  // non-admins have no use for it, so hide the tab entirely.
+  const { userDto } = useUserDto();
+  const isAdmin = userDto?.isAdmin;
   const [team, setTeam] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState("schedule");
@@ -135,12 +140,14 @@ function TeamCard() {
         >
           Statistics
         </button>
-        <button
-          className={selectedTab === "logos" ? "active" : ""}
-          onClick={() => setSelectedTab("logos")}
-        >
-          Logos
-        </button>
+        {isAdmin && (
+          <button
+            className={selectedTab === "logos" ? "active" : ""}
+            onClick={() => setSelectedTab("logos")}
+          >
+            Logos
+          </button>
+        )}
       </div>
 
       <div className="team-card-content">
@@ -159,7 +166,7 @@ function TeamCard() {
             <TeamStatistics team={team} seasonYear={resolvedSeason} stats={teamStats} />
           )
         )}
-        {selectedTab === "logos" && (
+        {isAdmin && selectedTab === "logos" && (
           <TeamLogos slug={slug} seasonYear={resolvedSeason} sport={sport} league={league} />
         )}
       </div>

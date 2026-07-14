@@ -97,7 +97,7 @@ public class SyntheticPickService : ISyntheticPickService
                 ContestId = matchup.ContestId,
                 CreatedUtc = prediction.CreatedUtc,
                 CreatedBy = syntheticId,
-                FranchiseId = finalPickFranchiseId,
+                FranchiseSeasonId = finalPickFranchiseId,
                 PickemGroupId = pickemGroupId,
                 PickType = prediction.PredictionType == PickType.StraightUp ?
                     PickType.StraightUp : PickType.AgainstTheSpread,

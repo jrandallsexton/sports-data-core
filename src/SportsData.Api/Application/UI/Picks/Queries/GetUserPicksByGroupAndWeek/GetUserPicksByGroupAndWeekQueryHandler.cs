@@ -45,7 +45,7 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
                 User = p.User.DisplayName,
                 ConfidencePoints = p.ConfidencePoints,
                 ContestId = p.ContestId,
-                FranchiseId = p.FranchiseId ?? Guid.Empty,
+                FranchiseId = p.FranchiseSeasonId ?? Guid.Empty,
                 IsCorrect = p.IsCorrect,
                 PickType = p.PickType,
                 TiebreakerGuessTotal = p.TiebreakerGuessTotal,

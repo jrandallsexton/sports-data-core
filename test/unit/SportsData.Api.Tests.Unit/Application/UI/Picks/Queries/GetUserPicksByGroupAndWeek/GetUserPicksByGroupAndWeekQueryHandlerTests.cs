@@ -62,7 +62,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
             ContestId = contestId,
             Week = 5,
             PickType = PickType.StraightUp,
-            FranchiseId = Guid.NewGuid(),
+            FranchiseSeasonId = Guid.NewGuid(),
             ConfidencePoints = 7,
             IsCorrect = true,
             PointsAwarded = 7,

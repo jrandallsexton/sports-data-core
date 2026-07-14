@@ -89,7 +89,7 @@ public class SubmitPickCommandHandler : ISubmitPickCommandHandler
 
         if (existing is not null)
         {
-            existing.FranchiseId = command.FranchiseSeasonId;
+            existing.FranchiseSeasonId = command.FranchiseSeasonId;
             existing.OverUnder = command.OverUnder;
             existing.ConfidencePoints = command.ConfidencePoints;
             existing.PickType = command.PickType;
@@ -108,7 +108,7 @@ public class SubmitPickCommandHandler : ISubmitPickCommandHandler
                 Week = command.Week,
                 PickType = command.PickType,
 
-                FranchiseId = command.FranchiseSeasonId,
+                FranchiseSeasonId = command.FranchiseSeasonId,
                 OverUnder = command.OverUnder,
                 ConfidencePoints = command.ConfidencePoints,
 

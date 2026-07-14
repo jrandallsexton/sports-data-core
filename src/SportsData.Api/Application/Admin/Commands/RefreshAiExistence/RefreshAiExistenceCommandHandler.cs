@@ -173,7 +173,7 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
                         ContestId = matchup.ContestId,
                         CreatedUtc = preview.CreatedUtc,
                         CreatedBy = statbotId,
-                        FranchiseId = group.PickType == PickType.AgainstTheSpread
+                        FranchiseSeasonId = group.PickType == PickType.AgainstTheSpread
                             ? preview.PredictedSpreadWinner
                             : preview.PredictedStraightUpWinner,
                         PickemGroupId = group.Id,
@@ -184,13 +184,13 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
 
                     if (group.PickType == PickType.AgainstTheSpread && matchup.SpreadCurrent.HasValue)
                     {
-                        synPick.FranchiseId = preview.PredictedSpreadWinner;
-                        if (synPick.FranchiseId == Guid.Empty)
-                            synPick.FranchiseId = preview.PredictedStraightUpWinner;
+                        synPick.FranchiseSeasonId = preview.PredictedSpreadWinner;
+                        if (synPick.FranchiseSeasonId == Guid.Empty)
+                            synPick.FranchiseSeasonId = preview.PredictedStraightUpWinner;
                     }
                     else
                     {
-                        synPick.FranchiseId = preview.PredictedStraightUpWinner;
+                        synPick.FranchiseSeasonId = preview.PredictedStraightUpWinner;
                     }
 
                     await _dataContext.UserPicks.AddAsync(synPick, cancellationToken);

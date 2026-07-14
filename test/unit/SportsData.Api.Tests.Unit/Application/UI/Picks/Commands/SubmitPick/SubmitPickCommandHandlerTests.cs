@@ -215,7 +215,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
         pick.PickemGroupId.Should().Be(command.PickemGroupId);
         pick.ContestId.Should().Be(command.ContestId);
         pick.PickType.Should().Be(command.PickType);
-        pick.FranchiseId.Should().Be(command.FranchiseSeasonId);
+        pick.FranchiseSeasonId.Should().Be(command.FranchiseSeasonId);
         pick.ConfidencePoints.Should().Be(command.ConfidencePoints);
         pick.TiebreakerGuessTotal.Should().Be(command.TiebreakerGuessTotal);
         pick.TiebreakerGuessHome.Should().Be(command.TiebreakerGuessHome);
@@ -251,7 +251,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
             PickemGroupId = groupId,
             ContestId = contestId,
             PickType = PickType.StraightUp,
-            FranchiseId = Guid.NewGuid(),
+            FranchiseSeasonId = Guid.NewGuid(),
             TiebreakerType = TiebreakerType.TotalPoints
         };
 
@@ -285,7 +285,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
 
         var updated = await DataContext.UserPicks.FirstOrDefaultAsync();
         updated.Should().NotBeNull();
-        updated!.FranchiseId.Should().Be(newFranchiseId);
+        updated!.FranchiseSeasonId.Should().Be(newFranchiseId);
         updated.OverUnder.Should().Be(OverUnderPick.Under);
         updated.ConfidencePoints.Should().Be(3);
         updated.TiebreakerGuessTotal.Should().Be(45);

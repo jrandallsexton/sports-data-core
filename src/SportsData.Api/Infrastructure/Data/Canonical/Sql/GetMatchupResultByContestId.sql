@@ -10,12 +10,11 @@
   c."SpreadWinnerFranchiseSeasonId",
   c."FinalizedUtc",
   afs."Abbreviation" as "AwayAbbreviation",
-  afs."FranchiseId" as "AwayFranchiseId",
-  hfs."Abbreviation" as "HomeAbbreviation",
-  hfs."FranchiseId" as "HomeFranchiseId"
+  hfs."Abbreviation" as "HomeAbbreviation"
 from public."Contest" c
 inner join public."Competition" co on co."ContestId" = c."Id"
--- Team abbreviations + franchise ids for notification copy / picked-side resolution.
+-- Team abbreviations for the notification copy. Picked-side is resolved in code
+-- against Away/HomeFranchiseSeasonId above.
 left join public."FranchiseSeason" afs on afs."Id" = c."AwayTeamFranchiseSeasonId"
 left join public."FranchiseSeason" hfs on hfs."Id" = c."HomeTeamFranchiseSeasonId"
 

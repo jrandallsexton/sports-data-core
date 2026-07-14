@@ -188,7 +188,7 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
         picks.Should().HaveCount(1);
-        picks[0].FranchiseId.Should().Be(homeTeamId);
+        picks[0].FranchiseSeasonId.Should().Be(homeTeamId);
         picks[0].ContestId.Should().Be(contestId);
         picks[0].UserId.Should().Be(syntheticId);
         picks[0].Week.Should().Be(14);
@@ -248,7 +248,7 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
         picks.Should().HaveCount(1);
-        picks[0].FranchiseId.Should().Be(awayTeamId); // Picks underdog (60% < 80%)
+        picks[0].FranchiseSeasonId.Should().Be(awayTeamId); // Picks underdog (60% < 80%)
     }
 
     [Fact]
@@ -305,7 +305,7 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
         picks.Should().HaveCount(1);
-        picks[0].FranchiseId.Should().Be(homeTeamId); // Picks favorite (85% >= 80%)
+        picks[0].FranchiseSeasonId.Should().Be(homeTeamId); // Picks favorite (85% >= 80%)
     }
 
     [Fact]
@@ -366,7 +366,7 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
         picks.Should().HaveCount(1);
         // Favorite (JMU/home) has only 29.3% < 80% threshold
         // So pick the underdog (Troy/away) who has 70.7% chance to cover
-        picks[0].FranchiseId.Should().Be(awayTeamId); // Picks Troy (underdog)
+        picks[0].FranchiseSeasonId.Should().Be(awayTeamId); // Picks Troy (underdog)
     }
 
     [Fact]
@@ -421,6 +421,6 @@ public class SyntheticPickServiceTests : ApiTestBase<SyntheticPickService>
         // Assert
         var picks = await DataContext.UserPicks.ToListAsync();
         picks.Should().HaveCount(1);
-        picks[0].FranchiseId.Should().Be(homeTeamId); // Picks favorite (55% >= 50%)
+        picks[0].FranchiseSeasonId.Should().Be(homeTeamId); // Picks favorite (55% >= 50%)
     }
 }

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Switch, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, Switch, ActivityIndicator, Alert, Pressable } from 'react-native';
 import { Stack } from 'expo-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { usersApi } from '@/src/services/api/usersApi';
+import { registerThisDevice } from '@/src/lib/notifications/registerPushDevice';
 import type { NotificationPreferences } from '@/src/types/models';
 
 // Per-category push-notification opt-out screen. The API owns these flags
@@ -161,6 +162,37 @@ export default function NotificationSettingsScreen() {
 
   const effective = prefs ?? ALL_ENABLED;
 
+  // Manual "register this device" escape hatch. The auto-register hook is
+  // silent and only fires at sign-in / foreground; this lets a user whose
+  // device somehow never registered fix it and SEE the result. Prompts for
+  // permission if needed.
+  const [registeringDevice, setRegisteringDevice] = useState(false);
+  const handleRegisterDevice = async () => {
+    if (registeringDevice) return;
+    setRegisteringDevice(true);
+    try {
+      const outcome = await registerThisDevice({ prompt: true });
+      if (outcome.ok) {
+        Alert.alert(
+          'Device registered',
+          'This device is set up to receive push notifications.'
+        );
+      } else if (outcome.permissionStatus !== 'granted') {
+        Alert.alert(
+          'Notifications are off',
+          'Turn on notifications for sportDeets in your device Settings, then try again.'
+        );
+      } else {
+        Alert.alert(
+          "Couldn't register this device",
+          outcome.error ?? 'Please try again in a moment.'
+        );
+      }
+    } finally {
+      setRegisteringDevice(false);
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: 'Notifications', headerBackTitle: 'Back' }} />
@@ -239,6 +271,47 @@ export default function NotificationSettingsScreen() {
                 </View>
               </View>
             ))}
+
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
+                This device
+              </Text>
+              <View
+                style={[
+                  styles.card,
+                  { backgroundColor: theme.card, borderColor: theme.border },
+                ]}
+              >
+                <View style={styles.row}>
+                  <View style={styles.rowText}>
+                    <Text style={[styles.rowLabel, { color: theme.text }]}>
+                      Register this device
+                    </Text>
+                    <Text style={[styles.rowDesc, { color: theme.textMuted }]}>
+                      Not getting notifications on this device? Tap to set it up.
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={handleRegisterDevice}
+                    disabled={registeringDevice}
+                    accessibilityRole="button"
+                    accessibilityLabel="Register this device for push notifications"
+                    style={[
+                      styles.registerButton,
+                      { borderColor: theme.tint, opacity: registeringDevice ? 0.5 : 1 },
+                    ]}
+                  >
+                    {registeringDevice ? (
+                      <ActivityIndicator color={theme.tint} size="small" />
+                    ) : (
+                      <Text style={[styles.registerButtonText, { color: theme.tint }]}>
+                        Register
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            </View>
           </>
         )}
       </ScrollView>
@@ -277,4 +350,14 @@ const styles = StyleSheet.create({
   rowText: { flex: 1, gap: 2 },
   rowLabel: { fontSize: 15, fontWeight: '600' },
   rowDesc: { fontSize: 12, lineHeight: 16 },
+  registerButton: {
+    minWidth: 88,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  registerButtonText: { fontSize: 14, fontWeight: '700' },
 });

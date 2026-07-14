@@ -94,27 +94,40 @@ export async function getFcmToken(): Promise<FcmTokenResult> {
 
 /**
  * Like {@link getFcmToken}, but NEVER prompts. Returns the FCM token only
- * when notification permission has ALREADY been granted; returns null
+ * when notification permission has ALREADY been granted; the token is null
  * otherwise (denied / undetermined / web / error).
  *
  * Used for silent automatic device registration at sign-in so we don't fire
- * an unsolicited iOS permission prompt on launch. Permission is requested
- * explicitly elsewhere (the admin push-token screen today; a priming flow in
- * the future), and once granted this picks the token up on the next sign-in.
+ * an unsolicited iOS permission prompt on launch. Returns the full
+ * {@link FcmTokenResult} — crucially, the <c>error</c> is surfaced rather than
+ * swallowed, so a granted-but-tokenless failure (e.g. the APNs token not being
+ * ready yet) is diagnosable instead of a silent no-op.
  */
-export async function getFcmTokenIfGranted(): Promise<string | null> {
-  if (Platform.OS === 'web') return null;
+export async function getFcmTokenIfGranted(): Promise<FcmTokenResult> {
+  if (Platform.OS === 'web') {
+    return { token: null, permissionStatus: 'undetermined', error: null };
+  }
+
+  let permissionStatus: PermissionStatus = 'undetermined';
   try {
     const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') return null;
+    permissionStatus = status as PermissionStatus;
+    if (permissionStatus !== 'granted') {
+      return { token: null, permissionStatus, error: null };
+    }
 
     if (Platform.OS === 'ios') {
       await messaging().registerDeviceForRemoteMessages();
     }
 
     const token = await messaging().getToken();
-    return token || null;
-  } catch {
-    return null;
+    return {
+      token: token || null,
+      permissionStatus,
+      error: token ? null : 'FCM returned empty token',
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { token: null, permissionStatus, error: message };
   }
 }

@@ -81,8 +81,6 @@ public class FirebasePushNotificationSender : IPushNotificationSender
             // FCM surfaces structured error codes (Unregistered = token dead,
             // InvalidArgument = malformed, SenderIdMismatch = wrong project,
             // QuotaExceeded = rate-limited, Unavailable = service issue).
-            // For v1 we just bubble the code + message; future token-
-            // deactivation logic will branch on ex.MessagingErrorCode here.
             _logger.LogWarning(
                 ex,
                 "FCM send failed. ErrorCode={ErrorCode}, MessagingErrorCode={MessagingErrorCode}, TokenPrefix={TokenPrefix}",
@@ -90,9 +88,20 @@ public class FirebasePushNotificationSender : IPushNotificationSender
                 ex.MessagingErrorCode,
                 SafeTokenPrefix(token));
 
+            // A dead/malformed token is gone for good — signal NotFound so the
+            // dispatch path prunes the UserDevice row (it re-registers on next
+            // app launch). Transient codes (Unavailable/Internal/QuotaExceeded)
+            // and SenderIdMismatch (a project-config error, not a per-token
+            // problem) stay Error so the row is left alone.
+            // See docs/architecture/notification-dead-token-pruning.md.
+            var status = ex.MessagingErrorCode is MessagingErrorCode.Unregistered
+                or MessagingErrorCode.InvalidArgument
+                ? ResultStatus.NotFound
+                : ResultStatus.Error;
+
             return new Failure<string>(
                 string.Empty,
-                ResultStatus.Error,
+                status,
                 [new ValidationFailure(
                     nameof(token),
                     $"FCM {ex.MessagingErrorCode}: {ex.Message}")]);

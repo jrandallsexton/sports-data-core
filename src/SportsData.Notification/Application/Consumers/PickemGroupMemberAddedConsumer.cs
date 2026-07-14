@@ -164,6 +164,8 @@ namespace SportsData.Notification.Application.Consumers
                 {
                     var reason = failure.Errors.FirstOrDefault()?.ErrorMessage ?? "unknown";
                     failureReasons.Add($"{device.Platform}:{reason}");
+                    // Dead token → prune the device (isolated best-effort save).
+                    await _dataContext.MarkDeadDeviceForRemovalAsync(sendResult, device.Id, _logger);
                 }
             }
 

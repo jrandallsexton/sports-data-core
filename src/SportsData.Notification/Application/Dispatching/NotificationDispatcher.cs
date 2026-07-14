@@ -175,6 +175,8 @@ namespace SportsData.Notification.Application.Dispatching
                     {
                         var reason = failure.Errors.FirstOrDefault()?.ErrorMessage ?? "unknown";
                         failureReasons.Add($"{device.Platform}:{reason}");
+                        // Dead token → prune the device (isolated best-effort save).
+                        await _dataContext.MarkDeadDeviceForRemovalAsync(result, device.Id, _logger);
                     }
                 }
                 catch (Exception ex)
@@ -306,6 +308,8 @@ namespace SportsData.Notification.Application.Dispatching
                     {
                         var reason = failure.Errors.FirstOrDefault()?.ErrorMessage ?? "unknown";
                         failureReasons.Add($"{device.Platform}:{reason}");
+                        // Dead token → prune the device (isolated best-effort save).
+                        await _dataContext.MarkDeadDeviceForRemovalAsync(result, device.Id, _logger);
                     }
                 }
                 catch (Exception ex)

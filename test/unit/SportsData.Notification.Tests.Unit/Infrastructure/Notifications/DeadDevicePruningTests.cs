@@ -58,47 +58,60 @@ public class DeadDevicePruningTests
     }
 
     [Fact]
-    public async Task MarkDeadDeviceForRemoval_NotFound_DeletesRowOnSave()
+    public async Task MarkDeadDeviceForRemovalAsync_NotFound_DeletesRow()
     {
         await using var ctx = NewContext();
         var deviceId = await SeedDeviceAsync(ctx);
 
-        var marked = ctx.MarkDeadDeviceForRemoval(
+        var pruned = await ctx.MarkDeadDeviceForRemovalAsync(
             new Failure<string>(string.Empty, ResultStatus.NotFound, new List<ValidationFailure>()),
             deviceId,
             NullLogger.Instance);
-        await ctx.SaveChangesAsync();
 
-        marked.Should().BeTrue();
+        pruned.Should().BeTrue();
         (await ctx.UserDevices.FindAsync(deviceId)).Should().BeNull();
     }
 
     [Fact]
-    public async Task MarkDeadDeviceForRemoval_TransientError_KeepsRow()
+    public async Task MarkDeadDeviceForRemovalAsync_TransientError_KeepsRow()
     {
         await using var ctx = NewContext();
         var deviceId = await SeedDeviceAsync(ctx);
 
-        var marked = ctx.MarkDeadDeviceForRemoval(
+        var pruned = await ctx.MarkDeadDeviceForRemovalAsync(
             new Failure<string>(string.Empty, ResultStatus.Error, new List<ValidationFailure>()),
             deviceId,
             NullLogger.Instance);
-        await ctx.SaveChangesAsync();
 
-        marked.Should().BeFalse();
+        pruned.Should().BeFalse();
         (await ctx.UserDevices.FindAsync(deviceId)).Should().NotBeNull();
     }
 
     [Fact]
-    public async Task MarkDeadDeviceForRemoval_Success_KeepsRow()
+    public async Task MarkDeadDeviceForRemovalAsync_Success_KeepsRow()
     {
         await using var ctx = NewContext();
         var deviceId = await SeedDeviceAsync(ctx);
 
-        var marked = ctx.MarkDeadDeviceForRemoval(new Success<string>("msg-id"), deviceId, NullLogger.Instance);
-        await ctx.SaveChangesAsync();
+        var pruned = await ctx.MarkDeadDeviceForRemovalAsync(
+            new Success<string>("msg-id"), deviceId, NullLogger.Instance);
 
-        marked.Should().BeFalse();
+        pruned.Should().BeFalse();
         (await ctx.UserDevices.FindAsync(deviceId)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task MarkDeadDeviceForRemovalAsync_MissingRow_IsNonFatal()
+    {
+        // The row was already deleted (concurrent prune / unregister). A
+        // best-effort prune must not throw / fail the message.
+        await using var ctx = NewContext();
+
+        var act = () => ctx.MarkDeadDeviceForRemovalAsync(
+            new Failure<string>(string.Empty, ResultStatus.NotFound, new List<ValidationFailure>()),
+            Guid.NewGuid(),
+            NullLogger.Instance);
+
+        await act.Should().NotThrowAsync();
     }
 }

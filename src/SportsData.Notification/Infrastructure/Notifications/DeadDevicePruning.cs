@@ -1,5 +1,7 @@
 using System.Linq;
 
+using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
@@ -23,17 +25,20 @@ public static class DeadDevicePruning
         => sendResult is Failure<string> { Status: ResultStatus.NotFound };
 
     /// <summary>
-    /// If <paramref name="sendResult"/> is a dead-token failure, marks the device
-    /// row for deletion — a tracked <c>Remove</c> with no immediate save, so it
-    /// flushes with the caller's terminal <c>SaveChangesAsync</c> (the one that
-    /// writes the claim outcome) in a single transaction. The device re-registers
-    /// on next app launch (#508). Returns true when it marked a row.
+    /// If <paramref name="sendResult"/> is a dead-token failure, deletes the
+    /// device row in its own best-effort save — isolated from the caller's claim
+    /// SaveChanges so a stale/missing row (a concurrent prune, or an unregister
+    /// between the AsNoTracking read and here) can NOT fail the message. The
+    /// device re-registers on next app launch (#508). Returns true when a row
+    /// was pruned; false when there was nothing to prune (not a dead token, or
+    /// the row was already gone).
     /// </summary>
-    public static bool MarkDeadDeviceForRemoval(
+    public static async Task<bool> MarkDeadDeviceForRemovalAsync(
         this AppDataContext dataContext,
         Result<string> sendResult,
         Guid deviceId,
-        ILogger logger)
+        ILogger logger,
+        CancellationToken cancellationToken = default)
     {
         if (!IsDeadTokenFailure(sendResult))
             return false;
@@ -45,10 +50,24 @@ public static class DeadDevicePruning
                      ?? new UserDevice { Id = deviceId };
         dataContext.UserDevices.Remove(device);
 
-        logger.LogInformation(
-            "Pruning dead push device {DeviceId} — FCM rejected its token; it will re-register on next app launch.",
-            deviceId);
-
-        return true;
+        try
+        {
+            await dataContext.SaveChangesAsync(cancellationToken);
+            logger.LogInformation(
+                "Pruned dead push device {DeviceId} — FCM rejected its token; it will re-register on next app launch.",
+                deviceId);
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // The row was already deleted (a concurrent prune / unregister). This
+            // best-effort prune is a no-op then — detach the stale entry so it
+            // can't re-fail the caller's terminal SaveChanges, and carry on.
+            dataContext.Entry(device).State = EntityState.Detached;
+            logger.LogDebug(
+                "Dead push device {DeviceId} was already removed; nothing to prune.",
+                deviceId);
+            return false;
+        }
     }
 }

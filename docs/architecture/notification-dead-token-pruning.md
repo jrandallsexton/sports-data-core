@@ -23,6 +23,7 @@ that follow-up.
 ## Design
 
 ### 1. Surface dead-token failures structurally
+
 In `FirebasePushNotificationSender`, map the FCM error code to the result status:
 
 - `Unregistered` (token no longer valid) and `InvalidArgument` (malformed token)
@@ -35,12 +36,16 @@ Reuses the existing `ResultStatus` enum (no Core change); the FCM-specific
 mapping stays in the sender. `NoOpPushNotificationSender` is unchanged.
 
 ### 2. Prune on dead token
-A small shared extension `MarkDeadDeviceForRemoval(this AppDataContext, result,
-deviceId, logger)`: when a send returns `Failure` with `Status == NotFound`, it
-**marks the `UserDevice` row for deletion** (tracked `Remove`, no immediate save)
-and logs a structured "pruning dead device" line. The consumer's/dispatcher's
-existing terminal `SaveChangesAsync` (which writes the claim's outcome) flushes
-the delete **in the same transaction** — no extra round-trip, no premature flush.
+
+A small shared extension `MarkDeadDeviceForRemovalAsync(this AppDataContext,
+result, deviceId, logger, ct)`: when a send returns `Failure` with
+`Status == NotFound`, it deletes the `UserDevice` row in its **own best-effort
+save**, isolated from the caller's claim `SaveChanges`. A stale/missing row (a
+concurrent prune, or an unregister between the `AsNoTracking` read and here)
+throws `DbUpdateConcurrencyException`, which the extension **catches, detaches,
+and swallows** — so a best-effort prune can never fail the message; unrelated
+save failures still propagate. The claim's terminal save is untouched (it no
+longer carries a staged device delete).
 
 **Decision: delete, not disable.** The token is genuinely dead, so the row is
 worthless; deleting it is clean and the device **re-registers on next launch**
@@ -52,6 +57,7 @@ Applied at all six send loops: `ContestOddsUpdatedConsumer`,
 `UserPickScoredConsumer`, and both `NotificationDispatcher` reminders.
 
 ### 3. Per-device visibility (minimal)
+
 The prune log line + the existing per-device `FailureReason` are the visibility
 for this pass. A dedicated per-device outcome table is **deferred** — the
 self-healing (pruning) is the higher-value half and stands alone.

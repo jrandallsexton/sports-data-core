@@ -197,8 +197,8 @@ namespace SportsData.Notification.Application.Consumers
                 if (result is Success<string>)
                     successCount++;
                 else
-                    // Dead token → prune the device; flushed by the SaveChanges below.
-                    _dataContext.MarkDeadDeviceForRemoval(result, device.Id, _logger);
+                    // Dead token → prune the device (isolated best-effort save).
+                    await _dataContext.MarkDeadDeviceForRemovalAsync(result, device.Id, _logger, cancellationToken);
             }
 
             claim.Title = title;

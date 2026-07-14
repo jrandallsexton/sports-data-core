@@ -21,7 +21,9 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public int Week { get; set; }
 
-        public Guid? FranchiseId { get; set; } // Used for SU or ATS
+        // The picked team, stored as a FranchiseSeasonId (matches Contest's
+        // Home/AwayTeamFranchiseSeasonId). Set for SU/ATS; null for Over/Under.
+        public Guid? FranchiseSeasonId { get; set; }
 
         public OverUnderPick? OverUnder { get; set; } // Enum: Over, Under
 

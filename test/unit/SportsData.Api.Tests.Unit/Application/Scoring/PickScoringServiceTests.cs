@@ -31,7 +31,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 
         var winnerId = Guid.NewGuid();
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, winnerId)
+            .With(p => p.FranchiseSeasonId, winnerId)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -57,7 +57,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var matchup = Fixture.Create<PickemGroupMatchup>();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, Guid.NewGuid())
+            .With(p => p.FranchiseSeasonId, Guid.NewGuid())
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -82,7 +82,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 
         var winnerId = Guid.NewGuid();
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, winnerId)
+            .With(p => p.FranchiseSeasonId, winnerId)
             .With(p => p.ConfidencePoints, 10)
             .Create();
 
@@ -107,7 +107,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
             .Create();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, Guid.NewGuid())
+            .With(p => p.FranchiseSeasonId, Guid.NewGuid())
             .With(p => p.ConfidencePoints, 10)
             .Create();
 
@@ -133,7 +133,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 
         var winnerId = Guid.NewGuid();
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, winnerId)
+            .With(p => p.FranchiseSeasonId, winnerId)
             .With(p => p.ConfidencePoints, (int?)null)
             .Create();
 
@@ -165,7 +165,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var awayFranchiseSeasonId = Guid.NewGuid();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, homeFranchiseSeasonId)
+            .With(p => p.FranchiseSeasonId, homeFranchiseSeasonId)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -197,7 +197,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var awayFranchiseSeasonId = Guid.NewGuid();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, homeFranchiseSeasonId)
+            .With(p => p.FranchiseSeasonId, homeFranchiseSeasonId)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -229,7 +229,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var awayFranchiseSeasonId = Guid.NewGuid();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, awayFranchiseSeasonId)
+            .With(p => p.FranchiseSeasonId, awayFranchiseSeasonId)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -261,7 +261,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var awayFranchiseSeasonId = Guid.NewGuid();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, awayFranchiseSeasonId)
+            .With(p => p.FranchiseSeasonId, awayFranchiseSeasonId)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -293,7 +293,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var awayFranchiseSeasonId = Guid.NewGuid();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, homeFranchiseSeasonId)
+            .With(p => p.FranchiseSeasonId, homeFranchiseSeasonId)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -325,7 +325,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var awayFranchiseSeasonId = Guid.NewGuid();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, awayFranchiseSeasonId)
+            .With(p => p.FranchiseSeasonId, awayFranchiseSeasonId)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -356,7 +356,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var awayFranchiseSeasonId = Guid.NewGuid();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, homeFranchiseSeasonId)
+            .With(p => p.FranchiseSeasonId, homeFranchiseSeasonId)
             .With(p => p.ConfidencePoints, 12)
             .Create();
 
@@ -388,7 +388,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var awayFranchiseSeasonId = Guid.NewGuid();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, homeFranchiseSeasonId)
+            .With(p => p.FranchiseSeasonId, homeFranchiseSeasonId)
             .With(p => p.ConfidencePoints, 12)
             .Create();
 
@@ -419,7 +419,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var winnerId = Guid.NewGuid();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, winnerId)
+            .With(p => p.FranchiseSeasonId, winnerId)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -446,7 +446,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var winnerId = Guid.NewGuid();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, winnerId)
+            .With(p => p.FranchiseSeasonId, winnerId)
             .Create();
 
         var result = Fixture.Build<MatchupResult>()
@@ -476,7 +476,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var matchup = Fixture.Create<PickemGroupMatchup>();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, (Guid?)null)
+            .With(p => p.FranchiseSeasonId, (Guid?)null)
             .Create();
 
         var result = Fixture.Create<MatchupResult>();
@@ -520,7 +520,7 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
         var matchup = Fixture.Create<PickemGroupMatchup>();
 
         var pick = Fixture.Build<PickemGroupUserPick>()
-            .With(p => p.FranchiseId, Guid.NewGuid())
+            .With(p => p.FranchiseSeasonId, Guid.NewGuid())
             .With(p => p.ScoredAt, (DateTime?)null)
             .With(p => p.IsCorrect, (bool?)null)
             .With(p => p.PointsAwarded, 0)

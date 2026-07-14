@@ -28,16 +28,12 @@ using System;
         // gate on this — the canonical "is this contest scoreable" signal.
         public DateTime? FinalizedUtc { get; set; }
 
-        // Team abbreviations + franchise ids (from the FranchiseSeason join).
-        // Used to compose the pick-result notification and to resolve which side
-        // the user picked — UserPick stores FranchiseId, not FranchiseSeasonId.
-        // Nullable — a franchise-season without an abbreviation degrades gracefully.
+        // Team abbreviations (from the FranchiseSeason join) for the pick-result
+        // notification copy. The picked side is resolved by comparing the pick's
+        // FranchiseSeasonId against Away/HomeFranchiseSeasonId above. Nullable —
+        // a franchise-season without an abbreviation degrades gracefully.
         public string? AwayAbbreviation { get; set; }
 
         public string? HomeAbbreviation { get; set; }
-
-        public Guid? AwayFranchiseId { get; set; }
-
-        public Guid? HomeFranchiseId { get; set; }
     }
 }

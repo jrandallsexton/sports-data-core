@@ -188,7 +188,7 @@ public class PickScoringAuditProcessor : IPickScoringAudit
             var clone = new PickemGroupUserPick
             {
                 Id = pick.Id,
-                FranchiseId = pick.FranchiseId,
+                FranchiseSeasonId = pick.FranchiseSeasonId,
                 ConfidencePoints = pick.ConfidencePoints
             };
 

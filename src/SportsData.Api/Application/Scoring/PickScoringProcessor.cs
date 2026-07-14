@@ -189,13 +189,13 @@ namespace SportsData.Api.Application.Scoring
                     pick.ModifiedUtc = _dateTimeProvider.UtcNow();
                     pick.ModifiedBy = CausationId.Api.PickScoringProcessor;
 
-                    // Which side did the user pick? UserPick stores FranchiseId
-                    // (SU/ATS); the matchup result carries the per-side FranchiseId.
-                    // Null for Over/Under picks (no FranchiseId) or an unresolved
-                    // match — the consumer falls back to the generic copy.
-                    bool? pickedIsHome = pick.FranchiseId.HasValue
-                        ? pick.FranchiseId == result.HomeFranchiseId ? true
-                          : pick.FranchiseId == result.AwayFranchiseId ? false
+                    // Which side did the user pick? Compare the pick's
+                    // FranchiseSeasonId against the contest's per-side
+                    // FranchiseSeasonIds. Null for Over/Under picks or an
+                    // unresolved match — the consumer falls back to generic copy.
+                    bool? pickedIsHome = pick.FranchiseSeasonId.HasValue
+                        ? pick.FranchiseSeasonId == result.HomeFranchiseSeasonId ? true
+                          : pick.FranchiseSeasonId == result.AwayFranchiseSeasonId ? false
                           : (bool?)null
                         : null;
 

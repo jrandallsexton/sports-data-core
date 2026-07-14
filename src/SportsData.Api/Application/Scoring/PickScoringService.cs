@@ -79,13 +79,13 @@ public class PickScoringService : IPickScoringService
         MatchupResult result,
         DateTime now)
     {
-        if (!pick.FranchiseId.HasValue)
+        if (!pick.FranchiseSeasonId.HasValue)
         {
             SetIncorrect(pick, now);
             return;
         }
 
-        pick.IsCorrect = pick.FranchiseId == result.WinnerFranchiseSeasonId;
+        pick.IsCorrect = pick.FranchiseSeasonId == result.WinnerFranchiseSeasonId;
         pick.ScoredAt = now;
     }
 
@@ -95,7 +95,7 @@ public class PickScoringService : IPickScoringService
         MatchupResult result,
         DateTime now)
     {
-        if (!pick.FranchiseId.HasValue)
+        if (!pick.FranchiseSeasonId.HasValue)
         {
             SetIncorrect(pick, now);
             return;
@@ -136,7 +136,7 @@ public class PickScoringService : IPickScoringService
             // else: it's a push → leave spreadWinnerId as null
         }
 
-        pick.IsCorrect = spreadWinnerId.HasValue && pick.FranchiseId == spreadWinnerId.Value;
+        pick.IsCorrect = spreadWinnerId.HasValue && pick.FranchiseSeasonId == spreadWinnerId.Value;
         pick.ScoredAt = now;
     }
 

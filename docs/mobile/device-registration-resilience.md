@@ -43,6 +43,7 @@ We don't need to distinguish the three timings to fix it — they share one defe
 ## Fix
 
 ### 1. Re-attempt on foreground (the automatic fix)
+
 Add an `AppState` listener: when the app becomes `active` while authenticated and
 registration hasn't yet succeeded this session, re-attempt. A cheap permission
 check short-circuits when permission isn't granted (no POST spam); once a
@@ -51,6 +52,7 @@ permission-granted-late, APNs-not-ready, and transient POST failures — the iPa
 gets its next chance the moment it's foregrounded.
 
 ### 2. Stop swallowing — surface failures to Sentry
+
 - `getFcmTokenIfGranted()` returns the **rich** `FcmTokenResult`
   (`{ token, permissionStatus, error }`), mirroring its prompting sibling
   `getFcmToken()`, instead of a bare `string | null` that discards the error.
@@ -61,6 +63,7 @@ gets its next chance the moment it's foregrounded.
   occurrence is diagnosable.
 
 ### 3. Manual "register this device" escape hatch
+
 On the notification-settings screen, a **"This device"** action that runs
 `registerThisDevice({ prompt: true })` (prompting for permission if needed) and
 shows the outcome via `Alert` — so a user who somehow ends up unregistered can
@@ -68,6 +71,7 @@ fix it themselves and *see* the result (the exact affordance whose absence made
 this hard to diagnose).
 
 ### 4. (Deferred) backend "enabled but no device" signal
+
 A user whose prefs are enabled but who has no `UserDevice` row is a detectable
 "wants notifications, can't receive them" state. Worth surfacing later (a
 dispatcher log/metric on `Suppressed_NoDevice` for opted-in users); **out of

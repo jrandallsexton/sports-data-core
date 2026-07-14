@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 
 import { registerThisDevice } from '@/src/lib/notifications/registerPushDevice';
@@ -77,6 +78,20 @@ describe('registerThisDevice', () => {
     expect(outcome.ok).toBe(false);
     expect(outcome.error).toBe('network down');
     expect(mockCaptureException).toHaveBeenCalledTimes(1);
+  });
+
+  it('is a no-op on web (never touches permission/token/API)', async () => {
+    const replaced = jest.replaceProperty(Platform, 'OS', 'web');
+    try {
+      const outcome = await registerThisDevice();
+
+      expect(outcome).toEqual({ ok: false, permissionStatus: 'undetermined' });
+      expect(mockGranted).not.toHaveBeenCalled();
+      expect(mockPrompt).not.toHaveBeenCalled();
+      expect(mockRegister).not.toHaveBeenCalled();
+    } finally {
+      replaced.restore();
+    }
   });
 
   it('uses the prompting token fn when prompt=true', async () => {

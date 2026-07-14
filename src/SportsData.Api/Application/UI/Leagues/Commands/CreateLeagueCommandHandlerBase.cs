@@ -142,7 +142,9 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
                     default!,
                     ResultStatus.Validation,
                     [new ValidationFailure(nameof(request.StartsOn),
-                        $"No {SportMode} games are scheduled in the selected date range. " +
+                        // User-facing copy — no raw Sport enum ("BaseballMlb"); the
+                        // user is already in a specific sport's create flow.
+                        "No games are scheduled in the selected date range. " +
                         "Choose a range that includes at least one game day.")]);
             }
         }

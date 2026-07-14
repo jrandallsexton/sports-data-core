@@ -131,6 +131,9 @@ namespace SportsData.Notification.Application.Consumers
                     device.FcmToken, title, body, data, context.CancellationToken);
                 if (result is Success<string>)
                     successCount++;
+                else
+                    // Dead token → prune the device; flushed by the SaveChanges below.
+                    _dataContext.MarkDeadDeviceForRemoval(result, device.Id, _logger);
             }
 
             claim.Title = title;

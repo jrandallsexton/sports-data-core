@@ -196,6 +196,9 @@ namespace SportsData.Notification.Application.Consumers
                 var result = await _pushSender.SendAsync(device.FcmToken, title, body);
                 if (result is Success<string>)
                     successCount++;
+                else
+                    // Dead token → prune the device; flushed by the SaveChanges below.
+                    _dataContext.MarkDeadDeviceForRemoval(result, device.Id, _logger);
             }
 
             claim.Title = title;

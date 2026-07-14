@@ -214,4 +214,27 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
     // hitting the "already claimed" branch) relies on Postgres raising 23505.
     // The InMemory provider does not enforce unique indexes, so that branch is
     // validated against the local migration DB rather than here.
+
+    [Fact]
+    public async Task Consume_DeadFcmToken_PrunesDevice()
+    {
+        // FCM reports the token dead (sender maps Unregistered/InvalidArgument to
+        // NotFound). The device row should be pruned so it stops failing forever;
+        // it re-registers on next app launch.
+        var userId = Guid.NewGuid();
+        await SeedDeviceAsync(userId);
+
+        _pushSender
+            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Failure<string>(string.Empty, ResultStatus.NotFound, []));
+
+        var msg = Msg(userId, "BOS", "NYY", awayScore: 3, homeScore: 2,
+            isCorrect: true, pickedIsHome: false, pickedSpread: null);
+
+        var sut = Mocker.CreateInstance<UserPickScoredConsumer>();
+        await sut.Consume(ContextFor(msg));
+
+        (await DataContext.UserDevices.CountAsync(d => d.UserId == userId)).Should().Be(0);
+    }
 }

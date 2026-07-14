@@ -1,87 +1,83 @@
 import { useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 
 import { useAuth } from './useAuth';
-import { getFcmTokenIfGranted } from '@/src/lib/notifications/pushNotifications';
-import { getOrCreateInstallationId } from '@/src/lib/device/installationId';
-import { devicesApi } from '@/src/services/api/devicesApi';
+import { registerThisDevice } from '@/src/lib/notifications/registerPushDevice';
 
 /**
  * Silently registers this device's FCM token with the API once the user is
- * authenticated and notification permission has already been granted. Replaces
- * the manual copy-paste step on the admin push-token screen.
+ * authenticated and notification permission has already been granted.
  *
  * Design choices:
- * - NO permission prompt. We use {@link getFcmTokenIfGranted}, which only
- *   returns a token when permission is already granted, so sign-in never fires
- *   an unsolicited iOS prompt. Requesting permission (with context) is a
- *   separate product flow.
- * - Native-only. expo-notifications / RN-Firebase messaging have no web
- *   equivalent; the hook no-ops on web.
- * - Idempotent + cheap. The backend upserts on (UserId, FcmToken), so repeat
- *   calls are harmless; the per-session token set just avoids needless POSTs.
- * - Token rotation. Subscribes to onTokenRefresh so a mid-session FCM token
- *   rotation re-registers without waiting for the next launch.
+ * - NO permission prompt. Registration goes through
+ *   {@link registerThisDevice} with prompt=false, which only returns a token
+ *   when permission is already granted — sign-in never fires an unsolicited
+ *   iOS prompt. (The manual settings action uses prompt=true.)
+ * - Native-only. RN-Firebase messaging has no web equivalent; the hook no-ops
+ *   on web.
+ * - Resilient. The one-shot sign-in attempt used to be the ONLY automatic
+ *   trigger, so a device whose permission or APNs token wasn't ready at that
+ *   instant (or whose POST failed) silently never registered. We now re-attempt
+ *   on every foreground until a registration succeeds this session, and on FCM
+ *   token rotation. See docs/mobile/device-registration-resilience.md.
  *
  * Call once from the root layout (native-only).
  */
 export function useRegisterPushDevice(): void {
   const { isAuthenticated, user } = useAuth();
 
-  // Tokens already registered this app session. Backend idempotency makes this
-  // a chattiness guard, not a correctness one.
-  const registeredTokensRef = useRef<Set<string>>(new Set());
+  // Whether registration has already succeeded this session. Reset on sign-out
+  // / account switch. Gates the foreground retry loop so we stop once done.
+  const registeredRef = useRef(false);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
     if (!isAuthenticated) {
-      // Signed out — forget what we registered so the next user's device
-      // re-registers cleanly.
-      registeredTokensRef.current.clear();
+      // Signed out — forget success so the next user's device re-registers.
+      registeredRef.current = false;
       return;
     }
 
-    // Fresh start for this sign-in. The effect also re-runs on a direct
-    // account switch (user?.uid A -> B with no intermediate sign-out); since
-    // the device's FCM token is the same across accounts, a stale cached token
-    // would otherwise suppress the new user's registration POST.
-    registeredTokensRef.current.clear();
+    // Fresh start for this sign-in. The effect also re-runs on a direct account
+    // switch (user?.uid A -> B with no intermediate sign-out).
+    registeredRef.current = false;
 
     let cancelled = false;
-    const platform = Platform.OS === 'ios' ? 'ios' : 'android';
 
-    const register = async (token: string | null) => {
-      if (cancelled || !token) return;
-      if (registeredTokensRef.current.has(token)) return;
-
-      try {
-        const installationId = await getOrCreateInstallationId();
-        await devicesApi.registerDevice({ installationId, fcmToken: token, platform });
-        registeredTokensRef.current.add(token);
-      } catch (err) {
-        // Non-fatal: reminders just won't reach this device until a later
-        // retry (next launch / token refresh). Never surface to the user.
-        const message = err instanceof Error ? err.message : String(err);
-        console.log('[push] device registration failed', { message });
-      }
+    // Silent attempt, gated on not-yet-succeeded. A cheap permission check
+    // short-circuits inside registerThisDevice when permission isn't granted,
+    // so foreground retries don't POST-spam while denied.
+    const attempt = async () => {
+      if (cancelled || registeredRef.current) return;
+      const outcome = await registerThisDevice();
+      if (!cancelled && outcome.ok) registeredRef.current = true;
     };
 
-    // Initial registration for this sign-in.
-    void (async () => {
-      const token = await getFcmTokenIfGranted();
-      await register(token);
-    })();
+    // Initial attempt for this sign-in.
+    void attempt();
 
-    // Re-register if FCM rotates the token while signed in.
-    const unsubscribe = messaging().onTokenRefresh((token) => {
-      void register(token);
+    // Re-attempt on foreground until we've succeeded once. Covers permission
+    // granted after launch, an APNs token that wasn't ready at sign-in, and
+    // transient POST failures — none of which the one-shot attempt recovered.
+    const appStateSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void attempt();
+    });
+
+    // Token rotation must reach the backend even after a prior success, so this
+    // re-registers unconditionally (not gated by registeredRef).
+    const unsubscribeTokenRefresh = messaging().onTokenRefresh(() => {
+      void (async () => {
+        const outcome = await registerThisDevice();
+        if (!cancelled && outcome.ok) registeredRef.current = true;
+      })();
     });
 
     return () => {
       cancelled = true;
-      unsubscribe();
+      appStateSub.remove();
+      unsubscribeTokenRefresh();
     };
   }, [isAuthenticated, user?.uid]);
 }

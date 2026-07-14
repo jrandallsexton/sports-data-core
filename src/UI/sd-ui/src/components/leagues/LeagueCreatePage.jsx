@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import apiWrapper from "../../api/apiWrapper.js";
 import { useUserDto } from "../../contexts/UserContext";
 
@@ -184,11 +185,11 @@ const LeagueCreatePage = () => {
     // round-trip.
     if (durationMode === DURATION_DATES) {
       if (endsOn && endsOn < todayIsoDate) {
-        alert("End date can't be in the past.");
+        toast.error("End date can't be in the past.");
         return;
       }
       if (startsOn && endsOn && endsOn < startsOn) {
-        alert("End date must be on or after the start date.");
+        toast.error("End date must be on or after the start date.");
         return;
       }
     }
@@ -198,7 +199,7 @@ const LeagueCreatePage = () => {
 
   const finalizeLeagueCreation = async () => {
     if (durationMode === DURATION_WEEKS) {
-      alert(
+      toast.error(
         "Week Range isn't wired up yet — it needs the season calendar endpoint. Use Full Season or Date Range for now."
       );
       return;
@@ -242,7 +243,10 @@ const LeagueCreatePage = () => {
       navigate(`/app/league/${response.id}`);
     } catch (error) {
       console.error("Failed to create league:", error);
-      alert("An error occurred while creating the league.");
+      // Surface the server's validation message (e.g. the blackout-date guard's
+      // "No games are scheduled in the selected date range.") when present.
+      const serverMessage = error?.response?.data?.errors?.[0]?.errorMessage;
+      toast.error(serverMessage || "An error occurred while creating the league.");
     }
 
     setShowConfirmDialog(false);

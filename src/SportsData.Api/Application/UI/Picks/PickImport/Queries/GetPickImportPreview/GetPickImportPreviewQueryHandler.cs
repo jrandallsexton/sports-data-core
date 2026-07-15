@@ -94,10 +94,20 @@ public class GetPickImportPreviewQueryHandler : IGetPickImportPreviewQueryHandle
 
         var nowUtc = _dateTime.UtcNow();
 
-        // The target league's matchups define the universe.
+        // The target league's matchups define the universe. Project only the
+        // fields the plan needs (lock state derives from StartDateUtc) rather
+        // than materializing the full ~30-column entity.
         var targetMatchups = await _dataContext.PickemGroupMatchups
             .AsNoTracking()
             .Where(m => m.GroupId == query.TargetLeagueId)
+            .Select(m => new
+            {
+                m.ContestId,
+                m.SeasonWeek,
+                m.StartDateUtc,
+                m.Headline,
+                m.HomeSpread
+            })
             .ToListAsync(cancellationToken);
 
         var contestIds = targetMatchups.Select(m => m.ContestId).ToList();
@@ -127,7 +137,7 @@ public class GetPickImportPreviewQueryHandler : IGetPickImportPreviewQueryHandle
                 .Select(m => new PickImportTargetMatchup(
                     m.ContestId,
                     m.SeasonWeek,
-                    m.IsLocked(nowUtc),
+                    PickemGroupMatchupExtensions.IsStartLocked(m.StartDateUtc, nowUtc),
                     m.Headline,
                     m.HomeSpread))
                 .ToList(),

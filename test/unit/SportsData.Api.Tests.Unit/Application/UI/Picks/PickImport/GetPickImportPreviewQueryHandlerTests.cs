@@ -252,4 +252,23 @@ public class GetPickImportPreviewQueryHandlerTests : ApiTestBase<GetPickImportPr
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.NotFound);
     }
+
+    [Fact]
+    public async Task ExcludesDeactivatedSourceLeague()
+    {
+        var userId = Guid.NewGuid();
+        var sourceId = SeedLeague(userId, PickType.StraightUp, deactivated: true);
+        var targetId = SeedLeague(userId, PickType.StraightUp);
+        await DataContext.SaveChangesAsync();
+
+        var result = await CreateHandler().ExecuteAsync(new GetPickImportPreviewQuery
+        {
+            UserId = userId,
+            SourceLeagueId = sourceId,
+            TargetLeagueId = targetId
+        });
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.NotFound);
+    }
 }

@@ -2,13 +2,13 @@ namespace SportsData.Api.Application.UI.Picks.PickImport.Dtos;
 
 /// <summary>
 /// Body for POST /ui/leagues/{targetId}/picks/import. The target league is the
-/// route id; this names the source league and the collisions the user chose to
-/// replace (by contest id). Contests not listed here keep their existing target
-/// pick.
+/// route id; this names the source league and the contests the user selected to
+/// import (the checked boxes). Only those are imported; every other contest is
+/// left untouched.
 /// </summary>
 public sealed class PickImportRequest
 {
     public Guid SourceLeagueId { get; set; }
 
-    public List<Guid> ReplaceContestIds { get; set; } = [];
+    public List<Guid> ContestIds { get; set; } = [];
 }

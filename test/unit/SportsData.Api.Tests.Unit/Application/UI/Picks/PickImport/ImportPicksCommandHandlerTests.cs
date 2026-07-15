@@ -123,7 +123,8 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
         {
             UserId = userId,
             SourceLeagueId = sourceId,
-            TargetLeagueId = targetId
+            TargetLeagueId = targetId,
+            ContestIds = [contestA, contestB]
         });
 
         result.IsSuccess.Should().BeTrue();
@@ -139,7 +140,42 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
     }
 
     [Fact]
-    public async Task ReplacesOnlyApprovedCollisions_AndKeepsTheRest()
+    public async Task ImportsOnlySelectedContests_LeavesUnselectedUntouched()
+    {
+        // The user unchecks one of two importable contests — only the checked one is written.
+        var userId = Guid.NewGuid();
+        var sourceId = SeedLeague(userId, PickType.StraightUp);
+        var targetId = SeedLeague(userId, PickType.StraightUp);
+
+        var selected = Guid.NewGuid();
+        var unselected = Guid.NewGuid();
+        var team = Guid.NewGuid();
+        var future = NowUtc.AddDays(1);
+
+        SeedMatchup(targetId, selected, future);
+        SeedMatchup(targetId, unselected, future);
+        SeedPick(sourceId, userId, selected, team);
+        SeedPick(sourceId, userId, unselected, team);
+        await DataContext.SaveChangesAsync();
+
+        var result = await CreateHandler().ExecuteAsync(new ImportPicksCommand
+        {
+            UserId = userId,
+            SourceLeagueId = sourceId,
+            TargetLeagueId = targetId,
+            ContestIds = [selected]
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Imported.Should().Be(1);
+        result.Value.SkippedByReason.Should().ContainKey("NotSelected").WhoseValue.Should().Be(1);
+
+        TargetPick(targetId, userId, selected).Should().NotBeNull();
+        TargetPick(targetId, userId, unselected).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ReplacesOnlySelectedCollisions_AndLeavesUnselected()
     {
         var userId = Guid.NewGuid();
         var sourceId = SeedLeague(userId, PickType.StraightUp);
@@ -165,13 +201,13 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
             UserId = userId,
             SourceLeagueId = sourceId,
             TargetLeagueId = targetId,
-            ReplaceContestIds = [approved]
+            ContestIds = [approved]
         });
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Imported.Should().Be(0);
         result.Value.Replaced.Should().Be(1);
-        result.Value.SkippedByReason.Should().ContainKey("KeptExisting").WhoseValue.Should().Be(1);
+        result.Value.SkippedByReason.Should().ContainKey("NotSelected").WhoseValue.Should().Be(1);
 
         // Approved collision was overwritten with the source team + traceability.
         var approvedPick = TargetPick(targetId, userId, approved)!;
@@ -208,7 +244,8 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
         {
             UserId = userId,
             SourceLeagueId = sourceId,
-            TargetLeagueId = targetId
+            TargetLeagueId = targetId,
+            ContestIds = [locked, matches, notShared]
         });
 
         result.IsSuccess.Should().BeTrue();
@@ -238,7 +275,8 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
         {
             UserId = userId,
             SourceLeagueId = sourceId,
-            TargetLeagueId = targetId
+            TargetLeagueId = targetId,
+            ContestIds = [contest]
         });
 
         result.IsSuccess.Should().BeTrue();
@@ -270,7 +308,7 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
             UserId = userId,
             SourceLeagueId = sourceId,
             TargetLeagueId = targetId,
-            ReplaceContestIds = [collision]
+            ContestIds = [collision]
         });
 
         result.Value.RequiresConfidence.Should().BeTrue();
@@ -338,7 +376,8 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
         {
             UserId = userId,
             SourceLeagueId = sourceId,
-            TargetLeagueId = targetId
+            TargetLeagueId = targetId,
+            ContestIds = [okContest, failContest]
         });
 
         result.IsSuccess.Should().BeTrue();
@@ -370,7 +409,8 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
         {
             UserId = userId,
             SourceLeagueId = sourceId,
-            TargetLeagueId = targetId
+            TargetLeagueId = targetId,
+            ContestIds = [contest]
         };
 
         var first = await CreateHandler().ExecuteAsync(command);

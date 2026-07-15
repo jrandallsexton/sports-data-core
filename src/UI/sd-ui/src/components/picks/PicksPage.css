@@ -82,9 +82,26 @@
   grid-column: 3; /* Position in the third column */
 }
 
-.pick-status {
-  font-size: 1rem;
+/* Picks-made count, styled as a pill to match .pick-mode-badge. Muted while
+   picks remain, accent (with a check) once every game is picked. */
+.pick-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background-color: var(--active-bg);
   color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+}
+
+.pick-status-badge.complete {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .pick-mode-badge {
@@ -102,12 +119,29 @@
   line-height: 1.4;
 }
 
+/* Show/hide-picked-games toggle: a compact icon button matching the pill row.
+   Accent-highlighted while picked games are hidden. */
 .hide-picked-toggle {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  padding: 5px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background-color: var(--active-bg);
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.hide-picked-toggle:hover {
+  color: var(--text-primary);
+}
+
+.hide-picked-toggle.active {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 @media (max-width: 600px) {

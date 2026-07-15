@@ -6,6 +6,8 @@ import { useUserDto } from "../../contexts/UserContext";
 import { useLeagueContext } from "../../contexts/LeagueContext";
 import { useContestUpdates } from "../../contexts/ContestUpdatesContext";
 import InsightDialog from "../insights/InsightDialog.jsx";
+import ImportPicksDialog from "./ImportPicksDialog.jsx";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import toast from "react-hot-toast";
 import apiWrapper from "../../api/apiWrapper.js";
 import LeagueWeekSelector from "./LeagueWeekSelector.jsx";
@@ -61,6 +63,14 @@ function PicksPage() {
   const [hidePicked, setHidePicked] = useState(false);
   const [fadingOut, setFadingOut] = useState([]);
   const [now, setNow] = useState(new Date());
+
+  // Cross-league pick import. importState is set by an off-critical-path
+  // availability check when the user can fill unpicked games from another league.
+  const [importState, setImportState] = useState(null); // { sources: [{ leagueId, name, toImport }] }
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  // Bumped to force a picks refetch after an import commits.
+  const [picksReload, setPicksReload] = useState(0);
 
   // Update 'now' every 15 seconds to keep lock status in sync with MatchupCard
   useEffect(() => {
@@ -328,7 +338,123 @@ function PicksPage() {
     return () => {
       cancelled = true;
     };
-  }, [routeLeagueId, selectedWeek, seasonWeeks]);
+  }, [routeLeagueId, selectedWeek, seasonWeeks, picksReload]);
+
+  // Off-critical-path: can the user import picks into this league from another
+  // (same-type) league? Drives the "Import N picks" button. The whole-league
+  // preview is fetched; the dialog scopes display to the current week's matchups.
+  // Runs after matchups/picks load so it never delays time-to-first-pick.
+  useEffect(() => {
+    let cancelled = false;
+    async function checkImportAvailability() {
+      if (!routeLeagueId || matchups.length === 0) {
+        setImportState(null);
+        return;
+      }
+      // Nothing to fill → don't even ask.
+      if (!matchups.some((m) => !userPicks[m.contestId])) {
+        setImportState(null);
+        return;
+      }
+
+      try {
+        const sourcesRes = await apiWrapper.Imports.getSources(routeLeagueId);
+        if (cancelled) return;
+        const sources = sourcesRes.data || [];
+        if (sources.length === 0) {
+          setImportState(null);
+          return;
+        }
+
+        // Preview every candidate source in parallel; keep only those that
+        // actually have picks to import. A single import always draws from one
+        // source, so this just populates the dialog's source picker.
+        const previews = await Promise.all(
+          sources.map((s) =>
+            apiWrapper.Imports.getPreview(routeLeagueId, s.leagueId)
+              .then((res) => ({
+                leagueId: s.leagueId,
+                name: s.name,
+                toImport: res.data?.toImport || [],
+              }))
+              .catch(() => ({ leagueId: s.leagueId, name: s.name, toImport: [] }))
+          )
+        );
+        if (cancelled) return;
+
+        const withPicks = previews.filter((p) => p.toImport.length > 0);
+        setImportState(withPicks.length > 0 ? { sources: withPicks } : null);
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Import availability check failed:", error);
+        setImportState(null);
+      }
+    }
+
+    checkImportAvailability();
+    return () => {
+      cancelled = true;
+    };
+  }, [routeLeagueId, selectedWeek, matchups, userPicks]);
+
+  // Per-source importable rows for the dialog: each candidate source's picks,
+  // scoped to this week's still-unpicked matchups and enriched for display from
+  // data already loaded. Sources with nothing to offer are dropped, so the
+  // dialog's picker only lists useful ones. Built off raw `matchups` (stable)
+  // rather than enrichedMatchups so live score ticks don't churn it.
+  // Kept with the other hooks (before any early return) per rules-of-hooks.
+  const importSources = useMemo(() => {
+    if (!importState) return [];
+    const byContest = new Map(matchups.map((m) => [m.contestId, m]));
+    return importState.sources
+      .map((src) => ({
+        leagueId: src.leagueId,
+        name: src.name,
+        items: src.toImport
+          .filter((i) => byContest.has(i.contestId) && !userPicks[i.contestId])
+          .map((i) => {
+            const m = byContest.get(i.contestId);
+            const isHome = i.franchiseSeasonId === m.homeFranchiseSeasonId;
+            return {
+              contestId: i.contestId,
+              franchiseSeasonId: i.franchiseSeasonId,
+              team: isHome ? m.home : m.away,
+              matchupLabel: `${m.away} @ ${m.home}`,
+            };
+          }),
+      }))
+      .filter((src) => src.items.length > 0);
+  }, [importState, matchups, userPicks]);
+
+  async function handleImport(sourceLeagueId, contestIds) {
+    if (!sourceLeagueId || contestIds.length === 0) return;
+    setImporting(true);
+    try {
+      const res = await apiWrapper.Imports.execute(
+        routeLeagueId,
+        sourceLeagueId,
+        contestIds
+      );
+
+      if (res.data?.requiresConfidence) {
+        // Confidence-league target: import returns a draft, not a commit. That
+        // pick-sheet flow isn't wired up yet.
+        toast("This league uses confidence points — import isn’t available here yet.", {
+          icon: "⚠️",
+        });
+      } else {
+        const imported = res.data?.imported ?? contestIds.length;
+        toast.success(`Imported ${imported} pick${imported === 1 ? "" : "s"}!`);
+        setPicksReload((k) => k + 1); // refetch picks → UI + button update
+      }
+      setIsImportOpen(false);
+    } catch (error) {
+      console.error("Failed to import picks:", error);
+      toast.error("Failed to import picks. Please try again.");
+    } finally {
+      setImporting(false);
+    }
+  }
 
   async function handlePick(matchup, selectedFranchiseSeasonId, confidencePoints) {
     try {
@@ -569,20 +695,37 @@ function PicksPage() {
                 </span>
               );
             })()}
-            <span className="pick-status">
-              {allPicked
-                ? "All Picks Made"
-                : `${picksMade} / ${totalGames} Picks Made`}
+            <span
+              className={`pick-status-badge${allPicked ? " complete" : ""}`}
+              title="Picks made"
+            >
+              {allPicked && "✓ "}
+              {picksMade}/{totalGames}
             </span>
             {!allPicked && (
-              <label className="hide-picked-toggle">
-                <input
-                  type="checkbox"
-                  checked={hidePicked}
-                  onChange={() => setHidePicked(!hidePicked)}
-                />
-                Hide Picked Games
-              </label>
+              <button
+                type="button"
+                className={`hide-picked-toggle${hidePicked ? " active" : ""}`}
+                onClick={() => setHidePicked(!hidePicked)}
+                title={hidePicked ? "Show all games" : "Hide picked games"}
+                aria-label={hidePicked ? "Show all games" : "Hide picked games"}
+                aria-pressed={hidePicked}
+              >
+                {hidePicked ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            )}
+            {importSources.length > 0 && (
+              <button
+                type="button"
+                className="import-picks-button"
+                onClick={() => setIsImportOpen(true)}
+              >
+                {importSources.length === 1
+                  ? `Import ${importSources[0].items.length} pick${
+                      importSources[0].items.length === 1 ? "" : "s"
+                    }`
+                  : "Import picks"}
+              </button>
             )}
           </div>
         </div>
@@ -631,6 +774,16 @@ function PicksPage() {
             loading={loadingInsight}
             onRejectPreview={handleRejectPreview}
             onApprovePreview={handleApprovePreview}
+          />
+        )}
+
+        {isImportOpen && (
+          <ImportPicksDialog
+            isOpen={isImportOpen}
+            sources={importSources}
+            importing={importing}
+            onClose={() => setIsImportOpen(false)}
+            onImport={handleImport}
           />
         )}
       </div>

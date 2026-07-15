@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.UI.Leagues.PickImport.Planner;
+namespace SportsData.Api.Application.UI.Picks.PickImport.Planner;
 
 /// <summary>
 /// Pure, storage-agnostic classification core for cross-league pick import.

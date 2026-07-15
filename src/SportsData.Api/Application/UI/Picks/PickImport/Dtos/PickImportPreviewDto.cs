@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.UI.Leagues.PickImport.Dtos;
+namespace SportsData.Api.Application.UI.Picks.PickImport.Dtos;
 
 /// <summary>
 /// Dry-run plan for importing a user's picks from one league into another.

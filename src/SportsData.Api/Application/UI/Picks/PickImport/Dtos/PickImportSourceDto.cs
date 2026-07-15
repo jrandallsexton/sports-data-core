@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.UI.Leagues.PickImport.Dtos;
+namespace SportsData.Api.Application.UI.Picks.PickImport.Dtos;
 
 /// <summary>
 /// A candidate source league for importing picks into a target: one of the user's

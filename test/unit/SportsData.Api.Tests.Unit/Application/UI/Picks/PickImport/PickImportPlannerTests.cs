@@ -1,10 +1,10 @@
 using FluentAssertions;
 
-using SportsData.Api.Application.UI.Leagues.PickImport.Planner;
+using SportsData.Api.Application.UI.Picks.PickImport.Planner;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.PickImport;
+namespace SportsData.Api.Tests.Unit.Application.UI.Picks.PickImport;
 
 public class PickImportPlannerTests
 {

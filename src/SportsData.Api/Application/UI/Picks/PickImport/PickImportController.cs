@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-using SportsData.Api.Application.UI.Leagues.PickImport.Dtos;
-using SportsData.Api.Application.UI.Leagues.PickImport.Queries.GetPickImportPreview;
-using SportsData.Api.Application.UI.Leagues.PickImport.Queries.GetPickImportSources;
+using SportsData.Api.Application.UI.Picks.PickImport.Dtos;
+using SportsData.Api.Application.UI.Picks.PickImport.Queries.GetPickImportPreview;
+using SportsData.Api.Application.UI.Picks.PickImport.Queries.GetPickImportSources;
 using SportsData.Api.Extensions;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 
-namespace SportsData.Api.Application.UI.Leagues.PickImport;
+namespace SportsData.Api.Application.UI.Picks.PickImport;
 
 /// <summary>
 /// Cross-league pick import, scoped to the target league.

@@ -2,13 +2,13 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
-using SportsData.Api.Application.UI.Leagues.PickImport.Dtos;
-using SportsData.Api.Application.UI.Leagues.PickImport.Planner;
+using SportsData.Api.Application.UI.Picks.PickImport.Dtos;
+using SportsData.Api.Application.UI.Picks.PickImport.Planner;
 using SportsData.Api.Extensions;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.UI.Leagues.PickImport.Queries.GetPickImportPreview;
+namespace SportsData.Api.Application.UI.Picks.PickImport.Queries.GetPickImportPreview;
 
 public interface IGetPickImportPreviewQueryHandler
 {

@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.UI.Leagues.PickImport.Queries.GetPickImportPreview;
+namespace SportsData.Api.Application.UI.Picks.PickImport.Queries.GetPickImportPreview;
 
 public sealed class GetPickImportPreviewQuery
 {

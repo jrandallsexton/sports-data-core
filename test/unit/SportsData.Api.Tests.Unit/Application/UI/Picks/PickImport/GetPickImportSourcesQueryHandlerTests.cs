@@ -1,13 +1,13 @@
 using FluentAssertions;
 
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.UI.Leagues.PickImport.Queries.GetPickImportSources;
+using SportsData.Api.Application.UI.Picks.PickImport.Queries.GetPickImportSources;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.PickImport;
+namespace SportsData.Api.Tests.Unit.Application.UI.Picks.PickImport;
 
 public class GetPickImportSourcesQueryHandlerTests : ApiTestBase<GetPickImportSourcesQueryHandler>
 {

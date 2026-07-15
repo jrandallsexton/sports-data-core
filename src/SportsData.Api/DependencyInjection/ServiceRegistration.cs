@@ -132,14 +132,14 @@ namespace SportsData.Api.DependencyInjection
 
             // Pick Import (cross-league)
             services.AddScoped<
-                Application.UI.Leagues.PickImport.Planner.IPickImportPlanner,
-                Application.UI.Leagues.PickImport.Planner.PickImportPlanner>();
+                Application.UI.Picks.PickImport.Planner.IPickImportPlanner,
+                Application.UI.Picks.PickImport.Planner.PickImportPlanner>();
             services.AddScoped<
-                Application.UI.Leagues.PickImport.Queries.GetPickImportPreview.IGetPickImportPreviewQueryHandler,
-                Application.UI.Leagues.PickImport.Queries.GetPickImportPreview.GetPickImportPreviewQueryHandler>();
+                Application.UI.Picks.PickImport.Queries.GetPickImportPreview.IGetPickImportPreviewQueryHandler,
+                Application.UI.Picks.PickImport.Queries.GetPickImportPreview.GetPickImportPreviewQueryHandler>();
             services.AddScoped<
-                Application.UI.Leagues.PickImport.Queries.GetPickImportSources.IGetPickImportSourcesQueryHandler,
-                Application.UI.Leagues.PickImport.Queries.GetPickImportSources.GetPickImportSourcesQueryHandler>();
+                Application.UI.Picks.PickImport.Queries.GetPickImportSources.IGetPickImportSourcesQueryHandler,
+                Application.UI.Picks.PickImport.Queries.GetPickImportSources.GetPickImportSourcesQueryHandler>();
 
             // Public Results Queries
             services.AddScoped<

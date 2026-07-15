@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.UI.Leagues.PickImport.Dtos;
+namespace SportsData.Api.Application.UI.Picks.PickImport.Dtos;
 
 /// <summary>
 /// Body for POST /ui/leagues/{targetId}/picks/import/preview. The target league is

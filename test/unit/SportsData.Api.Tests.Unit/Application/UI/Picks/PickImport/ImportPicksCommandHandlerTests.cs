@@ -22,14 +22,15 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
     private static readonly DateTime NowUtc = new(2026, 7, 15, 12, 0, 0, DateTimeKind.Utc);
 
     // Real plan service + real submit handler so the whole write path is exercised.
-    private ImportPicksCommandHandler CreateHandler()
+    // Pass submitOverride to force per-contest submit outcomes (failure-path coverage).
+    private ImportPicksCommandHandler CreateHandler(ISubmitPickCommandHandler? submitOverride = null)
     {
         var dateTime = new Mock<IDateTimeProvider>();
         dateTime.Setup(x => x.UtcNow()).Returns(NowUtc);
 
         var planService = new PickImportPlanService(DataContext, new PickImportPlanner(), dateTime.Object);
 
-        var submitHandler = new SubmitPickCommandHandler(
+        var submitHandler = submitOverride ?? new SubmitPickCommandHandler(
             NullLogger<SubmitPickCommandHandler>.Instance,
             DataContext,
             new Mock<IEventBus>().Object);
@@ -255,6 +256,48 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
 
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.NotFound);
+    }
+
+    [Fact]
+    public async Task CountsSubmitFailureUnderFailed_AndImportsTheRest()
+    {
+        // A contest can lock (or otherwise fail to submit) between plan and commit.
+        // Stub the submit handler to fail one of two planned imports; the other
+        // still imports and the failure is counted, not fatal.
+        var userId = Guid.NewGuid();
+        var sourceId = SeedLeague(userId, PickType.StraightUp);
+        var targetId = SeedLeague(userId, PickType.StraightUp);
+
+        var okContest = Guid.NewGuid();
+        var failContest = Guid.NewGuid();
+        var team = Guid.NewGuid();
+        var future = NowUtc.AddDays(1);
+
+        SeedMatchup(targetId, okContest, future);
+        SeedMatchup(targetId, failContest, future);
+        SeedPick(sourceId, userId, okContest, team);
+        SeedPick(sourceId, userId, failContest, team);
+        await DataContext.SaveChangesAsync();
+
+        var submit = new Mock<ISubmitPickCommandHandler>();
+        submit.Setup(x => x.ExecuteAsync(
+                It.Is<SubmitPickCommand>(c => c.ContestId == failContest), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Failure<Guid>(Guid.Empty, ResultStatus.Validation, []));
+        submit.Setup(x => x.ExecuteAsync(
+                It.Is<SubmitPickCommand>(c => c.ContestId == okContest), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<Guid>(okContest));
+
+        var result = await CreateHandler(submit.Object).ExecuteAsync(new ImportPicksCommand
+        {
+            UserId = userId,
+            SourceLeagueId = sourceId,
+            TargetLeagueId = targetId
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Imported.Should().Be(1);
+        result.Value.SkippedByReason.Should().ContainKey("Failed").WhoseValue.Should().Be(1);
+        result.Value.Skipped.Should().Be(1);
     }
 
     [Fact]

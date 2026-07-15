@@ -22,7 +22,7 @@ function MatchupCard({
   matchup,
   pickType,
   userPickFranchiseSeasonId,
-  userPickResult, // New: DTO containing isCorrect, franchiseId, etc.
+  userPickResult, // New: DTO containing isCorrect, franchiseSeasonId, etc.
   onPick,
   onViewInsight,
   isInsightUnlocked,
@@ -113,11 +113,11 @@ function MatchupCard({
   // Reset local pick if matchup or user pick changes (e.g., after refresh or parent update)
   useEffect(() => {
     setLocalPickFranchiseId(null);
-  }, [matchup.matchupId, userPickFranchiseSeasonId, userPickResult?.franchiseId]);
+  }, [matchup.matchupId, userPickFranchiseSeasonId, userPickResult?.franchiseSeasonId]);
 
   // Determine selected team: prefer local pick, then userPickResult, then userPickFranchiseSeasonId
   const selectedFranchiseId =
-    localPickFranchiseId ?? userPickResult?.franchiseId ?? userPickFranchiseSeasonId;
+    localPickFranchiseId ?? userPickResult?.franchiseSeasonId ?? userPickFranchiseSeasonId;
 
   const isAwaySelected = selectedFranchiseId === matchup.awayFranchiseSeasonId;
   const isHomeSelected = selectedFranchiseId === matchup.homeFranchiseSeasonId;

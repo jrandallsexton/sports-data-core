@@ -192,7 +192,7 @@ export interface UserPick {
   id: string;
   userId: string;
   contestId: string;
-  franchiseId: string;
+  franchiseSeasonId: string;
   pickType: PickType;
   confidencePoints?: number | null;
   tiebreakerGuessTotal?: number | null;

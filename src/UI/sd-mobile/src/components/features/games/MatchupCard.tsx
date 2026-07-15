@@ -695,7 +695,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
     enrichedMatchup.awayScore > enrichedMatchup.homeScore;
 
   // Use server pick if available, otherwise optimistic
-  const effectiveFranchiseId = pick?.franchiseId ?? optimisticFranchiseId;
+  const effectiveFranchiseId = pick?.franchiseSeasonId ?? optimisticFranchiseId;
 
   const pickedHome = effectiveFranchiseId === matchup.homeFranchiseSeasonId;
   const pickedAway = effectiveFranchiseId === matchup.awayFranchiseSeasonId;

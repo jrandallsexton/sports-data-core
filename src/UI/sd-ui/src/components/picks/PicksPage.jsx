@@ -349,7 +349,7 @@ function PicksPage() {
       const updatedPick = {
         ...userPicks[matchup.contestId],
         contestId: matchup.contestId,
-        franchiseId: selectedFranchiseSeasonId,
+        franchiseSeasonId: selectedFranchiseSeasonId,
         confidencePoints: confidencePoints !== undefined ? confidencePoints : userPicks[matchup.contestId]?.confidencePoints
       };
 

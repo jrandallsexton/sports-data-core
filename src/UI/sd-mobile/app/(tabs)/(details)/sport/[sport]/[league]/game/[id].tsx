@@ -314,7 +314,7 @@ function PickSelector({
   awayTeamName,
   homeFranchiseSeasonId,
   awayFranchiseSeasonId,
-  existingPickFranchiseId,
+  existingPickFranchiseSeasonId,
   isLocked,
   submitPending,
   onPick,
@@ -323,7 +323,7 @@ function PickSelector({
   awayTeamName: string;
   homeFranchiseSeasonId: string;
   awayFranchiseSeasonId: string;
-  existingPickFranchiseId: string | null;
+  existingPickFranchiseSeasonId: string | null;
   isLocked: boolean;
   submitPending: boolean;
   onPick: (choice: PickChoice, franchiseSeasonId: string) => void;
@@ -331,8 +331,8 @@ function PickSelector({
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
-  const pickedHome = existingPickFranchiseId === homeFranchiseSeasonId;
-  const pickedAway = existingPickFranchiseId === awayFranchiseSeasonId;
+  const pickedHome = existingPickFranchiseSeasonId === homeFranchiseSeasonId;
+  const pickedAway = existingPickFranchiseSeasonId === awayFranchiseSeasonId;
   const hasPick = pickedHome || pickedAway;
   const locked = isLocked || submitPending;
 
@@ -503,7 +503,7 @@ export default function GameDetailScreen() {
             awayTeamName={matchup.away}
             homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
             awayFranchiseSeasonId={matchup.awayFranchiseSeasonId}
-            existingPickFranchiseId={existingPick?.franchiseId ?? null}
+            existingPickFranchiseSeasonId={existingPick?.franchiseSeasonId ?? null}
             isLocked={isLocked}
             submitPending={submitPick.isPending}
             onPick={handlePick}

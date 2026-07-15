@@ -14,7 +14,7 @@ public record UserPickDto
 
     public Guid ContestId { get; init; }
 
-    public Guid FranchiseId { get; init; }
+    public Guid FranchiseSeasonId { get; init; }
 
     public PickType PickType { get; init; }
 

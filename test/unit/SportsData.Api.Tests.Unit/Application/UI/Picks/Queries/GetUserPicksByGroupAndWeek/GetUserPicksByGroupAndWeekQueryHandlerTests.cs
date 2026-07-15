@@ -88,9 +88,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
         result.Value.Should().HaveCount(1);
         result.Value[0].UserId.Should().Be(userId);
         result.Value[0].ContestId.Should().Be(contestId);
-        // The DTO exposes the pick's FranchiseSeasonId under the API-compatible
-        // `FranchiseId` field name (kept for the web/mobile contract).
-        result.Value[0].FranchiseId.Should().Be(franchiseSeasonId);
+        result.Value[0].FranchiseSeasonId.Should().Be(franchiseSeasonId);
         result.Value[0].PickType.Should().Be(PickType.StraightUp);
         result.Value[0].ConfidencePoints.Should().Be(7);
         result.Value[0].IsCorrect.Should().BeTrue();

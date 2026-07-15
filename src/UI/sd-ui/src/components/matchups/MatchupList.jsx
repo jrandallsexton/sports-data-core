@@ -36,7 +36,7 @@ function MatchupList({
           key={matchup.contestId}
           matchup={matchup}
           pickType={pickType}
-          userPickFranchiseSeasonId={userPicks[matchup.contestId]?.franchiseId}
+          userPickFranchiseSeasonId={userPicks[matchup.contestId]?.franchiseSeasonId}
           userPickResult={userPicks[matchup.contestId]}
           onPick={onPick}
           onViewInsight={onViewInsight}

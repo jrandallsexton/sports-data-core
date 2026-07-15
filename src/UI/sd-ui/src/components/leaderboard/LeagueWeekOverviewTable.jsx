@@ -98,12 +98,12 @@ function LeagueWeekOverviewTable({ overview }) {
                   const pick = pickMap[user.userId]?.[contest.contestId];
                   let teamShort = '';
                   if (pick) {
-                    if (pick.franchiseId === contest.awayFranchiseSeasonId) {
+                    if (pick.franchiseSeasonId === contest.awayFranchiseSeasonId) {
                       teamShort = contest.awayShort;
-                    } else if (pick.franchiseId === contest.homeFranchiseSeasonId) {
+                    } else if (pick.franchiseSeasonId === contest.homeFranchiseSeasonId) {
                       teamShort = contest.homeShort;
                     } else {
-                      teamShort = pick.franchiseId; // fallback
+                      teamShort = pick.franchiseSeasonId; // fallback
                     }
                   }
                   return (

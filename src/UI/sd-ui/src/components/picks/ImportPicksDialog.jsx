@@ -17,14 +17,25 @@ function ImportPicksDialog({ isOpen, sources, importing, onClose, onImport }) {
 
   const [selected, setSelected] = useState(() => new Set(items.map((i) => i.contestId)));
 
-  // Reset checkboxes to all-checked whenever the chosen source changes.
+  // Close on Escape (unless mid-import), matching the app's Gallery modal.
   useEffect(() => {
-    const src = sources.find((s) => s.leagueId === selectedSourceId) ?? sources[0] ?? null;
-    setSelected(new Set((src?.items ?? []).map((i) => i.contestId)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSourceId]);
+    const onKey = (e) => {
+      if (e.key === "Escape" && !importing) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [importing, onClose]);
 
   if (!isOpen || !currentSource) return null;
+
+  // Switch source and re-seed the checkboxes to all of that source's picks.
+  // Done here (on the user's action) rather than in an effect so a background
+  // data refresh can never wipe in-progress checkbox edits.
+  const changeSource = (leagueId) => {
+    setSelectedSourceId(leagueId);
+    const src = sources.find((s) => s.leagueId === leagueId);
+    setSelected(new Set((src?.items ?? []).map((i) => i.contestId)));
+  };
 
   const toggle = (contestId) => {
     setSelected((prev) => {
@@ -43,8 +54,16 @@ function ImportPicksDialog({ isOpen, sources, importing, onClose, onImport }) {
 
   return (
     <div className="import-dialog-overlay" onClick={importing ? undefined : onClose}>
-      <div className="import-dialog" onClick={(e) => e.stopPropagation()}>
-        <h3 className="import-dialog-title">Import picks</h3>
+      <div
+        className="import-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="import-dialog-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 id="import-dialog-title" className="import-dialog-title">
+          Import picks
+        </h3>
 
         {sources.length > 1 ? (
           <div className="import-dialog-source">
@@ -52,7 +71,7 @@ function ImportPicksDialog({ isOpen, sources, importing, onClose, onImport }) {
             <select
               id="import-source"
               value={selectedSourceId}
-              onChange={(e) => setSelectedSourceId(e.target.value)}
+              onChange={(e) => changeSource(e.target.value)}
               disabled={importing}
             >
               {sources.map((s) => (

@@ -54,7 +54,10 @@ public class ImportPicksCommandHandler : IImportPicksCommandHandler
         var context = success.Value;
 
         var plan = context.Plan;
-        var selected = command.ContestIds.ToHashSet();
+        // Null-safe: an absent/null selection (e.g. "contestIds": null in the
+        // payload, which overrides the DTO default) means nothing was chosen —
+        // import nothing rather than NRE.
+        var selected = (command.ContestIds ?? Array.Empty<Guid>()).ToHashSet();
 
         // Confidence targets don't commit directly: the pick sheet is save-gated on
         // a confidence value per pick, so return the selected team selections as a

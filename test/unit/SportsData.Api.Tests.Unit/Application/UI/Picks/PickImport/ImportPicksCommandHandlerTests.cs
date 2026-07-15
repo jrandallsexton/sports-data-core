@@ -175,6 +175,34 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
     }
 
     [Fact]
+    public async Task NullContestIds_ImportsNothing_WithoutThrowing()
+    {
+        // A "contestIds": null payload overrides the DTO default; treat it as an
+        // empty selection (no-op) rather than throwing.
+        var userId = Guid.NewGuid();
+        var sourceId = SeedLeague(userId, PickType.StraightUp);
+        var targetId = SeedLeague(userId, PickType.StraightUp);
+
+        var contest = Guid.NewGuid();
+        var team = Guid.NewGuid();
+        SeedMatchup(targetId, contest, NowUtc.AddDays(1));
+        SeedPick(sourceId, userId, contest, team);
+        await DataContext.SaveChangesAsync();
+
+        var result = await CreateHandler().ExecuteAsync(new ImportPicksCommand
+        {
+            UserId = userId,
+            SourceLeagueId = sourceId,
+            TargetLeagueId = targetId,
+            ContestIds = null!
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Imported.Should().Be(0);
+        TargetPick(targetId, userId, contest).Should().BeNull();
+    }
+
+    [Fact]
     public async Task ReplacesOnlySelectedCollisions_AndLeavesUnselected()
     {
         var userId = Guid.NewGuid();

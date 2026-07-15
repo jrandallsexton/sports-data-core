@@ -71,6 +71,10 @@ function PicksPage() {
   const [importing, setImporting] = useState(false);
   // Bumped to force a picks refetch after an import commits.
   const [picksReload, setPicksReload] = useState(0);
+  // "leagueId:week" that the current userPicks belong to. Gates the import
+  // availability check so a stale pick set — e.g. the previous league, which
+  // shares contest ids on same-day games — can't mis-drive the button.
+  const [picksLoadedKey, setPicksLoadedKey] = useState(null);
 
   // Update 'now' every 15 seconds to keep lock status in sync with MatchupCard
   useEffect(() => {
@@ -328,6 +332,7 @@ function PicksPage() {
         }
 
         setUserPicks(picksByContest);
+        setPicksLoadedKey(`${routeLeagueId}:${selectedWeek}`);
       } catch (error) {
         if (cancelled) return;
         console.error("Failed to fetch user picks:", error);
@@ -347,6 +352,13 @@ function PicksPage() {
   useEffect(() => {
     let cancelled = false;
     async function checkImportAvailability() {
+      // Only evaluate once the CURRENT league/week's picks have loaded — a stale
+      // pick set could otherwise mis-drive the button (shared contest ids across
+      // leagues). Stays unset while loading or after a picks-fetch failure.
+      if (picksLoadedKey !== `${routeLeagueId}:${selectedWeek}`) {
+        setImportState(null);
+        return;
+      }
       if (!routeLeagueId || matchups.length === 0) {
         setImportState(null);
         return;
@@ -395,7 +407,7 @@ function PicksPage() {
     return () => {
       cancelled = true;
     };
-  }, [routeLeagueId, selectedWeek, matchups, userPicks]);
+  }, [routeLeagueId, selectedWeek, matchups, userPicks, picksLoadedKey]);
 
   // Per-source importable rows for the dialog: each candidate source's picks,
   // scoped to this week's still-unpicked matchups and enriched for display from

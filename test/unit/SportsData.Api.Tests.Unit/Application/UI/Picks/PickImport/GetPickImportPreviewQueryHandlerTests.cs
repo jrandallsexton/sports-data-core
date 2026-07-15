@@ -20,7 +20,8 @@ public class GetPickImportPreviewQueryHandlerTests : ApiTestBase<GetPickImportPr
     {
         var dateTime = new Mock<IDateTimeProvider>();
         dateTime.Setup(x => x.UtcNow()).Returns(NowUtc);
-        return new GetPickImportPreviewQueryHandler(DataContext, new PickImportPlanner(), dateTime.Object);
+        var planService = new PickImportPlanService(DataContext, new PickImportPlanner(), dateTime.Object);
+        return new GetPickImportPreviewQueryHandler(planService);
     }
 
     private Guid SeedLeague(Guid userId, PickType pickType, bool useConfidence = false, bool deactivated = false)

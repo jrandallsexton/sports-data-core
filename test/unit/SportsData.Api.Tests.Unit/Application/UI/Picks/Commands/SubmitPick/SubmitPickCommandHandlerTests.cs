@@ -292,4 +292,54 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
         updated.TiebreakerGuessHome.Should().Be(21);
         updated.TiebreakerGuessAway.Should().Be(24);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldPersistImportedFromPickId_WhenProvided()
+    {
+        // Arrange
+        var groupId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        var sourcePickId = Guid.NewGuid();
+
+        var group = new PickemGroup
+        {
+            Id = groupId,
+            Name = "Test League",
+            Sport = Sport.FootballNcaa,
+            League = League.NCAAF
+        };
+        var matchup = new PickemGroupMatchup
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            ContestId = contestId,
+            StartDateUtc = DateTime.UtcNow.AddHours(1)
+        };
+
+        await DataContext.PickemGroups.AddAsync(group);
+        await DataContext.PickemGroupMatchups.AddAsync(matchup);
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<SubmitPickCommandHandler>();
+
+        var command = new SubmitPickCommand
+        {
+            UserId = Guid.NewGuid(),
+            PickemGroupId = groupId,
+            ContestId = contestId,
+            Week = 5,
+            PickType = PickType.StraightUp,
+            FranchiseSeasonId = Guid.NewGuid(),
+            ImportedFromPickId = sourcePickId
+        };
+
+        // Act
+        var result = await handler.ExecuteAsync(command);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+
+        var pick = await DataContext.UserPicks.FirstOrDefaultAsync();
+        pick!.ImportedFromPickId.Should().Be(sourcePickId);
+    }
 }

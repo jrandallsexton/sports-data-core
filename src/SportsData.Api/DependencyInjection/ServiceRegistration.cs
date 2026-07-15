@@ -135,11 +135,17 @@ namespace SportsData.Api.DependencyInjection
                 Application.UI.Picks.PickImport.Planner.IPickImportPlanner,
                 Application.UI.Picks.PickImport.Planner.PickImportPlanner>();
             services.AddScoped<
+                Application.UI.Picks.PickImport.Planner.IPickImportPlanService,
+                Application.UI.Picks.PickImport.Planner.PickImportPlanService>();
+            services.AddScoped<
                 Application.UI.Picks.PickImport.Queries.GetPickImportPreview.IGetPickImportPreviewQueryHandler,
                 Application.UI.Picks.PickImport.Queries.GetPickImportPreview.GetPickImportPreviewQueryHandler>();
             services.AddScoped<
                 Application.UI.Picks.PickImport.Queries.GetPickImportSources.IGetPickImportSourcesQueryHandler,
                 Application.UI.Picks.PickImport.Queries.GetPickImportSources.GetPickImportSourcesQueryHandler>();
+            services.AddScoped<
+                Application.UI.Picks.PickImport.Commands.ImportPicks.IImportPicksCommandHandler,
+                Application.UI.Picks.PickImport.Commands.ImportPicks.ImportPicksCommandHandler>();
 
             // Public Results Queries
             services.AddScoped<

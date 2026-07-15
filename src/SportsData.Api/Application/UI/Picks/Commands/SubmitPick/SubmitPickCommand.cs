@@ -27,4 +27,12 @@ public class SubmitPickCommand
     public int? TiebreakerGuessHome { get; set; }
 
     public int? TiebreakerGuessAway { get; set; }
+
+    /// <summary>
+    /// When this pick was created/updated by importing from another league, the
+    /// id of the source <see cref="Infrastructure.Data.Entities.PickemGroupUserPick"/>
+    /// it was copied from. Null for hand-made picks. Enables import traceability
+    /// and idempotent re-runs. See docs/features/pick-import-across-leagues.md.
+    /// </summary>
+    public Guid? ImportedFromPickId { get; set; }
 }

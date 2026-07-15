@@ -1,0 +1,152 @@
+using FluentValidation.Results;
+
+using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
+using SportsData.Api.Application.UI.Picks.PickImport.Dtos;
+using SportsData.Api.Application.UI.Picks.PickImport.Planner;
+using SportsData.Core.Common;
+
+namespace SportsData.Api.Application.UI.Picks.PickImport.Commands.ImportPicks;
+
+public interface IImportPicksCommandHandler
+{
+    Task<Result<PickImportResultDto>> ExecuteAsync(
+        ImportPicksCommand command,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Commits a cross-league pick import into a non-confidence target: re-plans
+/// server-side (never trusts the client's classification), then upserts the
+/// import set plus the collisions the user approved for replacement, each via
+/// <see cref="ISubmitPickCommandHandler"/> so imported picks are validated and
+/// published identically to hand-made ones. See
+/// docs/features/pick-import-across-leagues.md.
+/// </summary>
+public class ImportPicksCommandHandler : IImportPicksCommandHandler
+{
+    private readonly ILogger<ImportPicksCommandHandler> _logger;
+    private readonly IPickImportPlanService _planService;
+    private readonly ISubmitPickCommandHandler _submitPick;
+
+    public ImportPicksCommandHandler(
+        ILogger<ImportPicksCommandHandler> logger,
+        IPickImportPlanService planService,
+        ISubmitPickCommandHandler submitPick)
+    {
+        _logger = logger;
+        _planService = planService;
+        _submitPick = submitPick;
+    }
+
+    public async Task<Result<PickImportResultDto>> ExecuteAsync(
+        ImportPicksCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var planResult = await _planService.BuildAsync(
+            command.UserId, command.SourceLeagueId, command.TargetLeagueId, cancellationToken);
+
+        if (planResult is not Success<PickImportPlanContext> success)
+        {
+            var failure = (Failure<PickImportPlanContext>)planResult;
+            return new Failure<PickImportResultDto>(default!, failure.Status, failure.Errors);
+        }
+
+        var context = success.Value;
+
+        // Confidence-points targets take a different (pick-sheet, save-gated) path
+        // that isn't built yet. Reject explicitly rather than committing unranked
+        // picks that would score 0. Deferred to a follow-up PR.
+        if (context.TargetUsesConfidencePoints)
+        {
+            return new Failure<PickImportResultDto>(
+                default!,
+                ResultStatus.Validation,
+                [new ValidationFailure(
+                    nameof(command.TargetLeagueId),
+                    "Importing into a confidence-points league is not yet supported.")]);
+        }
+
+        var plan = context.Plan;
+        var replaceSet = command.ReplaceContestIds.ToHashSet();
+
+        var imported = 0;
+        var replaced = 0;
+        var failed = 0;
+
+        foreach (var item in plan.ToImport)
+        {
+            if (await TrySubmitAsync(command, context.TargetPickType, item.ContestId, item.Week,
+                    item.FranchiseSeasonId, item.SourcePickId, cancellationToken))
+                imported++;
+            else
+                failed++;
+        }
+
+        foreach (var collision in plan.Collisions.Where(c => replaceSet.Contains(c.ContestId)))
+        {
+            if (await TrySubmitAsync(command, context.TargetPickType, collision.ContestId, collision.Week,
+                    collision.SourceFranchiseSeasonId, collision.SourcePickId, cancellationToken))
+                replaced++;
+            else
+                failed++;
+        }
+
+        var keptCount = plan.Collisions.Count(c => !replaceSet.Contains(c.ContestId));
+
+        var skippedByReason = plan.Skipped
+            .GroupBy(s => s.Reason.ToString())
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        if (keptCount > 0)
+            skippedByReason["KeptExisting"] = keptCount;
+        if (failed > 0)
+            skippedByReason["Failed"] = failed;
+
+        var result = new PickImportResultDto
+        {
+            Imported = imported,
+            Replaced = replaced,
+            Skipped = plan.Skipped.Count + keptCount + failed,
+            SkippedByReason = skippedByReason
+        };
+
+        _logger.LogInformation(
+            "Pick import committed. UserId={UserId}, Source={Source}, Target={Target}, Imported={Imported}, Replaced={Replaced}, Skipped={Skipped}",
+            command.UserId, command.SourceLeagueId, command.TargetLeagueId, imported, replaced, result.Skipped);
+
+        return new Success<PickImportResultDto>(result);
+    }
+
+    private async Task<bool> TrySubmitAsync(
+        ImportPicksCommand command,
+        PickType targetPickType,
+        Guid contestId,
+        int week,
+        Guid franchiseSeasonId,
+        Guid sourcePickId,
+        CancellationToken cancellationToken)
+    {
+        var submit = new SubmitPickCommand
+        {
+            UserId = command.UserId,
+            PickemGroupId = command.TargetLeagueId,
+            ContestId = contestId,
+            Week = week,
+            PickType = targetPickType,
+            FranchiseSeasonId = franchiseSeasonId,
+            ImportedFromPickId = sourcePickId
+        };
+
+        var result = await _submitPick.ExecuteAsync(submit, cancellationToken);
+        if (result.IsSuccess)
+            return true;
+
+        // A contest can lock between plan and commit; treat as skip, not a hard
+        // failure — re-running the import is idempotent and picks up the rest.
+        _logger.LogWarning(
+            "Pick import skipped a contest that failed to submit. UserId={UserId}, Target={Target}, ContestId={ContestId}, Status={Status}",
+            command.UserId, command.TargetLeagueId, contestId, result.Status);
+        return false;
+    }
+}

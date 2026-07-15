@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.UI.Picks.PickImport.Commands.ImportPicks;
 using SportsData.Api.Application.UI.Picks.PickImport.Dtos;
 using SportsData.Api.Application.UI.Picks.PickImport.Queries.GetPickImportPreview;
 using SportsData.Api.Application.UI.Picks.PickImport.Queries.GetPickImportSources;
@@ -60,6 +61,32 @@ public class PickImportController : ApiControllerBase
         };
 
         var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Commits the import: creates the import set plus the collisions the user
+    /// chose to replace. Returns a summary. Confidence-points targets are not yet
+    /// supported and are rejected.
+    /// </summary>
+    [HttpPost]
+    [Authorize]
+    public async Task<ActionResult<PickImportResultDto>> Import(
+        [FromRoute] Guid targetId,
+        [FromBody] PickImportRequest request,
+        [FromServices] IImportPicksCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var command = new ImportPicksCommand
+        {
+            UserId = HttpContext.GetCurrentUserId(),
+            SourceLeagueId = request.SourceLeagueId,
+            TargetLeagueId = targetId,
+            ReplaceContestIds = request.ReplaceContestIds
+        };
+
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();
     }

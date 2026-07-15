@@ -96,6 +96,7 @@ public class SubmitPickCommandHandler : ISubmitPickCommandHandler
             existing.TiebreakerGuessTotal = command.TiebreakerGuessTotal;
             existing.TiebreakerGuessHome = command.TiebreakerGuessHome;
             existing.TiebreakerGuessAway = command.TiebreakerGuessAway;
+            existing.ImportedFromPickId = command.ImportedFromPickId;
         }
         else
         {
@@ -115,6 +116,8 @@ public class SubmitPickCommandHandler : ISubmitPickCommandHandler
                 TiebreakerGuessTotal = command.TiebreakerGuessTotal,
                 TiebreakerGuessHome = command.TiebreakerGuessHome,
                 TiebreakerGuessAway = command.TiebreakerGuessAway,
+
+                ImportedFromPickId = command.ImportedFromPickId,
 
                 TiebreakerType = TiebreakerType.TotalPoints
             };

@@ -222,11 +222,16 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
     }
 
     [Fact]
-    public async Task RejectsConfidencePointsTarget()
+    public async Task ReturnsDraftForConfidenceTarget_WithoutWriting()
     {
         var userId = Guid.NewGuid();
         var sourceId = SeedLeague(userId, PickType.StraightUp);
         var targetId = SeedLeague(userId, PickType.StraightUp, useConfidence: true);
+
+        var contest = Guid.NewGuid();
+        var team = Guid.NewGuid();
+        SeedMatchup(targetId, contest, NowUtc.AddDays(1));
+        SeedPick(sourceId, userId, contest, team);
         await DataContext.SaveChangesAsync();
 
         var result = await CreateHandler().ExecuteAsync(new ImportPicksCommand
@@ -236,8 +241,43 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
             TargetLeagueId = targetId
         });
 
-        result.IsSuccess.Should().BeFalse();
-        result.Status.Should().Be(ResultStatus.Validation);
+        result.IsSuccess.Should().BeTrue();
+        result.Value.RequiresConfidence.Should().BeTrue();
+        result.Value.Imported.Should().Be(0);
+        result.Value.Draft.Should().ContainSingle(d => d.ContestId == contest && d.FranchiseSeasonId == team);
+
+        // Confidence targets never write from the import; the pick sheet persists later.
+        TargetPick(targetId, userId, contest).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ConfidenceDraft_IncludesApprovedReplaceSelections_ButKeepsExistingPicks()
+    {
+        var userId = Guid.NewGuid();
+        var sourceId = SeedLeague(userId, PickType.StraightUp);
+        var targetId = SeedLeague(userId, PickType.StraightUp, useConfidence: true);
+
+        var collision = Guid.NewGuid();
+        var sourceTeam = Guid.NewGuid();
+        var existingTeam = Guid.NewGuid();
+        SeedMatchup(targetId, collision, NowUtc.AddDays(1));
+        SeedPick(sourceId, userId, collision, sourceTeam);
+        SeedPick(targetId, userId, collision, existingTeam);
+        await DataContext.SaveChangesAsync();
+
+        var result = await CreateHandler().ExecuteAsync(new ImportPicksCommand
+        {
+            UserId = userId,
+            SourceLeagueId = sourceId,
+            TargetLeagueId = targetId,
+            ReplaceContestIds = [collision]
+        });
+
+        result.Value.RequiresConfidence.Should().BeTrue();
+        result.Value.Draft.Should().ContainSingle(d => d.ContestId == collision && d.FranchiseSeasonId == sourceTeam);
+
+        // Draft mode writes nothing — the existing target pick is untouched.
+        TargetPick(targetId, userId, collision)!.FranchiseSeasonId.Should().Be(existingTeam);
     }
 
     [Fact]

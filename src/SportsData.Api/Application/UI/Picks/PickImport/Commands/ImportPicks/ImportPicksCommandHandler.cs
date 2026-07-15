@@ -1,5 +1,3 @@
-using FluentValidation.Results;
-
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
 using SportsData.Api.Application.UI.Picks.PickImport.Dtos;
@@ -54,21 +52,40 @@ public class ImportPicksCommandHandler : IImportPicksCommandHandler
 
         var context = success.Value;
 
-        // Confidence-points targets take a different (pick-sheet, save-gated) path
-        // that isn't built yet. Reject explicitly rather than committing unranked
-        // picks that would score 0. Deferred to a follow-up PR.
-        if (context.TargetUsesConfidencePoints)
-        {
-            return new Failure<PickImportResultDto>(
-                default!,
-                ResultStatus.Validation,
-                [new ValidationFailure(
-                    nameof(command.TargetLeagueId),
-                    "Importing into a confidence-points league is not yet supported.")]);
-        }
-
         var plan = context.Plan;
         var replaceSet = command.ReplaceContestIds.ToHashSet();
+
+        // Confidence targets don't commit directly: the pick sheet is save-gated on
+        // a confidence value per pick, so return the selections the user wants
+        // (import set + approved replaces) as a draft to pre-fill that sheet. No
+        // writes. See docs/features/pick-import-across-leagues.md.
+        if (context.TargetUsesConfidencePoints)
+        {
+            var draft = plan.ToImport
+                .Select(i => new PickImportDraftItemDto
+                {
+                    ContestId = i.ContestId,
+                    Week = i.Week,
+                    FranchiseSeasonId = i.FranchiseSeasonId,
+                    Headline = i.Headline
+                })
+                .Concat(plan.Collisions
+                    .Where(c => replaceSet.Contains(c.ContestId))
+                    .Select(c => new PickImportDraftItemDto
+                    {
+                        ContestId = c.ContestId,
+                        Week = c.Week,
+                        FranchiseSeasonId = c.SourceFranchiseSeasonId,
+                        Headline = c.Headline
+                    }))
+                .ToList();
+
+            return new Success<PickImportResultDto>(new PickImportResultDto
+            {
+                RequiresConfidence = true,
+                Draft = draft
+            });
+        }
 
         var imported = 0;
         var replaced = 0;

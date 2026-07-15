@@ -80,6 +80,19 @@ public class SubmitPickCommandHandler : ISubmitPickCommandHandler
                 [new ValidationFailure(nameof(command.OverUnder), "PickType is OverUnder, but selection not provided")]);
         }
 
+        // Confidence leagues score each pick by its assigned confidence; a pick
+        // saved without one would score 0 (unranked). Gate the save so no
+        // incomplete picks persist. This is what makes the confidence pick sheet
+        // "save-gated" for imported selections. See
+        // docs/features/pick-import-across-leagues.md.
+        if (group.UseConfidencePoints && command.ConfidencePoints is null)
+        {
+            return new Failure<Guid>(
+                default,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(command.ConfidencePoints), "This league uses confidence points; assign a confidence value to the pick.")]);
+        }
+
         var existing = await _dataContext.UserPicks
             .FirstOrDefaultAsync(p =>
                     p.UserId == command.UserId &&

@@ -342,4 +342,100 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
         var pick = await DataContext.UserPicks.FirstOrDefaultAsync();
         pick!.ImportedFromPickId.Should().Be(sourcePickId);
     }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldReturnValidation_WhenConfidenceLeagueAndConfidenceMissing()
+    {
+        // Arrange
+        var groupId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+
+        var group = new PickemGroup
+        {
+            Id = groupId,
+            Name = "Confidence League",
+            Sport = Sport.FootballNcaa,
+            League = League.NCAAF,
+            UseConfidencePoints = true
+        };
+        var matchup = new PickemGroupMatchup
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            ContestId = contestId,
+            StartDateUtc = DateTime.UtcNow.AddHours(1)
+        };
+        await DataContext.PickemGroups.AddAsync(group);
+        await DataContext.PickemGroupMatchups.AddAsync(matchup);
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<SubmitPickCommandHandler>();
+
+        var command = new SubmitPickCommand
+        {
+            UserId = Guid.NewGuid(),
+            PickemGroupId = groupId,
+            ContestId = contestId,
+            Week = 5,
+            PickType = PickType.StraightUp,
+            FranchiseSeasonId = Guid.NewGuid(),
+            ConfidencePoints = null // unranked — must be rejected in a confidence league
+        };
+
+        // Act
+        var result = await handler.ExecuteAsync(command);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.Validation);
+        (await DataContext.UserPicks.FirstOrDefaultAsync()).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldSucceed_WhenConfidenceLeagueAndConfidenceProvided()
+    {
+        // Arrange
+        var groupId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+
+        var group = new PickemGroup
+        {
+            Id = groupId,
+            Name = "Confidence League",
+            Sport = Sport.FootballNcaa,
+            League = League.NCAAF,
+            UseConfidencePoints = true
+        };
+        var matchup = new PickemGroupMatchup
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            ContestId = contestId,
+            StartDateUtc = DateTime.UtcNow.AddHours(1)
+        };
+        await DataContext.PickemGroups.AddAsync(group);
+        await DataContext.PickemGroupMatchups.AddAsync(matchup);
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<SubmitPickCommandHandler>();
+
+        var command = new SubmitPickCommand
+        {
+            UserId = Guid.NewGuid(),
+            PickemGroupId = groupId,
+            ContestId = contestId,
+            Week = 5,
+            PickType = PickType.StraightUp,
+            FranchiseSeasonId = Guid.NewGuid(),
+            ConfidencePoints = 5
+        };
+
+        // Act
+        var result = await handler.ExecuteAsync(command);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var pick = await DataContext.UserPicks.FirstOrDefaultAsync();
+        pick!.ConfidencePoints.Should().Be(5);
+    }
 }

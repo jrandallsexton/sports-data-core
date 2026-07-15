@@ -20,4 +20,30 @@ public sealed class PickImportResultDto
 
     /// <summary>Skipped counts keyed by reason (e.g. Locked, AlreadyMatches, NotShared, KeptExisting, Failed).</summary>
     public Dictionary<string, int> SkippedByReason { get; init; } = new();
+
+    /// <summary>
+    /// True when the target uses confidence points: nothing was written. The
+    /// selections in <see cref="Draft"/> pre-fill the pick sheet, and the user
+    /// assigns a confidence value to each before saving via the normal
+    /// (confidence-required) path.
+    /// </summary>
+    public bool RequiresConfidence { get; init; }
+
+    /// <summary>
+    /// Draft selections for a confidence target (import set plus approved replaces).
+    /// Empty for a direct (non-confidence) commit.
+    /// </summary>
+    public List<PickImportDraftItemDto> Draft { get; init; } = [];
+}
+
+/// <summary>A team selection to pre-fill into a confidence-league pick sheet.</summary>
+public sealed class PickImportDraftItemDto
+{
+    public Guid ContestId { get; init; }
+
+    public int Week { get; init; }
+
+    public Guid FranchiseSeasonId { get; init; }
+
+    public string? Headline { get; init; }
 }

@@ -262,8 +262,9 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
     public async Task CountsSubmitFailureUnderFailed_AndImportsTheRest()
     {
         // A contest can lock (or otherwise fail to submit) between plan and commit.
-        // Stub the submit handler to fail one of two planned imports; the other
-        // still imports and the failure is counted, not fatal.
+        // Force a failure on one of two planned imports; the other goes through the
+        // real submit handler and actually persists, and the failure is counted,
+        // not fatal.
         var userId = Guid.NewGuid();
         var sourceId = SeedLeague(userId, PickType.StraightUp);
         var targetId = SeedLeague(userId, PickType.StraightUp);
@@ -279,13 +280,19 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
         SeedPick(sourceId, userId, failContest, team);
         await DataContext.SaveChangesAsync();
 
+        var realSubmit = new SubmitPickCommandHandler(
+            NullLogger<SubmitPickCommandHandler>.Instance,
+            DataContext,
+            new Mock<IEventBus>().Object);
+
         var submit = new Mock<ISubmitPickCommandHandler>();
         submit.Setup(x => x.ExecuteAsync(
                 It.Is<SubmitPickCommand>(c => c.ContestId == failContest), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Failure<Guid>(Guid.Empty, ResultStatus.Validation, []));
+        // okContest delegates to the real handler so it genuinely persists.
         submit.Setup(x => x.ExecuteAsync(
                 It.Is<SubmitPickCommand>(c => c.ContestId == okContest), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<Guid>(okContest));
+            .Returns((SubmitPickCommand c, CancellationToken ct) => realSubmit.ExecuteAsync(c, ct));
 
         var result = await CreateHandler(submit.Object).ExecuteAsync(new ImportPicksCommand
         {
@@ -298,6 +305,12 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
         result.Value.Imported.Should().Be(1);
         result.Value.SkippedByReason.Should().ContainKey("Failed").WhoseValue.Should().Be(1);
         result.Value.Skipped.Should().Be(1);
+
+        // The successful import actually persisted; the failed one did not.
+        var okPick = TargetPick(targetId, userId, okContest);
+        okPick.Should().NotBeNull();
+        okPick!.FranchiseSeasonId.Should().Be(team);
+        TargetPick(targetId, userId, failContest).Should().BeNull();
     }
 
     [Fact]

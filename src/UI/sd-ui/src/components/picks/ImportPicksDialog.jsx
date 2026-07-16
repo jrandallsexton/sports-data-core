@@ -49,7 +49,11 @@ function ImportPicksDialog({ isOpen, sources, importing, onClose, onImport }) {
     if (!focusables || focusables.length === 0) return;
     const first = focusables[0];
     const last = focusables[focusables.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
+    // Right after open, focus sits on the container (tabIndex -1) — treat it as
+    // before the first control so Shift+Tab wraps to the last instead of escaping.
+    const atStart =
+      document.activeElement === first || document.activeElement === dialogRef.current;
+    if (e.shiftKey && atStart) {
       e.preventDefault();
       last.focus();
     } else if (!e.shiftKey && document.activeElement === last) {

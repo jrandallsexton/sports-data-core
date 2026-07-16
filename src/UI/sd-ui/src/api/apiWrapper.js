@@ -15,6 +15,7 @@ import Maps from "./mapsApi";
 import Articles from "./articlesApi";
 import Season from "./seasonApi";
 import LogoAdmin from "./logoAdminApi";
+import Imports from "./importsApi";
 
 const apiWrapper = {
   Matchups,
@@ -33,7 +34,8 @@ const apiWrapper = {
   Maps,
   Articles,
   Season,
-  LogoAdmin
+  LogoAdmin,
+  Imports
 };
 
 export default apiWrapper;

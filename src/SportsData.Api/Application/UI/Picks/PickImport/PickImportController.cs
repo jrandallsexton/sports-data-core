@@ -83,7 +83,7 @@ public class PickImportController : ApiControllerBase
             UserId = HttpContext.GetCurrentUserId(),
             SourceLeagueId = request.SourceLeagueId,
             TargetLeagueId = targetId,
-            ReplaceContestIds = request.ReplaceContestIds
+            ContestIds = request.ContestIds
         };
 
         var result = await handler.ExecuteAsync(command, cancellationToken);

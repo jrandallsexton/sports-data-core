@@ -32,6 +32,7 @@ import { useRegisterPushDevice } from '@/src/hooks/useRegisterPushDevice';
 import { ThemeProvider, useThemeMode } from '@/src/lib/theme/ThemeContext';
 import { TextSizeProvider, useTextSize } from '@/src/lib/textSize/TextSizeContext';
 import { SignalRGate } from '@/src/components/signalR/SignalRGate';
+import Toast from 'react-native-toast-message';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -153,6 +154,8 @@ function RootLayout() {
           <RootLayoutNav />
         </TextSizeProvider>
       </ThemeProvider>
+      {/* Root-level toast host — renders above the nav tree. */}
+      <Toast />
     </QueryClientProvider>
   );
 }

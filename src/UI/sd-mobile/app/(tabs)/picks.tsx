@@ -20,8 +20,11 @@ import { EmptyState } from '@/src/components/ui/EmptyState';
 import { usePicks, useSubmitPick } from '@/src/hooks/useContest';
 import { useMatchups } from '@/src/hooks/useMatchups';
 import { useCurrentUser } from '@/src/hooks/useStandings';
+import { useImportAvailability, useImportPicks } from '@/src/hooks/useImportPicks';
+import { ImportPicksModal } from '@/src/components/features/picks/ImportPicksModal';
 import { getLeagues } from '@/src/lib/leagues';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
+import Toast from 'react-native-toast-message';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -41,6 +44,7 @@ export default function PicksScreen() {
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [hidePicked, setHidePicked] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   // Latest week = last element of the ascending seasonWeeks list.
   const latestWeek = (l: { seasonWeeks?: number[] } | null | undefined) =>
@@ -123,6 +127,76 @@ export default function PicksScreen() {
   // on screen.
   const made = entries.filter((e) => e.pick !== null).length;
   const allPicked = total > 0 && made >= total;
+
+  // ── Cross-league pick import ────────────────────────────────────────────────
+  // Only check availability once picks + matchups have loaded and there are
+  // unpicked games to fill (React Query's enabled replaces the web's manual
+  // picks-loaded gating).
+  const importEnabled =
+    !picksLoading && !matchupsLoading && total > 0 && made < total;
+  const { data: availabilityData } = useImportAvailability(
+    leagueId,
+    selectedWeek,
+    importEnabled,
+  );
+  const importPicks = useImportPicks();
+
+  // Enrich the previewed sources for display, scoped to this week's still-unpicked
+  // matchups; drop sources with nothing left to offer.
+  const importSources = useMemo(() => {
+    const avail = availabilityData ?? [];
+    const byContest = new Map(matchups.map((m) => [m.contestId, m]));
+    return avail
+      .map((src) => ({
+        leagueId: src.leagueId,
+        name: src.name,
+        items: src.toImport
+          .filter((i) => byContest.has(i.contestId) && !pickMap.has(i.contestId))
+          .map((i) => {
+            const m = byContest.get(i.contestId)!;
+            const isHome = i.franchiseSeasonId === m.homeFranchiseSeasonId;
+            return {
+              contestId: i.contestId,
+              franchiseSeasonId: i.franchiseSeasonId,
+              team: isHome ? m.home : m.away,
+              matchupLabel: `${m.away} @ ${m.home}`,
+            };
+          }),
+      }))
+      .filter((src) => src.items.length > 0);
+  }, [availabilityData, matchups, pickMap]);
+
+  const handleImport = useCallback(
+    (sourceLeagueId: string, contestIds: string[]) => {
+      if (!leagueId || selectedWeek == null) return;
+      importPicks.mutate(
+        { leagueId, week: selectedWeek, sourceLeagueId, contestIds },
+        {
+          onSuccess: (res) => {
+            setImportOpen(false);
+            if (res?.requiresConfidence) {
+              Toast.show({
+                type: 'info',
+                text1: 'Not available here yet',
+                text2: 'This league uses confidence points.',
+              });
+            } else {
+              const n = res?.imported ?? contestIds.length;
+              Toast.show({ type: 'success', text1: `Imported ${n} pick${n === 1 ? '' : 's'}!` });
+            }
+          },
+          onError: () => {
+            Toast.show({
+              type: 'error',
+              text1: 'Failed to import picks',
+              text2: 'Please try again.',
+            });
+          },
+        },
+      );
+    },
+    [leagueId, selectedWeek, importPicks],
+  );
 
   // Hide Picked is a no-op once allPicked flips true — the toggle is also
   // hidden in that branch of the header, so respecting it would strand the
@@ -251,6 +325,23 @@ export default function PicksScreen() {
         />
       )}
 
+      {importSources.length > 0 && !allPicked && (
+        <Pressable
+          onPress={() => setImportOpen(true)}
+          style={[styles.importBanner, { backgroundColor: theme.tint }]}
+          accessibilityRole="button"
+        >
+          <Ionicons name="download-outline" size={18} color={theme.textOnAccent} />
+          <Text style={[styles.importBannerText, { color: theme.textOnAccent }]}>
+            {importSources.length === 1
+              ? `Import ${importSources[0].items.length} pick${
+                  importSources[0].items.length === 1 ? '' : 's'
+                } from ${importSources[0].name}`
+              : 'Import picks from another league'}
+          </Text>
+        </Pressable>
+      )}
+
       {isLoading ? (
         <LoadingSpinner message="Loading picks…" />
       ) : (
@@ -360,6 +451,14 @@ export default function PicksScreen() {
           }
         />
       )}
+
+      <ImportPicksModal
+        visible={importOpen}
+        sources={importSources}
+        importing={importPicks.isPending}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImport}
+      />
     </View>
   );
 }
@@ -374,6 +473,18 @@ const styles = StyleSheet.create({
   columnWrapper: { gap: 10 },
   // Each card fills its share of the row so columns stay equal width.
   cardSlot: { flex: 1 },
+  // "Import picks" banner shown above the slate when picks can be pulled in.
+  importBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 14,
+    marginTop: 10,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  importBannerText: { fontSize: 15, fontWeight: '700' },
 });
 
 const headerStyles = StyleSheet.create({

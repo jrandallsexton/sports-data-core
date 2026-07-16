@@ -133,6 +133,9 @@ export function ImportPicksModal({ visible, sources, importing, onClose, onImpor
           style={styles.selectAll}
           onPress={toggleAll}
           disabled={importing || items.length === 0}
+          accessibilityRole="checkbox"
+          accessibilityLabel="Select all"
+          accessibilityState={{ checked: allSelected, disabled: importing || items.length === 0 }}
         >
           <Ionicons
             name={allSelected ? 'checkbox' : 'square-outline'}
@@ -152,6 +155,9 @@ export function ImportPicksModal({ visible, sources, importing, onClose, onImpor
                 style={[styles.row, { borderBottomColor: theme.border }]}
                 onPress={() => toggle(item.contestId)}
                 disabled={importing}
+                accessibilityRole="checkbox"
+                accessibilityLabel={`${item.matchupLabel}, pick ${item.team}`}
+                accessibilityState={{ checked, disabled: importing }}
               >
                 <Ionicons
                   name={checked ? 'checkbox' : 'square-outline'}

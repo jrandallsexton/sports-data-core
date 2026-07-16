@@ -46,7 +46,13 @@ export function useImportAvailability(
               name: s.name,
               toImport: r.data?.toImport ?? [],
             }))
-            .catch(() => ({ leagueId: s.leagueId, name: s.name, toImport: [] })),
+            .catch((err) => {
+              // Degrade gracefully — one flaky source shouldn't hide the whole
+              // import feature — but surface the failure (feeds a Sentry
+              // breadcrumb) rather than swallowing it silently.
+              console.warn('[import] preview failed for source', s.leagueId, err);
+              return { leagueId: s.leagueId, name: s.name, toImport: [] };
+            }),
         ),
       );
       return previews.filter((p) => p.toImport.length > 0);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./ImportPicksDialog.css";
 
 /**
@@ -17,6 +17,8 @@ function ImportPicksDialog({ isOpen, sources, importing, onClose, onImport }) {
 
   const [selected, setSelected] = useState(() => new Set(items.map((i) => i.contestId)));
 
+  const dialogRef = useRef(null);
+
   // Close on Escape (unless mid-import), matching the app's Gallery modal.
   useEffect(() => {
     const onKey = (e) => {
@@ -26,7 +28,35 @@ function ImportPicksDialog({ isOpen, sources, importing, onClose, onImport }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [importing, onClose]);
 
+  // Move focus into the dialog on open; restore it to the trigger on close.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    dialogRef.current?.focus();
+    return () => {
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, []);
+
   if (!isOpen || !currentSource) return null;
+
+  // Trap Tab / Shift+Tab within the dialog so keyboard focus can't escape to the
+  // page behind the modal.
+  const handleTabTrap = (e) => {
+    if (e.key !== "Tab") return;
+    const focusables = dialogRef.current?.querySelectorAll(
+      'button:not([disabled]), select:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusables || focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   // Switch source and re-seed the checkboxes to all of that source's picks.
   // Done here (on the user's action) rather than in an effect so a background
@@ -50,7 +80,12 @@ function ImportPicksDialog({ isOpen, sources, importing, onClose, onImport }) {
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(items.map((i) => i.contestId)));
 
-  const count = selected.size;
+  // Submit only contests still present in the source being imported from — prunes
+  // any stale ids if a background refresh changed/dropped the selected source, so
+  // source and contestIds can never mismatch. No-op in the normal case.
+  const currentItemIds = new Set(items.map((i) => i.contestId));
+  const chosenContestIds = [...selected].filter((id) => currentItemIds.has(id));
+  const count = chosenContestIds.length;
 
   return (
     <div className="import-dialog-overlay" onClick={importing ? undefined : onClose}>
@@ -59,6 +94,9 @@ function ImportPicksDialog({ isOpen, sources, importing, onClose, onImport }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="import-dialog-title"
+        ref={dialogRef}
+        tabIndex={-1}
+        onKeyDown={handleTabTrap}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="import-dialog-title" className="import-dialog-title">
@@ -70,7 +108,7 @@ function ImportPicksDialog({ isOpen, sources, importing, onClose, onImport }) {
             <label htmlFor="import-source">Import from</label>
             <select
               id="import-source"
-              value={selectedSourceId}
+              value={currentSource.leagueId}
               onChange={(e) => changeSource(e.target.value)}
               disabled={importing}
             >
@@ -117,7 +155,7 @@ function ImportPicksDialog({ isOpen, sources, importing, onClose, onImport }) {
           </button>
           <button
             className="import-dialog-button confirm"
-            onClick={() => onImport(currentSource.leagueId, [...selected])}
+            onClick={() => onImport(currentSource.leagueId, chosenContestIds)}
             disabled={importing || count === 0}
           >
             {importing ? "Importing…" : `Import ${count} pick${count === 1 ? "" : "s"}`}

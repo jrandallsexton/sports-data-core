@@ -319,6 +319,12 @@ function PicksPage() {
       if (!routeLeagueId || selectedWeek === null) return;
       if (!seasonWeeks.includes(selectedWeek)) return;
 
+      // Invalidate the loaded key while this request is in flight; only a
+      // successful response re-validates it. A failure (e.g. the post-import
+      // refetch) thus leaves imports gated rather than evaluating against a
+      // stale pick set.
+      setPicksLoadedKey(null);
+
       try {
         const response = await apiWrapper.Picks.getUserPicksByWeek(
           routeLeagueId,

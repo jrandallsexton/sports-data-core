@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "812654295319-jsh0nbhh23mj3ndp5gmui7r9roa9tpiv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sportdeets.mobile",
+            "certificate_hash": "235aa78ffea9205980512517662751c10e24eb10"
+          }
+        },
+        {
           "client_id": "812654295319-dgb618dhnl9oflea534fjgdlipkgoi5f.apps.googleusercontent.com",
           "client_type": 3
         }

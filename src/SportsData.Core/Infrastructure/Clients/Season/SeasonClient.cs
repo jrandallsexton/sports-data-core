@@ -17,6 +17,7 @@ namespace SportsData.Core.Infrastructure.Clients.Season;
 public interface IProvideSeasons : IProvideHealthChecks
 {
     Task<Result<SeasonOverviewDto>> GetSeasonOverview(int seasonYear, CancellationToken ct = default);
+    Task<Result<CurrentSeasonDto>> GetCurrentSeason(CancellationToken ct = default);
     Task<Result<FranchiseSeasonPollDto>> GetPollBySeasonWeekId(Guid seasonWeekId, string pollSlug, CancellationToken ct = default);
     Task<Result<CanonicalSeasonWeekDto>> GetCurrentSeasonWeek(CancellationToken ct = default);
     Task<Result<List<CanonicalSeasonWeekDto>>> GetCurrentAndLastSeasonWeeks(CancellationToken ct = default);
@@ -49,6 +50,16 @@ public class SeasonClient : ClientBase, IProvideSeasons
             overview => overview,
             default!,
             "Season overview",
+            ResultStatus.NotFound,
+            ct);
+    }
+
+    public async Task<Result<CurrentSeasonDto>> GetCurrentSeason(CancellationToken ct = default)
+    {
+        return await GetAsync<CurrentSeasonDto>(
+            "seasons/current",
+            default!,
+            "Current season",
             ResultStatus.NotFound,
             ct);
     }

@@ -59,6 +59,7 @@ using SportsData.Producer.Application.GroupSeasons.Queries.GetConferenceIdsBySlu
 using SportsData.Producer.Application.Images;
 using SportsData.Producer.Application.Seasons.Queries.GetCompletedSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentAndLastSeasonWeeks;
+using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeason;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeasonWeek;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonOverview;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonWeeksByDateRange;
@@ -345,6 +346,7 @@ namespace SportsData.Producer.DependencyInjection
             }
 
             // Season Queries
+            services.AddScoped<IGetCurrentSeasonQueryHandler, GetCurrentSeasonQueryHandler>();
             services.AddScoped<IGetSeasonOverviewQueryHandler, GetSeasonOverviewQueryHandler>();
             services.AddScoped<IGetCurrentSeasonWeekQueryHandler, GetCurrentSeasonWeekQueryHandler>();
             services.AddScoped<IGetCurrentAndLastSeasonWeeksQueryHandler, GetCurrentAndLastSeasonWeeksQueryHandler>();

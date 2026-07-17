@@ -210,6 +210,11 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetVenuesQueryHandler, GetVenuesQueryHandler>();
             services.AddScoped<IGetVenueByIdQueryHandler, GetVenueByIdQueryHandler>();
 
+            // Seasons Queries
+            services.AddScoped<
+                Application.Seasons.Queries.GetCurrentSeason.IGetCurrentSeasonQueryHandler,
+                Application.Seasons.Queries.GetCurrentSeason.GetCurrentSeasonQueryHandler>();
+
             // Conferences Queries
             services.AddScoped<IGetConferenceNamesAndSlugsQueryHandler, GetConferenceNamesAndSlugsQueryHandler>();
 

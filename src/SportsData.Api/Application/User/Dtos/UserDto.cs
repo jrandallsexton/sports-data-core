@@ -36,6 +36,12 @@ public class UserDto
         public required string Name { get; set; }
 
         /// <summary>
+        /// Optional commissioner-set league description. Null/empty when unset.
+        /// Rendered under the league name on YourLeaguesCard.
+        /// </summary>
+        public string? Description { get; set; }
+
+        /// <summary>
         /// Sport this league belongs to (FootballNcaa / FootballNfl / BaseballMlb).
         /// Used by the UI to render a default sport icon next to the league name
         /// until commissioner-uploaded league icons land.

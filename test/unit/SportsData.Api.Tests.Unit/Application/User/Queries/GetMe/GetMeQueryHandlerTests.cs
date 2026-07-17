@@ -125,6 +125,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         {
             Id = groupId,
             Name = "Test League",
+            Description = "Friends & family pool",
             Sport = Sport.FootballNcaa,
             League = League.NCAAF
         };
@@ -169,6 +170,7 @@ public class GetMeQueryHandlerTests : ApiTestBase<GetMeQueryHandler>
         result.Value.Leagues.Should().HaveCount(1);
         result.Value.Leagues.First().Id.Should().Be(groupId);
         result.Value.Leagues.First().Name.Should().Be("Test League");
+        result.Value.Leagues.First().Description.Should().Be("Friends & family pool");
         result.Value.Leagues.First().SeasonWeeks.Should().Equal(5);
     }
 

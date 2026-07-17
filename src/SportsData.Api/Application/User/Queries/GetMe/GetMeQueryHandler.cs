@@ -77,6 +77,7 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                     {
                         Id = m.Group.Id,
                         Name = m.Group.Name,
+                        Description = m.Group.Description,
                         Sport = m.Group.Sport,
                         // Dedupe: some leagues have multiple PickemGroupWeek rows with
                         // the same SeasonWeek number (e.g. a preseason Week 1 alongside a

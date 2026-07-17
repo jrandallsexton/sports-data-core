@@ -113,21 +113,21 @@ describe('leaguesApi.getUserLeagues', () => {
     (apiClient.get as jest.Mock).mockResolvedValue({ data: [] });
   });
 
-  it('GETs /ui/leagues', async () => {
+  // Default omits the param entirely rather than sending includeDeactivated=false,
+  // so the request matches the BE's default contract.
+  it('GETs /ui/leagues without the param by default', async () => {
     await leaguesApi.getUserLeagues();
 
     expect(apiClient.get).toHaveBeenCalledTimes(1);
-    expect(apiClient.get).toHaveBeenCalledWith('/ui/leagues');
+    expect(apiClient.get).toHaveBeenCalledWith('/ui/leagues', { params: undefined });
   });
 
-  // No includeDeactivated param: mobile has no past-leagues surface, so it
-  // relies on the BE default excluding them. If this ever sends the flag,
-  // LeaguesScreen has to start hiding Duplicate on deactivated rows.
-  it('does not opt into deactivated leagues', async () => {
-    await leaguesApi.getUserLeagues();
+  it('opts into deactivated leagues when asked', async () => {
+    await leaguesApi.getUserLeagues({ includeDeactivated: true });
 
-    const [, config] = (apiClient.get as jest.Mock).mock.calls[0];
-    expect(config).toBeUndefined();
+    expect(apiClient.get).toHaveBeenCalledWith('/ui/leagues', {
+      params: { includeDeactivated: true },
+    });
   });
 
   it('returns the server response body', async () => {

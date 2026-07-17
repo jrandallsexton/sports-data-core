@@ -56,13 +56,25 @@ export interface LeagueMember {
   role: string;
 }
 
-// Subset of the BE LeagueDetailDto the invite preview needs.
+// Subset of the BE LeagueDetailDto used by the invite preview and the
+// expandable league overview on My Leagues. Mirrors what sd-ui's LeagueDetail
+// page renders, minus its Danger Zone (mobile has no delete affordance).
 export interface LeagueDetail {
   id: string;
   name: string;
   description: string | null;
   pickType: PickType;
+  useConfidencePoints: boolean;
+  tiebreakerType: TiebreakerType;
+  tiebreakerTiePolicy: TiebreakerTiePolicy;
+  /** NCAA-only AP-poll filter; null for every other sport. */
+  rankingFilter: NcaaRankingFilter | null;
+  /** Conferences (NCAA) or divisions (NFL/MLB) — see the BE's naming note. */
+  conferenceSlugs: string[];
   isPublic: boolean;
+  /** League window. Null on either side = open-ended; both null = full season. */
+  startsOn: string | null;
+  endsOn: string | null;
   members: LeagueMember[];
 }
 
@@ -113,11 +125,14 @@ export const leaguesApi = {
   joinLeague: (id: string) =>
     apiClient.post<void>(`/ui/leagues/${id}/join`),
 
-  // GET /ui/leagues — the current user's leagues. Deactivated (past-season)
-  // leagues are excluded by the BE unless includeDeactivated is passed, which
-  // mobile doesn't do: there's no past-leagues surface here yet.
-  getUserLeagues: () =>
-    apiClient.get<LeagueSummary[]>('/ui/leagues'),
+  // GET /ui/leagues — the current user's leagues. The BE excludes deactivated
+  // (past-season) leagues unless includeDeactivated is passed; those rows come
+  // back carrying a non-null deactivatedUtc so the caller can mark them
+  // read-only.
+  getUserLeagues: ({ includeDeactivated = false }: { includeDeactivated?: boolean } = {}) =>
+    apiClient.get<LeagueSummary[]>('/ui/leagues', {
+      params: includeDeactivated ? { includeDeactivated: true } : undefined,
+    }),
 
   // POST /ui/leagues/{id}/clone — duplicate a league the user belongs to.
   // Copies config and regenerates the slate server-side; picks are NOT copied.

@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 
 import { Text } from '@/src/components/ui/AppText';
+import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { CloneLeagueModal } from '@/src/components/features/leagues/CloneLeagueModal';
+import { LeagueCard } from '@/src/components/features/leagues/LeagueCard';
 import { leaguesApi, type LeagueSummary } from '@/src/services/api/leaguesApi';
 import { standingsKeys } from '@/src/hooks/useStandings';
 
@@ -15,31 +18,15 @@ export const leaguesKeys = {
   mine: ['leagues', 'mine'] as const,
 };
 
-// Mirrors YourLeaguesCard's SPORT_ICON map.
-const SPORT_ICON: Record<LeagueSummary['sport'], string> = {
-  FootballNcaa: '🏈',
-  FootballNfl: '🏈',
-  BaseballMlb: '⚾',
-};
-
-const PICK_TYPE_LABEL: Record<LeagueSummary['leagueType'], string> = {
-  StraightUp: 'Straight Up',
-  AgainstTheSpread: 'Against The Spread',
-  OverUnder: 'Over / Under',
-};
+const ALL_LEAGUES = 'All';
 
 /**
  * "My Leagues" — mobile's league management surface, mirroring sd-ui's
- * /app/leagues. One card per league with Picks + Duplicate.
+ * /app/leagues. One card per league with a collapsible overview (standing in for
+ * web's dedicated /app/league/{id} page), plus Picks + Duplicate.
  *
- * No Settings action yet: mobile has no league-settings screen (only
- * create-league and league-invite exist), so the card stops at what mobile can
- * actually route to. Add it here when that screen lands.
- *
- * Past-season leagues aren't shown — the BE excludes them unless the caller
- * opts in via includeDeactivated, and mobile has no past-leagues toggle yet
- * (web grew one in #519). That's also why no card needs to hide Duplicate: every
- * league reaching this screen is active and therefore cloneable.
+ * Filters mirror the web's: a sport-league filter and a past-leagues toggle. A
+ * season-year filter is expected on both platforms later.
  */
 export default function LeaguesScreen() {
   const scheme = useColorScheme();
@@ -48,10 +35,16 @@ export default function LeaguesScreen() {
   const queryClient = useQueryClient();
 
   const [cloneTarget, setCloneTarget] = useState<LeagueSummary | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showPast, setShowPast] = useState(false);
+  const [leagueFilter, setLeagueFilter] = useState<string>(ALL_LEAGUES);
 
+  // Always fetch past leagues so the toggle is instant rather than a refetch.
+  // A user's league count is small, and every row is needed the moment they
+  // flip "Past" on.
   const { data: leagues = [], isLoading } = useQuery({
     queryKey: leaguesKeys.mine,
-    queryFn: () => leaguesApi.getUserLeagues().then((r) => r.data),
+    queryFn: () => leaguesApi.getUserLeagues({ includeDeactivated: true }).then((r) => r.data),
   });
 
   const cloneMutation = useMutation({
@@ -81,6 +74,26 @@ export default function LeaguesScreen() {
     },
   });
 
+  // Everything below is derived from `leagues` rather than mirrored into state,
+  // so the filters can't drift out of sync with a refetch.
+  const hasPast = leagues.some((l) => l.deactivatedUtc);
+  const scoped = showPast ? leagues : leagues.filter((l) => !l.deactivatedUtc);
+
+  const availableLeagues = [...new Set(scoped.map((l) => l.league).filter(Boolean))].sort();
+
+  // Self-healing: if the selected league leaves scope (e.g. it only existed
+  // among past leagues and "Past" was switched off), fall back to All instead
+  // of stranding the user on an empty list.
+  const activeFilter = availableLeagues.includes(leagueFilter as LeagueSummary['league'])
+    ? leagueFilter
+    : ALL_LEAGUES;
+
+  const visibleLeagues =
+    activeFilter === ALL_LEAGUES ? scoped : scoped.filter((l) => l.league === activeFilter);
+
+  const showFilterBar = leagues.length > 0 && (hasPast || availableLeagues.length > 1);
+  const filterOptions = [ALL_LEAGUES, ...availableLeagues].map((v) => ({ value: v, label: v }));
+
   const openPicks = (leagueId: string) =>
     router.push({ pathname: '/(tabs)/picks', params: { leagueId } } as never);
 
@@ -98,6 +111,46 @@ export default function LeaguesScreen() {
         style={{ backgroundColor: theme.background }}
         contentContainerStyle={styles.content}
       >
+        {showFilterBar && (
+          <View style={styles.filterBar}>
+            {availableLeagues.length > 1 && (
+              <SegmentedControl
+                value={activeFilter}
+                options={filterOptions}
+                onChange={setLeagueFilter}
+                accessibilityLabel="Filter by league"
+              />
+            )}
+            {hasPast && (
+              <TouchableOpacity
+                style={[
+                  styles.pastToggle,
+                  { borderColor: showPast ? theme.tint : theme.border },
+                  showPast && { backgroundColor: theme.tint },
+                ]}
+                onPress={() => setShowPast(!showPast)}
+                accessibilityRole="button"
+                accessibilityLabel={showPast ? 'Hide past leagues' : 'Show past leagues'}
+                accessibilityState={{ selected: showPast }}
+              >
+                <Ionicons
+                  name={showPast ? 'eye-outline' : 'eye-off-outline'}
+                  size={14}
+                  color={showPast ? theme.textOnAccent : theme.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.pastToggleText,
+                    { color: showPast ? theme.textOnAccent : theme.textMuted },
+                  ]}
+                >
+                  Past
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {isLoading ? (
           <ActivityIndicator style={styles.loading} color={theme.tint} />
         ) : leagues.length === 0 ? (
@@ -114,51 +167,22 @@ export default function LeaguesScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+        ) : visibleLeagues.length === 0 ? (
+          <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+            No leagues match this filter.
+          </Text>
         ) : (
-          leagues.map((league) => (
-            <View
+          visibleLeagues.map((league) => (
+            <LeagueCard
               key={league.id}
-              style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
-            >
-              <View style={styles.cardHeader}>
-                <Text
-                  style={styles.cardIcon}
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants"
-                >
-                  {SPORT_ICON[league.sport]}
-                </Text>
-                <Text style={[styles.cardName, { color: theme.text }]} numberOfLines={1}>
-                  {league.name}
-                </Text>
-              </View>
-
-              <Text style={[styles.cardMeta, { color: theme.textMuted }]}>
-                {PICK_TYPE_LABEL[league.leagueType] ?? league.leagueType}
-                {league.useConfidencePoints ? ' · Confidence' : ''}
-                {' · '}
-                {league.memberCount} member{league.memberCount === 1 ? '' : 's'}
-              </Text>
-
-              <View style={styles.cardActions}>
-                <TouchableOpacity
-                  style={[styles.action, { backgroundColor: theme.tint }]}
-                  onPress={() => openPicks(league.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Open picks for ${league.name}`}
-                >
-                  <Text style={[styles.actionText, { color: theme.textOnAccent }]}>Picks</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.action, styles.actionSecondary, { borderColor: theme.border }]}
-                  onPress={() => setCloneTarget(league)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Duplicate ${league.name}`}
-                >
-                  <Text style={[styles.actionText, { color: theme.text }]}>Duplicate</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+              league={league}
+              expanded={expandedId === league.id}
+              onToggleExpanded={() =>
+                setExpandedId((prev) => (prev === league.id ? null : league.id))
+              }
+              onOpenPicks={() => openPicks(league.id)}
+              onDuplicate={() => setCloneTarget(league)}
+            />
           ))
         )}
       </ScrollView>
@@ -178,28 +202,21 @@ export default function LeaguesScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
+  filterBar: { gap: 10 },
+  pastToggle: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  pastToggleText: { fontSize: 12, fontWeight: '700' },
   loading: { marginTop: 32 },
   empty: { alignItems: 'center', gap: 16, marginTop: 48 },
-  emptyText: { fontSize: 15 },
+  emptyText: { fontSize: 15, textAlign: 'center' },
   createButton: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 },
   createButtonText: { fontSize: 15, fontWeight: '700' },
-  card: {
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
-    padding: 16,
-    gap: 8,
-  },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardIcon: { fontSize: 18 },
-  cardName: { fontSize: 17, fontWeight: '700', flexShrink: 1 },
-  cardMeta: { fontSize: 13 },
-  cardActions: { flexDirection: 'row', gap: 10, paddingTop: 6 },
-  action: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  actionSecondary: { borderWidth: 1 },
-  actionText: { fontSize: 14, fontWeight: '700' },
 });

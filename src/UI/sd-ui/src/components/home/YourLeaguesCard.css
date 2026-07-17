@@ -8,8 +8,20 @@
   box-shadow: var(--shadow-md);
   padding: 1rem 1.25rem;
   max-width: 880px;
+  /* border-box so max-width is the true outer width and this card lines up
+     with the countdown (.home-primary) above it, whose larger padding would
+     otherwise make it render wider under the default content-box model. */
+  box-sizing: border-box;
   margin: 0 auto;
   color: var(--text-primary);
+}
+
+.your-leagues-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .your-leagues-card__eyebrow {
@@ -17,17 +29,38 @@
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.15em;
-  margin-bottom: 0.5rem;
+}
+
+.your-leagues-card__manage {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.12s ease;
+}
+
+.your-leagues-card__manage:hover,
+.your-leagues-card__manage:focus-visible {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.your-leagues-card__manage:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .your-leagues-card__list {
   list-style: none;
   margin: 0;
   padding: 0;
-}
-
-.your-leagues-card__item + .your-leagues-card__item {
-  border-top: 1px solid var(--border-primary);
+  /* Responsive grid — fills 2-3 columns on desktop, collapses to 1 on narrow
+     screens — so a short league list no longer leaves the card mostly empty. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.5rem;
 }
 
 .your-leagues-card__row {
@@ -35,21 +68,26 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.75rem 0.25rem;
+  padding: 0.75rem;
+  /* Each league is a discrete bordered card. The prior hairline top-borders
+     read as row separators in a single column but look wrong in a grid, where
+     adjacent items sit side by side. */
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
   color: var(--text-primary);
   text-decoration: none;
-  transition: background-color 0.12s ease;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
 .your-leagues-card__row:hover,
 .your-leagues-card__row:focus-visible {
   background-color: var(--accent-subtle);
+  border-color: var(--accent);
 }
 
 .your-leagues-card__row:focus-visible {
   outline: 2px solid var(--accent-hover);
-  outline-offset: -2px;
-  border-radius: 6px;
+  outline-offset: 2px;
 }
 
 .your-leagues-card__icon {

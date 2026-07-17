@@ -34,7 +34,14 @@ function YourLeaguesCard() {
 
   return (
     <div className="your-leagues-card">
-      <div className="your-leagues-card__eyebrow">YOUR LEAGUES</div>
+      <div className="your-leagues-card__header">
+        <div className="your-leagues-card__eyebrow">YOUR LEAGUES</div>
+        {/* Mirrors sd-mobile's "Manage ›" affordance — routes to the leagues
+            management page (clone, filters, past leagues). */}
+        <Link to="/app/leagues" className="your-leagues-card__manage">
+          Manage ›
+        </Link>
+      </div>
       <ul className="your-leagues-card__list">
         {leagues.map((league) => {
           const icon = SPORT_ICON[league.sport];

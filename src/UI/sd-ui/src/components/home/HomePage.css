@@ -296,6 +296,9 @@ h2 {
   text-align: center;
   color: var(--text-primary);
   max-width: 880px;
+  /* border-box so max-width is the true outer width — keeps this card and the
+     YourLeaguesCard below it exactly the same width despite differing padding. */
+  box-sizing: border-box;
   /* Small top bump separates the banner from the nav/top-of-page edge
      on desktop, where .main-content's 2rem padding alone felt flush. */
   margin: 5px auto 0 auto;

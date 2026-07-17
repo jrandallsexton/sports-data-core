@@ -60,7 +60,14 @@ function YourLeaguesCard() {
                 <span className="your-leagues-card__icon" aria-hidden="true">
                   {icon}
                 </span>
-                <span className="your-leagues-card__name">{league.name}</span>
+                <span className="your-leagues-card__text">
+                  <span className="your-leagues-card__name">{league.name}</span>
+                  {league.description && (
+                    <span className="your-leagues-card__description">
+                      {league.description}
+                    </span>
+                  )}
+                </span>
                 <span className="your-leagues-card__chevron" aria-hidden="true">
                   ›
                 </span>

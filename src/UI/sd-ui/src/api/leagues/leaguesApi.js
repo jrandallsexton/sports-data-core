@@ -32,6 +32,17 @@ const createBaseballMlbLeague = async (request) => {
 };
 
 /**
+ * Clones an existing league the user belongs to into a new one they own.
+ * @param {string} leagueId - Source league GUID
+ * @param {{ name: string, inviteMembers: boolean }} body
+ * @returns {Promise<{ id: string }>} The new league's ID
+ */
+const cloneLeague = async (leagueId, body) => {
+  const response = await apiClient.post(`${BASE_PATH}/${leagueId}/clone`, body);
+  return response.data;
+};
+
+/**
  * Fetches a league by ID.
  * @param {string} id - League GUID
  * @returns {Promise<LeagueDetailDto>} League details
@@ -43,10 +54,15 @@ const getLeagueById = async (id) => {
 
 /**
  * Fetches all leagues the current user belongs to.
+ * @param {Object} [options]
+ * @param {boolean} [options.includeDeactivated=false] - Also return past-season
+ *   leagues. Those carry a non-null deactivatedUtc and are read-only.
  * @returns {Promise<LeagueSummaryDto[]>} Array of leagues
  */
-const getUserLeagues = async () => {
-  const response = await apiClient.get(BASE_PATH);
+const getUserLeagues = async ({ includeDeactivated = false } = {}) => {
+  const response = await apiClient.get(BASE_PATH, {
+    params: includeDeactivated ? { includeDeactivated: true } : undefined,
+  });
   return response.data;
 };
 
@@ -141,6 +157,7 @@ const LeaguesApi = {
   createFootballNcaaLeague,
   createFootballNflLeague,
   createBaseballMlbLeague,
+  cloneLeague,
   getLeagueById,
   getUserLeagues,
   joinLeague,

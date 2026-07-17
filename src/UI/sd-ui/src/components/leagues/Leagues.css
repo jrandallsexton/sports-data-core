@@ -43,6 +43,60 @@
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25);
 }
 
+.leagues-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.league-filter-chips {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.league-filter-chip,
+.past-leagues-toggle {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.past-leagues-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.league-filter-chip:hover,
+.past-leagues-toggle:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.league-filter-chip.active,
+.past-leagues-toggle.active {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.league-filter-chip:focus-visible,
+.past-leagues-toggle:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+}
+
 .league-grid {
   display: flex;
   flex-direction: column;
@@ -138,6 +192,28 @@
 .card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Past seasons read as archived: muted border, de-emphasized until hovered. */
+.card-past {
+  border-color: var(--border-strong);
+  opacity: 0.75;
+}
+
+.card-past:hover {
+  opacity: 1;
+}
+
+.past-league-badge {
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 .league-avatar {

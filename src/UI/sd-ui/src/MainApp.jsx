@@ -190,6 +190,8 @@ function MainApp() {
             <Route path="/league/create" element={<LeagueCreatePage />} />
             <Route path="/league/:id" element={<LeagueDetail />} />
             <Route path="/league" element={<Leagues />} />
+            {/* Alias: honor the plural /leagues too. */}
+            <Route path="/leagues" element={<Leagues />} />
             <Route path="/join/:leagueId" element={<AutoJoinRedirect />} />
             <Route
               path="/:sport/:seasonYear"

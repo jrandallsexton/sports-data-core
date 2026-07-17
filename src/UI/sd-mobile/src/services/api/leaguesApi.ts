@@ -66,6 +66,32 @@ export interface LeagueDetail {
   members: LeagueMember[];
 }
 
+// Matches SportsData.Api.Application.UI.Leagues.Dtos.LeagueSummaryDto.
+export interface LeagueSummary {
+  id: string;
+  name: string;
+  sport: 'FootballNcaa' | 'FootballNfl' | 'BaseballMlb';
+  /** Sport-league the group plays. */
+  league: 'NCAAF' | 'NFL' | 'MLB' | 'NBA';
+  /** PickType by name — the BE projects `PickType.ToString()` into this field. */
+  leagueType: PickType;
+  useConfidencePoints: boolean;
+  memberCount: number;
+  avatarUrl: string | null;
+  /**
+   * Non-null once the league's season has passed: read-only, and not cloneable.
+   * Only populated when the caller opts in via `includeDeactivated`; the default
+   * list omits those rows entirely, so this is null for every league mobile
+   * currently fetches.
+   */
+  deactivatedUtc: string | null;
+}
+
+export interface CloneLeagueRequest {
+  name: string;
+  inviteMembers: boolean;
+}
+
 export const leaguesApi = {
   // POST /ui/leagues/football/ncaa
   createFootballNcaaLeague: (payload: CreateFootballNcaaLeagueRequest) =>
@@ -86,4 +112,16 @@ export const leaguesApi = {
   // POST /ui/leagues/{id}/join — join a league by id.
   joinLeague: (id: string) =>
     apiClient.post<void>(`/ui/leagues/${id}/join`),
+
+  // GET /ui/leagues — the current user's leagues. Deactivated (past-season)
+  // leagues are excluded by the BE unless includeDeactivated is passed, which
+  // mobile doesn't do: there's no past-leagues surface here yet.
+  getUserLeagues: () =>
+    apiClient.get<LeagueSummary[]>('/ui/leagues'),
+
+  // POST /ui/leagues/{id}/clone — duplicate a league the user belongs to.
+  // Copies config and regenerates the slate server-side; picks are NOT copied.
+  // Returns the new league's id.
+  cloneLeague: (id: string, payload: CloneLeagueRequest) =>
+    apiClient.post<{ id: string }>(`/ui/leagues/${id}/clone`, payload),
 };

@@ -50,7 +50,17 @@ export function YourLeaguesCard({ leagues }: Props) {
         { backgroundColor: theme.card, borderColor: theme.border },
       ]}
     >
-      <Text style={[styles.eyebrow, { color: theme.tint }]}>YOUR LEAGUES</Text>
+      <View style={styles.headerRow}>
+        <Text style={[styles.eyebrow, { color: theme.tint }]}>YOUR LEAGUES</Text>
+        <TouchableOpacity
+          onPress={() => router.push('/leagues' as never)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Manage your leagues"
+        >
+          <Text style={[styles.manage, { color: theme.tint }]}>Manage ›</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.pillGrid}>
         {leagues.map((league) => {
@@ -96,11 +106,20 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     padding: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
   eyebrow: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.5,
-    marginBottom: 10,
+  },
+  manage: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   pillGrid: {
     flexDirection: 'row',

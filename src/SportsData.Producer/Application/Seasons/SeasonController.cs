@@ -5,6 +5,7 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Application.Seasons.Queries.GetCompletedSeasonWeeks;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentAndLastSeasonWeeks;
+using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeason;
 using SportsData.Producer.Application.Seasons.Queries.GetCurrentSeasonWeek;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonOverview;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonWeeksByDateRange;
@@ -23,6 +24,21 @@ public class SeasonController : ControllerBase
     {
         var query = new GetSeasonOverviewQuery(seasonYear);
         var result = await handler.ExecuteAsync(query, cancellationToken);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// The current-or-upcoming season with its phases, for this Producer's sport.
+    /// Backs the API's per-sport <c>seasons/current</c> resource (which the
+    /// off-season kickoff countdown consumes). Returns raw phase data — no
+    /// countdown computation here.
+    /// </summary>
+    [HttpGet("current")]
+    public async Task<ActionResult<CurrentSeasonDto>> GetCurrentSeason(
+        [FromServices] IGetCurrentSeasonQueryHandler handler,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await handler.ExecuteAsync(new GetCurrentSeasonQuery(), cancellationToken);
         return result.ToActionResult();
     }
 

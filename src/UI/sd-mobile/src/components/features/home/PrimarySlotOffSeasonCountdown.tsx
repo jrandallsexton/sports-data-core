@@ -1,80 +1,47 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useQueries } from '@tanstack/react-query';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { Button } from '@/src/components/ui/Button';
+import {
+  seasonApi,
+  REGULAR_SEASON_TYPE_CODE,
+  type CurrentSeason,
+} from '@/src/services/api/seasonApi';
 
-// ─── Kickoff helpers ──────────────────────────────────────────────────────────
+// ─── Sports ─────────────────────────────────────────────────────────────────
 //
-// NCAAFB: first Saturday of September. NFL: Thursday after Labor Day (Labor
-// Day = first Monday of September, kickoff = that Monday + 3 days). Computed
-// at render time so the card rolls over on its own each season — no yearly
-// constant maintenance.
+// `sportEnum` is what create-league reads from ?sport= to preselect the tab.
+// `sport`/`league` are the API route segments. Kickoff is data-driven — the
+// Regular Season phase's StartDate from seasons/current — not a computed rule.
+// The prior rules ("first Saturday of September" / "Thursday after Labor Day")
+// were both wrong for 2026. See docs/features/data-driven-season-countdown.md.
 
-/** First Saturday of September in the given year, 00:00 UTC. */
-function ncaafbKickoff(year: number): Date {
-  for (let day = 1; day <= 7; day++) {
-    const d = new Date(Date.UTC(year, 8, day)); // month 8 = September
-    if (d.getUTCDay() === 6) return d; // Saturday
-  }
-  return new Date(Date.UTC(year, 8, 7)); // unreachable fallback
+const SPORTS = [
+  { key: 'NCAAFB', label: 'NCAAFB', sportEnum: 'FootballNcaa', sport: 'football', league: 'ncaa' },
+  { key: 'NFL', label: 'NFL', sportEnum: 'FootballNfl', sport: 'football', league: 'nfl' },
+] as const;
+
+// Kickoff = the Regular Season phase's start, or null when not sourced yet.
+function regularSeasonStart(season: CurrentSeason | undefined): string | null {
+  return season?.phases?.find((p) => p.typeCode === REGULAR_SEASON_TYPE_CODE)?.startDate ?? null;
 }
 
-/** Thursday after Labor Day (first Monday of September) in the given year. */
-function nflKickoff(year: number): Date {
-  for (let day = 1; day <= 7; day++) {
-    const d = new Date(Date.UTC(year, 8, day));
-    if (d.getUTCDay() === 1) {
-      // Labor Day — kickoff is the following Thursday (+3 days).
-      return new Date(Date.UTC(year, 8, day + 3));
-    }
-  }
-  return new Date(Date.UTC(year, 8, 10)); // unreachable fallback
-}
-
-/**
- * Return the season year the countdown should track.
- *
- * Anchors on the *previous* calendar year's NFL kickoff so January/February
- * stays on the in-progress season (playoffs + Super Bowl) instead of
- * incorrectly advancing to the next year's off-season countdown. Rollover
- * happens ≈6 months after that kickoff — roughly March of the current
- * calendar year — which is the product-correct moment to start counting
- * down to the new season.
- *
- * Examples:
- *   - Nov 15, 2026 (regular season):       year=2026 ✓
- *   - Jan 15, 2027 (2026 playoffs):        year=2026 ✓ ("underway" still)
- *   - Apr 15, 2027 (off-season):           year=2027 ✓ (counting down)
- *   - Sep 11, 2027 (2027 NCAAFB started):  year=2027 ✓
- */
-function targetSeasonYear(nowMs: number): number {
-  const now = new Date(nowMs);
-  const year = now.getUTCFullYear();
-  const rollover = new Date(nflKickoff(year - 1));
-  rollover.setUTCMonth(rollover.getUTCMonth() + 6);
-  return nowMs >= rollover.getTime() ? year : year - 1;
-}
-
-function daysUntil(targetUtc: Date, nowMs: number): number {
+function daysUntil(kickoffIso: string, nowMs: number): number {
   const msPerDay = 1000 * 60 * 60 * 24;
-  return Math.ceil((targetUtc.getTime() - nowMs) / msPerDay);
+  return Math.ceil((new Date(kickoffIso).getTime() - nowMs) / msPerDay);
 }
 
-type SportPhrase = { status: 'live' | 'upcoming'; text: string };
+type SportPhrase = { status: 'live' | 'upcoming' | 'unknown'; text: string };
 
-function sportPhrase(
-  sport: { label: string; kickoff: Date },
-  nowMs: number,
-): SportPhrase {
-  const days = daysUntil(sport.kickoff, nowMs);
-  if (days <= 0) return { status: 'live', text: `${sport.label} is underway` };
-  return {
-    status: 'upcoming',
-    text: `${sport.label} in ${days} ${days === 1 ? 'day' : 'days'}`,
-  };
+function sportPhrase(label: string, kickoff: string | null, nowMs: number): SportPhrase {
+  if (!kickoff) return { status: 'unknown', text: `${label} kickoff coming soon` };
+  const days = daysUntil(kickoff, nowMs);
+  if (days <= 0) return { status: 'live', text: `${label} is underway` };
+  return { status: 'upcoming', text: `${label} in ${days} ${days === 1 ? 'day' : 'days'}` };
 }
 
 /**
@@ -84,9 +51,10 @@ function sportPhrase(
  *   - upcoming → create-league with ?sport= preselected
  *   - live     → picks tab (all leagues)
  *
- * `nowMs` ticks hourly so day-boundary transitions update without a remount —
- * an app left open across midnight still shows the correct "X days" count.
- * Hourly (vs daily) is cheap and covers DST / straggler tick drift for free.
+ * Kickoffs are fetched per sport from seasons/current (the Regular Season
+ * phase's StartDate). `nowMs` ticks hourly so day-boundary transitions update
+ * without a remount — an app left open across midnight still shows the correct
+ * "X days" count.
  */
 export function PrimarySlotOffSeasonCountdown() {
   const scheme = useColorScheme();
@@ -99,31 +67,46 @@ export function PrimarySlotOffSeasonCountdown() {
     return () => clearInterval(id);
   }, []);
 
-  const year = useMemo(() => targetSeasonYear(nowMs), [nowMs]);
-  const sports = useMemo(
-    () => [
-      {
-        key: 'NCAAFB',
-        label: 'NCAAFB',
-        kickoff: ncaafbKickoff(year),
-        sportEnum: 'FootballNcaa',
-      },
-      {
-        key: 'NFL',
-        label: 'NFL',
-        kickoff: nflKickoff(year),
-        sportEnum: 'FootballNfl',
-      },
-    ],
-    [year],
-  );
+  const results = useQueries({
+    queries: SPORTS.map((s) => ({
+      queryKey: ['season', 'current', s.sport, s.league],
+      queryFn: () => seasonApi.getCurrentSeason(s.sport, s.league).then((r) => r.data),
+      staleTime: 1000 * 60 * 60, // kickoff dates barely move; refetch hourly at most
+      // A sport with no sourced season is a valid "coming soon" state — don't
+      // retry it as though it were a transient error.
+      retry: false,
+    })),
+  });
 
-  const phrases = sports.map((s) => ({ ...s, phrase: sportPhrase(s, nowMs) }));
+  const loading = results.some((r) => r.isLoading);
+
+  // Cheap to recompute each render (and it must, to follow the hourly nowMs
+  // tick), so no memo — a memo here would just need fragile deps over the
+  // query results.
+  const phrases = SPORTS.map((s, i) => {
+    const kickoff = regularSeasonStart(results[i].data);
+    return { ...s, kickoff, phrase: sportPhrase(s.label, kickoff, nowMs) };
+  });
+
+  const seasonYear =
+    results.map((r) => r.data?.seasonYear).find((y) => y != null) ?? null;
+
   const allLive = phrases.every((s) => s.phrase.status === 'live');
+  const eyebrow = seasonYear ? `${seasonYear} SEASON` : 'UPCOMING SEASON';
 
   const body = allLive
     ? 'Jump into your leagues and lock in your picks before the next kickoff.'
-    : `Spin up your ${year} pick'em league now so you're ready for Week 1.`;
+    : seasonYear
+      ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week 1.`
+      : "Spin up your pick'em league now so you're ready for Week 1.";
+
+  if (loading) {
+    return (
+      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.body, { color: theme.textMuted }]}>Loading the season schedule…</Text>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -132,7 +115,7 @@ export function PrimarySlotOffSeasonCountdown() {
         { backgroundColor: theme.card, borderColor: theme.border },
       ]}
     >
-      <Text style={[styles.eyebrow, { color: theme.tint }]}>{year} SEASON</Text>
+      <Text style={[styles.eyebrow, { color: theme.tint }]}>{eyebrow}</Text>
 
       {allLive ? (
         <Text style={[styles.headline, { color: theme.text }]}>

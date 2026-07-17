@@ -3,7 +3,7 @@
 --   SET          → literal value
 --   set_config() → value from a subquery (T-SQL "SELECT @var = col FROM ...")
 -- Strings only; cast at the call site against typed columns.
-SET my.contest_id  = '73399ac2-fb71-8ff5-7d43-cd9c1d0d0a05';
+SET my.contest_id  = '5dbbb652-568b-6707-d295-f1fd251477d7';
 SET my.season_id   = '4810b35f-8e31-2631-eba4-ac268341fc43';
 SET my.season_year = '2026';
 
@@ -17,7 +17,7 @@ WHERE "ContestId" = current_setting('my.contest_id')::uuid
 LIMIT 1;
 
 -- ─── Health snapshot ──────────────────────────────────────────────────────────
---SELECT 'NonFinalizedContests', COUNT(*) FROM public."Contest" WHERE "FinalizedUtc" IS NULL; -- 24,337
+SELECT 'NonFinalizedContests', COUNT(*) FROM public."Contest" WHERE "FinalizedUtc" IS NULL; -- 24,337
 
 -- ─── Contest by id ────────────────────────────────────────────────────────────
 SELECT 'Contest', * FROM public."Contest" WHERE "Id" = current_setting('my.contest_id')::uuid;
@@ -27,6 +27,8 @@ SELECT 'ContestExternalId', * FROM public."ContestExternalId" WHERE "ContestId" 
 SELECT 'Competition', * FROM public."Competition" WHERE "ContestId" = current_setting('my.contest_id')::uuid;
 
 -- ─── Competition fan-out (uses derived competition_id) ────────────────────────
+SELECT 'CompetitionNote', * FROM public."CompetitionNote" WHERE "CompetitionId" = current_setting('my.competition_id')::uuid;
+
 SELECT 'CompetitionCompetitor', * FROM public."CompetitionCompetitor" WHERE "CompetitionId" = current_setting('my.competition_id')::uuid;
 
 SELECT 'CompetitionCompetitorScores', * FROM public."CompetitionCompetitorScores"
@@ -51,6 +53,12 @@ SELECT 'CompetitionStatus', * FROM public."CompetitionStatus" WHERE "Competition
 SELECT 'CompetitionStream', * FROM public."CompetitionStream" WHERE "CompetitionId" = current_setting('my.competition_id')::uuid;
 
 SELECT 'CompetitionOdds', * FROM public."CompetitionOdds" WHERE "CompetitionId" = current_setting('my.competition_id')::uuid;
+
+-- select distinct CO."ProviderId", CO."ProviderName" FROM public."CompetitionOdds" CO
+-- inner JOIN public."Competition" COMP on COMP."Id" = CO."CompetitionId"
+-- inner join public."Contest" C on C."Id" = COMP."ContestId"
+-- where c."SeasonYear" in (2022, 2023, 2024, 2025, 2026)
+-- order by CO."ProviderName";
 
 -- ─── Lookup tables ────────────────────────────────────────────────────────────
 --SELECT DISTINCT "StatusTypeName" FROM public."CompetitionStatus";

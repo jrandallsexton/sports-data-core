@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   View,
   FlatList,
+  ScrollView,
   StyleSheet,
   RefreshControl,
   Pressable,
@@ -34,7 +35,12 @@ export default function PicksScreen() {
   const router = useRouter();
   const navigation = useNavigation();
 
-  const { data: me, isLoading: meLoading, refetch: refetchMe } = useCurrentUser();
+  const {
+    data: me,
+    isLoading: meLoading,
+    refetch: refetchMe,
+    isRefetching: meRefetching,
+  } = useCurrentUser();
   const leagues = useMemo(() => getLeagues(me), [me]);
 
   // Optional deep-link param: home "Your Leagues" card pushes
@@ -341,13 +347,28 @@ export default function PicksScreen() {
   // stale and the heal-refetch above is in flight. Previously this fell back to
   // week 1 — a week that doesn't exist for every sport (MLB's start at 17) — and
   // rendered an empty slate that read as "the league failed to build".
+  //
+  // Scrollable so pull-to-refresh actually works: the heal fires only once per
+  // league, so this is the user's only way out if it didn't resolve.
   if (selectedWeek === null) {
     return (
-      <EmptyState
-        icon="🗓️"
-        title="Setting up your league"
-        subtitle="Your games are being scheduled. This usually takes a moment — pull to refresh if they don't appear."
-      />
+      <ScrollView
+        style={[styles.container, { backgroundColor: theme.background }]}
+        contentContainerStyle={styles.setupContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={meRefetching}
+            onRefresh={refetchMe}
+            tintColor={theme.tint}
+          />
+        }
+      >
+        <EmptyState
+          icon="🗓️"
+          title="Setting up your league"
+          subtitle="Your games are being scheduled. This usually takes a moment — pull down to refresh if they don't appear."
+        />
+      </ScrollView>
     );
   }
 
@@ -506,6 +527,9 @@ export default function PicksScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  // flexGrow so EmptyState's own flex:1 can center in a short ScrollView, while
+  // still leaving the content pullable.
+  setupContent: { flexGrow: 1 },
   // gap = vertical spacing between rows (replaces the old ItemSeparator).
   list: { padding: 14, paddingBottom: 24, gap: 10 },
   // Horizontal spacing between columns in a multi-column row.

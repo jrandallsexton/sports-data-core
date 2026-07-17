@@ -42,7 +42,12 @@ export default function LeaguesScreen() {
   // Always fetch past leagues so the toggle is instant rather than a refetch.
   // A user's league count is small, and every row is needed the moment they
   // flip "Past" on.
-  const { data: leagues = [], isLoading } = useQuery({
+  const {
+    data: leagues = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: leaguesKeys.mine,
     queryFn: () => leaguesApi.getUserLeagues({ includeDeactivated: true }).then((r) => r.data),
   });
@@ -153,6 +158,25 @@ export default function LeaguesScreen() {
 
         {isLoading ? (
           <ActivityIndicator style={styles.loading} color={theme.tint} />
+        ) : isError ? (
+          // Must precede the empty branch: on failure `leagues` falls back to []
+          // and would otherwise render "you're not part of any leagues yet",
+          // making a network blip look like data loss.
+          <View style={styles.empty}>
+            <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+              Couldn&rsquo;t load your leagues.
+            </Text>
+            <TouchableOpacity
+              style={[styles.createButton, { backgroundColor: theme.tint }]}
+              onPress={() => refetch()}
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading your leagues"
+            >
+              <Text style={[styles.createButtonText, { color: theme.textOnAccent }]}>
+                Try again
+              </Text>
+            </TouchableOpacity>
+          </View>
         ) : leagues.length === 0 ? (
           <View style={styles.empty}>
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>

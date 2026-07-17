@@ -81,7 +81,12 @@ export function LeagueCard({
 
   const isPast = !!league.deactivatedUtc;
 
-  const { data: detail, isLoading: detailLoading } = useQuery({
+  const {
+    data: detail,
+    isLoading: detailLoading,
+    isError: detailError,
+    refetch: refetchDetail,
+  } = useQuery({
     queryKey: leagueDetailKeys.byId(league.id),
     queryFn: () => leaguesApi.getLeagueById(league.id).then((r) => r.data),
     enabled: expanded,
@@ -139,8 +144,25 @@ export function LeagueCard({
 
       {expanded && (
         <View style={[styles.details, { borderTopColor: theme.border }]}>
-          {detailLoading || !detail ? (
+          {detailLoading ? (
             <ActivityIndicator size="small" color={theme.tint} style={styles.detailLoading} />
+          ) : detailError || !detail ? (
+            // Split from the loading branch deliberately: a failed fetch leaves
+            // isLoading false with detail undefined, so folding the two together
+            // spins forever with no way out.
+            <View style={styles.detailError}>
+              <Text style={[styles.detailErrorText, { color: theme.textMuted }]}>
+                Couldn&rsquo;t load details.
+              </Text>
+              <TouchableOpacity
+                onPress={() => refetchDetail()}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`Retry loading details for ${league.name}`}
+              >
+                <Text style={[styles.detailRetry, { color: theme.tint }]}>Try again</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <>
               {detail.description ? (
@@ -232,6 +254,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   detailLoading: { paddingVertical: 12 },
+  detailError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  detailErrorText: { fontSize: 13, flexShrink: 1 },
+  detailRetry: { fontSize: 13, fontWeight: '700' },
   description: { fontSize: 13, lineHeight: 18, marginBottom: 4 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   detailLabel: { fontSize: 13 },

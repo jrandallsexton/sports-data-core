@@ -139,9 +139,9 @@ to a Producer outage.
 
 ## Files touched
 
-- `SportsData.Producer`: new `GetSeasonPhases` query + handler; `SeasonController` action (`seasons/{year}/phases`); `SeasonPhaseDto` (Core.Dtos.Canonical).
-- `SportsData.Core`: `IProvideSeasons` / `SeasonClient.GetSeasonPhases`.
-- `SportsData.Api`: new `Application/Seasons/` slice — `SeasonsController` (`api/{sport}/{league}/seasons/current`) + `GetCurrentSeason` query handler + `CurrentSeasonDto` + DI registration.
+- `SportsData.Producer`: new `GetCurrentSeason` query + handler; `SeasonController` action (`seasons/current`); DI registration.
+- `SportsData.Core`: `IProvideSeasons` / `SeasonClient.GetCurrentSeason`; `CurrentSeasonDto` + `SeasonPhaseDto` (Core.Dtos.Canonical).
+- `SportsData.Api`: new `Application/Seasons/` slice — `SeasonsController` (`api/{sport}/{league}/seasons/current`) + `GetCurrentSeason` query handler + DI registration.
 - `sd-ui`: `PrimarySlotOffSeasonCountdown.jsx` + season api client method.
 - `sd-mobile`: `PrimarySlotOffSeasonCountdown.tsx` + season api method.
 - Tests at each layer.

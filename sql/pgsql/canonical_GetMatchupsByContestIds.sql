@@ -1,0 +1,221 @@
+SELECT
+  c."SeasonWeekId" AS "SeasonWeekId",
+  sw_contest."EndDate" AS "SeasonWeekEndDate",
+  c."Id" AS "ContestId",
+  c."StartDateUtc" AS "StartDateUtc",
+  cn."Headline" AS "Headline",
+  cs."StatusTypeName" AS "Status",
+  cs."StatusDescription" AS "StatusDescription",
+  STRING_AGG(cb."MediaName", ' | ') AS "Broadcasts",
+  v."Name" AS "Venue", v."City" AS "VenueCity", v."State" AS "VenueState",
+  fAway."DisplayName" AS "Away", fAway."Abbreviation" AS "AwayShort",
+  fsAway."Id" AS "AwayFranchiseSeasonId",
+  COALESCE(fslAway."Uri", flAway."Uri") AS "AwayLogoUri",
+  COALESCE(fslDarkAway."Uri", flDarkAway."Uri") AS "AwayLogoUriDark",
+  fAway."Slug" AS "AwaySlug", fAway."ColorCodeHex" AS "AwayColor",
+  fsrdAway."Current" AS "AwayRank", gsAway."Slug" AS "AwayConferenceSlug",
+  fsAway."Wins" AS "AwayWins", fsAway."Losses" AS "AwayLosses",
+  fsAway."ConferenceWins" AS "AwayConferenceWins", fsAway."ConferenceLosses" AS "AwayConferenceLosses",
+  fHome."DisplayName" AS "Home", fHome."Abbreviation" AS "HomeShort",
+  fsHome."Id" AS "HomeFranchiseSeasonId",
+  COALESCE(fslHome."Uri", flHome."Uri") AS "HomeLogoUri",
+  COALESCE(fslDarkHome."Uri", flDarkHome."Uri") AS "HomeLogoUriDark",
+  fHome."Slug" AS "HomeSlug", fHome."ColorCodeHex" AS "HomeColor",
+  fsrdHome."Current" AS "HomeRank", gsHome."Slug" AS "HomeConferenceSlug",
+  fsHome."Wins" AS "HomeWins", fsHome."Losses" AS "HomeLosses",
+  fsHome."ConferenceWins" AS "HomeConferenceWins", fsHome."ConferenceLosses" AS "HomeConferenceLosses",
+  co."Details" AS "SpreadCurrentDetails", co."Spread" AS "SpreadCurrent",
+  cto."SpreadPointsOpen" AS "SpreadOpen",
+  co."OverUnder" AS "OverUnderCurrent", co."TotalPointsOpen" AS "OverUnderOpen",
+  co."OverOdds", co."UnderOdds",
+  c."AwayScore", c."HomeScore",
+  c."WinnerFranchiseSeasonId",
+  c."SpreadWinnerFranchiseSeasonId",
+  c."OverUnder" AS "OverUnderResult",
+  c."EndDateUtc" AS "CompletedUtc"
+FROM public."Contest" c
+INNER JOIN public."SeasonWeek" sw_contest ON sw_contest."Id" = c."SeasonWeekId"
+LEFT JOIN public."Venue" v ON v."Id" = c."VenueId"
+INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
+LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'
+LEFT JOIN public."CompetitionBroadcast" cb ON cb."CompetitionId" = comp."Id"
+LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
+LEFT JOIN LATERAL (
+  SELECT * FROM public."CompetitionOdds"
+  WHERE "CompetitionId" = comp."Id" AND "ProviderId" IN ('{PreferredOddsProviderId}', '{FallbackOddsProviderId}')
+  ORDER BY CASE WHEN "ProviderId" = '{PreferredOddsProviderId}' THEN 1 ELSE 2 END
+  LIMIT 1
+) co ON TRUE
+LEFT JOIN public."CompetitionTeamOdds" cto ON cto."CompetitionOddsId" = co."Id" AND cto."Side" = 'Home'
+INNER JOIN public."FranchiseSeason" fsAway ON fsAway."Id" = c."AwayTeamFranchiseSeasonId"
+INNER JOIN public."Franchise" fAway ON fAway."Id" = fsAway."FranchiseId"
+-- Logo selection order (applies to all eight lateral subqueries below):
+--   1. sportdeets-mark row tagged with the requested direction ('Roundel')
+--   2. any sportdeets-mark row (fallback when requested direction not yet
+--      generated for this team — e.g. shields not backfilled)
+--   3. anything else (preserves ESPN-sourced behavior for unbackfilled teams)
+-- Tie-breaker stays CreatedUtc ASC to match prior behavior on ties.
+LEFT JOIN LATERAL (
+  SELECT fl.* FROM public."FranchiseLogo" fl
+  WHERE fl."FranchiseId" = fAway."Id"
+  ORDER BY
+    CASE
+      WHEN fl."Rel" @> ARRAY['sportdeets-mark', 'Roundel']::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
+      ELSE                                                               2
+    END,
+    fl."CreatedUtc" ASC
+  LIMIT 1
+) flAway ON TRUE
+-- FranchiseSeason-level logo is preferred; Franchise-level acts as fallback
+-- (matches LogoSelectionService.SelectWithFallback convention: season -> franchise).
+LEFT JOIN LATERAL (
+  SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
+  WHERE fsl."FranchiseSeasonId" = fsAway."Id"
+  ORDER BY
+    CASE
+      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', 'Roundel']::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
+      ELSE                                                                2
+    END,
+    fsl."CreatedUtc" ASC
+  LIMIT 1
+) fslAway ON TRUE
+-- Dark-bg variants for theme-aware UI rendering. Same season -> franchise
+-- fallback as the default lateral above. Note sportdeets-marks are
+-- theme-agnostic (single render serves both backgrounds), so a team with
+-- sportdeets-mark rows will surface the same Uri here as in the light lateral
+-- above — that is the intended behavior until/unless dedicated dark variants
+-- are generated. The IsForDarkBg = TRUE filter only matters for ESPN-sourced
+-- rows in the ELSE branch.
+LEFT JOIN LATERAL (
+  SELECT fl.* FROM public."FranchiseLogo" fl
+  WHERE fl."FranchiseId" = fAway."Id"
+    AND (
+      fl."Rel" @> ARRAY['sportdeets-mark']::text[]
+      OR fl."IsForDarkBg" = TRUE
+    )
+  ORDER BY
+    CASE
+      WHEN fl."Rel" @> ARRAY['sportdeets-mark', 'Roundel']::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
+      ELSE                                                               2
+    END,
+    fl."CreatedUtc" ASC
+  LIMIT 1
+) flDarkAway ON TRUE
+LEFT JOIN LATERAL (
+  SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
+  WHERE fsl."FranchiseSeasonId" = fsAway."Id"
+    AND (
+      fsl."Rel" @> ARRAY['sportdeets-mark']::text[]
+      OR fsl."IsForDarkBg" = TRUE
+    )
+  ORDER BY
+    CASE
+      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', 'Roundel']::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
+      ELSE                                                                2
+    END,
+    fsl."CreatedUtc" ASC
+  LIMIT 1
+) fslDarkAway ON TRUE
+INNER JOIN public."GroupSeason" gsAway ON gsAway."Id" = fsAway."GroupSeasonId"
+LEFT JOIN LATERAL (
+  SELECT fsr.* FROM public."FranchiseSeasonRanking" fsr
+  INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
+  WHERE fsr."FranchiseSeasonId" = fsAway."Id"
+    AND fsr."DefaultRanking" = true AND fsr."Type" IN ('ap', 'cfp')
+    AND sw."StartDate" <= c."StartDateUtc"
+  ORDER BY sw."StartDate" DESC LIMIT 1
+) fsrAway ON TRUE
+LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdAway ON fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+INNER JOIN public."FranchiseSeason" fsHome ON fsHome."Id" = c."HomeTeamFranchiseSeasonId"
+INNER JOIN public."Franchise" fHome ON fHome."Id" = fsHome."FranchiseId"
+LEFT JOIN LATERAL (
+  SELECT fl.* FROM public."FranchiseLogo" fl
+  WHERE fl."FranchiseId" = fHome."Id"
+  ORDER BY
+    CASE
+      WHEN fl."Rel" @> ARRAY['sportdeets-mark', 'Roundel']::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
+      ELSE                                                               2
+    END,
+    fl."CreatedUtc" ASC
+  LIMIT 1
+) flHome ON TRUE
+-- FranchiseSeason-level preferred, Franchise fallback — see Away comment above.
+LEFT JOIN LATERAL (
+  SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
+  WHERE fsl."FranchiseSeasonId" = fsHome."Id"
+  ORDER BY
+    CASE
+      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', 'Roundel']::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
+      ELSE                                                                2
+    END,
+    fsl."CreatedUtc" ASC
+  LIMIT 1
+) fslHome ON TRUE
+-- Dark-bg variants — see Away comment above.
+LEFT JOIN LATERAL (
+  SELECT fl.* FROM public."FranchiseLogo" fl
+  WHERE fl."FranchiseId" = fHome."Id"
+    AND (
+      fl."Rel" @> ARRAY['sportdeets-mark']::text[]
+      OR fl."IsForDarkBg" = TRUE
+    )
+  ORDER BY
+    CASE
+      WHEN fl."Rel" @> ARRAY['sportdeets-mark', 'Roundel']::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
+      ELSE                                                               2
+    END,
+    fl."CreatedUtc" ASC
+  LIMIT 1
+) flDarkHome ON TRUE
+LEFT JOIN LATERAL (
+  SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
+  WHERE fsl."FranchiseSeasonId" = fsHome."Id"
+    AND (
+      fsl."Rel" @> ARRAY['sportdeets-mark']::text[]
+      OR fsl."IsForDarkBg" = TRUE
+    )
+  ORDER BY
+    CASE
+      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', 'Roundel']::text[] THEN 0
+      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
+      ELSE                                                                2
+    END,
+    fsl."CreatedUtc" ASC
+  LIMIT 1
+) fslDarkHome ON TRUE
+INNER JOIN public."GroupSeason" gsHome ON gsHome."Id" = fsHome."GroupSeasonId"
+LEFT JOIN LATERAL (
+  SELECT fsr.* FROM public."FranchiseSeasonRanking" fsr
+  INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
+  WHERE fsr."FranchiseSeasonId" = fsHome."Id"
+    AND fsr."DefaultRanking" = true AND fsr."Type" IN ('ap', 'cfp')
+    AND sw."StartDate" <= c."StartDateUtc"
+  ORDER BY sw."StartDate" DESC LIMIT 1
+) fsrHome ON TRUE
+LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdHome ON fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+WHERE c."Id" IN ('ea13b248-7934-8bda-5220-57aaf483efff')
+GROUP BY
+  c."SeasonWeekId", sw_contest."EndDate", c."Id", c."StartDateUtc", cn."Headline", cs."StatusTypeName", cs."StatusDescription",
+  v."Name", v."City", v."State",
+  fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id",
+  flAway."Uri", fslAway."Uri", flDarkAway."Uri", fslDarkAway."Uri", fAway."Slug",
+  fsrdAway."Current", gsAway."Slug",
+  fsAway."Wins", fsAway."Losses", fsAway."ConferenceWins", fsAway."ConferenceLosses",
+  fAway."Abbreviation", fAway."ColorCodeHex",
+  fHome."Abbreviation", fHome."ColorCodeHex",
+  fHome."DisplayName", fHome."DisplayNameShort", fsHome."Id",
+  flHome."Uri", fslHome."Uri", flDarkHome."Uri", fslDarkHome."Uri", fHome."Slug",
+  fsrdHome."Current", gsHome."Slug",
+  fsHome."Wins", fsHome."Losses", fsHome."ConferenceWins", fsHome."ConferenceLosses",
+  co."Details", co."Spread", co."OverUnder", co."OverOdds", co."UnderOdds",
+  cto."SpreadPointsOpen", co."TotalPointsOpen",
+  c."AwayScore", c."HomeScore", c."WinnerFranchiseSeasonId", c."SpreadWinnerFranchiseSeasonId",
+  c."OverUnder", c."EndDateUtc"
+ORDER BY c."StartDateUtc", fHome."Slug"

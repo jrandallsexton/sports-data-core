@@ -1,7 +1,7 @@
 # Mobile Notifications & Live Updates — Scoping Plan
 
 **Status**: Refreshed 2026-06-23 — pre-implementation, foundational decisions locked
-**Target delivery**: Before 2026 NCAAFB kickoff (September 5, 2026) — ~10 weeks from today
+**Target delivery**: Before 2026 NCAAFB kickoff (August 29, 2026 — corrected 2026-07-17 against sourced SeasonPhase data; was written as Sep 5) — ~10 weeks from the 2026-06-23 refresh
 **Primary driver**: Mobile engagement. The web app can survive on polling; the mobile app cannot.
 
 **Transport + placement decisions locked (2026-06-23)**:

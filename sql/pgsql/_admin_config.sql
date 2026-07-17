@@ -1,5 +1,12 @@
 -- Global limits / usage
-SHOW max_connections;
+SHOW max_connections; SHOW shared_buffers; SHOW work_mem; SHOW effective_cache_size;
+
+ --ALTER SYSTEM SET max_connections = 700;
+SELECT pg_reload_conf();
+
+  SELECT name, setting, sourcefile
+  FROM pg_file_settings
+  WHERE name = 'max_connections';
 
 SELECT count(*) AS total, 
        sum(CASE WHEN state='active' THEN 1 ELSE 0 END) AS active,

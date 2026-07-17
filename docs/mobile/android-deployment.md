@@ -48,6 +48,12 @@ What's missing for Internal Testing (friend distribution):
   - Privacy policy URL — required because we collect personal data
     via Firebase Auth (user IDs, emails). Cheap fix: a static page on
     sportdeets.com.
+  - **Account-deletion URL** — because the app has account creation,
+    Google's Data Safety flow also requires a publicly reachable
+    account-deletion mechanism (both in-app and a web URL that lets a
+    user request deletion without logging in). See
+    `account-deletion.md`. Host this alongside the privacy policy —
+    it's a second static page/URL, not just one.
 - **Manual first `.aab` upload** through Play Console UI (initializes
   Play App Signing — `eas submit` cannot do this).
 - **Internal testing track** populated with tester Google account
@@ -73,13 +79,36 @@ What's missing for Production (eventual public release):
 
 What's missing for Google Sign-In on Android (separate from Play):
 
-- **SHA-1 debug fingerprint registered in Firebase Console** for the
-  Android app — required for Google Sign-In on Android (Firebase
-  needs to verify which client signed the OAuth request). Get the
-  SHA-1 via `eas credentials -p android` after the first build, then
-  paste into Firebase Console → Project Settings → Your apps → Android
-  app → "Add fingerprint". Not required for FCM or email/password
-  sign-in.
+- **TWO SHA-1 fingerprints must be registered in Firebase Console**
+  for the Android app — required for Google Sign-In on Android
+  (Firebase verifies the signature of the *installed* app against the
+  OAuth client). As of now `google-services.json` contains only a
+  type-3 (web) OAuth client and **no Android certificate hash at all**,
+  so Google Sign-In on Android is not yet wired. You need both:
+  - **Upload / build keystore SHA-1** — makes Google Sign-In work for
+    **direct-APK installs (Path A)**. Get it via
+    `eas credentials -p android` after the first build.
+  - **Play App Signing SHA-1** — makes Google Sign-In work for
+    **Play-installed testers (Path B / Internal Testing)**. This is
+    the trap: Google **re-signs** your app with the Play App Signing
+    key when it's delivered through any Play track, so the installed
+    app's signature is *different* from your upload keystore. Sign-In
+    validates against the delivered signature, so the upload-key SHA-1
+    alone will fail for every Internal Testing tester. This SHA-1 only
+    exists **after the first manual AAB upload** (Step 5) initializes
+    Play App Signing; grab it from **Play Console → Setup → App
+    integrity → App signing key certificate**.
+
+  Register both in **Firebase Console → Project Settings → Your apps →
+  Android app → "Add fingerprint"**, then re-download
+  `google-services.json` and commit it (an Android OAuth client with a
+  certificate hash should now appear). Not required for FCM or
+  email/password sign-in.
+
+  > **Symptom if you skip the Play App Signing SHA-1:** Google Sign-In
+  > works in your sideloaded dev APK but throws a `DEVELOPER_ERROR`
+  > (code 10) for every friend who installs from the Internal Testing
+  > track. This is the #1 "worked in dev, broke in Play" gotcha.
 
 ---
 
@@ -171,8 +200,8 @@ gated steps).
 | - | ---- | ---- | ------- |
 | 1 | EAS Android build config + first APK build | ~30 min | APK lands on the dev device; daily dev unblocked |
 | 2 | Play Console app created (DONE 2026-06-04) | — | App exists in Play Console |
-| 3 | Privacy policy URL hosted on sportdeets.com | ~30 min | Required field for Data Safety form |
-| 4 | App-content forms: content rating + target audience + data safety + privacy URL | ~45 min | Internal Testing track unblocked |
+| 3 | Privacy policy URL + account-deletion URL hosted on sportdeets.com | ~45 min | Required fields for Data Safety form |
+| 4 | App-content forms: content rating + target audience + data safety + privacy URL + account-deletion URL | ~45 min | Internal Testing track unblocked |
 | 5 | Manual upload of first `.aab` to Internal Testing via Play Console UI | ~15 min | Play App Signing initialized; tester install link live |
 | 6 | Add tester Google emails to Internal track + send share link | ~5 min | Friends can install |
 | 7 | Service account JSON + `eas.json` `submit` profile | ~15 min | `eas submit -p android --latest --track internal` works |
@@ -411,6 +440,8 @@ EAS Update is not currently wired up for this project (per
 4. **Play Console requires a privacy policy URL** as part of listing
    setup. Even if you have nothing fancy, you need *something* hosted
    at a public URL. (Cheap fix: a static page on `sportdeets.com`.)
+   You also need an **account-deletion URL** (see gotcha #10) — two
+   static pages, not one.
 5. **Data Safety form is mandatory.** Play Console will block release
    until you declare what user data your app collects (Firebase Auth
    counts; Sentry counts). Be honest; users see this in the listing.
@@ -435,6 +466,18 @@ EAS Update is not currently wired up for this project (per
    purchases / subscriptions through Google Play Billing instead.
    This is the universal mobile monetization pattern (Spotify,
    Netflix, etc. are all Free apps with paid tiers).
+10. **Account-deletion mechanism is required for apps with account
+    creation.** Google's Data Safety flow needs both an in-app path
+    AND a public web URL where a user can request deletion without
+    logging in. Host it next to the privacy policy. See
+    `account-deletion.md`.
+11. **Google Sign-In needs BOTH SHA-1 fingerprints in Firebase.** The
+    upload-keystore SHA-1 covers direct-APK installs; the **Play App
+    Signing** SHA-1 (available only after the first manual AAB upload)
+    covers Play-installed testers, because Play re-signs the delivered
+    app. Missing the Play App Signing SHA-1 → `DEVELOPER_ERROR`
+    (code 10) for every Internal Testing tester while dev APKs still
+    work. See the "Google Sign-In on Android" section above.
 
 ---
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   FlatList,
@@ -34,7 +34,7 @@ export default function PicksScreen() {
   const router = useRouter();
   const navigation = useNavigation();
 
-  const { data: me, isLoading: meLoading } = useCurrentUser();
+  const { data: me, isLoading: meLoading, refetch: refetchMe } = useCurrentUser();
   const leagues = useMemo(() => getLeagues(me), [me]);
 
   // Optional deep-link param: home "Your Leagues" card pushes
@@ -62,25 +62,48 @@ export default function PicksScreen() {
       : null;
     if (targeted) {
       setLeagueId(targeted.id);
-      setSelectedWeek(latestWeek(targeted) ?? 1);
+      setSelectedWeek(latestWeek(targeted));
       return;
     }
 
     // Otherwise initialize once to the first league in the list.
     if (!leagueId) {
       setLeagueId(leagues[0].id);
-      setSelectedWeek(latestWeek(leagues[0]) ?? 1);
+      setSelectedWeek(latestWeek(leagues[0]));
     }
   }, [leagues, leagueIdParam]);
 
   const selectedLeague = leagues.find((l) => l.id === leagueId) ?? null;
   const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
 
+  // A league with no weeks means this /user/me snapshot predates its slate
+  // build. Create/clone return before the slate exists (~700ms), and anything
+  // invalidating /user/me on that response caches the one empty frame — which
+  // useCurrentUser's 5-minute staleTime then serves for the next five minutes.
+  // Refetch to heal, once per league so a genuinely week-less league (e.g. a
+  // future-season league whose SeasonWeeks aren't sourced yet) can't loop.
+  const healedLeagueRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedLeague || seasonWeeks.length > 0) return;
+    if (healedLeagueRef.current === selectedLeague.id) return;
+    healedLeagueRef.current = selectedLeague.id;
+    refetchMe();
+  }, [selectedLeague, seasonWeeks.length, refetchMe]);
+
+  // Snap to the latest week once the weeks actually arrive. The init effect
+  // above only runs on league/param change, so without this a heal-refetch
+  // would land the data and still leave no week selected.
+  useEffect(() => {
+    if (selectedWeek !== null) return;
+    const week = latestWeek(selectedLeague);
+    if (week !== null) setSelectedWeek(week);
+  }, [selectedLeague, selectedWeek]);
+
   const handleLeagueChange = useCallback(
     (id: string) => {
       setLeagueId(id);
       const league = leagues.find((l) => l.id === id);
-      setSelectedWeek(latestWeek(league) ?? 1);
+      setSelectedWeek(latestWeek(league));
     },
     [leagues],
   );
@@ -308,6 +331,20 @@ export default function PicksScreen() {
         icon="🗓️"
         title="No active league"
         subtitle="You haven't joined a pick'em group yet."
+      />
+    );
+  }
+
+  // No week to show: either the slate is still being built, or this snapshot is
+  // stale and the heal-refetch above is in flight. Previously this fell back to
+  // week 1 — a week that doesn't exist for every sport (MLB's start at 17) — and
+  // rendered an empty slate that read as "the league failed to build".
+  if (selectedWeek === null) {
+    return (
+      <EmptyState
+        icon="🗓️"
+        title="Setting up your league"
+        subtitle="Your games are being scheduled. This usually takes a moment — pull to refresh if they don't appear."
       />
     );
   }

@@ -57,7 +57,15 @@ namespace SportsData.Api.Application.Processors
 
             if (groupWeek is null)
             {
-                _logger.LogError("GroupWeek was null.{GroupId} {SeasonWeekId}", command.GroupId, command.SeasonWeekId);
+                // Expected on every league's first pass (create or clone) — the
+                // shell is created right here and processing continues. Logged at
+                // Debug because at Error it was the loudest line in a healthy
+                // bootstrap trail and read as the cause of failures it had nothing
+                // to do with.
+                _logger.LogDebug(
+                    "No PickemGroupWeek for group {GroupId} week {SeasonWeekId} yet; creating it.",
+                    command.GroupId,
+                    command.SeasonWeekId);
 
                 groupWeek = new PickemGroupWeek()
                 {

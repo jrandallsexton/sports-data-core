@@ -380,6 +380,7 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="leagues" options={{ title: 'My Leagues' }} />
         <Stack.Screen name="create-league" options={{ presentation: 'modal' }} />
         <Stack.Screen name="league-invite/[leagueId]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="admin/push-token" options={{ title: 'Push Token' }} />

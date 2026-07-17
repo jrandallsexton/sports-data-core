@@ -4,12 +4,14 @@ import {
   type CreateFootballNcaaLeagueRequest,
   type CreateFootballNflLeagueRequest,
   type CreateLeagueResponse,
+  type LeagueSummary,
 } from '@/src/services/api/leaguesApi';
 
 // Mock the shared axios instance — we only care that the right URL + body go out.
 jest.mock('@/src/services/api/client', () => ({
   apiClient: {
     post: jest.fn(),
+    get: jest.fn(),
   },
 }));
 
@@ -104,3 +106,70 @@ testCreateLeague(
   leaguesApi.createBaseballMlbLeague,
   mlbPayload,
 );
+
+describe('leaguesApi.getUserLeagues', () => {
+  beforeEach(() => {
+    (apiClient.get as jest.Mock).mockReset();
+    (apiClient.get as jest.Mock).mockResolvedValue({ data: [] });
+  });
+
+  // Default omits the param entirely rather than sending includeDeactivated=false,
+  // so the request matches the BE's default contract.
+  it('GETs /ui/leagues without the param by default', async () => {
+    await leaguesApi.getUserLeagues();
+
+    expect(apiClient.get).toHaveBeenCalledTimes(1);
+    expect(apiClient.get).toHaveBeenCalledWith('/ui/leagues', { params: undefined });
+  });
+
+  it('opts into deactivated leagues when asked', async () => {
+    await leaguesApi.getUserLeagues({ includeDeactivated: true });
+
+    expect(apiClient.get).toHaveBeenCalledWith('/ui/leagues', {
+      params: { includeDeactivated: true },
+    });
+  });
+
+  it('returns the server response body', async () => {
+    const league: LeagueSummary = {
+      id: 'league-1',
+      name: 'MLB Test',
+      sport: 'BaseballMlb',
+      league: 'MLB',
+      leagueType: 'StraightUp',
+      useConfidencePoints: false,
+      memberCount: 4,
+      avatarUrl: null,
+      deactivatedUtc: null,
+    };
+    (apiClient.get as jest.Mock).mockResolvedValue({ data: [league] });
+
+    const response = await leaguesApi.getUserLeagues();
+    expect(response.data).toEqual([league]);
+  });
+});
+
+describe('leaguesApi.cloneLeague', () => {
+  beforeEach(() => {
+    (apiClient.post as jest.Mock).mockReset();
+    (apiClient.post as jest.Mock).mockResolvedValue({ data: { id: 'clone-1' } });
+  });
+
+  it('POSTs to /ui/leagues/{id}/clone with the name and inviteMembers', async () => {
+    await leaguesApi.cloneLeague('source-1', { name: 'MLB Test (Copy)', inviteMembers: true });
+
+    expect(apiClient.post).toHaveBeenCalledTimes(1);
+    expect(apiClient.post).toHaveBeenCalledWith('/ui/leagues/source-1/clone', {
+      name: 'MLB Test (Copy)',
+      inviteMembers: true,
+    });
+  });
+
+  it('returns the new league id', async () => {
+    const response = await leaguesApi.cloneLeague('source-1', {
+      name: 'Copy',
+      inviteMembers: false,
+    });
+    expect(response.data).toEqual({ id: 'clone-1' });
+  });
+});

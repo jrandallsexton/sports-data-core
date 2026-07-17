@@ -8,12 +8,24 @@ using SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
+using Moq;
+
 using Xunit;
 
 namespace SportsData.Api.Tests.Unit.Application.UI.Picks.Commands.SubmitPick;
 
 public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandler>
 {
+    // Fixed "now" so matchup lock state is deterministic — the handler now checks
+    // lock via the injected IDateTimeProvider (configured below) rather than the
+    // real wall clock.
+    private static readonly DateTime Now = new(2026, 7, 16, 12, 0, 0, DateTimeKind.Utc);
+
+    public SubmitPickCommandHandlerTests()
+    {
+        Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(Now);
+    }
+
     [Fact]
     public async Task ExecuteAsync_ShouldReturnNotFound_WhenGroupDoesNotExist()
     {
@@ -88,7 +100,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
             Id = Guid.NewGuid(),
             GroupId = groupId,
             ContestId = contestId,
-            StartDateUtc = DateTime.UtcNow.AddMinutes(2) // Within lock window (5 min)
+            StartDateUtc = Now.AddMinutes(2) // Within lock window (5 min)
         };
 
         await DataContext.PickemGroups.AddAsync(group);
@@ -132,7 +144,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
             Id = Guid.NewGuid(),
             GroupId = groupId,
             ContestId = contestId,
-            StartDateUtc = DateTime.UtcNow.AddHours(1)
+            StartDateUtc = Now.AddHours(1)
         };
 
         await DataContext.PickemGroups.AddAsync(group);
@@ -179,7 +191,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
             Id = Guid.NewGuid(),
             GroupId = groupId,
             ContestId = contestId,
-            StartDateUtc = DateTime.UtcNow.AddHours(1)
+            StartDateUtc = Now.AddHours(1)
         };
 
         await DataContext.PickemGroups.AddAsync(group);
@@ -242,7 +254,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
             Id = Guid.NewGuid(),
             GroupId = groupId,
             ContestId = contestId,
-            StartDateUtc = DateTime.UtcNow.AddHours(1)
+            StartDateUtc = Now.AddHours(1)
         };
         var existingPick = new PickemGroupUserPick
         {
@@ -313,7 +325,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
             Id = Guid.NewGuid(),
             GroupId = groupId,
             ContestId = contestId,
-            StartDateUtc = DateTime.UtcNow.AddHours(1)
+            StartDateUtc = Now.AddHours(1)
         };
 
         await DataContext.PickemGroups.AddAsync(group);
@@ -363,7 +375,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
             Id = Guid.NewGuid(),
             GroupId = groupId,
             ContestId = contestId,
-            StartDateUtc = DateTime.UtcNow.AddHours(1)
+            StartDateUtc = Now.AddHours(1)
         };
         await DataContext.PickemGroups.AddAsync(group);
         await DataContext.PickemGroupMatchups.AddAsync(matchup);
@@ -411,7 +423,7 @@ public class SubmitPickCommandHandlerTests : ApiTestBase<SubmitPickCommandHandle
             Id = Guid.NewGuid(),
             GroupId = groupId,
             ContestId = contestId,
-            StartDateUtc = DateTime.UtcNow.AddHours(1)
+            StartDateUtc = Now.AddHours(1)
         };
         await DataContext.PickemGroups.AddAsync(group);
         await DataContext.PickemGroupMatchups.AddAsync(matchup);

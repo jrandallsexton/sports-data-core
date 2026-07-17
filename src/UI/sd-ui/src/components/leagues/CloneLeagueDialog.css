@@ -1,0 +1,108 @@
+/* Mirrors ConfirmationDialog for a consistent modal look. */
+.clone-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg-overlay);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.clone-dialog {
+  background-color: var(--bg-modal);
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.clone-dialog-title {
+  color: var(--accent);
+  margin: 0 0 12px 0;
+  font-size: 1.5rem;
+}
+
+.clone-dialog-message {
+  color: var(--text-primary);
+  margin: 0 0 18px 0;
+  line-height: 1.5;
+}
+
+.clone-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.clone-dialog-field span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.clone-dialog-field input[type="text"] {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background-color: var(--bg-modal);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.clone-dialog-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  margin-bottom: 22px;
+}
+
+.clone-dialog-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.clone-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.clone-dialog-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.clone-dialog-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.clone-dialog-button.cancel {
+  background-color: var(--border-strong);
+  color: var(--text-primary);
+  border: 1px solid var(--text-muted);
+}
+
+.clone-dialog-button.cancel:hover:not(:disabled) {
+  background-color: var(--active-bg);
+}
+
+.clone-dialog-button.confirm {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  border: none;
+}
+
+.clone-dialog-button.confirm:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}

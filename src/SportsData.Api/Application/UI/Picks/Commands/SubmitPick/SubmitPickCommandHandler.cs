@@ -25,15 +25,18 @@ public class SubmitPickCommandHandler : ISubmitPickCommandHandler
     private readonly ILogger<SubmitPickCommandHandler> _logger;
     private readonly AppDataContext _dataContext;
     private readonly IEventBus _eventBus;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public SubmitPickCommandHandler(
         ILogger<SubmitPickCommandHandler> logger,
         AppDataContext dataContext,
-        IEventBus eventBus)
+        IEventBus eventBus,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
         _eventBus = eventBus;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -64,7 +67,7 @@ public class SubmitPickCommandHandler : ISubmitPickCommandHandler
                 [new ValidationFailure(nameof(command.ContestId), "Matchup not found for the specified contest")]);
         }
 
-        if (matchup.IsLocked())
+        if (matchup.IsLocked(_dateTimeProvider.UtcNow()))
         {
             return new Failure<Guid>(
                 default,

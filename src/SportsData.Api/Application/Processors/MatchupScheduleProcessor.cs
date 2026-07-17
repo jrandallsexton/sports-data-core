@@ -158,6 +158,24 @@ namespace SportsData.Api.Application.Processors
                     .ToList();
             }
 
+            // Inclusion filter is the last place a slate can silently go empty:
+            // a matchup survives only on a rank hit (topX) or a conference/division
+            // slug hit. Sports without ranks (MLB) lean entirely on the slugs, so a
+            // group carrying zero slugs yields zero matchups with no other signal.
+            // Log the inputs alongside the result so an empty slate is attributable
+            // without a repro.
+            _logger.LogInformation(
+                "Inclusion filter kept {After}/{Before} matchups for group {GroupId} week {Week} " +
+                "(topX={TopX}, conferences={ConferenceCount} [{ConferenceSlugs}], nonStandardWeek={IsNonStandardWeek})",
+                groupMatchups.Count,
+                allMatchups.Count,
+                group.Id,
+                command.SeasonWeek,
+                topX,
+                conferenceSlugs.Count,
+                string.Join(",", conferenceSlugs),
+                groupWeek.IsNonStandardWeek);
+
             // Upsert-by-ContestId. The shape supports both first-pass and
             // refresh calls:
             //   • Filter passes a contest already in groupWeek.Matchups →

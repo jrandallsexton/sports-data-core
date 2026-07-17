@@ -109,6 +109,9 @@ namespace SportsData.Api.DependencyInjection
 
             // League Commands
             services.AddScoped<IAddMatchupCommandHandler, AddMatchupCommandHandler>();
+            services.AddScoped<
+                Application.UI.Leagues.Commands.CloneLeague.ICloneLeagueCommandHandler,
+                Application.UI.Leagues.Commands.CloneLeague.CloneLeagueCommandHandler>();
             services.AddScoped<ICreateFootballNcaaLeagueCommandHandler, CreateFootballNcaaLeagueCommandHandler>();
             services.AddScoped<ICreateFootballNflLeagueCommandHandler, CreateFootballNflLeagueCommandHandler>();
             services.AddScoped<ICreateBaseballMlbLeagueCommandHandler, CreateBaseballMlbLeagueCommandHandler>();

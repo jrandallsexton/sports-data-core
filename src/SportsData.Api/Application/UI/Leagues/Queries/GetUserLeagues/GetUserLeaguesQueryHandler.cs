@@ -29,18 +29,22 @@ public class GetUserLeaguesQueryHandler : IGetUserLeaguesQueryHandler
         var leagues = await _dbContext.PickemGroupMembers
             .AsNoTracking()
             .Where(m => m.UserId == query.UserId)
-            // Hide deactivated leagues — matches the filter on /user/me. A future
-            // "Past Seasons" endpoint will surface the excluded rows explicitly.
-            .Where(m => m.Group.DeactivatedUtc == null)
+            // Hide deactivated leagues unless the caller opts in — matches the
+            // filter on /user/me. Opting in is how the My Leagues page powers its
+            // "show past leagues" toggle; the rows carry DeactivatedUtc so the UI
+            // can mark them read-only.
+            .Where(m => query.IncludeDeactivated || m.Group.DeactivatedUtc == null)
             .Include(m => m.Group)
             .Select(m => new LeagueSummaryDto
             {
                 Id = m.Group.Id,
                 Name = m.Group.Name,
                 Sport = m.Group.Sport.ToString(),
+                League = m.Group.League.ToString(),
                 LeagueType = m.Group.PickType.ToString(),
                 UseConfidencePoints = m.Group.UseConfidencePoints,
-                MemberCount = m.Group.Members.Count
+                MemberCount = m.Group.Members.Count,
+                DeactivatedUtc = m.Group.DeactivatedUtc
             })
             .ToListAsync(cancellationToken);
 

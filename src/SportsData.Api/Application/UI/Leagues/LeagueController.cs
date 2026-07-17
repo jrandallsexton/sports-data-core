@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
+using SportsData.Api.Application.UI.Leagues.Commands.CloneLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague.Dtos;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
@@ -114,6 +115,35 @@ public class LeagueController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    /// <summary>
+    /// Clones one of the user's leagues into a new one they own: copies the config
+    /// and regenerates the same slate, optionally inviting the source's members.
+    /// Deactivated leagues can't be cloned.
+    /// </summary>
+    [HttpPost("{id}/clone")]
+    [Authorize]
+    public async Task<ActionResult<Guid>> CloneLeague(
+        [FromRoute] Guid id,
+        [FromBody] CloneLeagueRequest request,
+        [FromServices] ICloneLeagueCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var command = new CloneLeagueCommand
+        {
+            UserId = HttpContext.GetCurrentUserId(),
+            SourceLeagueId = id,
+            Name = request.Name,
+            InviteMembers = request.InviteMembers
+        };
+
+        var result = await handler.ExecuteAsync(command, cancellationToken);
+
+        if (result.IsSuccess)
+            return CreatedAtAction(nameof(GetById), new { id = result.Value }, new { id = result.Value });
+
+        return result.ToActionResult();
+    }
+
     [HttpGet("{id}")]
     [Authorize]
     public async Task<ActionResult<LeagueDetailDto>> GetById(
@@ -131,11 +161,16 @@ public class LeagueController : ApiControllerBase
     [Authorize]
     public async Task<ActionResult<List<LeagueSummaryDto>>> GetLeagues(
         [FromServices] IGetUserLeaguesQueryHandler handler,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] bool includeDeactivated = false)
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var query = new GetUserLeaguesQuery { UserId = userId };
+        var query = new GetUserLeaguesQuery
+        {
+            UserId = userId,
+            IncludeDeactivated = includeDeactivated
+        };
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();

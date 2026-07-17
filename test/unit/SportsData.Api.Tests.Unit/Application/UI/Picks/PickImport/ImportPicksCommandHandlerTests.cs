@@ -19,6 +19,9 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Picks.PickImport;
 
 public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHandler>
 {
+    // Both the plan service and the (real) SubmitPickCommandHandler are driven by
+    // this mocked clock, so lock state is fully deterministic regardless of the
+    // calendar.
     private static readonly DateTime NowUtc = new(2026, 7, 15, 12, 0, 0, DateTimeKind.Utc);
 
     // Real plan service + real submit handler so the whole write path is exercised.
@@ -33,7 +36,8 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
         var submitHandler = submitOverride ?? new SubmitPickCommandHandler(
             NullLogger<SubmitPickCommandHandler>.Instance,
             DataContext,
-            new Mock<IEventBus>().Object);
+            new Mock<IEventBus>().Object,
+            dateTime.Object);
 
         return new ImportPicksCommandHandler(
             NullLogger<ImportPicksCommandHandler>.Instance,
@@ -386,10 +390,13 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
         SeedPick(sourceId, userId, failContest, team);
         await DataContext.SaveChangesAsync();
 
+        var realSubmitClock = new Mock<IDateTimeProvider>();
+        realSubmitClock.Setup(x => x.UtcNow()).Returns(NowUtc);
         var realSubmit = new SubmitPickCommandHandler(
             NullLogger<SubmitPickCommandHandler>.Instance,
             DataContext,
-            new Mock<IEventBus>().Object);
+            new Mock<IEventBus>().Object,
+            realSubmitClock.Object);
 
         var submit = new Mock<ISubmitPickCommandHandler>();
         submit.Setup(x => x.ExecuteAsync(

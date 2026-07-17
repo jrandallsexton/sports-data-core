@@ -16,7 +16,7 @@ platforms currently get the kickoff date wrong:
 
   | Sport  | Rule computes | Actual (sourced) | Error |
   |--------|---------------|------------------|-------|
-  | NCAAFB | Sep 5         | **Aug 29**       | 7 days early |
+  | NCAAFB | Sep 5         | **Aug 29**       | 7 days late |
   | NFL    | Sep 10        | **Sep 9** (Wed)  | 1 day late |
 
   NCAAFB has no fixed rule at all; NFL's is a convention the league doesn't

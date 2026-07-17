@@ -96,7 +96,9 @@ export function PrimarySlotOffSeasonCountdown() {
 
   const body = allLive
     ? 'Jump into your leagues and lock in your picks before the next kickoff.'
-    : `Spin up your ${seasonYear ?? ''} pick'em league now so you're ready for Week 1.`;
+    : seasonYear
+      ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week 1.`
+      : "Spin up your pick'em league now so you're ready for Week 1.";
 
   if (loading) {
     return (

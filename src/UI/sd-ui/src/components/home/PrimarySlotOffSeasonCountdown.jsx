@@ -122,7 +122,9 @@ function PrimarySlotOffSeasonCountdown() {
 
   const body = allLive
     ? "Jump into your leagues and lock in your picks before the next kickoff."
-    : `Spin up your ${seasonYear ?? ""} pick'em league now so you're ready for Week 1.`;
+    : seasonYear
+    ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week 1.`
+    : "Spin up your pick'em league now so you're ready for Week 1.";
 
   // CTAs — per-sport when any sport is still upcoming, single collapsed
   // button when all sports are live. For a sport that's already live, the

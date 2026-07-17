@@ -82,11 +82,13 @@ export default function PicksScreen() {
   // useCurrentUser's 5-minute staleTime then serves for the next five minutes.
   // Refetch to heal, once per league so a genuinely week-less league (e.g. a
   // future-season league whose SeasonWeeks aren't sourced yet) can't loop.
-  const healedLeagueRef = useRef<string | null>(null);
+  // A Set, not a single id: with one slot, switching between two week-less
+  // leagues evicts the guard and each switch back refetches again.
+  const healedLeaguesRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (!selectedLeague || seasonWeeks.length > 0) return;
-    if (healedLeagueRef.current === selectedLeague.id) return;
-    healedLeagueRef.current = selectedLeague.id;
+    if (healedLeaguesRef.current.has(selectedLeague.id)) return;
+    healedLeaguesRef.current.add(selectedLeague.id);
     refetchMe();
   }, [selectedLeague, seasonWeeks.length, refetchMe]);
 

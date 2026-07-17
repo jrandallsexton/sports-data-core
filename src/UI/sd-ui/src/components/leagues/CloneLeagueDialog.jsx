@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./CloneLeagueDialog.css";
 
 /**
@@ -10,12 +10,67 @@ function CloneLeagueDialog({ league, submitting, onClose, onConfirm }) {
   const [name, setName] = useState(`${league.name} (Copy)`);
   const [inviteMembers, setInviteMembers] = useState(false);
 
+  const dialogRef = useRef(null);
+
   const trimmed = name.trim();
+
+  // Close on Escape (unless mid-submit), matching ImportPicksDialog.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape" && !submitting) onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [submitting, onClose]);
+
+  // Restore focus to the trigger on close. Focus doesn't need moving IN on open —
+  // the name input autoFocuses, which is both inside the dialog and the field the
+  // user came here to edit.
+  useEffect(() => {
+    const previouslyFocused = document.activeElement;
+    return () => {
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, []);
+
+  // Trap Tab / Shift+Tab within the dialog so keyboard focus can't escape to the
+  // page behind the modal.
+  const handleTabTrap = (e) => {
+    if (e.key !== "Tab") return;
+    const focusables = dialogRef.current?.querySelectorAll(
+      'button:not([disabled]), select:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusables || focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    // The container (tabIndex -1) can hold focus if the input is disabled mid-submit;
+    // treat it as before the first control so Shift+Tab wraps instead of escaping.
+    const atStart =
+      document.activeElement === first || document.activeElement === dialogRef.current;
+    if (e.shiftKey && atStart) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   return (
     <div className="clone-dialog-overlay" onClick={submitting ? undefined : onClose}>
-      <div className="clone-dialog" onClick={(e) => e.stopPropagation()}>
-        <h3 className="clone-dialog-title">Duplicate league</h3>
+      <div
+        className="clone-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="clone-dialog-title"
+        ref={dialogRef}
+        tabIndex={-1}
+        onKeyDown={handleTabTrap}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 id="clone-dialog-title" className="clone-dialog-title">
+          Duplicate league
+        </h3>
         <p className="clone-dialog-message">
           Create a copy of <strong>{league.name}</strong> with the same settings and
           games. Picks aren&rsquo;t copied.

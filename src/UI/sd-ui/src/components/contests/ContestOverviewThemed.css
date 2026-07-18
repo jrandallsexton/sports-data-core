@@ -24,8 +24,8 @@
 }
 
 .contest-team-logo {
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
   margin-bottom: 4px;
 }
@@ -119,7 +119,7 @@
 }
 
 .contest-leader-statline {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
 }
 

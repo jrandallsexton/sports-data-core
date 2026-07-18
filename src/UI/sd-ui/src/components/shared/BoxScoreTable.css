@@ -82,13 +82,20 @@
   background: var(--bg-input) !important;
 }
 
+/* Header cell that carries the status pill; spans the period columns so the
+   pill centers over them. Spacing below separates it from the period row. */
+.boxscore-status-cell {
+  padding-bottom: 6px;
+}
+
 .boxscore-status {
-  color: var(--warning);
+  display: inline-block;
+  color: var(--accent);
   font-weight: 700;
   background: var(--badge-bg);
   border-radius: 6px;
   padding: 4px 10px;
-  margin-bottom: 6px;
+  white-space: nowrap;
 }
 
 @media (max-width: 900px) {

@@ -116,7 +116,7 @@ export default function ContestOverviewPlaylog({ playLog, sport, contestId, leag
                 padding: "14px 18px"
               }}
             >
-              <div style={{ fontWeight: 700, color: 'var(--warning)', marginBottom: 8 }}>{periodPrefix}{quarter}</div>
+              <div style={{ fontWeight: 700, color: 'var(--accent)', marginBottom: 8 }}>{periodPrefix}{quarter}</div>
               <div className="contest-scoring-summary-list">
                 {playsByQuarter[quarter].map((play, idx) => {
                   const logoUrl = getLogoUrl(play.team);
@@ -128,7 +128,7 @@ export default function ContestOverviewPlaylog({ playLog, sport, contestId, leag
                             src={logoUrl}
                             alt={play.team}
                             className="contest-scoring-summary-logo"
-                            style={{ width: 20, height: 20, objectFit: 'contain', verticalAlign: 'middle' }}
+                            style={{ width: 32, height: 32, objectFit: 'contain', verticalAlign: 'middle' }}
                           />
                         </div>
                       )}

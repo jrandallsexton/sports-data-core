@@ -100,6 +100,7 @@ export default function ContestOverviewAdmin({ contestId, sport, league }) {
   // invisible against the .contest-section background. Use --accent for
   // a high-contrast call-to-action treatment that works in both themes.
   const buttonStyle = {
+    width: "100%",
     padding: "10px 24px",
     fontSize: 16,
     fontWeight: 600,
@@ -113,7 +114,7 @@ export default function ContestOverviewAdmin({ contestId, sport, league }) {
   return (
     <div className="contest-section">
       <div className="contest-section-title">Admin</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "stretch" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
         <div>
           <button onClick={handleRefresh} disabled={refreshing} style={buttonStyle}>
             {refreshing ? "Refreshing..." : "Refresh Contest"}

@@ -57,15 +57,15 @@ export default function ContestOverview() {
           {/* Win probability moved up until TeamStats is available */}
           <ContestOverviewWinProb winProbability={winProbability} homeTeam={homeTeam} awayTeam={awayTeam} sport={sport} />
           <ContestOverviewMetrics homeMetrics={homeMetrics} awayMetrics={awayMetrics} homeName={homeTeam?.displayName} awayName={awayTeam?.displayName} />
-          {/* Admin section slots into the second column immediately after
-              Metrics. Hidden from non-admins via the isAdmin gate. */}
-          {isAdmin && (
-            <ContestOverviewAdmin contestId={contestId} sport={sport} league={league} />
-          )}
-          <ContestOverviewInfo info={info} />
         </div>
         <div className="contest-overview-col">
           <ContestOverviewPlaylog playLog={playLog} sport={sport} contestId={contestId} league={league} />
+          <ContestOverviewInfo info={info} />
+          {/* Admin section sits in the third column below Play Log and Info.
+              Hidden from non-admins via the isAdmin gate. */}
+          {isAdmin && (
+            <ContestOverviewAdmin contestId={contestId} sport={sport} league={league} />
+          )}
         </div>
       </div>
     </div>

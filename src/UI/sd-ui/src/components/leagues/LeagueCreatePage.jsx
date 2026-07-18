@@ -185,7 +185,9 @@ const LeagueCreatePage = () => {
       const s = formatDateShort(startsOn);
       const e = formatDateShort(endsOn);
       if (!s && !e) return null;
-      if (s && e) return s === e ? s : `${s}–${e}`; // single day vs range
+      // Single-day is decided by the raw ISO values, not the formatted labels —
+      // the label drops the year, so dates a year apart would format identically.
+      if (s && e) return startsOn === endsOn ? s : `${s}–${e}`;
       return s || e;
     }
     return null; // full season

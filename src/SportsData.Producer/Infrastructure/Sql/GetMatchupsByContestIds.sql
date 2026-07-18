@@ -50,74 +50,48 @@ LEFT JOIN LATERAL (
 LEFT JOIN public."CompetitionTeamOdds" cto ON cto."CompetitionOddsId" = co."Id" AND cto."Side" = 'Home'
 INNER JOIN public."FranchiseSeason" fsAway ON fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fAway ON fAway."Id" = fsAway."FranchiseId"
--- Logo selection order (applies to all eight lateral subqueries below):
---   1. sportdeets-mark row tagged with the requested direction (@Direction)
---   2. any sportdeets-mark row (fallback when requested direction not yet
---      generated for this team — e.g. shields not backfilled)
---   3. anything else (preserves ESPN-sourced behavior for unbackfilled teams)
--- Tie-breaker stays CreatedUtc ASC to match prior behavior on ties.
+-- Logo selection: FAIL-CLOSED (2026-07-18). Every lateral filters to
+-- sportdeets-mark rows only (`Rel @> ARRAY['sportdeets-mark']`) and NEVER falls
+-- through to an ESPN / untagged row — a null result renders a placeholder, never
+-- a licensed logo. See docs/logo-license-audit.md. Order among marks: the
+-- requested @Direction first, then any mark; CreatedUtc ASC breaks ties.
+-- COALESCE(season, franchise) prefers a season mark, else the franchise mark;
+-- because a mark-less season now yields NULL, the franchise mark is correctly
+-- reached (the prior fail-open shadowing is gone). Dark laterals are identical —
+-- marks are theme-agnostic, so the same mark serves both backgrounds.
 LEFT JOIN LATERAL (
   SELECT fl.* FROM public."FranchiseLogo" fl
   WHERE fl."FranchiseId" = fAway."Id"
+    AND fl."Rel" @> ARRAY['sportdeets-mark']::text[]
   ORDER BY
-    CASE
-      WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
-      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
-      ELSE                                                               2
-    END,
+    CASE WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0 ELSE 1 END,
     fl."CreatedUtc" ASC
   LIMIT 1
 ) flAway ON TRUE
--- FranchiseSeason-level logo is preferred; Franchise-level acts as fallback
--- (matches LogoSelectionService.SelectWithFallback convention: season -> franchise).
 LEFT JOIN LATERAL (
   SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
   WHERE fsl."FranchiseSeasonId" = fsAway."Id"
+    AND fsl."Rel" @> ARRAY['sportdeets-mark']::text[]
   ORDER BY
-    CASE
-      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
-      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
-      ELSE                                                                2
-    END,
+    CASE WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0 ELSE 1 END,
     fsl."CreatedUtc" ASC
   LIMIT 1
 ) fslAway ON TRUE
--- Dark-bg variants for theme-aware UI rendering. Same season -> franchise
--- fallback as the default lateral above. Note sportdeets-marks are
--- theme-agnostic (single render serves both backgrounds), so a team with
--- sportdeets-mark rows will surface the same Uri here as in the light lateral
--- above — that is the intended behavior until/unless dedicated dark variants
--- are generated. The IsForDarkBg = TRUE filter only matters for ESPN-sourced
--- rows in the ELSE branch.
 LEFT JOIN LATERAL (
   SELECT fl.* FROM public."FranchiseLogo" fl
   WHERE fl."FranchiseId" = fAway."Id"
-    AND (
-      fl."Rel" @> ARRAY['sportdeets-mark']::text[]
-      OR fl."IsForDarkBg" = TRUE
-    )
+    AND fl."Rel" @> ARRAY['sportdeets-mark']::text[]
   ORDER BY
-    CASE
-      WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
-      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
-      ELSE                                                               2
-    END,
+    CASE WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0 ELSE 1 END,
     fl."CreatedUtc" ASC
   LIMIT 1
 ) flDarkAway ON TRUE
 LEFT JOIN LATERAL (
   SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
   WHERE fsl."FranchiseSeasonId" = fsAway."Id"
-    AND (
-      fsl."Rel" @> ARRAY['sportdeets-mark']::text[]
-      OR fsl."IsForDarkBg" = TRUE
-    )
+    AND fsl."Rel" @> ARRAY['sportdeets-mark']::text[]
   ORDER BY
-    CASE
-      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
-      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
-      ELSE                                                                2
-    END,
+    CASE WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0 ELSE 1 END,
     fsl."CreatedUtc" ASC
   LIMIT 1
 ) fslDarkAway ON TRUE
@@ -136,58 +110,36 @@ INNER JOIN public."Franchise" fHome ON fHome."Id" = fsHome."FranchiseId"
 LEFT JOIN LATERAL (
   SELECT fl.* FROM public."FranchiseLogo" fl
   WHERE fl."FranchiseId" = fHome."Id"
+    AND fl."Rel" @> ARRAY['sportdeets-mark']::text[]
   ORDER BY
-    CASE
-      WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
-      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
-      ELSE                                                               2
-    END,
+    CASE WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0 ELSE 1 END,
     fl."CreatedUtc" ASC
   LIMIT 1
 ) flHome ON TRUE
--- FranchiseSeason-level preferred, Franchise fallback — see Away comment above.
 LEFT JOIN LATERAL (
   SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
   WHERE fsl."FranchiseSeasonId" = fsHome."Id"
+    AND fsl."Rel" @> ARRAY['sportdeets-mark']::text[]
   ORDER BY
-    CASE
-      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
-      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
-      ELSE                                                                2
-    END,
+    CASE WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0 ELSE 1 END,
     fsl."CreatedUtc" ASC
   LIMIT 1
 ) fslHome ON TRUE
--- Dark-bg variants — see Away comment above.
 LEFT JOIN LATERAL (
   SELECT fl.* FROM public."FranchiseLogo" fl
   WHERE fl."FranchiseId" = fHome."Id"
-    AND (
-      fl."Rel" @> ARRAY['sportdeets-mark']::text[]
-      OR fl."IsForDarkBg" = TRUE
-    )
+    AND fl."Rel" @> ARRAY['sportdeets-mark']::text[]
   ORDER BY
-    CASE
-      WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
-      WHEN 'sportdeets-mark' = ANY(fl."Rel")                        THEN 1
-      ELSE                                                               2
-    END,
+    CASE WHEN fl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0 ELSE 1 END,
     fl."CreatedUtc" ASC
   LIMIT 1
 ) flDarkHome ON TRUE
 LEFT JOIN LATERAL (
   SELECT fsl.* FROM public."FranchiseSeasonLogo" fsl
   WHERE fsl."FranchiseSeasonId" = fsHome."Id"
-    AND (
-      fsl."Rel" @> ARRAY['sportdeets-mark']::text[]
-      OR fsl."IsForDarkBg" = TRUE
-    )
+    AND fsl."Rel" @> ARRAY['sportdeets-mark']::text[]
   ORDER BY
-    CASE
-      WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0
-      WHEN 'sportdeets-mark' = ANY(fsl."Rel")                        THEN 1
-      ELSE                                                                2
-    END,
+    CASE WHEN fsl."Rel" @> ARRAY['sportdeets-mark', @Direction]::text[] THEN 0 ELSE 1 END,
     fsl."CreatedUtc" ASC
   LIMIT 1
 ) fslDarkHome ON TRUE

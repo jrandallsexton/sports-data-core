@@ -10,6 +10,7 @@ import TeamNews from "./TeamNews";
 import TeamStatistics from "./TeamStatistics";
 import TeamRoster from "./TeamRoster";
 import TeamLogos from "./TeamLogos";
+import TeamLogo from "../common/TeamLogo";
 
 function TeamCard() {
   const { sport = 'football', league = 'ncaa', slug, seasonYear } = useParams();
@@ -72,8 +73,10 @@ function TeamCard() {
       }}
     >
       <div className="team-header">
-        <img
+        <TeamLogo
           src={theme === 'dark' ? (team.logoUrlDark || team.logoUrl) : (team.logoUrlLight || team.logoUrl)}
+          abbr={team.shortName}
+          color={team.colorPrimary}
           alt={`${team.name} logo`}
           className="team-logo"
         />

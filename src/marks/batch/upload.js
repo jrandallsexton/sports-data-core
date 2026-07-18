@@ -17,14 +17,23 @@ const SDMarks = require('../marks.js');
 // with MLB defaults so the first-pass developer experience still works
 // without the wrapper.
 const SPORT = process.env.SD_SPORT || 'MLB';
+// Data files live in batch/data/. SD_DATA_FILE is a bare filename resolved
+// there (run.ps1 sets it per sport, e.g. franchise-colors-ncaafb.txt).
 const DATA_FILE = path.resolve(
   __dirname,
-  '..',
+  'data',
   process.env.SD_DATA_FILE || 'franchise-colors-mlb.txt'
 );
-// Default matches the year currently in franchise-colors.sql; run.ps1 sets
-// SD_SCOPE explicitly so this default only matters for direct node invocation.
-const SCOPE = process.env.SD_SCOPE || 'franchise-season:2026';
+// Entity grain this run targets. Defaults to 'franchise' so a bare
+// `node upload.js` (no wrapper) is internally consistent with the franchise-grain
+// default data file above — the previous 'franchise-season' default paired with
+// a franchise-grain file yields undefined entity IDs. run.ps1 sets SD_KIND
+// explicitly for either grain. 'franchise' keys marks by FranchiseId (one
+// year-invariant mark per franchise); 'franchise-season' keys by
+// FranchiseSeasonId (legacy per-season pass).
+const KIND = process.env.SD_KIND || 'franchise';
+// Manifest label only. Defaults to the grain; run.ps1 sets SD_SCOPE explicitly.
+const SCOPE = process.env.SD_SCOPE || KIND;
 const OUTPUT_DIR = path.resolve(__dirname, 'output');
 const MANIFEST_DIR = path.join(OUTPUT_DIR, 'manifests');
 const CONTAINER = 'sportdeets-marks';
@@ -82,8 +91,24 @@ async function main() {
   await container.createIfNotExists({ access: 'blob' });
 
   const rows = readTeams(DATA_FILE);
+
+  // Pre-flight: every row must carry the entity ID that KIND keys on, BEFORE any
+  // blob is written. A grain/data-file mismatch (e.g. franchise-season KIND
+  // against a franchise-grain file) would otherwise yield undefined IDs and
+  // stamp every mark onto one shared blob key. Fail clearly instead.
+  const idField = KIND === 'franchise' ? 'FranchiseId' : 'FranchiseSeasonId';
+  const missingIdCount = rows.filter((r) => !r[idField]).length;
+  if (missingIdCount > 0) {
+    console.error(
+      `SD_KIND='${KIND}' keys on "${idField}", but ${missingIdCount} of ${rows.length} ` +
+      `rows in ${path.basename(DATA_FILE)} lack it — the data file's grain does not ` +
+      `match SD_KIND. Aborting before upload.`
+    );
+    process.exit(1);
+  }
+
   console.log(`Loaded ${rows.length} teams from ${path.basename(DATA_FILE)}`);
-  console.log(`Target: ${targetEnv} / container "${CONTAINER}" / scope ${SCOPE}`);
+  console.log(`Target: ${targetEnv} / container "${CONTAINER}" / scope ${SCOPE} / kind ${KIND}`);
   console.log(`Uploading ${rows.length * DIRECTIONS.length} blobs...\n`);
 
   const entries = [];
@@ -102,8 +127,13 @@ async function main() {
       secondary: (altHex && altHex !== 'NULL') ? '#' + altHex : null
     };
 
+    // The entity a mark is keyed to depends on the run grain: FranchiseId for a
+    // franchise-level run, FranchiseSeasonId for a season-level one. The blob
+    // path and idempotency hash both key off it, so re-runs are stable per grain.
+    const entityId = KIND === 'franchise' ? row.FranchiseId : row.FranchiseSeasonId;
+
     for (const direction of DIRECTIONS) {
-      const blobPath = `franchise-season/${direction}/${row.FranchiseSeasonId}.png`;
+      const blobPath = `${KIND}/${direction}/${entityId}.png`;
       try {
         const png = renderPng(direction, team);
         const blob = container.getBlockBlobClient(blobPath);
@@ -111,15 +141,15 @@ async function main() {
           blobHTTPHeaders: { blobContentType: 'image/png' }
         });
         entries.push({
-          kind: 'franchise-season',
+          kind: KIND,
           direction,
-          entityId: row.FranchiseSeasonId,
+          entityId,
           franchiseId: row.FranchiseId,
           slug: row.Slug,
           sport: SPORT,
           blobPath,
           blobUrl: blob.url,
-          originalUrlHash: syntheticHash(direction, row.FranchiseSeasonId),
+          originalUrlHash: syntheticHash(direction, entityId),
           width: SIZE,
           height: SIZE,
           rel: ['sportdeets-mark', direction]

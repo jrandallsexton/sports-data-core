@@ -67,6 +67,52 @@ const SPORT_COPY = {
   },
 };
 
+// Suggested-description building blocks. A description is trivially skipped at
+// create time but is what makes a league legible on YourLeaguesCard for members
+// in several leagues — so we offer a one-tap, non-destructive suggestion derived
+// from the sport + pick type the commissioner already chose. Friendlier sport
+// phrasing than SPORT_COPY.label ("College football" vs "NCAA").
+const SPORT_DESC_PHRASE = {
+  [SPORT_NCAA]: "NCAAFB",
+  [SPORT_NFL]: "NFL",
+  [SPORT_MLB]: "MLB",
+};
+
+const PICK_TYPE_DESC_PHRASE = {
+  StraightUp: "SU",
+  AgainstTheSpread: "ATS",
+  OverUnder: "O/U",
+};
+
+// "Aug 29" from a YYYY-MM-DD date-input value. Parsed at local midnight (append
+// T00:00:00) so the date input's calendar day isn't shifted back a day by
+// UTC-parsing. Returns null for empty input.
+function formatDateShort(iso) {
+  if (!iso) return null;
+  const d = new Date(`${iso}T00:00:00`);
+  return Number.isNaN(d.getTime())
+    ? null
+    : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+// Returns the suggested description as a compact tag, enriched by whatever's
+// chosen so far. Gated on sport alone (always set) so it's robust; pick type /
+// confidence / window refine it. Terse by design — it's a glanceable
+// distinguisher on the home card, not a sentence: e.g. "NCAAFB ATS w/Confidence",
+// "MLB SU · Aug 29". The Description field lives at the BOTTOM of the form, so by
+// the time the user reaches it every input is set and the tag is complete; that
+// placement also primes the writer. `windowLabel` is a pre-formatted
+// span/day/week string, or null for full season.
+function buildSuggestedDescription(sport, pickType, useConfidencePoints, windowLabel) {
+  const sportPhrase = SPORT_DESC_PHRASE[sport];
+  if (!sportPhrase) return null;
+  const pickPhrase = PICK_TYPE_DESC_PHRASE[pickType]; // may be undefined pre-selection
+  let tag = pickPhrase ? `${sportPhrase} ${pickPhrase}` : sportPhrase;
+  if (useConfidencePoints) tag += " w/Confidence";
+  if (windowLabel) tag += ` · ${windowLabel}`;
+  return tag;
+}
+
 const DURATION_FULL = "full";
 const DURATION_WEEKS = "weeks";
 const DURATION_DATES = "dates";
@@ -90,6 +136,9 @@ const LeagueCreatePage = () => {
   const [sport, setSport] = useState(initialSport);
   const [leagueName, setLeagueName] = useState("");
   const [description, setDescription] = useState("");
+  // True once the user types in the description field, which freezes the
+  // auto-suggestion so their input is never overwritten. See effectiveDescription.
+  const [descriptionEdited, setDescriptionEdited] = useState(false);
   const [pickType, setPickType] = useState("");
   const [tiebreaker, setTiebreaker] = useState("");
   const [useConfidencePoints, setUseConfidencePoints] = useState(false);
@@ -123,6 +172,43 @@ const LeagueCreatePage = () => {
   const isNcaa = sport === SPORT_NCAA;
   const isMlbAvailable = userDto?.isAdmin === true;
   const copy = SPORT_COPY[sport];
+
+  // Human-readable window for the suggested description: a single day, a date
+  // range, a single week, or a week range. null for a full-season league.
+  const descriptionWindowLabel = (() => {
+    if (durationMode === DURATION_WEEKS) {
+      return startWeek === endWeek
+        ? `Week ${startWeek}`
+        : `Weeks ${startWeek}–${endWeek}`;
+    }
+    if (durationMode === DURATION_DATES) {
+      const s = formatDateShort(startsOn);
+      const e = formatDateShort(endsOn);
+      if (!s && !e) return null;
+      // Single-day is decided by the raw ISO values, not the formatted labels —
+      // the label drops the year, so dates a year apart would format identically.
+      if (s && e) return startsOn === endsOn ? s : `${s}–${e}`;
+      return s || e;
+    }
+    return null; // full season
+  })();
+
+  // The suggested description, recomputed each render from every parameter
+  // chosen so far (sport/pickType/confidence/window).
+  const suggestedDescription = buildSuggestedDescription(
+    sport,
+    pickType,
+    useConfidencePoints,
+    descriptionWindowLabel
+  );
+
+  // Prefill the description field with the suggestion by default, but stop
+  // tracking once the user edits it — so the field is populated (readily
+  // visible) without ever clobbering what someone deliberately types. The
+  // effective value is what both the field shows and the submit payload sends.
+  const effectiveDescription = descriptionEdited
+    ? description
+    : suggestedDescription ?? "";
 
   useEffect(() => {
     if (!isNcaa) return;
@@ -207,7 +293,7 @@ const LeagueCreatePage = () => {
 
     const formState = {
       leagueName,
-      description,
+      description: effectiveDescription,
       pickType,
       tiebreaker,
       useConfidencePoints,
@@ -319,17 +405,6 @@ const LeagueCreatePage = () => {
               onChange={(e) => setLeagueName(e.target.value)}
               placeholder={copy.namePlaceholder}
               required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="description">Description (optional)</label>
-            <textarea
-              id="description"
-              name="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={copy.descPlaceholder}
             />
           </div>
 
@@ -569,6 +644,24 @@ const LeagueCreatePage = () => {
             </div>
           </div>
 
+          {/* Description is intentionally last: it's optional flavor, and its
+              suggested value derives from the parameters chosen above — so by the
+              time the user reaches it, the field is pre-filled with a fully
+              informed suggestion the user can accept, edit, or clear. */}
+          <div className="form-group">
+            <label htmlFor="description">Description (optional)</label>
+            <textarea
+              id="description"
+              name="description"
+              value={effectiveDescription}
+              onChange={(e) => {
+                setDescriptionEdited(true);
+                setDescription(e.target.value);
+              }}
+              placeholder={copy.descPlaceholder}
+            />
+          </div>
+
           <button type="submit" className="submit-button">
             Create League
           </button>
@@ -599,7 +692,7 @@ const LeagueCreatePage = () => {
                 {useConfidencePoints ? "Yes" : "No"}
               </li>
               <li>
-                <strong>Description:</strong> {description || "None"}
+                <strong>Description:</strong> {effectiveDescription || "None"}
               </li>
               <li>
                 <strong>Pick Deadline:</strong> 5 minutes before kickoff

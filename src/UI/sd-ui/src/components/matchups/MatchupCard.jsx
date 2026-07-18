@@ -170,6 +170,8 @@ function MatchupCard({
         {/* Away Team Row */}
         <TeamRow
           teamName={matchup.away}
+          teamShort={matchup.awayShort}
+          teamColor={matchup.awayColor}
           teamSlug={matchup.awaySlug}
           logoUri={awayLogoSrc}
           rank={matchup.awayRank}
@@ -191,6 +193,8 @@ function MatchupCard({
         {/* Home Team Row */}
         <TeamRow
           teamName={matchup.home}
+          teamShort={matchup.homeShort}
+          teamColor={matchup.homeColor}
           teamSlug={matchup.homeSlug}
           logoUri={homeLogoSrc}
           rank={matchup.homeRank}

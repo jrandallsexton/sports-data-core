@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { FaSearchPlus, FaSearchMinus } from "react-icons/fa";
 import { teamLink, resolveSportLeague } from '../../utils/sportLinks';
 import MiniSchedule from "./MiniSchedule";
+import TeamLogo from "../common/TeamLogo";
 
 /**
  * TeamRow component - displays team information, record, and optional schedule
@@ -24,6 +25,8 @@ import MiniSchedule from "./MiniSchedule";
  */
 function TeamRow({
   teamName,
+  teamShort,
+  teamColor,
   teamSlug,
   rank,
   logoUri,
@@ -49,13 +52,13 @@ function TeamRow({
     <>
       <div className="team-row">
         <div className="team-info">
-          {logoUri && (
-            <img
-              src={logoUri}
-              alt={`${teamName} logo`}
-              className="matchup-logo"
-            />
-          )}
+          <TeamLogo
+            src={logoUri}
+            abbr={teamShort}
+            color={teamColor}
+            alt={`${teamName} logo`}
+            className="matchup-logo"
+          />
           <div className="team-details">
             <div className="team-name-row">
               {rank && (

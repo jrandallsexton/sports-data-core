@@ -35,11 +35,17 @@ param(
   [ValidateSet('Mlb','Ncaafb','Nfl')]
   [string]$Sport = 'Mlb',
 
-  # 'Teams' (default) runs upload.js / insert.js against franchise-colors data
-  # and writes FranchiseSeasonLogo rows. 'Athletes' runs upload-athletes.js /
-  # insert-athletes.js against athletes-{sport} data and writes AthleteImage.
+  # 'Teams' (default) runs upload.js / insert.js against franchise-colors data.
+  # 'Athletes' runs upload-athletes.js / insert-athletes.js against
+  # athletes-{sport} data and writes AthleteImage.
   [ValidateSet('Teams','Athletes')]
   [string]$Target = 'Teams',
+
+  # Teams grain. 'Franchise' (default, go-forward) writes one year-invariant mark
+  # per franchise into FranchiseLogo. 'FranchiseSeason' is the legacy per-season
+  # pass (FranchiseSeasonLogo). Ignored for -Target Athletes.
+  [ValidateSet('Franchise','FranchiseSeason')]
+  [string]$Grain = 'Franchise',
 
   [string]$Scope,
 
@@ -107,7 +113,13 @@ switch ($Sport) {
 
 if ($Target -eq 'Teams') {
   $env:SD_DATA_FILE = "franchise-colors-$sportLower.txt"
-  if (-not $Scope) { $Scope = 'franchise-season:2026' }
+  if ($Grain -eq 'Franchise') {
+    $env:SD_KIND = 'franchise'
+    if (-not $Scope) { $Scope = 'franchise' }
+  } else {
+    $env:SD_KIND = 'franchise-season'
+    if (-not $Scope) { $Scope = 'franchise-season:2026' }
+  }
 } else {
   # Athletes
   $env:SD_DATA_FILE = "athletes-$sportLower.txt"
@@ -117,9 +129,9 @@ $env:SD_SCOPE = $Scope
 
 $env:SD_TARGET_ENV = $Environment
 
-Write-Host "Phase: $Phase  Environment: $Environment  Sport: $Sport  Target: $Target" -ForegroundColor Cyan
+Write-Host "Phase: $Phase  Environment: $Environment  Sport: $Sport  Target: $Target  Grain: $Grain" -ForegroundColor Cyan
 Write-Host "PG: $env:PG_DATABASE @ $env:PG_HOST" -ForegroundColor Cyan
-Write-Host "Data file: $env:SD_DATA_FILE  Scope: $env:SD_SCOPE" -ForegroundColor Cyan
+Write-Host "Data file: $env:SD_DATA_FILE  Kind: $env:SD_KIND  Scope: $env:SD_SCOPE" -ForegroundColor Cyan
 
 # Script picker: target × phase → which Node script runs.
 $scriptName = if ($Target -eq 'Teams') {

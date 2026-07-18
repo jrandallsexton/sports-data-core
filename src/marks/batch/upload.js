@@ -17,14 +17,21 @@ const SDMarks = require('../marks.js');
 // with MLB defaults so the first-pass developer experience still works
 // without the wrapper.
 const SPORT = process.env.SD_SPORT || 'MLB';
+// Data files live in batch/data/. SD_DATA_FILE is a bare filename resolved
+// there (run.ps1 sets it per sport, e.g. franchise-colors-ncaafb.txt).
 const DATA_FILE = path.resolve(
   __dirname,
-  '..',
+  'data',
   process.env.SD_DATA_FILE || 'franchise-colors-mlb.txt'
 );
 // Default matches the year currently in franchise-colors.sql; run.ps1 sets
 // SD_SCOPE explicitly so this default only matters for direct node invocation.
 const SCOPE = process.env.SD_SCOPE || 'franchise-season:2026';
+// Entity grain this run targets. 'franchise-season' (default, legacy) keys marks
+// by FranchiseSeasonId; 'franchise' (the go-forward backfill) keys them by
+// FranchiseId — one year-invariant mark per franchise. The franchise-grain data
+// file (franchise-colors.sql) carries FranchiseId but no FranchiseSeasonId.
+const KIND = process.env.SD_KIND || 'franchise-season';
 const OUTPUT_DIR = path.resolve(__dirname, 'output');
 const MANIFEST_DIR = path.join(OUTPUT_DIR, 'manifests');
 const CONTAINER = 'sportdeets-marks';
@@ -102,8 +109,13 @@ async function main() {
       secondary: (altHex && altHex !== 'NULL') ? '#' + altHex : null
     };
 
+    // The entity a mark is keyed to depends on the run grain: FranchiseId for a
+    // franchise-level run, FranchiseSeasonId for a season-level one. The blob
+    // path and idempotency hash both key off it, so re-runs are stable per grain.
+    const entityId = KIND === 'franchise' ? row.FranchiseId : row.FranchiseSeasonId;
+
     for (const direction of DIRECTIONS) {
-      const blobPath = `franchise-season/${direction}/${row.FranchiseSeasonId}.png`;
+      const blobPath = `${KIND}/${direction}/${entityId}.png`;
       try {
         const png = renderPng(direction, team);
         const blob = container.getBlockBlobClient(blobPath);
@@ -111,15 +123,15 @@ async function main() {
           blobHTTPHeaders: { blobContentType: 'image/png' }
         });
         entries.push({
-          kind: 'franchise-season',
+          kind: KIND,
           direction,
-          entityId: row.FranchiseSeasonId,
+          entityId,
           franchiseId: row.FranchiseId,
           slug: row.Slug,
           sport: SPORT,
           blobPath,
           blobUrl: blob.url,
-          originalUrlHash: syntheticHash(direction, row.FranchiseSeasonId),
+          originalUrlHash: syntheticHash(direction, entityId),
           width: SIZE,
           height: SIZE,
           rel: ['sportdeets-mark', direction]

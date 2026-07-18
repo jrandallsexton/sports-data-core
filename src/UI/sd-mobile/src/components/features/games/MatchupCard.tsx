@@ -105,6 +105,12 @@ function TeamRow({
   const isHome = side === 'home';
   const name = isHome ? matchup.home : matchup.away;
   const abbr = isHome ? matchup.homeShort : matchup.awayShort;
+  // Team color for the license-free logo placeholder (shown when a team has no
+  // generated mark — logos are fail-closed, so no licensed logo is ever served).
+  const rawColor = isHome ? matchup.homeColor : matchup.awayColor;
+  const teamColor = rawColor
+    ? (rawColor.startsWith('#') ? rawColor : `#${rawColor}`)
+    : null;
   // Dark-mode logo swap: some teams have a *Dark variant for use against
   // a dark surface (e.g. dark-on-white wordmarks that disappear against
   // theme.card in dark mode). Falls back to the default variant when no
@@ -152,8 +158,8 @@ function TeamRow({
         {logoUrl ? (
           <Image source={{ uri: logoUrl }} style={styles.logo} resizeMode="contain" />
         ) : (
-          <View style={[styles.logoPlaceholder, { backgroundColor: theme.border }]}>
-            <Text style={{ color: theme.textMuted, fontSize: 11, fontWeight: '700' }}>
+          <View style={[styles.logoPlaceholder, { backgroundColor: teamColor ?? theme.border }]}>
+            <Text style={{ color: teamColor ? '#fff' : theme.textMuted, fontSize: 11, fontWeight: '700' }}>
               {abbr.slice(0, 3)}
             </Text>
           </View>

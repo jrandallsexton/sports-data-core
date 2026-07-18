@@ -132,6 +132,50 @@ const chunkInto = <T,>(arr: T[], size: number): T[][] => {
 const DURATION_FULL = 'full';
 const DURATION_DATES = 'dates';
 
+// Suggested-description building blocks — mirrors sd-ui's LeagueCreatePage. A
+// compact, glanceable tag prefilled into the (optional) description field so a
+// commissioner doesn't leave it blank; it's what makes leagues legible on the
+// home YourLeaguesCard for members in several leagues. Terse by design:
+// "NCAAFB ATS w/Confidence", "MLB SU · Aug 29".
+const SPORT_DESC_PHRASE: Record<SportKey, string> = {
+  FootballNcaa: 'NCAAFB',
+  FootballNfl: 'NFL',
+  BaseballMlb: 'MLB',
+};
+
+const PICK_TYPE_DESC_PHRASE: Record<string, string> = {
+  StraightUp: 'SU',
+  AgainstTheSpread: 'ATS',
+  OverUnder: 'O/U',
+};
+
+// "Aug 29" from a YYYY-MM-DD value. Parsed at local midnight so the calendar day
+// isn't shifted back by a UTC parse. null for empty input.
+function formatDateShort(iso: string): string | null {
+  if (!iso) return null;
+  const d = new Date(`${iso}T00:00:00`);
+  return Number.isNaN(d.getTime())
+    ? null
+    : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// The suggested tag, enriched by whatever's chosen so far. Gated on sport alone
+// (always set) so it's robust; pick type / confidence / window refine it.
+// `windowLabel` is a pre-formatted day/range string, or null for full season.
+function buildSuggestedDescription(
+  sport: SportKey,
+  pickType: string,
+  useConfidencePoints: boolean,
+  windowLabel: string | null,
+): string {
+  const sportPhrase = SPORT_DESC_PHRASE[sport];
+  const pickPhrase = PICK_TYPE_DESC_PHRASE[pickType];
+  let tag = pickPhrase ? `${sportPhrase} ${pickPhrase}` : sportPhrase;
+  if (useConfidencePoints) tag += ' w/Confidence';
+  if (windowLabel) tag += ` · ${windowLabel}`;
+  return tag;
+}
+
 const schema = z
   .object({
     sport: z.enum(['FootballNcaa', 'FootballNfl', 'BaseballMlb']),
@@ -374,6 +418,8 @@ export default function CreateLeagueScreen() {
   const sport = watch('sport');
   const divisionSlugs = watch('divisionSlugs');
   const durationMode = watch('durationMode');
+  const pickType = watch('pickType');
+  const useConfidencePoints = watch('useConfidencePoints');
   // Watched for two reasons: (1) the end-date picker clamps its
   // minimumDate to startsOn so the user can't pick an end earlier than
   // the start, and (2) if the user moves startsOn *past* an already-set
@@ -389,6 +435,32 @@ export default function CreateLeagueScreen() {
       setValue('endsOn', startsOn, { shouldDirty: true, shouldValidate: true });
     }
   }, [durationMode, startsOn, endsOn, setValue]);
+
+  // Suggested description window: single day, a date range, or null (full season).
+  const descriptionWindowLabel = (() => {
+    if (durationMode !== DURATION_DATES) return null;
+    const s = formatDateShort(startsOn);
+    const e = formatDateShort(endsOn);
+    if (!s && !e) return null;
+    if (s && e) return s === e ? s : `${s}–${e}`;
+    return s || e;
+  })();
+
+  const suggestedDescription = buildSuggestedDescription(
+    sport,
+    pickType,
+    useConfidencePoints,
+    descriptionWindowLabel,
+  );
+
+  // Prefill the description with the suggested tag until the user edits it, so
+  // the field is populated without ever clobbering deliberate input. RHF holds
+  // the value, so the submit payload picks it up automatically.
+  const descriptionEditedRef = useRef(false);
+  useEffect(() => {
+    if (descriptionEditedRef.current) return;
+    setValue('description', suggestedDescription);
+  }, [suggestedDescription, setValue]);
 
   // Today as 'YYYY-MM-DD' for the date-picker floors. Memoized so re-renders
   // during the form session don't create a new Date object per render, but
@@ -593,41 +665,6 @@ export default function CreateLeagueScreen() {
             />
             {errors.name && (
               <Text style={[styles.fieldError, { color: theme.error }]}>{errors.name.message}</Text>
-            )}
-          </View>
-
-          {/* Description */}
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: theme.textMuted }]}>Description (optional)</Text>
-            <Controller
-              control={control}
-              name="description"
-              render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[
-                    styles.input,
-                    styles.multiline,
-                    {
-                      backgroundColor: theme.card,
-                      borderColor: errors.description ? theme.error : theme.border,
-                      color: theme.text,
-                    },
-                  ]}
-                  placeholder={copy.descPlaceholder}
-                  placeholderTextColor={theme.textMuted}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  value={value ?? ''}
-                  maxLength={500}
-                  multiline
-                  textAlignVertical="top"
-                />
-              )}
-            />
-            {errors.description && (
-              <Text style={[styles.fieldError, { color: theme.error }]}>
-                {errors.description.message}
-              </Text>
             )}
           </View>
 
@@ -886,6 +923,47 @@ export default function CreateLeagueScreen() {
               </View>
             )}
           />
+
+          {/* Description last: optional flavor, and its suggested tag derives
+              from the parameters chosen above — so by the time the user reaches
+              it, the field is prefilled with a fully informed suggestion they
+              can accept, edit, or clear. */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Description (optional)</Text>
+            <Controller
+              control={control}
+              name="description"
+              render={({ field: { onChange, value, onBlur } }) => (
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.multiline,
+                    {
+                      backgroundColor: theme.card,
+                      borderColor: errors.description ? theme.error : theme.border,
+                      color: theme.text,
+                    },
+                  ]}
+                  placeholder={copy.descPlaceholder}
+                  placeholderTextColor={theme.textMuted}
+                  onChangeText={(text) => {
+                    descriptionEditedRef.current = true;
+                    onChange(text);
+                  }}
+                  onBlur={onBlur}
+                  value={value ?? ''}
+                  maxLength={500}
+                  multiline
+                  textAlignVertical="top"
+                />
+              )}
+            />
+            {errors.description && (
+              <Text style={[styles.fieldError, { color: theme.error }]}>
+                {errors.description.message}
+              </Text>
+            )}
+          </View>
 
           <Button
             title="Create League"

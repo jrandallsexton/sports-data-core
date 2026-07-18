@@ -82,15 +82,15 @@
   min-width: 120px;
   max-width: 160px;
 .contest-team-logo-wrap {
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--text-inverse); /* white background looks best for most logos */
+  /* No background box: generated roundels are transparent, self-contained,
+     team-colored marks — a bg/border rendered as a black square in dark mode.
+     Show the mark bare, matching mobile. */
   border-radius: 8px;
-  padding: 4px;
-  border: 1px solid var(--border-strong);
 }
   font-size: 1.1rem;
   font-weight: 600;
@@ -140,10 +140,18 @@
   margin-bottom: 8px;
 }
 
-.contest-leaders-stacked {
+/* Two columns: away | home. */
+.contest-leaders-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.contest-leaders-column {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .contest-leader-item {
@@ -154,22 +162,26 @@
   padding: 4px 0;
 }
 
+/* Player name on top (prominent), stat line smaller on the line below. */
 .contest-leader-player {
-  font-weight: 600;
+  font-size: 1.02rem;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
 }
 
 .contest-leader-statline {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .contest-leader-team-logo {
-  width: 18px;
-  height: 18px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
   flex-shrink: 0;
 }
@@ -194,17 +206,16 @@
 }
 
 .contest-scoring-summary-logo-wrap {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--text-inverse); /* white background looks best for most logos */
+  /* No background box: transparent roundel, matches the header/mobile. A
+     bg/border rendered as a black square in dark mode. */
   border-radius: 6px;
-  padding: 3px;
   margin-right: 8px;
   flex: 0 0 auto;
-  border: 1px solid var(--border-strong);
 }
 
 .contest-scoring-summary-logo {
@@ -213,7 +224,7 @@
 
 .contest-scoring-summary-quarter {
   font-weight: 700;
-  color: var(--warning);
+  color: var(--accent);
 }
 
 .contest-scoring-summary-team {
@@ -423,7 +434,7 @@
   color: var(--info);
 }
 .contest-analysis-actual strong {
-  color: var(--warning);
+  color: var(--accent);
 }
 .contest-analysis-notes strong {
   color: var(--text-secondary);
@@ -451,7 +462,7 @@
 .contest-section-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--warning);
+  color: var(--accent);
   margin-bottom: 14px;
   letter-spacing: 1px;
   border-bottom: 1px solid var(--bg-input);
@@ -496,7 +507,7 @@
 .contest-boxscore-section th {
   font-weight: 700;
   background: var(--badge-bg);
-  color: var(--warning);
+  color: var(--accent);
 }
 .contest-boxscore-section tr:last-child td {
   border-bottom: none;
@@ -560,22 +571,20 @@
   text-align: center;
 }
 .contest-team-logo {
-  width: 40px;
-  height: 40px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
   margin-bottom: 0;
 }
 
 .contest-team-logo-wrap {
-  width: 48px;
-  height: 48px;
+  width: 60px;
+  height: 60px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--text-inverse);
+  /* No background box — see note above (transparent roundel, matches mobile). */
   border-radius: 8px;
-  padding: 4px;
-  border: 1px solid var(--border-strong);
 }
 @media (max-width: 900px) {
   .contest-header-flex {

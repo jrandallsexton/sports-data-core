@@ -17,17 +17,13 @@ export default function ContestOverviewLeaders({ homeTeam, awayTeam, leaders }) 
             className="contest-leader-team-logo"
           />
         )}
-        {l.playerHeadshotUrl && (
-          <img
-            src={l.playerHeadshotUrl}
-            alt={l.playerName}
-            style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-          />
-        )}
+        {/* Player headshot removed: ESPN-sourced player headshots are licensed
+            and can't ship (same constraint as team logos). NCAAFB still surfaced
+            them here. Team logo + name/stat line remain. */}
         <div style={{ minWidth: 0 }}>
-          <span className="contest-leader-player">{l.playerName}</span>
+          <div className="contest-leader-player">{l.playerName}</div>
           {l.statLine && (
-            <span className="contest-leader-statline"> - {l.statLine}</span>
+            <div className="contest-leader-statline">{l.statLine}</div>
           )}
         </div>
       </div>
@@ -57,11 +53,19 @@ export default function ContestOverviewLeaders({ homeTeam, awayTeam, leaders }) 
               <div className="contest-leader-category-header">
                 {cat.categoryName}
               </div>
-              <div className="contest-leaders-stacked">
-                {cat.away?.leaders?.length > 0 &&
-                  cat.away.leaders.map((l, i) => <React.Fragment key={`a${i}`}>{renderPlayer(l, awayTeam)}</React.Fragment>)}
-                {cat.home?.leaders?.length > 0 &&
-                  cat.home.leaders.map((l, i) => <React.Fragment key={`h${i}`}>{renderPlayer(l, homeTeam)}</React.Fragment>)}
+              {/* Two columns: away | home. Leaders aren't sequential like the
+                  play log, so side-by-side reads more intuitively than a stack. */}
+              <div className="contest-leaders-columns">
+                <div className="contest-leaders-column">
+                  {cat.away?.leaders?.map((l, i) => (
+                    <React.Fragment key={`a${i}`}>{renderPlayer(l, awayTeam)}</React.Fragment>
+                  ))}
+                </div>
+                <div className="contest-leaders-column">
+                  {cat.home?.leaders?.map((l, i) => (
+                    <React.Fragment key={`h${i}`}>{renderPlayer(l, homeTeam)}</React.Fragment>
+                  ))}
+                </div>
               </div>
             </div>
           ))

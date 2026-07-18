@@ -40,9 +40,18 @@ export default function BoxScoreTable({
 
   return (
     <div className={`boxscore-table-wrapper compact${wideClass}`}>
-      <div className="boxscore-status">{statusLabel}</div>
       <table className={`boxscore-table compact${wideClass}`}>
         <thead>
+          {/* Status ("Final" / "Live · B5") spans only the period columns so it
+              centers over them regardless of period count (football 4, MLB 9+) —
+              the empty cells hold the team-label and Total columns. */}
+          <tr>
+            <th aria-hidden="true"></th>
+            <th colSpan={periodScores.length} className="boxscore-status-cell">
+              <span className="boxscore-status">{statusLabel}</span>
+            </th>
+            <th aria-hidden="true"></th>
+          </tr>
           <tr>
             <th></th>
             {periodScores.map((p) => (

@@ -1,3 +1,8 @@
+# Build number doubles as the app version shown in the footer (injected as the
+# REACT_APP_VERSION build-arg below). $(Rev:.r) is the per-day build counter,
+# starting at .1 — e.g. 2026.07.18.1, 2026.07.18.2.
+name: $(Date:yyyy.MM.dd)$(Rev:.r)
+
 trigger:
   branches:
     include:
@@ -121,7 +126,7 @@ stages:
               dockerfile: $(dockerfilePath)
               containerRegistry: $(dockerRegistryServiceConnection)
               buildContext: '$(Build.SourcesDirectory)/src/UI/sd-ui'
-              arguments: '--build-arg REACT_APP_API_BASE_URL=https://api.sportdeets.com --build-arg REACT_APP_ENVIRONMENT=production --build-arg REACT_APP_PROD_URL=https://sportdeets.com --build-arg REACT_APP_GOOGLE_MAPS_API_KEY=$(REACT_APP_GOOGLE_MAPS_API_KEY)'
+              arguments: '--build-arg REACT_APP_API_BASE_URL=https://api.sportdeets.com --build-arg REACT_APP_ENVIRONMENT=production --build-arg REACT_APP_PROD_URL=https://sportdeets.com --build-arg REACT_APP_GOOGLE_MAPS_API_KEY=$(REACT_APP_GOOGLE_MAPS_API_KEY) --build-arg REACT_APP_VERSION=$(Build.BuildNumber)'
               tags: |
                 $(tag)
                 latest

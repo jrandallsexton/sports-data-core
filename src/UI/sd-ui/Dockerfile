@@ -20,6 +20,11 @@ ARG REACT_APP_API_BASE_URL
 ARG REACT_APP_ENVIRONMENT
 ARG REACT_APP_PROD_URL
 ARG REACT_APP_GOOGLE_MAPS_API_KEY
+# Optional explicit version — e.g. pass --build-arg REACT_APP_VERSION=<image-tag>
+# from whatever builds this image. Left unset it falls back to a UTC build
+# timestamp (resolved in the build RUN below). Surfaced in the footer via
+# process.env.REACT_APP_VERSION (LandingFooter.jsx).
+ARG REACT_APP_VERSION
 
 # Set as environment variables for the build
 ENV REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL}
@@ -27,8 +32,12 @@ ENV REACT_APP_ENVIRONMENT=${REACT_APP_ENVIRONMENT}
 ENV REACT_APP_PROD_URL=${REACT_APP_PROD_URL}
 ENV REACT_APP_GOOGLE_MAPS_API_KEY=${REACT_APP_GOOGLE_MAPS_API_KEY}
 
-# Build the app directly with react-scripts (env vars already set above)
-RUN npx react-scripts build
+# Build the app. Resolve the version in-shell (not via ENV) so an explicit
+# REACT_APP_VERSION wins, but an unset one defaults to a UTC build timestamp
+# (YYYY.MM.DD.HHMM) — so the footer always shows something meaningful with no
+# change required to whatever builds this image.
+RUN export REACT_APP_VERSION="${REACT_APP_VERSION:-$(date -u +%Y.%m.%d.%H%M)}" && \
+    npx react-scripts build
 
 # Production stage
 FROM nginx:1.28-alpine

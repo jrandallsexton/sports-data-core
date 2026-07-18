@@ -238,14 +238,14 @@ WHERE NOT EXISTS (
         WHERE fl."FranchiseId" = f."Id" AND 'sportdeets-mark' = ANY(fl."Rel"));
 ```
 
-## Decisions pending
+## Decisions (resolved 2026-07-18)
 
-- **Fail closed?** — recommended yes (see fix plan). Confirms the guarantee
-  regardless of backfill completeness.
+- **Fail closed?** — YES. The only hard guarantee no licensed logo can render;
+  implemented in A + B.
 - **Placeholder design** — team-color circle + abbreviation (client-side, fully
-  license-free) vs. a static neutral asset.
-- **Backfill scope** — run Q6/Q7 to size it; decide whether to block launch on
-  full coverage or ship fail-closed + placeholder now and backfill after.
+  license-free); implemented in C.
+- **Backfill scope** — generate one mark per franchise for ALL franchises
+  (Option 2, franchise-level), run in prod for all three sports.
 
 ---
 
@@ -313,18 +313,23 @@ placeholder) is the remaining safety net for teams with no mark.
 
 - Data backfill: **DONE** — franchise-level marks generated + inserted for all
   three sports in prod (6 script runs, zero errors).
-- A (`LogoSelectionService` fail-closed): **DRAFTED** — + 9 unit tests; full
-  Producer suite green (502 passed).
-- B (`GetMatchupsByContestIds.sql` marks-only): **DRAFTED**.
-- C (frontend placeholders): pending.
+- A (`LogoSelectionService` fail-closed): **DONE** — + 9 unit tests; full Producer
+  suite green (502 passed).
+- B (`GetMatchupsByContestIds.sql` marks-only): **DONE**.
+- C (frontend placeholders): **DONE** — reusable web `TeamLogo` wired into the
+  matchup cards + TeamCard team-header; mobile `MatchupCard` placeholder upgraded
+  to team-color.
 
-### Sequencing
+All of A + B + C ship together in one PR (fix/logo-compliance-fail-closed).
 
-Backfill (below) → **A + B** (fail-closed selection) → **C** (placeholders) ship
-together. After the backfill + A + B, every team with a mark renders it; C is the
-safety net for any gap. **Compliance is not achieved until A + B ship** — the
-data backfill alone leaves the fail-open code serving licensed logos for any team
-that still has a season ESPN row (which is most of them).
+### Sequencing (as shipped)
+
+The prod backfill ran first (marks now exist), then A + B + C shipped together in
+one PR. With the backfill done, A + B guarantee no licensed logo can render and
+every team with a mark shows it; C is the safety net for any team still lacking a
+mark. Note the data backfill alone would NOT have been enough — the fail-open
+code kept serving licensed logos for any team with a season ESPN row (most of
+them), which is exactly what A + B fixes.
 
 ---
 
@@ -389,5 +394,6 @@ WHERE NOT EXISTS (
 - `run.ps1 -Environment <dev|prod>` writes blob + DB **together** for that env;
   they must match (a prod DB row can't point at a dev blob URL).
 - `-Grain FranchiseSeason` still runs the legacy per-season pass if ever needed.
-- The selector change (fail-closed, franchise-only) comes AFTER this backfill so
-  the app reads these marks instead of the licensed mirrors.
+- The selector change (fail-closed; season mark preferred, then franchise mark,
+  else null) comes AFTER this backfill so the app reads these marks instead of
+  the licensed mirrors.

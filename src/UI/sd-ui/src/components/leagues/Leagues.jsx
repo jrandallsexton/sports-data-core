@@ -96,21 +96,26 @@ const Leagues = () => {
     ? leagueFilter
     : ALL_LEAGUES;
 
-  // Season years present in the current scope, newest-first. Derived from
-  // `scoped` (post-"Past" toggle) so picking a season can't strand the user on a
-  // year that isn't currently shown; the self-heal falls back to All otherwise.
+  // League (sport) is the primary filter; season options derive from the
+  // league-filtered set so the two can't combine into an empty result.
+  const leaguesInLeagueFilter =
+    activeFilter === ALL_LEAGUES
+      ? scoped
+      : scoped.filter((l) => l.league === activeFilter);
+
+  // Season years available *for the active league*, newest-first. Because they
+  // come from the league-filtered set, any (league, season) pair has leagues;
+  // switching to a league that lacks the chosen season self-heals season to All.
   const availableSeasons = [
-    ...new Set(scoped.map((l) => l.seasonYear).filter(Boolean)),
+    ...new Set(leaguesInLeagueFilter.map((l) => l.seasonYear).filter(Boolean)),
   ].sort((a, b) => b - a);
 
   const activeSeasonFilter = availableSeasons.includes(seasonFilter)
     ? seasonFilter
     : ALL_SEASONS;
 
-  const visibleLeagues = scoped.filter(
-    (l) =>
-      (activeFilter === ALL_LEAGUES || l.league === activeFilter) &&
-      (activeSeasonFilter === ALL_SEASONS || l.seasonYear === activeSeasonFilter)
+  const visibleLeagues = leaguesInLeagueFilter.filter(
+    (l) => activeSeasonFilter === ALL_SEASONS || l.seasonYear === activeSeasonFilter
   );
 
   const showFilterBar =

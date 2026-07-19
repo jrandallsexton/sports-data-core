@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   FlatList,
@@ -12,6 +12,7 @@ import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { StandingsControls } from '@/src/components/features/selectors/StandingsControls';
 import { useStandings, useUserLeagues } from '@/src/hooks/useStandings';
+import { useSeasonLeagueSelection } from '@/src/hooks/useSeasonLeagueSelection';
 import { useAuthStore } from '@/src/stores/authStore';
 import type { Standing } from '@/src/types/models';
 
@@ -80,62 +81,20 @@ export default function StandingsScreen() {
   // season and recently-ended leagues are reachable — /user/me is active-only.
   const { data: allLeagues = [], isLoading: leaguesLoading } = useUserLeagues();
 
-  const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
-  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
-  // Active-only by default to keep the league row short; the pill reveals ended.
-  const [showEnded, setShowEnded] = useState(false);
+  // Season/league selection state machine (derivation + reconciliation).
+  const {
+    seasons,
+    selectedSeason,
+    setSelectedSeason,
+    seasonLeagues,
+    selectedLeagueId,
+    setSelectedLeagueId,
+    canFilterEnded,
+    showEnded,
+    setShowEnded,
+  } = useSeasonLeagueSelection(allLeagues);
+
   const [showBots, setShowBots] = useState(true);
-
-  // Season options, newest-first, from all the user's leagues (server-
-  // authoritative seasonYear). Shown only when there's cross-season history.
-  const seasons = useMemo(
-    () => [...new Set(allLeagues.map((l) => l.seasonYear))].sort((a, b) => b - a),
-    [allLeagues],
-  );
-
-  const seasonAllLeagues = useMemo(
-    () =>
-      selectedSeason == null
-        ? []
-        : allLeagues.filter((l) => l.seasonYear === selectedSeason),
-    [allLeagues, selectedSeason],
-  );
-
-  // The "Show ended" pill applies only to the current (newest) season; a prior
-  // season is browsed as history and shows all its leagues. seasonHasActive also
-  // hides it when even the current season has no active leagues (no empty row).
-  const isCurrentSeason = selectedSeason != null && selectedSeason === seasons[0];
-  const seasonHasActive = useMemo(
-    () => seasonAllLeagues.some((l) => !l.deactivatedUtc),
-    [seasonAllLeagues],
-  );
-  const canFilterEnded = isCurrentSeason && seasonHasActive;
-
-  const seasonLeagues = useMemo(
-    () =>
-      canFilterEnded && !showEnded
-        ? seasonAllLeagues.filter((l) => !l.deactivatedUtc)
-        : seasonAllLeagues,
-    [seasonAllLeagues, canFilterEnded, showEnded],
-  );
-
-  // Keep selectedSeason valid: unset or no-longer-present snaps to the saved
-  // league's season if it's one of theirs, otherwise the newest season.
-  useEffect(() => {
-    if (seasons.length === 0) return;
-    if (selectedSeason != null && seasons.includes(selectedSeason)) return;
-    const saved = allLeagues.find((l) => l.id === selectedLeagueId);
-    setSelectedSeason(saved ? saved.seasonYear : seasons[0]);
-  }, [seasons, selectedSeason, allLeagues, selectedLeagueId]);
-
-  // Keep the selected league within the visible set (snap after switching season
-  // or toggling the pill).
-  useEffect(() => {
-    if (selectedSeason == null || seasonLeagues.length === 0) return;
-    if (!seasonLeagues.some((l) => l.id === selectedLeagueId)) {
-      setSelectedLeagueId(seasonLeagues[0].id);
-    }
-  }, [selectedSeason, seasonLeagues, selectedLeagueId]);
 
   const {
     data: standings = [],

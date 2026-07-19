@@ -300,6 +300,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddSingleton<GameRecapPromptProvider>();
             services.AddScoped<PickScoringJob>();
             services.AddScoped<LeagueWeekScoringJob>();
+            services.AddScoped<LeagueDeactivationJob>();
 
             // TODO: Restore after Contest processing is refactored
             // services.AddScoped<ContestRecapJob>();
@@ -358,6 +359,14 @@ namespace SportsData.Api.DependencyInjection
                 nameof(LeagueWeekScoringJob),
                 job => job.ExecuteAsync(),
                 Cron.Daily(9, 15));
+
+            // Nightly soft-close of finished leagues. Stamps DeactivatedUtc on
+            // leagues whose EndsOn is more than 7 days past, dropping them from
+            // active surfaces. 4am UTC keeps it clear of the 2/6/9am job cluster.
+            recurringJobManager.AddOrUpdate<LeagueDeactivationJob>(
+                nameof(LeagueDeactivationJob),
+                job => job.ExecuteAsync(),
+                Cron.Daily(4));
 
             recurringJobManager.AddOrUpdate<MatchupPreviewGenerator>(
                 nameof(MatchupPreviewGenerator),

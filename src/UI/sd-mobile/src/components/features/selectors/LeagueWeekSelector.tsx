@@ -125,6 +125,12 @@ export function LeagueWeekSelector({
             </View>
           )}
 
+          {/* Hairline rule separating the league and week groups (only present
+              when the league row renders). */}
+          {leagues.length > 1 && (
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          )}
+
           {/* Week selector */}
           <View style={styles.chipRow}>
             {weeks.map((w) => {
@@ -183,6 +189,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     gap: 8,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: 14,
   },
   chip: {
     paddingHorizontal: 14,

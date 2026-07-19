@@ -61,6 +61,33 @@
   font-weight: 500;
 }
 
+/* Pill toggle (e.g. "Show ended"): outlined when off, filled accent when on. */
+.pill-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-primary, var(--accent));
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.pill-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pill-toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
 .leaderboard-table {
   width: 100%;
   margin-top: 20px;

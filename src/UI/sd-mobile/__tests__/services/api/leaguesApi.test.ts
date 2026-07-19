@@ -140,6 +140,8 @@ describe('leaguesApi.getUserLeagues', () => {
       useConfidencePoints: false,
       memberCount: 4,
       avatarUrl: null,
+      seasonYear: 2026,
+      seasonWeeks: [1, 2, 3],
       deactivatedUtc: null,
     };
     (apiClient.get as jest.Mock).mockResolvedValue({ data: [league] });

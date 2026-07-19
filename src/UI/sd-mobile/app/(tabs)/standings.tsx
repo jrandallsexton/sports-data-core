@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   FlatList,
+  ScrollView,
   StyleSheet,
   RefreshControl,
 } from 'react-native';
@@ -10,7 +11,10 @@ import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { EmptyState } from '@/src/components/ui/EmptyState';
-import { useStandings, useCurrentUser } from '@/src/hooks/useStandings';
+import { Button } from '@/src/components/ui/Button';
+import { StandingsControls } from '@/src/components/features/selectors/StandingsControls';
+import { useStandings, useUserLeagues } from '@/src/hooks/useStandings';
+import { useSeasonLeagueSelection } from '@/src/hooks/useSeasonLeagueSelection';
 import { useAuthStore } from '@/src/stores/authStore';
 import type { Standing } from '@/src/types/models';
 
@@ -74,8 +78,25 @@ export default function StandingsScreen() {
   const theme = getTheme(scheme);
 
   const { user } = useAuthStore();
-  const { data: me } = useCurrentUser();
-  const firstLeagueId = me?.leagues?.[0]?.id;
+
+  // Source the league list from getUserLeagues (includes deactivated) so past-
+  // season and recently-ended leagues are reachable — /user/me is active-only.
+  const { data: allLeagues = [], isLoading: leaguesLoading } = useUserLeagues();
+
+  // Season/league selection state machine (derivation + reconciliation).
+  const {
+    seasons,
+    selectedSeason,
+    setSelectedSeason,
+    seasonLeagues,
+    selectedLeagueId,
+    setSelectedLeagueId,
+    canFilterEnded,
+    showEnded,
+    setShowEnded,
+  } = useSeasonLeagueSelection(allLeagues);
+
+  const [showBots, setShowBots] = useState(true);
 
   const {
     data: standings = [],
@@ -83,54 +104,102 @@ export default function StandingsScreen() {
     refetch,
     isRefetching,
     isError,
-  } = useStandings(firstLeagueId);
+  } = useStandings(selectedLeagueId);
 
-  if (isLoading) {
+  const visibleStandings = useMemo(
+    () => (showBots ? standings : standings.filter((s) => !s.isSynthetic)),
+    [standings, showBots],
+  );
+
+  if (leaguesLoading) {
     return <LoadingSpinner message="Loading standings…" fullScreen />;
   }
 
-  if (isError || !firstLeagueId) {
+  if (allLeagues.length === 0) {
     return (
       <EmptyState
         icon="🏆"
-        title="No standings yet"
-        subtitle="Standings appear once the season begins."
+        title="No leagues yet"
+        subtitle="Join or create a league to see standings."
       />
     );
   }
 
+  const standingsLoading = isLoading || !selectedLeagueId;
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <FlatList
-        data={standings}
-        keyExtractor={(item) => item.userId}
-        renderItem={({ item }) => (
-          <StandingRow
-            standing={item}
-            isMe={item.userId === user?.uid}
-          />
-        )}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor={theme.tint}
-          />
-        }
-        ListHeaderComponent={
-          <View style={styles.listHeader}>
-            <Text style={[styles.listHeaderText, { color: theme.textMuted }]}>Rank</Text>
-            <Text style={[styles.listHeaderText, { color: theme.textMuted, flex: 1, marginLeft: 48 }]}>Player</Text>
-            <Text style={[styles.listHeaderText, { color: theme.textMuted }]}>Points</Text>
-          </View>
-        }
-        ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
-        ListEmptyComponent={
-          <EmptyState title="No standings yet" subtitle="Be the first to make your picks!" />
-        }
+      <StandingsControls
+        seasons={seasons}
+        selectedSeason={selectedSeason}
+        onSeasonChange={setSelectedSeason}
+        leagues={seasonLeagues}
+        selectedLeagueId={selectedLeagueId}
+        onLeagueChange={setSelectedLeagueId}
+        canFilterEnded={canFilterEnded}
+        showEnded={showEnded}
+        onToggleEnded={() => setShowEnded((v) => !v)}
+        showBots={showBots}
+        onToggleBots={() => setShowBots((v) => !v)}
       />
+
+      {standingsLoading ? (
+        <LoadingSpinner message="Loading standings…" />
+      ) : isError ? (
+        // Genuine fetch failure (distinct from the not-started empty state,
+        // which the FlatList's ListEmptyComponent handles). Scrollable so
+        // pull-to-refresh works, plus an explicit Retry.
+        <ScrollView
+          contentContainerStyle={styles.errorContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={theme.tint}
+            />
+          }
+        >
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={[styles.errorTitle, { color: theme.text }]}>
+            Couldn't load standings
+          </Text>
+          <Text style={[styles.errorSubtitle, { color: theme.textMuted }]}>
+            Something went wrong. Pull to refresh or tap retry.
+          </Text>
+          <Button title="Retry" variant="secondary" size="sm" onPress={() => refetch()} />
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={visibleStandings}
+          keyExtractor={(item) => item.userId}
+          renderItem={({ item }) => (
+            <StandingRow
+              standing={item}
+              isMe={item.userId === user?.uid}
+            />
+          )}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={theme.tint}
+            />
+          }
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              <Text style={[styles.listHeaderText, { color: theme.textMuted }]}>Rank</Text>
+              <Text style={[styles.listHeaderText, { color: theme.textMuted, flex: 1, marginLeft: 48 }]}>Player</Text>
+              <Text style={[styles.listHeaderText, { color: theme.textMuted }]}>Points</Text>
+            </View>
+          }
+          ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
+          ListEmptyComponent={
+            <EmptyState title="No standings yet" subtitle="Be the first to make your picks!" />
+          }
+        />
+      )}
     </View>
   );
 }
@@ -140,6 +209,11 @@ export default function StandingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { padding: 14, paddingBottom: 24 },
+  // flexGrow fills the viewport so the error centers and pull-to-refresh works.
+  errorContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 10 },
+  errorIcon: { fontSize: 48, marginBottom: 4 },
+  errorTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  errorSubtitle: { fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 6 },
   listHeader: {
     flexDirection: 'row',
     paddingHorizontal: 16,

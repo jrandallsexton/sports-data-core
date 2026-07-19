@@ -91,6 +91,18 @@ export interface LeagueSummary {
   memberCount: number;
   avatarUrl: string | null;
   /**
+   * The season the league belongs to (e.g. 2026). Server-authoritative; drives
+   * the Standings season filter so the client groups leagues by season without
+   * inferring it.
+   */
+  seasonYear: number;
+  /**
+   * Distinct week numbers the league has, ascending. Lets Standings source its
+   * week list from this one call (including past-season / deactivated leagues
+   * that /user/me omits). Empty for leagues with no weeks yet.
+   */
+  seasonWeeks: number[];
+  /**
    * Non-null once the league's season has passed: read-only, and not cloneable.
    * Only populated when the caller opts in via `includeDeactivated`; the default
    * list omits those rows entirely, so this is null for every league mobile

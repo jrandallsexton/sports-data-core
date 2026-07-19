@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUserDto } from "../../contexts/UserContext";
 import { useLeagueContext } from "../../contexts/LeagueContext";
 import LeagueSelector from "../shared/LeagueSelector";
@@ -11,8 +11,17 @@ import "./LeaderboardPage.css";
 
 function LeaderboardPage() {
   const { userDto, loading: userLoading } = useUserDto();
-  const { selectedLeagueId, setSelectedLeagueId, initializeLeagueSelection } = useLeagueContext();
-  const leagues = Object.values(userDto?.leagues || []);
+  const { selectedLeagueId, setSelectedLeagueId } = useLeagueContext();
+
+  // Source the league list from getUserLeagues (includeDeactivated) rather than
+  // userDto.leagues: the latter is active-only, so past-season / recently-ended
+  // leagues never appear. This call carries seasonYear + seasonWeeks per league,
+  // so the season filter and week selector work for every season.
+  const [allLeagues, setAllLeagues] = useState([]);
+  const [selectedSeason, setSelectedSeason] = useState(null);
+  // Active-only by default to keep the League selector short (important on
+  // mobile). The pill reveals ended/deactivated leagues on demand.
+  const [showEnded, setShowEnded] = useState(false);
 
   const [leaderboard, setLeaderboard] = useState([]);
   const [sortBy, setSortBy] = useState("totalPoints");
@@ -26,11 +35,83 @@ function LeaderboardPage() {
 
   const currentUserId = userDto?.id ?? null;
 
+  // Fetch every league the user belongs to, including deactivated ones.
   useEffect(() => {
-    if (!userLoading && leagues.length > 0) {
-      initializeLeagueSelection(leagues);
-    }
-  }, [userLoading, leagues, initializeLeagueSelection]);
+    let cancelled = false;
+    LeaguesApi.getUserLeagues({ includeDeactivated: true })
+      .then((list) => {
+        if (!cancelled) setAllLeagues(Array.isArray(list) ? list : []);
+      })
+      .catch((err) => {
+        console.error("Failed to load leagues", err);
+        if (!cancelled) setAllLeagues([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Season options, newest-first, from ALL the user's leagues (server-
+  // authoritative seasonYear). This is a primary control shown whenever there's
+  // cross-season history — independent of the "Show ended" pill.
+  const seasons = useMemo(
+    () => [...new Set(allLeagues.map((l) => l.seasonYear))].sort((a, b) => b - a),
+    [allLeagues]
+  );
+
+  // Every league in the selected season (active + ended).
+  // Sorted by name (id tie-breaker) so the League dropdown order and the
+  // reconciliation effect's seasonLeagues[0] snap target are deterministic —
+  // getUserLeagues returns no guaranteed order.
+  const seasonAllLeagues = useMemo(
+    () =>
+      selectedSeason == null
+        ? []
+        : allLeagues
+            .filter((l) => l.seasonYear === selectedSeason)
+            .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)),
+    [allLeagues, selectedSeason]
+  );
+
+  // The "Show ended" pill applies only to the current (newest) season: a prior
+  // season is browsed as history, so its toggle is never shown regardless of
+  // whether some league there is still marked active. The extra seasonHasActive
+  // check also hides the pill (and shows everything) when the current season has
+  // no active leagues, avoiding an empty selector.
+  const isCurrentSeason = selectedSeason != null && selectedSeason === seasons[0];
+  const seasonHasActive = useMemo(
+    () => seasonAllLeagues.some((l) => !l.deactivatedUtc),
+    [seasonAllLeagues]
+  );
+  const canFilterEnded = isCurrentSeason && seasonHasActive;
+
+  // League selector options: active-only in the current season unless the pill
+  // is on; otherwise (past season, or pill on) show everything.
+  const seasonLeagues = useMemo(
+    () =>
+      canFilterEnded && !showEnded
+        ? seasonAllLeagues.filter((l) => !l.deactivatedUtc)
+        : seasonAllLeagues,
+    [seasonAllLeagues, canFilterEnded, showEnded]
+  );
+
+  // Keep selectedSeason valid: unset or no-longer-present snaps to the saved
+  // league's season if it's one of theirs, otherwise the newest season.
+  useEffect(() => {
+    if (seasons.length === 0) return;
+    if (selectedSeason != null && seasons.includes(selectedSeason)) return;
+    const saved = allLeagues.find((l) => l.id === selectedLeagueId);
+    setSelectedSeason(saved ? saved.seasonYear : seasons[0]);
+  }, [seasons, selectedSeason, allLeagues, selectedLeagueId]);
+
+  // Keep the selected league consistent with the visible set: if the current
+  // selection isn't in it (e.g. after switching seasons or toggling the pill),
+  // snap to the first league shown.
+  useEffect(() => {
+    if (selectedSeason == null || seasonLeagues.length === 0) return;
+    const inSeason = seasonLeagues.some((l) => l.id === selectedLeagueId);
+    if (!inSeason) setSelectedLeagueId(seasonLeagues[0].id);
+  }, [selectedSeason, seasonLeagues, selectedLeagueId, setSelectedLeagueId]);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -53,8 +134,10 @@ function LeaderboardPage() {
     fetchLeaderboard();
   }, [selectedLeagueId]);
 
-  // Find the selected league and its ascending week list
-  const selectedLeague = leagues.find(l => l.id === selectedLeagueId);
+  // Find the selected league and its ascending week list. Search across all
+  // leagues (not just the season subset) so seasonWeeks still resolves during
+  // the brief window before a season switch reconciles the selection.
+  const selectedLeague = allLeagues.find(l => l.id === selectedLeagueId);
   const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
   const latestSeasonWeek = seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
 
@@ -152,21 +235,50 @@ function LeaderboardPage() {
   return (
     <div className="leaderboard-container">
       <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+        {/* Season filter — only when the user has leagues across multiple
+            seasons. Scopes the League selector below it. */}
+        {seasons.length > 1 && (
+          <div className="league-selector">
+            <label htmlFor="seasonSelect">Season:</label>
+            <select
+              id="seasonSelect"
+              value={selectedSeason ?? ""}
+              onChange={(e) => setSelectedSeason(Number(e.target.value))}
+            >
+              {seasons.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <LeagueSelector
-          leagues={leagues}
+          leagues={seasonLeagues}
           selectedLeagueId={selectedLeagueId}
           setSelectedLeagueId={setSelectedLeagueId}
         />
-        
-        {/* Show Bots Filter */}
-        <label className="checkbox-label">
-          <input
-            type="checkbox"
-            checked={showBots}
-            onChange={(e) => setShowBots(e.target.checked)}
-          />
-          <span>Show Bots</span>
-        </label>
+
+        {/* Reveal ended/deactivated leagues. Current season only — a past
+            season is browsed as history and shows all its leagues. */}
+        {canFilterEnded && (
+          <button
+            type="button"
+            className={`pill-toggle ${showEnded ? "active" : ""}`}
+            aria-pressed={showEnded}
+            onClick={() => setShowEnded((v) => !v)}
+          >
+            Show ended
+          </button>
+        )}
+
+        <button
+          type="button"
+          className={`pill-toggle ${showBots ? "active" : ""}`}
+          aria-pressed={showBots}
+          onClick={() => setShowBots((v) => !v)}
+        >
+          Show Bots
+        </button>
       </div>
 
       {/* Tab Navigation */}

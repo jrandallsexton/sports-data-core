@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   View,
   FlatList,
+  ScrollView,
   StyleSheet,
   RefreshControl,
 } from 'react-native';
@@ -10,6 +11,7 @@ import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { EmptyState } from '@/src/components/ui/EmptyState';
+import { Button } from '@/src/components/ui/Button';
 import { StandingsControls } from '@/src/components/features/selectors/StandingsControls';
 import { useStandings, useUserLeagues } from '@/src/hooks/useStandings';
 import { useSeasonLeagueSelection } from '@/src/hooks/useSeasonLeagueSelection';
@@ -144,11 +146,28 @@ export default function StandingsScreen() {
       {standingsLoading ? (
         <LoadingSpinner message="Loading standings…" />
       ) : isError ? (
-        <EmptyState
-          icon="🏆"
-          title="No standings yet"
-          subtitle="Standings appear once the season begins."
-        />
+        // Genuine fetch failure (distinct from the not-started empty state,
+        // which the FlatList's ListEmptyComponent handles). Scrollable so
+        // pull-to-refresh works, plus an explicit Retry.
+        <ScrollView
+          contentContainerStyle={styles.errorContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={theme.tint}
+            />
+          }
+        >
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={[styles.errorTitle, { color: theme.text }]}>
+            Couldn't load standings
+          </Text>
+          <Text style={[styles.errorSubtitle, { color: theme.textMuted }]}>
+            Something went wrong. Pull to refresh or tap retry.
+          </Text>
+          <Button title="Retry" variant="secondary" size="sm" onPress={() => refetch()} />
+        </ScrollView>
       ) : (
         <FlatList
           data={visibleStandings}
@@ -190,6 +209,11 @@ export default function StandingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { padding: 14, paddingBottom: 24 },
+  // flexGrow fills the viewport so the error centers and pull-to-refresh works.
+  errorContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 10 },
+  errorIcon: { fontSize: 48, marginBottom: 4 },
+  errorTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  errorSubtitle: { fontSize: 14, textAlign: 'center', lineHeight: 20, marginBottom: 6 },
   listHeader: {
     flexDirection: 'row',
     paddingHorizontal: 16,

@@ -220,7 +220,10 @@ public class LeagueDeactivationJobTests : ApiTestBase<LeagueDeactivationJob>
             _toThrow = toThrow;
         }
 
+        // Return a faulted task (not a synchronous throw) so the exception
+        // surfaces at the job's await, matching how a real async SaveChangesAsync
+        // fails.
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-            => throw _toThrow;
+            => Task.FromException<int>(_toThrow);
     }
 }

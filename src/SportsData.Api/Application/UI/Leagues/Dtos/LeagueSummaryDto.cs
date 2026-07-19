@@ -6,6 +6,12 @@
 
         public string Name { get; set; } = null!;
 
+        /// <summary>
+        /// Optional commissioner-set blurb, shown under the league name on the
+        /// My Leagues cards. Null when the commissioner didn't set one.
+        /// </summary>
+        public string? Description { get; set; }
+
         public string Sport { get; set; } = null!;
 
         /// <summary>

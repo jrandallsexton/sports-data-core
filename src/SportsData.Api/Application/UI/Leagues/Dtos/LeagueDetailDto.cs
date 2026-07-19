@@ -30,6 +30,12 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
 
         public DateTime? EndsOn { get; set; }
 
+        /// <summary>
+        /// Non-null once the league's season has passed: it's read-only. The UI
+        /// hides mutating affordances (invite members, delete) when this is set.
+        /// </summary>
+        public DateTime? DeactivatedUtc { get; set; }
+
         public List<LeagueMemberDto> Members { get; set; } = [];
 
         public class LeagueMemberDto

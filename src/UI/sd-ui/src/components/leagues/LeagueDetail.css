@@ -47,15 +47,29 @@
   background-color: var(--bg-modal);
   border: 2px solid var(--accent);
   border-radius: 12px;
-  padding: 2rem;
+  padding: 1rem 1.75rem 1.75rem;
 }
 
-.league-info-card h2 {
+/* Both card titles (league name + Members) share one style so the two columns
+   read as peers. */
+.league-info-card h2,
+.members-section h2 {
   color: var(--accent);
   font-size: 2rem;
-  margin-bottom: 1.5rem;
+  margin: 0 0 1rem 0;
   font-weight: 600;
   text-align: center;
+}
+
+/* Commissioner blurb as a subtitle directly under the league name. The negative
+   top margin tucks it up against the name (whose margin-bottom is 1.5rem). */
+.league-detail-byline {
+  margin: -0.75rem 0 1.25rem 0;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.4;
 }
 
 .make-picks-button {
@@ -105,31 +119,28 @@
   background-color: var(--bg-modal);
   border: 2px solid var(--accent);
   border-radius: 12px;
-  padding: 2rem;
+  padding: 1rem 1.75rem 1.75rem;
 }
 
-.members-section h2 {
-  color: var(--accent);
-  font-size: 1.5rem;
-  margin-bottom: 1.5rem;
-  font-weight: 600;
-}
-
+/* Two responsive columns — one when the sidebar is narrow, two when there's
+   room — so the members list stops wasting horizontal space. */
 .members-list {
   list-style-type: none;
   padding: 0;
   margin: 0;
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 0.5rem;
 }
 
 .members-list li {
   background-color: var(--bg-card-hover);
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 8px;
+  border-left: 4px solid var(--accent);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   transition: background-color 0.3s ease;
 }
 
@@ -142,19 +153,11 @@
   color: var(--text-primary);
 }
 
-.member-role {
-  background-color: var(--accent);
-  color: var(--bg-modal);
-  padding: 0.25rem 0.75rem;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
-.member-role.commissioner {
-  background-color: var(--warning);
-  color: var(--bg-modal);
+/* Only the commissioner is marked, with a crown — normal members carry no
+   badge. */
+.member-crown {
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
 .no-members-message {
@@ -261,18 +264,9 @@
     padding: 1.5rem;
   }
 
-  .league-info-card h2 {
+  .league-info-card h2,
+  .members-section h2 {
     font-size: 1.5rem;
-  }
-
-  .members-list li {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .member-role {
-    align-self: flex-end;
   }
 
   .confirm-delete-button {

@@ -56,6 +56,7 @@ public class GetLeagueByIdQueryHandler : IGetLeagueByIdQueryHandler
             IsPublic = league.IsPublic,
             StartsOn = league.StartsOn,
             EndsOn = league.EndsOn,
+            DeactivatedUtc = league.DeactivatedUtc,
             Members = league.Members.Select(m => new LeagueDetailDto.LeagueMemberDto
             {
                 UserId = m.UserId,

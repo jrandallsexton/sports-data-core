@@ -1,9 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 using Moq;
 
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.Jobs;
+using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 
@@ -134,6 +136,50 @@ public class LeagueDeactivationJobTests : ApiTestBase<LeagueDeactivationJob>
         Assert.False(await DataContext.PickemGroups.AnyAsync());
     }
 
+    [Fact]
+    public async Task ExecuteAsync_WhenSaveChangesThrows_RethrowsException()
+    {
+        // Covers the job's catch-log-rethrow path. Seed an eligible league via a
+        // normal context, then run the job through one whose SaveChangesAsync
+        // always throws (both share the same InMemory store), and assert the
+        // exact exception propagates.
+        var options = new DbContextOptionsBuilder<AppDataContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
+            .Options;
+
+        await using (var seed = new AppDataContext(options))
+        {
+            seed.PickemGroups.Add(new PickemGroup
+            {
+                Id = Guid.NewGuid(),
+                Name = "Eligible League",
+                Sport = Sport.BaseballMlb,
+                League = League.MLB,
+                PickType = PickType.StraightUp,
+                TiebreakerType = TiebreakerType.None,
+                TiebreakerTiePolicy = TiebreakerTiePolicy.EarliestSubmission,
+                CommissionerUserId = Guid.NewGuid(),
+                EndsOn = FixedNow.AddDays(-10),
+                CreatedUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                CreatedBy = Guid.Empty,
+            });
+            await seed.SaveChangesAsync();
+        }
+
+        var expected = new InvalidOperationException("save failed");
+
+        // Swap the job's DbContext for the throwing one (overrides ApiTestBase's
+        // registration), pointed at the same store the seed wrote to.
+        await using var throwingContext = new ThrowOnSaveDataContext(options, expected);
+        Mocker.Use<AppDataContext>(throwingContext);
+
+        var sut = Mocker.CreateInstance<LeagueDeactivationJob>();
+
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ExecuteAsync());
+        Assert.Same(expected, actual);
+    }
+
     private async Task SeedLeagueAsync(
         Guid leagueId,
         DateTime? endsOn,
@@ -157,5 +203,24 @@ public class LeagueDeactivationJobTests : ApiTestBase<LeagueDeactivationJob>
 
         await DataContext.PickemGroups.AddAsync(group);
         await DataContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// AppDataContext whose <see cref="SaveChangesAsync"/> always throws the
+    /// supplied exception, so the job's catch-log-rethrow path can be exercised.
+    /// Queries delegate to the base InMemory store.
+    /// </summary>
+    private sealed class ThrowOnSaveDataContext : AppDataContext
+    {
+        private readonly Exception _toThrow;
+
+        public ThrowOnSaveDataContext(DbContextOptions<AppDataContext> options, Exception toThrow)
+            : base(options)
+        {
+            _toThrow = toThrow;
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+            => throw _toThrow;
     }
 }

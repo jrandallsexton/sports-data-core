@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { standingsApi } from '@/src/services/api/standingsApi';
+import { leaguesApi, type LeagueSummary } from '@/src/services/api/leaguesApi';
 import { useAuthStore } from '@/src/stores/authStore';
 import type { Standing, UserDto } from '@/src/types/models';
 
@@ -7,6 +8,7 @@ import type { Standing, UserDto } from '@/src/types/models';
 export const standingsKeys = {
   byLeague: (leagueId: string) => ['standings', leagueId] as const,
   me: ['user', 'me'] as const,
+  userLeagues: ['leagues', 'all'] as const,
 };
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
@@ -32,6 +34,23 @@ export function useCurrentUser() {
   return useQuery<UserDto>({
     queryKey: standingsKeys.me,
     queryFn: () => standingsApi.getMe().then((r) => r.data),
+    staleTime: 1000 * 60 * 5,
+    enabled: isInitialized && user !== null,
+  });
+}
+
+/**
+ * Every league the user belongs to, including deactivated (past-season) ones.
+ * Unlike /user/me (active-only), this drives the Standings season/league filter,
+ * carrying seasonYear + seasonWeeks + deactivatedUtc per league.
+ */
+export function useUserLeagues() {
+  const { user, isInitialized } = useAuthStore();
+
+  return useQuery<LeagueSummary[]>({
+    queryKey: standingsKeys.userLeagues,
+    queryFn: () =>
+      leaguesApi.getUserLeagues({ includeDeactivated: true }).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
     enabled: isInitialized && user !== null,
   });

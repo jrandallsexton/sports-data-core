@@ -21,6 +21,22 @@
         public int MemberCount { get; set; }
 
         /// <summary>
+        /// The season the league belongs to (e.g. 2026). Drives the leaderboard's
+        /// season filter so the client can group leagues by season without
+        /// inferring it. Server-authoritative — read straight off
+        /// <c>PickemGroup.SeasonYear</c>.
+        /// </summary>
+        public int SeasonYear { get; set; }
+
+        /// <summary>
+        /// Distinct week numbers the league has, ascending. Lets the leaderboard
+        /// source its week selector from this one call (including past-season /
+        /// deactivated leagues that <c>/user/me</c> omits). Empty for leagues with
+        /// no weeks generated yet.
+        /// </summary>
+        public List<int> SeasonWeeks { get; set; } = [];
+
+        /// <summary>
         /// Set once the group's season has passed. Non-null means the league is
         /// read-only: it cannot be cloned (the clone handler rejects it) and the
         /// UI hides its Duplicate action. Only populated when the caller opts in

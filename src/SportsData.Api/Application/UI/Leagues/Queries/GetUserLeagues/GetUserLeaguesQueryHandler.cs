@@ -44,6 +44,16 @@ public class GetUserLeaguesQueryHandler : IGetUserLeaguesQueryHandler
                 LeagueType = m.Group.PickType.ToString(),
                 UseConfidencePoints = m.Group.UseConfidencePoints,
                 MemberCount = m.Group.Members.Count,
+                SeasonYear = m.Group.SeasonYear,
+                // Distinct week numbers, ascending. Some leagues have multiple
+                // PickemGroupWeek rows with the same SeasonWeek (e.g. preseason +
+                // regular-season Week 1); the UI wants the unique set. Mirrors the
+                // projection on /user/me.
+                SeasonWeeks = m.Group.Weeks
+                    .Select(w => w.SeasonWeek)
+                    .Distinct()
+                    .OrderBy(w => w)
+                    .ToList(),
                 DeactivatedUtc = m.Group.DeactivatedUtc
             })
             .ToListAsync(cancellationToken);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   FlatList,
@@ -10,7 +10,8 @@ import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { EmptyState } from '@/src/components/ui/EmptyState';
-import { useStandings, useCurrentUser } from '@/src/hooks/useStandings';
+import { StandingsControls } from '@/src/components/features/selectors/StandingsControls';
+import { useStandings, useUserLeagues } from '@/src/hooks/useStandings';
 import { useAuthStore } from '@/src/stores/authStore';
 import type { Standing } from '@/src/types/models';
 
@@ -74,8 +75,67 @@ export default function StandingsScreen() {
   const theme = getTheme(scheme);
 
   const { user } = useAuthStore();
-  const { data: me } = useCurrentUser();
-  const firstLeagueId = me?.leagues?.[0]?.id;
+
+  // Source the league list from getUserLeagues (includes deactivated) so past-
+  // season and recently-ended leagues are reachable — /user/me is active-only.
+  const { data: allLeagues = [], isLoading: leaguesLoading } = useUserLeagues();
+
+  const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
+  const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
+  // Active-only by default to keep the league row short; the pill reveals ended.
+  const [showEnded, setShowEnded] = useState(false);
+  const [showBots, setShowBots] = useState(true);
+
+  // Season options, newest-first, from all the user's leagues (server-
+  // authoritative seasonYear). Shown only when there's cross-season history.
+  const seasons = useMemo(
+    () => [...new Set(allLeagues.map((l) => l.seasonYear))].sort((a, b) => b - a),
+    [allLeagues],
+  );
+
+  const seasonAllLeagues = useMemo(
+    () =>
+      selectedSeason == null
+        ? []
+        : allLeagues.filter((l) => l.seasonYear === selectedSeason),
+    [allLeagues, selectedSeason],
+  );
+
+  // The "Show ended" pill applies only to the current (newest) season; a prior
+  // season is browsed as history and shows all its leagues. seasonHasActive also
+  // hides it when even the current season has no active leagues (no empty row).
+  const isCurrentSeason = selectedSeason != null && selectedSeason === seasons[0];
+  const seasonHasActive = useMemo(
+    () => seasonAllLeagues.some((l) => !l.deactivatedUtc),
+    [seasonAllLeagues],
+  );
+  const canFilterEnded = isCurrentSeason && seasonHasActive;
+
+  const seasonLeagues = useMemo(
+    () =>
+      canFilterEnded && !showEnded
+        ? seasonAllLeagues.filter((l) => !l.deactivatedUtc)
+        : seasonAllLeagues,
+    [seasonAllLeagues, canFilterEnded, showEnded],
+  );
+
+  // Keep selectedSeason valid: unset or no-longer-present snaps to the saved
+  // league's season if it's one of theirs, otherwise the newest season.
+  useEffect(() => {
+    if (seasons.length === 0) return;
+    if (selectedSeason != null && seasons.includes(selectedSeason)) return;
+    const saved = allLeagues.find((l) => l.id === selectedLeagueId);
+    setSelectedSeason(saved ? saved.seasonYear : seasons[0]);
+  }, [seasons, selectedSeason, allLeagues, selectedLeagueId]);
+
+  // Keep the selected league within the visible set (snap after switching season
+  // or toggling the pill).
+  useEffect(() => {
+    if (selectedSeason == null || seasonLeagues.length === 0) return;
+    if (!seasonLeagues.some((l) => l.id === selectedLeagueId)) {
+      setSelectedLeagueId(seasonLeagues[0].id);
+    }
+  }, [selectedSeason, seasonLeagues, selectedLeagueId]);
 
   const {
     data: standings = [],
@@ -83,54 +143,85 @@ export default function StandingsScreen() {
     refetch,
     isRefetching,
     isError,
-  } = useStandings(firstLeagueId);
+  } = useStandings(selectedLeagueId);
 
-  if (isLoading) {
+  const visibleStandings = useMemo(
+    () => (showBots ? standings : standings.filter((s) => !s.isSynthetic)),
+    [standings, showBots],
+  );
+
+  if (leaguesLoading) {
     return <LoadingSpinner message="Loading standings…" fullScreen />;
   }
 
-  if (isError || !firstLeagueId) {
+  if (allLeagues.length === 0) {
     return (
       <EmptyState
         icon="🏆"
-        title="No standings yet"
-        subtitle="Standings appear once the season begins."
+        title="No leagues yet"
+        subtitle="Join or create a league to see standings."
       />
     );
   }
 
+  const standingsLoading = isLoading || !selectedLeagueId;
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <FlatList
-        data={standings}
-        keyExtractor={(item) => item.userId}
-        renderItem={({ item }) => (
-          <StandingRow
-            standing={item}
-            isMe={item.userId === user?.uid}
-          />
-        )}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetching}
-            onRefresh={refetch}
-            tintColor={theme.tint}
-          />
-        }
-        ListHeaderComponent={
-          <View style={styles.listHeader}>
-            <Text style={[styles.listHeaderText, { color: theme.textMuted }]}>Rank</Text>
-            <Text style={[styles.listHeaderText, { color: theme.textMuted, flex: 1, marginLeft: 48 }]}>Player</Text>
-            <Text style={[styles.listHeaderText, { color: theme.textMuted }]}>Points</Text>
-          </View>
-        }
-        ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
-        ListEmptyComponent={
-          <EmptyState title="No standings yet" subtitle="Be the first to make your picks!" />
-        }
+      <StandingsControls
+        seasons={seasons}
+        selectedSeason={selectedSeason}
+        onSeasonChange={setSelectedSeason}
+        leagues={seasonLeagues}
+        selectedLeagueId={selectedLeagueId}
+        onLeagueChange={setSelectedLeagueId}
+        canFilterEnded={canFilterEnded}
+        showEnded={showEnded}
+        onToggleEnded={() => setShowEnded((v) => !v)}
+        showBots={showBots}
+        onToggleBots={() => setShowBots((v) => !v)}
       />
+
+      {standingsLoading ? (
+        <LoadingSpinner message="Loading standings…" />
+      ) : isError ? (
+        <EmptyState
+          icon="🏆"
+          title="No standings yet"
+          subtitle="Standings appear once the season begins."
+        />
+      ) : (
+        <FlatList
+          data={visibleStandings}
+          keyExtractor={(item) => item.userId}
+          renderItem={({ item }) => (
+            <StandingRow
+              standing={item}
+              isMe={item.userId === user?.uid}
+            />
+          )}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={theme.tint}
+            />
+          }
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              <Text style={[styles.listHeaderText, { color: theme.textMuted }]}>Rank</Text>
+              <Text style={[styles.listHeaderText, { color: theme.textMuted, flex: 1, marginLeft: 48 }]}>Player</Text>
+              <Text style={[styles.listHeaderText, { color: theme.textMuted }]}>Points</Text>
+            </View>
+          }
+          ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
+          ListEmptyComponent={
+            <EmptyState title="No standings yet" subtitle="Be the first to make your picks!" />
+          }
+        />
+      )}
     </View>
   );
 }

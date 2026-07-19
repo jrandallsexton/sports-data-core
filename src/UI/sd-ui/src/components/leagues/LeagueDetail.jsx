@@ -78,6 +78,10 @@ const LeagueDetail = () => {
   const commissionerId = commissioner?.userId;
   const isCommissioner = userDto?.id === commissionerId;
 
+  // A deactivated league is a finished season: read-only. Hide the mutating
+  // affordances (invite members, delete) entirely.
+  const isPast = !!league.deactivatedUtc;
+
   const startLabel = formatWindowBound(league.startsOn);
   const endLabel = formatWindowBound(league.endsOn);
   let windowLabel;
@@ -95,11 +99,13 @@ const LeagueDetail = () => {
       <div className="league-detail-primary">
         <div className="league-info-card">
           <h2>{league.name}</h2>
+          {league.description && (
+            <p className="league-detail-byline">{league.description}</p>
+          )}
           <Link to={`/app/picks/${league.id}`} className="make-picks-button">
             Make Your Picks
           </Link>
           <ul className="league-details-list">
-            <li><strong>Description:</strong> {league.description}</li>
             <li><strong>Pick Type:</strong> {league.pickType}</li>
             <li><strong>Tiebreaker:</strong> {league.tiebreakerType}</li>
             <li><strong>Tie Policy:</strong> {league.tiebreakerTiePolicy}</li>
@@ -125,8 +131,16 @@ const LeagueDetail = () => {
             <ul className="members-list">
               {league.members.map((member) => (
                 <li key={member.userId}>
+                  {member.role === "commissioner" && (
+                    <span
+                      className="member-crown"
+                      title="Commissioner"
+                      aria-label="Commissioner"
+                    >
+                      👑
+                    </span>
+                  )}
                   <span className="member-username">{member.username}</span>
-                  <span className={`member-role ${member.role}`}>{member.role}</span>
                 </li>
               ))}
             </ul>
@@ -135,9 +149,11 @@ const LeagueDetail = () => {
           )}
         </div>
 
-        <LeagueInvitation leagueId={league.id} leagueName={league.name} />
+        {!isPast && (
+          <LeagueInvitation leagueId={league.id} leagueName={league.name} />
+        )}
 
-        {isCommissioner && (
+        {isCommissioner && !isPast && (
           <div className="danger-zone">
           <h2>Danger Zone</h2>
           {confirmingDelete ? (

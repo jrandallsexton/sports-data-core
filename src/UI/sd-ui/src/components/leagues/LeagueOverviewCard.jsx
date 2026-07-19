@@ -16,10 +16,17 @@ const LeagueOverviewCard = ({ league, onDuplicate }) => {
           className="league-avatar"
         />
       )}
-      <h2>
-        {league.name}
-        {isPast && <span className="past-league-badge">Past</span>}
-      </h2>
+      <div className="league-card-header">
+        <h2 className="league-card-title">
+          <Link to={`/app/picks/${league.id}`} className="league-card-name-link">
+            {league.name}
+          </Link>
+          {isPast && <span className="past-league-badge">Past</span>}
+        </h2>
+        {league.description && (
+          <p className="league-card-description">{league.description}</p>
+        )}
+      </div>
       <p>
         <strong>Type:</strong> {league.leagueType}
       </p>
@@ -29,21 +36,20 @@ const LeagueOverviewCard = ({ league, onDuplicate }) => {
       <p>
         <strong>Members:</strong> {league.memberCount}
       </p>
-      <Link to={`/app/league/${league.id}`} className="submit-button">
-        League Settings
-      </Link>
-      <Link to={`/app/picks/${league.id}`} className="submit-button">
-        Picks
-      </Link>
-      {onDuplicate && !isPast && (
-        <button
-          type="button"
-          className="submit-button"
-          onClick={() => onDuplicate(league)}
-        >
-          Duplicate
-        </button>
-      )}
+      <div className="league-card-actions">
+        <Link to={`/app/league/${league.id}`} className="submit-button">
+          Settings
+        </Link>
+        {onDuplicate && !isPast && (
+          <button
+            type="button"
+            className="submit-button"
+            onClick={() => onDuplicate(league)}
+          >
+            Duplicate
+          </button>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,3 +1,61 @@
+/* Header wrapper carries the underline (relocated off the h2) so the name stays
+   a pure heading and the description byline sits above the rule. Mirrors the
+   shared .card h2 border from HomePage.css. */
+.league-card-header {
+  border-bottom: 1.5px solid var(--accent);
+  padding-bottom: 0.4rem;
+  margin-bottom: 1.2rem;
+}
+
+/* The title no longer owns the shared .card h2 underline — the wrapper does.
+   Scoped tighter than .card h2 so the override wins. */
+.card .league-card-title {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin: 0;
+}
+
+/* The league name is the primary CTA — a link into that league's picks page. */
+.league-card-name-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.league-card-name-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* Commissioner blurb as a byline under the name. Scoped tighter than the global
+   .card p so its subtitle styling wins. */
+.card .league-card-description {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.85rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+/* Action buttons sit in a single row (Settings [/ Duplicate]) rather than a
+   full-width vertical stack, to tighten each league card. flex:1 lets them
+   share the width evenly whether there are one or two. */
+.league-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* Gap owns the spacing here; higher specificity beats the stacked-layout margin
+   rules below (including their mobile-media variants). */
+.card .league-card-actions .submit-button {
+  flex: 1;
+  margin: 0;
+  padding: 0.6rem 0.5rem;
+  font-size: 0.85rem;
+}
+
 .submit-button {
   display: block;
   box-sizing: border-box;

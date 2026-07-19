@@ -9,13 +9,35 @@ import CloneLeagueDialog from "./CloneLeagueDialog";
 import "./Leagues.css"; // for grid styling
 
 const ALL_LEAGUES = "All";
+const ALL_SEASONS = "All";
+
+// Persist the My Leagues filter state so navigating into a league detail and
+// back (or returning in a later visit) restores the same view instead of
+// resetting to defaults. Stale values are absorbed by the self-healing below.
+const FILTERS_STORAGE_KEY = "leagues.filters";
+
+function loadPersistedFilters() {
+  let parsed;
+  try {
+    parsed = JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY)) || {};
+  } catch {
+    parsed = {};
+  }
+  return {
+    ...parsed,
+    // Coerce to a strict boolean: a stale/legacy non-boolean (e.g. the string
+    // "false", which is truthy) must not accidentally enable the toggle.
+    showPast: parsed.showPast === true,
+  };
+}
 
 const Leagues = () => {
   const [leagues, setLeagues] = useState([]);
   const [cloneTarget, setCloneTarget] = useState(null);
   const [cloning, setCloning] = useState(false);
-  const [showPast, setShowPast] = useState(false);
-  const [leagueFilter, setLeagueFilter] = useState(ALL_LEAGUES);
+  const [showPast, setShowPast] = useState(() => loadPersistedFilters().showPast);
+  const [leagueFilter, setLeagueFilter] = useState(() => loadPersistedFilters().leagueFilter ?? ALL_LEAGUES);
+  const [seasonFilter, setSeasonFilter] = useState(() => loadPersistedFilters().seasonFilter ?? ALL_SEASONS);
 
   // Always fetch past leagues so the toggle is instant rather than a refetch.
   // The user's league count is small, and every row is needed the moment they
@@ -28,6 +50,19 @@ const Leagues = () => {
   useEffect(() => {
     fetchLeagues();
   }, [fetchLeagues]);
+
+  // Persist filters so a round-trip to a league detail (or a later visit)
+  // restores the same view.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        FILTERS_STORAGE_KEY,
+        JSON.stringify({ showPast, leagueFilter, seasonFilter })
+      );
+    } catch {
+      /* ignore storage failures (private mode, quota) */
+    }
+  }, [showPast, leagueFilter, seasonFilter]);
 
   const handleClone = async (name, inviteMembers) => {
     if (!cloneTarget) return;
@@ -61,12 +96,30 @@ const Leagues = () => {
     ? leagueFilter
     : ALL_LEAGUES;
 
-  const visibleLeagues =
+  // League (sport) is the primary filter; season options derive from the
+  // league-filtered set so the two can't combine into an empty result.
+  const leaguesInLeagueFilter =
     activeFilter === ALL_LEAGUES
       ? scoped
       : scoped.filter((l) => l.league === activeFilter);
 
-  const showFilterBar = hasPast || availableLeagues.length > 1;
+  // Season years available *for the active league*, newest-first. Because they
+  // come from the league-filtered set, any (league, season) pair has leagues;
+  // switching to a league that lacks the chosen season self-heals season to All.
+  const availableSeasons = [
+    ...new Set(leaguesInLeagueFilter.map((l) => l.seasonYear).filter(Boolean)),
+  ].sort((a, b) => b - a);
+
+  const activeSeasonFilter = availableSeasons.includes(seasonFilter)
+    ? seasonFilter
+    : ALL_SEASONS;
+
+  const visibleLeagues = leaguesInLeagueFilter.filter(
+    (l) => activeSeasonFilter === ALL_SEASONS || l.seasonYear === activeSeasonFilter
+  );
+
+  const showFilterBar =
+    hasPast || availableLeagues.length > 1 || availableSeasons.length > 1;
 
   return (
     <div className="page-container">
@@ -79,6 +132,23 @@ const Leagues = () => {
 
       {leagues.length > 0 && showFilterBar && (
         <div className="leagues-filter-bar">
+          {availableSeasons.length > 1 && (
+            <div className="league-filter-chips" role="group" aria-label="Filter by season">
+              {[ALL_SEASONS, ...availableSeasons].map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={`league-filter-chip${
+                    activeSeasonFilter === option ? " active" : ""
+                  }`}
+                  onClick={() => setSeasonFilter(option)}
+                  aria-pressed={activeSeasonFilter === option}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          )}
           {availableLeagues.length > 1 && (
             <div className="league-filter-chips" role="group" aria-label="Filter by league">
               {[ALL_LEAGUES, ...availableLeagues].map((option) => (

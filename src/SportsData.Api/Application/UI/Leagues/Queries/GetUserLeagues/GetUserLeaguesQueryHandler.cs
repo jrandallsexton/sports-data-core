@@ -39,6 +39,7 @@ public class GetUserLeaguesQueryHandler : IGetUserLeaguesQueryHandler
             {
                 Id = m.Group.Id,
                 Name = m.Group.Name,
+                Description = m.Group.Description,
                 Sport = m.Group.Sport.ToString(),
                 League = m.Group.League.ToString(),
                 LeagueType = m.Group.PickType.ToString(),

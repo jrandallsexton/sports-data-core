@@ -45,11 +45,16 @@ export function useSeasonLeagueSelection(allLeagues: LeagueSummary[]): SeasonLea
     [allLeagues],
   );
 
+  // Sorted by name (id tie-breaker) so the league list order and the
+  // reconciliation snap target (seasonLeagues[0]) are deterministic —
+  // getUserLeagues returns no guaranteed order.
   const seasonAllLeagues = useMemo(
     () =>
       selectedSeason == null
         ? []
-        : allLeagues.filter((l) => l.seasonYear === selectedSeason),
+        : allLeagues
+            .filter((l) => l.seasonYear === selectedSeason)
+            .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)),
     [allLeagues, selectedSeason],
   );
 

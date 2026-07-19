@@ -60,11 +60,16 @@ function LeaderboardPage() {
   );
 
   // Every league in the selected season (active + ended).
+  // Sorted by name (id tie-breaker) so the League dropdown order and the
+  // reconciliation effect's seasonLeagues[0] snap target are deterministic —
+  // getUserLeagues returns no guaranteed order.
   const seasonAllLeagues = useMemo(
     () =>
       selectedSeason == null
         ? []
-        : allLeagues.filter((l) => l.seasonYear === selectedSeason),
+        : allLeagues
+            .filter((l) => l.seasonYear === selectedSeason)
+            .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id)),
     [allLeagues, selectedSeason]
   );
 

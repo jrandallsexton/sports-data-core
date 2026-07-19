@@ -58,6 +58,20 @@ describe('useSeasonLeagueSelection', () => {
     expect(result.current.seasonLeagues.map((l) => l.id).sort()).toEqual(['active', 'ended']);
   });
 
+  it('sorts leagues by name so ordering and the snap target are deterministic', () => {
+    const leagues = [
+      league({ id: 'z', name: 'Zeta', seasonYear: 2026 }),
+      league({ id: 'a', name: 'Alpha', seasonYear: 2026 }),
+      league({ id: 'm', name: 'Mu', seasonYear: 2026 }),
+    ];
+
+    const { result } = renderHook(() => useSeasonLeagueSelection(leagues));
+
+    expect(result.current.seasonLeagues.map((l) => l.name)).toEqual(['Alpha', 'Mu', 'Zeta']);
+    // Snap target is the first in sorted order, not the input order.
+    expect(result.current.selectedLeagueId).toBe('a');
+  });
+
   it('treats a prior season as all-ended: no ended filter, every league shown', () => {
     const leagues = [
       league({ id: 'current', seasonYear: 2026 }),

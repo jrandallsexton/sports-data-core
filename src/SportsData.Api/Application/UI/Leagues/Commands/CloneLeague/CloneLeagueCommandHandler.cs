@@ -94,8 +94,9 @@ public class CloneLeagueCommandHandler : ICloneLeagueCommandHandler
                 [new ValidationFailure(nameof(command.SourceLeagueId), "This league has ended and can't be cloned.")]);
         }
 
-        // PickemGroup has no SeasonYear column; the slate regenerates from config +
-        // season, so derive the season from the source's matchups.
+        // Derive the clone's season from the source's matchups — the authoritative
+        // record of which season the slate ran in. (The source's own SeasonYear may
+        // still be a pre-backfill default for older leagues, so matchups are safer.)
         var seasonYear = await _dbContext.PickemGroupMatchups
             .AsNoTracking()
             .Where(m => m.GroupId == source.Id)
@@ -113,6 +114,7 @@ public class CloneLeagueCommandHandler : ICloneLeagueCommandHandler
             Name = name,
             Description = source.Description,
             Sport = source.Sport,
+            SeasonYear = seasonYear,
             League = source.League,
             PickType = source.PickType,
             TiebreakerType = source.TiebreakerType,

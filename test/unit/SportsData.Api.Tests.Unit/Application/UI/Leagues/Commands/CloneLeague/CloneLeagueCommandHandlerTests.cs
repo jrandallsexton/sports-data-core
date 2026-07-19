@@ -99,6 +99,8 @@ public class CloneLeagueCommandHandlerTests : ApiTestBase<CloneLeagueCommandHand
         clone.UseConfidencePoints.Should().BeTrue();
         clone.IsPublic.Should().BeTrue();
         clone.DeactivatedUtc.Should().BeNull();
+        // No source matchups seeded, so the season falls back to the clock year.
+        clone.SeasonYear.Should().Be(NowUtc.Year);
 
         DataContext.PickemGroupMembers.AsNoTracking()
             .Should().Contain(m => m.PickemGroupId == clone.Id

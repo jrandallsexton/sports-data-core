@@ -39,6 +39,16 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public int? DropLowWeeksCount { get; set; }
 
         /// <summary>
+        /// The season the league belongs to (e.g. 2026). Populated at creation from
+        /// the request (falling back to the current year) and by the clone handler.
+        /// Lets active-only surfaces (e.g. the leaderboard) offer a season filter so
+        /// users can still reach deactivated leagues from prior seasons without
+        /// widening the active filter. Existing rows were backfilled to 2026 via a DB
+        /// default; earlier seasons are corrected by hand.
+        /// </summary>
+        public int SeasonYear { get; set; }
+
+        /// <summary>
         /// Inclusive start of the league window. Null = from the start of the season.
         /// Contests with StartTime &gt;= StartsOn are in-window.
         /// </summary>
@@ -86,6 +96,11 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.Name).HasMaxLength(100);
 
                 builder.Property(x => x.NonStandardWeekGroupSeasonMapFilter).HasMaxLength(100);
+
+                // DB default backfills pre-existing rows to 2026 (avoids a
+                // nullable→backfill→non-nullable migration dance) and serves as a
+                // safety net; creation paths set it explicitly to the real season.
+                builder.Property(x => x.SeasonYear).HasDefaultValue(2026);
 
                 builder.Property(l => l.PickType)
                     .HasConversion<int>() // Store bitflag as int

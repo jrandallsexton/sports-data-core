@@ -167,6 +167,7 @@ public class CreateFootballNcaaLeagueCommandHandlerTests : ApiTestBase<CreateFoo
         saved.RankingFilter.Should().BeNull();
         saved.CommissionerUserId.Should().Be(currentUserId);
         saved.CreatedBy.Should().Be(currentUserId);
+        saved.SeasonYear.Should().Be(SeasonYear);
 
         saved.Conferences.Should().ContainSingle()
             .Which.Should().Match<PickemGroupConference>(c =>

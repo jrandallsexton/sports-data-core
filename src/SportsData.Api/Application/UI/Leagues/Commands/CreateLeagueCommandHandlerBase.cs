@@ -184,6 +184,7 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
             Name = request.Name.Trim(),
             PickType = pickType,
             Sport = SportMode,
+            SeasonYear = seasonYear,
             TiebreakerTiePolicy = tiebreakerTiePolicy,
             TiebreakerType = tiebreakerType,
             UseConfidencePoints = request.UseConfidencePoints,

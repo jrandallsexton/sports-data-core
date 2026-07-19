@@ -17,18 +17,25 @@ const ALL_SEASONS = "All";
 const FILTERS_STORAGE_KEY = "leagues.filters";
 
 function loadPersistedFilters() {
+  let parsed;
   try {
-    return JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY)) || {};
+    parsed = JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY)) || {};
   } catch {
-    return {};
+    parsed = {};
   }
+  return {
+    ...parsed,
+    // Coerce to a strict boolean: a stale/legacy non-boolean (e.g. the string
+    // "false", which is truthy) must not accidentally enable the toggle.
+    showPast: parsed.showPast === true,
+  };
 }
 
 const Leagues = () => {
   const [leagues, setLeagues] = useState([]);
   const [cloneTarget, setCloneTarget] = useState(null);
   const [cloning, setCloning] = useState(false);
-  const [showPast, setShowPast] = useState(() => loadPersistedFilters().showPast ?? false);
+  const [showPast, setShowPast] = useState(() => loadPersistedFilters().showPast);
   const [leagueFilter, setLeagueFilter] = useState(() => loadPersistedFilters().leagueFilter ?? ALL_LEAGUES);
   const [seasonFilter, setSeasonFilter] = useState(() => loadPersistedFilters().seasonFilter ?? ALL_SEASONS);
 

@@ -1,3 +1,20 @@
+/* Header wrapper carries the underline (relocated off the h2) so the name stays
+   a pure heading and the description byline sits above the rule. Mirrors the
+   shared .card h2 border from HomePage.css. */
+.league-card-header {
+  border-bottom: 1.5px solid var(--accent);
+  padding-bottom: 0.4rem;
+  margin-bottom: 1.2rem;
+}
+
+/* The title no longer owns the shared .card h2 underline — the wrapper does.
+   Scoped tighter than .card h2 so the override wins. */
+.card .league-card-title {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin: 0;
+}
+
 /* The league name is the primary CTA — a link into that league's picks page. */
 .league-card-name-link {
   color: inherit;
@@ -10,12 +27,9 @@
   text-decoration: underline;
 }
 
-/* Commissioner blurb as a byline under the name. Rendered as a block span
-   INSIDE the h2 so it sits above the shared .card h2 border-bottom without
-   touching that global rule. Overrides the h2's bold/large/accent styling on
-   just this element. */
-.league-card-description {
-  display: block;
+/* Commissioner blurb as a byline under the name. Scoped tighter than the global
+   .card p so its subtitle styling wins. */
+.card .league-card-description {
   margin: 0.25rem 0 0 0;
   font-size: 0.85rem;
   font-weight: 400;

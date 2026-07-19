@@ -16,15 +16,17 @@ const LeagueOverviewCard = ({ league, onDuplicate }) => {
           className="league-avatar"
         />
       )}
-      <h2 className="league-card-title">
-        <Link to={`/app/picks/${league.id}`} className="league-card-name-link">
-          {league.name}
-        </Link>
-        {isPast && <span className="past-league-badge">Past</span>}
+      <div className="league-card-header">
+        <h2 className="league-card-title">
+          <Link to={`/app/picks/${league.id}`} className="league-card-name-link">
+            {league.name}
+          </Link>
+          {isPast && <span className="past-league-badge">Past</span>}
+        </h2>
         {league.description && (
-          <span className="league-card-description">{league.description}</span>
+          <p className="league-card-description">{league.description}</p>
         )}
-      </h2>
+      </div>
       <p>
         <strong>Type:</strong> {league.leagueType}
       </p>

@@ -14,16 +14,16 @@ SELECT
   COALESCE(fslDarkAway."Uri", flDarkAway."Uri") AS "AwayLogoUriDark",
   fAway."Slug" AS "AwaySlug", fAway."ColorCodeHex" AS "AwayColor",
   fsrdAway."Current" AS "AwayRank", gsAway."Slug" AS "AwayConferenceSlug",
-  fsAway."Wins" AS "AwayWins", fsAway."Losses" AS "AwayLosses",
-  fsAway."ConferenceWins" AS "AwayConferenceWins", fsAway."ConferenceLosses" AS "AwayConferenceLosses",
+  COALESCE(enterAway."Wins", 0) AS "AwayWins", COALESCE(enterAway."Losses", 0) AS "AwayLosses",
+  COALESCE(enterAway."ConferenceWins", 0) AS "AwayConferenceWins", COALESCE(enterAway."ConferenceLosses", 0) AS "AwayConferenceLosses",
   fHome."DisplayName" AS "Home", fHome."Abbreviation" AS "HomeShort",
   fsHome."Id" AS "HomeFranchiseSeasonId",
   COALESCE(fslHome."Uri", flHome."Uri") AS "HomeLogoUri",
   COALESCE(fslDarkHome."Uri", flDarkHome."Uri") AS "HomeLogoUriDark",
   fHome."Slug" AS "HomeSlug", fHome."ColorCodeHex" AS "HomeColor",
   fsrdHome."Current" AS "HomeRank", gsHome."Slug" AS "HomeConferenceSlug",
-  fsHome."Wins" AS "HomeWins", fsHome."Losses" AS "HomeLosses",
-  fsHome."ConferenceWins" AS "HomeConferenceWins", fsHome."ConferenceLosses" AS "HomeConferenceLosses",
+  COALESCE(enterHome."Wins", 0) AS "HomeWins", COALESCE(enterHome."Losses", 0) AS "HomeLosses",
+  COALESCE(enterHome."ConferenceWins", 0) AS "HomeConferenceWins", COALESCE(enterHome."ConferenceLosses", 0) AS "HomeConferenceLosses",
   co."Details" AS "SpreadCurrentDetails", co."Spread" AS "SpreadCurrent",
   cto."SpreadPointsOpen" AS "SpreadOpen",
   co."OverUnder" AS "OverUnderCurrent", co."TotalPointsOpen" AS "OverUnderOpen",
@@ -105,6 +105,34 @@ LEFT JOIN LATERAL (
   ORDER BY sw."StartDate" DESC LIMIT 1
 ) fsrAway ON TRUE
 LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdAway ON fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+-- Entering record: the record the away team carried INTO this game = its record
+-- THROUGH its most-recent prior competition that has a 'total' record (same
+-- FranchiseSeason, earlier StartDate). Point-in-time, unlike the mutable
+-- FranchiseSeason W/L. Parsed from ESPN's CompetitionCompetitorRecord Summary
+-- ("6-2"). Null (→ 0 via COALESCE) at the season opener or an un-sourced gap.
+-- See docs/features/point-in-time-team-records.md.
+LEFT JOIN LATERAL (
+  SELECT
+    split_part(tot."Summary", '-', 1)::int  AS "Wins",
+    split_part(tot."Summary", '-', 2)::int  AS "Losses",
+    split_part(conf."Summary", '-', 1)::int AS "ConferenceWins",
+    split_part(conf."Summary", '-', 2)::int AS "ConferenceLosses"
+  FROM public."CompetitionCompetitor" prev_cc
+  INNER JOIN public."Competition" prev_comp ON prev_comp."Id" = prev_cc."CompetitionId"
+  INNER JOIN public."Contest" prev_ct ON prev_ct."Id" = prev_comp."ContestId"
+  INNER JOIN public."CompetitionCompetitorRecord" tot
+    ON tot."CompetitionCompetitorId" = prev_cc."Id" AND tot."Type" = 'total'
+  -- LEFT (not INNER) on purpose: an FBS independent (Notre Dame, UConn, …) has
+  -- no conference and carries no 'vsconf' record, so INNER would exclude ALL
+  -- their games and blank the overall record. 'total' (the INNER join above) is
+  -- the authoritative driver; a missing 'vsconf' correctly yields 0-0 conference.
+  LEFT JOIN public."CompetitionCompetitorRecord" conf
+    ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
+  WHERE prev_cc."FranchiseSeasonId" = fsAway."Id"
+    AND prev_ct."StartDateUtc" < c."StartDateUtc"
+  ORDER BY prev_ct."StartDateUtc" DESC
+  LIMIT 1
+) enterAway ON TRUE
 INNER JOIN public."FranchiseSeason" fsHome ON fsHome."Id" = c."HomeTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fHome ON fHome."Id" = fsHome."FranchiseId"
 LEFT JOIN LATERAL (
@@ -153,6 +181,25 @@ LEFT JOIN LATERAL (
   ORDER BY sw."StartDate" DESC LIMIT 1
 ) fsrHome ON TRUE
 LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdHome ON fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+-- Entering record for the home team — same lag as enterAway above.
+LEFT JOIN LATERAL (
+  SELECT
+    split_part(tot."Summary", '-', 1)::int  AS "Wins",
+    split_part(tot."Summary", '-', 2)::int  AS "Losses",
+    split_part(conf."Summary", '-', 1)::int AS "ConferenceWins",
+    split_part(conf."Summary", '-', 2)::int AS "ConferenceLosses"
+  FROM public."CompetitionCompetitor" prev_cc
+  INNER JOIN public."Competition" prev_comp ON prev_comp."Id" = prev_cc."CompetitionId"
+  INNER JOIN public."Contest" prev_ct ON prev_ct."Id" = prev_comp."ContestId"
+  INNER JOIN public."CompetitionCompetitorRecord" tot
+    ON tot."CompetitionCompetitorId" = prev_cc."Id" AND tot."Type" = 'total'
+  LEFT JOIN public."CompetitionCompetitorRecord" conf
+    ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
+  WHERE prev_cc."FranchiseSeasonId" = fsHome."Id"
+    AND prev_ct."StartDateUtc" < c."StartDateUtc"
+  ORDER BY prev_ct."StartDateUtc" DESC
+  LIMIT 1
+) enterHome ON TRUE
 WHERE c."Id" = ANY(@ContestIds)
 GROUP BY
   c."SeasonWeekId", sw_contest."EndDate", c."Id", c."StartDateUtc", cn."Headline", cs."StatusTypeName", cs."StatusDescription",
@@ -160,13 +207,13 @@ GROUP BY
   fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id",
   flAway."Uri", fslAway."Uri", flDarkAway."Uri", fslDarkAway."Uri", fAway."Slug",
   fsrdAway."Current", gsAway."Slug",
-  fsAway."Wins", fsAway."Losses", fsAway."ConferenceWins", fsAway."ConferenceLosses",
+  enterAway."Wins", enterAway."Losses", enterAway."ConferenceWins", enterAway."ConferenceLosses",
   fAway."Abbreviation", fAway."ColorCodeHex",
   fHome."Abbreviation", fHome."ColorCodeHex",
   fHome."DisplayName", fHome."DisplayNameShort", fsHome."Id",
   flHome."Uri", fslHome."Uri", flDarkHome."Uri", fslDarkHome."Uri", fHome."Slug",
   fsrdHome."Current", gsHome."Slug",
-  fsHome."Wins", fsHome."Losses", fsHome."ConferenceWins", fsHome."ConferenceLosses",
+  enterHome."Wins", enterHome."Losses", enterHome."ConferenceWins", enterHome."ConferenceLosses",
   co."Details", co."Spread", co."OverUnder", co."OverOdds", co."UnderOdds",
   co."ProviderName",
   cto."SpreadPointsOpen", co."TotalPointsOpen",

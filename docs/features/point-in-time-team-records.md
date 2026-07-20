@@ -20,7 +20,7 @@ Today it shows the final-season record.
 team records from the **mutable, season-level `FranchiseSeason` row** (aliases
 `fsAway` / `fsHome`):
 
-```
+```sql
 fsAway."Wins", fsAway."Losses", fsAway."ConferenceWins", fsAway."ConferenceLosses"
 fsHome."Wins", fsHome."Losses", fsHome."ConferenceWins", fsHome."ConferenceLosses"
 ```

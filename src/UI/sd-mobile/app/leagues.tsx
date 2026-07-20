@@ -119,7 +119,7 @@ export default function LeaguesScreen() {
   const cardWidth =
     columns === 1
       ? undefined
-      : (width - CONTENT_PADDING * 2 - GRID_GAP * (columns - 1)) / columns;
+      : Math.floor((width - CONTENT_PADDING * 2 - GRID_GAP * (columns - 1)) / columns);
 
   return (
     <>

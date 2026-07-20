@@ -122,6 +122,10 @@ LEFT JOIN LATERAL (
   INNER JOIN public."Contest" prev_ct ON prev_ct."Id" = prev_comp."ContestId"
   INNER JOIN public."CompetitionCompetitorRecord" tot
     ON tot."CompetitionCompetitorId" = prev_cc."Id" AND tot."Type" = 'total'
+  -- LEFT (not INNER) on purpose: an FBS independent (Notre Dame, UConn, …) has
+  -- no conference and carries no 'vsconf' record, so INNER would exclude ALL
+  -- their games and blank the overall record. 'total' (the INNER join above) is
+  -- the authoritative driver; a missing 'vsconf' correctly yields 0-0 conference.
   LEFT JOIN public."CompetitionCompetitorRecord" conf
     ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
   WHERE prev_cc."FranchiseSeasonId" = fsAway."Id"

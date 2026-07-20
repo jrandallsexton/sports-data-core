@@ -153,10 +153,12 @@ export default function PicksScreen() {
   const handleLeagueChange = useCallback(
     (id: string) => {
       setLeagueId(id);
-      const league = leagues.find((l) => l.id === id);
+      // Search selectableLeagues (active + viewed past) so switching to the past
+      // league resolves its weeks instead of transiently clearing selectedWeek.
+      const league = selectableLeagues.find((l) => l.id === id);
       setSelectedWeek(latestWeek(league));
     },
-    [leagues],
+    [selectableLeagues],
   );
 
   const {

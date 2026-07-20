@@ -139,7 +139,7 @@ export function PrimarySlotOffSeasonCountdown() {
             title="Go to picks"
             onPress={() => router.push('/(tabs)/picks' as never)}
             size="md"
-            fullWidth
+            style={styles.actionButton}
           />
         ) : (
           phrases.map((s) => {
@@ -159,7 +159,7 @@ export function PrimarySlotOffSeasonCountdown() {
                       )
                 }
                 size="md"
-                fullWidth
+                style={styles.actionButton}
               />
             );
           })
@@ -202,6 +202,12 @@ const styles = StyleSheet.create({
   },
   actions: {
     width: '100%',
+    flexDirection: 'row',
     gap: 8,
+  },
+  // Each CTA shares the row equally → two sports read as two columns; the lone
+  // all-live "Go to picks" button fills the row on its own.
+  actionButton: {
+    flex: 1,
   },
 });

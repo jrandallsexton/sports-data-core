@@ -128,6 +128,9 @@ export default function LeaguesScreen() {
           title: 'My Leagues',
           headerStyle: { backgroundColor: theme.card },
           headerTintColor: theme.text,
+          // The parent (tabs) group has no title, so iOS would otherwise render
+          // the raw route name ("(tabs)") as the back label. Show just the chevron.
+          headerBackButtonDisplayMode: 'minimal',
         }}
       />
 

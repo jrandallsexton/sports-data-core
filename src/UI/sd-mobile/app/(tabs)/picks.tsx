@@ -25,6 +25,10 @@ import { useImportAvailability, useImportPicks } from '@/src/hooks/useImportPick
 import { ImportPicksModal } from '@/src/components/features/picks/ImportPicksModal';
 import { getLeagues } from '@/src/lib/leagues';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
+import { useQuery } from '@tanstack/react-query';
+import { leaguesApi } from '@/src/services/api/leaguesApi';
+import { leaguesKeys } from '../leagues';
+import type { League } from '@/src/types/models';
 import Toast from 'react-native-toast-message';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -47,6 +51,39 @@ export default function PicksScreen() {
   // /(tabs)/picks?leagueId=<id> so the screen opens on that league directly.
   const { leagueId: leagueIdParam } = useLocalSearchParams<{ leagueId?: string }>();
 
+  // Viewing a PAST (deactivated) league: /user/me is active-only, so a deep-link
+  // param that isn't in the active set is fetched on demand (getUserLeagues
+  // includes deactivated) and rendered read-only. Reuses the My Leagues query
+  // key so arriving from that screen costs no extra request.
+  const candidatePastId = useMemo(
+    () =>
+      leagueIdParam && !leagues.some((l) => l.id === leagueIdParam)
+        ? leagueIdParam
+        : null,
+    [leagueIdParam, leagues],
+  );
+  const { data: allLeagues, isFetched: allLeaguesFetched } = useQuery({
+    queryKey: leaguesKeys.mine,
+    queryFn: () =>
+      leaguesApi.getUserLeagues({ includeDeactivated: true }).then((r) => r.data),
+    enabled: !!candidatePastId,
+  });
+  const pastLeagueAsLeague = useMemo<League | null>(() => {
+    if (!candidatePastId || !allLeagues) return null;
+    // Only a genuinely deactivated league becomes a read-only past view — an
+    // active league merely missing from a stale /user/me snapshot must not be.
+    const found = allLeagues.find((l) => l.id === candidatePastId && l.deactivatedUtc);
+    return found
+      ? { id: found.id, name: found.name, sport: found.sport, seasonWeeks: found.seasonWeeks }
+      : null;
+  }, [candidatePastId, allLeagues]);
+
+  // Active leagues plus the viewed past league — used for resolution + selector.
+  const selectableLeagues = useMemo(
+    () => (pastLeagueAsLeague ? [...leagues, pastLeagueAsLeague] : leagues),
+    [leagues, pastLeagueAsLeague],
+  );
+
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [hidePicked, setHidePicked] = useState(false);
@@ -56,31 +93,39 @@ export default function PicksScreen() {
   const latestWeek = (l: { seasonWeeks?: number[] } | null | undefined) =>
     l?.seasonWeeks?.length ? l.seasonWeeks[l.seasonWeeks.length - 1] : null;
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps — intentionally excluding leagueId to only initialize once and avoid rerunning on user selection
+  // eslint-disable-next-line react-hooks/exhaustive-deps — intentionally excluding leagueId to only initialize/target, not rerun on user selection
   useEffect(() => {
-    if (leagues.length === 0) return;
-
-    // If a deep-link param targets a league the user actually belongs to,
-    // force-select it (overrides any prior in-session selection so tapping
-    // a different league from the home card always lands on that league).
-    const targeted = leagueIdParam
-      ? leagues.find((l) => l.id === leagueIdParam)
-      : null;
-    if (targeted) {
-      setLeagueId(targeted.id);
-      setSelectedWeek(latestWeek(targeted));
-      return;
+    // Deep-link param wins: an active league, or the on-demand past league.
+    if (leagueIdParam) {
+      const active = leagues.find((l) => l.id === leagueIdParam);
+      if (active) {
+        setLeagueId(active.id);
+        setSelectedWeek(latestWeek(active));
+        return;
+      }
+      if (pastLeagueAsLeague && pastLeagueAsLeague.id === leagueIdParam) {
+        setLeagueId(pastLeagueAsLeague.id);
+        setSelectedWeek(latestWeek(pastLeagueAsLeague));
+        return;
+      }
+      // Param is a past league still being fetched → wait rather than default to
+      // the first active league (that was the bug).
+      if (candidatePastId === leagueIdParam && !allLeaguesFetched) return;
+      // Otherwise it's not one of the user's leagues → fall through to default.
     }
 
-    // Otherwise initialize once to the first league in the list.
-    if (!leagueId) {
+    // Initialize once to the first active league.
+    if (!leagueId && leagues.length > 0) {
       setLeagueId(leagues[0].id);
       setSelectedWeek(latestWeek(leagues[0]));
     }
-  }, [leagues, leagueIdParam]);
+  }, [leagues, leagueIdParam, pastLeagueAsLeague, candidatePastId, allLeaguesFetched]);
 
-  const selectedLeague = leagues.find((l) => l.id === leagueId) ?? null;
+  const selectedLeague = selectableLeagues.find((l) => l.id === leagueId) ?? null;
   const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
+
+  // Read-only when viewing a deactivated league — no pick submission.
+  const isReadOnly = !!pastLeagueAsLeague && leagueId === pastLeagueAsLeague.id;
 
   // A league with no weeks means this /user/me snapshot predates its slate
   // build. Create/clone return before the slate exists (~700ms), and anything
@@ -110,10 +155,12 @@ export default function PicksScreen() {
   const handleLeagueChange = useCallback(
     (id: string) => {
       setLeagueId(id);
-      const league = leagues.find((l) => l.id === id);
+      // Search selectableLeagues (active + viewed past) so switching to the past
+      // league resolves its weeks instead of transiently clearing selectedWeek.
+      const league = selectableLeagues.find((l) => l.id === id);
       setSelectedWeek(latestWeek(league));
     },
-    [leagues],
+    [selectableLeagues],
   );
 
   const {
@@ -164,7 +211,7 @@ export default function PicksScreen() {
   // unpicked games to fill (React Query's enabled replaces the web's manual
   // picks-loaded gating).
   const importEnabled =
-    !picksLoading && !matchupsLoading && total > 0 && made < total;
+    !isReadOnly && !picksLoading && !matchupsLoading && total > 0 && made < total;
   const { data: availabilityData } = useImportAvailability(
     leagueId,
     selectedWeek,
@@ -175,6 +222,10 @@ export default function PicksScreen() {
   // Enrich the previewed sources for display, scoped to this week's still-unpicked
   // matchups; drop sources with nothing left to offer.
   const importSources = useMemo(() => {
+    // Never offer imports for a read-only past league. Guards the race where
+    // availabilityData was cached before isReadOnly resolved (the query disables
+    // but keeps its last data).
+    if (isReadOnly) return [];
     const avail = availabilityData ?? [];
     const byContest = new Map(matchups.map((m) => [m.contestId, m]));
     return avail
@@ -195,10 +246,11 @@ export default function PicksScreen() {
           }),
       }))
       .filter((src) => src.items.length > 0);
-  }, [availabilityData, matchups, pickMap]);
+  }, [isReadOnly, availabilityData, matchups, pickMap]);
 
   const handleImport = useCallback(
     (sourceLeagueId: string, contestIds: string[]) => {
+      if (isReadOnly) return; // deactivated leagues are view-only
       if (!leagueId || selectedWeek == null) return;
       importPicks.mutate(
         { leagueId, week: selectedWeek, sourceLeagueId, contestIds },
@@ -226,7 +278,7 @@ export default function PicksScreen() {
         },
       );
     },
-    [leagueId, selectedWeek, importPicks],
+    [isReadOnly, leagueId, selectedWeek, importPicks],
   );
 
   // Hide Picked is a no-op once allPicked flips true — the toggle is also
@@ -289,6 +341,13 @@ export default function PicksScreen() {
     navigation.setOptions({
       headerRight: () => (
         <View style={headerStyles.pill}>
+          {isReadOnly && (
+            <View style={[headerStyles.modeBadge, { borderColor: theme.textMuted }]}>
+              <Text style={[headerStyles.modeBadgeText, { color: theme.textMuted }]}>
+                🔒 ENDED
+              </Text>
+            </View>
+          )}
           {pickModeLabel ? (
             <View style={[headerStyles.modeBadge, { borderColor: theme.tint }]}>
               <Text style={[headerStyles.modeBadgeText, { color: theme.tint }]}>
@@ -327,7 +386,7 @@ export default function PicksScreen() {
         </View>
       ),
     });
-  }, [made, total, allPicked, hidePicked, theme, pickModeLabel]);
+  }, [made, total, allPicked, hidePicked, theme, pickModeLabel, isReadOnly]);
 
   if (meLoading) {
     return <LoadingSpinner message="Loading picks…" fullScreen />;
@@ -376,7 +435,7 @@ export default function PicksScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {selectedWeek !== null && (
         <LeagueWeekSelector
-          leagues={leagues}
+          leagues={selectableLeagues}
           selectedLeagueId={leagueId}
           onLeagueChange={handleLeagueChange}
           selectedWeek={selectedWeek}
@@ -481,6 +540,15 @@ export default function PicksScreen() {
                 );
               }}
               onPick={(m, _choice, franchiseSeasonId) => {
+                // Past (deactivated) leagues are view-only — the season is over.
+                if (isReadOnly) {
+                  Toast.show({
+                    type: 'info',
+                    text1: 'League has ended',
+                    text2: 'Picks are read-only.',
+                  });
+                  return;
+                }
                 if (!leagueId || !selectedWeek) return;
                 submitPick.mutate({
                   pickemGroupId: leagueId,
@@ -513,7 +581,7 @@ export default function PicksScreen() {
       )}
 
       <ImportPicksModal
-        visible={importOpen}
+        visible={!isReadOnly && importOpen}
         sources={importSources}
         importing={importPicks.isPending}
         onClose={() => setImportOpen(false)}

@@ -70,7 +70,9 @@ export default function PicksScreen() {
   });
   const pastLeagueAsLeague = useMemo<League | null>(() => {
     if (!candidatePastId || !allLeagues) return null;
-    const found = allLeagues.find((l) => l.id === candidatePastId);
+    // Only a genuinely deactivated league becomes a read-only past view — an
+    // active league merely missing from a stale /user/me snapshot must not be.
+    const found = allLeagues.find((l) => l.id === candidatePastId && l.deactivatedUtc);
     return found
       ? { id: found.id, name: found.name, sport: found.sport, seasonWeeks: found.seasonWeeks }
       : null;

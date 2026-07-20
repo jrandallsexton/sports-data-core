@@ -115,7 +115,11 @@ function PicksPage() {
     LeaguesApi.getUserLeagues({ includeDeactivated: true })
       .then((list) => {
         if (cancelled) return;
-        const found = (list || []).find((l) => l.id === routeLeagueId) ?? null;
+        // Only a genuinely deactivated league becomes a read-only past view. An
+        // active league merely missing from a stale /user/me snapshot must not be
+        // caught here, or normal pick submission would be blocked.
+        const found =
+          (list || []).find((l) => l.id === routeLeagueId && l.deactivatedUtc) ?? null;
         setPastLeague(found);
         setPastLeagueResolvedFor(routeLeagueId);
       })
@@ -129,9 +133,13 @@ function PicksPage() {
     };
   }, [userLoading, routeLeagueId, activeLeagues]);
 
-  // The fetched past league only counts when it matches the current route.
+  // The fetched past league only counts when it matches the current route AND is
+  // actually deactivated (guards against an active league treated as read-only).
   const viewedPastLeague = useMemo(
-    () => (pastLeague && pastLeague.id === routeLeagueId ? pastLeague : null),
+    () =>
+      pastLeague && pastLeague.deactivatedUtc && pastLeague.id === routeLeagueId
+        ? pastLeague
+        : null,
     [pastLeague, routeLeagueId]
   );
 

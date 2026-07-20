@@ -222,6 +222,10 @@ export default function PicksScreen() {
   // Enrich the previewed sources for display, scoped to this week's still-unpicked
   // matchups; drop sources with nothing left to offer.
   const importSources = useMemo(() => {
+    // Never offer imports for a read-only past league. Guards the race where
+    // availabilityData was cached before isReadOnly resolved (the query disables
+    // but keeps its last data).
+    if (isReadOnly) return [];
     const avail = availabilityData ?? [];
     const byContest = new Map(matchups.map((m) => [m.contestId, m]));
     return avail
@@ -242,7 +246,7 @@ export default function PicksScreen() {
           }),
       }))
       .filter((src) => src.items.length > 0);
-  }, [availabilityData, matchups, pickMap]);
+  }, [isReadOnly, availabilityData, matchups, pickMap]);
 
   const handleImport = useCallback(
     (sourceLeagueId: string, contestIds: string[]) => {
@@ -577,7 +581,7 @@ export default function PicksScreen() {
       )}
 
       <ImportPicksModal
-        visible={importOpen}
+        visible={!isReadOnly && importOpen}
         sources={importSources}
         importing={importPicks.isPending}
         onClose={() => setImportOpen(false)}

@@ -102,8 +102,10 @@ const LeagueDetail = () => {
           {league.description && (
             <p className="league-detail-byline">{league.description}</p>
           )}
+          {/* Past leagues open the picks page read-only ("View Picks"); active
+              leagues go there to make picks. */}
           <Link to={`/app/picks/${league.id}`} className="make-picks-button">
-            Make Your Picks
+            {isPast ? "View Picks" : "Make Your Picks"}
           </Link>
           <ul className="league-details-list">
             <li><strong>Pick Type:</strong> {league.pickType}</li>

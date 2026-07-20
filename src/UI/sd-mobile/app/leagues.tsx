@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  useWindowDimensions,
+} from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +26,8 @@ export const leaguesKeys = {
 };
 
 const ALL_LEAGUES = 'All';
+const CONTENT_PADDING = 16; // matches styles.content horizontal padding
+const GRID_GAP = 12; // matches styles.grid gap
 
 /**
  * "My Leagues" — mobile's league management surface, mirroring sd-ui's
@@ -101,6 +110,16 @@ export default function LeaguesScreen() {
 
   const openPicks = (leagueId: string) =>
     router.push({ pathname: '/(tabs)/picks', params: { leagueId } } as never);
+
+  // Responsive columns: phones stay single-column; tablets flow into 2 (portrait)
+  // or 3 (wide/landscape) so the cards stop wasting horizontal space. Width-driven
+  // (not device type) so it also tracks orientation and split-screen.
+  const { width } = useWindowDimensions();
+  const columns = width >= 1000 ? 3 : width >= 680 ? 2 : 1;
+  const cardWidth =
+    columns === 1
+      ? undefined
+      : (width - CONTENT_PADDING * 2 - GRID_GAP * (columns - 1)) / columns;
 
   return (
     <>
@@ -196,18 +215,24 @@ export default function LeaguesScreen() {
             No leagues match this filter.
           </Text>
         ) : (
-          visibleLeagues.map((league) => (
-            <LeagueCard
-              key={league.id}
-              league={league}
-              expanded={expandedId === league.id}
-              onToggleExpanded={() =>
-                setExpandedId((prev) => (prev === league.id ? null : league.id))
-              }
-              onOpenPicks={() => openPicks(league.id)}
-              onDuplicate={() => setCloneTarget(league)}
-            />
-          ))
+          <View style={styles.grid}>
+            {visibleLeagues.map((league) => (
+              <View
+                key={league.id}
+                style={cardWidth != null ? { width: cardWidth } : styles.cardFull}
+              >
+                <LeagueCard
+                  league={league}
+                  expanded={expandedId === league.id}
+                  onToggleExpanded={() =>
+                    setExpandedId((prev) => (prev === league.id ? null : league.id))
+                  }
+                  onOpenPicks={() => openPicks(league.id)}
+                  onDuplicate={() => setCloneTarget(league)}
+                />
+              </View>
+            ))}
+          </View>
         )}
       </ScrollView>
 
@@ -226,6 +251,10 @@ export default function LeaguesScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 16, gap: 12 },
+  // Wrapping grid; cards top-align (flex-start) so an expanded card grows down
+  // without stretching its shorter row-mates. Item widths are set inline.
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, alignItems: 'flex-start' },
+  cardFull: { width: '100%' },
   filterBar: { gap: 10 },
   pastToggle: {
     alignSelf: 'flex-start',

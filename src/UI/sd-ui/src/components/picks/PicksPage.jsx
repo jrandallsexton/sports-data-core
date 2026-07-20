@@ -10,6 +10,7 @@ import ImportPicksDialog from "./ImportPicksDialog.jsx";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import toast from "react-hot-toast";
 import apiWrapper from "../../api/apiWrapper.js";
+import LeaguesApi from "../../api/leagues/leaguesApi";
 import LeagueWeekSelector from "./LeagueWeekSelector.jsx";
 import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx";
@@ -85,9 +86,62 @@ function PicksPage() {
   // Memoized so the init effect's dep check doesn't fire on every render
   // (a fresh `Object.values` ref every render previously triggered re-init
   // and stomped the user's dropdown selection).
-  const leagues = useMemo(
+  const activeLeagues = useMemo(
     () => Object.values(userDto?.leagues || {}),
     [userDto]
+  );
+
+  // Viewing a PAST (deactivated) league: /user/me is active-only, so when the
+  // route points at a league that isn't in the active set, fetch it on demand
+  // (getUserLeagues includes deactivated) and render it read-only. This keeps
+  // the shared chrome active-only while still allowing a historical picks view.
+  const [pastLeague, setPastLeague] = useState(null);
+  const [pastLeagueResolvedFor, setPastLeagueResolvedFor] = useState(null);
+  const pastFetchAttemptedFor = useRef(null);
+
+  useEffect(() => {
+    if (userLoading || !routeLeagueId) return;
+    // Route is an active league → no past fetch; clear any stale past state.
+    if (activeLeagues.some((l) => l.id === routeLeagueId)) {
+      pastFetchAttemptedFor.current = null;
+      setPastLeague(null);
+      setPastLeagueResolvedFor(null);
+      return;
+    }
+    // Fetch once per routeLeagueId; the ref guards against a refetch loop.
+    if (pastFetchAttemptedFor.current === routeLeagueId) return;
+    pastFetchAttemptedFor.current = routeLeagueId;
+    let cancelled = false;
+    LeaguesApi.getUserLeagues({ includeDeactivated: true })
+      .then((list) => {
+        if (cancelled) return;
+        const found = (list || []).find((l) => l.id === routeLeagueId) ?? null;
+        setPastLeague(found);
+        setPastLeagueResolvedFor(routeLeagueId);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPastLeague(null);
+        setPastLeagueResolvedFor(routeLeagueId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userLoading, routeLeagueId, activeLeagues]);
+
+  // The fetched past league only counts when it matches the current route.
+  const viewedPastLeague = useMemo(
+    () => (pastLeague && pastLeague.id === routeLeagueId ? pastLeague : null),
+    [pastLeague, routeLeagueId]
+  );
+
+  // Read-only when viewing a deactivated league — no pick submission.
+  const isReadOnly = !!viewedPastLeague;
+
+  // Resolution + selector set: active leagues plus the viewed past league.
+  const leagues = useMemo(
+    () => (viewedPastLeague ? [...activeLeagues, viewedPastLeague] : activeLeagues),
+    [activeLeagues, viewedPastLeague]
   );
 
   // Derive the selected league from the route param. With `leagues`
@@ -226,30 +280,39 @@ function PicksPage() {
   // available. Once the URL has a valid league id, subsequent league
   // switches happen through `handleLeagueChange` (selector → navigate).
   useEffect(() => {
-    if (userLoading || leagues.length === 0) return;
+    if (userLoading || activeLeagues.length === 0) return;
 
-    initializeLeagueSelection(leagues);
+    initializeLeagueSelection(activeLeagues);
 
-    const isRouteValid =
-      routeLeagueId && leagues.some((l) => l.id === routeLeagueId);
-    if (isRouteValid) {
-      // Keep cross-page memory current with the URL-driven selection so
-      // Leaderboard/Messageboard remember the user's league after a tab
-      // switch.
+    // Active league in the URL → keep cross-page memory current so
+    // Leaderboard/Messageboard remember the user's league after a tab switch.
+    if (routeLeagueId && activeLeagues.some((l) => l.id === routeLeagueId)) {
       setGlobalLeagueId(routeLeagueId);
       return;
     }
 
+    // A loaded past (deactivated) league → valid read-only view. Don't redirect,
+    // and don't write a deactivated id into the shared chrome selection.
+    if (viewedPastLeague) return;
+
+    // A past-league URL whose on-demand fetch hasn't resolved yet → wait rather
+    // than bounce to an active league (that was the original bug).
+    if (routeLeagueId && pastLeagueResolvedFor !== routeLeagueId) return;
+
+    // Genuinely not one of the user's leagues → fall back to a remembered/first
+    // active league.
     const fallback =
-      globalLeagueId && leagues.some((l) => l.id === globalLeagueId)
+      globalLeagueId && activeLeagues.some((l) => l.id === globalLeagueId)
         ? globalLeagueId
-        : leagues[0].id;
+        : activeLeagues[0].id;
     setGlobalLeagueId(fallback);
     navigate(`/app/picks/${fallback}`, { replace: true });
   }, [
     userLoading,
-    leagues,
+    activeLeagues,
     routeLeagueId,
+    viewedPastLeague,
+    pastLeagueResolvedFor,
     globalLeagueId,
     setGlobalLeagueId,
     initializeLeagueSelection,
@@ -475,6 +538,11 @@ function PicksPage() {
   }
 
   async function handlePick(matchup, selectedFranchiseSeasonId, confidencePoints) {
+    // Past (deactivated) leagues are view-only — the season is over.
+    if (isReadOnly) {
+      toast("This league has ended — picks are read-only.", { icon: "🔒" });
+      return;
+    }
     try {
       const pickPayload = {
         pickemGroupId: routeLeagueId,
@@ -696,6 +764,14 @@ function PicksPage() {
             seasonWeeks={seasonWeeks}
           />
           <div className="pick-status-toggle-row">
+            {isReadOnly && (
+              <span
+                className="pick-mode-badge"
+                title="This league has ended — read-only"
+              >
+                🔒 Ended
+              </span>
+            )}
             {(() => {
               // Pick-mode badge. PickType enum on the wire serializes as a
               // string ("StraightUp" / "AgainstTheSpread" / "OverUnder").

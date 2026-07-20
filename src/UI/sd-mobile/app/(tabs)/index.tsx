@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { ScrollView, View, StyleSheet, RefreshControl, useWindowDimensions } from 'react-native';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
@@ -35,6 +35,12 @@ export default function HomeScreen() {
   } = useCurrentUser();
   const leagues = useMemo(() => getLeagues(me), [me]);
 
+  // On tablet-width screens, place the countdown and leagues side by side so the
+  // countdown stops stretching awkwardly across the full width. Same width-driven
+  // breakpoint as the leagues grid.
+  const { width } = useWindowDimensions();
+  const twoColumn = width >= 680;
+
   if (meLoading) {
     return <LoadingSpinner message="Loading…" fullScreen />;
   }
@@ -55,10 +61,21 @@ export default function HomeScreen() {
       }
     >
       {hasLeagues ? (
-        <>
-          <PrimarySlotOffSeasonCountdown />
-          <YourLeaguesCard leagues={leagues} />
-        </>
+        twoColumn ? (
+          <View style={styles.twoCol}>
+            <View style={styles.col}>
+              <PrimarySlotOffSeasonCountdown />
+            </View>
+            <View style={styles.col}>
+              <YourLeaguesCard leagues={leagues} />
+            </View>
+          </View>
+        ) : (
+          <>
+            <PrimarySlotOffSeasonCountdown />
+            <YourLeaguesCard leagues={leagues} />
+          </>
+        )
       ) : (
         <PrimarySlotNewUser />
       )}
@@ -72,4 +89,8 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 16,
   },
+  // Countdown | leagues side by side; top-aligned so the leagues list can grow
+  // without stretching the countdown column.
+  twoCol: { flexDirection: 'row', gap: 16, alignItems: 'flex-start' },
+  col: { flex: 1 },
 });

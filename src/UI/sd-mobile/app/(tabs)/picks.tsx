@@ -209,7 +209,7 @@ export default function PicksScreen() {
   // unpicked games to fill (React Query's enabled replaces the web's manual
   // picks-loaded gating).
   const importEnabled =
-    !picksLoading && !matchupsLoading && total > 0 && made < total;
+    !isReadOnly && !picksLoading && !matchupsLoading && total > 0 && made < total;
   const { data: availabilityData } = useImportAvailability(
     leagueId,
     selectedWeek,
@@ -244,6 +244,7 @@ export default function PicksScreen() {
 
   const handleImport = useCallback(
     (sourceLeagueId: string, contestIds: string[]) => {
+      if (isReadOnly) return; // deactivated leagues are view-only
       if (!leagueId || selectedWeek == null) return;
       importPicks.mutate(
         { leagueId, week: selectedWeek, sourceLeagueId, contestIds },
@@ -271,7 +272,7 @@ export default function PicksScreen() {
         },
       );
     },
-    [leagueId, selectedWeek, importPicks],
+    [isReadOnly, leagueId, selectedWeek, importPicks],
   );
 
   // Hide Picked is a no-op once allPicked flips true — the toggle is also

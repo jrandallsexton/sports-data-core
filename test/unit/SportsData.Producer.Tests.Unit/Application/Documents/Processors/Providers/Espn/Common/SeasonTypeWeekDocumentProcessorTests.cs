@@ -92,6 +92,102 @@ public class SeasonTypeWeekDocumentProcessorTests
     }
 
     [Fact]
+    public async Task WhenSeasonWeekExists_Update_RefreshesFields_PreservesIdentityAuditAndExternalIds()
+    {
+        // Arrange
+        const string weekRef =
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1?lang=en&region=us";
+        var json = $$"""
+        {
+          "$ref": "{{weekRef}}",
+          "number": 1,
+          "startDate": "2025-02-01T08:00Z",
+          "endDate": "2025-08-23T06:59Z",
+          "text": "Week 1"
+        }
+        """;
+
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var seasonId = Guid.NewGuid();
+        var seasonPhaseId = Guid.NewGuid();
+        var canonicalId = generator.Generate(weekRef).CanonicalId;
+        var urlHash = generator.Generate(weekRef).UrlHash;
+        var originalCreatedUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var originalCreatedBy = Guid.NewGuid();
+
+        // Existing STALE week under the phase, keyed by the fixture's canonical id
+        // with a matching external id so the processor takes the update path.
+        var existing = new SeasonWeek
+        {
+            Id = canonicalId,
+            SeasonId = seasonId,
+            SeasonPhaseId = seasonPhaseId,
+            Number = 99,
+            Text = "STALE",
+            StartDate = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            EndDate = new DateTime(2000, 1, 2, 0, 0, 0, DateTimeKind.Utc),
+            CreatedUtc = originalCreatedUtc,
+            CreatedBy = originalCreatedBy
+        };
+        existing.ExternalIds.Add(new SeasonWeekExternalId
+        {
+            Id = Guid.NewGuid(),
+            Value = urlHash,
+            SourceUrl = generator.Generate(weekRef).CleanUrl,
+            SourceUrlHash = urlHash,
+            Provider = SourceDataProvider.Espn
+        });
+
+        var seasonPhase = Fixture.Build<SeasonPhase>()
+            .With(p => p.Id, seasonPhaseId)
+            .With(p => p.SeasonId, seasonId)
+            .With(p => p.Weeks, new List<SeasonWeek> { existing })
+            .Create();
+
+        await FootballDataContext.SeasonPhases.AddAsync(seasonPhase);
+        await FootballDataContext.SaveChangesAsync();
+        var originalExternalIdRowId = existing.ExternalIds.Single().Id;
+
+        FootballDataContext.ChangeTracker.Clear();
+
+        var command = new ProcessDocumentCommand(
+            sourceDataProvider: SourceDataProvider.Espn,
+            sport: Sport.FootballNcaa,
+            seasonYear: 2025,
+            documentType: DocumentType.SeasonTypeWeek,
+            document: json,
+            messageId: Guid.NewGuid(),
+            correlationId: Guid.NewGuid(),
+            parentId: seasonPhaseId.ToString(),
+            sourceUri: new Uri(weekRef),
+            urlHash: urlHash);
+
+        var sut = Mocker.CreateInstance<SeasonTypeWeekDocumentProcessor<FootballDataContext>>();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert
+        var updated = await FootballDataContext.SeasonWeeks
+            .AsNoTracking()
+            .Include(w => w.ExternalIds)
+            .FirstAsync(w => w.Id == canonicalId);
+
+        // Data fields refreshed (previously the update branch was a no-op).
+        updated.Number.Should().Be(1);
+        updated.Text.Should().Be("Week 1");
+        updated.StartDate.Should().Be(DateTime.Parse("2025-02-01T08:00Z").ToUniversalTime());
+        updated.EndDate.Should().Be(DateTime.Parse("2025-08-23T06:59Z").ToUniversalTime());
+        // Identity + audit + external ids preserved.
+        updated.Id.Should().Be(canonicalId);
+        updated.CreatedUtc.Should().Be(originalCreatedUtc);
+        updated.CreatedBy.Should().Be(originalCreatedBy);
+        updated.ExternalIds.Should().ContainSingle().Which.Id.Should().Be(originalExternalIdRowId);
+    }
+
+    [Fact]
     public async Task WhenParentIdNotProvided_ShouldDeriveSeasonPhaseIdFromUri_AndCreateSeasonWeek()
     {
         // Arrange - This test validates the scenario where ParentId is not provided 

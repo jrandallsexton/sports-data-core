@@ -15,6 +15,7 @@ using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Footba
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -98,5 +99,69 @@ public class FootballAthleteDocumentProcessorTests :
         athlete!.FirstName.Should().Be(dto.FirstName);
         athlete.LastName.Should().Be(dto.LastName);
         athlete.PositionId.Should().Be(position.Id);
+    }
+
+    [Fact]
+    public async Task WhenAthleteExists_Update_RefreshesHand()
+    {
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthlete_Debug.json");
+        var dto = json.FromJson<EspnFootballAthleteDto>()!;
+        // The Debug fixture ships no `hand`, so add one — the update path must
+        // refresh the null hand columns to these values.
+        dto.Hand = new EspnAthleteHandDto { Type = "LEFT", Abbreviation = "L", DisplayValue = "Left" };
+        var mutatedJson = dto.ToJson();
+
+        var athleteIdentity = generator.Generate(dto.Ref);
+
+        // Seed an existing athlete (null hand) with a matching external id so the
+        // processor finds it and takes the update path.
+        var existing = new FootballAthlete
+        {
+            Id = athleteIdentity.CanonicalId,
+            FirstName = "Stale",
+            LastName = "Stale",
+            DisplayName = "Stale",
+            ShortName = "Stale",
+            CreatedUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            CreatedBy = Guid.NewGuid()
+        };
+        existing.ExternalIds.Add(new AthleteExternalId
+        {
+            Id = Guid.NewGuid(),
+            Provider = SourceDataProvider.Espn,
+            Value = athleteIdentity.UrlHash,
+            SourceUrl = athleteIdentity.CleanUrl,
+            SourceUrlHash = athleteIdentity.UrlHash
+        });
+        await FootballDataContext.Athletes.AddAsync(existing);
+        await FootballDataContext.SaveChangesAsync();
+        FootballDataContext.ChangeTracker.Clear();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2025)
+            .With(x => x.DocumentType, DocumentType.Athlete)
+            .With(x => x.UrlHash, athleteIdentity.UrlHash)
+            .With(x => x.Document, mutatedJson)
+            .Create();
+
+        var sut = Mocker.CreateInstance<FootballAthleteDocumentProcessor<FootballDataContext>>();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert — hand columns refreshed from null to the fixture's values.
+        var updated = await FootballDataContext.Athletes
+            .OfType<FootballAthlete>()
+            .AsNoTracking()
+            .FirstAsync(x => x.Id == athleteIdentity.CanonicalId);
+
+        updated.HandType.Should().Be("LEFT");
+        updated.HandAbbreviation.Should().Be("L");
+        updated.HandDisplayValue.Should().Be("Left");
     }
 }

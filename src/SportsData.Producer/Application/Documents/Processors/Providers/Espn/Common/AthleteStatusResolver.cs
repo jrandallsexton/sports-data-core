@@ -43,8 +43,23 @@ public static class AthleteStatusResolver
         };
 
         await dataContext.AthleteStatuses.AddAsync(created, cancellationToken);
-        await dataContext.SaveChangesAsync(cancellationToken);
 
-        return created.Id;
+        try
+        {
+            await dataContext.SaveChangesAsync(cancellationToken);
+            return created.Id;
+        }
+        catch (DbUpdateException)
+        {
+            // A concurrent caller inserted the same status name first (unique
+            // index on Name). Detach our losing row and return the winner's id.
+            dataContext.Entry(created).State = EntityState.Detached;
+
+            var winner = await dataContext.AthleteStatuses
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => (x.Name ?? "").ToLower() == nameLower, cancellationToken);
+
+            return winner?.Id;
+        }
     }
 }

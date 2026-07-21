@@ -1858,6 +1858,9 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("AthleteStatus", (string)null);
                 });
 

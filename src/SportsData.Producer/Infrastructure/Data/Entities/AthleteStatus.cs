@@ -33,6 +33,13 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(s => s.Name)
                     .HasMaxLength(100);
 
+                // Deduped by name (per-sport DB, so this is unique within the
+                // sport collection). Backs the resolver's concurrent-insert guard.
+                // ESPN status names are case-stable and the resolver's lookup
+                // lowercases, so no case-variant rows are ever inserted.
+                builder.HasIndex(s => s.Name)
+                    .IsUnique();
+
                 builder.Property(s => s.Type)
                     .HasMaxLength(50);
             }

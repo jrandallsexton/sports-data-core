@@ -285,6 +285,13 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
         entity.CollegeAthleteRef = dto.CollegeAthlete?.Ref?.ToString();
         entity.Jersey = dto.Jersey;
 
+        if (entity is FootballAthlete footballAthlete)
+        {
+            footballAthlete.HandType = dto.Hand?.Type;
+            footballAthlete.HandAbbreviation = dto.Hand?.Abbreviation;
+            footballAthlete.HandDisplayValue = dto.Hand?.DisplayValue;
+        }
+
         if (dto.Draft is not null)
         {
             entity.DraftDisplayText = dto.Draft.Display;

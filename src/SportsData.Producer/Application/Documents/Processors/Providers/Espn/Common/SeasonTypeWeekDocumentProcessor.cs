@@ -96,7 +96,7 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
         }
         else
         {
-            await ProcessExistingEntity();
+            await ProcessExistingEntity(seasonWeek, externalProviderDto);
         }
 
     }
@@ -156,9 +156,18 @@ public class SeasonTypeWeekDocumentProcessor<TDataContext> : DocumentProcessorBa
         }
     }
 
-    private async Task ProcessExistingEntity()
+    private async Task ProcessExistingEntity(
+        Infrastructure.Data.Entities.SeasonWeek existing,
+        EspnFootballSeasonTypeWeekDto dto)
     {
-        _logger.LogError("Update detected. Not implemented");
-        await Task.CompletedTask;
+        // Refresh the mapped data fields so a re-source/replay updates an existing
+        // week (previously a no-op, which meant the new Text column never
+        // backfilled). Identity, audit, and ExternalIds are left untouched.
+        existing.Number = dto.Number;
+        existing.Text = dto.Text;
+        existing.StartDate = DateTime.Parse(dto.StartDate).ToUniversalTime();
+        existing.EndDate = DateTime.Parse(dto.EndDate).ToUniversalTime();
+
+        await _dataContext.SaveChangesAsync();
     }
 }

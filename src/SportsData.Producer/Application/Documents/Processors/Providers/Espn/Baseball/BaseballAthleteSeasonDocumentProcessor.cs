@@ -9,6 +9,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Baseball;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
@@ -111,6 +112,10 @@ public class BaseballAthleteSeasonDocumentProcessor<TDataContext> : DocumentProc
             athleteId,
             command.CorrelationId);
 
+        // The mapper can't resolve the status FK (needs a DB lookup); do it here so
+        // AthleteSeason.StatusId is populated instead of null.
+        entity.StatusId = await AthleteStatusResolver.ResolveIdAsync(_dataContext, dto.Status);
+
         await _dataContext.AthleteSeasons.AddAsync(entity);
 
         await ProcessHeadshot(command, entity, dto, athleteId);
@@ -152,7 +157,9 @@ public class BaseballAthleteSeasonDocumentProcessor<TDataContext> : DocumentProc
         entity.PositionId = positionId;
         entity.ShortName = newEntity.ShortName;
         entity.Slug = newEntity.Slug;
-        entity.StatusId = newEntity.StatusId;
+        // Resolve the status FK from the DTO (the mapper leaves newEntity.StatusId
+        // null — it can't do the DB lookup).
+        entity.StatusId = await AthleteStatusResolver.ResolveIdAsync(_dataContext, dto.Status);
         entity.WeightDisplay = newEntity.WeightDisplay;
         entity.WeightLb = newEntity.WeightLb;
         entity.ModifiedBy = command.CorrelationId;

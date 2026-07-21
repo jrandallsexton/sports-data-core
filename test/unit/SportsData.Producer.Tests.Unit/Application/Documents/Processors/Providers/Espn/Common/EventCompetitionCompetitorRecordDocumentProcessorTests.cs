@@ -235,6 +235,50 @@ public class EventCompetitionCompetitorRecordDocumentProcessorTests
         stats.Should().NotContain(s => s.Name == "ties");
     }
 
+    // Extract one items[] entry from the real captured collection. In production
+    // Provider fans the records collection out into one DocumentPublished<T> per
+    // item, so this processor receives a single record — mirror that here.
+    private static string ExtractItem(string collectionJson, int index)
+    {
+        using var doc = JsonDocument.Parse(collectionJson);
+        return doc.RootElement.GetProperty("items")[index].GetRawText();
+    }
+
+    [Fact]
+    public async Task RealJson_TotalRecord_CapturesRecordLevelFields_AndAllStats()
+    {
+        var competitorId = await SeedCompetitorAsync();
+        var collection = await LoadJsonTestData(
+            "EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorRecord.json");
+        var totalJson = ExtractItem(collection, 0); // items[0] = "total"
+
+        var sut = Mocker.CreateInstance<EventCompetitionCompetitorRecordDocumentProcessor<TeamSportDataContext>>();
+        await sut.ProcessAsync(BuildCommand(competitorId.ToString(), totalJson));
+
+        var record = await FootballDataContext.CompetitionCompetitorRecords
+            .AsNoTracking()
+            .Include(r => r.Stats)
+            .FirstOrDefaultAsync(r => r.CompetitionCompetitorId == competitorId);
+
+        record.Should().NotBeNull();
+        record!.Type.Should().Be("total");
+        record.Summary.Should().Be("6-4");
+
+        // Record-level fields that were previously dropped at the mapping step
+        // (these are NOT in the stats array — the actual capture gap).
+        record.Abbreviation.Should().Be("Game");
+        record.DisplayName.Should().Be("Record Year To Date");
+        record.ShortDisplayName.Should().Be("YTD");
+        record.Description.Should().Be("Overall Record");
+
+        // The granular values (wins/losses/points/streak/…) live in the Stats
+        // collection — not flattened onto the record. All 23 captured.
+        record.Stats.Count.Should().BeGreaterThan(20);
+        record.Stats.Should().Contain(s => s.Name == "wins" && s.Value == 6);
+        record.Stats.Should().Contain(s => s.Name == "losses" && s.Value == 4);
+        record.Stats.Should().Contain(s => s.Name == "streak" && s.DisplayValue == "W1");
+    }
+
     [Fact]
     public async Task WhenCompetitorMissing_ReturnsWithoutCreatingRecord()
     {

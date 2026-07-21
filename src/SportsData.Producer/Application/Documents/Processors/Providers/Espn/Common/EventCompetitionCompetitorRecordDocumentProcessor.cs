@@ -220,6 +220,10 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
             CompetitionCompetitorId = competitorId,
             Type = dto.Type,
             Name = dto.Name,
+            Abbreviation = dto.Abbreviation,
+            DisplayName = dto.DisplayName,
+            ShortDisplayName = dto.ShortDisplayName,
+            Description = dto.Description,
             Summary = dto.Summary,
             DisplayValue = dto.DisplayValue,
             Value = dto.Value,
@@ -251,6 +255,10 @@ public class EventCompetitionCompetitorRecordDocumentProcessor<TDataContext> : D
 
         // Update record properties
         existingRecord.Name = dto.Name;
+        existingRecord.Abbreviation = dto.Abbreviation;
+        existingRecord.DisplayName = dto.DisplayName;
+        existingRecord.ShortDisplayName = dto.ShortDisplayName;
+        existingRecord.Description = dto.Description;
         existingRecord.Summary = dto.Summary;
         existingRecord.DisplayValue = dto.DisplayValue;
         existingRecord.Value = dto.Value;

@@ -111,6 +111,33 @@ public class BaseballEventCompetitionDocumentProcessorTests
     }
 
     [Fact]
+    public async Task CapturesFeedSourcesAndBaseballCompetitionFields()
+    {
+        var (competitionId, _, cmd) = await SetupAndBuildCommand();
+
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionDocumentProcessor<BaseballDataContext>>();
+        await sut.ProcessAsync(cmd);
+
+        var refreshed = await _baseballDataContext.Competitions
+            .OfType<BaseballCompetition>()
+            .FirstAsync(x => x.Id == competitionId);
+
+        // Feed-source FKs — fixture ships id "2" (feed) for all five facets;
+        // previously left permanently NULL.
+        refreshed.GameSourceId.Should().Be(2);
+        refreshed.BoxscoreSourceId.Should().Be(2);
+        refreshed.LinescoreSourceId.Should().Be(2);
+        refreshed.PlayByPlaySourceId.Should().Be(2);
+        refreshed.StatsSourceId.Should().Be(2);
+
+        // Baseball-specific competition fields, previously dropped.
+        refreshed.Duration.Should().Be("2:42");
+        refreshed.TimeOfDay.Should().Be("DAY");
+        refreshed.WasSuspended.Should().BeFalse();
+        refreshed.Necessary.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task WhenReprocessed_SnapshotIsLocked_AndDoesNotOverwrite()
     {
         // arrange — process once with the real fixture.

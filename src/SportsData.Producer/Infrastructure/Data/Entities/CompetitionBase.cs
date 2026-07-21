@@ -81,13 +81,28 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string? TypeName { get; set; }
 
+        // ESPN feed-source state per data facet. FK to lkCompetitionSource
+        // (id 1 basic/manual, 2 feed, 4 official). Explicit FK ids so the mapper
+        // can populate them from ESPN's source objects — previously the nav
+        // existed only as a shadow FK and was never mapped, leaving all five
+        // permanently NULL. See docs/features/espn-processor-data-capture-audit.md.
+        public int? GameSourceId { get; set; }
+
         public CompetitionSource? GameSource { get; set; }
+
+        public int? BoxscoreSourceId { get; set; }
 
         public CompetitionSource? BoxscoreSource { get; set; }
 
+        public int? LinescoreSourceId { get; set; }
+
         public CompetitionSource? LinescoreSource { get; set; }
 
+        public int? PlayByPlaySourceId { get; set; }
+
         public CompetitionSource? PlayByPlaySource { get; set; }
+
+        public int? StatsSourceId { get; set; }
 
         public CompetitionSource? StatsSource { get; set; }
 

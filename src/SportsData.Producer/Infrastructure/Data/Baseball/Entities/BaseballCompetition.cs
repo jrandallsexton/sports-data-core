@@ -14,6 +14,16 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball.Entities
         // without an OfType cast.
         public BaseballCompetitionStatus? Status { get; set; }
 
+        // Baseball-specific competition fields ESPN ships but the mapper
+        // previously dropped. See docs/features/espn-processor-data-capture-audit.md.
+        public string? Duration { get; set; } // elapsed game time displayValue, e.g. "2:57"
+
+        public string? TimeOfDay { get; set; } // "day" / "night"
+
+        public bool? WasSuspended { get; set; }
+
+        public bool? Necessary { get; set; } // postseason "if necessary" game
+
         // Series snapshot, populated by BaseballEventCompetitionDocumentProcessor
         // from inline series data on the EventCompetition payload. The
         // snapshot reflects state at-game-start and is locked on first

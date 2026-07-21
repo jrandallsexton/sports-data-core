@@ -1,5 +1,6 @@
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Baseball;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
@@ -38,6 +39,18 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
         {
             var entity = new BaseballCompetition();
             MapSharedProperties(dto, entity, externalRefIdentityGenerator, contestId, correlationId);
+
+            if (dto is not EspnBaseballEventCompetitionDto baseballDto)
+            {
+                throw new InvalidOperationException(
+                    $"Expected EspnBaseballEventCompetitionDto but got {dto.GetType().Name}");
+            }
+
+            entity.Duration = baseballDto.Duration?.DisplayValue;
+            entity.TimeOfDay = baseballDto.TimeOfDay;
+            entity.WasSuspended = baseballDto.WasSuspended;
+            entity.Necessary = baseballDto.Necessary;
+
             return entity;
         }
 
@@ -87,6 +100,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             entity.IsTimeoutsAvailable = dto.TimeoutsAvailable;
             entity.IsWallClockAvailable = dto.WallclockAvailable;
             entity.TimeValid = dto.TimeValid;
+            // Feed-source state per facet. ESPN's source id ("2" = feed) maps to
+            // the lkCompetitionSource seed ids; TryParse so a novel/absent id
+            // leaves the FK null rather than throwing.
+            entity.GameSourceId = ParseSourceId(dto.GameSource?.Id);
+            entity.BoxscoreSourceId = ParseSourceId(dto.BoxscoreSource?.Id);
+            entity.LinescoreSourceId = ParseSourceId(dto.LinescoreSource?.Id);
+            entity.PlayByPlaySourceId = ParseSourceId(dto.PlayByPlaySource?.Id);
+            entity.StatsSourceId = ParseSourceId(dto.StatsSource?.Id);
             entity.TypeAbbreviation = dto.Type?.Abbreviation;
             entity.TypeId = dto.Type?.Id;
             entity.TypeName = dto.Type?.TypeName;
@@ -104,5 +125,8 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 }
             };
         }
+
+        private static int? ParseSourceId(string? espnSourceId) =>
+            int.TryParse(espnSourceId, out var id) ? id : null;
     }
 }

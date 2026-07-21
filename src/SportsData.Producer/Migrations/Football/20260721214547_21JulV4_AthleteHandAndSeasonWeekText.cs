@@ -20,19 +20,22 @@ namespace SportsData.Producer.Migrations.Football
             migrationBuilder.AddColumn<string>(
                 name: "HandAbbreviation",
                 table: "Athlete",
-                type: "text",
+                type: "character varying(10)",
+                maxLength: 10,
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "HandDisplayValue",
                 table: "Athlete",
-                type: "text",
+                type: "character varying(20)",
+                maxLength: 20,
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "HandType",
                 table: "Athlete",
-                type: "text",
+                type: "character varying(20)",
+                maxLength: 20,
                 nullable: true);
         }
 

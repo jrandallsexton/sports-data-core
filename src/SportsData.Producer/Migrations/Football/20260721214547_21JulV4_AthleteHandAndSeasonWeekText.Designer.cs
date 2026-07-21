@@ -13,7 +13,7 @@ using SportsData.Producer.Infrastructure.Data.Football;
 namespace SportsData.Producer.Migrations.Football
 {
     [DbContext(typeof(FootballDataContext))]
-    [Migration("20260721210705_21JulV4_AthleteHandAndSeasonWeekText")]
+    [Migration("20260721214547_21JulV4_AthleteHandAndSeasonWeekText")]
     partial class _21JulV4_AthleteHandAndSeasonWeekText
     {
         /// <inheritdoc />
@@ -7941,13 +7941,16 @@ namespace SportsData.Producer.Migrations.Football
                         .HasColumnType("uuid");
 
                     b.Property<string>("HandAbbreviation")
-                        .HasColumnType("text");
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
 
                     b.Property<string>("HandDisplayValue")
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("HandType")
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<Guid?>("PositionId")
                         .HasColumnType("uuid");

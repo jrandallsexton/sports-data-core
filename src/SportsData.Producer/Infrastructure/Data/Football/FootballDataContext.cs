@@ -38,6 +38,7 @@ namespace SportsData.Producer.Infrastructure.Data.Football
             base.OnModelCreating(modelBuilder);
             modelBuilder.WithUriConverter();
             modelBuilder.ApplyConfiguration(new AthleteBase.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FootballAthlete.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeason.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetition.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetitionCompetitor.EntityConfiguration());

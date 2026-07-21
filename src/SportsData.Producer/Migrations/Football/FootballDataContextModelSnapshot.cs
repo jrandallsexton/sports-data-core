@@ -7938,13 +7938,16 @@ namespace SportsData.Producer.Migrations.Football
                         .HasColumnType("uuid");
 
                     b.Property<string>("HandAbbreviation")
-                        .HasColumnType("text");
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
 
                     b.Property<string>("HandDisplayValue")
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("HandType")
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<Guid?>("PositionId")
                         .HasColumnType("uuid");

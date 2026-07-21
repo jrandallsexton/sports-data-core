@@ -126,7 +126,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
             };
         }
 
+        // ESPN ships source id "0" for a facet that isn't sourced yet (e.g. a live
+        // game's boxscore before it exists). There's no CompetitionSource row for
+        // 0 (the lookup seeds 1/2/4), so treat non-positive ids as "no source" →
+        // null FK, rather than writing 0 and violating
+        // FK_Competition_CompetitionSource_*SourceId.
         private static int? ParseSourceId(string? espnSourceId) =>
-            int.TryParse(espnSourceId, out var id) ? id : null;
+            int.TryParse(espnSourceId, out var id) && id > 0 ? id : null;
     }
 }

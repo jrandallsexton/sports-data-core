@@ -142,16 +142,17 @@ public class BaseballEventCompetitionDocumentProcessorTests
     {
         var (competitionId, _, cmd) = await SetupAndBuildCommand();
 
-        // Mutate the fixture: drop one source entirely (absent) and give the rest
-        // non-numeric ids. ParseSourceId must leave every FK null rather than
-        // throw or FK-violate.
+        // Mutate the fixture: drop one source entirely (absent), one with the "0"
+        // ESPN ships for a not-yet-sourced facet (no CompetitionSource row for 0 —
+        // this was FK-violating in prod), and the rest non-numeric. ParseSourceId
+        // must leave every FK null rather than throw or FK-violate.
         var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetition.json");
         var dto = json.FromJson<EspnBaseballEventCompetitionDto>()!;
         dto.GameSource = null!;          // absent → ParseSourceId(null)
-        dto.BoxscoreSource.Id = "abc";   // non-numeric
+        dto.BoxscoreSource.Id = "0";     // not-sourced-yet sentinel (prod FK bug)
         dto.LinescoreSource.Id = "";     // empty
-        dto.PlayByPlaySource.Id = "n/a";
-        dto.StatsSource.Id = "full";
+        dto.PlayByPlaySource.Id = "n/a"; // non-numeric
+        dto.StatsSource.Id = "-1";       // negative
 
         var mutatedCmd = Fixture.Build<ProcessDocumentCommand>()
             .With(x => x.ParentId, cmd.ParentId)

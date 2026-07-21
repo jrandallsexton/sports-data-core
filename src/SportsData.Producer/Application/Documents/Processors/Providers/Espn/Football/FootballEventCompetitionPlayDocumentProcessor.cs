@@ -167,6 +167,16 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
             startFranchiseSeasonId,
             endFranchiseSeasonId);
 
+        // SetValues copies the key too; the remap must derive the same canonical id
+        // as the tracked entity (both come from the same play ref). Fail loud rather
+        // than silently mutate the primary key if that invariant is ever violated.
+        if (mapped.Id != footballPlay.Id)
+        {
+            throw new InvalidOperationException(
+                $"Play identity mismatch on update: remapped id {mapped.Id} != tracked id {footballPlay.Id}. " +
+                $"Ref={externalDto.Ref}");
+        }
+
         var createdUtc = footballPlay.CreatedUtc;
         var createdBy = footballPlay.CreatedBy;
         _dataContext.Entry(footballPlay).CurrentValues.SetValues(mapped);

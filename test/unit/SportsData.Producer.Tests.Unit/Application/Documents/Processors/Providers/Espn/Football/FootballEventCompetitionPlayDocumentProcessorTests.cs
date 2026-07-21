@@ -16,6 +16,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
@@ -107,6 +108,55 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
 
         // assert
         scoringPlays.Count().Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public async Task AsFootballEntity_CapturesScoringTypePointAfterAttemptAndWallclock()
+    {
+        // Real fixture: a touchdown play carries scoringType + pointAfterAttempt +
+        // wallclock — all previously dropped by the mapper.
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlays.json");
+        var plays = json.FromJson<List<EspnFootballEventCompetitionPlayDto>>()!;
+        var td = plays.First(p => p.ScoringType?.Abbreviation == "TD" && p.PointAfterAttempt != null);
+
+        var entity = td.AsFootballEntity(
+            new ExternalRefIdentityGenerator(),
+            correlationId: Guid.NewGuid(),
+            competitionId: Guid.NewGuid(),
+            driveId: null,
+            startFranchiseSeasonId: null,
+            endFranchiseSeasonId: null);
+
+        entity.ScoringTypeName.Should().Be("touchdown");
+        entity.ScoringTypeDisplayName.Should().Be("Touchdown");
+        entity.ScoringTypeAbbreviation.Should().Be("TD");
+        entity.PointAfterAttemptId.Should().Be(61);
+        entity.PointAfterAttemptText.Should().Be("Extra Point Good");
+        entity.PointAfterAttemptAbbreviation.Should().Be("Extra Point Good");
+        entity.PointAfterAttemptValue.Should().Be(1);
+        entity.Wallclock.Should().Be(td.Wallclock);
+    }
+
+    [Fact]
+    public async Task AsFootballEntity_NonScoringPlay_LeavesScoringFieldsNull()
+    {
+        // A non-scoring play has no scoringType / pointAfterAttempt.
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlays.json");
+        var plays = json.FromJson<List<EspnFootballEventCompetitionPlayDto>>()!;
+        var nonScoring = plays.First(p => p.ScoringType == null && p.PointAfterAttempt == null);
+
+        var entity = nonScoring.AsFootballEntity(
+            new ExternalRefIdentityGenerator(),
+            correlationId: Guid.NewGuid(),
+            competitionId: Guid.NewGuid(),
+            driveId: null,
+            startFranchiseSeasonId: null,
+            endFranchiseSeasonId: null);
+
+        entity.ScoringTypeName.Should().BeNull();
+        entity.ScoringTypeAbbreviation.Should().BeNull();
+        entity.PointAfterAttemptId.Should().BeNull();
+        entity.PointAfterAttemptValue.Should().BeNull();
     }
 
     [Fact]
@@ -345,55 +395,102 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         play.Competition!.Id.Should().Be(competitionId);
     }
 
-    [Fact(Skip="Updates not yet implemented")]
-    public async Task WhenEntityExists_ShouldUpdateExistingPlay()
+    [Fact]
+    public async Task WhenEntityExists_FullRemap_RefreshesFields_PreservesIdentityAuditAndExternalIds()
     {
         // arrange
         var generator = new ExternalRefIdentityGenerator();
         Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
         var competitionId = Guid.NewGuid();
-        var competition = Fixture.Build<FootballCompetition>()
-            .With(x => x.Id, competitionId)
-            .With(x => x.ContestId, Guid.NewGuid())
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .Create();
+        var competition = new FootballCompetition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            Date = UtcNow(),
+            CreatedUtc = UtcNow(),
+            CreatedBy = Guid.NewGuid()
+        };
         await FootballDataContext.Competitions.AddAsync(competition);
-
-        var playId = Guid.NewGuid();
-        var play = Fixture.Build<FootballCompetitionPlay>()
-            .With(x => x.Id, playId)
-            .With(x => x.CompetitionId, competitionId)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .Create();
-        await FootballDataContext.CompetitionPlays.AddAsync(play);
-
-        var externalId = Fixture.Build<CompetitionPlayExternalId>()
-            .With(x => x.CompetitionPlayId, playId)
-            .With(x => x.Provider, SourceDataProvider.Espn)
-            .With(x => x.SourceUrlHash, generator.Generate(PlayUrl).UrlHash)
-            .With(x => x.CreatedBy, Guid.NewGuid())
-            .Create();
-        play.ExternalIds.Add(externalId);
-
         await FootballDataContext.SaveChangesAsync();
+        await SeedInProgressStatusAsync(competitionId);
+
+        // Use a SCORING play (touchdown) so the update path must refresh the
+        // scoringType / pointAfterAttempt / wallclock columns — seeded null below.
+        // Seed an EXISTING play keyed by that play's canonical id with stale Text +
+        // null new fields + preserved audit, so the full remap is observable. The
+        // processor finds it by canonical id and takes the update path.
+        var plays = (await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlays.json"))
+            .FromJson<List<EspnFootballEventCompetitionPlayDto>>()!;
+        var td = plays.First(p => p.ScoringType?.Abbreviation == "TD" && p.PointAfterAttempt != null);
+        var json = td.ToJson();
+        var playRef = td.Ref;
+        var canonicalId = generator.Generate(playRef).CanonicalId;
+        var urlHash = generator.Generate(playRef).UrlHash;
+        var originalCreatedUtc = new DateTime(2020, 5, 5, 0, 0, 0, DateTimeKind.Utc);
+        var originalCreatedBy = Guid.NewGuid();
+
+        var play = new FootballCompetitionPlay
+        {
+            Id = canonicalId,
+            CompetitionId = competitionId,
+            EspnId = "stale-espn-id",
+            SequenceNumber = "0",
+            Text = "STALE TEXT",
+            TypeId = "0",
+            CreatedUtc = originalCreatedUtc,
+            CreatedBy = originalCreatedBy
+        };
+        var externalId = new CompetitionPlayExternalId
+        {
+            Id = Guid.NewGuid(),
+            CompetitionPlayId = canonicalId,
+            Provider = SourceDataProvider.Espn,
+            Value = urlHash,
+            SourceUrl = playRef.AbsoluteUri,
+            SourceUrlHash = urlHash,
+            CreatedBy = Guid.NewGuid()
+        };
+        play.ExternalIds.Add(externalId);
+        await FootballDataContext.CompetitionPlays.AddAsync(play);
+        await FootballDataContext.SaveChangesAsync();
+        var originalExternalIdRowId = externalId.Id;
+
+        // Fresh DI scope per message in production.
+        FootballDataContext.ChangeTracker.Clear();
 
         var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
-        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
-        var command = CreateCommand(json, competitionId.ToString());
-
-        // act
-        await sut.ProcessAsync(command);
+        // act — reprocess the same play (update path).
+        await sut.ProcessAsync(CreateCommand(json, competitionId.ToString()));
 
         // assert
-        var updatedPlay = await FootballDataContext.CompetitionPlays
+        var updated = await FootballDataContext.CompetitionPlays
+            .AsNoTracking()
             .Include(x => x.ExternalIds)
-            .FirstOrDefaultAsync(x => x.Id == playId);
+            .FirstAsync(x => x.Id == canonicalId);
 
-        updatedPlay.Should().NotBeNull();
-        updatedPlay!.ExternalIds.Should().NotBeEmpty();
-        updatedPlay.ModifiedBy.Should().NotBeNull();
+        // Full remap refreshed the field (previously the update path left it stale).
+        updated.Text.Should().NotBe("STALE TEXT");
+        // Identity + audit preserved.
+        updated.Id.Should().Be(canonicalId);
+        updated.CreatedUtc.Should().Be(originalCreatedUtc);
+        updated.CreatedBy.Should().Be(originalCreatedBy);
+        // ExternalIds is a navigation — SetValues touches scalars only, so the
+        // original row is untouched (not duplicated or replaced).
+        updated.ExternalIds.Should().ContainSingle()
+            .Which.Id.Should().Be(originalExternalIdRowId);
+
+        // Newly-captured columns backfilled by the full remap (seeded null; the TD
+        // fixture provides them) — this is the resourcing/replay guarantee.
+        updated.Wallclock.Should().Be(td.Wallclock);
+        updated.ScoringTypeName.Should().Be("touchdown");
+        updated.ScoringTypeDisplayName.Should().Be("Touchdown");
+        updated.ScoringTypeAbbreviation.Should().Be("TD");
+        updated.PointAfterAttemptId.Should().Be(61);
+        updated.PointAfterAttemptText.Should().Be("Extra Point Good");
+        updated.PointAfterAttemptAbbreviation.Should().Be("Extra Point Good");
+        updated.PointAfterAttemptValue.Should().Be(1);
     }
 
     [Fact(Skip = "log not throw")]

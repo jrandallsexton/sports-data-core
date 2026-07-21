@@ -147,12 +147,40 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
             externalDto.End.Team, command.SourceDataProvider);
 
         _logger.LogInformation(
-            "Updating CompetitionPlay. PlayId={PlayId}, DriveId={DriveId}",
+            "Updating CompetitionPlay (full remap). PlayId={PlayId}, DriveId={DriveId}",
             entity.Id,
             competitionDriveId);
 
-        footballPlay.StartFranchiseSeasonId = startFranchiseSeasonId;
-        footballPlay.EndFranchiseSeasonId = endFranchiseSeasonId;
-        footballPlay.DriveId = competitionDriveId;
+        // Full remap on reprocess/replay: previously this set only the three FK
+        // fields, so re-sourcing an existing play never refreshed the rest (and
+        // left newly-captured columns null). Build a fresh entity from the same
+        // create mapper and copy its scalar values onto the tracked one — so every
+        // mapped field is refreshed and no field can be missed here. SetValues
+        // touches scalars only, so the ExternalIds navigation is untouched; the
+        // canonical Id is identical (same ref), and the audit columns are
+        // preserved explicitly.
+        var mapped = externalDto.AsFootballEntity(
+            _externalRefIdentityGenerator,
+            command.CorrelationId,
+            footballPlay.CompetitionId,
+            competitionDriveId,
+            startFranchiseSeasonId,
+            endFranchiseSeasonId);
+
+        // SetValues copies the key too; the remap must derive the same canonical id
+        // as the tracked entity (both come from the same play ref). Fail loud rather
+        // than silently mutate the primary key if that invariant is ever violated.
+        if (mapped.Id != footballPlay.Id)
+        {
+            throw new InvalidOperationException(
+                $"Play identity mismatch on update: remapped id {mapped.Id} != tracked id {footballPlay.Id}. " +
+                $"Ref={externalDto.Ref}");
+        }
+
+        var createdUtc = footballPlay.CreatedUtc;
+        var createdBy = footballPlay.CreatedBy;
+        _dataContext.Entry(footballPlay).CurrentValues.SetValues(mapped);
+        footballPlay.CreatedUtc = createdUtc;
+        footballPlay.CreatedBy = createdBy;
     }
 }

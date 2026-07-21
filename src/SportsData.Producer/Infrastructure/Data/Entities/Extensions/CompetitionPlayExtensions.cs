@@ -40,7 +40,15 @@ public static class CompetitionPlayExtensions
             StartDown = dto.Start?.Down,
             StartYardLine = dto.Start?.YardLine,
             StartYardsToEndzone = dto.Start?.YardsToEndzone,
-            StatYardage = dto.StatYardage
+            StatYardage = dto.StatYardage,
+            Wallclock = dto.Wallclock == default ? null : dto.Wallclock,
+            ScoringTypeName = dto.ScoringType?.Name,
+            ScoringTypeDisplayName = dto.ScoringType?.DisplayName,
+            ScoringTypeAbbreviation = dto.ScoringType?.Abbreviation,
+            PointAfterAttemptId = dto.PointAfterAttempt?.Id,
+            PointAfterAttemptText = dto.PointAfterAttempt?.Text,
+            PointAfterAttemptAbbreviation = dto.PointAfterAttempt?.Abbreviation,
+            PointAfterAttemptValue = dto.PointAfterAttempt?.Value
         };
 
         MapSharedProperties(dto, entity, identity, correlationId, competitionId, startFranchiseSeasonId);

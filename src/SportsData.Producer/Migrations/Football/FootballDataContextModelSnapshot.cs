@@ -2671,6 +2671,10 @@ namespace SportsData.Producer.Migrations.Football
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Abbreviation")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<Guid>("CompetitionCompetitorId")
                         .HasColumnType("uuid");
 
@@ -2679,6 +2683,14 @@ namespace SportsData.Producer.Migrations.Football
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("DisplayValue")
                         .HasMaxLength(50)
@@ -2693,6 +2705,10 @@ namespace SportsData.Producer.Migrations.Football
                     b.Property<string>("Name")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("ShortDisplayName")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("Summary")
                         .HasMaxLength(50)

@@ -111,6 +111,75 @@ public class BaseballEventCompetitionDocumentProcessorTests
     }
 
     [Fact]
+    public async Task CapturesFeedSourcesAndBaseballCompetitionFields()
+    {
+        var (competitionId, _, cmd) = await SetupAndBuildCommand();
+
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionDocumentProcessor<BaseballDataContext>>();
+        await sut.ProcessAsync(cmd);
+
+        var refreshed = await _baseballDataContext.Competitions
+            .OfType<BaseballCompetition>()
+            .FirstAsync(x => x.Id == competitionId);
+
+        // Feed-source FKs — fixture ships id "2" (feed) for all five facets;
+        // previously left permanently NULL.
+        refreshed.GameSourceId.Should().Be(2);
+        refreshed.BoxscoreSourceId.Should().Be(2);
+        refreshed.LinescoreSourceId.Should().Be(2);
+        refreshed.PlayByPlaySourceId.Should().Be(2);
+        refreshed.StatsSourceId.Should().Be(2);
+
+        // Baseball-specific competition fields, previously dropped.
+        refreshed.Duration.Should().Be("2:42");
+        refreshed.TimeOfDay.Should().Be("DAY");
+        refreshed.WasSuspended.Should().BeFalse();
+        refreshed.Necessary.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task FeedSourceIds_AreNull_WhenAbsentOrNonNumeric()
+    {
+        var (competitionId, _, cmd) = await SetupAndBuildCommand();
+
+        // Mutate the fixture: drop one source entirely (absent) and give the rest
+        // non-numeric ids. ParseSourceId must leave every FK null rather than
+        // throw or FK-violate.
+        var json = await LoadJsonTestData("EspnBaseballMlb/EventCompetition.json");
+        var dto = json.FromJson<EspnBaseballEventCompetitionDto>()!;
+        dto.GameSource = null!;          // absent → ParseSourceId(null)
+        dto.BoxscoreSource.Id = "abc";   // non-numeric
+        dto.LinescoreSource.Id = "";     // empty
+        dto.PlayByPlaySource.Id = "n/a";
+        dto.StatsSource.Id = "full";
+
+        var mutatedCmd = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.ParentId, cmd.ParentId)
+            .With(x => x.SeasonYear, cmd.SeasonYear)
+            .With(x => x.SourceDataProvider, cmd.SourceDataProvider)
+            .With(x => x.Sport, cmd.Sport)
+            .With(x => x.DocumentType, cmd.DocumentType)
+            .With(x => x.Document, dto.ToJson())
+            .With(x => x.UrlHash, cmd.UrlHash)
+            .With(x => x.IncludeLinkedDocumentTypes, cmd.IncludeLinkedDocumentTypes)
+            .OmitAutoProperties()
+            .Create();
+
+        var sut = Mocker.CreateInstance<BaseballEventCompetitionDocumentProcessor<BaseballDataContext>>();
+        await sut.ProcessAsync(mutatedCmd);
+
+        var refreshed = await _baseballDataContext.Competitions
+            .OfType<BaseballCompetition>()
+            .FirstAsync(x => x.Id == competitionId);
+
+        refreshed.GameSourceId.Should().BeNull();
+        refreshed.BoxscoreSourceId.Should().BeNull();
+        refreshed.LinescoreSourceId.Should().BeNull();
+        refreshed.PlayByPlaySourceId.Should().BeNull();
+        refreshed.StatsSourceId.Should().BeNull();
+    }
+
+    [Fact]
     public async Task WhenReprocessed_SnapshotIsLocked_AndDoesNotOverwrite()
     {
         // arrange — process once with the real fixture.

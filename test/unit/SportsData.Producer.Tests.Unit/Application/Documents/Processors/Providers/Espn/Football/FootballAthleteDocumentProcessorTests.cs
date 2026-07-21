@@ -8,10 +8,12 @@ using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 using Xunit;
@@ -21,6 +23,26 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 public class FootballAthleteDocumentProcessorTests :
     ProducerTestBase<FootballAthleteDocumentProcessor<FootballDataContext>>
 {
+
+    [Fact]
+    public void AsFootballAthlete_CapturesThrowingHand()
+    {
+        // The mapper previously dropped ESPN's `hand` (QB handedness).
+        var dto = new EspnFootballAthleteDto
+        {
+            Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/athletes/123"),
+            Hand = new EspnAthleteHandDto { Type = "LEFT", Abbreviation = "L", DisplayValue = "Left" }
+        };
+
+        var entity = dto.AsFootballAthlete(
+            new ExternalRefIdentityGenerator(),
+            franchiseId: null,
+            correlationId: Guid.NewGuid());
+
+        entity.HandType.Should().Be("LEFT");
+        entity.HandAbbreviation.Should().Be("L");
+        entity.HandDisplayValue.Should().Be("Left");
+    }
 
     [Fact]
     public async Task WhenAthleteIsValid_ShouldCreateAthlete()

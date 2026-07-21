@@ -76,6 +76,7 @@ public class SeasonTypeWeekDocumentProcessorTests
 
         savedWeek.Should().NotBeNull();
         savedWeek!.Number.Should().Be(1);
+        savedWeek.Text.Should().Be("Week 1");
         savedWeek.StartDate.Should().Be(DateTime.Parse("2025-02-01T08:00Z").ToUniversalTime());
         savedWeek.EndDate.Should().Be(DateTime.Parse("2025-08-23T06:59Z").ToUniversalTime());
 

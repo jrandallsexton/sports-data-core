@@ -37,6 +37,9 @@ public static class AthleteExtensions
         if (dto is EspnFootballAthleteDto footballDto)
         {
             entity.Jersey = footballDto.Jersey;
+            entity.HandType = footballDto.Hand?.Type;
+            entity.HandAbbreviation = footballDto.Hand?.Abbreviation;
+            entity.HandDisplayValue = footballDto.Hand?.DisplayValue;
             if (footballDto.Draft is not null)
             {
                 entity.DraftDisplayText = footballDto.Draft.Display;

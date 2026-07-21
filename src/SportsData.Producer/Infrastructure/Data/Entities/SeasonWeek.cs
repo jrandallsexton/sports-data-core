@@ -26,6 +26,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public bool IsNonStandardWeek { get; set; }
 
+        // Human-readable week label ("Bowls", "Championship Week"). Previously
+        // dropped by the mapper; postseason/non-standard weeks otherwise render as
+        // a bare number. See docs/features/espn-processor-data-capture-audit.md.
+        public string? Text { get; set; }
+
         public ICollection<SeasonPollWeek> Rankings { get; set; } = [];
 
         public ICollection<SeasonWeekExternalId> ExternalIds { get; set; } = [];
@@ -51,6 +56,9 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
                 builder.Property(x => x.IsNonStandardWeek)
                     .IsRequired();
+
+                builder.Property(x => x.Text)
+                    .HasMaxLength(100);
 
                 builder.HasOne(x => x.Season)
                     .WithMany()

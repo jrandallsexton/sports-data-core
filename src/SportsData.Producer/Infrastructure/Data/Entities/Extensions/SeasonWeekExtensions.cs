@@ -24,6 +24,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
                 SeasonId = seasonId,
                 SeasonPhaseId = seasonPhaseId,
                 Number = dto.Number,
+                Text = dto.Text,
                 StartDate = DateTime.Parse(dto.StartDate).ToUniversalTime(),
                 EndDate = DateTime.Parse(dto.EndDate).ToUniversalTime(),
                 CreatedBy = correlationId,

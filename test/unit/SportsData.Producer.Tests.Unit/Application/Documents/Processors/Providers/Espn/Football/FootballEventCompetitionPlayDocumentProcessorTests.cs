@@ -415,13 +415,16 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         await FootballDataContext.SaveChangesAsync();
         await SeedInProgressStatusAsync(competitionId);
 
-        // Seed an EXISTING play keyed by the fixture ref's canonical id, with a
-        // deliberately stale Text and preserved audit columns so the remap is
-        // observable. The processor finds it by canonical id and takes the
-        // update path. Derive the id from the FIXTURE'S ref (not PlayUrl, which is
-        // a different play) so the lookup matches.
-        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
-        var playRef = json.FromJson<EspnFootballEventCompetitionPlayDto>()!.Ref;
+        // Use a SCORING play (touchdown) so the update path must refresh the
+        // scoringType / pointAfterAttempt / wallclock columns — seeded null below.
+        // Seed an EXISTING play keyed by that play's canonical id with stale Text +
+        // null new fields + preserved audit, so the full remap is observable. The
+        // processor finds it by canonical id and takes the update path.
+        var plays = (await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlays.json"))
+            .FromJson<List<EspnFootballEventCompetitionPlayDto>>()!;
+        var td = plays.First(p => p.ScoringType?.Abbreviation == "TD" && p.PointAfterAttempt != null);
+        var json = td.ToJson();
+        var playRef = td.Ref;
         var canonicalId = generator.Generate(playRef).CanonicalId;
         var urlHash = generator.Generate(playRef).UrlHash;
         var originalCreatedUtc = new DateTime(2020, 5, 5, 0, 0, 0, DateTimeKind.Utc);
@@ -477,6 +480,17 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         // original row is untouched (not duplicated or replaced).
         updated.ExternalIds.Should().ContainSingle()
             .Which.Id.Should().Be(originalExternalIdRowId);
+
+        // Newly-captured columns backfilled by the full remap (seeded null; the TD
+        // fixture provides them) — this is the resourcing/replay guarantee.
+        updated.Wallclock.Should().Be(td.Wallclock);
+        updated.ScoringTypeName.Should().Be("touchdown");
+        updated.ScoringTypeDisplayName.Should().Be("Touchdown");
+        updated.ScoringTypeAbbreviation.Should().Be("TD");
+        updated.PointAfterAttemptId.Should().Be(61);
+        updated.PointAfterAttemptText.Should().Be("Extra Point Good");
+        updated.PointAfterAttemptAbbreviation.Should().Be("Extra Point Good");
+        updated.PointAfterAttemptValue.Should().Be(1);
     }
 
     [Fact(Skip = "log not throw")]

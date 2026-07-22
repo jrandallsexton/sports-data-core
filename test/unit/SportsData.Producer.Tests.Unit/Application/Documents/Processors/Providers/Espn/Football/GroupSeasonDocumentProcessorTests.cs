@@ -4,8 +4,12 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Moq;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Images;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
@@ -62,6 +66,8 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
             .OmitAutoProperties()
             .Create();
 
+        var bus = Mocker.GetMock<IEventBus>();
+
         // act
         await sut.ProcessAsync(command);
 
@@ -69,6 +75,15 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
         var group = await FootballDataContext.GroupSeasons.FirstOrDefaultAsync();
         group.Should().NotBeNull();
         group.SeasonYear.Should().Be(2024);
+
+        // The SEC logo (dto.Logos) must be published as a GroupSeasonLogo image
+        // request — previously dropped, leaving the GroupSeasonLogo table empty.
+        bus.Verify(x => x.PublishBatch(
+            It.Is<IEnumerable<ProcessImageRequest>>(reqs =>
+                reqs.Any(r => r.DocumentType == DocumentType.GroupSeasonLogo
+                              && r.ParentEntityId == group.Id)),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     /// <summary>

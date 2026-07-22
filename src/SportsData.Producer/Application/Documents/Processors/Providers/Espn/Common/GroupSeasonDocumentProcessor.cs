@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -145,8 +146,46 @@ public class GroupSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<
 
         await ProcessChildren(dto, groupSeasonEntity, command);
 
+        await ProcessLogos(dto, groupSeasonEntity, seasonYear, command);
+
         await _dataContext.GroupSeasons.AddAsync(groupSeasonEntity);
         await _dataContext.SaveChangesAsync();
+    }
+
+    private async Task ProcessLogos(
+        EspnGroupSeasonDto dto,
+        GroupSeason groupSeasonEntity,
+        int seasonYear,
+        ProcessDocumentCommand command)
+    {
+        // The conference/division logo (dto.Logos) was previously dropped — no
+        // image request was published, so the GroupSeasonLogo table stayed empty.
+        // Publish a request per logo (the GroupSeasonLogoResponseProcessor writes
+        // the row after download), mirroring TeamSeasonDocumentProcessor.
+        if (dto.Logos is null || dto.Logos.Count == 0)
+        {
+            return;
+        }
+
+        var imageEvents = EventFactory.CreateProcessImageRequests(
+            _externalRefIdentityGenerator,
+            dto.Logos,
+            groupSeasonEntity.Id,
+            command.Sport,
+            seasonYear,
+            DocumentType.GroupSeasonLogo,
+            command.SourceDataProvider,
+            command.CorrelationId,
+            command.MessageId);
+
+        if (imageEvents.Count > 0)
+        {
+            _logger.LogInformation(
+                "Publishing {Count} GroupSeasonLogo image requests for GroupSeason {GroupSeasonId} ({SeasonYear}).",
+                imageEvents.Count, groupSeasonEntity.Id, seasonYear);
+
+            await _publishEndpoint.PublishBatch(imageEvents);
+        }
     }
 
     private async Task ProcessChildren(

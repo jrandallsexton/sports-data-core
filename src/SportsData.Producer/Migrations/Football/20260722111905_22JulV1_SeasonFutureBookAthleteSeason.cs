@@ -52,6 +52,15 @@ namespace SportsData.Producer.Migrations.Football
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // Athlete-only books (AthleteSeasonId set, no team) cannot be
+            // represented in the pre-migration schema. Remove them before
+            // restoring the non-null FranchiseSeason FK below — otherwise the
+            // AlterColumn would coerce their null FranchiseSeasonId to Guid.Empty
+            // and the AddForeignKey would fail (no such FranchiseSeason). This
+            // makes the downgrade intentionally lossy for athlete-market futures.
+            migrationBuilder.Sql(
+                "DELETE FROM \"SeasonFutureBook\" WHERE \"AthleteSeasonId\" IS NOT NULL AND \"FranchiseSeasonId\" IS NULL;");
+
             migrationBuilder.DropForeignKey(
                 name: "FK_SeasonFutureBook_AthleteSeason_AthleteSeasonId",
                 table: "SeasonFutureBook");

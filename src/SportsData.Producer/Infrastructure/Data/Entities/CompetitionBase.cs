@@ -144,7 +144,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionOdds> Odds { get; set; } = [];
 
-        public ICollection<CompetitionSituation> Situations { get; set; } = [];
+        public ICollection<CompetitionSituationBase> Situations { get; set; } = [];
 
         public ICollection<CompetitionMedia> Media { get; set; } = [];
 

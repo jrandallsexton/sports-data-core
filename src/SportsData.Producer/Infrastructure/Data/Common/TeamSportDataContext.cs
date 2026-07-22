@@ -98,7 +98,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<CompetitionProbability> CompetitionProbabilities { get; set; }
 
-        public DbSet<CompetitionSituation> CompetitionSituations { get; set; }
+        public DbSet<CompetitionSituationBase> CompetitionSituations { get; set; }
 
         public DbSet<CompetitionStatusBase> CompetitionStatuses { get; set; }
 
@@ -220,7 +220,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
             modelBuilder.ApplyConfiguration(new CompetitionProbability.EntityConfiguration());
 
-            modelBuilder.ApplyConfiguration(new CompetitionSituation.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new CompetitionSituationBase.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new CompetitionStatusBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionStatusExternalId.EntityConfiguration());

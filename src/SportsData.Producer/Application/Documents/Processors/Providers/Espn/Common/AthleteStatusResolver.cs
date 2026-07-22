@@ -25,7 +25,12 @@ public static class AthleteStatusResolver
         if (string.IsNullOrEmpty(name))
             return null;
 
-        var nameLower = name.ToLower();
+        // Invariant (culture-independent) so this .NET-side normalization can't
+        // diverge from the DB's lower() for culture cases (e.g. Turkish 'I'). The
+        // query-side ToLower below runs in Postgres (EF translates it to lower()),
+        // matching the NameNormalized computed column; it must stay ToLower because
+        // Npgsql can't translate ToLowerInvariant.
+        var nameLower = name.ToLowerInvariant();
 
         var existing = await dataContext.AthleteStatuses
             .AsNoTracking()

@@ -148,6 +148,69 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         return (kicker, returner);
     }
 
+    /// <summary>
+    /// Seed AthleteSeason + AthletePosition rows for the given season-scoped
+    /// athlete refs and position refs so participant resolution succeeds. Used by
+    /// tests processing plays whose participant deps aren't otherwise seeded.
+    /// </summary>
+    private async Task SeedParticipantDepsAsync(
+        ExternalRefIdentityGenerator generator,
+        IEnumerable<string> athleteRefs,
+        IEnumerable<string> positionRefs)
+    {
+        foreach (var refUrl in athleteRefs.Distinct())
+        {
+            FootballDataContext.AthleteSeasons.Add(new FootballAthleteSeason
+            {
+                Id = Guid.NewGuid(),
+                AthleteId = Guid.NewGuid(),
+                FranchiseSeasonId = Guid.NewGuid(),
+                PositionId = Guid.NewGuid(),
+                CreatedUtc = UtcNow(),
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds = new List<AthleteSeasonExternalId>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        Value = generator.Generate(refUrl).UrlHash,
+                        SourceUrl = new Uri(refUrl).ToCleanUrl(),
+                        SourceUrlHash = generator.Generate(refUrl).UrlHash,
+                        CreatedBy = Guid.NewGuid()
+                    }
+                }
+            });
+        }
+
+        foreach (var refUrl in positionRefs.Distinct())
+        {
+            FootballDataContext.AthletePositions.Add(new AthletePosition
+            {
+                Id = Guid.NewGuid(),
+                Name = "Position",
+                DisplayName = "Position",
+                Abbreviation = "POS",
+                CreatedUtc = UtcNow(),
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds = new List<AthletePositionExternalId>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        Value = generator.Generate(refUrl).UrlHash,
+                        SourceUrl = new Uri(refUrl).ToCleanUrl(),
+                        SourceUrlHash = generator.Generate(refUrl).UrlHash,
+                        CreatedBy = Guid.NewGuid()
+                    }
+                }
+            });
+        }
+
+        await FootballDataContext.SaveChangesAsync();
+    }
+
     private ProcessDocumentCommand CreateCommand(string jsonFile, string? parentId = null)
     {
         var generator = new ExternalRefIdentityGenerator();
@@ -580,6 +643,82 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
     }
 
     [Fact]
+    public async Task WhenReprocessingExistingPlay_ParticipantNotSourced_LeavesPlayUnmodified_AndRequestsDependency()
+    {
+        // arrange — an existing play, reprocessed while its participants are NOT
+        // sourced. The update path must throw BEFORE mutating the tracked entity,
+        // because the base's retry handler calls SaveChangesAsync — otherwise the
+        // remapped scalars would be persisted despite "withhold for retry".
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var bus = Mocker.GetMock<IEventBus>();
+
+        var competitionId = Guid.NewGuid();
+        await FootballDataContext.Competitions.AddAsync(new FootballCompetition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            Date = UtcNow(),
+            CreatedUtc = UtcNow(),
+            CreatedBy = Guid.NewGuid()
+        });
+        await FootballDataContext.SaveChangesAsync();
+        await SeedInProgressStatusAsync(competitionId);
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+        var playRef = json.FromJson<EspnFootballEventCompetitionPlayDto>()!.Ref;
+        var canonicalId = generator.Generate(playRef).CanonicalId;
+        var urlHash = generator.Generate(playRef).UrlHash;
+
+        // Seed the existing play with stale scalars (and NO participant deps).
+        var play = new FootballCompetitionPlay
+        {
+            Id = canonicalId,
+            CompetitionId = competitionId,
+            EspnId = "stale-espn-id",
+            SequenceNumber = "0",
+            Text = "STALE TEXT",
+            TypeId = "0",
+            CreatedUtc = UtcNow(),
+            CreatedBy = Guid.NewGuid()
+        };
+        play.ExternalIds.Add(new CompetitionPlayExternalId
+        {
+            Id = Guid.NewGuid(),
+            CompetitionPlayId = canonicalId,
+            Provider = SourceDataProvider.Espn,
+            Value = urlHash,
+            SourceUrl = playRef.AbsoluteUri,
+            SourceUrlHash = urlHash,
+            CreatedBy = Guid.NewGuid()
+        });
+        await FootballDataContext.CompetitionPlays.AddAsync(play);
+        await FootballDataContext.SaveChangesAsync();
+        FootballDataContext.ChangeTracker.Clear();
+
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+
+        // act — update path; participants unsourced → withhold for retry.
+        await sut.ProcessAsync(CreateCommand(json, competitionId.ToString()));
+
+        // assert — the existing play is untouched (scalars NOT remapped), no
+        // participants were written, and sourcing was requested.
+        var reloaded = await FootballDataContext.CompetitionPlays
+            .AsNoTracking()
+            .FirstAsync(x => x.Id == canonicalId);
+        reloaded.Text.Should().Be("STALE TEXT", "the tracked play must not be mutated before the dependency throw");
+
+        (await FootballDataContext.CompetitionPlayParticipants
+            .AnyAsync(p => p.CompetitionPlayId == canonicalId))
+            .Should().BeFalse();
+
+        bus.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.AthleteSeason),
+            It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+    }
+
+    [Fact]
     public async Task WhenEntityExists_FullRemap_RefreshesFields_PreservesIdentityAuditAndExternalIds()
     {
         // arrange
@@ -639,6 +778,22 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         await FootballDataContext.CompetitionPlays.AddAsync(play);
         await FootballDataContext.SaveChangesAsync();
         var originalExternalIdRowId = externalId.Id;
+
+        // The TD play carries participants; seed their athlete/position deps so the
+        // update path resolves them and performs the full remap (rather than
+        // withholding for retry).
+        await SeedParticipantDepsAsync(
+            generator,
+            athleteRefs: new[]
+            {
+                "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4429059?lang=en",
+                "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4430026?lang=en"
+            },
+            positionRefs: new[]
+            {
+                "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/9?lang=en",
+                "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/22?lang=en"
+            });
 
         // Fresh DI scope per message in production.
         FootballDataContext.ChangeTracker.Clear();

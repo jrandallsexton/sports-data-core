@@ -273,6 +273,14 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
                 $"Ref={externalDto.Ref}");
         }
 
+        // Resolve participants BEFORE mutating the tracked entity. A missing
+        // dependency throws ExternalDocumentNotSourcedException, and the base's
+        // retry handler calls SaveChangesAsync — so any tracked mutation made
+        // before the throw would be persisted despite "withhold for retry". By
+        // building participants first, a throw here leaves the tracked play
+        // completely unmodified.
+        var participants = await BuildParticipantsAsync(command, externalDto);
+
         var createdUtc = footballPlay.CreatedUtc;
         var createdBy = footballPlay.CreatedBy;
         _dataContext.Entry(footballPlay).CurrentValues.SetValues(mapped);
@@ -283,8 +291,6 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
         // refresh them. Replace the set wholesale: simpler than diffing per-row, and
         // ESPN can re-order or swap participants on a play between fetches. Mirrors
         // the baseball processor.
-        var participants = await BuildParticipantsAsync(command, externalDto);
-
         var existingParticipants = await _dataContext.Set<FootballCompetitionPlayParticipant>()
             .Where(p => p.CompetitionPlayId == footballPlay.Id)
             .ToListAsync();

@@ -78,10 +78,14 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
 
         // The SEC logo (dto.Logos) must be published as a GroupSeasonLogo image
         // request — previously dropped, leaving the GroupSeasonLogo table empty.
+        // The fixture carries exactly one logo; assert count, parent, type, and
+        // season year on every request.
         bus.Verify(x => x.PublishBatch(
             It.Is<IEnumerable<ProcessImageRequest>>(reqs =>
-                reqs.Any(r => r.DocumentType == DocumentType.GroupSeasonLogo
-                              && r.ParentEntityId == group.Id)),
+                reqs.Count() == 1
+                && reqs.All(r => r.ParentEntityId == group.Id
+                                 && r.DocumentType == DocumentType.GroupSeasonLogo
+                                 && r.SeasonYear == 2024)),
             It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -140,6 +144,8 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
             .OmitAutoProperties()
             .Create();
 
+        var bus = Mocker.GetMock<IEventBus>();
+
         // act
         await sut.ProcessAsync(command);
 
@@ -148,6 +154,18 @@ public class GroupSeasonDocumentProcessorTests : ProducerTestBase<GroupSeasonDoc
         group.Should().NotBeNull();
         group!.SeasonYear.Should().Be(2016,
             "SeasonYear must be extracted from the document $ref URL, not blindly inherited from command.Season");
+
+        // The logo image request must carry the same URL-derived season year
+        // (2016), not command.Season (2023) — proving ProcessLogos uses the year
+        // the processor resolved from the $ref, not the parent command's year.
+        bus.Verify(x => x.PublishBatch(
+            It.Is<IEnumerable<ProcessImageRequest>>(reqs =>
+                reqs.Count() == 1
+                && reqs.All(r => r.ParentEntityId == group.Id
+                                 && r.DocumentType == DocumentType.GroupSeasonLogo
+                                 && r.SeasonYear == 2016)),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact(Skip = "Revisit")]

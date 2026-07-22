@@ -160,6 +160,8 @@ public class EventCompetitionCompetitorRosterDocumentProcessor<TDataContext> : D
                 PositionId = finalPositionId,
                 JerseyNumber = entry.Jersey,
                 DidNotPlay = entry.DidNotPlay,
+                Starter = entry.Starter,
+                Active = entry.Active,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = command.CorrelationId
             };

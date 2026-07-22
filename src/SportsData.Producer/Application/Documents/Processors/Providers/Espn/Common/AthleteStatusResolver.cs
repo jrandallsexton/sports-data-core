@@ -25,16 +25,14 @@ public static class AthleteStatusResolver
         if (string.IsNullOrEmpty(name))
             return null;
 
-        // Invariant (culture-independent) so this .NET-side normalization can't
-        // diverge from the DB's lower() for culture cases (e.g. Turkish 'I'). The
-        // query-side ToLower below runs in Postgres (EF translates it to lower()),
-        // matching the NameNormalized computed column; it must stay ToLower because
-        // Npgsql can't translate ToLowerInvariant.
-        var nameLower = name.ToLowerInvariant();
+        // Single canonical normalization rule (culture-independent) used for both
+        // the persisted NameNormalized value and every lookup key, so the lookup
+        // and the unique constraint can't diverge for culture/Unicode cases.
+        var nameNormalized = name.ToLowerInvariant();
 
         var existing = await dataContext.AthleteStatuses
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => (x.Name ?? "").ToLower() == nameLower, cancellationToken);
+            .FirstOrDefaultAsync(x => x.NameNormalized == nameNormalized, cancellationToken);
 
         if (existing is not null)
             return existing.Id;
@@ -43,6 +41,7 @@ public static class AthleteStatusResolver
         {
             Id = Guid.NewGuid(),
             Name = name,
+            NameNormalized = nameNormalized,
             Abbreviation = status!.Abbreviation?.Trim(),
             Type = status.Type?.Trim(),
             ExternalId = status.Id.ToString()
@@ -57,15 +56,15 @@ public static class AthleteStatusResolver
         }
         catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
         {
-            // A concurrent caller inserted the same status name first (the unique
-            // index on the computed lower(Name) enforces this case-insensitively).
-            // Only this expected conflict is handled here; any other DbUpdateException
-            // propagates. Detach our losing row and return the winner's id.
+            // A concurrent caller inserted the same status first (the unique index
+            // on NameNormalized enforces this case-insensitively). Only this expected
+            // conflict is handled here; any other DbUpdateException propagates.
+            // Detach our losing row and return the winner's id.
             dataContext.Entry(created).State = EntityState.Detached;
 
             var winner = await dataContext.AthleteStatuses
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => (x.Name ?? "").ToLower() == nameLower, cancellationToken);
+                .FirstOrDefaultAsync(x => x.NameNormalized == nameNormalized, cancellationToken);
 
             return winner?.Id;
         }

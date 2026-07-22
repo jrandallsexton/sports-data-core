@@ -36,9 +36,27 @@ public class AthleteStatusResolverTests
         var created = await FootballDataContext.AthleteStatuses.AsNoTracking().SingleAsync();
         created.Id.Should().Be(id!.Value);
         created.Name.Should().Be("Inactive");
+        created.NameNormalized.Should().Be("inactive");
         created.Abbreviation.Should().Be("Inactive");
         created.Type.Should().Be("inactive");
         created.ExternalId.Should().Be("2");
+    }
+
+    [Fact]
+    public async Task ResolveIdAsync_IsCaseInsensitive_AndDoesNotDuplicate()
+    {
+        var first = await AthleteStatusResolver.ResolveIdAsync(
+            FootballDataContext,
+            new EspnAthleteStatusDto { Id = 1, Name = "Active", Type = "active", Abbreviation = "A" });
+
+        // Different casing must resolve to the same row via the canonical
+        // NameNormalized key, not create a second AthleteStatus.
+        var second = await AthleteStatusResolver.ResolveIdAsync(
+            FootballDataContext,
+            new EspnAthleteStatusDto { Id = 1, Name = "ACTIVE", Type = "active", Abbreviation = "A" });
+
+        second.Should().Be(first);
+        (await FootballDataContext.AthleteStatuses.CountAsync()).Should().Be(1);
     }
 
     [Fact]
@@ -48,6 +66,7 @@ public class AthleteStatusResolverTests
         {
             Id = Guid.NewGuid(),
             Name = "Active",
+            NameNormalized = "active",
             Abbreviation = "A",
             Type = "active",
             ExternalId = "1"

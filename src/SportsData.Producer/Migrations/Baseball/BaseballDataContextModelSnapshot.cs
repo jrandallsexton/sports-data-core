@@ -1853,10 +1853,8 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasColumnType("character varying(100)");
 
                     b.Property<string>("NameNormalized")
-                        .ValueGeneratedOnAddOrUpdate()
                         .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasComputedColumnSql("lower(\"Name\")", true);
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Type")
                         .HasMaxLength(50)

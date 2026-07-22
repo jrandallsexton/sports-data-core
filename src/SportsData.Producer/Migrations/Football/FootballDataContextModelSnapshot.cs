@@ -4415,14 +4415,11 @@ namespace SportsData.Producer.Migrations.Football
                     b.ToTable("CompetitionProbabilityExternalId");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionSituation", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionSituationBase", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<int>("AwayTimeouts")
-                        .HasColumnType("integer");
 
                     b.Property<Guid>("CompetitionId")
                         .HasColumnType("uuid");
@@ -4433,17 +4430,10 @@ namespace SportsData.Producer.Migrations.Football
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Distance")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Down")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("HomeTimeouts")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsRedZone")
-                        .HasColumnType("boolean");
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(34)
+                        .HasColumnType("character varying(34)");
 
                     b.Property<Guid?>("LastPlayId")
                         .HasColumnType("uuid");
@@ -4454,27 +4444,17 @@ namespace SportsData.Producer.Migrations.Football
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("YardLine")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CompetitionId");
 
                     b.HasIndex("LastPlayId");
 
-                    b.ToTable("CompetitionSituation", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_CompetitionSituation_AwayTimeouts", "\"AwayTimeouts\" >= 0");
+                    b.ToTable("CompetitionSituation", (string)null);
 
-                            t.HasCheckConstraint("CK_CompetitionSituation_Distance", "\"Distance\" >= -110");
+                    b.HasDiscriminator<string>("Discriminator").HasValue("CompetitionSituationBase");
 
-                            t.HasCheckConstraint("CK_CompetitionSituation_Down", "\"Down\" BETWEEN -1 AND 4");
-
-                            t.HasCheckConstraint("CK_CompetitionSituation_HomeTimeouts", "\"HomeTimeouts\" >= 0");
-
-                            t.HasCheckConstraint("CK_CompetitionSituation_YardLine", "\"YardLine\" BETWEEN 0 AND 100");
-                        });
+                    b.UseTphMappingStrategy();
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionSource", b =>
@@ -8143,6 +8123,44 @@ namespace SportsData.Producer.Migrations.Football
                     b.HasDiscriminator().HasValue("FootballCompetitionPlayParticipant");
                 });
 
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FootballCompetitionSituation", b =>
+                {
+                    b.HasBaseType("SportsData.Producer.Infrastructure.Data.Entities.CompetitionSituationBase");
+
+                    b.Property<int>("AwayTimeouts")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Distance")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Down")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("HomeTimeouts")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsRedZone")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("YardLine")
+                        .HasColumnType("integer");
+
+                    b.ToTable(t =>
+                        {
+                            t.HasCheckConstraint("CK_CompetitionSituation_AwayTimeouts", "\"AwayTimeouts\" >= 0");
+
+                            t.HasCheckConstraint("CK_CompetitionSituation_Distance", "\"Distance\" >= -110");
+
+                            t.HasCheckConstraint("CK_CompetitionSituation_Down", "\"Down\" BETWEEN -1 AND 4");
+
+                            t.HasCheckConstraint("CK_CompetitionSituation_HomeTimeouts", "\"HomeTimeouts\" >= 0");
+
+                            t.HasCheckConstraint("CK_CompetitionSituation_YardLine", "\"YardLine\" BETWEEN 0 AND 100");
+                        });
+
+                    b.HasDiscriminator().HasValue("FootballCompetitionSituation");
+                });
+
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Football.Entities.FootballCompetitionStatus", b =>
                 {
                     b.HasBaseType("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatusBase");
@@ -9037,7 +9055,7 @@ namespace SportsData.Producer.Migrations.Football
                     b.Navigation("CompetitionProbability");
                 });
 
-            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionSituation", b =>
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionSituationBase", b =>
                 {
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.CompetitionBase", "Competition")
                         .WithMany("Situations")

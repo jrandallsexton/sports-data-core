@@ -22,6 +22,8 @@ namespace SportsData.Producer.Infrastructure.Data.Football
 
         public DbSet<FootballCompetitionPlayParticipant> CompetitionPlayParticipants { get; set; }
 
+        public new DbSet<FootballCompetitionSituation> CompetitionSituations { get; set; }
+
         // Drives are football-only (a "drive" is a contiguous offensive
         // possession terminating in a result). Lifted off TeamSportDataContext
         // so EF doesn't discover FootballCompetitionPlay via the
@@ -47,6 +49,7 @@ namespace SportsData.Producer.Infrastructure.Data.Football
             modelBuilder.ApplyConfiguration(new FootballCompetitionPlay.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionPlayParticipantBase.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetitionPlayParticipant.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new FootballCompetitionSituation.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FootballCompetitionStatus.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionDrive.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionDriveExternalId.EntityConfiguration());

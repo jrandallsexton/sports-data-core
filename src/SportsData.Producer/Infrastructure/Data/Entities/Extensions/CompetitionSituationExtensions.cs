@@ -1,11 +1,13 @@
 ﻿using SportsData.Core.Common.Hashing;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
+
 namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 {
     public static class CompetitionSituationExtensions
     {
-        public static CompetitionSituation AsEntity(
+        public static FootballCompetitionSituation AsEntity(
             this EspnFootballEventCompetitionSituationDto dto,
             IGenerateExternalRefIdentities externalRefIdentityGenerator,
             Guid competitionId,
@@ -17,7 +19,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Extensions
 
             var identity = externalRefIdentityGenerator.Generate(dto.Ref);
 
-            return new CompetitionSituation
+            return new FootballCompetitionSituation
             {
                 Id = identity.CanonicalId,
                 CreatedBy = correlationId,

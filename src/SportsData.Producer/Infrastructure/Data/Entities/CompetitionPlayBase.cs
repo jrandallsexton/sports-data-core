@@ -55,7 +55,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public ICollection<CompetitionPlayExternalId> ExternalIds { get; set; } = [];
 
-        public ICollection<CompetitionSituation> SituationsAsLastPlay { get; set; } = [];
+        public ICollection<CompetitionSituationBase> SituationsAsLastPlay { get; set; } = [];
 
         public IEnumerable<ExternalId> GetExternalIds() => ExternalIds;
 

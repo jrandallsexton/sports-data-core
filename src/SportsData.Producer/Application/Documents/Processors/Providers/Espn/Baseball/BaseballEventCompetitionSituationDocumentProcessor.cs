@@ -10,6 +10,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
+using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 
@@ -19,14 +20,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Ba
 public class BaseballEventCompetitionSituationDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
     public BaseballEventCompetitionSituationDocumentProcessor(
         ILogger<BaseballEventCompetitionSituationDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs)
+        IGenerateResourceRefs refs,
+        IDateTimeProvider dateTimeProvider)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
+        _dateTimeProvider = dateTimeProvider;
     }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
@@ -88,31 +93,87 @@ public class BaseballEventCompetitionSituationDocumentProcessor<TDataContext> : 
             return;
         }
 
-        // Store baseball situation using the shared entity.
-        // Football-specific fields (Down, Distance, YardLine) set to 0.
-        // Baseball-specific data (balls, strikes, outs, runners) is not yet
-        // captured in the entity — will be addressed with sport-specific
-        // situation entities in a future refactor.
-        var entity = new CompetitionSituation
+        // Resolve baserunner occupancy (onFirst/onSecond/onThird). The refs are
+        // season-scoped athlete URLs → AthleteSeason. When a baserunner isn't
+        // sourced yet, request it and throw so the base retries after it lands
+        // (same dependency-sourcing pattern used above for LastPlay). All missing
+        // baserunners are requested before a single throw.
+        var (onFirstId, missingFirst) = await ResolveBaserunnerAsync(command, dto.OnFirst);
+        var (onSecondId, missingSecond) = await ResolveBaserunnerAsync(command, dto.OnSecond);
+        var (onThirdId, missingThird) = await ResolveBaserunnerAsync(command, dto.OnThird);
+
+        if (missingFirst || missingSecond || missingThird)
+        {
+            throw new ExternalDocumentNotSourcedException(
+                "One or more baserunners reference an AthleteSeason that isn't sourced yet. " +
+                "Requested the missing dependencies; will retry this situation.");
+        }
+
+        var entity = new BaseballCompetitionSituation
         {
             Id = identity.CanonicalId,
             CompetitionId = competitionIdValue,
             LastPlayId = lastPlayId,
-            Down = 0,
-            Distance = 0,
-            YardLine = 0,
-            IsRedZone = false,
-            AwayTimeouts = 0,
-            HomeTimeouts = 0,
+            Balls = dto.Balls,
+            Strikes = dto.Strikes,
+            Outs = dto.Outs,
+            OnFirstAthleteSeasonId = onFirstId,
+            OnSecondAthleteSeasonId = onSecondId,
+            OnThirdAthleteSeasonId = onThirdId,
             CreatedBy = command.CorrelationId,
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = _dateTimeProvider.UtcNow()
         };
 
-        await _dataContext.CompetitionSituations.AddAsync(entity);
+        foreach (var note in dto.SituationNotes ?? Enumerable.Empty<EspnBaseballSituationNoteDto>())
+        {
+            entity.Notes.Add(new BaseballCompetitionSituationNote
+            {
+                Id = Guid.NewGuid(),
+                SituationId = entity.Id,
+                Type = note.Type,
+                Text = note.Text,
+                CreatedBy = command.CorrelationId,
+                CreatedUtc = _dateTimeProvider.UtcNow()
+            });
+        }
+
+        await _dataContext.Set<BaseballCompetitionSituation>().AddAsync(entity);
         await _dataContext.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Persisted baseball CompetitionSituation. CompetitionId={CompId}, SituationId={SituationId}",
-            competitionIdValue, entity.Id);
+            "Persisted baseball CompetitionSituation. CompetitionId={CompId}, SituationId={SituationId}, " +
+            "Balls={Balls}, Strikes={Strikes}, Outs={Outs}, Notes={NoteCount}",
+            competitionIdValue, entity.Id, entity.Balls, entity.Strikes, entity.Outs, entity.Notes.Count);
+    }
+
+    /// <summary>
+    /// Resolve a baserunner's season-scoped athlete ref to an AthleteSeason id.
+    /// Returns (null, false) when the base is empty (no ref). When the ref is
+    /// present but unresolved, request the AthleteSeason and return
+    /// (null, true) so the caller can throw once after requesting all missing
+    /// baserunners.
+    /// </summary>
+    private async Task<(Guid? Id, bool Missing)> ResolveBaserunnerAsync(
+        ProcessDocumentCommand command,
+        EspnBaseballSituationPlayerDto? runner)
+    {
+        if (runner?.Athlete?.Ref is null)
+            return (null, false);
+
+        var athleteSeasonId = await _dataContext.ResolveIdAsync<AthleteSeason, AthleteSeasonExternalId>(
+            runner.Athlete,
+            command.SourceDataProvider,
+            () => _dataContext.AthleteSeasons,
+            externalIdsNav: "ExternalIds",
+            key: a => a.Id);
+
+        if (athleteSeasonId is null)
+        {
+            await PublishDependencyRequest<Guid?>(
+                command, runner.Athlete, parentId: null, DocumentType.AthleteSeason);
+            return (null, true);
+        }
+
+        return (athleteSeasonId, false);
     }
 }

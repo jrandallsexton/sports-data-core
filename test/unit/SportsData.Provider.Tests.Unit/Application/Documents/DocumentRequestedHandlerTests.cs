@@ -21,7 +21,10 @@ using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using FluentValidation.Results;
 
+using SportsData.Core.Config;
+
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 
 using Xunit;
 
@@ -65,6 +68,188 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         // assert
         background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
             It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.AtLeastOnce);
+    }
+
+    [Theory]
+    // Immutable type in-season: non-edge items served from Mongo (BypassCache=false);
+    // the live edge (last item) still bypasses. Mutable type: every item bypasses.
+    [InlineData(DocumentType.EventCompetitionPlay, false)]
+    [InlineData(DocumentType.EventCompetitionStatus, true)]
+    public async Task InSeason_ImmutableItems_ServeFromCache_ExceptLiveEdge(
+        DocumentType documentType,
+        bool expectNonEdgeBypass)
+    {
+        // arrange — in-season: SeasonYear == CurrentSeason so ShouldBypassCache is true.
+        const int season = 2026;
+        var cfg = (CommonConfig)RuntimeHelpers.GetUninitializedObject(typeof(CommonConfig));
+        cfg.CurrentSeason = season;
+        Mocker.Use<IOptions<CommonConfig>>(Options.Create(cfg));
+
+        // Single-page plays index, 3 items ($ref-only → non-hybrid), ascending ids.
+        const string baseUrl = "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401816227/competitions/401816227/plays";
+        var json =
+            "{\"count\":3,\"pageIndex\":1,\"pageSize\":25,\"pageCount\":1,\"items\":[" +
+            "{\"$ref\":\"" + baseUrl + "/1?lang=en\"}," +
+            "{\"$ref\":\"" + baseUrl + "/2?lang=en\"}," +
+            "{\"$ref\":\"" + baseUrl + "/3?lang=en\"}]}";
+
+        var espnApi = Mocker.GetMock<IProvideEspnApiData>();
+        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(json));
+
+        var captured = new List<ProcessResourceIndexItemCommand>();
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        background
+            .Setup(x => x.Enqueue<IProcessResourceIndexItems>(
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
+            .Callback<Expression<Func<IProcessResourceIndexItems, Task>>>(expr =>
+            {
+                var call = (MethodCallExpression)expr.Body;
+                var cmd = (ProcessResourceIndexItemCommand)Expression
+                    .Lambda(call.Arguments[0]).Compile().DynamicInvoke()!;
+                captured.Add(cmd);
+            })
+            .Returns(string.Empty);
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = Fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, new Uri($"{baseUrl}?lang=en"))
+            .With(x => x.DocumentType, documentType)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.SeasonYear, (int?)season)
+            .OmitAutoProperties()
+            .Create();
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert
+        captured.Should().HaveCount(3);
+        captured[^1].BypassCache.Should().BeTrue("the live edge (last item) may still be finalizing and must re-fetch");
+        captured[0].BypassCache.Should().Be(expectNonEdgeBypass);
+        captured[1].BypassCache.Should().Be(expectNonEdgeBypass);
+    }
+
+    [Theory]
+    // The immutable exception applies ONLY to exactly the current season. For a
+    // future season, a disabled feature (CurrentSeason == 0), or a null/non-seasonal
+    // SeasonYear, every item keeps the original bypass — no immutable-serve, non-edge included.
+    [InlineData(2026, 2027)] // future season
+    [InlineData(0, 2026)]    // feature disabled
+    [InlineData(2026, null)] // null / non-seasonal
+    public async Task NotCurrentSeason_ImmutablePlays_StillBypassEveryItem(
+        int currentSeason,
+        int? requestedSeason)
+    {
+        // arrange
+        var cfg = (CommonConfig)RuntimeHelpers.GetUninitializedObject(typeof(CommonConfig));
+        cfg.CurrentSeason = currentSeason;
+        Mocker.Use<IOptions<CommonConfig>>(Options.Create(cfg));
+
+        const string baseUrl = "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401816227/competitions/401816227/plays";
+        var json =
+            "{\"count\":3,\"pageIndex\":1,\"pageSize\":25,\"pageCount\":1,\"items\":[" +
+            "{\"$ref\":\"" + baseUrl + "/1?lang=en\"}," +
+            "{\"$ref\":\"" + baseUrl + "/2?lang=en\"}," +
+            "{\"$ref\":\"" + baseUrl + "/3?lang=en\"}]}";
+
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(json));
+
+        var captured = new List<ProcessResourceIndexItemCommand>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IProcessResourceIndexItems>(
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
+            .Callback<Expression<Func<IProcessResourceIndexItems, Task>>>(expr =>
+            {
+                var call = (MethodCallExpression)expr.Body;
+                captured.Add((ProcessResourceIndexItemCommand)Expression
+                    .Lambda(call.Arguments[0]).Compile().DynamicInvoke()!);
+            })
+            .Returns(string.Empty);
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = Fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, new Uri($"{baseUrl}?lang=en"))
+            .With(x => x.DocumentType, DocumentType.EventCompetitionPlay)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.SeasonYear, requestedSeason)
+            .OmitAutoProperties()
+            .Create();
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert — immutable exception does not apply; every item bypasses.
+        captured.Should().HaveCount(3);
+        captured.Should().OnlyContain(c => c.BypassCache);
+    }
+
+    [Fact]
+    public async Task InSeason_MultiPageIndex_OnlyFinalPageLastItem_IsLiveEdge()
+    {
+        // arrange — current season, immutable plays, 2-page index of 4 plays.
+        const int season = 2026;
+        var cfg = (CommonConfig)RuntimeHelpers.GetUninitializedObject(typeof(CommonConfig));
+        cfg.CurrentSeason = season;
+        Mocker.Use<IOptions<CommonConfig>>(Options.Create(cfg));
+
+        const string baseUrl = "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401816227/competitions/401816227/plays";
+        static string Page(int pageIndex, int pageCount, string baseUrl, params int[] ids)
+        {
+            var items = string.Join(",", ids.Select(id => "{\"$ref\":\"" + baseUrl + "/" + id + "?lang=en\"}"));
+            return $"{{\"count\":4,\"pageIndex\":{pageIndex},\"pageSize\":2,\"pageCount\":{pageCount},\"items\":[{items}]}}";
+        }
+
+        var espnApi = Mocker.GetMock<IProvideEspnApiData>();
+        // Page 2 request carries page=2 in the query; the initial request does not.
+        espnApi.Setup(x => x.GetResource(
+                It.Is<Uri>(u => u.Query.Contains("page=2")), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(Page(2, 2, baseUrl, 3, 4)));
+        espnApi.Setup(x => x.GetResource(
+                It.Is<Uri>(u => !u.Query.Contains("page=2")), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(Page(1, 2, baseUrl, 1, 2)));
+
+        var captured = new List<ProcessResourceIndexItemCommand>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IProcessResourceIndexItems>(
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
+            .Callback<Expression<Func<IProcessResourceIndexItems, Task>>>(expr =>
+            {
+                var call = (MethodCallExpression)expr.Body;
+                captured.Add((ProcessResourceIndexItemCommand)Expression
+                    .Lambda(call.Arguments[0]).Compile().DynamicInvoke()!);
+            })
+            .Returns(string.Empty);
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = Fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, new Uri($"{baseUrl}?lang=en"))
+            .With(x => x.DocumentType, DocumentType.EventCompetitionPlay)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.SeasonYear, (int?)season)
+            .OmitAutoProperties()
+            .Create();
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert — 4 items across 2 pages; only the FINAL page's LAST item is the live edge.
+        captured.Should().HaveCount(4);
+        captured[0].BypassCache.Should().BeFalse();
+        captured[1].BypassCache.Should().BeFalse("page-1's last item is NOT the live edge — it isn't the final page");
+        captured[2].BypassCache.Should().BeFalse();
+        captured[3].BypassCache.Should().BeTrue("only the last item on the final page is the live edge");
     }
 
     [Fact]

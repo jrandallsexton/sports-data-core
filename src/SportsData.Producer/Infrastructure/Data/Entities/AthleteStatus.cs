@@ -13,6 +13,12 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
 
         public string? Name { get; set; }
 
+        // DB-computed lowercase of Name, used to enforce CASE-INSENSITIVE
+        // uniqueness (the resolver dedups by lower(name)). Store-generated, so
+        // every AthleteStatus creator — the resolver and the athlete processor —
+        // stays consistent without setting it. Read-only from the app.
+        public string? NameNormalized { get; private set; }
+
         public string? Type { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<AthleteStatus>
@@ -33,11 +39,16 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.Property(s => s.Name)
                     .HasMaxLength(100);
 
-                // Deduped by name (per-sport DB, so this is unique within the
-                // sport collection). Backs the resolver's concurrent-insert guard.
-                // ESPN status names are case-stable and the resolver's lookup
-                // lowercases, so no case-variant rows are ever inserted.
-                builder.HasIndex(s => s.Name)
+                // Case-insensitive uniqueness: a stored computed lower(Name) plus a
+                // unique index on it. Per-sport DB, so unique within the sport
+                // collection. Backs the resolver's concurrent-insert guard and
+                // matches its lower(name) dedup, so "Active" and "active" can't both
+                // be inserted.
+                builder.Property(s => s.NameNormalized)
+                    .HasComputedColumnSql("lower(\"Name\")", stored: true)
+                    .HasMaxLength(100);
+
+                builder.HasIndex(s => s.NameNormalized)
                     .IsUnique();
 
                 builder.Property(s => s.Type)

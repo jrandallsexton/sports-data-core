@@ -13,8 +13,8 @@ using SportsData.Producer.Infrastructure.Data.Baseball;
 namespace SportsData.Producer.Migrations.Baseball
 {
     [DbContext(typeof(BaseballDataContext))]
-    [Migration("20260721224809_22JulV1_AthleteStatusNameUnique")]
-    partial class _22JulV1_AthleteStatusNameUnique
+    [Migration("20260721234046_22JulV1_AthleteStatusNameCaseInsensitiveUnique")]
+    partial class _22JulV1_AthleteStatusNameCaseInsensitiveUnique
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1855,13 +1855,19 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("NameNormalized")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasComputedColumnSql("lower(\"Name\")", true);
+
                     b.Property<string>("Type")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("NameNormalized")
                         .IsUnique();
 
                     b.ToTable("AthleteStatus", (string)null);

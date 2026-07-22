@@ -1852,13 +1852,19 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("NameNormalized")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasComputedColumnSql("lower(\"Name\")", true);
+
                     b.Property<string>("Type")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("NameNormalized")
                         .IsUnique();
 
                     b.ToTable("AthleteStatus", (string)null);

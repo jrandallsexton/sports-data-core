@@ -51,8 +51,9 @@ public static class AthleteStatusResolver
         }
         catch (DbUpdateException)
         {
-            // A concurrent caller inserted the same status name first (unique
-            // index on Name). Detach our losing row and return the winner's id.
+            // A concurrent caller inserted the same status name first (the unique
+            // index on the computed lower(Name) enforces this case-insensitively).
+            // Detach our losing row and return the winner's id.
             dataContext.Entry(created).State = EntityState.Detached;
 
             var winner = await dataContext.AthleteStatuses

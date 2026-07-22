@@ -327,6 +327,17 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 // hardcoding BypassCache=true, forcing an ESPN call for every child of
                 // every resource index — defeating Mongo cache entirely for re-finalize
                 // and historical-sourcing runs.
+                //
+                // In-season immutable items (e.g. a completed play) are served from
+                // Mongo instead of re-fetched from ESPN every live-poll cycle — the
+                // fix for the live-slate rate-limit storm. The one exception is the
+                // "live edge": the newest item (last item on the last page — the
+                // index is ordered ascending), which may still be finalizing, so it
+                // keeps bypassing. See docs/features/in-season-cache-bypass-fix.md.
+                var isLiveEdge = dto.PageIndex >= dto.PageCount && i == dto.Items.Count - 1;
+                var bypassCache = ShouldBypassCache(evt.SeasonYear)
+                    && (!InSeasonDocumentPolicy.IsImmutableInSeason(evt.DocumentType) || isLiveEdge);
+
                 var cmd = new ProcessResourceIndexItemCommand(
                     CorrelationId: evt.CorrelationId,
                     CausationId: evt.CausationId,
@@ -339,7 +350,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     DocumentType: evt.DocumentType,
                     ParentId: evt.ParentId,
                     SeasonYear: evt.SeasonYear,
-                    BypassCache: ShouldBypassCache(evt.SeasonYear),
+                    BypassCache: bypassCache,
                     IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes,
                     InlineJson: useInlineJson == true ? rawItemJsonList![i] : null);
 

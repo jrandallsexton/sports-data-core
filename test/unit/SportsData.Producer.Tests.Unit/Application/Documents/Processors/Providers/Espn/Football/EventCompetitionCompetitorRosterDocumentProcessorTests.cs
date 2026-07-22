@@ -483,6 +483,11 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorRoster.json");
         var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
 
+        // Fixed seed timestamp — these values are never asserted, but avoid new
+        // DateTime.UtcNow calls in test code (IDateTimeProvider convention). The
+        // processor sets its own CreatedUtc, so this only stamps seed entities.
+        var seedUtc = new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+
         // The captured fixture has starter/active all false. Flip a known entry to
         // true so the assertion proves real mapping, not a hardcoded false.
         var starterEntry = dto!.Entries.First(e => e.Athlete?.Ref != null);
@@ -500,8 +505,8 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
         {
             Id = competitionIdentity.CanonicalId,
             ContestId = Guid.NewGuid(),
-            Date = DateTime.UtcNow,
-            CreatedUtc = DateTime.UtcNow,
+            Date = seedUtc,
+            CreatedUtc = seedUtc,
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.Competitions.AddAsync(competition);
@@ -516,7 +521,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
             FranchiseSeasonId = Guid.NewGuid(),
             Order = 1,
             Winner = false,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = seedUtc,
             CreatedBy = Guid.NewGuid()
         };
         await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
@@ -532,7 +537,7 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
                 AthleteId = Guid.NewGuid(),
                 FranchiseSeasonId = Guid.NewGuid(),
                 PositionId = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = seedUtc,
                 CreatedBy = Guid.NewGuid()
             });
         }

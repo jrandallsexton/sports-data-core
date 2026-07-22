@@ -133,6 +133,64 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         captured[1].BypassCache.Should().Be(expectNonEdgeBypass);
     }
 
+    [Theory]
+    // The immutable exception applies ONLY to exactly the current season. For a
+    // future season or when the feature is disabled (CurrentSeason == 0), every
+    // item keeps the original bypass behavior — no immutable-serve, non-edge included.
+    [InlineData(2026, 2027)] // future season
+    [InlineData(0, 2026)]    // feature disabled
+    public async Task NotCurrentSeason_ImmutablePlays_StillBypassEveryItem(
+        int currentSeason,
+        int requestedSeason)
+    {
+        // arrange
+        var cfg = (CommonConfig)RuntimeHelpers.GetUninitializedObject(typeof(CommonConfig));
+        cfg.CurrentSeason = currentSeason;
+        Mocker.Use<IOptions<CommonConfig>>(Options.Create(cfg));
+
+        const string baseUrl = "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401816227/competitions/401816227/plays";
+        var json =
+            "{\"count\":3,\"pageIndex\":1,\"pageSize\":25,\"pageCount\":1,\"items\":[" +
+            "{\"$ref\":\"" + baseUrl + "/1?lang=en\"}," +
+            "{\"$ref\":\"" + baseUrl + "/2?lang=en\"}," +
+            "{\"$ref\":\"" + baseUrl + "/3?lang=en\"}]}";
+
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(json));
+
+        var captured = new List<ProcessResourceIndexItemCommand>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IProcessResourceIndexItems>(
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
+            .Callback<Expression<Func<IProcessResourceIndexItems, Task>>>(expr =>
+            {
+                var call = (MethodCallExpression)expr.Body;
+                captured.Add((ProcessResourceIndexItemCommand)Expression
+                    .Lambda(call.Arguments[0]).Compile().DynamicInvoke()!);
+            })
+            .Returns(string.Empty);
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = Fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, new Uri($"{baseUrl}?lang=en"))
+            .With(x => x.DocumentType, DocumentType.EventCompetitionPlay)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.SeasonYear, (int?)requestedSeason)
+            .OmitAutoProperties()
+            .Create();
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert — immutable exception does not apply; every item bypasses.
+        captured.Should().HaveCount(3);
+        captured.Should().OnlyContain(c => c.BypassCache);
+    }
+
     [Fact]
     public async Task WhenResourceIndexHasNoItems_NothingHappens()
     {

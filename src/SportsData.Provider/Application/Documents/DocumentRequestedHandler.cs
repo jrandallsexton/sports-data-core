@@ -334,9 +334,19 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 // "live edge": the newest item (last item on the last page — the
                 // index is ordered ascending), which may still be finalizing, so it
                 // keeps bypassing. See docs/features/in-season-cache-bypass-fix.md.
+                //
+                // Scope the immutable exception to EXACTLY the current season. When
+                // the feature is disabled (CurrentSeason == 0), the season is unknown
+                // (null), or the request is for a future season, keep the original
+                // bypass behavior for every item (no immutable-serve). Historical
+                // seasons already serve from cache via ShouldBypassCache == false.
                 var isLiveEdge = dto.PageIndex >= dto.PageCount && i == dto.Items.Count - 1;
-                var bypassCache = ShouldBypassCache(evt.SeasonYear)
-                    && (!InSeasonDocumentPolicy.IsImmutableInSeason(evt.DocumentType) || isLiveEdge);
+                var isCurrentSeason = _commonConfig.CurrentSeason != 0
+                    && evt.SeasonYear == _commonConfig.CurrentSeason;
+                var serveImmutableFromCache = isCurrentSeason
+                    && InSeasonDocumentPolicy.IsImmutableInSeason(evt.DocumentType)
+                    && !isLiveEdge;
+                var bypassCache = ShouldBypassCache(evt.SeasonYear) && !serveImmutableFromCache;
 
                 var cmd = new ProcessResourceIndexItemCommand(
                     CorrelationId: evt.CorrelationId,

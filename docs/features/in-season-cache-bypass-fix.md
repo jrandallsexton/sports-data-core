@@ -1,6 +1,9 @@
 # In-Season Cache Bypass — Stop Re-Fetching Immutable Documents
 
-Status: **Proposed / awaiting authorization**
+Status: **PoC implemented** (PR #549) — `DocumentRequestedHandler.ProcessResourceIndex`
+path only, allow-list `{ EventCompetitionPlay }`. Follow-ons deferred (see Scope):
+`ResourceIndexJob` paged loop, single-item/leaf paths, on-final force-bypass
+re-validate, in-season cooldown relaxation.
 Last updated: 2026-07-22
 Scope: MLB live sourcing (in-season). Applies to any current-season sport.
 
@@ -89,21 +92,31 @@ item keeps re-fetching (may still be finalizing); every other cached play serves
 from Mongo. Result: **1 ESPN play fetch/cycle** instead of hundreds.
 
 This is cleaner than reading the Situation doc's `lastPlay` ref: the decision is
-made *right where the index is already being iterated* (`ProcessResourceIndex` /
-`ResourceIndexJob`), with no cross-document lookup and no coupling to Situation
-processing.
+made *right where the index is already being iterated*, with no cross-document
+lookup and no coupling to Situation processing. **Implemented in the PoC for the
+`DocumentRequestedHandler.ProcessResourceIndex` path only** — the `ResourceIndexJob`
+paged loop is a deferred follow-on (see Scope below).
 
-Two safety nets for corrections beyond the edge:
-- **Finalization refresh forces a full re-validate.** The streamer already fires
-  `PublishContestRefreshOnFinalAsync` at game end — that pass MUST bypass cache
-  for plays (re-fetch all) so any missed mid-game correction is caught once, at
-  final. So the immutable-serve applies to the *live polling cycles*, not the
-  on-final refresh.
-- (Optional, later) periodic full re-validate every M minutes during the game.
+### Correction coverage for non-edge cached plays — DEFERRED (not in the PoC)
 
-Note: this is likely belt-and-suspenders — ESPN generally only lists a play in
-the index once it's complete, so most cached plays are already final. But
-re-fetching one item/cycle is cheap insurance and costs nothing meaningful.
+The PoC serves cached non-edge plays from Mongo and re-fetches only the live
+edge. It does **not** implement any re-validation of already-cached non-edge
+plays, so a rare mid-game **correction** (a scoring/stat change to an older play)
+would not be picked up. In particular:
+
+- **The finalization refresh does NOT currently force a full re-validate.**
+  `PublishContestRefreshOnFinalAsync` flows through the same enqueue path, so
+  post-PoC it will *also* serve plays from cache — corrections are not re-fetched
+  at final. Making the on-final pass force-bypass plays is a **required follow-on**
+  before broad rollout; it is not implemented here.
+- A periodic mid-game full re-validate is a possible later addition, also not
+  implemented.
+
+Why this is acceptable for the PoC: ESPN generally only lists a play in the index
+once it's complete, so most cached plays are already final; corrections are rare.
+The live-edge re-fetch covers the still-finalizing play. But the correction gap
+is real and is why the on-final force-bypass is called out as a follow-on rather
+than "coverage we already have."
 
 ## Design options (the actual fix)
 
@@ -156,11 +169,13 @@ to its core decision** (`:186` already serves from Mongo when
 - **`ProcessResourceIndex` (`DocumentRequestedHandler`) and `ResourceIndexJob`**
   — the two item-enqueue loops. Replace the flat
   `BypassCache: ShouldBypassCache(seasonYear)` with a per-item computation:
-  ```
+
+  ```csharp
   var isLiveEdge = dto.PageIndex == dto.PageCount && i == dto.Items.Count - 1;
   var bypass = ShouldBypassCache(seasonYear)
                && (!IsImmutableInSeason(docType) || isLiveEdge);
   ```
+
   So: mutable types + the live-edge play → bypass (unchanged); every other
   immutable item → `false` → served from Mongo by the existing item path. This
   is the whole core fix.

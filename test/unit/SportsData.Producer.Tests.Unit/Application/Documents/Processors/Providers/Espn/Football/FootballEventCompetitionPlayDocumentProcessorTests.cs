@@ -10,6 +10,8 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
@@ -32,6 +34,15 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private const string PlayUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays/401628334123";
+
+    // The two participants in the KickoffReturnOffense fixture (kicker + returner).
+    // The play processor now requests sourcing + throws for retry when a
+    // participant's athlete/position can't be resolved, so tests expecting the
+    // play to persist must seed these deps.
+    private const string KickerAthleteRef = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4430026?lang=en";
+    private const string ReturnerAthleteRef = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/4869748?lang=en";
+    private const string KickerPositionRef = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/22?lang=en";
+    private const string ReturnerPositionRef = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/positions/1?lang=en";
 
     // Fixed "now" for every CreatedUtc in this file. Per CLAUDE.md, tests
     // route timestamps through IDateTimeProvider so seeded entities are
@@ -65,6 +76,76 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
             CreatedBy = Guid.NewGuid()
         });
         await FootballDataContext.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Seed the AthleteSeason + AthletePosition rows referenced by the two
+    /// participants in the KickoffReturnOffense fixture so the play processor's
+    /// strict participant resolution finds them instead of requesting sourcing
+    /// and throwing for retry. Returns the (kicker, returner) AthleteSeason ids.
+    /// </summary>
+    private async Task<(Guid KickerSeasonId, Guid ReturnerSeasonId)> SeedKickoffReturnParticipantDepsAsync(
+        ExternalRefIdentityGenerator generator)
+    {
+        Guid SeedAthlete(string refUrl)
+        {
+            var id = Guid.NewGuid();
+            FootballDataContext.AthleteSeasons.Add(new FootballAthleteSeason
+            {
+                Id = id,
+                AthleteId = Guid.NewGuid(),
+                FranchiseSeasonId = Guid.NewGuid(),
+                PositionId = Guid.NewGuid(),
+                CreatedUtc = UtcNow(),
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds = new List<AthleteSeasonExternalId>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        Value = generator.Generate(refUrl).UrlHash,
+                        SourceUrl = new Uri(refUrl).ToCleanUrl(),
+                        SourceUrlHash = generator.Generate(refUrl).UrlHash,
+                        CreatedBy = Guid.NewGuid()
+                    }
+                }
+            });
+            return id;
+        }
+
+        void SeedPosition(string refUrl)
+        {
+            FootballDataContext.AthletePositions.Add(new AthletePosition
+            {
+                Id = Guid.NewGuid(),
+                Name = "Position",
+                DisplayName = "Position",
+                Abbreviation = "POS",
+                CreatedUtc = UtcNow(),
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds = new List<AthletePositionExternalId>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        Value = generator.Generate(refUrl).UrlHash,
+                        SourceUrl = new Uri(refUrl).ToCleanUrl(),
+                        SourceUrlHash = generator.Generate(refUrl).UrlHash,
+                        CreatedBy = Guid.NewGuid()
+                    }
+                }
+            });
+        }
+
+        var kicker = SeedAthlete(KickerAthleteRef);
+        var returner = SeedAthlete(ReturnerAthleteRef);
+        SeedPosition(KickerPositionRef);
+        SeedPosition(ReturnerPositionRef);
+        await FootballDataContext.SaveChangesAsync();
+
+        return (kicker, returner);
     }
 
     private ProcessDocumentCommand CreateCommand(string jsonFile, string? parentId = null)
@@ -255,6 +336,8 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         await FootballDataContext.FranchiseSeasons.AddAsync(returnTeam);
         await FootballDataContext.SaveChangesAsync();
 
+        await SeedKickoffReturnParticipantDepsAsync(generator);
+
         var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
@@ -376,6 +459,8 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
 
         await FootballDataContext.SaveChangesAsync();
 
+        await SeedKickoffReturnParticipantDepsAsync(generator);
+
         var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
@@ -393,6 +478,105 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         play!.ExternalIds.Should().NotBeEmpty();
         play.Competition.Should().NotBeNull();
         play.Competition!.Id.Should().Be(competitionId);
+    }
+
+    [Fact]
+    public async Task WhenProcessingPlay_PersistsParticipants_WithResolvedAthleteSeason()
+    {
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var competitionId = Guid.NewGuid();
+        var competition = new FootballCompetition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            Date = UtcNow(),
+            CreatedUtc = UtcNow(),
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
+        await FootballDataContext.SaveChangesAsync();
+        await SeedInProgressStatusAsync(competitionId);
+
+        var (kickerSeasonId, returnerSeasonId) = await SeedKickoffReturnParticipantDepsAsync(generator);
+
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+        var command = CreateCommand(json, competitionId.ToString());
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert - both participants persisted with order/type + resolved athlete/position
+        var play = await FootballDataContext.CompetitionPlays
+            .FirstAsync(x => x.CompetitionId == competitionId);
+
+        var participants = await FootballDataContext.CompetitionPlayParticipants
+            .Where(p => p.CompetitionPlayId == play.Id)
+            .OrderBy(p => p.Order)
+            .ToListAsync();
+
+        participants.Should().HaveCount(2);
+
+        participants[0].Type.Should().Be("kicker");
+        participants[0].Order.Should().Be(1);
+        participants[0].AthleteSeasonId.Should().Be(kickerSeasonId);
+        participants[0].PositionId.Should().NotBeNull();
+        participants[0].StatisticsRef.Should().NotBeNullOrEmpty();
+
+        participants[1].Type.Should().Be("returner");
+        participants[1].Order.Should().Be(2);
+        participants[1].AthleteSeasonId.Should().Be(returnerSeasonId);
+        participants[1].PositionId.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task WhenParticipantAthleteNotSourced_RequestsDependency_AndDoesNotPersistPlay()
+    {
+        // arrange — competition + status seeded, but NOT the participant athletes
+        // or positions, so participant resolution fails.
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var bus = Mocker.GetMock<IEventBus>();
+
+        var competitionId = Guid.NewGuid();
+        await FootballDataContext.Competitions.AddAsync(new FootballCompetition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            Date = UtcNow(),
+            CreatedUtc = UtcNow(),
+            CreatedBy = Guid.NewGuid()
+        });
+        await FootballDataContext.SaveChangesAsync();
+        await SeedInProgressStatusAsync(competitionId);
+
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+        var command = CreateCommand(json, competitionId.ToString());
+
+        // act — the base swallows ExternalDocumentNotSourcedException and schedules
+        // a retry, so ProcessAsync returns without throwing.
+        await sut.ProcessAsync(command);
+
+        // assert — the play was NOT persisted (withheld for retry), and sourcing
+        // was requested for the unresolved participant dependencies.
+        var play = await FootballDataContext.CompetitionPlays
+            .FirstOrDefaultAsync(x => x.CompetitionId == competitionId);
+        play.Should().BeNull("the play must be withheld until its participants are sourced");
+
+        bus.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.AthleteSeason),
+            It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
+        bus.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.AthletePosition),
+            It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce);
     }
 
     [Fact]

@@ -58,6 +58,13 @@ public class FootballCompetitionPlay : CompetitionPlayBase
 
     public int? PointAfterAttemptValue { get; set; }
 
+    // Per-play athlete attribution (passer / rusher / receiver / tackler + order
+    // and per-participant stats ref). Rows live in the shared
+    // `CompetitionPlayParticipant` TPH table; the FK/relationship is configured on
+    // FootballCompetitionPlayParticipant. Previously dropped by the mapper.
+    public ICollection<FootballCompetitionPlayParticipant> Participants { get; set; }
+        = new List<FootballCompetitionPlayParticipant>();
+
     public new class EntityConfiguration : IEntityTypeConfiguration<FootballCompetitionPlay>
     {
         public void Configure(EntityTypeBuilder<FootballCompetitionPlay> builder)

@@ -87,7 +87,7 @@ play. Also relevant: rare post-game ESPN **corrections** (scoring changes).
 item.** VERIFIED against a real MLB plays index: `EspnResourceIndexDto.Items` is
 ordered **ascending** by play id (639 plays / 26 pages, ids strictly
 increasing). So the newest play is deterministically the **last item on the last
-page**: `dto.PageIndex == dto.PageCount && i == dto.Items.Count - 1`. That single
+page**: `dto.PageIndex >= dto.PageCount && i == dto.Items.Count - 1`. That single
 item keeps re-fetching (may still be finalizing); every other cached play serves
 from Mongo. Result: **1 ESPN play fetch/cycle** instead of hundreds.
 
@@ -171,7 +171,7 @@ to its core decision** (`:186` already serves from Mongo when
   `BypassCache: ShouldBypassCache(seasonYear)` with a per-item computation:
 
   ```csharp
-  var isLiveEdge = dto.PageIndex == dto.PageCount && i == dto.Items.Count - 1;
+  var isLiveEdge = dto.PageIndex >= dto.PageCount && i == dto.Items.Count - 1;
   var bypass = ShouldBypassCache(seasonYear)
                && (!IsImmutableInSeason(docType) || isLiveEdge);
   ```

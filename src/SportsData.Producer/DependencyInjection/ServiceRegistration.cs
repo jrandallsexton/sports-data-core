@@ -306,10 +306,12 @@ namespace SportsData.Producer.DependencyInjection
 
             // Contest Commands
             services.AddScoped<IFinalizeContestsBySeasonYearHandler, FinalizeContestsBySeasonYearHandler>();
+            services.AddScoped<IRefreshContestsBySeasonYearHandler, RefreshContestsBySeasonYearHandler>();
             services.AddScoped<IReenrichContestHandler, ReenrichContestHandler>();
 
             // Contest Command Validators
             services.AddScoped<FluentValidation.IValidator<FinalizeContestsBySeasonYearCommand>, FinalizeContestsBySeasonYearCommandValidator>();
+            services.AddScoped<FluentValidation.IValidator<RefreshContestsBySeasonYearCommand>, RefreshContestsBySeasonYearCommandValidator>();
             services.AddScoped<FluentValidation.IValidator<ReenrichContestCommand>, ReenrichContestCommandValidator>();
 
             // Contest Queries

@@ -4523,10 +4523,7 @@ namespace SportsData.Producer.Migrations.Baseball
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionSource", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
@@ -4536,7 +4533,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(75)
+                        .HasColumnType("character varying(75)");
 
                     b.Property<Guid?>("ModifiedBy")
                         .HasColumnType("uuid");
@@ -4546,11 +4544,38 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.Property<string>("State")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(75)
+                        .HasColumnType("character varying(75)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("CompetitionSource");
+                    b.ToTable("CompetitionSource", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "basic/manual",
+                            State = "basic"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "feed",
+                            State = "full"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            CreatedBy = new Guid("00000000-0000-0000-0000-000000000000"),
+                            CreatedUtc = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "official",
+                            State = "full"
+                        });
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.CompetitionStatusBase", b =>

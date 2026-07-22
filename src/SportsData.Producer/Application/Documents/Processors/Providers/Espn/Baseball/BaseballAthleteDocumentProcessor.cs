@@ -153,11 +153,13 @@ public class BaseballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
         var name = dto.Status.Name?.Trim();
         if (string.IsNullOrEmpty(name)) return;
 
-        var nameLower = name.ToLower();
+        var nameNormalized = name.ToLowerInvariant();
 
+        // Dedup by the canonical NameNormalized, matching the unique index and
+        // AthleteStatusResolver.
         var status = await _dataContext.AthleteStatuses
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => (x.Name ?? "").ToLower() == nameLower);
+            .FirstOrDefaultAsync(x => x.NameNormalized == nameNormalized);
 
         if (status is null)
         {
@@ -165,6 +167,7 @@ public class BaseballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
             {
                 Id = Guid.NewGuid(),
                 Name = name,
+                NameNormalized = nameNormalized,
                 Abbreviation = dto.Status.Abbreviation?.Trim(),
                 Type = dto.Status.Type?.Trim(),
                 ExternalId = dto.Status.Id.ToString()

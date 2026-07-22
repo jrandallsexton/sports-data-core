@@ -165,6 +165,13 @@ public class AthleteSeasonDocumentProcessorTests :
         entity.DisplayName.Should().Be(dto.DisplayName);
         entity.Jersey.Should().Be(dto.Jersey);
 
+        // Status FK now resolved from the DTO (was always null before). The
+        // fixture ships status "Inactive" — an AthleteStatus row is created and
+        // linked.
+        entity.StatusId.Should().NotBeNull();
+        var status = await FootballDataContext.AthleteStatuses.FirstAsync(s => s.Id == entity.StatusId);
+        status.Name.Should().Be("Inactive");
+
         // Verify headshot image request was published (EspnFootballNcaaAthleteSeason.json has headshot)
         // Note: ParentEntityId is the Athlete ID (career-level), not AthleteSeason ID
         bus.Verify(x => x.Publish(
@@ -318,6 +325,7 @@ public class AthleteSeasonDocumentProcessorTests :
         updatedEntity.Jersey.Should().Be(dto.Jersey, "Jersey should be updated");
         updatedEntity.ExperienceYears.Should().Be(dto.Experience.Years, "Experience should be updated");
         updatedEntity.ModifiedUtc.Should().Be(now);
+        updatedEntity.StatusId.Should().NotBeNull("the status FK is resolved on update too");
 
         // Verify image request was published
         // Note: Image request uses Athlete ID as ParentEntityId (career-level images)

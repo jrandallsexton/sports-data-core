@@ -191,13 +191,13 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
             return;
         }
 
-        var nameLower = name.ToLower();
+        var nameNormalized = name.ToLowerInvariant();
 
-        // Look for existing
+        // Look for existing (dedup by the canonical NameNormalized, matching the
+        // unique index and AthleteStatusResolver).
         var status = await _dataContext.AthleteStatuses
             .AsNoTracking()
-            .FirstOrDefaultAsync(x =>
-                (x.Name ?? "").ToLower() == nameLower);
+            .FirstOrDefaultAsync(x => x.NameNormalized == nameNormalized);
 
         if (status is null)
         {
@@ -206,6 +206,7 @@ public class FootballAthleteDocumentProcessor<TDataContext> : DocumentProcessorB
             {
                 Id = Guid.NewGuid(),
                 Name = name,
+                NameNormalized = nameNormalized,
                 Abbreviation = abbreviation,
                 Type = type,
                 ExternalId = externalId.ToString()

@@ -9,6 +9,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
+using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -61,6 +62,91 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
         return status is null ? null : !status.IsCompleted;
     }
 
+    /// <summary>
+    /// Build the per-play participant rows (passer / rusher / receiver / tackler
+    /// / …), resolving each athlete ref to a canonical AthleteSeason id and each
+    /// position ref to an AthletePosition id. ESPN names the field "athlete" but
+    /// the URL is season-scoped (`/seasons/{year}/athletes/{id}`), so it resolves
+    /// against AthleteSeason, not the global AthleteBase.
+    ///
+    /// When a referenced athlete/position isn't sourced yet, request that
+    /// dependency and throw <see cref="ExternalDocumentNotSourcedException"/> so
+    /// the base retries this play after the dependency lands (the established
+    /// dependency-sourcing pattern — see the athlete processor's
+    /// ProcessCurrentPosition). Every missing dependency across the participant
+    /// set is requested before the single throw, so one retry cycle sources them
+    /// all rather than one-per-retry. Deliberately stricter than the baseball
+    /// participant processor (which tolerates null): a persisted football play
+    /// always has fully-resolved participant attribution.
+    /// </summary>
+    private async Task<List<FootballCompetitionPlayParticipant>> BuildParticipantsAsync(
+        ProcessDocumentCommand command,
+        EspnFootballEventCompetitionPlayDto dto)
+    {
+        var result = new List<FootballCompetitionPlayParticipant>();
+        if (dto.Participants is null || dto.Participants.Count == 0) return result;
+
+        var provider = command.SourceDataProvider;
+        var anyMissing = false;
+
+        foreach (var participant in dto.Participants)
+        {
+            Guid? athleteSeasonId = null;
+            if (participant.Athlete?.Ref is not null)
+            {
+                athleteSeasonId = await _dataContext.ResolveIdAsync<AthleteSeason, AthleteSeasonExternalId>(
+                    participant.Athlete,
+                    provider,
+                    () => _dataContext.AthleteSeasons,
+                    externalIdsNav: "ExternalIds",
+                    key: a => a.Id);
+
+                if (athleteSeasonId is null)
+                {
+                    await PublishDependencyRequest<string?>(
+                        command, participant.Athlete, parentId: null, DocumentType.AthleteSeason);
+                    anyMissing = true;
+                }
+            }
+
+            Guid? positionId = null;
+            if (participant.Position?.Ref is not null)
+            {
+                positionId = await _dataContext.ResolveIdAsync<AthletePosition, AthletePositionExternalId>(
+                    participant.Position,
+                    provider,
+                    () => _dataContext.AthletePositions,
+                    externalIdsNav: "ExternalIds",
+                    key: p => p.Id);
+
+                if (positionId is null)
+                {
+                    await PublishDependencyRequest<string?>(
+                        command, participant.Position, parentId: null, DocumentType.AthletePosition);
+                    anyMissing = true;
+                }
+            }
+
+            result.Add(new FootballCompetitionPlayParticipant
+            {
+                Order = participant.Order,
+                Type = participant.Type ?? string.Empty,
+                AthleteSeasonId = athleteSeasonId,
+                PositionId = positionId,
+                StatisticsRef = participant.Statistics?.Ref?.ToString()
+            });
+        }
+
+        if (anyMissing)
+        {
+            throw new ExternalDocumentNotSourcedException(
+                "One or more play participants reference an AthleteSeason/AthletePosition that isn't sourced yet. " +
+                "Requested the missing dependencies; will retry this play.");
+        }
+
+        return result;
+    }
+
     protected override async Task<CompetitionPlayBase> BuildNewPlayAsync(
         ProcessDocumentCommand command,
         EspnFootballEventCompetitionPlayDto externalDto,
@@ -80,19 +166,29 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
         var endFranchiseSeasonId = await ResolveFranchiseSeasonIdAsync(
             externalDto.End.Team, command.SourceDataProvider);
 
+        var participants = await BuildParticipantsAsync(command, externalDto);
+
         _logger.LogInformation(
-            "Creating new CompetitionPlay. CompetitionId={CompId}, DriveId={DriveId}, PlayType={PlayType}",
+            "Creating new CompetitionPlay. CompetitionId={CompId}, DriveId={DriveId}, PlayType={PlayType}, ParticipantCount={Count}",
             competition.Id,
             competitionDriveId,
-            externalDto.Type?.Text);
+            externalDto.Type?.Text,
+            participants.Count);
 
-        return externalDto.AsFootballEntity(
+        var play = externalDto.AsFootballEntity(
             _externalRefIdentityGenerator,
             command.CorrelationId,
             competition.Id,
             competitionDriveId,
             startFranchiseSeasonId,
             endFranchiseSeasonId);
+
+        foreach (var participant in participants)
+        {
+            play.Participants.Add(participant);
+        }
+
+        return play;
     }
 
     protected override Task PublishSportPlayCompletedAsync(
@@ -177,10 +273,37 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
                 $"Ref={externalDto.Ref}");
         }
 
+        // Resolve participants BEFORE mutating the tracked entity. A missing
+        // dependency throws ExternalDocumentNotSourcedException, and the base's
+        // retry handler calls SaveChangesAsync — so any tracked mutation made
+        // before the throw would be persisted despite "withhold for retry". By
+        // building participants first, a throw here leaves the tracked play
+        // completely unmodified.
+        var participants = await BuildParticipantsAsync(command, externalDto);
+
         var createdUtc = footballPlay.CreatedUtc;
         var createdBy = footballPlay.CreatedBy;
         _dataContext.Entry(footballPlay).CurrentValues.SetValues(mapped);
         footballPlay.CreatedUtc = createdUtc;
         footballPlay.CreatedBy = createdBy;
+
+        // Participants live in a separate table, so SetValues (scalars only) can't
+        // refresh them. Replace the set wholesale: simpler than diffing per-row, and
+        // ESPN can re-order or swap participants on a play between fetches. Mirrors
+        // the baseball processor.
+        var existingParticipants = await _dataContext.Set<FootballCompetitionPlayParticipant>()
+            .Where(p => p.CompetitionPlayId == footballPlay.Id)
+            .ToListAsync();
+
+        if (existingParticipants.Count > 0)
+        {
+            _dataContext.Set<FootballCompetitionPlayParticipant>().RemoveRange(existingParticipants);
+        }
+
+        foreach (var participant in participants)
+        {
+            participant.CompetitionPlayId = footballPlay.Id;
+            await _dataContext.Set<FootballCompetitionPlayParticipant>().AddAsync(participant);
+        }
     }
 }

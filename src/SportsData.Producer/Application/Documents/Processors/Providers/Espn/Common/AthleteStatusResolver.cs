@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -49,11 +50,12 @@ public static class AthleteStatusResolver
             await dataContext.SaveChangesAsync(cancellationToken);
             return created.Id;
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
         {
             // A concurrent caller inserted the same status name first (the unique
             // index on the computed lower(Name) enforces this case-insensitively).
-            // Detach our losing row and return the winner's id.
+            // Only this expected conflict is handled here; any other DbUpdateException
+            // propagates. Detach our losing row and return the winner's id.
             dataContext.Entry(created).State = EntityState.Detached;
 
             var winner = await dataContext.AthleteStatuses

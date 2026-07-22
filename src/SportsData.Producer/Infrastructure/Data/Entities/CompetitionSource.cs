@@ -25,7 +25,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                     .IsRequired()
                     .HasMaxLength(75);
 
-                builder.ToTable("lkCompetitionSource");
+                // NOTE: table is "CompetitionSource" (not the "lk" prefix used by
+                // other lookups) — the FKs on Competition (GameSourceId, etc.)
+                // reference this name, and this config was historically never
+                // registered so the convention name is what exists in every DB.
+                builder.ToTable("CompetitionSource");
 
                 builder.HasData(
                     new CompetitionSource

@@ -207,6 +207,12 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
             modelBuilder.ApplyConfiguration(new CompetitionMetric.EntityConfiguration());
 
+            // Previously UNREGISTERED — its HasData seed (source ids 1/2/4) never
+            // reached any DB, so the CompetitionSource lookup was empty and the
+            // Competition feed-source FKs (GameSourceId, etc.) violated once the
+            // mapper began writing real ids. Registering it emits the seed.
+            modelBuilder.ApplyConfiguration(new CompetitionSource.EntityConfiguration());
+
             modelBuilder.ApplyConfiguration(new CompetitionOdds.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionOddsExternalId.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionTeamOdds.EntityConfiguration());

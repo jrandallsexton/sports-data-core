@@ -9,10 +9,14 @@ Last updated: 2026-07-22
 football-shaped `CompetitionSituation` entity with `Down/Distance/YardLine = 0`
 and **drops all baseball situation data**: `balls`, `strikes`, `outs`,
 `onFirst`/`onSecond`/`onThird` (baserunner occupancy), and `situationNotes`.
-This is why `BaseballEventCompetitionPlayDocumentProcessor` publishes hardcoded
-`RunnerOnFirst/Second/Third: false` — the live diamond can never show men on
-base. The processor's own comment says this "will be addressed with
-sport-specific situation entities in a future refactor." This is that refactor.
+Without this data persisted there is nothing to source live runner state from,
+which is why `BaseballEventCompetitionPlayDocumentProcessor` currently publishes
+hardcoded `RunnerOnFirst/Second/Third: false`. The processor's own comment says
+the capture gap "will be addressed with sport-specific situation entities in a
+future refactor." This is that refactor — it provides the **persistence
+groundwork** only. Wiring the live runner flags / diamond display from the
+captured situation is a separate, later phase; `RunnerOnFirst/Second/Third`
+remain hardcoded to `false` until then (see "Explicitly OUT of scope" below).
 
 ## Current shape
 

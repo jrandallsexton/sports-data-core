@@ -30,6 +30,10 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests
 {
     private readonly BaseballDataContext _db;
 
+    // Fixed clock for deterministic seeded timestamps (per CLAUDE.md, tests route
+    // time through IDateTimeProvider rather than DateTime.UtcNow).
+    private static readonly DateTime FixedUtcNow = new(2026, 5, 10, 12, 0, 0, DateTimeKind.Utc);
+
     // The two baserunners (onFirst / onSecond) and the lastPlay in the fixture.
     private const string OnFirstAthleteRef = "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/41217?lang=en&region=us";
     private const string OnSecondAthleteRef = "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/athletes/41183?lang=en&region=us";
@@ -41,6 +45,10 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests
                 .UseInMemoryDatabase(Guid.NewGuid().ToString()[..8])
                 .Options);
         Mocker.Use(_db);
+
+        Mocker.GetMock<IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(FixedUtcNow);
     }
 
     private async Task<(Guid competitionId, Guid lastPlayId)> SeedCompetitionAndLastPlayAsync(
@@ -52,8 +60,8 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
-            Date = DateTime.UtcNow,
-            CreatedUtc = DateTime.UtcNow,
+            Date = FixedUtcNow,
+            CreatedUtc = FixedUtcNow,
             CreatedBy = Guid.NewGuid()
         });
 
@@ -67,7 +75,7 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests
             Text = "Test play",
             TypeId = "99",
             Type = PlayType.Unknown,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedUtcNow,
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<CompetitionPlayExternalId>
             {
@@ -96,7 +104,7 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests
             AthleteId = Guid.NewGuid(),
             FranchiseSeasonId = Guid.NewGuid(),
             PositionId = Guid.NewGuid(),
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedUtcNow,
             CreatedBy = Guid.NewGuid(),
             ExternalIds = new List<AthleteSeasonExternalId>
             {
@@ -214,7 +222,7 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests
             Balls = 0,
             Strikes = 0,
             Outs = 0,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedUtcNow,
             CreatedBy = Guid.NewGuid()
         });
         await _db.SaveChangesAsync();
@@ -243,8 +251,8 @@ public class BaseballEventCompetitionSituationDocumentProcessorTests
         {
             Id = competitionId,
             ContestId = Guid.NewGuid(),
-            Date = DateTime.UtcNow,
-            CreatedUtc = DateTime.UtcNow,
+            Date = FixedUtcNow,
+            CreatedUtc = FixedUtcNow,
             CreatedBy = Guid.NewGuid()
         });
         await _db.SaveChangesAsync();

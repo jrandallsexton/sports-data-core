@@ -20,14 +20,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Ba
 public class BaseballEventCompetitionSituationDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
     public BaseballEventCompetitionSituationDocumentProcessor(
         ILogger<BaseballEventCompetitionSituationDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs)
+        IGenerateResourceRefs refs,
+        IDateTimeProvider dateTimeProvider)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
+        _dateTimeProvider = dateTimeProvider;
     }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
@@ -117,7 +121,7 @@ public class BaseballEventCompetitionSituationDocumentProcessor<TDataContext> : 
             OnSecondAthleteSeasonId = onSecondId,
             OnThirdAthleteSeasonId = onThirdId,
             CreatedBy = command.CorrelationId,
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = _dateTimeProvider.UtcNow()
         };
 
         foreach (var note in dto.SituationNotes ?? Enumerable.Empty<EspnBaseballSituationNoteDto>())
@@ -129,7 +133,7 @@ public class BaseballEventCompetitionSituationDocumentProcessor<TDataContext> : 
                 Type = note.Type,
                 Text = note.Text,
                 CreatedBy = command.CorrelationId,
-                CreatedUtc = DateTime.UtcNow
+                CreatedUtc = _dateTimeProvider.UtcNow()
             });
         }
 

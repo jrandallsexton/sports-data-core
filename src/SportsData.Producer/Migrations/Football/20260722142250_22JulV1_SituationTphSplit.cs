@@ -80,6 +80,20 @@ namespace SportsData.Producer.Migrations.Football
                 name: "Discriminator",
                 table: "CompetitionSituation");
 
+            // AlterColumn's defaultValue only sets the DEFAULT for future inserts;
+            // it does NOT backfill existing rows. Coalesce any NULLs to the column
+            // defaults first so the SET NOT NULL below can't fail on a stray NULL.
+            migrationBuilder.Sql(@"
+                UPDATE ""CompetitionSituation"" SET
+                    ""YardLine"" = COALESCE(""YardLine"", 0),
+                    ""Down"" = COALESCE(""Down"", 0),
+                    ""Distance"" = COALESCE(""Distance"", 0),
+                    ""HomeTimeouts"" = COALESCE(""HomeTimeouts"", 0),
+                    ""AwayTimeouts"" = COALESCE(""AwayTimeouts"", 0),
+                    ""IsRedZone"" = COALESCE(""IsRedZone"", false)
+                WHERE ""YardLine"" IS NULL OR ""Down"" IS NULL OR ""Distance"" IS NULL
+                   OR ""HomeTimeouts"" IS NULL OR ""AwayTimeouts"" IS NULL OR ""IsRedZone"" IS NULL;");
+
             migrationBuilder.AlterColumn<int>(
                 name: "YardLine",
                 table: "CompetitionSituation",

@@ -43,7 +43,9 @@ public class FootballCompetitionSituation : CompetitionSituationBase
                 t.HasCheckConstraint("CK_CompetitionSituation_Down", "\"Down\" BETWEEN -1 AND 4");
                 // 0..100 yard line (covers goal line/touchback edges)
                 t.HasCheckConstraint("CK_CompetitionSituation_YardLine", "\"YardLine\" BETWEEN 0 AND 100");
-                // Distance >= 0
+                // Distance floor of -110 (NOT >= 0): ESPN ships negative distances
+                // and the mapper does not clamp Distance (unlike timeouts), so the
+                // constraint must admit them or valid plays would fail to insert.
                 t.HasCheckConstraint("CK_CompetitionSituation_Distance", "\"Distance\" >= -110");
                 // Timeouts >= 0 (tighten to 0..3 if you want to enforce NCAA max)
                 t.HasCheckConstraint("CK_CompetitionSituation_AwayTimeouts", "\"AwayTimeouts\" >= 0");

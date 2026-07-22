@@ -44,6 +44,19 @@ public class AthleteCompetition : CanonicalEntityBase<Guid>
     /// </summary>
     public bool DidNotPlay { get; set; }
 
+    /// <summary>
+    /// Whether the athlete was in the starting lineup for this competition
+    /// (ESPN roster entry <c>starter</c>). Drives starting-lineup composition.
+    /// </summary>
+    public bool Starter { get; set; }
+
+    /// <summary>
+    /// Whether the athlete was active (dressed / available) for this competition
+    /// (ESPN roster entry <c>active</c>). Distinct from <see cref="DidNotPlay"/>:
+    /// a player can be active but still not play.
+    /// </summary>
+    public bool Active { get; set; }
+
     public class EntityConfiguration : IEntityTypeConfiguration<AthleteCompetition>
     {
         public void Configure(EntityTypeBuilder<AthleteCompetition> builder)

@@ -1007,6 +1007,9 @@ namespace SportsData.Producer.Migrations.Baseball
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("AthleteSeasonId")
                         .HasColumnType("uuid");
 
@@ -1037,6 +1040,9 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.Property<Guid?>("PositionId")
                         .HasColumnType("uuid");
+
+                    b.Property<bool>("Starter")
+                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 

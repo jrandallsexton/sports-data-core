@@ -467,8 +467,108 @@ public class EventCompetitionCompetitorRosterDocumentProcessorTests
             .Select(e => e.DidNotPlay)
             .ToList();
 
-        actualDidNotPlayValues.Should().BeEquivalentTo(expectedDidNotPlayValues, 
+        actualDidNotPlayValues.Should().BeEquivalentTo(expectedDidNotPlayValues,
             "the DidNotPlay flags should match the source DTO entries");
+    }
+
+    [Fact]
+    public async Task WhenRosterEntryIsStarterAndActive_PersistsStarterAndActiveFlags()
+    {
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var sut = Mocker.CreateInstance<EventCompetitionCompetitorRosterDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorRoster.json");
+        var dto = json.FromJson<EspnEventCompetitionCompetitorRosterDto>();
+
+        // Fixed seed timestamp — these values are never asserted, but avoid new
+        // DateTime.UtcNow calls in test code (IDateTimeProvider convention). The
+        // processor sets its own CreatedUtc, so this only stamps seed entities.
+        var seedUtc = new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        // The captured fixture has starter/active all false. Flip a known entry to
+        // true so the assertion proves real mapping, not a hardcoded false.
+        var starterEntry = dto!.Entries.First(e => e.Athlete?.Ref != null);
+        starterEntry.Starter = true;
+        starterEntry.Active = true;
+
+        // A second, distinct entry stays false to prove both values round-trip.
+        var benchEntry = dto.Entries.First(e => e.Athlete?.Ref != null && e != starterEntry);
+        benchEntry.Starter = false;
+        benchEntry.Active = false;
+
+        // Create Competition in database
+        var competitionIdentity = generator.Generate(dto.Competition!.Ref!);
+        var competition = new FootballCompetition
+        {
+            Id = competitionIdentity.CanonicalId,
+            ContestId = Guid.NewGuid(),
+            Date = seedUtc,
+            CreatedUtc = seedUtc,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        // Create CompetitionCompetitor in database (required for FK)
+        var competitorId = Guid.NewGuid();
+        var competitor = new FootballCompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = competition.Id,
+            HomeAway = "home",
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            Winner = false,
+            CreatedUtc = seedUtc,
+            CreatedBy = Guid.NewGuid()
+        };
+        await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
+
+        // Create AthleteSeason for the two entries under test
+        var starterSeasonId = generator.Generate(starterEntry.Athlete!.Ref!).CanonicalId;
+        var benchSeasonId = generator.Generate(benchEntry.Athlete!.Ref!).CanonicalId;
+        foreach (var id in new[] { starterSeasonId, benchSeasonId })
+        {
+            await FootballDataContext.AthleteSeasons.AddAsync(new FootballAthleteSeason
+            {
+                Id = id,
+                AthleteId = Guid.NewGuid(),
+                FranchiseSeasonId = Guid.NewGuid(),
+                PositionId = Guid.NewGuid(),
+                CreatedUtc = seedUtc,
+                CreatedBy = Guid.NewGuid()
+            });
+        }
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2025)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitorRoster)
+            .With(x => x.Document, dto.ToJson())   // serialize the mutated DTO
+            .With(x => x.ParentId, competitorId.ToString())
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert - starter/active flags persisted per source entry
+        var starterRow = await FootballDataContext.AthleteCompetitions
+            .FirstAsync(x => x.CompetitionId == competition.Id
+                             && x.CompetitionCompetitorId == competitorId
+                             && x.AthleteSeasonId == starterSeasonId);
+        starterRow.Starter.Should().BeTrue();
+        starterRow.Active.Should().BeTrue();
+
+        var benchRow = await FootballDataContext.AthleteCompetitions
+            .FirstAsync(x => x.CompetitionId == competition.Id
+                             && x.CompetitionCompetitorId == competitorId
+                             && x.AthleteSeasonId == benchSeasonId);
+        benchRow.Starter.Should().BeFalse();
+        benchRow.Active.Should().BeFalse();
     }
 }
 

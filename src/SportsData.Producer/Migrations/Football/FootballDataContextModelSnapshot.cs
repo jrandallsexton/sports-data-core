@@ -7105,13 +7105,16 @@ namespace SportsData.Producer.Migrations.Football
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AthleteSeasonId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("FranchiseSeasonId")
+                    b.Property<Guid?>("FranchiseSeasonId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("ModifiedBy")
@@ -7128,6 +7131,8 @@ namespace SportsData.Producer.Migrations.Football
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AthleteSeasonId");
 
                     b.HasIndex("FranchiseSeasonId");
 
@@ -9462,17 +9467,21 @@ namespace SportsData.Producer.Migrations.Football
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonFutureBook", b =>
                 {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason", "AthleteSeason")
+                        .WithMany()
+                        .HasForeignKey("AthleteSeasonId");
+
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", "FranchiseSeason")
                         .WithMany()
-                        .HasForeignKey("FranchiseSeasonId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("FranchiseSeasonId");
 
                     b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.SeasonFutureItem", "SeasonFutureItem")
                         .WithMany("Books")
                         .HasForeignKey("SeasonFutureItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("AthleteSeason");
 
                     b.Navigation("FranchiseSeason");
 

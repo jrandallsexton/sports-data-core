@@ -99,23 +99,47 @@ public class SeasonFutureDocumentProcessor<TDataContext> : DocumentProcessorBase
 
             foreach (var bookDto in itemDto.Books ?? Enumerable.Empty<EspnFootballSeasonFutureBookDto>())
             {
-                if (bookDto.Team?.Ref == null)
+                // A book is scoped to EITHER a team (most futures) or an athlete
+                // (season MVP, awards, etc.). Athlete-market books were previously
+                // dropped by a team-only guard.
+                Guid? franchiseSeasonId = null;
+                Guid? athleteSeasonId = null;
+
+                if (bookDto.Team?.Ref != null)
                 {
-                    _logger.LogWarning("Book missing team ref for Provider {ProviderName}", item.ProviderName);
-                    continue;
+                    franchiseSeasonId = await _dataContext.ResolveIdAsync<
+                        FranchiseSeason, FranchiseSeasonExternalId>(
+                        bookDto.Team,
+                        command.SourceDataProvider,
+                        () => _dataContext.FranchiseSeasons.Where(fs => fs.SeasonYear == season.Year),
+                        externalIdsNav: "ExternalIds",
+                        key: fs => fs.Id);
+
+                    if (!franchiseSeasonId.HasValue)
+                    {
+                        _logger.LogWarning("No FranchiseSeason mapping found for Team Ref {TeamRef}", bookDto.Team.Ref);
+                        continue;
+                    }
                 }
-
-                var franchiseSeasonId = await _dataContext.ResolveIdAsync<
-                    FranchiseSeason, FranchiseSeasonExternalId>(
-                    bookDto.Team,
-                    command.SourceDataProvider,
-                    () => _dataContext.FranchiseSeasons.Where(fs => fs.SeasonYear == season.Year),
-                    externalIdsNav: "ExternalIds",
-                    key: fs => fs.Id);
-
-                if (!franchiseSeasonId.HasValue)
+                else if (bookDto.Athlete?.Ref != null)
                 {
-                    _logger.LogWarning("No FranchiseSeason mapping found for Team Ref {TeamRef}", bookDto.Team?.Ref);
+                    athleteSeasonId = await _dataContext.ResolveIdAsync<
+                        AthleteSeason, AthleteSeasonExternalId>(
+                        bookDto.Athlete,
+                        command.SourceDataProvider,
+                        () => _dataContext.AthleteSeasons,
+                        externalIdsNav: "ExternalIds",
+                        key: a => a.Id);
+
+                    if (!athleteSeasonId.HasValue)
+                    {
+                        _logger.LogWarning("No AthleteSeason mapping found for Athlete Ref {AthleteRef}", bookDto.Athlete.Ref);
+                        continue;
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Book missing both team and athlete ref for Provider {ProviderName}", item.ProviderName);
                     continue;
                 }
 
@@ -123,7 +147,8 @@ public class SeasonFutureDocumentProcessor<TDataContext> : DocumentProcessorBase
                 {
                     Id = Guid.NewGuid(),
                     SeasonFutureItemId = item.Id,
-                    FranchiseSeasonId = franchiseSeasonId.Value,
+                    FranchiseSeasonId = franchiseSeasonId,
+                    AthleteSeasonId = athleteSeasonId,
                     Value = bookDto.Value,
                     CreatedBy = command.CorrelationId,
                     CreatedUtc = DateTime.UtcNow

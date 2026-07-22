@@ -7,10 +7,13 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -162,5 +165,97 @@ public class SeasonFutureDocumentProcessorTests : ProducerTestBase<SeasonFutureD
             );
     }
 
+    [Fact]
+    public async Task WhenBookIsAthleteMarket_ResolvesAthleteSeasonId_NotSkipped()
+    {
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
+        var sut = Mocker.CreateInstance<SeasonFutureDocumentProcessor<FootballDataContext>>();
+
+        var seedUtc = new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var season = new Season
+        {
+            Id = Guid.NewGuid(),
+            Year = 2025,
+            Name = "2025 NCAA Football",
+            StartDate = new DateTime(2025, 8, 1),
+            EndDate = new DateTime(2026, 1, 15)
+        };
+        await FootballDataContext.Seasons.AddAsync(season);
+
+        // Athlete-market book (season MVP / award) — carries an athlete $ref, no
+        // team. Seed a matching AthleteSeason so ResolveIdAsync finds it. Shape is
+        // the real ESPN season-scoped athlete ref.
+        var athleteRef = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870906?lang=en");
+        var athleteHash = HashProvider.GenerateHashFromUri(athleteRef);
+
+        var athleteSeason = new FootballAthleteSeason
+        {
+            Id = Guid.NewGuid(),
+            AthleteId = Guid.NewGuid(),
+            FranchiseSeasonId = Guid.NewGuid(),
+            PositionId = Guid.NewGuid(),
+            CreatedUtc = seedUtc,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<AthleteSeasonExternalId>
+            {
+                new AthleteSeasonExternalId
+                {
+                    Id = Guid.NewGuid(),
+                    Provider = SourceDataProvider.Espn,
+                    Value = athleteHash,
+                    SourceUrlHash = athleteHash,
+                    SourceUrl = athleteRef.ToCleanUrl()
+                }
+            }
+        };
+        await FootballDataContext.AthleteSeasons.AddAsync(athleteSeason);
+        await FootballDataContext.SaveChangesAsync();
+
+        // Load a real futures document (team-only) and inject one athlete book into
+        // the first provider's item so we exercise the athlete path end-to-end.
+        var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonFuture.json");
+        var dto = documentJson.FromJson<EspnFootballSeasonFutureDto>();
+        var targetItem = dto!.Futures.First();
+        targetItem.Books.Add(new EspnFootballSeasonFutureBookDto
+        {
+            Team = null,
+            Athlete = new EspnLinkDto { Ref = athleteRef },
+            Value = "+600"
+        });
+
+        const string url = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/futures/2758?lang=en";
+        var urlHash = url.UrlHash();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.DocumentType, DocumentType.SeasonFuture)
+            .With(x => x.Document, dto.ToJson())
+            .With(x => x.SeasonYear, season.Year)
+            .With(x => x.UrlHash, urlHash)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert - the athlete book was persisted with AthleteSeasonId (and no team)
+        var future = await FootballDataContext.SeasonFutures
+            .Include(x => x.Items)
+                .ThenInclude(i => i.Books)
+            .FirstOrDefaultAsync();
+
+        future.Should().NotBeNull();
+
+        var athleteBook = future!.Items.SelectMany(i => i.Books)
+            .SingleOrDefault(b => b.AthleteSeasonId == athleteSeason.Id);
+
+        athleteBook.Should().NotBeNull("the athlete-market book must no longer be skipped");
+        athleteBook!.FranchiseSeasonId.Should().BeNull();
+        athleteBook.Value.Should().Be("+600");
+    }
 }

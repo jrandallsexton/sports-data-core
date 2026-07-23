@@ -187,6 +187,30 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         //   - Historical season → serve from Mongo. Immutable; nothing to gain by hitting
         //     ESPN. (Trade-off: in-season games that finish early in the year will still
         //     re-source until the season flips. Acceptable for now.)
+        //
+        // Immutable-in-season override (companion to the ProcessResourceIndex fan-out fix
+        // in docs/features/in-season-cache-bypass-fix.md): an EventCompetitionPlay is
+        // immutable once ESPN emits it. Producer's live situation processor resolves
+        // `lastPlay.$ref` as a SINGLE leaf request and, when the play isn't canonical yet,
+        // throws-to-retry — so the same immutable play was re-fetched from ESPN on every
+        // situation retry/poll cycle: the leaf-path twin of the live-slate rate-limit storm.
+        //
+        // Two deliberate differences from the fan-out path:
+        //   1. No live-edge carve-out. A single leaf has no positional "newest item"
+        //      signal, and it doesn't need one — a cache MISS still fetches (so a never-seen
+        //      play is sourced exactly once), and the fan-out path keeps the current game's
+        //      edge play fresh every cycle. Serving the leaf from Mongo is at most one cycle
+        //      stale, then immutable.
+        //   2. Gate on feature-enabled (CurrentSeason != 0), NOT exact current season.
+        //      Dependency-sourced leaf requests (e.g. lastPlay) do not reliably carry a
+        //      SeasonYear, so an "== current season" gate would silently no-op on exactly
+        //      the traffic we need to catch. Immutability is season-independent: a cache hit
+        //      for a play from any season is correct, and historical seasons already serve
+        //      from cache via ShouldBypassCache regardless.
+        var serveImmutableFromCache = _commonConfig.CurrentSeason != 0
+            && InSeasonDocumentPolicy.IsImmutableInSeason(evt.DocumentType);
+        var bypassCache = ShouldBypassCache(evt.SeasonYear) && !serveImmutableFromCache;
+
         var cmd = new ProcessResourceIndexItemCommand(
             CorrelationId: evt.CorrelationId,
             CausationId: evt.CausationId,
@@ -199,7 +223,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             DocumentType: evt.DocumentType,
             ParentId: evt.ParentId,
             SeasonYear: evt.SeasonYear,
-            BypassCache: ShouldBypassCache(evt.SeasonYear),
+            BypassCache: bypassCache,
             IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes);
 
         _logger.LogInformation(

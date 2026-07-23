@@ -645,4 +645,72 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         capturedCommands[0].InlineJson.Should().BeNull(
             "leaf path defers fetch+persist to ProcessResourceIndexItem; no inline data is attached at this stage");
     }
+
+    [Theory]
+    // Leaf path (single dependency-sourced doc — e.g. Producer's live situation processor
+    // resolving lastPlay.$ref). Companion to the ProcessResourceIndex fan-out fix. Two
+    // deliberate differences from the fan-out path:
+    //   - no live-edge carve-out (a single leaf has no positional "newest" signal), and
+    //   - the gate is feature-enabled (CurrentSeason != 0), NOT exact current season,
+    //     because dependency-sourced leaf requests don't reliably carry a SeasonYear.
+    // The DocumentType (not the URI) drives the policy; the URI here is a generic numeric
+    // play leaf so classification is unambiguous.
+    //          currentSeason, requestedSeason, docType, expectBypass
+    [InlineData(2026, 2026, DocumentType.EventCompetitionPlay, false)]    // current-season immutable → serve from cache
+    [InlineData(2026, null, DocumentType.EventCompetitionPlay, false)]    // the lastPlay bug: null season, feature on → cache
+    [InlineData(2026, 2024, DocumentType.EventCompetitionPlay, false)]    // historical immutable → cache (already the case)
+    [InlineData(2026, 2027, DocumentType.EventCompetitionPlay, false)]    // future immutable, feature on → cache (season-independent)
+    [InlineData(0, 2026, DocumentType.EventCompetitionPlay, true)]        // feature disabled → bypass
+    [InlineData(0, null, DocumentType.EventCompetitionPlay, true)]        // feature disabled → bypass
+    [InlineData(2026, 2026, DocumentType.EventCompetitionStatus, true)]   // mutable type → bypass (unchanged)
+    [InlineData(2026, null, DocumentType.EventCompetitionStatus, true)]   // mutable type → bypass (unchanged)
+    public async Task Leaf_ImmutablePlay_ServesFromCache_WhenFeatureEnabled_RegardlessOfSeason(
+        int currentSeason,
+        int? requestedSeason,
+        DocumentType documentType,
+        bool expectBypass)
+    {
+        // arrange
+        var cfg = (CommonConfig)RuntimeHelpers.GetUninitializedObject(typeof(CommonConfig));
+        cfg.CurrentSeason = currentSeason;
+        Mocker.Use<IOptions<CommonConfig>>(Options.Create(cfg));
+
+        // Single play URI (ends in a numeric id) → classified as a leaf, not an index.
+        var leafUri = new Uri(
+            "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401816230/competitions/401816230/plays/4018162301401020033?lang=en");
+
+        ProcessResourceIndexItemCommand? captured = null;
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IProcessResourceIndexItems>(
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
+            .Callback<Expression<Func<IProcessResourceIndexItems, Task>>>(expr =>
+            {
+                var call = (MethodCallExpression)expr.Body;
+                captured = (ProcessResourceIndexItemCommand)Expression
+                    .Lambda(call.Arguments[0]).Compile().DynamicInvoke()!;
+            })
+            .Returns(string.Empty);
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = Fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, leafUri)
+            .With(x => x.DocumentType, documentType)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.BaseballMlb)
+            .With(x => x.SeasonYear, requestedSeason)
+            .OmitAutoProperties()
+            .Create();
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert — leaf path enqueues exactly one command (itself); its BypassCache
+        // reflects the immutable-in-season override.
+        captured.Should().NotBeNull();
+        captured!.Uri.Should().Be(leafUri);
+        captured.BypassCache.Should().Be(expectBypass);
+    }
 }

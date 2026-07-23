@@ -59,12 +59,14 @@ Producer-side. For a given `(sport, seasonYear)`:
 1. Distinct ContestIds via the **FranchiseSeason traversal** (chosen over
    `Contests.Where(SeasonYear == year)` deliberately, to avoid leaning on the
    `Contest.SeasonYear` denormalization — see `project_seasonyear_denorm`):
-   ```
+
+   ```text
    FranchiseSeason (SeasonYear == year)  →  their Ids
      → CompetitionCompetitor (FranchiseSeasonId ∈ those)   // indexed on FranchiseSeasonId
      → Competition.ContestId
      → Distinct()                                          // each contest has 2 franchise seasons — DEDUP
    ```
+
    `FranchiseSeason` has no direct competition/contest navigation, so the hop is
    through `CompetitionCompetitor.FranchiseSeasonId → Competition.ContestId`.
    **The `Distinct()` is load-bearing** — home + away each reference the same

@@ -225,10 +225,8 @@ namespace SportsData.Api.Application.Admin
                 .Resolve(mode)
                 .RefreshContestsBySeasonYear(mode, seasonYear, correlationId, cancellationToken);
 
-            if (!result.IsSuccess)
-                return result.ToActionResult().Result!;
-
-            return Accepted(new { correlationId, sport = mode.ToString(), seasonYear });
+            return result.ToActionResult(_ =>
+                Accepted(new { correlationId, sport = mode.ToString(), seasonYear }));
         }
 
         [HttpPost]

@@ -185,6 +185,19 @@ namespace SportsData.Producer.Application.Contests
         public IActionResult RefreshContestsBySeasonYear(
             [FromBody] RefreshContestsBySeasonYearCommand command)
         {
+            // This Producer pod is bound to a single sport (IAppMode.CurrentSport)
+            // and its DbContext is that sport's. Unlike the finalize handler, the
+            // refresh handler's FranchiseSeason traversal does NOT filter on Sport,
+            // so a mismatched body Sport would query the wrong-sport data and enqueue
+            // mis-tagged UpdateContestCommands. Reject synchronously here (established
+            // _appMode guard pattern) before a doomed background job is ever queued.
+            if (command.Sport != _appMode.CurrentSport)
+            {
+                return BadRequest(
+                    $"RefreshContestsBySeasonYear Sport={command.Sport} does not match this " +
+                    $"Producer's CurrentSport={_appMode.CurrentSport}.");
+            }
+
             var correlationId = command.CorrelationId == Guid.Empty
                 ? GetCorrelationIdFromRequest()
                 : command.CorrelationId;

@@ -5,6 +5,7 @@ using Hangfire.Tags.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -167,7 +168,22 @@ namespace SportsData.Core.DependencyInjection
                     builder.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), ["40001"]);
                 });
                 options.ConfigureWarnings(w =>
-                    w.Throw(RelationalEventId.MultipleCollectionIncludeWarning));
+                {
+                    w.Throw(RelationalEventId.MultipleCollectionIncludeWarning);
+
+                    // Downgrade EF's own pre-catch save/command failure logs to Debug.
+                    // Under at-least-once delivery + parallel workers, processors race
+                    // to insert the same row; the losers hit a unique/PK violation that
+                    // the processors' `catch when (ex.IsUniqueConstraintViolation())`
+                    // idempotency guards absorb as success. EF logs the failed
+                    // SaveChanges at Error BEFORE that catch runs, producing high-volume
+                    // noise (especially during bulk re-seeds) that buries real errors.
+                    // Genuinely unhandled failures still surface at Error via each
+                    // service's own exception handling (e.g. DocumentProcessorBase).
+                    w.Log(
+                        (RelationalEventId.CommandError, LogLevel.Debug),
+                        (CoreEventId.SaveChangesFailed, LogLevel.Debug));
+                });
 
             });
 

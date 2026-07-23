@@ -679,15 +679,15 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var leafUri = new Uri(
             "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401816230/competitions/401816230/plays/4018162301401020033?lang=en");
 
-        ProcessResourceIndexItemCommand? captured = null;
+        var captured = new List<ProcessResourceIndexItemCommand>();
         Mocker.GetMock<IProvideBackgroundJobs>()
             .Setup(x => x.Enqueue<IProcessResourceIndexItems>(
                 It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
             .Callback<Expression<Func<IProcessResourceIndexItems, Task>>>(expr =>
             {
                 var call = (MethodCallExpression)expr.Body;
-                captured = (ProcessResourceIndexItemCommand)Expression
-                    .Lambda(call.Arguments[0]).Compile().DynamicInvoke()!;
+                captured.Add((ProcessResourceIndexItemCommand)Expression
+                    .Lambda(call.Arguments[0]).Compile().DynamicInvoke()!);
             })
             .Returns(string.Empty);
 
@@ -709,8 +709,8 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
 
         // assert — leaf path enqueues exactly one command (itself); its BypassCache
         // reflects the immutable-in-season override.
-        captured.Should().NotBeNull();
-        captured!.Uri.Should().Be(leafUri);
-        captured.BypassCache.Should().Be(expectBypass);
+        var command = captured.Should().ContainSingle().Subject;
+        command.Uri.Should().Be(leafUri);
+        command.BypassCache.Should().Be(expectBypass);
     }
 }

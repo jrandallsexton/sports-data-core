@@ -547,5 +547,121 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // This test validates the refactoring was successful - all these verifications passing means
             // ProcessUpdate is correctly calling the helper methods instead of duplicating code
         }
+
+        [Fact]
+        public async Task WhenEspnReferencesNovelSourceId_UpsertsCompetitionSourceFromDto()
+        {
+            // arrange — same setup as WhenEntityDoesNotExist_IsAdded, but the ESPN doc's
+            // statsSource points at an id NOT in the 1/2/4 seed. EnsureCompetitionSources
+            // must create a CompetitionSource row for it (from ESPN's description/state)
+            // so the Competition's StatsSourceId FK is satisfiable — the fix for the
+            // FK_Competition_CompetitionSource_StatsSourceId violation during sourcing.
+            var documentJson = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetition.json");
+
+            // Inject a novel statsSource id, preserving every other field.
+            var node = System.Text.Json.Nodes.JsonNode.Parse(documentJson)!;
+            node["statsSource"]!["id"] = "77";
+            node["statsSource"]!["description"] = "unit-test-novel-source";
+            node["statsSource"]!["state"] = "novel";
+            documentJson = node.ToJsonString();
+
+            // Fixed timestamp for setup rows — avoids DateTime.UtcNow per the project's
+            // no-wall-clock rule; these CreatedUtc/StartDateUtc values are never asserted.
+            var fixedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+            var dto = documentJson.FromJson<EspnFootballEventCompetitionDto>();
+
+            Guid homeId = Guid.Empty;
+            Guid awayId = Guid.Empty;
+
+            foreach (var competitor in dto.Competitors)
+            {
+                var identity = generator.Generate(competitor.Team.Ref);
+
+                if (competitor.HomeAway == "home")
+                    homeId = identity.CanonicalId;
+                else
+                    awayId = identity.CanonicalId;
+
+                await base.FootballDataContext.FranchiseSeasons.AddAsync(new FranchiseSeason
+                {
+                    Id = Guid.NewGuid(),
+                    Abbreviation = "Test",
+                    DisplayName = "Test Franchise Season",
+                    DisplayNameShort = "Test FS",
+                    Slug = identity.CanonicalId.ToString(),
+                    Location = "Test Location",
+                    Name = "Test Franchise Season",
+                    ColorCodeHex = "#FFFFFF",
+                    ColorCodeAltHex = "#000000",
+                    IsActive = true,
+                    SeasonYear = 2024,
+                    FranchiseId = Guid.NewGuid(),
+                    CreatedUtc = fixedUtc,
+                    CreatedBy = Guid.NewGuid(),
+                    ExternalIds = new List<FranchiseSeasonExternalId>
+                    {
+                        new()
+                        {
+                            Id = Guid.NewGuid(),
+                            Provider = SourceDataProvider.Espn,
+                            SourceUrl = identity.CleanUrl,
+                            SourceUrlHash = identity.UrlHash,
+                            Value = identity.UrlHash
+                        }
+                    }
+                });
+            }
+            await base.FootballDataContext.SaveChangesAsync();
+
+            var contest = new FootballContest
+            {
+                Id = Guid.NewGuid(),
+                Name = "Test",
+                ShortName = "Test",
+                Sport = Sport.FootballNcaa,
+                SeasonYear = 2024,
+                StartDateUtc = fixedUtc,
+                HomeTeamFranchiseSeasonId = homeId,
+                AwayTeamFranchiseSeasonId = awayId,
+                CreatedUtc = fixedUtc,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            await base.FootballDataContext.Contests.AddAsync(contest);
+            await base.FootballDataContext.SaveChangesAsync();
+
+            var sut = Mocker.CreateInstance<FootballEventCompetitionDocumentProcessor<FootballDataContext>>();
+
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .OmitAutoProperties()
+                .With(x => x.ParentId, contest.Id.ToString)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.SeasonYear, 2024)
+                .With(x => x.DocumentType, DocumentType.EventCompetition)
+                .With(x => x.Document, documentJson)
+                .With(x => x.UrlHash, "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334?lang=en".UrlHash())
+                .Create();
+
+            // act
+            await sut.ProcessAsync(command);
+
+            // assert — the novel source id now has a CompetitionSource row sourced from
+            // the DTO, and the competition's StatsSourceId FK points at it.
+            var source = await base.FootballDataContext.Set<CompetitionSource>()
+                .FirstOrDefaultAsync(s => s.Id == 77);
+            source.Should().NotBeNull();
+            source!.Description.Should().Be("unit-test-novel-source");
+            source.State.Should().Be("novel");
+
+            var competition = await base.FootballDataContext.Competitions
+                .FirstOrDefaultAsync(c => c.ContestId == contest.Id);
+            competition.Should().NotBeNull();
+            competition!.StatsSourceId.Should().Be(77);
+        }
     }
 }

@@ -88,6 +88,12 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
                 x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
                                        z.Provider == command.SourceDataProvider));
 
+        // ESPN references source providers by id on up to five facets; Competition
+        // has an FK per facet to CompetitionSource. The seed covers only ids 1/2/4,
+        // so upsert any referenced id from the DTO before the competition (and its
+        // *SourceId FKs) is saved.
+        await EnsureCompetitionSourcesAsync(externalDto, command.CorrelationId);
+
         if (entity is null)
         {
             _logger.LogInformation("Processing new Competition entity. Ref={Ref}", externalDto.Ref);
@@ -98,6 +104,101 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
             _logger.LogInformation("Processing Competition update. CompetitionId={CompetitionId}, Ref={Ref}", entity.Id, externalDto.Ref);
             await ProcessUpdate(command, externalDto, entity);
         }
+    }
+
+    /// <summary>
+    /// Ensures a <see cref="CompetitionSource"/> row exists for every source id ESPN
+    /// references on this competition (game / boxscore / linescore / playbyplay / stats).
+    /// The lookup is seeded with only ids 1/2/4, but ESPN ships others (e.g. 3), which
+    /// would violate <c>FK_Competition_CompetitionSource_*SourceId</c> when the
+    /// competition saves. Rather than chase the seed, upsert the referenced sources from
+    /// the DTO itself — it carries id + description + state — so any id ESPN publishes
+    /// gets a row with its real labels. Mirrors <c>ParseSourceId</c>: only ids &gt; 0 map
+    /// to an FK (id 0/absent means "facet not sourced" → null FK, nothing to ensure).
+    /// </summary>
+    private async Task EnsureCompetitionSourcesAsync(
+        EspnEventCompetitionDtoBase dto,
+        Guid correlationId)
+    {
+        // Distinct positive ids across the five facets, keeping the first
+        // description/state seen for each id.
+        var wanted = new Dictionary<int, (string? Description, string? State)>();
+
+        void Consider(string? id, string? description, string? state)
+        {
+            if (int.TryParse(id, out var n) && n > 0 && !wanted.ContainsKey(n))
+                wanted[n] = (description, state);
+        }
+
+        Consider(dto.GameSource?.Id, dto.GameSource?.Description, dto.GameSource?.State);
+        Consider(dto.BoxscoreSource?.Id, dto.BoxscoreSource?.Description, dto.BoxscoreSource?.State);
+        Consider(dto.LinescoreSource?.Id, dto.LinescoreSource?.Description, dto.LinescoreSource?.State);
+        Consider(dto.PlayByPlaySource?.Id, dto.PlayByPlaySource?.Description, dto.PlayByPlaySource?.State);
+        Consider(dto.StatsSource?.Id, dto.StatsSource?.Description, dto.StatsSource?.State);
+
+        if (wanted.Count == 0)
+            return;
+
+        var existingIds = await _dataContext.Set<CompetitionSource>()
+            .AsNoTracking()
+            .Where(s => wanted.Keys.Contains(s.Id))
+            .Select(s => s.Id)
+            .ToListAsync();
+
+        var missing = wanted.Keys.Except(existingIds).ToList();
+        if (missing.Count == 0)
+            return;
+
+        // Insert each missing source independently. A concurrently-processed
+        // competition can insert one of these ids between our existence check and
+        // save; a single batched SaveChanges would let that one unique violation roll
+        // back the whole batch and strand the OTHER still-missing ids — re-triggering
+        // the FK violation on the competition save. Per-id saves isolate the race: the
+        // colliding id is benign (its row now exists), the rest still persist.
+        var inserted = new List<int>();
+        foreach (var id in missing)
+        {
+            var (description, state) = wanted[id];
+            var row = new CompetitionSource
+            {
+                Id = id,
+                Description = Clamp(description, $"espn source {id}"),
+                State = Clamp(state, "unknown"),
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = correlationId
+            };
+            _dataContext.Set<CompetitionSource>().Add(row);
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+                inserted.Add(id);
+            }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                // Raced with another competition inserting this id — the row now
+                // exists. Detach our duplicate and continue with the remaining ids.
+                _dataContext.Entry(row).State = EntityState.Detached;
+                _logger.LogDebug("CompetitionSource {Id} upsert raced; row already present.", id);
+            }
+        }
+
+        if (inserted.Count > 0)
+        {
+            _logger.LogInformation(
+                "Upserted {Count} missing CompetitionSource row(s) from ESPN doc. Ids={Ids}",
+                inserted.Count, string.Join(",", inserted));
+        }
+    }
+
+    // CompetitionSource.Description / State are required and capped at 75 chars
+    // (HasMaxLength(75)); fall back to a synthetic label when ESPN omits the field.
+    private static string Clamp(string? value, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return fallback;
+
+        return value.Length <= 75 ? value : value[..75];
     }
 
     private async Task ProcessNewEntity(

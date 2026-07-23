@@ -149,41 +149,44 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
         if (missing.Count == 0)
             return;
 
+        // Insert each missing source independently. A concurrently-processed
+        // competition can insert one of these ids between our existence check and
+        // save; a single batched SaveChanges would let that one unique violation roll
+        // back the whole batch and strand the OTHER still-missing ids — re-triggering
+        // the FK violation on the competition save. Per-id saves isolate the race: the
+        // colliding id is benign (its row now exists), the rest still persist.
+        var inserted = new List<int>();
         foreach (var id in missing)
         {
             var (description, state) = wanted[id];
-            await _dataContext.Set<CompetitionSource>().AddAsync(new CompetitionSource
+            var row = new CompetitionSource
             {
                 Id = id,
                 Description = Clamp(description, $"espn source {id}"),
                 State = Clamp(state, "unknown"),
                 CreatedBy = correlationId
-            });
+            };
+            _dataContext.Set<CompetitionSource>().Add(row);
+
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+                inserted.Add(id);
+            }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                // Raced with another competition inserting this id — the row now
+                // exists. Detach our duplicate and continue with the remaining ids.
+                _dataContext.Entry(row).State = EntityState.Detached;
+                _logger.LogDebug("CompetitionSource {Id} upsert raced; row already present.", id);
+            }
         }
 
-        try
+        if (inserted.Count > 0)
         {
-            await _dataContext.SaveChangesAsync();
             _logger.LogInformation(
                 "Upserted {Count} missing CompetitionSource row(s) from ESPN doc. Ids={Ids}",
-                missing.Count, string.Join(",", missing));
-        }
-        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
-        {
-            // A concurrently-processed competition inserted the same source id(s)
-            // between our existence check and this save. Benign — the rows now exist.
-            // Detach our duplicates so the subsequent Competition save isn't blocked.
-            foreach (var entry in _dataContext.ChangeTracker
-                         .Entries<CompetitionSource>()
-                         .Where(e => e.State == EntityState.Added)
-                         .ToList())
-            {
-                entry.State = EntityState.Detached;
-            }
-
-            _logger.LogDebug(
-                "CompetitionSource upsert raced; ids already present. Ids={Ids}",
-                string.Join(",", missing));
+                inserted.Count, string.Join(",", inserted));
         }
     }
 

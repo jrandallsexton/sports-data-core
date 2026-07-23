@@ -160,7 +160,48 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
             competitionId,
             _dataContext.ChangeTracker.HasChanges());
 
-        await _dataContext.SaveChangesAsync();
+        try
+        {
+            await _dataContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+        {
+            // At-least-once delivery + parallel Hangfire workers can process the same
+            // competitor document concurrently. Both run SELECT-then-INSERT for the
+            // competitor and its deterministic-Id child rows (e.g. the MLB
+            // CompetitionCompetitorProbable), and the loser hits a duplicate-key here.
+            // Recover only if EVERY row this batch attempted to insert is already present
+            // in the database (the winner wrote the identical deterministic-Id rows) —
+            // narrower than "the competitor exists", which is trivially true on the
+            // update path and would mask an unrelated violation.
+            var recovered = await TryRecoverFromDuplicateInsertAsync(
+                async () =>
+                {
+                    var added = _dataContext.ChangeTracker.Entries()
+                        .Where(e => e.State == EntityState.Added)
+                        .ToList();
+                    if (added.Count == 0)
+                        return false;
+                    foreach (var entry in added)
+                    {
+                        if (await entry.GetDatabaseValuesAsync() is null)
+                            return false;
+                    }
+                    return true;
+                },
+                $"CompetitionCompetitor CompetitionId={competitionId}, UrlHash={command.UrlHash}, CorrelationId={command.CorrelationId}");
+
+            if (!recovered)
+            {
+                _logger.LogError(ex,
+                    "Unique constraint violation persisting CompetitionCompetitor but not all attempted rows were " +
+                    "found in the database — unrelated data-integrity issue. UrlHash={UrlHash}, CorrelationId={CorrelationId}",
+                    command.UrlHash, command.CorrelationId);
+                throw;
+            }
+
+            return;
+        }
 
         _logger.LogInformation(
             "✅ SAVE_COMPLETED: SaveChangesAsync completed. All outbox messages should now be flushed to service bus. " +

@@ -273,6 +273,33 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
                 command.MessageId));
         }
 
-        await _dataContext.SaveChangesAsync();
+        try
+        {
+            await _dataContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+        {
+            // At-least-once delivery + parallel workers can process the same odds wrapper
+            // concurrently. When both observe no existing rows, both INSERT the same
+            // deterministic per-provider Ids and the loser hits a duplicate-key here.
+            // Recover only if THIS wrapper's rows are already present — same competition
+            // AND the same content hash — i.e. the winner persisted this exact document,
+            // not merely some odds for the competition.
+            var recovered = await TryRecoverFromDuplicateInsertAsync(
+                () => _dataContext.CompetitionOdds
+                    .AsNoTracking()
+                    .AnyAsync(o => o.CompetitionId == competition.Id &&
+                                   o.ContentHash == wrapperContentHash),
+                $"MLB odds CompetitionId={competition.Id}, CorrelationId={command.CorrelationId}");
+
+            if (!recovered)
+            {
+                _logger.LogError(ex,
+                    "Unique constraint violation persisting MLB odds but no rows for this competition + content " +
+                    "hash were found — unrelated data-integrity issue. CompetitionId={CompId}, CorrelationId={CorrelationId}",
+                    competition.Id, command.CorrelationId);
+                throw;
+            }
+        }
     }
 }

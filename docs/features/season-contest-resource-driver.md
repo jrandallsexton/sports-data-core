@@ -1,6 +1,7 @@
 # By-Season Contest Re-Source Driver
 
-Status: **Designed / not yet implemented** (deferred behind PR #549)
+Status: **Implemented** (PR #550) — `RefreshContestsBySeasonYearHandler`, the
+`POST /api/contests/refresh` endpoint, DI + validator registrations, and unit tests.
 Last updated: 2026-07-22
 
 ## Goal

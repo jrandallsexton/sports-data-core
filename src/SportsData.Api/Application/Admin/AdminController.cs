@@ -189,6 +189,46 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Admin "re-source every contest for a (sport, season)". Fans out the
+        /// narrowed Contest Refresh per contest through the matching per-sport
+        /// Producer to backfill point-in-time records / play data (no athletes).
+        /// Producer enqueues the work and returns 202.
+        ///
+        /// This is the front door for the by-season driver: Producer's own
+        /// <c>/api/contests/refresh</c> endpoint is not internet-facing, so
+        /// operator access routes through here (AdminApiToken-gated) and over to
+        /// the correct Producer pod via the contest client factory. See
+        /// docs/features/season-contest-resource-driver.md.
+        ///
+        /// Example: POST /admin/contests/refresh?sport=baseball&amp;league=mlb&amp;seasonYear=2026
+        /// </summary>
+        [HttpPost]
+        [Route("contests/refresh")]
+        public async Task<IActionResult> RefreshContestsBySeasonYear(
+            [FromQuery] int seasonYear,
+            [FromServices] IContestClientFactory contestClientFactory,
+            [FromQuery] string sport = "football",
+            [FromQuery] string league = "ncaa",
+            CancellationToken cancellationToken = default)
+        {
+            // API runs in Sport.All; sport+league → a concrete Sport so the
+            // client factory routes to the matching per-sport Producer pod.
+            var mode = ModeMapper.ResolveMode(sport, league);
+            var correlationId = ActivityExtensions.GetCorrelationId();
+
+            _logger.LogInformation(
+                "RefreshContestsBySeasonYear requested. Sport={Sport}, SeasonYear={SeasonYear}, CorrelationId={CorrelationId}",
+                mode, seasonYear, correlationId);
+
+            var result = await contestClientFactory
+                .Resolve(mode)
+                .RefreshContestsBySeasonYear(mode, seasonYear, correlationId, cancellationToken);
+
+            return result.ToActionResult(_ =>
+                Accepted(new { correlationId, sport = mode.ToString(), seasonYear }));
+        }
+
         [HttpPost]
         [Route("ai-refresh")]
         public IActionResult RefreshAiExistence()

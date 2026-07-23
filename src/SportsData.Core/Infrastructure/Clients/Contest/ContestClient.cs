@@ -60,6 +60,21 @@ public interface IProvideContests : IProvideHealthChecks
     Task<Result<ReenrichContestResponse>> ReenrichContest(Guid contestId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Admin "re-source every contest for a (sport, season)". Producer fans out
+    /// the narrowed Contest Refresh per contest to backfill point-in-time
+    /// records / play data (no athletes), enqueues the work, and returns 202.
+    /// <paramref name="sport"/> is echoed in the body so Producer can guard it
+    /// against the pod's <c>CurrentSport</c>; <paramref name="correlationId"/>
+    /// threads the API trace id into Producer's logs. See
+    /// docs/features/season-contest-resource-driver.md.
+    /// </summary>
+    Task<Result<bool>> RefreshContestsBySeasonYear(
+        Sport sport,
+        int seasonYear,
+        Guid correlationId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Triggers a replay of a stored contest's plays through the bus →
     /// SignalR pipeline. Producer enqueues the work and returns
     /// 202 Accepted; the bus then emits <c>ContestStatusChanged</c> once
@@ -321,6 +336,21 @@ public class ContestClient : ClientBase, IProvideContests
                 ResultStatus.Error,
                 [new ValidationFailure(operationName, $"{operationName} timed out: {ex.Message}")]);
         }
+    }
+
+    public async Task<Result<bool>> RefreshContestsBySeasonYear(
+        Sport sport,
+        int seasonYear,
+        Guid correlationId,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new RefreshContestsBySeasonYearRequest(sport, seasonYear, correlationId);
+
+        return await PostWithResultAsync(
+            "contests/refresh",
+            request,
+            "RefreshContestsBySeasonYear",
+            cancellationToken);
     }
 
     // ========== Matchup query methods (Phase 2) ==========

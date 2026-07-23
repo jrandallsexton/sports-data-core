@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+
+using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.Common;
 
@@ -6,6 +8,22 @@ namespace SportsData.Core.Extensions
 {
     public static class ResultExtensions
     {
+        /// <summary>
+        /// Maps a <see cref="Result{T}"/> to an <see cref="ActionResult"/>, projecting a
+        /// successful value through <paramref name="onSuccess"/> (e.g. a custom 202/201
+        /// payload) while routing failures through the shared status→result mapping in
+        /// the parameterless overload. Use when the success shape differs from the raw
+        /// <c>result.Value</c> but failures should map identically.
+        /// </summary>
+        public static ActionResult ToActionResult<T>(this Result<T> result, Func<T, ActionResult> onSuccess)
+        {
+            if (result.IsSuccess)
+                return onSuccess(result.Value);
+
+            // Failures always populate ActionResult<T>.Result; fall back to 500 defensively.
+            return result.ToActionResult().Result ?? new StatusCodeResult(500);
+        }
+
         public static ActionResult<T> ToActionResult<T>(this Result<T> result)
         {
             if (result.IsSuccess)

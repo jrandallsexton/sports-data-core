@@ -161,10 +161,50 @@ public class ContestClientTests
         failure.Errors.Should().ContainSingle(e => e.PropertyName == "Contest");
     }
 
+    [Fact]
+    public async Task RefreshContestsBySeasonYear_PostsToContestsRefresh_WithSportSeasonAndCorrelation()
+    {
+        // Arrange — Producer returns 202 Accepted (enqueues the fan-out).
+        _handler.SetResponse(HttpStatusCode.Accepted, string.Empty);
+        var correlationId = Guid.NewGuid();
+
+        // Act
+        var result = await _sut.RefreshContestsBySeasonYear(Sport.BaseballMlb, 2026, correlationId);
+
+        // Assert — success, correct route, and the Sport enum round-trips in the
+        // body (the contract that lets Producer's [FromBody] bind succeed).
+        result.Should().BeOfType<Success<bool>>();
+        _handler.LastRequestUri.Should().EndWith("/contests/refresh");
+
+        _handler.LastRequestBody.Should().NotBeNullOrEmpty();
+        var posted = _handler.LastRequestBody.FromJson<RefreshContestsBySeasonYearRequest>();
+        posted.Should().NotBeNull();
+        posted!.Sport.Should().Be(Sport.BaseballMlb);
+        posted.SeasonYear.Should().Be(2026);
+        posted.CorrelationId.Should().Be(correlationId);
+    }
+
+    [Fact]
+    public async Task RefreshContestsBySeasonYear_OnBadRequest_MapsFailure()
+    {
+        // Arrange — Producer rejects (e.g. sport mismatch guard).
+        _handler.SetResponse(HttpStatusCode.BadRequest, "Sport mismatch");
+
+        // Act
+        var result = await _sut.RefreshContestsBySeasonYear(Sport.FootballNcaa, 2025, Guid.NewGuid());
+
+        // Assert
+        result.Should().BeOfType<Failure<bool>>();
+        ((Failure<bool>)result).Status.Should().Be(ResultStatus.BadRequest);
+    }
+
     private class TestHttpMessageHandler : HttpMessageHandler
     {
         private HttpStatusCode _statusCode = HttpStatusCode.OK;
         private string _content = string.Empty;
+
+        public string LastRequestUri { get; private set; } = string.Empty;
+        public string LastRequestBody { get; private set; } = string.Empty;
 
         public void SetResponse(HttpStatusCode statusCode, string content)
         {
@@ -172,15 +212,19 @@ public class ContestClientTests
             _content = content;
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(
+        protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            LastRequestUri = request.RequestUri?.ToString();
+            if (request.Content is not null)
+                LastRequestBody = await request.Content.ReadAsStringAsync(cancellationToken);
+
             var response = new HttpResponseMessage(_statusCode)
             {
                 Content = new StringContent(_content, Encoding.UTF8, "application/json")
             };
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

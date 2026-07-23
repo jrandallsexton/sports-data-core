@@ -124,6 +124,15 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// Returns <c>false</c> when the expected rows are absent so the caller rethrows the
     /// unrelated violation.
     ///
+    /// PRECONDITION — the entire pending change set must be the one document's idempotent
+    /// unit (as the competitor/odds callers are). On success this detaches ALL
+    /// Added/Modified/Deleted entries, including this batch's outbox messages: the winner
+    /// committed identical data AND its outbox events atomically, so those events are
+    /// already published — dropping our duplicates avoids a double-publish, and avoids a
+    /// fresh concurrency exception from retrying a Modified row the winner already bumped.
+    /// Do NOT use this helper when the tracker also holds unrelated pending work that must
+    /// still be flushed.
+    ///
     /// Call from inside
     /// <c>catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())</c> and
     /// <c>throw;</c> when this returns false, preserving the original stack trace. The

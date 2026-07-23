@@ -1,10 +1,12 @@
 # In-Season Cache Bypass — Stop Re-Fetching Immutable Documents
 
-Status: **PoC implemented** (PR #549) — `DocumentRequestedHandler.ProcessResourceIndex`
-path only, allow-list `{ EventCompetitionPlay }`. Follow-ons deferred (see Scope):
-`ResourceIndexJob` paged loop, single-item/leaf paths, on-final force-bypass
+Status: **Implemented** (PR #549) — `DocumentRequestedHandler.ProcessResourceIndex`
+fan-out path, allow-list `{ EventCompetitionPlay }`. **Leaf-path follow-on implemented**
+(PR #551) — `DocumentRequestedHandler.ProcessResourceIndexItem`, the single
+dependency-sourced doc path (e.g. situation `lastPlay.$ref`); see "Leaf path" below.
+Follow-ons still deferred (see Scope): `ResourceIndexJob` paged loop, on-final force-bypass
 re-validate, in-season cooldown relaxation.
-Last updated: 2026-07-22
+Last updated: 2026-07-23
 Scope: MLB live sourcing (in-season). Applies to any current-season sport.
 
 ## Problem
@@ -117,6 +119,58 @@ once it's complete, so most cached plays are already final; corrections are rare
 The live-edge re-fetch covers the still-finalizing play. But the correction gap
 is real and is why the on-final force-bypass is called out as a follow-on rather
 than "coverage we already have."
+
+## Leaf path (`ProcessResourceIndexItem`) — follow-on, implemented (review pending)
+
+After #549 deployed, Grafana (`provider-baseball-mlb-worker-metrics`, *MongoDB Cache
+Hits vs ESPN Live Fetches*) showed the intended inversion: at deploy the red
+(ESPN fetches) plateau collapsed from ~5,000/interval to a ~500 floor and green
+(cache hits) went from **zero to dominant**. But a **residual red floor crept
+back to ~2,500–3,000/interval** — a second, independent amplification path the
+fan-out fix never touched.
+
+Seq isolated it to a single immutable play fetched repeatedly *after* the deploy
+(e.g. `…/competitions/401816230/plays/4018162301401020033`, 3+ `ESPN live fetch`
+events, same `CorrelationId`), all with `SourceContext =
+ResourceIndexItemProcessor` and `BypassCache = true` — the **leaf** branch of
+`DocumentRequestedHandler.ConsumeInternal`, not the index fan-out.
+
+**Root cause.** Producer's live `EventCompetitionSituation` processor is mutable
+and re-runs every cycle. Each run resolves `dto.LastPlay.$ref`; when that play
+isn't in the canonical DB yet it calls `PublishDependencyRequest(...,
+EventCompetitionPlay)` and throws `ExternalDocumentNotSourcedException` to retry.
+That publish (`DocumentProcessorBase`, `SeasonYear: command.SeasonYear`) lands on
+the Provider **leaf path**, which still hardcoded `BypassCache:
+ShouldBypassCache(evt.SeasonYear)` → in-season → fetch. So the same immutable play
+was re-fetched from ESPN on **every situation retry** — the leaf-path twin of the
+live-slate storm.
+
+**Fix.** The leaf path now honors the same immutable-in-season policy, with **two
+deliberate differences** from the fan-out path:
+
+1. **No live-edge carve-out.** A single leaf has no positional "newest item"
+   signal and doesn't need one: a cache **miss** still fetches (a never-seen play
+   is sourced exactly once), and the fan-out path keeps the current game's edge
+   play fresh every cycle. Serving the leaf from Mongo is at most one cycle stale,
+   then immutable. It also breaks the situation retry loop *faster* — the play is
+   republished from Mongo, persists canonically, and the situation stops asking.
+2. **Gate on feature-enabled (`CurrentSeason != 0`), NOT exact current season.**
+   Dependency-sourced leaf requests (e.g. `lastPlay`) do **not** reliably carry a
+   usable `SeasonYear`, so an "`== current season`" gate would silently no-op on
+   exactly this traffic. Immutability is season-independent: a cache hit for a
+   play from any season is correct, and historical seasons already serve from
+   cache via `ShouldBypassCache` regardless.
+
+```csharp
+// ProcessResourceIndexItem — leaf path
+var serveImmutableFromCache = _commonConfig.CurrentSeason != 0
+    && InSeasonDocumentPolicy.IsImmutableInSeason(evt.DocumentType);
+var bypassCache = ShouldBypassCache(evt.SeasonYear) && !serveImmutableFromCache;
+```
+
+Tests: `Leaf_ImmutablePlay_ServesFromCache_WhenFeatureEnabled_RegardlessOfSeason`
+covers current-season, the null-season `lastPlay` case, historical, future,
+feature-disabled, and the mutable-type control.
 
 ## Design options (the actual fix)
 

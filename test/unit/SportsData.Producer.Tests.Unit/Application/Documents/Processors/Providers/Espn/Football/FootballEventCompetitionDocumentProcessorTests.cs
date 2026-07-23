@@ -565,6 +565,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             node["statsSource"]!["state"] = "novel";
             documentJson = node.ToJsonString();
 
+            // Fixed timestamp for setup rows — avoids DateTime.UtcNow per the project's
+            // no-wall-clock rule; these CreatedUtc/StartDateUtc values are never asserted.
+            var fixedUtc = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
             var generator = new ExternalRefIdentityGenerator();
             Mocker.Use<IGenerateExternalRefIdentities>(generator);
 
@@ -596,7 +600,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                     IsActive = true,
                     SeasonYear = 2024,
                     FranchiseId = Guid.NewGuid(),
-                    CreatedUtc = DateTime.UtcNow,
+                    CreatedUtc = fixedUtc,
                     CreatedBy = Guid.NewGuid(),
                     ExternalIds = new List<FranchiseSeasonExternalId>
                     {
@@ -620,10 +624,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 ShortName = "Test",
                 Sport = Sport.FootballNcaa,
                 SeasonYear = 2024,
-                StartDateUtc = DateTime.UtcNow,
+                StartDateUtc = fixedUtc,
                 HomeTeamFranchiseSeasonId = homeId,
                 AwayTeamFranchiseSeasonId = awayId,
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = fixedUtc,
                 CreatedBy = Guid.NewGuid()
             };
 

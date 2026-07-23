@@ -160,7 +160,48 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
             competitionId,
             _dataContext.ChangeTracker.HasChanges());
 
-        await _dataContext.SaveChangesAsync();
+        try
+        {
+            await _dataContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+        {
+            // At-least-once delivery + parallel Hangfire workers can process the same
+            // competitor document concurrently. Both run SELECT-then-INSERT for the
+            // competitor and its deterministic-Id child rows (e.g. the MLB
+            // CompetitionCompetitorProbable), and the loser hits a duplicate-key here.
+            // The winner's rows are already canonical (same source doc → identical
+            // deterministic Ids), so this is idempotent success. Confirm the competitor
+            // landed; if not, the violation is on an unrelated constraint → rethrow.
+            var competitorExists = await _dataContext.CompetitionCompetitors
+                .AsNoTracking()
+                .AnyAsync(c => c.ExternalIds.Any(e => e.SourceUrlHash == command.UrlHash &&
+                                                      e.Provider == command.SourceDataProvider));
+
+            if (!competitorExists)
+            {
+                _logger.LogError(ex,
+                    "Unique constraint violation persisting CompetitionCompetitor but no matching row by UrlHash — " +
+                    "unrelated data-integrity issue. UrlHash={UrlHash}, CorrelationId={CorrelationId}",
+                    command.UrlHash, command.CorrelationId);
+                throw;
+            }
+
+            // Detach the failed batch so the completion-notification SaveChanges in the
+            // base ProcessAsync can't re-attempt the duplicate inserts.
+            foreach (var entry in _dataContext.ChangeTracker.Entries()
+                         .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+                         .ToList())
+            {
+                entry.State = EntityState.Detached;
+            }
+
+            _logger.LogWarning(
+                "Duplicate key persisting CompetitionCompetitor/child rows — another worker won the race. " +
+                "Treating as idempotent success. CompetitionId={CompetitionId}, UrlHash={UrlHash}, CorrelationId={CorrelationId}",
+                competitionId, command.UrlHash, command.CorrelationId);
+            return;
+        }
 
         _logger.LogInformation(
             "✅ SAVE_COMPLETED: SaveChangesAsync completed. All outbox messages should now be flushed to service bus. " +

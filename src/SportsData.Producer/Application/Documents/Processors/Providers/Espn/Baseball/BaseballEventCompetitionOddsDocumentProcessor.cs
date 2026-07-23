@@ -273,6 +273,45 @@ public class BaseballEventCompetitionOddsDocumentProcessor<TDataContext> : Docum
                 command.MessageId));
         }
 
-        await _dataContext.SaveChangesAsync();
+        try
+        {
+            await _dataContext.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+        {
+            // At-least-once delivery + parallel workers can process the same odds
+            // wrapper concurrently. When both observe no existing rows, both INSERT the
+            // same deterministic per-provider Ids and the loser hits a duplicate-key
+            // here. The winner's rows are already canonical, so treat as idempotent
+            // success. Confirm odds landed for this competition; otherwise the violation
+            // is on an unrelated constraint → rethrow.
+            var oddsExist = await _dataContext.CompetitionOdds
+                .AsNoTracking()
+                .AnyAsync(o => o.CompetitionId == competition.Id);
+
+            if (!oddsExist)
+            {
+                _logger.LogError(ex,
+                    "Unique constraint violation persisting MLB odds but no rows found for competition — " +
+                    "unrelated data-integrity issue. CompetitionId={CompId}, CorrelationId={CorrelationId}",
+                    competition.Id, command.CorrelationId);
+                throw;
+            }
+
+            // Detach the failed batch (the new odds rows, and any RemoveRange'd existing
+            // rows) so the completion-notification SaveChanges in the base ProcessAsync
+            // neither re-inserts the duplicates nor deletes the winner's rows.
+            foreach (var entry in _dataContext.ChangeTracker.Entries()
+                         .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+                         .ToList())
+            {
+                entry.State = EntityState.Detached;
+            }
+
+            _logger.LogWarning(
+                "Duplicate key persisting MLB odds — another worker won the race. Treating as idempotent success. " +
+                "CompetitionId={CompId}, CorrelationId={CorrelationId}",
+                competition.Id, command.CorrelationId);
+        }
     }
 }

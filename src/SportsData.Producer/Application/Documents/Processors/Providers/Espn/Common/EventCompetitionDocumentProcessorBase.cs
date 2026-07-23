@@ -164,6 +164,7 @@ public abstract class EventCompetitionDocumentProcessorBase<TDataContext> : Docu
                 Id = id,
                 Description = Clamp(description, $"espn source {id}"),
                 State = Clamp(state, "unknown"),
+                CreatedUtc = DateTime.UtcNow,
                 CreatedBy = correlationId
             };
             _dataContext.Set<CompetitionSource>().Add(row);

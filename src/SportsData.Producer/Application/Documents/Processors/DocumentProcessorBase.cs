@@ -353,8 +353,12 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         {
             if (hasRef is null)
             {
-                _logger.LogWarning(
-                    "⏭️ SKIP_CHILD_DOCUMENT: parent DTO link is null. ChildDocumentType={ChildDocumentType}, ParentId={ParentId}",
+                // Expected, not an error: ESPN doesn't ship every optional facet for
+                // every game (e.g. no EventCompetitionPlay `details` link for a
+                // lower-division game with no play-by-play). Debug, not Warning, so a
+                // full-season backfill doesn't flood Seq with benign skips.
+                _logger.LogDebug(
+                    "⏭️ SKIP_CHILD_DOCUMENT: parent DTO has no {ChildDocumentType} link (facet not present). ParentId={ParentId}",
                     documentType,
                     parentId?.ToString());
                 return;

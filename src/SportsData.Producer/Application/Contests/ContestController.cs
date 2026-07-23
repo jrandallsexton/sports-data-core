@@ -174,6 +174,47 @@ namespace SportsData.Producer.Application.Contests
             return Accepted(new { CorrelationId = correlationId, Sport = command.Sport, SeasonYear = command.SeasonYear });
         }
 
+        /// <summary>
+        /// Re-source every contest for a (sport, season) through the narrowed
+        /// "Refresh Contest" path — the admin refresh button, at season scale.
+        /// Backfills point-in-time records / play data without pulling athletes.
+        /// See docs/features/season-contest-resource-driver.md.
+        /// </summary>
+        [HttpPost]
+        [Route("refresh")]
+        public IActionResult RefreshContestsBySeasonYear(
+            [FromBody] RefreshContestsBySeasonYearCommand command)
+        {
+            // This Producer pod is bound to a single sport (IAppMode.CurrentSport)
+            // and its DbContext is that sport's. Unlike the finalize handler, the
+            // refresh handler's FranchiseSeason traversal does NOT filter on Sport,
+            // so a mismatched body Sport would query the wrong-sport data and enqueue
+            // mis-tagged UpdateContestCommands. Reject synchronously here (established
+            // _appMode guard pattern) before a doomed background job is ever queued.
+            if (command.Sport != _appMode.CurrentSport)
+            {
+                return BadRequest(
+                    $"RefreshContestsBySeasonYear Sport={command.Sport} does not match this " +
+                    $"Producer's CurrentSport={_appMode.CurrentSport}.");
+            }
+
+            var correlationId = command.CorrelationId == Guid.Empty
+                ? GetCorrelationIdFromRequest()
+                : command.CorrelationId;
+
+            _logger.LogInformation(
+                "RefreshContestsBySeasonYear requested. Sport={Sport}, SeasonYear={SeasonYear}, CorrelationId={CorrelationId}",
+                command.Sport,
+                command.SeasonYear,
+                correlationId);
+
+            var cmd = command with { CorrelationId = correlationId };
+
+            _backgroundJobProvider.Enqueue<IRefreshContestsBySeasonYearHandler>(h => h.ExecuteAsync(cmd, CancellationToken.None));
+
+            return Accepted(new { CorrelationId = correlationId, Sport = command.Sport, SeasonYear = command.SeasonYear });
+        }
+
         [HttpPost]
         [Route("{contestId}/stream")]
         public async Task<IActionResult> StartStream([FromRoute] Guid contestId, CancellationToken cancellationToken)

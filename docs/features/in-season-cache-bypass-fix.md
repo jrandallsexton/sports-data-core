@@ -1,12 +1,12 @@
 # In-Season Cache Bypass — Stop Re-Fetching Immutable Documents
 
-Status: **PoC implemented** (PR #549) — `DocumentRequestedHandler.ProcessResourceIndex`
+Status: **Implemented** (PR #549) — `DocumentRequestedHandler.ProcessResourceIndex`
 fan-out path, allow-list `{ EventCompetitionPlay }`. **Leaf-path follow-on implemented**
-(uncommitted, review pending) — `DocumentRequestedHandler.ProcessResourceIndexItem`, the
-single dependency-sourced doc path (e.g. situation `lastPlay.$ref`); see "Leaf path" below.
+(PR #551) — `DocumentRequestedHandler.ProcessResourceIndexItem`, the single
+dependency-sourced doc path (e.g. situation `lastPlay.$ref`); see "Leaf path" below.
 Follow-ons still deferred (see Scope): `ResourceIndexJob` paged loop, on-final force-bypass
 re-validate, in-season cooldown relaxation.
-Last updated: 2026-07-22
+Last updated: 2026-07-23
 Scope: MLB live sourcing (in-season). Applies to any current-season sport.
 
 ## Problem

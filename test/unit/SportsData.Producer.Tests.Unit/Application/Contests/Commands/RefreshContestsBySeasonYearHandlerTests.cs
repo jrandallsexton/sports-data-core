@@ -26,8 +26,14 @@ public class RefreshContestsBySeasonYearHandlerTests :
 {
     public RefreshContestsBySeasonYearHandlerTests()
     {
+        // Fixed clock so the validator's "no more than one year in the future"
+        // rule is deterministic (test seasons are 2024/2025).
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(x => x.UtcNow())
+            .Returns(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
         Mocker.Use<IValidator<RefreshContestsBySeasonYearCommand>>(
-            new RefreshContestsBySeasonYearCommandValidator());
+            new RefreshContestsBySeasonYearCommandValidator(clock.Object));
     }
 
     private FranchiseSeason NewFranchiseSeason(int seasonYear) =>

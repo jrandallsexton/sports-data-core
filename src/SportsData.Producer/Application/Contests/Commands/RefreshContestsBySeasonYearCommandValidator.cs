@@ -1,10 +1,12 @@
 using FluentValidation;
 
+using SportsData.Core.Common;
+
 namespace SportsData.Producer.Application.Contests.Commands;
 
 public class RefreshContestsBySeasonYearCommandValidator : AbstractValidator<RefreshContestsBySeasonYearCommand>
 {
-    public RefreshContestsBySeasonYearCommandValidator()
+    public RefreshContestsBySeasonYearCommandValidator(IDateTimeProvider dateTimeProvider)
     {
         RuleFor(x => x.Sport)
             .IsInEnum()
@@ -13,7 +15,7 @@ public class RefreshContestsBySeasonYearCommandValidator : AbstractValidator<Ref
         RuleFor(x => x.SeasonYear)
             .GreaterThan(2000)
             .WithMessage("Season year must be greater than 2000")
-            .Must(year => year <= DateTime.UtcNow.Year + 1)
+            .Must(year => year <= dateTimeProvider.UtcNow().Year + 1)
             .WithMessage("Season year cannot be more than one year in the future");
 
         RuleFor(x => x.CorrelationId)

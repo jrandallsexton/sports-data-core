@@ -170,36 +170,36 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
             // competitor document concurrently. Both run SELECT-then-INSERT for the
             // competitor and its deterministic-Id child rows (e.g. the MLB
             // CompetitionCompetitorProbable), and the loser hits a duplicate-key here.
-            // The winner's rows are already canonical (same source doc → identical
-            // deterministic Ids), so this is idempotent success. Confirm the competitor
-            // landed; if not, the violation is on an unrelated constraint → rethrow.
-            var competitorExists = await _dataContext.CompetitionCompetitors
-                .AsNoTracking()
-                .AnyAsync(c => c.ExternalIds.Any(e => e.SourceUrlHash == command.UrlHash &&
-                                                      e.Provider == command.SourceDataProvider));
+            // Recover only if EVERY row this batch attempted to insert is already present
+            // in the database (the winner wrote the identical deterministic-Id rows) —
+            // narrower than "the competitor exists", which is trivially true on the
+            // update path and would mask an unrelated violation.
+            var recovered = await TryRecoverFromDuplicateInsertAsync(
+                async () =>
+                {
+                    var added = _dataContext.ChangeTracker.Entries()
+                        .Where(e => e.State == EntityState.Added)
+                        .ToList();
+                    if (added.Count == 0)
+                        return false;
+                    foreach (var entry in added)
+                    {
+                        if (await entry.GetDatabaseValuesAsync() is null)
+                            return false;
+                    }
+                    return true;
+                },
+                $"CompetitionCompetitor CompetitionId={competitionId}, UrlHash={command.UrlHash}, CorrelationId={command.CorrelationId}");
 
-            if (!competitorExists)
+            if (!recovered)
             {
                 _logger.LogError(ex,
-                    "Unique constraint violation persisting CompetitionCompetitor but no matching row by UrlHash — " +
-                    "unrelated data-integrity issue. UrlHash={UrlHash}, CorrelationId={CorrelationId}",
+                    "Unique constraint violation persisting CompetitionCompetitor but not all attempted rows were " +
+                    "found in the database — unrelated data-integrity issue. UrlHash={UrlHash}, CorrelationId={CorrelationId}",
                     command.UrlHash, command.CorrelationId);
                 throw;
             }
 
-            // Detach the failed batch so the completion-notification SaveChanges in the
-            // base ProcessAsync can't re-attempt the duplicate inserts.
-            foreach (var entry in _dataContext.ChangeTracker.Entries()
-                         .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
-                         .ToList())
-            {
-                entry.State = EntityState.Detached;
-            }
-
-            _logger.LogWarning(
-                "Duplicate key persisting CompetitionCompetitor/child rows — another worker won the race. " +
-                "Treating as idempotent success. CompetitionId={CompetitionId}, UrlHash={UrlHash}, CorrelationId={CorrelationId}",
-                competitionId, command.UrlHash, command.CorrelationId);
             return;
         }
 

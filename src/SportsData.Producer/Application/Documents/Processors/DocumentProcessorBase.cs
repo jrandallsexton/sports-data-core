@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics.Metrics;
 
+using Microsoft.EntityFrameworkCore;
+
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
@@ -107,6 +109,47 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
                 throw;
             }
         }
+    }
+
+    /// <summary>
+    /// Idempotent recovery for a duplicate-key (Postgres 23505) SaveChanges failure
+    /// caused by a concurrent worker persisting the same deterministic-Id rows
+    /// (at-least-once delivery + parallel Hangfire workers processing the same document).
+    ///
+    /// Runs <paramref name="confirmWrittenAsync"/> to verify the rows this batch attempted
+    /// were actually written by the winner. When confirmed, detaches the failed batch
+    /// (Added / Modified / Deleted) — required because a later SaveChanges (e.g. the
+    /// completion notification in <see cref="ProcessAsync"/>) would otherwise re-attempt
+    /// the duplicate inserts — logs, and returns <c>true</c> (idempotent success).
+    /// Returns <c>false</c> when the expected rows are absent so the caller rethrows the
+    /// unrelated violation.
+    ///
+    /// Call from inside
+    /// <c>catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())</c> and
+    /// <c>throw;</c> when this returns false, preserving the original stack trace. The
+    /// predicate MUST be narrow enough to distinguish a same-document race from an
+    /// unrelated unique violation (e.g. confirm the specific rows/content this batch
+    /// wrote, not merely that the parent entity exists).
+    /// </summary>
+    protected async Task<bool> TryRecoverFromDuplicateInsertAsync(
+        Func<Task<bool>> confirmWrittenAsync,
+        string context)
+    {
+        // Verify BEFORE detaching — the predicate may inspect the still-tracked entries.
+        if (!await confirmWrittenAsync())
+            return false;
+
+        foreach (var entry in _dataContext.ChangeTracker.Entries()
+                     .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+                     .ToList())
+        {
+            entry.State = EntityState.Detached;
+        }
+
+        _logger.LogWarning(
+            "Duplicate key on insert — another worker won the race; treating as idempotent success. {Context}",
+            context);
+        return true;
     }
 
     /// <summary>

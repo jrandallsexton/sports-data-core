@@ -117,7 +117,7 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
         }
         else
         {
-            await ProcessExistingEntity();
+            ProcessExistingEntity(dto, pollWeek);
         }
     }
 
@@ -348,9 +348,36 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
     }
 
 
-    private async Task ProcessExistingEntity()
+    private void ProcessExistingEntity(
+        EspnFootballSeasonTypeWeekRankingsDto dto,
+        SeasonPollWeek existing)
     {
-        _logger.LogError("Update detected. Not implemented");
-        await Task.CompletedTask;
+        var incomingLastUpdated = dto.LastUpdated.TryParseUtcNullable();
+
+        // ESPN stamps each poll-week with a lastUpdated timestamp. During backfills
+        // and at-least-once redelivery the same document arrives repeatedly with
+        // identical content, so its lastUpdated has not advanced past what we stored
+        // — there is nothing to do. This is the overwhelmingly common path (and was
+        // previously logged at Error, which spammed Seq during re-sourcing); keep it
+        // quiet.
+        var isRevision = incomingLastUpdated is not null &&
+                         (existing.LastUpdatedUtc is null || incomingLastUpdated > existing.LastUpdatedUtc);
+
+        if (!isRevision)
+        {
+            _logger.LogDebug(
+                "SeasonPollWeek {SeasonPollWeekId} already current (stored lastUpdated {StoredLastUpdated}); no update needed.",
+                existing.Id, existing.LastUpdatedUtc);
+            return;
+        }
+
+        // ESPN revised this poll-week (e.g. an end-of-week correction). Applying the
+        // revision in place — reconciling scalar fields plus the ranked Entries
+        // collection — is not yet implemented; surfaced at Information (not Error) so a
+        // genuine revision stays visible without drowning Seq. Revisions do not occur
+        // for completed seasons, so this path is dormant during historical backfills.
+        _logger.LogInformation(
+            "SeasonPollWeek {SeasonPollWeekId} was revised upstream (incoming lastUpdated {IncomingLastUpdated} > stored {StoredLastUpdated}); in-place update not yet implemented.",
+            existing.Id, incomingLastUpdated, existing.LastUpdatedUtc);
     }
 }

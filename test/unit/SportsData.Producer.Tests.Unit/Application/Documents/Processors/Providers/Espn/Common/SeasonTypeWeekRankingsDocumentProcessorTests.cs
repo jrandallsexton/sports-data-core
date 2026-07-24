@@ -289,6 +289,104 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         }
 
         [Fact]
+        public async Task ProcessExistingSeasonTypeWeekRankings_WhenUnchanged_IsIdempotentNoOp()
+        {
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonTypeWeekRankings.json");
+            var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
+
+            // Arrange — same setup as ProcessNewSeasonTypeWeekRankings_CreatesRankingEntity
+            var correlationId = Guid.NewGuid();
+            var seasonId = Guid.NewGuid();
+            var seasonPhaseId = Guid.NewGuid();
+
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+            var seasonPollRef = EspnUriMapper.SeasonPollWeekRefToSeasonPollRef(dto!.Ref);
+            var seasonPollIdentity = generator.Generate(seasonPollRef);
+
+            var seasonPoll = new SeasonPoll
+            {
+                Id = seasonPollIdentity.CanonicalId,
+                Name = "AFCA Coaches Poll",
+                ShortName = "Coaches",
+                SeasonYear = 2025,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+            await FootballDataContext.SeasonPolls.AddAsync(seasonPoll);
+
+            var season = new Season
+            {
+                Id = seasonId,
+                Name = "2025 NCAA Football Season",
+                Year = 2025,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            var seasonPhase = new SeasonPhase
+            {
+                Id = seasonPhaseId,
+                SeasonId = seasonId,
+                Name = "2025 Regular Season",
+                Slug = "Regular Season",
+                Abbreviation = "REG",
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            var seasonWeekIdentity = generator.Generate(dto.Season.Type.Week.Ref);
+            var weekRefUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1/rankings/2?lang=en&region=us";
+            var weekHash = generator.Generate(weekRefUrl).UrlHash;
+
+            var seasonWeek = new SeasonWeek
+            {
+                Id = seasonWeekIdentity.CanonicalId,
+                Number = 2,
+                SeasonId = seasonId,
+                SeasonPhaseId = seasonPhaseId,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            };
+
+            await FootballDataContext.Seasons.AddAsync(season);
+            await FootballDataContext.SeasonPhases.AddAsync(seasonPhase);
+            await FootballDataContext.SeasonWeeks.AddAsync(seasonWeek);
+            await FootballDataContext.SaveChangesAsync();
+
+            await SeedFranchisesAndSeasonsFromDto(dto, generator);
+
+            var command = new ProcessDocumentCommand(
+                SourceDataProvider.Espn,
+                Sport.FootballNcaa,
+                2025,
+                DocumentType.SeasonTypeWeekRankings,
+                json,
+                messageId: Guid.NewGuid(),
+                correlationId: correlationId,
+                parentId: seasonPollIdentity.CanonicalId.ToString(),
+                sourceUri: new Uri(weekRefUrl),
+                urlHash: weekHash
+            );
+
+            var sut = Mocker.CreateInstance<SeasonTypeWeekRankingsDocumentProcessor<FootballDataContext>>();
+
+            // Act — process the same document twice (simulates at-least-once redelivery / backfill re-source)
+            await sut.ProcessAsync(command);
+            await sut.ProcessAsync(command);
+
+            // Assert — still exactly one SeasonPollWeek with its full entry set; the second
+            // pass is a no-op (no duplicate rows, no exception).
+            var rankings = await FootballDataContext.SeasonPollWeeks
+                .Include(r => r.Entries)
+                .ToListAsync();
+
+            rankings.Should().ContainSingle("re-delivering an unchanged document must not create a duplicate");
+            rankings.Single().Entries.Should().HaveCount(51);
+        }
+
+        [Fact]
         public async Task WhenParentIdIsNotGuid_DerivesSeasonPollIdFromRef()
         {
             var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonTypeWeekRankings.json");

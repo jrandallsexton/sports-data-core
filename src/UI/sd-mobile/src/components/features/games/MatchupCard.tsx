@@ -502,11 +502,11 @@ export interface MatchupCardProps {
   leagueSport?: string | null;
   /**
    * SeasonWeek.EndDate of the displayed week (ISO 8601), surfaced via
-   * LeagueWeekMatchupsDto.asOfDate. Passed into MiniSchedule's fetch as an
-   * inclusive FinalizedUtc upper bound so the historical-pick-review case
-   * doesn't show results from games the picker couldn't yet have seen. Date
-   * filter (not week number) so MLB same-week games and football post-season
-   * Week-1 reuse both behave correctly.
+   * LeagueWeekMatchupsDto.asOfDate. Retained for prop compatibility with the
+   * screen-level caller but no longer consumed: the MiniSchedule now anchors
+   * its FinalizedUtc cutoff on THIS game's kickoff (matchup.startDateUtc), not
+   * the week end — see scheduleAsOfDate in the body. Week-end sat after the card
+   * game finalized, so it wrongly pulled the card's own game into its schedule.
    */
   leagueAsOfDate?: string | null;
   /**
@@ -518,7 +518,7 @@ export interface MatchupCardProps {
   pickType?: PickType | null;
 }
 
-export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seasonYear, leagueSport, leagueAsOfDate, pickType }: MatchupCardProps) {
+export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seasonYear, leagueSport, pickType }: MatchupCardProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
@@ -618,6 +618,14 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   const year = seasonYear ?? new Date(matchup.startDateUtc).getFullYear();
   const sportLeague = resolveSportLeague(leagueSport);
 
+  // Point-in-time anchor for the MiniSchedule — THIS game's kickoff, not the
+  // week's end. The endpoint filters FinalizedUtc <= asOfDate, and a game's
+  // FinalizedUtc is always after its own StartDateUtc, so anchoring on
+  // startDateUtc excludes the card game (and any not-yet-played same-day game,
+  // e.g. an MLB doubleheader's later game) while keeping every game already
+  // completed at kickoff. (Web parity: MatchupCard.jsx scheduleAsOfDate.)
+  const scheduleAsOfDate = matchup.startDateUtc;
+
   // Only fetch when the sport enum resolves — otherwise we'd issue a
   // football/ncaa request for a slug that lives in a different sport
   // (resolveSportLeague returns null for unmapped/unknown enums by design).
@@ -627,7 +635,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
     sportLeague?.sport ?? 'football',
     sportLeague?.league ?? 'ncaa',
     showAwaySchedule && !!sportLeague,
-    leagueAsOfDate ?? null,
+    scheduleAsOfDate,
   );
   const homeFinalizedGames = useTeamFinalizedGames(
     matchup.homeSlug ?? null,
@@ -635,7 +643,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
     sportLeague?.sport ?? 'football',
     sportLeague?.league ?? 'ncaa',
     showHomeSchedule && !!sportLeague,
-    leagueAsOfDate ?? null,
+    scheduleAsOfDate,
   );
 
   const handleOpenStats = async () => {

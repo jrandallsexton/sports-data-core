@@ -31,8 +31,7 @@ function MatchupCard({
   usedConfidencePoints = [],
   totalGames,
   leagueSport, // Backend Sport enum name (e.g. "BaseballMlb") — drives team-link routing
-  leagueSeasonYear, // From LeagueWeekMatchupsDto.SeasonYear — canonical for all matchups in this response
-  leagueAsOfDate // From LeagueWeekMatchupsDto.AsOfDate (= SeasonWeek.EndDate of the displayed week). Threaded into MiniSchedule as an inclusive FinalizedUtc upper bound so historical pick reviews don't show future game results.
+  leagueSeasonYear // From LeagueWeekMatchupsDto.SeasonYear — canonical for all matchups in this response
 }) {
   const { userDto } = useUserDto();
   // seasonYear is authoritative from leagueSeasonYear (set by the backend
@@ -42,6 +41,16 @@ function MatchupCard({
   // season-specific fetches / omitting the URL segment rather than silently
   // rendering a stale year.
   const seasonYear = leagueSeasonYear ?? matchup.seasonYear;
+
+  // Point-in-time anchor for the embedded MiniSchedule. Must be THIS game's
+  // kickoff, not the week's end. The endpoint filters FinalizedUtc <= asOfDate,
+  // and a game's FinalizedUtc is always after its own StartDateUtc — so
+  // anchoring on startDateUtc excludes the card game (and any not-yet-played
+  // same-day game, e.g. an MLB doubleheader's later game) for free, while
+  // keeping every game already completed at kickoff. The old league-level
+  // asOfDate (= SeasonWeek.EndDate) sat after the card game finalized, which
+  // wrongly pulled the card's own game into its own schedule.
+  const scheduleAsOfDate = matchup.startDateUtc;
 
   // /picks routes don't carry sport in the URL — resolve it from the matchups
   // DTO's leagueSport so contest links, etc. point at the right sport-aware
@@ -85,7 +94,7 @@ function MatchupCard({
     homeLoading,
     awayError,
     homeError
-  } = useTeamFinalizedGames(matchup.awaySlug, matchup.homeSlug, seasonYear, leagueSport, leagueAsOfDate);
+  } = useTeamFinalizedGames(matchup.awaySlug, matchup.homeSlug, seasonYear, leagueSport, scheduleAsOfDate);
 
   const userTz = useUserTimeZone();
 
@@ -187,7 +196,7 @@ function MatchupCard({
           loading={awayLoading}
           error={awayError}
           probablePitcher={matchup.awayProbablePitcher}
-          asOfDate={leagueAsOfDate}
+          asOfDate={scheduleAsOfDate}
         />
 
         {/* Home Team Row */}
@@ -210,7 +219,7 @@ function MatchupCard({
           loading={homeLoading}
           error={homeError}
           probablePitcher={matchup.homeProbablePitcher}
-          asOfDate={leagueAsOfDate}
+          asOfDate={scheduleAsOfDate}
         />
 
         {/* Spread and Over/Under */}

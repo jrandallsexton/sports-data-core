@@ -130,11 +130,11 @@ const Leagues = () => {
   // mutates, and visibleLeagues derives from state.
   const sortedLeagues = [...visibleLeagues].sort((a, b) => {
     if (sortMode === SORT_ALPHA) {
-      return (a.name ?? "").localeCompare(b.name ?? "");
+      return (a.name ?? "").localeCompare(b.name ?? "") || a.id.localeCompare(b.id);
     }
     const tb = b.createdUtc ? Date.parse(b.createdUtc) : 0;
     const ta = a.createdUtc ? Date.parse(a.createdUtc) : 0;
-    return tb - ta || (a.name ?? "").localeCompare(b.name ?? "");
+    return tb - ta || (a.name ?? "").localeCompare(b.name ?? "") || a.id.localeCompare(b.id);
   });
 
   // Show the bar when any control is useful: filters vary, past leagues exist,

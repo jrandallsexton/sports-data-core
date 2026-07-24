@@ -116,11 +116,11 @@ export default function LeaguesScreen() {
   // ties (or a missing timestamp) stay deterministic. Copy first — sort mutates.
   const sortedLeagues = [...visibleLeagues].sort((a, b) => {
     if (sortMode === 'alpha') {
-      return (a.name ?? '').localeCompare(b.name ?? '');
+      return (a.name ?? '').localeCompare(b.name ?? '') || a.id.localeCompare(b.id);
     }
     const tb = b.createdUtc ? Date.parse(b.createdUtc) : 0;
     const ta = a.createdUtc ? Date.parse(a.createdUtc) : 0;
-    return tb - ta || (a.name ?? '').localeCompare(b.name ?? '');
+    return tb - ta || (a.name ?? '').localeCompare(b.name ?? '') || a.id.localeCompare(b.id);
   });
 
   const showFilterBar =

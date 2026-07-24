@@ -1,10 +1,10 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
   <title>sportDeets app icon</title>
-  <desc>Italic bold S knocked out of a cyan capital D on a near-black rounded square.</desc>
-  <defs><clipPath id="sq"><rect width="1024" height="1024" rx="228"/></clipPath></defs>
+  <desc>Italic bold S knocked out of a cyan capital D on a near-black rounded square. Glyph shifted +25px right so the D&#39;s area centroid sits on the canvas center; S keeps its relative position inside the D.</desc>
+  <defs><clipPath id="sq"><rect width="1024" height="1024" rx="228"></rect></clipPath></defs>
   <g clip-path="url(#sq)">
-    <rect width="1024" height="1024" fill="#0d1117"/>
-    <path d="M288 222 L428 222 A290 290 0 0 1 428 802 L288 802 Z" fill="#61dafb"/>
-    <path transform="translate(472.000,512.000) scale(0.560000,-0.560000) translate(-314.500,-352.500)" d="M33 183Q33 192 35 210H213Q210 172 231.0 150.0Q252 128 295 128Q334 128 356.5 145.0Q379 162 379 193Q379 225 350.5 245.0Q322 265 262 290Q204 314 167.5 335.5Q131 357 104.0 394.0Q77 431 77 487Q76 556 111.0 607.0Q146 658 208.0 685.0Q270 712 350 712Q422 712 478.0 689.5Q534 667 565.0 624.5Q596 582 596 524Q596 509 595 502H413Q414 506 414 514Q414 542 394.5 559.5Q375 577 341 577Q305 577 282.5 559.5Q260 542 260 512Q260 482 288.0 461.5Q316 441 375 414Q434 387 471.5 364.0Q509 341 536.0 302.5Q563 264 563 208Q563 146 530.0 97.0Q497 48 435.0 20.5Q373 -7 290 -7Q176 -7 104.5 42.5Q33 92 33 183Z" fill="#0d1117"/>
+    <rect width="1024" height="1024" fill="#0d1117"></rect>
+    <path d="M322 222 L462 222 A290 290 0 0 1 462 802 L322 802 Z" fill="#61dafb"></path>
+    <path transform="translate(512.000,512.000) scale(0.560000,-0.560000) translate(-314.500,-352.500)" d="M33 183Q33 192 35 210H213Q210 172 231.0 150.0Q252 128 295 128Q334 128 356.5 145.0Q379 162 379 193Q379 225 350.5 245.0Q322 265 262 290Q204 314 167.5 335.5Q131 357 104.0 394.0Q77 431 77 487Q76 556 111.0 607.0Q146 658 208.0 685.0Q270 712 350 712Q422 712 478.0 689.5Q534 667 565.0 624.5Q596 582 596 524Q596 509 595 502H413Q414 506 414 514Q414 542 394.5 559.5Q375 577 341 577Q305 577 282.5 559.5Q260 542 260 512Q260 482 288.0 461.5Q316 441 375 414Q434 387 471.5 364.0Q509 341 536.0 302.5Q563 264 563 208Q563 146 530.0 97.0Q497 48 435.0 20.5Q373 -7 290 -7Q176 -7 104.5 42.5Q33 92 33 183Z" fill="#0d1117"></path>
   </g>
 </svg>

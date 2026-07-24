@@ -11,6 +11,11 @@ import "./Leagues.css"; // for grid styling
 const ALL_LEAGUES = "All";
 const ALL_SEASONS = "All";
 
+// Sort modes for the My Leagues grid. Default is newest-first (by createdUtc);
+// the A-Z pill sorts by league name.
+const SORT_NEWEST = "newest";
+const SORT_ALPHA = "alpha";
+
 // Persist the My Leagues filter state so navigating into a league detail and
 // back (or returning in a later visit) restores the same view instead of
 // resetting to defaults. Stale values are absorbed by the self-healing below.
@@ -38,6 +43,7 @@ const Leagues = () => {
   const [showPast, setShowPast] = useState(() => loadPersistedFilters().showPast);
   const [leagueFilter, setLeagueFilter] = useState(() => loadPersistedFilters().leagueFilter ?? ALL_LEAGUES);
   const [seasonFilter, setSeasonFilter] = useState(() => loadPersistedFilters().seasonFilter ?? ALL_SEASONS);
+  const [sortMode, setSortMode] = useState(() => loadPersistedFilters().sortMode ?? SORT_NEWEST);
 
   // Always fetch past leagues so the toggle is instant rather than a refetch.
   // The user's league count is small, and every row is needed the moment they
@@ -57,12 +63,12 @@ const Leagues = () => {
     try {
       localStorage.setItem(
         FILTERS_STORAGE_KEY,
-        JSON.stringify({ showPast, leagueFilter, seasonFilter })
+        JSON.stringify({ showPast, leagueFilter, seasonFilter, sortMode })
       );
     } catch {
       /* ignore storage failures (private mode, quota) */
     }
-  }, [showPast, leagueFilter, seasonFilter]);
+  }, [showPast, leagueFilter, seasonFilter, sortMode]);
 
   const handleClone = async (name, inviteMembers) => {
     if (!cloneTarget) return;
@@ -118,8 +124,26 @@ const Leagues = () => {
     (l) => activeSeasonFilter === ALL_SEASONS || l.seasonYear === activeSeasonFilter
   );
 
+  // Apply the chosen sort. Default is newest-first by createdUtc (the raw API
+  // order is arbitrary); A-Z sorts by name. Both fall back to a name compare so
+  // ties (or a missing timestamp) stay deterministic. Copy first — Array.sort
+  // mutates, and visibleLeagues derives from state.
+  const sortedLeagues = [...visibleLeagues].sort((a, b) => {
+    if (sortMode === SORT_ALPHA) {
+      return (a.name ?? "").localeCompare(b.name ?? "") || a.id.localeCompare(b.id);
+    }
+    const tb = b.createdUtc ? Date.parse(b.createdUtc) : 0;
+    const ta = a.createdUtc ? Date.parse(a.createdUtc) : 0;
+    return tb - ta || (a.name ?? "").localeCompare(b.name ?? "") || a.id.localeCompare(b.id);
+  });
+
+  // Show the bar when any control is useful: filters vary, past leagues exist,
+  // or there's more than one league to sort.
   const showFilterBar =
-    hasPast || availableLeagues.length > 1 || availableSeasons.length > 1;
+    hasPast ||
+    availableLeagues.length > 1 ||
+    availableSeasons.length > 1 ||
+    visibleLeagues.length > 1;
 
   return (
     <div className="page-container">
@@ -166,6 +190,26 @@ const Leagues = () => {
               ))}
             </div>
           )}
+          {visibleLeagues.length > 1 && (
+            <div className="league-filter-chips" role="group" aria-label="Sort leagues">
+              {[
+                { key: SORT_NEWEST, label: "Newest" },
+                { key: SORT_ALPHA, label: "A-Z" },
+              ].map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={`league-filter-chip${
+                    sortMode === option.key ? " active" : ""
+                  }`}
+                  onClick={() => setSortMode(option.key)}
+                  aria-pressed={sortMode === option.key}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          )}
           {hasPast && (
             <button
               type="button"
@@ -189,7 +233,7 @@ const Leagues = () => {
         <p>No leagues match this filter.</p>
       ) : (
         <div className="league-grid">
-          {visibleLeagues.map((league) => (
+          {sortedLeagues.map((league) => (
             <LeagueOverviewCard
               key={league.id}
               league={league}

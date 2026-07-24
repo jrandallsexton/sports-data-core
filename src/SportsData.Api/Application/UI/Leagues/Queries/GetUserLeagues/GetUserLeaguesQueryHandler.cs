@@ -55,7 +55,8 @@ public class GetUserLeaguesQueryHandler : IGetUserLeaguesQueryHandler
                     .Distinct()
                     .OrderBy(w => w)
                     .ToList(),
-                DeactivatedUtc = m.Group.DeactivatedUtc
+                DeactivatedUtc = m.Group.DeactivatedUtc,
+                CreatedUtc = m.Group.CreatedUtc
             })
             .ToListAsync(cancellationToken);
 

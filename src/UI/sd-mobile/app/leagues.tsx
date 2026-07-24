@@ -26,6 +26,11 @@ export const leaguesKeys = {
 };
 
 const ALL_LEAGUES = 'All';
+
+// Sort modes for the league grid. Default newest-first (by createdUtc); the A-Z
+// option sorts by league name. Mirrors sd-ui's Leagues.jsx.
+type SortMode = 'newest' | 'alpha';
+
 const CONTENT_PADDING = 16; // matches styles.content horizontal padding
 const GRID_GAP = 12; // matches styles.grid gap
 
@@ -47,6 +52,7 @@ export default function LeaguesScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showPast, setShowPast] = useState(false);
   const [leagueFilter, setLeagueFilter] = useState<string>(ALL_LEAGUES);
+  const [sortMode, setSortMode] = useState<SortMode>('newest');
 
   // Always fetch past leagues so the toggle is instant rather than a refetch.
   // A user's league count is small, and every row is needed the moment they
@@ -105,7 +111,21 @@ export default function LeaguesScreen() {
   const visibleLeagues =
     activeFilter === ALL_LEAGUES ? scoped : scoped.filter((l) => l.league === activeFilter);
 
-  const showFilterBar = leagues.length > 0 && (hasPast || availableLeagues.length > 1);
+  // Apply the chosen sort. Default is newest-first by createdUtc (the raw API
+  // order is arbitrary); A-Z sorts by name. Both fall back to a name compare so
+  // ties (or a missing timestamp) stay deterministic. Copy first — sort mutates.
+  const sortedLeagues = [...visibleLeagues].sort((a, b) => {
+    if (sortMode === 'alpha') {
+      return (a.name ?? '').localeCompare(b.name ?? '') || a.id.localeCompare(b.id);
+    }
+    const tb = b.createdUtc ? Date.parse(b.createdUtc) : 0;
+    const ta = a.createdUtc ? Date.parse(a.createdUtc) : 0;
+    return tb - ta || (a.name ?? '').localeCompare(b.name ?? '') || a.id.localeCompare(b.id);
+  });
+
+  const showFilterBar =
+    leagues.length > 0 &&
+    (hasPast || availableLeagues.length > 1 || visibleLeagues.length > 1);
   const filterOptions = [ALL_LEAGUES, ...availableLeagues].map((v) => ({ value: v, label: v }));
 
   const openPicks = (leagueId: string) =>
@@ -146,6 +166,17 @@ export default function LeaguesScreen() {
                 options={filterOptions}
                 onChange={setLeagueFilter}
                 accessibilityLabel="Filter by league"
+              />
+            )}
+            {visibleLeagues.length > 1 && (
+              <SegmentedControl<SortMode>
+                value={sortMode}
+                options={[
+                  { value: 'newest', label: 'Newest' },
+                  { value: 'alpha', label: 'A-Z' },
+                ]}
+                onChange={setSortMode}
+                accessibilityLabel="Sort leagues"
               />
             )}
             {hasPast && (
@@ -219,7 +250,7 @@ export default function LeaguesScreen() {
           </Text>
         ) : (
           <View style={styles.grid}>
-            {visibleLeagues.map((league) => (
+            {sortedLeagues.map((league) => (
               <View
                 key={league.id}
                 style={cardWidth != null ? { width: cardWidth } : styles.cardFull}

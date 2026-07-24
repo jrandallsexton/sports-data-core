@@ -143,6 +143,7 @@ describe('leaguesApi.getUserLeagues', () => {
       seasonYear: 2026,
       seasonWeeks: [1, 2, 3],
       deactivatedUtc: null,
+      createdUtc: '2026-01-01T00:00:00Z',
     };
     (apiClient.get as jest.Mock).mockResolvedValue({ data: [league] });
 

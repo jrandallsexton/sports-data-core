@@ -51,5 +51,13 @@
         public DateTime? DeactivatedUtc { get; set; }
 
         public string? AvatarUrl { get; set; } // optional for visuals
+
+        /// <summary>
+        /// When the league was created (server-authoritative, off
+        /// <c>PickemGroup.CreatedUtc</c>). Drives the default newest-to-oldest
+        /// sort on the My Leagues page; the client also offers an A-Z sort by
+        /// <see cref="Name"/>.
+        /// </summary>
+        public DateTime CreatedUtc { get; set; }
     }
 }

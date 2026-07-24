@@ -15,6 +15,7 @@ function league(
     avatarUrl: null,
     seasonWeeks: [],
     deactivatedUtc: null,
+    createdUtc: '2025-01-01T00:00:00Z',
     ...partial,
   };
 }

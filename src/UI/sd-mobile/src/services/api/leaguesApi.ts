@@ -109,6 +109,12 @@ export interface LeagueSummary {
    * currently fetches.
    */
   deactivatedUtc: string | null;
+  /**
+   * When the league was created (ISO 8601, server-authoritative off
+   * PickemGroup.CreatedUtc). Drives the default newest-first sort on the My
+   * Leagues screen; the A-Z option sorts by `name`.
+   */
+  createdUtc: string;
 }
 
 export interface CloneLeagueRequest {

@@ -42,7 +42,7 @@ Two shifts, **verified by rendering** the SVG (not just math): the cyan **D** mo
 >
 > **Android adaptive icon — the glyph ONLY, on a fully transparent background, with the artwork sized inside the center 66% "safe zone" (the outer ~17% on every edge may be cropped by the launcher):**
 > - `android-icon-foreground.png` — 1024×1024
-> - `android-icon-background.png` — 512×512, solid `#0d1117`
+> - `android-icon-background.png` — 1024×1024, solid `#0d1117` (must match the foreground size — Expo's `adaptiveIcon.backgroundImage` requires equal dimensions)
 > - `android-icon-monochrome.png` — 432×432, a single flat white (`#ffffff`) silhouette of the same glyph on transparent, same safe-zone sizing (for Android 13+ themed icons)
 >
 > **Splash — the glyph centered on `#0d1117` with generous padding:**
@@ -70,7 +70,7 @@ Two shifts, **verified by rendering** the SVG (not just math): the cyan **D** mo
 | `icon-1024-appstore.png` | 1024² | App Store Connect upload |
 | `splash-icon.png` | 1024² | Splash |
 | `android-icon-foreground.png` | 1024² | Adaptive foreground |
-| `android-icon-background.png` | 512² | Adaptive background (see wiring note) |
+| `android-icon-background.png` | 1024² | Adaptive background — must equal the foreground size to be usable as `backgroundImage` (see wiring note) |
 | `android-icon-monochrome.png` | 432² | Themed icon (see wiring note) |
 | `favicon.png` | 48² | Expo web favicon |
 
@@ -89,7 +89,7 @@ Two shifts, **verified by rendering** the SVG (not just math): the cyan **D** mo
 ## 4) After the files come back
 
 1. Drop the mobile rasters into `src/UI/sd-mobile/assets/images/` and the web icons into `src/UI/sd-ui/public/`, overwriting the placeholders (same filenames → no config edits needed).
-2. **Wiring note:** `app.json` currently uses a flat `#0d1117` `backgroundColor` for the Android adaptive icon and does **not** reference `android-icon-background.png` or `android-icon-monochrome.png`. If you want the monochrome (themed) icon and/or image background wired in, tell me and I'll update `android.adaptiveIcon` in `app.json`.
+2. **Wiring note:** `app.json`'s `android.adaptiveIcon` now wires `foregroundImage` (`android-icon-foreground.png`) + `monochromeImage` (`android-icon-monochrome.png`, the Android 13+ themed icon) over a flat `#0d1117` `backgroundColor`. It does **not** use `backgroundImage`. The committed `android-icon-background.png` is currently **512×512 and unused** — harmless as-is, but if you ever switch to an image background it must be regenerated at **1024×1024** to match the foreground (Expo rejects a mismatched `backgroundImage`); do not wire the 512 file.
 3. **Likely-dead asset:** `src/UI/sd-mobile/assets/images/favicon/` is a second, generated favicon set that `app.json` doesn't reference — verify before spending effort there. `src/UI/sd-ui/public/helmet.svg` is a separate mark, not the app icon.
 4. **Rebuild / ship:** web is a standard CRA build; mobile needs an Expo/EAS build. Bump `ios.buildNumber` and `android.versionCode` in `app.json` if submitting to the stores.
 

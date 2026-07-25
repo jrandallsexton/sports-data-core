@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import SeasonApi from "../../api/seasonApi";
+import {
+  getLeagueCreationGates,
+  formatGateDate,
+} from "../../utils/leagueCreationGates";
 
 /**
  * Tier 1 primary slot — fallback shown when the user has at least one
@@ -56,6 +60,10 @@ function sportPhrase(sport, nowMs) {
 function PrimarySlotOffSeasonCountdown() {
   // { NCAAFB: { kickoff, seasonYear } | null, ... } once loaded.
   const [seasons, setSeasons] = useState(null);
+  // Active creation gates keyed by backend Sport enum: { FootballNcaa: opensUtc }.
+  // A sport present is locked (create CTA becomes "opens {date}"). See
+  // docs/features/league-creation-availability-gate.md.
+  const [gates, setGates] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -77,6 +85,10 @@ function PrimarySlotOffSeasonCountdown() {
       setSeasons(
         Object.fromEntries(results.map((r) => [r.key, r]))
       );
+    });
+
+    getLeagueCreationGates().then((g) => {
+      if (!cancelled) setGates(g);
     });
 
     return () => {
@@ -101,6 +113,10 @@ function PrimarySlotOffSeasonCountdown() {
   }));
 
   const allLive = sportsWithPhrases.every((s) => s.phrase.status === "live");
+  // Every surfaced sport is gated from creation → don't urge "spin up a league
+  // now" when no CTA can act on it. (Live sports are never active gates, so this
+  // implies none are live.)
+  const allGated = sportsWithPhrases.every((s) => Boolean(gates[s.sportEnum]));
 
   // Eyebrow season year — first sport that reported one. Falls back to a
   // generic label if no season is sourced yet.
@@ -122,6 +138,8 @@ function PrimarySlotOffSeasonCountdown() {
 
   const body = allLive
     ? "Jump into your leagues and lock in your picks before the next kickoff."
+    : allGated
+    ? "Leagues open soon — we'll be ready before Week 1."
     : seasonYear
     ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week 1.`
     : "Spin up your pick'em league now so you're ready for Week 1.";
@@ -142,13 +160,41 @@ function PrimarySlotOffSeasonCountdown() {
 
     return sportsWithPhrases.map((s) => {
       const isLive = s.phrase.status === "live";
+      if (isLive) {
+        return (
+          <Link
+            key={s.key}
+            to="/app/picks"
+            className="home-primary__cta home-primary__cta--primary"
+          >
+            {`Pick ${s.label} games`}
+          </Link>
+        );
+      }
+
+      // Creation gated (e.g. NCAAFB awaiting AP Poll release) — show when it
+      // opens instead of a create link. The server enforces the same gate.
+      const opensUtc = gates[s.sportEnum];
+      if (opensUtc) {
+        return (
+          <span
+            key={s.key}
+            className="home-primary__cta home-primary__cta--disabled"
+            aria-disabled="true"
+            title={`${s.label} league creation opens ${formatGateDate(opensUtc)}`}
+          >
+            {`${s.label} leagues open ${formatGateDate(opensUtc)}`}
+          </span>
+        );
+      }
+
       return (
         <Link
           key={s.key}
-          to={isLive ? "/app/picks" : `/app/league/create?sport=${s.sportEnum}`}
+          to={`/app/league/create?sport=${s.sportEnum}`}
           className="home-primary__cta home-primary__cta--primary"
         >
-          {isLive ? `Pick ${s.label} games` : `Create ${s.label} league`}
+          {`Create ${s.label} league`}
         </Link>
       );
     });

@@ -3,6 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import apiWrapper from "../../api/apiWrapper.js";
 import { useUserDto } from "../../contexts/UserContext";
+import {
+  getLeagueCreationGates,
+  formatGateDate,
+} from "../../utils/leagueCreationGates";
 
 import "./LeagueCreatePage.css";
 
@@ -134,6 +138,12 @@ const LeagueCreatePage = () => {
     return raw && VALID_SPORT_PARAMS.has(raw) ? raw : SPORT_NCAA;
   })();
   const [sport, setSport] = useState(initialSport);
+  // Active league-creation gates: { FootballNcaa: "2026-08-17T00:00:00Z", ... }.
+  // A sport present here is locked until that instant; empty until loaded (and
+  // on fetch failure — the server guard is the real enforcement). See
+  // docs/features/league-creation-availability-gate.md.
+  const [creationGates, setCreationGates] = useState({});
+  const [gatesLoaded, setGatesLoaded] = useState(false);
   const [leagueName, setLeagueName] = useState("");
   const [description, setDescription] = useState("");
   // True once the user types in the description field, which freezes the
@@ -172,6 +182,33 @@ const LeagueCreatePage = () => {
   const isNcaa = sport === SPORT_NCAA;
   const isMlbAvailable = userDto?.isAdmin === true;
   const copy = SPORT_COPY[sport];
+
+  const isSportLocked = (s) => Boolean(creationGates[s]);
+
+  // Load the active creation gates once on mount. Fails open (empty map) — the
+  // server guard still rejects a locked create.
+  useEffect(() => {
+    let cancelled = false;
+    getLeagueCreationGates().then((gates) => {
+      if (cancelled) return;
+      setCreationGates(gates);
+      setGatesLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // If the preselected / deep-linked sport is locked, fall back to the first
+  // open sport so the form isn't stranded on a disabled tab. Only moves off a
+  // locked selection; locked tabs can't be picked (they're disabled).
+  useEffect(() => {
+    if (!gatesLoaded || !isSportLocked(sport)) return;
+    const fallback = [SPORT_NCAA, SPORT_NFL, ...(isMlbAvailable ? [SPORT_MLB] : [])]
+      .find((s) => !isSportLocked(s));
+    if (fallback) setSport(fallback);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gatesLoaded, creationGates, sport, isMlbAvailable]);
 
   // Human-readable window for the suggested description: a single day, a date
   // range, a single week, or a week range. null for a full-season league.
@@ -367,29 +404,59 @@ const LeagueCreatePage = () => {
             type="button"
             role="tab"
             aria-selected={sport === SPORT_NCAA}
-            className={`segmented-tab${sport === SPORT_NCAA ? " active" : ""}`}
+            disabled={isSportLocked(SPORT_NCAA)}
+            title={
+              isSportLocked(SPORT_NCAA)
+                ? `Opens ${formatGateDate(creationGates[SPORT_NCAA])}`
+                : undefined
+            }
+            className={`segmented-tab${sport === SPORT_NCAA ? " active" : ""}${
+              isSportLocked(SPORT_NCAA) ? " locked" : ""
+            }`}
             onClick={() => setSport(SPORT_NCAA)}
           >
             NCAA
+            {isSportLocked(SPORT_NCAA) &&
+              ` · opens ${formatGateDate(creationGates[SPORT_NCAA])}`}
           </button>
           <button
             type="button"
             role="tab"
             aria-selected={sport === SPORT_NFL}
-            className={`segmented-tab${sport === SPORT_NFL ? " active" : ""}`}
+            disabled={isSportLocked(SPORT_NFL)}
+            title={
+              isSportLocked(SPORT_NFL)
+                ? `Opens ${formatGateDate(creationGates[SPORT_NFL])}`
+                : undefined
+            }
+            className={`segmented-tab${sport === SPORT_NFL ? " active" : ""}${
+              isSportLocked(SPORT_NFL) ? " locked" : ""
+            }`}
             onClick={() => setSport(SPORT_NFL)}
           >
             NFL
+            {isSportLocked(SPORT_NFL) &&
+              ` · opens ${formatGateDate(creationGates[SPORT_NFL])}`}
           </button>
           {isMlbAvailable && (
             <button
               type="button"
               role="tab"
               aria-selected={sport === SPORT_MLB}
-              className={`segmented-tab${sport === SPORT_MLB ? " active" : ""}`}
+              disabled={isSportLocked(SPORT_MLB)}
+              title={
+                isSportLocked(SPORT_MLB)
+                  ? `Opens ${formatGateDate(creationGates[SPORT_MLB])}`
+                  : undefined
+              }
+              className={`segmented-tab${sport === SPORT_MLB ? " active" : ""}${
+                isSportLocked(SPORT_MLB) ? " locked" : ""
+              }`}
               onClick={() => setSport(SPORT_MLB)}
             >
               MLB
+              {isSportLocked(SPORT_MLB) &&
+                ` · opens ${formatGateDate(creationGates[SPORT_MLB])}`}
             </button>
           )}
         </div>

@@ -366,6 +366,16 @@ h2 {
   background-color: var(--accent-subtle);
 }
 
+/* Locked create CTA — league creation for this sport is gated until its data is
+   ready (e.g. NCAAFB awaiting AP Poll release). Reads "NCAAFB leagues open Aug 17". */
+.home-primary__cta--disabled {
+  background-color: transparent;
+  color: var(--text-secondary, var(--text-primary));
+  border: 1.5px solid var(--border-input, rgba(255, 255, 255, 0.15));
+  opacity: 0.75;
+  cursor: default;
+}
+
 .home-primary__cta:focus-visible {
   outline: 2px solid var(--accent-hover);
   outline-offset: 2px;

@@ -137,6 +137,17 @@ const getPublicLeagues = async () => {
   return response.data;
 };
 
+/**
+ * Fetches the sports currently gated from league creation, each with the UTC
+ * instant it opens (e.g. NCAAFB waits for AP Poll release). Only active gates
+ * are returned; a sport not listed is open.
+ * @returns {Promise<{ gates: { sport: string, opensUtc: string }[] }>}
+ */
+const getCreationAvailability = async () => {
+  const response = await apiClient.get(`${BASE_PATH}/creation-availability`);
+  return response.data;
+};
+
 const getLeagueWeekOverview = async (leagueId, weekNumber) => {
   return apiClient.get(
     `${BASE_PATH}/${encodeURIComponent(leagueId)}/overview/${weekNumber}`
@@ -166,6 +177,7 @@ const LeaguesApi = {
   searchInviteableUsers,
   inviteUser,
   getPublicLeagues,
+  getCreationAvailability,
   getLeagueWeekOverview,
   getLeagueScores
 };

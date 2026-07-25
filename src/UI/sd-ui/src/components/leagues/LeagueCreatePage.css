@@ -232,6 +232,20 @@
   background-color: var(--bg-muted, rgba(255, 255, 255, 0.05));
 }
 
+/* Locked sport tab (league creation gated until its data is ready — e.g. NCAAFB
+   awaiting AP Poll release). Muted + not-allowed; the suffix reads "· opens Aug 17". */
+.segmented-tab:disabled,
+.segmented-tab.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.segmented-tab.locked:hover {
+  background-color: transparent;
+}
+
 .inline-options label {
   font-weight: normal;
   display: inline-flex;

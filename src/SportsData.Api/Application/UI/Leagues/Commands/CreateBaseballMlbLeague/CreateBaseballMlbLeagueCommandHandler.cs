@@ -29,8 +29,9 @@ public class CreateBaseballMlbLeagueCommandHandler
         IFranchiseClientFactory franchiseClientFactory,
         IContestClientFactory contestClientFactory,
         IValidator<CreateBaseballMlbLeagueRequest> validator,
-        IDateTimeProvider dateTimeProvider)
-        : base(logger, dbContext, eventBus, franchiseClientFactory, contestClientFactory, validator, dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ILeagueCreationAvailability availability)
+        : base(logger, dbContext, eventBus, franchiseClientFactory, contestClientFactory, validator, dateTimeProvider, availability)
     {
     }
 

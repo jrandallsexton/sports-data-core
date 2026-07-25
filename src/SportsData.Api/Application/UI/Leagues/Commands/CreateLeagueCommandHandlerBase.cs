@@ -56,6 +56,7 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
     private readonly IContestClientFactory _contestClientFactory;
     private readonly IValidator<TRequest> _validator;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ILeagueCreationAvailability _availability;
 
     protected CreateLeagueCommandHandlerBase(
         ILogger logger,
@@ -64,7 +65,8 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
         IFranchiseClientFactory franchiseClientFactory,
         IContestClientFactory contestClientFactory,
         IValidator<TRequest> validator,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ILeagueCreationAvailability availability)
     {
         _logger = logger;
         _dbContext = dbContext;
@@ -73,6 +75,7 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
         _contestClientFactory = contestClientFactory;
         _validator = validator;
         _dateTimeProvider = dateTimeProvider;
+        _availability = availability;
     }
 
     protected abstract Sport SportMode { get; }
@@ -116,6 +119,26 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
         var validation = await _validator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
             return new Failure<Guid>(default!, ResultStatus.Validation, validation.Errors);
+
+        // Availability gate: some sports aren't open for league creation yet — e.g.
+        // NCAAFB waits for AP Poll release. This is the correctness floor behind the
+        // FE tab-hiding: it closes the deep-link / direct-API path. Reject before any
+        // downstream work. See docs/features/league-creation-availability-gate.md.
+        var opensUtc = _availability.GetOpensUtc(SportMode);
+        if (opensUtc is not null)
+        {
+            _logger.LogInformation(
+                "Rejecting create-league: {Sport} creation opens {OpensUtc:o}.",
+                SportMode, opensUtc);
+
+            return new Failure<Guid>(
+                default!,
+                ResultStatus.Validation,
+                // User-facing copy — no raw Sport enum; the user is already in a
+                // specific sport's create flow.
+                [new ValidationFailure(nameof(request),
+                    $"League creation opens {opensUtc:MMMM d, yyyy}. Check back then.")]);
+        }
 
         // Blackout guard: a windowed league whose date range contains no games
         // bootstraps to zero matchups (e.g. an MLB league created on the

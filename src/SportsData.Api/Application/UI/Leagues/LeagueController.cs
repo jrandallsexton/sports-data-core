@@ -116,6 +116,21 @@ public class LeagueController : ApiControllerBase
     }
 
     /// <summary>
+    /// Sports currently gated from league creation, each with the UTC instant it
+    /// opens (e.g. NCAAFB waits for AP Poll release). Only active gates are returned;
+    /// a sport not listed is open. The create-league UI locks exactly these sports
+    /// and shows an "opens {date}" affordance. The create endpoints enforce the same
+    /// gate server-side. See docs/features/league-creation-availability-gate.md.
+    /// </summary>
+    [HttpGet("creation-availability")]
+    [Authorize]
+    public ActionResult<LeagueCreationAvailabilityDto> GetCreationAvailability(
+        [FromServices] ILeagueCreationAvailability availability)
+    {
+        return Ok(new LeagueCreationAvailabilityDto(availability.GetActiveGates()));
+    }
+
+    /// <summary>
     /// Clones one of the user's leagues into a new one they own: copies the config
     /// and regenerates the same slate, optionally inviting the source's members.
     /// Deactivated leagues can't be cloned.

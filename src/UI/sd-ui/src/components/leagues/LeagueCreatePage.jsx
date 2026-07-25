@@ -126,7 +126,7 @@ const DURATION_DATES = "dates";
 const VALID_SPORT_PARAMS = new Set([SPORT_NCAA, SPORT_NFL, SPORT_MLB]);
 
 const LeagueCreatePage = () => {
-  const { userDto, refreshUserDto } = useUserDto();
+  const { userDto, loading: userLoading, refreshUserDto } = useUserDto();
   const [searchParams] = useSearchParams();
   // Preselect the sport tab when the landing page (or any other caller)
   // deep-links here with ?sport=FootballNcaa / FootballNfl / BaseballMlb.
@@ -219,15 +219,21 @@ const LeagueCreatePage = () => {
   const allSportsLocked =
     gatesLoaded && eligibleSports.every((s) => isSportLocked(s));
 
-  // If the preselected / deep-linked sport is locked, fall back to the first
-  // open sport so the form isn't stranded on a disabled tab. Only moves off a
-  // locked selection; locked tabs can't be picked (they're disabled).
+  // Keep the selected sport valid. The current sport is a valid selection only
+  // if it's eligible for this user (MLB is admin-only) AND not gated; otherwise
+  // fall back to the first eligible, open sport. This covers both a locked
+  // eligible sport and an unlocked-but-ineligible deep-link (e.g.
+  // ?sport=BaseballMlb for a non-admin). Wait until gates AND the user (admin
+  // status) are known so an admin's MLB deep-link isn't bounced mid-load, and
+  // only move when a valid fallback exists.
   useEffect(() => {
-    if (!gatesLoaded || !isSportLocked(sport)) return;
+    if (!gatesLoaded || userLoading) return;
+    const isSelectable = eligibleSports.includes(sport) && !isSportLocked(sport);
+    if (isSelectable) return;
     const fallback = eligibleSports.find((s) => !isSportLocked(s));
     if (fallback) setSport(fallback);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gatesLoaded, creationGates, sport, eligibleSports]);
+  }, [gatesLoaded, userLoading, creationGates, sport, eligibleSports]);
 
   // Human-readable window for the suggested description: a single day, a date
   // range, a single week, or a week range. null for a full-season league.

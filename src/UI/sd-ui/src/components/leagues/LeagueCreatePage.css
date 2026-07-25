@@ -291,8 +291,21 @@ input[type="checkbox"] {
   transition: background-color 0.2s ease;
 }
 
-.submit-button:hover {
+.submit-button:hover:not(:disabled) {
   background-color: var(--accent-hover);
+}
+
+.submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Shown when every selectable sport is gated from creation (e.g. NCAAFB + NFL
+   both awaiting their open date). Pairs with the disabled submit button. */
+.sport-locked-note {
+  color: var(--text-secondary, var(--text-primary));
+  font-size: 0.9rem;
+  margin: 0 0 0.25rem;
 }
 
 .radio-group {

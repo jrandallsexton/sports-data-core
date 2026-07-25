@@ -44,3 +44,13 @@ export function formatGateDate(iso) {
         timeZone: "UTC",
       });
 }
+
+/**
+ * User-facing variant of {@link formatGateDate}: falls back to "soon" when the
+ * instant is missing or unparseable, so a bad value never renders as the literal
+ * "null" in a CTA or tab. Use this for display strings; use formatGateDate when
+ * you need to distinguish an unparseable value.
+ */
+export function formatGateDateOrSoon(iso) {
+  return formatGateDate(iso) ?? "soon";
+}

@@ -49,3 +49,13 @@ export function formatGateDate(iso: string): string | null {
   if (Number.isNaN(d.getTime())) return null;
   return `${MONTHS_SHORT[d.getUTCMonth()]} ${d.getUTCDate()}`;
 }
+
+/**
+ * User-facing variant of {@link formatGateDate}: falls back to "soon" when the
+ * instant is missing or unparseable, so a bad value never renders as the literal
+ * "null" in a CTA or note. Use this for display strings; use formatGateDate when
+ * you need to distinguish an unparseable value.
+ */
+export function formatGateDateOrSoon(iso: string): string {
+  return formatGateDate(iso) ?? 'soon';
+}

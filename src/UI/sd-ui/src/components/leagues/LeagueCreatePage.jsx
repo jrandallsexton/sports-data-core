@@ -5,7 +5,7 @@ import apiWrapper from "../../api/apiWrapper.js";
 import { useUserDto } from "../../contexts/UserContext";
 import {
   getLeagueCreationGates,
-  formatGateDate,
+  formatGateDateOrSoon,
 } from "../../utils/leagueCreationGates";
 
 import "./LeagueCreatePage.css";
@@ -183,7 +183,15 @@ const LeagueCreatePage = () => {
   const isMlbAvailable = userDto?.isAdmin === true;
   const copy = SPORT_COPY[sport];
 
-  const isSportLocked = (s) => Boolean(creationGates[s]);
+  // Locked while the sport's configured "opens" instant is still in the future.
+  // Derived from the current time (not merely presence in the fetched snapshot),
+  // so a gate that elapses while the page is open clears on the next render —
+  // no reload. (The gate flips once, weeks out; a page-lifetime setTimeout at
+  // that instant would be unreliable and exceeds the ~24.8-day timer ceiling.)
+  const isSportLocked = (s) => {
+    const opensUtc = creationGates[s];
+    return Boolean(opensUtc) && new Date(opensUtc).getTime() > Date.now();
+  };
 
   // Load the active creation gates once on mount. Fails open (empty map) — the
   // server guard still rejects a locked create.
@@ -199,16 +207,27 @@ const LeagueCreatePage = () => {
     };
   }, []);
 
+  // The sports this user can choose from (MLB is admin-only). Single source for
+  // the fallback selection and the all-locked guard so they can't drift.
+  const eligibleSports = useMemo(
+    () => [SPORT_NCAA, SPORT_NFL, ...(isMlbAvailable ? [SPORT_MLB] : [])],
+    [isMlbAvailable]
+  );
+
+  // Every selectable sport is currently gated → nothing can be created. Disable
+  // submission and show an unavailable note (the server enforces this too).
+  const allSportsLocked =
+    gatesLoaded && eligibleSports.every((s) => isSportLocked(s));
+
   // If the preselected / deep-linked sport is locked, fall back to the first
   // open sport so the form isn't stranded on a disabled tab. Only moves off a
   // locked selection; locked tabs can't be picked (they're disabled).
   useEffect(() => {
     if (!gatesLoaded || !isSportLocked(sport)) return;
-    const fallback = [SPORT_NCAA, SPORT_NFL, ...(isMlbAvailable ? [SPORT_MLB] : [])]
-      .find((s) => !isSportLocked(s));
+    const fallback = eligibleSports.find((s) => !isSportLocked(s));
     if (fallback) setSport(fallback);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gatesLoaded, creationGates, sport, isMlbAvailable]);
+  }, [gatesLoaded, creationGates, sport, eligibleSports]);
 
   // Human-readable window for the suggested description: a single day, a date
   // range, a single week, or a week range. null for a full-season league.
@@ -300,6 +319,15 @@ const LeagueCreatePage = () => {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+
+    // Every eligible sport is gated — nothing can be created. Guards the
+    // Enter-key submit path (the button is also disabled). Server enforces too.
+    if (allSportsLocked) {
+      toast.error(
+        "League creation isn't open yet — check back when your sport unlocks."
+      );
+      return;
+    }
 
     // Mirror of the server `EffectiveEndsOn > now` rule. The `min` attribute
     // on the date inputs handles the native-picker UX, but the keyboard /
@@ -407,7 +435,7 @@ const LeagueCreatePage = () => {
             disabled={isSportLocked(SPORT_NCAA)}
             title={
               isSportLocked(SPORT_NCAA)
-                ? `Opens ${formatGateDate(creationGates[SPORT_NCAA])}`
+                ? `Opens ${formatGateDateOrSoon(creationGates[SPORT_NCAA])}`
                 : undefined
             }
             className={`segmented-tab${sport === SPORT_NCAA ? " active" : ""}${
@@ -417,7 +445,7 @@ const LeagueCreatePage = () => {
           >
             NCAA
             {isSportLocked(SPORT_NCAA) &&
-              ` · opens ${formatGateDate(creationGates[SPORT_NCAA])}`}
+              ` · opens ${formatGateDateOrSoon(creationGates[SPORT_NCAA])}`}
           </button>
           <button
             type="button"
@@ -426,7 +454,7 @@ const LeagueCreatePage = () => {
             disabled={isSportLocked(SPORT_NFL)}
             title={
               isSportLocked(SPORT_NFL)
-                ? `Opens ${formatGateDate(creationGates[SPORT_NFL])}`
+                ? `Opens ${formatGateDateOrSoon(creationGates[SPORT_NFL])}`
                 : undefined
             }
             className={`segmented-tab${sport === SPORT_NFL ? " active" : ""}${
@@ -436,7 +464,7 @@ const LeagueCreatePage = () => {
           >
             NFL
             {isSportLocked(SPORT_NFL) &&
-              ` · opens ${formatGateDate(creationGates[SPORT_NFL])}`}
+              ` · opens ${formatGateDateOrSoon(creationGates[SPORT_NFL])}`}
           </button>
           {isMlbAvailable && (
             <button
@@ -446,7 +474,7 @@ const LeagueCreatePage = () => {
               disabled={isSportLocked(SPORT_MLB)}
               title={
                 isSportLocked(SPORT_MLB)
-                  ? `Opens ${formatGateDate(creationGates[SPORT_MLB])}`
+                  ? `Opens ${formatGateDateOrSoon(creationGates[SPORT_MLB])}`
                   : undefined
               }
               className={`segmented-tab${sport === SPORT_MLB ? " active" : ""}${
@@ -456,7 +484,7 @@ const LeagueCreatePage = () => {
             >
               MLB
               {isSportLocked(SPORT_MLB) &&
-                ` · opens ${formatGateDate(creationGates[SPORT_MLB])}`}
+                ` · opens ${formatGateDateOrSoon(creationGates[SPORT_MLB])}`}
             </button>
           )}
         </div>
@@ -729,7 +757,17 @@ const LeagueCreatePage = () => {
             />
           </div>
 
-          <button type="submit" className="submit-button">
+          {allSportsLocked && (
+            <p className="sport-locked-note">
+              League creation isn’t open yet. Check back when your sport unlocks.
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="submit-button"
+            disabled={allSportsLocked}
+          >
             Create League
           </button>
         </form>

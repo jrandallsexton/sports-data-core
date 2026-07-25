@@ -1,5 +1,6 @@
 using System.Globalization;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using SportsData.Api.Application.UI.Leagues.Dtos;
@@ -38,18 +39,19 @@ public class LeagueCreationAvailability : ILeagueCreationAvailability
 
     public LeagueCreationAvailability(
         IOptions<ApiConfig> config,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ILogger<LeagueCreationAvailability> logger)
     {
         _dateTimeProvider = dateTimeProvider;
-        _opensUtc = ParseGates(config.Value.LeagueCreationOpensUtc);
+        _opensUtc = ParseGates(config.Value.LeagueCreationOpensUtc, logger);
     }
 
     // Config is a string→string map keyed by Sport name (the binder populates
     // string-keyed dictionaries reliably; enum-keyed ones bind empty). Parse once:
-    // "FootballNcaa" → Sport, the value → a UTC instant. Silently drop unknown
-    // sport names / unparseable dates so a stray config value can't break creation.
+    // "FootballNcaa" → Sport, the value → a UTC instant.
     private static IReadOnlyDictionary<Sport, DateTime> ParseGates(
-        IReadOnlyDictionary<string, string>? configured)
+        IReadOnlyDictionary<string, string>? configured,
+        ILogger logger)
     {
         var parsed = new Dictionary<Sport, DateTime>();
         if (configured is null)
@@ -57,8 +59,15 @@ public class LeagueCreationAvailability : ILeagueCreationAvailability
 
         foreach (var (name, value) in configured)
         {
+            // Unknown sport name: nothing to gate (no real sport it maps to), so
+            // skip — but log, since it's almost certainly a typo that leaves the
+            // intended sport ungated.
             if (!Enum.TryParse<Sport>(name, ignoreCase: true, out var sport))
+            {
+                logger.LogWarning(
+                    "Ignoring league-creation gate for unrecognized sport name '{SportName}'.", name);
                 continue;
+            }
 
             // AssumeUniversal: a bare "2026-08-17T00:00:00" is the intended UTC
             // instant. AdjustToUniversal normalizes a "…Z"/offset value to UTC.
@@ -71,6 +80,17 @@ public class LeagueCreationAvailability : ILeagueCreationAvailability
                     out var opens))
             {
                 parsed[sport] = opens;
+            }
+            else
+            {
+                // Fail CLOSED: a gate is configured for a real sport but its date is
+                // unparseable. Dropping it would silently OPEN the sport — defeating
+                // the gate. Keep the sport locked (until the config is corrected) and
+                // make the misconfiguration loud.
+                logger.LogError(
+                    "League-creation gate for {Sport} has an unparseable date '{Value}'; " +
+                    "keeping the sport CLOSED until the config is corrected.", sport, value);
+                parsed[sport] = DateTime.MaxValue;
             }
         }
 

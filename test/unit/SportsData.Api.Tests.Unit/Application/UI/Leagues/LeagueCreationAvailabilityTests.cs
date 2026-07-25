@@ -3,6 +3,7 @@ using System.Linq;
 
 using FluentAssertions;
 
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 using Moq;
@@ -19,24 +20,30 @@ public class LeagueCreationAvailabilityTests
 {
     private static readonly DateTime Now = new(2026, 7, 25, 12, 0, 0, DateTimeKind.Utc);
 
-    private static LeagueCreationAvailability Build(Dictionary<Sport, DateTime> gates)
+    private static LeagueCreationAvailability Build(Dictionary<Sport, DateTime> gates) =>
+        BuildRaw(gates.ToDictionary(
+            // Mirror how AppConfig delivers the gate: a string→string map keyed by
+            // Sport name, with an ISO-8601 value. "o" round-trips the Kind (…Z for
+            // Utc, bare for Unspecified) so the service's parsing is exercised.
+            kvp => kvp.Key.ToString(),
+            kvp => kvp.Value.ToString("o", CultureInfo.InvariantCulture)));
+
+    private static LeagueCreationAvailability BuildRaw(Dictionary<string, string> configured)
     {
         var config = new ApiConfig
         {
             BaseUrl = "https://api.test",
             UserIdSystem = Guid.NewGuid(),
-            // Mirror how AppConfig delivers the gate: a string→string map keyed by
-            // Sport name, with an ISO-8601 value. "o" round-trips the Kind (…Z for
-            // Utc, bare for Unspecified) so the service's parsing is exercised.
-            LeagueCreationOpensUtc = gates.ToDictionary(
-                kvp => kvp.Key.ToString(),
-                kvp => kvp.Value.ToString("o", CultureInfo.InvariantCulture)),
+            LeagueCreationOpensUtc = configured,
         };
 
         var clock = new Mock<IDateTimeProvider>();
         clock.Setup(x => x.UtcNow()).Returns(Now);
 
-        return new LeagueCreationAvailability(Options.Create(config), clock.Object);
+        return new LeagueCreationAvailability(
+            Options.Create(config),
+            clock.Object,
+            NullLogger<LeagueCreationAvailability>.Instance);
     }
 
     [Fact]
@@ -101,5 +108,20 @@ public class LeagueCreationAvailabilityTests
     public void GetActiveGates_Empty_WhenNoGatesConfigured()
     {
         Build(new()).GetActiveGates().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void MalformedDate_ForKnownSport_FailsClosed_NotOpen()
+    {
+        // A configured gate for a real sport with an unparseable date must not
+        // silently OPEN the sport (that would defeat the gate). It stays locked.
+        var sut = BuildRaw(new Dictionary<string, string>
+        {
+            ["FootballNcaa"] = "not-a-date",
+        });
+
+        sut.GetOpensUtc(Sport.FootballNcaa).Should().NotBeNull();
+        sut.GetActiveGates().Should().ContainSingle()
+            .Which.Sport.Should().Be(nameof(Sport.FootballNcaa));
     }
 }

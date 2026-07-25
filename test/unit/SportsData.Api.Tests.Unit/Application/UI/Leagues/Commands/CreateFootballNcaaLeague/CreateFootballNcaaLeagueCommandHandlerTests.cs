@@ -230,7 +230,17 @@ public class CreateFootballNcaaLeagueCommandHandlerTests : ApiTestBase<CreateFoo
 
         var result = await sut.ExecuteAsync(BuildValidRequest(), Guid.NewGuid());
 
+        // Gate-specific rejection (not some other validation failure).
         result.IsSuccess.Should().BeFalse();
+        var failure = result.Should().BeOfType<Failure<Guid>>().Subject;
+        failure.Status.Should().Be(ResultStatus.Validation);
+        failure.Errors.Should().ContainSingle()
+            // Culture-stable prefix — the full message carries the localized date.
+            .Which.ErrorMessage.Should().Contain("League creation opens");
+
+        // Rejected at the gate before any downstream work: nothing persisted,
+        // nothing published.
+        (await DataContext.PickemGroups.CountAsync()).Should().Be(0);
         eventBusMock.Verify(
             x => x.Publish(It.IsAny<PickemGroupCreated>(), It.IsAny<CancellationToken>()),
             Times.Never);

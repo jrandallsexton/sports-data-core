@@ -52,7 +52,7 @@ with **no redeploy and no OTA push**. NFL is the same map with a different value
 `feedback_appconfig_sport_keyed` pattern). Set the NCAA gate as a hierarchical key in
 the API's AppConfig label:
 
-```
+```ini
 SportsData.Api:ApiConfig:LeagueCreationOpensUtc:FootballNcaa = 2026-08-17T00:00:00Z
 ```
 
@@ -69,9 +69,10 @@ SportsData.Api:ApiConfig:LeagueCreationOpensUtc:FootballNcaa = 2026-08-17T00:00:
 `ILeagueCreationAvailability` parses each entry once at construction: the key
 `"FootballNcaa"` → `Sport`, the value → a UTC instant (`DateTimeStyles.AssumeUniversal
 | AdjustToUniversal`, so both `…Z` and a bare `2026-08-17T00:00:00` resolve to the
-same UTC instant, never shifted by the host timezone). Unknown sport names /
-unparseable dates are dropped. No migration; change the date or unlock early live in
-AppConfig.
+same UTC instant, never shifted by the host timezone). An unknown sport name is
+logged and skipped; a **known** sport with an unparseable date is logged and kept
+**closed** (fail-closed — a misconfigured gate must never silently open the sport).
+No migration; change the date or unlock early live in AppConfig.
 
 ### One service, two consumers
 
@@ -152,8 +153,9 @@ the worst case is a slightly worse UX on a transient outage, never a broken leag
 ## Testing
 
 - **Service:** future gate → `GetOpensUtc` returns the instant; absent/past → null;
-  Unspecified config instant treated as UTC; `GetActiveGates` returns future-only,
-  earliest first. (`LeagueCreationAvailabilityTests`, 7 cases.)
+  Unspecified config instant treated as UTC; a malformed date for a **known** sport →
+  fail-closed (stays locked, not silently opened); `GetActiveGates` returns
+  future-only, earliest first. (`LeagueCreationAvailabilityTests`, 7 cases.)
 - **Guard:** future `OpensUtc` → `Failure(Validation)`, **no** `PickemGroupCreated`
   published. (`CreateFootballNcaaLeagueCommandHandlerTests.ShouldFail_WhenSportCreationNotYetOpen`.)
   Existing create-handler tests auto-mock the service (returns null → open), so they

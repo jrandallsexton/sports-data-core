@@ -37,7 +37,7 @@ import { standingsKeys } from '@/src/hooks/useStandings';
 import { useCurrentUser } from '@/src/hooks/useStandings';
 import {
   useLeagueCreationGates,
-  formatGateDate,
+  formatGateDateOrSoon,
 } from '@/src/hooks/useLeagueCreationGates';
 
 // ─── Sport config ─────────────────────────────────────────────────────────────
@@ -524,29 +524,37 @@ export default function CreateLeagueScreen() {
     setValue('sport', 'BaseballMlb');
   }, [isAdmin, params.sport, sport, setValue]);
 
+  // The sports this user may create, before gating (MLB is admin-only). Single
+  // source so the visible picker and the locked-sport fallback never drift.
+  const availableSportsForUser = useMemo<SportKey[]>(
+    () => ['FootballNcaa', 'FootballNfl', ...(isAdmin ? (['BaseballMlb'] as SportKey[]) : [])],
+    [isAdmin],
+  );
+
   // If the preselected / deep-linked sport is gated from creation, fall back to
   // the first open sport so the form isn't stuck on a hidden option. Mirrors the
   // MLB promotion effect above, inverted; runs once gates resolve.
   useEffect(() => {
     if (!gates[sport]) return; // current sport open
-    const fallback = (
-      ['FootballNcaa', 'FootballNfl', ...(isAdmin ? ['BaseballMlb'] : [])] as SportKey[]
-    ).find((k) => !gates[k]);
+    const fallback = availableSportsForUser.find((k) => !gates[k]);
     if (fallback && fallback !== sport) {
       setValue('sport', fallback);
     }
-  }, [gates, sport, isAdmin, setValue]);
+  }, [gates, sport, availableSportsForUser, setValue]);
 
   const sportOptions = useMemo<{ value: SportKey; label: string }[]>(() => {
     // Emoji pulled from SPORT_COPY so the icon stays in lockstep with the
     // Divisions header (which also reads copy.emoji) — single source of truth.
     const fmt = (k: SportKey) => ({ value: k, label: `${SPORT_COPY[k].emoji} ${SPORT_COPY[k].label}` });
-    const base: { value: SportKey; label: string }[] = [fmt('FootballNcaa'), fmt('FootballNfl')];
-    if (isAdmin) base.push(fmt('BaseballMlb'));
     // Hide sports currently gated from creation — they surface as an "opens
     // {date}" note below the picker instead. The server enforces the same gate.
-    return base.filter((o) => !gates[o.value]);
-  }, [isAdmin, gates]);
+    return availableSportsForUser.filter((k) => !gates[k]).map(fmt);
+  }, [availableSportsForUser, gates]);
+
+  // Every selectable sport is gated → nothing can be created (availableSportsForUser
+  // is never empty, so an empty option list means all-locked). Disable submission
+  // and show an unavailable note; the server enforces this too.
+  const allSportsLocked = sportOptions.length === 0;
 
   // Gated football sports to call out under the picker (e.g. "NCAA leagues open
   // Aug 17"). MLB isn't advertised here — it's admin-only and unannounced.
@@ -556,7 +564,7 @@ export default function CreateLeagueScreen() {
         .filter((k) => gates[k])
         .map((k) => ({
           key: k,
-          text: `${SPORT_COPY[k].emoji} ${SPORT_COPY[k].label} leagues open ${formatGateDate(gates[k])}`,
+          text: `${SPORT_COPY[k].emoji} ${SPORT_COPY[k].label} leagues open ${formatGateDateOrSoon(gates[k])}`,
         })),
     [gates],
   );
@@ -632,7 +640,10 @@ export default function CreateLeagueScreen() {
     },
   });
 
-  const onSubmit = (data: FormData) => createMutation.mutate(data);
+  const onSubmit = (data: FormData) => {
+    if (allSportsLocked) return; // nothing creatable; the button is also disabled
+    createMutation.mutate(data);
+  };
 
   // Tiebreaker options use sport-aware labels for the "total" variant.
   const tiebreakerOptions: { value: FormData['tiebreakerType']; label: string }[] = [
@@ -1009,10 +1020,17 @@ export default function CreateLeagueScreen() {
             )}
           </View>
 
+          {allSportsLocked && (
+            <Text style={[styles.gateNote, { color: theme.textMuted, marginTop: 12 }]}>
+              League creation isn’t open yet. Check back when your sport unlocks.
+            </Text>
+          )}
+
           <Button
             title="Create League"
             onPress={handleSubmit(onSubmit)}
             loading={createMutation.isPending}
+            disabled={allSportsLocked}
             fullWidth
             size="lg"
             style={{ marginTop: 12 }}

@@ -13,7 +13,7 @@ import {
 } from '@/src/services/api/seasonApi';
 import {
   useLeagueCreationGates,
-  formatGateDate,
+  formatGateDateOrSoon,
 } from '@/src/hooks/useLeagueCreationGates';
 
 // ─── Sports ─────────────────────────────────────────────────────────────────
@@ -177,7 +177,7 @@ export function PrimarySlotOffSeasonCountdown() {
               return (
                 <Button
                   key={s.key}
-                  title={`${s.label} opens ${formatGateDate(opensUtc)}`}
+                  title={`${s.label} opens ${formatGateDateOrSoon(opensUtc)}`}
                   onPress={() => {}}
                   disabled
                   size="md"

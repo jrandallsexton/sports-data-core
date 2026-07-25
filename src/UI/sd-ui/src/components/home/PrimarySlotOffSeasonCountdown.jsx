@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import SeasonApi from "../../api/seasonApi";
 import {
   getLeagueCreationGates,
-  formatGateDate,
+  formatGateDateOrSoon,
 } from "../../utils/leagueCreationGates";
 
 /**
@@ -113,10 +113,19 @@ function PrimarySlotOffSeasonCountdown() {
   }));
 
   const allLive = sportsWithPhrases.every((s) => s.phrase.status === "live");
+
+  // A sport is gated only while its "opens" instant is still ahead of nowMs, so a
+  // gate that elapses clears on re-render without a reload. (nowMs is snapshotted
+  // per render; the gate flips once weeks out, so no page-lifetime timer.)
+  const isGated = (sportEnum) => {
+    const opensUtc = gates[sportEnum];
+    return Boolean(opensUtc) && new Date(opensUtc).getTime() > nowMs;
+  };
+
   // Every surfaced sport is gated from creation → don't urge "spin up a league
   // now" when no CTA can act on it. (Live sports are never active gates, so this
   // implies none are live.)
-  const allGated = sportsWithPhrases.every((s) => Boolean(gates[s.sportEnum]));
+  const allGated = sportsWithPhrases.every((s) => isGated(s.sportEnum));
 
   // Eyebrow season year — first sport that reported one. Falls back to a
   // generic label if no season is sourced yet.
@@ -174,16 +183,16 @@ function PrimarySlotOffSeasonCountdown() {
 
       // Creation gated (e.g. NCAAFB awaiting AP Poll release) — show when it
       // opens instead of a create link. The server enforces the same gate.
-      const opensUtc = gates[s.sportEnum];
-      if (opensUtc) {
+      if (isGated(s.sportEnum)) {
+        const opensUtc = gates[s.sportEnum];
         return (
           <span
             key={s.key}
             className="home-primary__cta home-primary__cta--disabled"
             aria-disabled="true"
-            title={`${s.label} league creation opens ${formatGateDate(opensUtc)}`}
+            title={`${s.label} league creation opens ${formatGateDateOrSoon(opensUtc)}`}
           >
-            {`${s.label} leagues open ${formatGateDate(opensUtc)}`}
+            {`${s.label} leagues open ${formatGateDateOrSoon(opensUtc)}`}
           </span>
         );
       }

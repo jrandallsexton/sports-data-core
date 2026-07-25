@@ -35,6 +35,10 @@ import {
 } from '@/src/services/api/leaguesApi';
 import { standingsKeys } from '@/src/hooks/useStandings';
 import { useCurrentUser } from '@/src/hooks/useStandings';
+import {
+  useLeagueCreationGates,
+  formatGateDateOrSoon,
+} from '@/src/hooks/useLeagueCreationGates';
 
 // ─── Sport config ─────────────────────────────────────────────────────────────
 //
@@ -369,6 +373,11 @@ export default function CreateLeagueScreen() {
   const params = useLocalSearchParams<{ sport?: string }>();
   const { data: me } = useCurrentUser();
   const isAdmin = me?.isAdmin === true;
+  // Active league-creation gates: { FootballNcaa: "2026-08-17T00:00:00Z", ... }.
+  // A sport present is locked until that instant (e.g. NCAAFB awaiting AP Poll
+  // release). Empty until loaded / on fetch failure — the server guard is the
+  // real enforcement. See docs/features/league-creation-availability-gate.md.
+  const gates = useLeagueCreationGates();
 
   // Safe initial sport for useForm defaultValues (which are cached on first
   // render and don't respond to later changes). MLB is admin-gated and
@@ -515,14 +524,50 @@ export default function CreateLeagueScreen() {
     setValue('sport', 'BaseballMlb');
   }, [isAdmin, params.sport, sport, setValue]);
 
+  // The sports this user may create, before gating (MLB is admin-only). Single
+  // source so the visible picker and the locked-sport fallback never drift.
+  const availableSportsForUser = useMemo<SportKey[]>(
+    () => ['FootballNcaa', 'FootballNfl', ...(isAdmin ? (['BaseballMlb'] as SportKey[]) : [])],
+    [isAdmin],
+  );
+
+  // If the preselected / deep-linked sport is gated from creation, fall back to
+  // the first open sport so the form isn't stuck on a hidden option. Mirrors the
+  // MLB promotion effect above, inverted; runs once gates resolve.
+  useEffect(() => {
+    if (!gates[sport]) return; // current sport open
+    const fallback = availableSportsForUser.find((k) => !gates[k]);
+    if (fallback && fallback !== sport) {
+      setValue('sport', fallback);
+    }
+  }, [gates, sport, availableSportsForUser, setValue]);
+
   const sportOptions = useMemo<{ value: SportKey; label: string }[]>(() => {
     // Emoji pulled from SPORT_COPY so the icon stays in lockstep with the
     // Divisions header (which also reads copy.emoji) — single source of truth.
     const fmt = (k: SportKey) => ({ value: k, label: `${SPORT_COPY[k].emoji} ${SPORT_COPY[k].label}` });
-    const base: { value: SportKey; label: string }[] = [fmt('FootballNcaa'), fmt('FootballNfl')];
-    if (isAdmin) base.push(fmt('BaseballMlb'));
-    return base;
-  }, [isAdmin]);
+    // Hide sports currently gated from creation — they surface as an "opens
+    // {date}" note below the picker instead. The server enforces the same gate.
+    return availableSportsForUser.filter((k) => !gates[k]).map(fmt);
+  }, [availableSportsForUser, gates]);
+
+  // Every selectable sport is gated → nothing can be created (availableSportsForUser
+  // is never empty, so an empty option list means all-locked). Disable submission
+  // and show an unavailable note; the server enforces this too.
+  const allSportsLocked = sportOptions.length === 0;
+
+  // Gated football sports to call out under the picker (e.g. "NCAA leagues open
+  // Aug 17"). MLB isn't advertised here — it's admin-only and unannounced.
+  const gateNotes = useMemo(
+    () =>
+      (['FootballNcaa', 'FootballNfl'] as SportKey[])
+        .filter((k) => gates[k])
+        .map((k) => ({
+          key: k,
+          text: `${SPORT_COPY[k].emoji} ${SPORT_COPY[k].label} leagues open ${formatGateDateOrSoon(gates[k])}`,
+        })),
+    [gates],
+  );
 
   const currentDivisions = useMemo(() => {
     if (sport === 'FootballNfl') return NFL_DIVISIONS;
@@ -595,7 +640,10 @@ export default function CreateLeagueScreen() {
     },
   });
 
-  const onSubmit = (data: FormData) => createMutation.mutate(data);
+  const onSubmit = (data: FormData) => {
+    if (allSportsLocked) return; // nothing creatable; the button is also disabled
+    createMutation.mutate(data);
+  };
 
   // Tiebreaker options use sport-aware labels for the "total" variant.
   const tiebreakerOptions: { value: FormData['tiebreakerType']; label: string }[] = [
@@ -637,6 +685,11 @@ export default function CreateLeagueScreen() {
                 />
               )}
             />
+            {gateNotes.map((n) => (
+              <Text key={n.key} style={[styles.gateNote, { color: theme.textMuted }]}>
+                {n.text}
+              </Text>
+            ))}
           </View>
 
           {/* Name */}
@@ -967,10 +1020,17 @@ export default function CreateLeagueScreen() {
             )}
           </View>
 
+          {allSportsLocked && (
+            <Text style={[styles.gateNote, { color: theme.textMuted, marginTop: 12 }]}>
+              League creation isn’t open yet. Check back when your sport unlocks.
+            </Text>
+          )}
+
           <Button
             title="Create League"
             onPress={handleSubmit(onSubmit)}
             loading={createMutation.isPending}
+            disabled={allSportsLocked}
             fullWidth
             size="lg"
             style={{ marginTop: 12 }}
@@ -1001,6 +1061,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  gateNote: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   input: {
     borderWidth: 1.5,

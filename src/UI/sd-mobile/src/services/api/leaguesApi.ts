@@ -122,6 +122,19 @@ export interface CloneLeagueRequest {
   inviteMembers: boolean;
 }
 
+// Matches SportsData.Api.Application.UI.Leagues.Dtos.LeagueCreationGateDto.
+export interface LeagueCreationGate {
+  /** Backend Sport enum name, e.g. "FootballNcaa". */
+  sport: string;
+  /** UTC instant league creation opens for this sport. */
+  opensUtc: string;
+}
+
+// Matches SportsData.Api.Application.UI.Leagues.Dtos.LeagueCreationAvailabilityDto.
+export interface LeagueCreationAvailability {
+  gates: LeagueCreationGate[];
+}
+
 export const leaguesApi = {
   // POST /ui/leagues/football/ncaa
   createFootballNcaaLeague: (payload: CreateFootballNcaaLeagueRequest) =>
@@ -157,4 +170,10 @@ export const leaguesApi = {
   // Returns the new league's id.
   cloneLeague: (id: string, payload: CloneLeagueRequest) =>
     apiClient.post<{ id: string }>(`/ui/leagues/${id}/clone`, payload),
+
+  // GET /ui/leagues/creation-availability — sports currently gated from league
+  // creation, each with the UTC instant it opens (only active gates; a sport not
+  // listed is open). The create endpoints enforce the same gate server-side.
+  getCreationAvailability: () =>
+    apiClient.get<LeagueCreationAvailability>('/ui/leagues/creation-availability'),
 };

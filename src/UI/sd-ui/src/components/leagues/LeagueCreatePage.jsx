@@ -3,6 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import apiWrapper from "../../api/apiWrapper.js";
 import { useUserDto } from "../../contexts/UserContext";
+import {
+  getLeagueCreationGates,
+  formatGateDateOrSoon,
+} from "../../utils/leagueCreationGates";
 
 import "./LeagueCreatePage.css";
 
@@ -122,7 +126,7 @@ const DURATION_DATES = "dates";
 const VALID_SPORT_PARAMS = new Set([SPORT_NCAA, SPORT_NFL, SPORT_MLB]);
 
 const LeagueCreatePage = () => {
-  const { userDto, refreshUserDto } = useUserDto();
+  const { userDto, loading: userLoading, refreshUserDto } = useUserDto();
   const [searchParams] = useSearchParams();
   // Preselect the sport tab when the landing page (or any other caller)
   // deep-links here with ?sport=FootballNcaa / FootballNfl / BaseballMlb.
@@ -134,6 +138,12 @@ const LeagueCreatePage = () => {
     return raw && VALID_SPORT_PARAMS.has(raw) ? raw : SPORT_NCAA;
   })();
   const [sport, setSport] = useState(initialSport);
+  // Active league-creation gates: { FootballNcaa: "2026-08-17T00:00:00Z", ... }.
+  // A sport present here is locked until that instant; empty until loaded (and
+  // on fetch failure — the server guard is the real enforcement). See
+  // docs/features/league-creation-availability-gate.md.
+  const [creationGates, setCreationGates] = useState({});
+  const [gatesLoaded, setGatesLoaded] = useState(false);
   const [leagueName, setLeagueName] = useState("");
   const [description, setDescription] = useState("");
   // True once the user types in the description field, which freezes the
@@ -172,6 +182,58 @@ const LeagueCreatePage = () => {
   const isNcaa = sport === SPORT_NCAA;
   const isMlbAvailable = userDto?.isAdmin === true;
   const copy = SPORT_COPY[sport];
+
+  // Locked while the sport's configured "opens" instant is still in the future.
+  // Derived from the current time (not merely presence in the fetched snapshot),
+  // so a gate that elapses while the page is open clears on the next render —
+  // no reload. (The gate flips once, weeks out; a page-lifetime setTimeout at
+  // that instant would be unreliable and exceeds the ~24.8-day timer ceiling.)
+  const isSportLocked = (s) => {
+    const opensUtc = creationGates[s];
+    return Boolean(opensUtc) && new Date(opensUtc).getTime() > Date.now();
+  };
+
+  // Load the active creation gates once on mount. Fails open (empty map) — the
+  // server guard still rejects a locked create.
+  useEffect(() => {
+    let cancelled = false;
+    getLeagueCreationGates().then((gates) => {
+      if (cancelled) return;
+      setCreationGates(gates);
+      setGatesLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // The sports this user can choose from (MLB is admin-only). Single source for
+  // the fallback selection and the all-locked guard so they can't drift.
+  const eligibleSports = useMemo(
+    () => [SPORT_NCAA, SPORT_NFL, ...(isMlbAvailable ? [SPORT_MLB] : [])],
+    [isMlbAvailable]
+  );
+
+  // Every selectable sport is currently gated → nothing can be created. Disable
+  // submission and show an unavailable note (the server enforces this too).
+  const allSportsLocked =
+    gatesLoaded && eligibleSports.every((s) => isSportLocked(s));
+
+  // Keep the selected sport valid. The current sport is a valid selection only
+  // if it's eligible for this user (MLB is admin-only) AND not gated; otherwise
+  // fall back to the first eligible, open sport. This covers both a locked
+  // eligible sport and an unlocked-but-ineligible deep-link (e.g.
+  // ?sport=BaseballMlb for a non-admin). Wait until gates AND the user (admin
+  // status) are known so an admin's MLB deep-link isn't bounced mid-load, and
+  // only move when a valid fallback exists.
+  useEffect(() => {
+    if (!gatesLoaded || userLoading) return;
+    const isSelectable = eligibleSports.includes(sport) && !isSportLocked(sport);
+    if (isSelectable) return;
+    const fallback = eligibleSports.find((s) => !isSportLocked(s));
+    if (fallback) setSport(fallback);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gatesLoaded, userLoading, creationGates, sport, eligibleSports]);
 
   // Human-readable window for the suggested description: a single day, a date
   // range, a single week, or a week range. null for a full-season league.
@@ -263,6 +325,15 @@ const LeagueCreatePage = () => {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+
+    // Every eligible sport is gated — nothing can be created. Guards the
+    // Enter-key submit path (the button is also disabled). Server enforces too.
+    if (allSportsLocked) {
+      toast.error(
+        "League creation isn't open yet — check back when your sport unlocks."
+      );
+      return;
+    }
 
     // Mirror of the server `EffectiveEndsOn > now` rule. The `min` attribute
     // on the date inputs handles the native-picker UX, but the keyboard /
@@ -367,29 +438,59 @@ const LeagueCreatePage = () => {
             type="button"
             role="tab"
             aria-selected={sport === SPORT_NCAA}
-            className={`segmented-tab${sport === SPORT_NCAA ? " active" : ""}`}
+            disabled={isSportLocked(SPORT_NCAA)}
+            title={
+              isSportLocked(SPORT_NCAA)
+                ? `Opens ${formatGateDateOrSoon(creationGates[SPORT_NCAA])}`
+                : undefined
+            }
+            className={`segmented-tab${sport === SPORT_NCAA ? " active" : ""}${
+              isSportLocked(SPORT_NCAA) ? " locked" : ""
+            }`}
             onClick={() => setSport(SPORT_NCAA)}
           >
             NCAA
+            {isSportLocked(SPORT_NCAA) &&
+              ` · opens ${formatGateDateOrSoon(creationGates[SPORT_NCAA])}`}
           </button>
           <button
             type="button"
             role="tab"
             aria-selected={sport === SPORT_NFL}
-            className={`segmented-tab${sport === SPORT_NFL ? " active" : ""}`}
+            disabled={isSportLocked(SPORT_NFL)}
+            title={
+              isSportLocked(SPORT_NFL)
+                ? `Opens ${formatGateDateOrSoon(creationGates[SPORT_NFL])}`
+                : undefined
+            }
+            className={`segmented-tab${sport === SPORT_NFL ? " active" : ""}${
+              isSportLocked(SPORT_NFL) ? " locked" : ""
+            }`}
             onClick={() => setSport(SPORT_NFL)}
           >
             NFL
+            {isSportLocked(SPORT_NFL) &&
+              ` · opens ${formatGateDateOrSoon(creationGates[SPORT_NFL])}`}
           </button>
           {isMlbAvailable && (
             <button
               type="button"
               role="tab"
               aria-selected={sport === SPORT_MLB}
-              className={`segmented-tab${sport === SPORT_MLB ? " active" : ""}`}
+              disabled={isSportLocked(SPORT_MLB)}
+              title={
+                isSportLocked(SPORT_MLB)
+                  ? `Opens ${formatGateDateOrSoon(creationGates[SPORT_MLB])}`
+                  : undefined
+              }
+              className={`segmented-tab${sport === SPORT_MLB ? " active" : ""}${
+                isSportLocked(SPORT_MLB) ? " locked" : ""
+              }`}
               onClick={() => setSport(SPORT_MLB)}
             >
               MLB
+              {isSportLocked(SPORT_MLB) &&
+                ` · opens ${formatGateDateOrSoon(creationGates[SPORT_MLB])}`}
             </button>
           )}
         </div>
@@ -662,7 +763,17 @@ const LeagueCreatePage = () => {
             />
           </div>
 
-          <button type="submit" className="submit-button">
+          {allSportsLocked && (
+            <p className="sport-locked-note">
+              League creation isn’t open yet. Check back when your sport unlocks.
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="submit-button"
+            disabled={allSportsLocked}
+          >
             Create League
           </button>
         </form>

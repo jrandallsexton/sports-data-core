@@ -11,6 +11,10 @@ import {
   REGULAR_SEASON_TYPE_CODE,
   type CurrentSeason,
 } from '@/src/services/api/seasonApi';
+import {
+  useLeagueCreationGates,
+  formatGateDateOrSoon,
+} from '@/src/hooks/useLeagueCreationGates';
 
 // ─── Sports ─────────────────────────────────────────────────────────────────
 //
@@ -67,6 +71,11 @@ export function PrimarySlotOffSeasonCountdown() {
     return () => clearInterval(id);
   }, []);
 
+  // Active creation gates keyed by backend Sport enum: { FootballNcaa: opensUtc }.
+  // A gated sport's create CTA becomes a disabled "opens {date}". See
+  // docs/features/league-creation-availability-gate.md.
+  const gates = useLeagueCreationGates();
+
   const results = useQueries({
     queries: SPORTS.map((s) => ({
       queryKey: ['season', 'current', s.sport, s.league],
@@ -92,13 +101,18 @@ export function PrimarySlotOffSeasonCountdown() {
     results.map((r) => r.data?.seasonYear).find((y) => y != null) ?? null;
 
   const allLive = phrases.every((s) => s.phrase.status === 'live');
+  // Every surfaced sport is gated from creation → don't urge "spin up a league
+  // now" when no CTA can act on it. (Live sports are never active gates.)
+  const allGated = phrases.every((s) => Boolean(gates[s.sportEnum]));
   const eyebrow = seasonYear ? `${seasonYear} SEASON` : 'UPCOMING SEASON';
 
   const body = allLive
     ? 'Jump into your leagues and lock in your picks before the next kickoff.'
-    : seasonYear
-      ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week 1.`
-      : "Spin up your pick'em league now so you're ready for Week 1.";
+    : allGated
+      ? "Leagues open soon — we'll be ready before Week 1."
+      : seasonYear
+        ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week 1.`
+        : "Spin up your pick'em league now so you're ready for Week 1.";
 
   if (loading) {
     return (
@@ -144,19 +158,45 @@ export function PrimarySlotOffSeasonCountdown() {
         ) : (
           phrases.map((s) => {
             const isLive = s.phrase.status === 'live';
+            if (isLive) {
+              return (
+                <Button
+                  key={s.key}
+                  title={`Pick ${s.label} games`}
+                  onPress={() => router.push('/(tabs)/picks' as never)}
+                  size="md"
+                  style={styles.actionButton}
+                />
+              );
+            }
+
+            // Creation gated (e.g. NCAAFB awaiting AP Poll release) — show when it
+            // opens instead of a create action. The server enforces the same gate.
+            const opensUtc = gates[s.sportEnum];
+            if (opensUtc) {
+              return (
+                <Button
+                  key={s.key}
+                  title={`${s.label} opens ${formatGateDateOrSoon(opensUtc)}`}
+                  onPress={() => {}}
+                  disabled
+                  size="md"
+                  style={styles.actionButton}
+                />
+              );
+            }
+
             return (
               <Button
                 key={s.key}
-                title={isLive ? `Pick ${s.label} games` : `Create ${s.label} league`}
+                title={`Create ${s.label} league`}
                 onPress={() =>
-                  isLive
-                    ? router.push('/(tabs)/picks' as never)
-                    : router.push(
-                        {
-                          pathname: '/create-league',
-                          params: { sport: s.sportEnum },
-                        } as never,
-                      )
+                  router.push(
+                    {
+                      pathname: '/create-league',
+                      params: { sport: s.sportEnum },
+                    } as never,
+                  )
                 }
                 size="md"
                 style={styles.actionButton}

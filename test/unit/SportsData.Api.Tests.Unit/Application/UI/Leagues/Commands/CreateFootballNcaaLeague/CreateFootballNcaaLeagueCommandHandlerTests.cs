@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.UI.Leagues;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague.Dtos;
 using SportsData.Api.Infrastructure.Data.Entities;
@@ -213,6 +214,36 @@ public class CreateFootballNcaaLeagueCommandHandlerTests : ApiTestBase<CreateFoo
 
         var saved = await DataContext.PickemGroups.FirstAsync(g => g.Id == leagueId);
         saved.RankingFilter.Should().Be(TeamRankingFilter.AP_TOP_25);
+    }
+
+    [Fact]
+    public async Task ShouldFail_WhenSportCreationNotYetOpen()
+    {
+        // Availability gate (correctness floor): NCAAFB is closed until AP Poll
+        // release. Reject before any downstream work; nothing is published.
+        Mocker.GetMock<ILeagueCreationAvailability>()
+            .Setup(x => x.GetOpensUtc(Sport.FootballNcaa))
+            .Returns(new DateTime(2026, 8, 17, 0, 0, 0, DateTimeKind.Utc));
+
+        var eventBusMock = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<CreateFootballNcaaLeagueCommandHandler>();
+
+        var result = await sut.ExecuteAsync(BuildValidRequest(), Guid.NewGuid());
+
+        // Gate-specific rejection (not some other validation failure).
+        result.IsSuccess.Should().BeFalse();
+        var failure = result.Should().BeOfType<Failure<Guid>>().Subject;
+        failure.Status.Should().Be(ResultStatus.Validation);
+        failure.Errors.Should().ContainSingle()
+            // Culture-stable prefix — the full message carries the localized date.
+            .Which.ErrorMessage.Should().Contain("League creation opens");
+
+        // Rejected at the gate before any downstream work: nothing persisted,
+        // nothing published.
+        (await DataContext.PickemGroups.CountAsync()).Should().Be(0);
+        eventBusMock.Verify(
+            x => x.Publish(It.IsAny<PickemGroupCreated>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

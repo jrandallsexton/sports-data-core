@@ -73,6 +73,19 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
             TiebreakerType = TiebreakerType.TotalPoints
         };
         await DataContext.UserPicks.AddAsync(pick);
+
+        // The matchup the pick belongs to — a pick without its matchup is an
+        // impossible state, and TotalMatchups should reflect it.
+        await DataContext.PickemGroupMatchups.AddAsync(new PickemGroupMatchup
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            ContestId = contestId,
+            SeasonYear = 2025,
+            SeasonWeek = 5,
+            SeasonWeekId = Guid.NewGuid(),
+            StartDateUtc = DateTime.UtcNow
+        });
         await DataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<GetUserPicksByGroupAndWeekQueryHandler>();
@@ -98,6 +111,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
         result.Value.Picks[0].PointsAwarded.Should().Be(7);
         result.Value.CorrectCount.Should().Be(1);
         result.Value.IncorrectCount.Should().Be(0);
+        result.Value.TotalMatchups.Should().Be(1);
     }
 
     [Fact]

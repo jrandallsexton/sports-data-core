@@ -1,7 +1,7 @@
 info:
   name: FootballNcaa - TeamBySeason - LSU - Athletes
   type: http
-  seq: 17
+  seq: 19
 
 http:
   method: GET

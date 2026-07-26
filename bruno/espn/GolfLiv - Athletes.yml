@@ -1,7 +1,7 @@
 info:
   name: GolfLiv - Athletes
   type: http
-  seq: 23
+  seq: 26
 
 http:
   method: GET

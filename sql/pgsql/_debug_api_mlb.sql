@@ -1,6 +1,7 @@
 select * from public."PickemGroup" order by "CreatedUtc" desc;
 
 update public."PickemGroup" set "DeactivatedUtc" = NOW() where "Id" = '4319cb6e-e503-465f-8213-eacae5c0c948';
+update public."PickemGroup" set "DeactivatedUtc" = NOW() where "CreatedUtc" < '2025-09-01 00:15:50.451784+00';
 
 select * from public."PickemGroup" where "Id" = '64ac64df-6bdc-436a-a344-71b98dd2b685';
 

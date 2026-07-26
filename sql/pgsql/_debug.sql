@@ -109,7 +109,7 @@ select * from public."SeasonPoll"
 
 select * from public."Season" order by "Year" desc
 select * from public."SeasonPhase" order by "Year" desc, "Slug"
-select * from public."SeasonWeek" order by "StartDate"
+select * from public."SeasonWeek" where "SeasonId" = 'ce446b31-6bdb-fd32-d8cf-e4410277698c' order by "StartDate"
 --update public."SeasonWeek" set "EndDate" = '2025-12-14 07:59:00+00' where "Id" = '99105d46-d7d3-cd2d-380a-0e9302395a3c'
 select sp."Name" as "SeasonPhase",  sw.* from public."SeasonWeek" sw
 inner join public."Season" s on s."Id" = sw."SeasonId"
@@ -151,8 +151,8 @@ select * from public."CompetitionStream"
 select * from public."Contest" where "Id" = '06747d6c-31c6-8651-bd96-97b0f00a2f78'
 select * from public."Contest" Where "HomeTeamFranchiseSeasonId" = '8f90c51b-d906-2c02-e8e8-2ac0ac6340ae' or "AwayTeamFranchiseSeasonId" = '8f90c51b-d906-2c02-e8e8-2ac0ac6340ae' order by "StartDateUtc"
 --update public."Contest" set "AwayScore" = 7, "HomeScore" = 7 where "Id" = '11c76d72-9c12-4d8d-bef7-f62b240a4af6'
-select count(*) from public."Contest" where "SeasonYear" = 2024
-select * from public."Contest" where "SeasonWeekId" = '947db3ad-0c7b-044b-2355-cabfffc6c1a7' order by "StartDateUtc"
+select count(*) from public."Contest" where "SeasonYear" = 2026
+select * from public."Contest" where "SeasonWeekId" = 'f78d8d4e-635b-148d-f13e-d661d8b1ab4b' order by "StartDateUtc"
 select distinct "SeasonYear" from public."Contest"
 select * from public."ContestExternalId" where "ContestId" = '59960665-7a2d-5c6e-d260-563132d4005b'
 select * from public."Competition" where "ContestId" = '51cc46b6-04ee-a1f6-86ef-fc4f194a856a'
@@ -323,3 +323,16 @@ SELECT om.*
        FROM "OutboxMessage" om
        LEFT JOIN "OutboxState" os ON om."OutboxId" = os."OutboxId"
        WHERE os."OutboxId" IS NULL;
+
+SELECT f."Slug",
+       (SELECT fl."Uri"
+        FROM public."FranchiseLogo" fl
+        WHERE fl."FranchiseId" = f."Id"
+          AND fl."Rel" @> ARRAY['sportdeets-mark']::text[]
+        ORDER BY CASE WHEN fl."Rel" @> ARRAY['sportdeets-mark', 'roundel']::text[]
+                      THEN 0 ELSE 1 END,
+                 fl."CreatedUtc" ASC
+        LIMIT 1) AS resolved_logo
+FROM public."Franchise" f
+ORDER BY f."Slug"
+LIMIT 50;

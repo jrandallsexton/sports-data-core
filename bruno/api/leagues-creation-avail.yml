@@ -1,7 +1,7 @@
 info:
-  name: preview-reset
+  name: leagues-creation-avail
   type: http
-  seq: 11
+  seq: 21
 
 http:
   method: POST

@@ -9,8 +9,10 @@ import {
   Switch,
   TouchableOpacity,
   Alert,
+  Modal,
 } from 'react-native';
 import DateTimePicker, {
+  DateTimePickerAndroid,
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { Text } from '@/src/components/ui/AppText';
@@ -21,7 +23,7 @@ import { z } from 'zod';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { getTheme } from '@/constants/Colors';
+import { getTheme, type ColorScheme } from '@/constants/Colors';
 import { Button } from '@/src/components/ui/Button';
 import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 import {
@@ -308,27 +310,104 @@ type DateFieldProps = {
   placeholder: string;
   accessibilityLabel: string;
   theme: ThemePalette;
+  scheme: ColorScheme;
   error?: string;
   minimumDate?: Date;
 };
 
-// Pressable that shows the formatted date (or placeholder) and opens the
-// native picker on tap. Android dismisses the picker after any interaction;
-// iOS keeps it on screen until the user taps away, so we drive visibility
-// from local state and only commit form value on `event.type === 'set'`.
-function DateField({ value, onChange, placeholder, accessibilityLabel, theme, error, minimumDate }: DateFieldProps) {
-  const [show, setShow] = useState(false);
+/**
+ * Date input backed by each platform's own picker. A single
+ * `<DateTimePicker display="default">` render path misbehaved on two of the
+ * three targets, so each gets the interaction its picker is actually built for:
+ *
+ *  - **Android** — the imperative `DateTimePickerAndroid.open()` API. This is
+ *    the library's documented Android path: it fires the dialog exactly once,
+ *    where a declaratively-rendered picker can re-open or desync when the tree
+ *    re-renders while the dialog is up.
+ *  - **iOS** — a spinner in an explicit Cancel/Done modal, editing a *draft*
+ *    date. `display="default"` renders the picker INLINE on iOS 14+, which is
+ *    the stray calendar that appeared below the field. Worse, the committed
+ *    value was fed straight back in as `value`, so every scroll tick
+ *    round-tripped through `dateToIsoDateOnly` (which drops the time and
+ *    re-anchors at local midnight) and snapped the wheel back — the "fighting
+ *    it" symptom. The draft breaks that loop: nothing commits until Done.
+ *  - **Web** — the library ships no web implementation; it renders `null` and
+ *    console-warns, which is why Chrome showed no picker at all. A native
+ *    `<input type="date">` stands in (react-native-web renders to the DOM, so a
+ *    host element is legal here), and its value format is already the
+ *    `YYYY-MM-DD` we store. Date inputs ignore `placeholder` and supply their
+ *    own `mm/dd/yyyy` hint, so it's only used for the native branches' label.
+ */
+function DateField({
+  value,
+  onChange,
+  placeholder,
+  accessibilityLabel,
+  theme,
+  scheme,
+  error,
+  minimumDate,
+}: DateFieldProps) {
+  const [iosOpen, setIosOpen] = useState(false);
+  const [draft, setDraft] = useState<Date | null>(null);
 
   const dateValue = value ? parseDateOnly(value) : new Date();
   const display = value ? formatDateOnlyDisplay(value) : placeholder;
   const hasValue = value.length > 0;
 
-  const handleChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShow(false);
-    if (event.type === 'set' && selectedDate) {
-      onChange(dateToIsoDateOnly(selectedDate));
+  const commit = (d: Date) => onChange(dateToIsoDateOnly(d));
+
+  const openPicker = () => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: dateValue,
+        mode: 'date',
+        minimumDate,
+        onChange: (event: DateTimePickerEvent, selected?: Date) => {
+          if (event.type === 'set' && selected) commit(selected);
+        },
+      });
+      return;
     }
+    // Seed the draft from the current value so Done-without-scrolling is a
+    // no-op commit rather than a jump to today.
+    setDraft(dateValue);
+    setIosOpen(true);
   };
+
+  const errorNode = error ? (
+    <Text style={[styles.fieldError, { color: theme.error }]}>{error}</Text>
+  ) : null;
+
+  if (Platform.OS === 'web') {
+    return (
+      <>
+        {React.createElement('input', {
+          type: 'date',
+          value,
+          min: minimumDate ? dateToIsoDateOnly(minimumDate) : undefined,
+          'aria-label': accessibilityLabel,
+          onChange: (e: { target: { value: string } }) => onChange(e.target.value),
+          style: {
+            backgroundColor: theme.card,
+            color: theme.text,
+            borderWidth: 1.5,
+            borderStyle: 'solid',
+            borderColor: error ? theme.error : theme.border,
+            borderRadius: 10,
+            padding: '12px 14px',
+            fontSize: 16,
+            fontFamily: 'inherit',
+            width: '100%',
+            boxSizing: 'border-box',
+          },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- DOM host
+          // element: RN's JSX typings don't declare intrinsic web elements.
+        } as any)}
+        {errorNode}
+      </>
+    );
+  }
 
   return (
     <>
@@ -341,7 +420,7 @@ function DateField({ value, onChange, placeholder, accessibilityLabel, theme, er
             justifyContent: 'center',
           },
         ]}
-        onPress={() => setShow(true)}
+        onPress={openPicker}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
       >
@@ -349,16 +428,55 @@ function DateField({ value, onChange, placeholder, accessibilityLabel, theme, er
           {display}
         </Text>
       </TouchableOpacity>
-      {show && (
-        <DateTimePicker
-          value={dateValue}
-          mode="date"
-          display="default"
-          onChange={handleChange}
-          minimumDate={minimumDate}
+
+      {/* iOS only — Android's dialog is driven imperatively above. */}
+      <Modal
+        visible={iosOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIosOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.pickerBackdrop}
+          activeOpacity={1}
+          onPress={() => setIosOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss date picker"
         />
-      )}
-      {error && <Text style={[styles.fieldError, { color: theme.error }]}>{error}</Text>}
+        <View style={[styles.pickerSheet, { backgroundColor: theme.card, borderTopColor: theme.border }]}>
+          <View style={[styles.pickerBar, { borderBottomColor: theme.border }]}>
+            <TouchableOpacity onPress={() => setIosOpen(false)} hitSlop={12}>
+              <Text style={[styles.pickerBarAction, { color: theme.textMuted }]}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={[styles.pickerBarTitle, { color: theme.text }]}>{accessibilityLabel}</Text>
+            <TouchableOpacity
+              onPress={() => {
+                if (draft) commit(draft);
+                setIosOpen(false);
+              }}
+              hitSlop={12}
+            >
+              <Text style={[styles.pickerBarAction, styles.pickerBarDone, { color: theme.tint }]}>
+                Done
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <DateTimePicker
+            value={draft ?? dateValue}
+            mode="date"
+            display="spinner"
+            // Without this the wheel follows the OS appearance, which renders
+            // dark text on the dark sheet when the in-app theme is overridden.
+            themeVariant={scheme}
+            minimumDate={minimumDate}
+            onChange={(_event: DateTimePickerEvent, selected?: Date) => {
+              if (selected) setDraft(selected);
+            }}
+          />
+        </View>
+      </Modal>
+
+      {errorNode}
     </>
   );
 }
@@ -804,6 +922,7 @@ export default function CreateLeagueScreen() {
                         placeholder="Select start"
                         accessibilityLabel="Start Date"
                         theme={theme}
+                        scheme={scheme}
                         error={errors.startsOn?.message}
                         minimumDate={parseDateOnly(todayIsoDate)}
                       />
@@ -822,6 +941,7 @@ export default function CreateLeagueScreen() {
                         placeholder="Select end"
                         accessibilityLabel="End Date"
                         theme={theme}
+                        scheme={scheme}
                         error={errors.endsOn?.message}
                         minimumDate={parseDateOnly(endsOnMinIsoDate)}
                       />
@@ -1128,4 +1248,25 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 6,
   },
+  // iOS date-picker sheet. Anchored to the bottom over a dimmed backdrop so the
+  // wheel never displaces form content the way the old inline picker did.
+  pickerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  pickerSheet: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingBottom: 24,
+  },
+  pickerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  pickerBarTitle: { fontSize: 15, fontWeight: '700' },
+  pickerBarAction: { fontSize: 16 },
+  pickerBarDone: { fontWeight: '700' },
 });

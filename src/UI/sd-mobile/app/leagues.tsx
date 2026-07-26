@@ -151,6 +151,23 @@ export default function LeaguesScreen() {
           // The parent (tabs) group has no title, so iOS would otherwise render
           // the raw route name ("(tabs)") as the back label. Show just the chevron.
           headerBackButtonDisplayMode: 'minimal',
+          // Mirrors sd-ui's Leagues.jsx header (title left, "+ Create League"
+          // right). The in-content button below only renders on the empty state,
+          // so without this there's no way to create a second league from here.
+          // Left unconditional to match web: the create screen surfaces the
+          // per-sport availability gate, and the API enforces it server-side.
+          headerRight: () => (
+            <TouchableOpacity
+              style={styles.headerCreate}
+              onPress={() => router.push('/create-league' as never)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Create league"
+            >
+              <Ionicons name="add" size={18} color={theme.tint} />
+              <Text style={[styles.headerCreateText, { color: theme.tint }]}>Create</Text>
+            </TouchableOpacity>
+          ),
         }}
       />
 
@@ -301,6 +318,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   pastToggleText: { fontSize: 12, fontWeight: '700' },
+  // Nav-bar "+ Create" action. Text alongside the glyph (rather than a bare "+")
+  // so the affordance is unambiguous; hitSlop covers the small visual footprint.
+  // marginRight matches picks.tsx's headerRight inset — the native stack doesn't
+  // pad headerRight content, so without it the label butts the screen edge.
+  headerCreate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 4,
+    marginRight: 12,
+  },
+  headerCreateText: { fontSize: 15, fontWeight: '700' },
   loading: { marginTop: 32 },
   empty: { alignItems: 'center', gap: 16, marginTop: 48 },
   emptyText: { fontSize: 15, textAlign: 'center' },

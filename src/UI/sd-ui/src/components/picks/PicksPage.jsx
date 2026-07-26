@@ -399,6 +399,10 @@ function PicksPage() {
       // refetch) thus leaves imports gated rather than evaluating against a
       // stale pick set.
       setPicksLoadedKey(null);
+      // Same treatment for the results glance: without this, switching
+      // league/week (or a failed fetch) would keep rendering the previous
+      // selection's counts against the new page.
+      setPicksSummary(null);
 
       try {
         const response = await apiWrapper.Picks.getUserPicksByWeek(

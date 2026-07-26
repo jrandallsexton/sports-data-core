@@ -351,7 +351,15 @@ function DateField({
   const [iosOpen, setIosOpen] = useState(false);
   const [draft, setDraft] = useState<Date | null>(null);
 
-  const dateValue = value ? parseDateOnly(value) : new Date();
+  // Seed at or after `minimumDate`. With an empty field the fallback is today,
+  // which can precede a later floor — the End field's floor is `startsOn` when
+  // that's in the future. iOS clamps the wheel's *display* to minimumDate but
+  // doesn't fire onChange for that clamp, so a straight Done would commit the
+  // earlier seeded date rather than the one on screen. Android's dialog opens
+  // on this value too, so it wants the same floor.
+  const parsedValue = value ? parseDateOnly(value) : new Date();
+  const dateValue =
+    minimumDate && parsedValue < minimumDate ? minimumDate : parsedValue;
   const display = value ? formatDateOnlyDisplay(value) : placeholder;
   const hasValue = value.length > 0;
 

@@ -415,12 +415,12 @@ export default function GameDetailScreen() {
   const { data: overview, isLoading: overviewLoading, error: overviewError } = useContestOverview(id, sport, league);
 
   const { data: matchupsResponse } = useMatchups(leagueId, weekNumber);
-  const { data: myPicks = [] } = usePicks(leagueId, weekNumber);
+  const { data: picksResult } = usePicks(leagueId, weekNumber);
   const submitPick = useSubmitPick();
 
   const matchup = matchupsResponse?.matchups.find((m) => m.contestId === id) ?? null;
   const pickType = matchupsResponse?.pickType ?? 'StraightUp';
-  const existingPick = myPicks.find((p) => p.contestId === id) ?? null;
+  const existingPick = picksResult?.picks.find((p) => p.contestId === id) ?? null;
 
   const matchupStatus = matchup?.status.toLowerCase();
   const kickoffMs = matchup ? new Date(matchup.startDateUtc).getTime() : NaN;

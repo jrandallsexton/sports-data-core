@@ -76,6 +76,10 @@ function PicksPage() {
   // availability check so a stale pick set — e.g. the previous league, which
   // shares contest ids on same-day games — can't mis-drive the button.
   const [picksLoadedKey, setPicksLoadedKey] = useState(null);
+  // Server-computed result counts off the picks envelope (UserPicksResultDto):
+  // { totalMatchups, correctCount, incorrectCount }. Drives the ended-league
+  // header glance (X|Y|Z). null until the envelope loads.
+  const [picksSummary, setPicksSummary] = useState(null);
 
   // Update 'now' every 15 seconds to keep lock status in sync with MatchupCard
   useEffect(() => {
@@ -403,12 +407,18 @@ function PicksPage() {
         );
         if (cancelled) return;
 
+        // UserPicksResultDto envelope: picks + server-computed result counts
+        // (was a raw array; see docs/features/league-ended-headers.md).
+        const { picks, totalMatchups, correctCount, incorrectCount } =
+          response.data;
+
         const picksByContest = {};
-        for (const pick of response.data) {
+        for (const pick of picks) {
           picksByContest[pick.contestId] = pick; // Store full pick object
         }
 
         setUserPicks(picksByContest);
+        setPicksSummary({ totalMatchups, correctCount, incorrectCount });
         setPicksLoadedKey(`${routeLeagueId}:${selectedWeek}`);
       } catch (error) {
         if (cancelled) return;
@@ -797,14 +807,44 @@ function PicksPage() {
                 </span>
               );
             })()}
-            <span
-              className={`pick-status-badge${allPicked ? " complete" : ""}`}
-              title="Picks made"
-            >
-              {allPicked && "✓ "}
-              {picksMade}/{totalGames}
-            </span>
-            {!allPicked && (
+            {isReadOnly ? (
+              // Ended league: pick progress is irrelevant — show the results
+              // glance instead. X (no scored pick: unpicked + never-resolved)
+              // is derived from the server's counts so the three always sum to
+              // the week's matchup total. Empty until the envelope loads.
+              picksSummary && (
+                <span
+                  className="pick-results-glance"
+                  title="No result | Correct | Incorrect"
+                >
+                  <span className="glance-none">
+                    {Math.max(
+                      0,
+                      picksSummary.totalMatchups -
+                        picksSummary.correctCount -
+                        picksSummary.incorrectCount
+                    )}
+                  </span>
+                  <span className="glance-sep">|</span>
+                  <span className="glance-correct">
+                    {picksSummary.correctCount}
+                  </span>
+                  <span className="glance-sep">|</span>
+                  <span className="glance-incorrect">
+                    {picksSummary.incorrectCount}
+                  </span>
+                </span>
+              )
+            ) : (
+              <span
+                className={`pick-status-badge${allPicked ? " complete" : ""}`}
+                title="Picks made"
+              >
+                {allPicked && "✓ "}
+                {picksMade}/{totalGames}
+              </span>
+            )}
+            {!allPicked && !isReadOnly && (
               <button
                 type="button"
                 className={`hide-picked-toggle${hidePicked ? " active" : ""}`}

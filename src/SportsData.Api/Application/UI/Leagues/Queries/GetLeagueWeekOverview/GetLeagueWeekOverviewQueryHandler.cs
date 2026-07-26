@@ -132,7 +132,7 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
 
             if (userPicksResult.IsSuccess)
             {
-                result.UserPicks.AddRange(userPicksResult.Value);
+                result.UserPicks.AddRange(userPicksResult.Value.Picks);
             }
             else
             {

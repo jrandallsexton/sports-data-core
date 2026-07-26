@@ -10,7 +10,7 @@ namespace SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek
 
 public interface IGetUserPicksByGroupAndWeekQueryHandler
 {
-    Task<Result<List<UserPickDto>>> ExecuteAsync(
+    Task<Result<UserPicksResultDto>> ExecuteAsync(
         GetUserPicksByGroupAndWeekQuery query,
         CancellationToken cancellationToken = default);
 }
@@ -28,7 +28,7 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
         _dataContext = dataContext;
     }
 
-    public async Task<Result<List<UserPickDto>>> ExecuteAsync(
+    public async Task<Result<UserPicksResultDto>> ExecuteAsync(
         GetUserPicksByGroupAndWeekQuery query,
         CancellationToken cancellationToken = default)
     {
@@ -54,6 +54,23 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
             })
             .ToListAsync(cancellationToken);
 
-        return new Success<List<UserPickDto>>(picks);
+        // Total for the group-week (picked or not) — covered by the
+        // (GroupId, SeasonYear, SeasonWeek) index on PickemGroupMatchup.
+        // Correct/incorrect are counted from the already-materialized picks
+        // rather than issuing further queries.
+        var totalMatchups = await _dataContext.PickemGroupMatchups
+            .AsNoTracking()
+            .CountAsync(m =>
+                m.GroupId == query.GroupId &&
+                m.SeasonWeek == query.WeekNumber,
+                cancellationToken);
+
+        return new Success<UserPicksResultDto>(new UserPicksResultDto
+        {
+            Picks = picks,
+            TotalMatchups = totalMatchups,
+            CorrectCount = picks.Count(p => p.IsCorrect == true),
+            IncorrectCount = picks.Count(p => p.IsCorrect == false)
+        });
     }
 }

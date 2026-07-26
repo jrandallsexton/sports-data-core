@@ -104,6 +104,40 @@
   color: var(--accent);
 }
 
+/* Ended-league results glance (X | Y | Z): replaces .pick-status-badge when the
+   league is read-only. No result muted, correct green, incorrect red — same
+   pill chrome as its siblings. */
+.pick-results-glance {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background-color: var(--active-bg);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+}
+
+.pick-results-glance .glance-none {
+  color: var(--text-secondary);
+}
+
+.pick-results-glance .glance-sep {
+  color: var(--border-strong);
+  font-weight: 400;
+}
+
+.pick-results-glance .glance-correct {
+  color: var(--success-text);
+}
+
+.pick-results-glance .glance-incorrect {
+  color: var(--error-text);
+}
+
 .pick-mode-badge {
   display: inline-flex;
   align-items: center;

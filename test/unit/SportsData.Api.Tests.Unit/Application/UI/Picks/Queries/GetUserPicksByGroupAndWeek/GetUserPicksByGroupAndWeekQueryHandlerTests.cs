@@ -31,7 +31,10 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().BeEmpty();
+        result.Value.Picks.Should().BeEmpty();
+        result.Value.TotalMatchups.Should().Be(0);
+        result.Value.CorrectCount.Should().Be(0);
+        result.Value.IncorrectCount.Should().Be(0);
     }
 
     [Fact]
@@ -85,14 +88,16 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value[0].UserId.Should().Be(userId);
-        result.Value[0].ContestId.Should().Be(contestId);
-        result.Value[0].FranchiseSeasonId.Should().Be(franchiseSeasonId);
-        result.Value[0].PickType.Should().Be(PickType.StraightUp);
-        result.Value[0].ConfidencePoints.Should().Be(7);
-        result.Value[0].IsCorrect.Should().BeTrue();
-        result.Value[0].PointsAwarded.Should().Be(7);
+        result.Value.Picks.Should().HaveCount(1);
+        result.Value.Picks[0].UserId.Should().Be(userId);
+        result.Value.Picks[0].ContestId.Should().Be(contestId);
+        result.Value.Picks[0].FranchiseSeasonId.Should().Be(franchiseSeasonId);
+        result.Value.Picks[0].PickType.Should().Be(PickType.StraightUp);
+        result.Value.Picks[0].ConfidencePoints.Should().Be(7);
+        result.Value.Picks[0].IsCorrect.Should().BeTrue();
+        result.Value.Picks[0].PointsAwarded.Should().Be(7);
+        result.Value.CorrectCount.Should().Be(1);
+        result.Value.IncorrectCount.Should().Be(0);
     }
 
     [Fact]
@@ -150,8 +155,8 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value[0].ContestId.Should().Be(pick1.ContestId);
+        result.Value.Picks.Should().HaveCount(1);
+        result.Value.Picks[0].ContestId.Should().Be(pick1.ContestId);
     }
 
     [Fact]
@@ -220,7 +225,93 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().HaveCount(1);
-        result.Value[0].UserId.Should().Be(userId1);
+        result.Value.Picks.Should().HaveCount(1);
+        result.Value.Picks[0].UserId.Should().Be(userId1);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ShouldComputeResultCounts_AcrossPickOutcomes()
+    {
+        // Arrange — 5 matchups in the group-week: 2 correct picks, 1 incorrect,
+        // 1 picked-but-never-resolved (IsCorrect null), 1 unpicked. The client
+        // derives X (no scored pick) = TotalMatchups - Correct - Incorrect = 2,
+        // covering both the unpicked and the never-resolved game.
+        var userId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+        const int week = 5;
+
+        var user = new UserEntity
+        {
+            Username = "test_user_19",
+            Id = userId,
+            FirebaseUid = Guid.NewGuid().ToString(),
+            Email = "test@test.com",
+            DisplayName = "Test User",
+            SignInProvider = "test",
+            LastLoginUtc = DateTime.UtcNow
+        };
+        await DataContext.Users.AddAsync(user);
+
+        var contestIds = Enumerable.Range(0, 5).Select(_ => Guid.NewGuid()).ToArray();
+        foreach (var contestId in contestIds)
+        {
+            await DataContext.PickemGroupMatchups.AddAsync(new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                ContestId = contestId,
+                SeasonYear = 2025,
+                SeasonWeek = week,
+                SeasonWeekId = Guid.NewGuid(),
+                StartDateUtc = DateTime.UtcNow
+            });
+        }
+
+        // A matchup for another week must not inflate TotalMatchups.
+        await DataContext.PickemGroupMatchups.AddAsync(new PickemGroupMatchup
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            ContestId = Guid.NewGuid(),
+            SeasonYear = 2025,
+            SeasonWeek = week + 1,
+            SeasonWeekId = Guid.NewGuid(),
+            StartDateUtc = DateTime.UtcNow
+        });
+
+        bool?[] outcomes = [true, true, false, null]; // contestIds[4] stays unpicked
+        for (var i = 0; i < outcomes.Length; i++)
+        {
+            await DataContext.UserPicks.AddAsync(new PickemGroupUserPick
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                PickemGroupId = groupId,
+                ContestId = contestIds[i],
+                Week = week,
+                PickType = PickType.StraightUp,
+                IsCorrect = outcomes[i],
+                TiebreakerType = TiebreakerType.TotalPoints
+            });
+        }
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetUserPicksByGroupAndWeekQueryHandler>();
+        var query = new GetUserPicksByGroupAndWeekQuery
+        {
+            UserId = userId,
+            GroupId = groupId,
+            WeekNumber = week
+        };
+
+        // Act
+        var result = await handler.ExecuteAsync(query);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Picks.Should().HaveCount(4);
+        result.Value.TotalMatchups.Should().Be(5);
+        result.Value.CorrectCount.Should().Be(2);
+        result.Value.IncorrectCount.Should().Be(1);
     }
 }

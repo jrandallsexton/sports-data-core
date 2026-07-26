@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { picksApi } from '@/src/services/api/picksApi';
 import { contestOverviewApi } from '@/src/services/api/contestOverviewApi';
 import { useAuthStore } from '@/src/stores/authStore';
-import type { UserPick, PickWidgetResponse, ContestOverviewDto } from '@/src/types/models';
+import type { UserPicksResult, PickWidgetResponse, ContestOverviewDto } from '@/src/types/models';
 import type { SubmitPickPayload } from '@/src/services/api/picksApi';
 
 // ─── Query key factory ────────────────────────────────────────────────────────
@@ -14,13 +14,16 @@ export const pickKeys = {
 
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
-/** Fetches the current user's picks for a given league + week. */
+/**
+ * Fetches the current user's picks for a given league + week, wrapped with
+ * server-computed result counts (see UserPicksResult).
+ */
 export function usePicks(
   leagueId: string | null | undefined,
   week: number | null | undefined,
 ) {
   const { user, isInitialized } = useAuthStore();
-  return useQuery<UserPick[]>({
+  return useQuery<UserPicksResult>({
     queryKey: pickKeys.byLeagueWeek(leagueId ?? '', week ?? 0),
     queryFn: () =>
       picksApi.getByLeagueAndWeek(leagueId!, week!).then((r) => r.data),

@@ -187,6 +187,24 @@ export interface LeagueMatchupsResponse {
 
 // ─── Picks ───────────────────────────────────────────────────────────────────
 
+/**
+ * Matches UserPicksResultDto from GET /ui/picks/{groupId}/week/{week}.
+ * Envelope over the user's picks plus server-computed result counts for the
+ * ended-league header glance (X|Y|Z). X (no scored pick) is derived:
+ * totalMatchups - correctCount - incorrectCount — the server sends the minimal
+ * orthogonal set so a redundant fourth counter can't drift out of agreement.
+ * See docs/features/league-ended-headers.md.
+ */
+export interface UserPicksResult {
+  picks: UserPick[];
+  /** All matchups in the group-week, picked or not. */
+  totalMatchups: number;
+  /** Picks with isCorrect === true. */
+  correctCount: number;
+  /** Picks with isCorrect === false. */
+  incorrectCount: number;
+}
+
 /** Matches UserPickDto from GET /ui/picks/{groupId}/week/{week} */
 export interface UserPick {
   id: string;

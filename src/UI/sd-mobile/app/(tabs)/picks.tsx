@@ -28,8 +28,11 @@ import { resolveSportLeague } from '@/src/utils/sportLinks';
 import { useQuery } from '@tanstack/react-query';
 import { leaguesApi } from '@/src/services/api/leaguesApi';
 import { leaguesKeys } from '../leagues';
-import type { League } from '@/src/types/models';
+import type { League, UserPick } from '@/src/types/models';
 import Toast from 'react-native-toast-message';
+
+// Stable fallback while the picks envelope loads (see usePicks call site).
+const EMPTY_PICKS: UserPick[] = [];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -164,11 +167,14 @@ export default function PicksScreen() {
   );
 
   const {
-    data: myPicks = [],
+    data: picksResult,
     isLoading: picksLoading,
     refetch,
     isRefetching,
   } = usePicks(leagueId, selectedWeek);
+  // Stable [] fallback so downstream memos don't re-run every render while the
+  // envelope is loading.
+  const myPicks = picksResult?.picks ?? EMPTY_PICKS;
 
   const { data: matchupsResponse, isLoading: matchupsLoading } = useMatchups(
     leagueId,
@@ -205,6 +211,22 @@ export default function PicksScreen() {
   // on screen.
   const made = entries.filter((e) => e.pick !== null).length;
   const allPicked = total > 0 && made >= total;
+
+  // Ended-league header glance (X|Y|Z): counts come from the picks envelope,
+  // not client math over entries — the server owns the result semantics.
+  // X (no scored pick: unpicked + never-resolved games) is derived from the
+  // other three so the glance always sums to the week's matchup total; clamped
+  // defensively so a server miscount can't render a negative. null until the
+  // envelope loads. See docs/features/league-ended-headers.md.
+  const resultsGlance = useMemo(() => {
+    if (!isReadOnly || !picksResult) return null;
+    const { totalMatchups, correctCount, incorrectCount } = picksResult;
+    return {
+      noResult: Math.max(0, totalMatchups - correctCount - incorrectCount),
+      correct: correctCount,
+      incorrect: incorrectCount,
+    };
+  }, [isReadOnly, picksResult]);
 
   // ── Cross-league pick import ────────────────────────────────────────────────
   // Only check availability once picks + matchups have loaded and there are
@@ -361,7 +383,29 @@ export default function PicksScreen() {
               </Text>
             </View>
           ) : null}
-          {allPicked ? (
+          {isReadOnly ? (
+            // Results glance replaces pick progress: "how did I do?", not "how
+            // far along am I?". X muted | correct green | incorrect red. Slot
+            // stays empty (badges only) until the picks envelope loads.
+            resultsGlance && (
+              <Text
+                style={headerStyles.pillText}
+                accessibilityLabel={`${resultsGlance.noResult} without a result, ${resultsGlance.correct} correct, ${resultsGlance.incorrect} incorrect`}
+              >
+                <Text style={[headerStyles.pillText, { color: theme.textMuted }]}>
+                  {resultsGlance.noResult}
+                </Text>
+                <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>{' | '}</Text>
+                <Text style={[headerStyles.pillText, { color: theme.successText }]}>
+                  {resultsGlance.correct}
+                </Text>
+                <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>{' | '}</Text>
+                <Text style={[headerStyles.pillText, { color: theme.errorText }]}>
+                  {resultsGlance.incorrect}
+                </Text>
+              </Text>
+            )
+          ) : allPicked ? (
             <Text style={[headerStyles.pillText, { color: theme.tint }]}>
               All Picks Made
             </Text>
@@ -370,35 +414,33 @@ export default function PicksScreen() {
               <Text style={[headerStyles.pillText, { color: theme.tint }]}>
                 {made}/{total}
               </Text>
-              {/* Ended leagues drop the toggle: it exists to keep the screen
-                  clean while picking, which no longer applies, and the header
-                  has no room for it next to the "ENDED" badge. visibleEntries
-                  treats the filter as inactive here to match. */}
-              {!isReadOnly && (
-                <Pressable
-                  onPress={() => setHidePicked((v) => !v)}
-                  hitSlop={6}
-                  style={headerStyles.hideToggle}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: hidePicked }}
-                  accessibilityLabel="Hide picked games"
-                >
-                  <Ionicons
-                    name={hidePicked ? 'checkbox' : 'square-outline'}
-                    size={18}
-                    color={hidePicked ? theme.tint : theme.textMuted}
-                  />
-                  <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>
-                    {' '}Hide Picked
-                  </Text>
-                </Pressable>
-              )}
+              {/* Ended leagues never reach this branch (the glance above owns
+                  the isReadOnly slot), so Hide Picked only renders while
+                  picking — where it belongs. visibleEntries still treats the
+                  filter as inactive for read-only leagues to match. */}
+              <Pressable
+                onPress={() => setHidePicked((v) => !v)}
+                hitSlop={6}
+                style={headerStyles.hideToggle}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: hidePicked }}
+                accessibilityLabel="Hide picked games"
+              >
+                <Ionicons
+                  name={hidePicked ? 'checkbox' : 'square-outline'}
+                  size={18}
+                  color={hidePicked ? theme.tint : theme.textMuted}
+                />
+                <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>
+                  {' '}Hide Picked
+                </Text>
+              </Pressable>
             </>
           )}
         </View>
       ),
     });
-  }, [made, total, allPicked, hidePicked, theme, pickModeLabel, isReadOnly]);
+  }, [made, total, allPicked, hidePicked, theme, pickModeLabel, isReadOnly, resultsGlance]);
 
   if (meLoading) {
     return <LoadingSpinner message="Loading picks…" fullScreen />;

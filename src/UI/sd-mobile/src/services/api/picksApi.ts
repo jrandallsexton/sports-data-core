@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { UserPick, PickType, PickWidgetResponse } from '@/src/types/models';
+import type { UserPicksResult, PickType, PickWidgetResponse } from '@/src/types/models';
 
 export interface SubmitPickPayload {
   pickemGroupId: string;      // leagueId
@@ -51,9 +51,10 @@ export interface PickImportResult {
 }
 
 export const picksApi = {
-  // GET /ui/picks/{leagueId}/week/{week}
+  // GET /ui/picks/{leagueId}/week/{week} — envelope of picks + result counts
+  // (was a raw UserPick[]; see docs/features/league-ended-headers.md)
   getByLeagueAndWeek: (leagueId: string, week: number) =>
-    apiClient.get<UserPick[]>(`/ui/picks/${leagueId}/week/${week}`),
+    apiClient.get<UserPicksResult>(`/ui/picks/${leagueId}/week/${week}`),
 
   // POST /ui/picks
   submitPick: (payload: SubmitPickPayload) =>

@@ -71,7 +71,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         _userPicksQueryHandlerMock
             .Setup(x => x.ExecuteAsync(
                 It.IsAny<GetUserPicksByGroupAndWeekQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<List<UserPickDto>>([]));
+            .ReturnsAsync(new Success<UserPicksResultDto>(new UserPicksResultDto()));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
         var query = new GetLeagueWeekOverviewQuery
@@ -152,7 +152,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         _userPicksQueryHandlerMock
             .Setup(x => x.ExecuteAsync(
                 It.IsAny<GetUserPicksByGroupAndWeekQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<List<UserPickDto>>([]));
+            .ReturnsAsync(new Success<UserPicksResultDto>(new UserPicksResultDto()));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
         var query = new GetLeagueWeekOverviewQuery
@@ -206,7 +206,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         _userPicksQueryHandlerMock
             .Setup(x => x.ExecuteAsync(
                 It.IsAny<GetUserPicksByGroupAndWeekQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<List<UserPickDto>>([]));
+            .ReturnsAsync(new Success<UserPicksResultDto>(new UserPicksResultDto()));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
         var query = new GetLeagueWeekOverviewQuery
@@ -251,12 +251,12 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
             .Setup(x => x.ExecuteAsync(
                 It.Is<GetUserPicksByGroupAndWeekQuery>(q => q.UserId == user1.Id && q.GroupId == league.Id && q.WeekNumber == 5),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<List<UserPickDto>>(user1Picks));
+            .ReturnsAsync(new Success<UserPicksResultDto>(new UserPicksResultDto { Picks = user1Picks }));
         _userPicksQueryHandlerMock
             .Setup(x => x.ExecuteAsync(
                 It.Is<GetUserPicksByGroupAndWeekQuery>(q => q.UserId == user2.Id && q.GroupId == league.Id && q.WeekNumber == 5),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<List<UserPickDto>>(user2Picks));
+            .ReturnsAsync(new Success<UserPicksResultDto>(new UserPicksResultDto { Picks = user2Picks }));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
         var query = new GetLeagueWeekOverviewQuery

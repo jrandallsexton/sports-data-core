@@ -104,15 +104,19 @@ export function PrimarySlotOffSeasonCountdown() {
   // Every surfaced sport is gated from creation → don't urge "spin up a league
   // now" when no CTA can act on it. (Live sports are never active gates.)
   const allGated = phrases.every((s) => Boolean(gates[s.sportEnum]));
-  const eyebrow = seasonYear ? `${seasonYear} SEASON` : 'UPCOMING SEASON';
+  // Frame the per-sport countdowns as *kickoff* dates so "NCAAFB in 35 days"
+  // isn't misread against the earlier "Opens Aug 18" league-creation gate. Drop
+  // "KICKOFFS" once everything's underway (nothing is counting down anymore).
+  const seasonLabel = seasonYear ? `${seasonYear} SEASON` : 'UPCOMING SEASON';
+  const eyebrow = allLive ? seasonLabel : `${seasonLabel} KICKOFFS`;
 
   const body = allLive
     ? 'Jump into your leagues and lock in your picks before the next kickoff.'
     : allGated
-      ? "Leagues open soon — we'll be ready before Week 1."
+      ? "Leagues open soon — we'll be ready before Week\u00A01."
       : seasonYear
-        ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week 1.`
-        : "Spin up your pick'em league now so you're ready for Week 1.";
+        ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week\u00A01.`
+        : "Spin up your pick'em league now so you're ready for Week\u00A01.";
 
   if (loading) {
     return (
@@ -177,11 +181,19 @@ export function PrimarySlotOffSeasonCountdown() {
               return (
                 <Button
                   key={s.key}
-                  title={`${s.label} opens ${formatGateDateOrSoon(opensUtc)}`}
+                  // Two balanced lines — "{sport} Leagues" on top, "Open {date}"
+                  // below — reads cleaner than one string that wraps mid-phrase at
+                  // half-width on a phone, and matches web's "leagues open" wording.
+                  title={`${s.label} Leagues\nOpen ${formatGateDateOrSoon(opensUtc)}`}
                   onPress={() => {}}
                   disabled
+                  // Muted outline (not a solid primary fill) so it reads as an
+                  // informational "coming soon" chip, not a tappable CTA — matching
+                  // web's gated affordance.
+                  variant="secondary"
                   size="md"
-                  style={styles.actionButton}
+                  style={{ ...styles.actionButton, borderColor: theme.border, opacity: 0.75 }}
+                  textStyle={{ ...styles.gatedCtaText, color: theme.textMuted }}
                 />
               );
             }
@@ -249,5 +261,12 @@ const styles = StyleSheet.create({
   // all-live "Go to picks" button fills the row on its own.
   actionButton: {
     flex: 1,
+  },
+  // Gated "Opens {date}" CTA: two centered lines, smaller/tighter than the
+  // default md label so both fit the half-width button on a phone.
+  gatedCtaText: {
+    fontSize: 13,
+    lineHeight: 17,
+    textAlign: 'center',
   },
 });

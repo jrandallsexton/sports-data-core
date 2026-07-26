@@ -281,14 +281,20 @@ export default function PicksScreen() {
     [isReadOnly, leagueId, selectedWeek, importPicks],
   );
 
-  // Hide Picked is a no-op once allPicked flips true — the toggle is also
-  // hidden in that branch of the header, so respecting it would strand the
-  // user with an empty FlatList ("No games this week") and no in-UI escape.
-  // Treating the filter as inactive when allPicked === true keeps the cards
-  // visible after the final pick while the header reads "All Picks Made".
+  // Hide Picked is a no-op wherever its toggle isn't rendered, otherwise a
+  // filter left switched on would strand the user with an empty FlatList
+  // ("No games this week") and no in-UI escape. Two such cases:
+  //   - allPicked — keeps the cards visible after the final pick while the
+  //     header reads "All Picks Made".
+  //   - isReadOnly — an ended league is a record to review, not a surface to
+  //     keep clean while picking, and the header has no room for the toggle
+  //     alongside the "ENDED" badge.
   const visibleEntries = useMemo(
-    () => (hidePicked && !allPicked ? entries.filter((e) => !e.pick) : entries),
-    [entries, hidePicked, allPicked],
+    () =>
+      hidePicked && !allPicked && !isReadOnly
+        ? entries.filter((e) => !e.pick)
+        : entries,
+    [entries, hidePicked, allPicked, isReadOnly],
   );
 
   // Responsive columns: phones stay single-column; tablets get a multi-column
@@ -364,23 +370,29 @@ export default function PicksScreen() {
               <Text style={[headerStyles.pillText, { color: theme.tint }]}>
                 {made}/{total}
               </Text>
-              <Pressable
-                onPress={() => setHidePicked((v) => !v)}
-                hitSlop={6}
-                style={headerStyles.hideToggle}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: hidePicked }}
-                accessibilityLabel="Hide picked games"
-              >
-                <Ionicons
-                  name={hidePicked ? 'checkbox' : 'square-outline'}
-                  size={18}
-                  color={hidePicked ? theme.tint : theme.textMuted}
-                />
-                <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>
-                  {' '}Hide Picked
-                </Text>
-              </Pressable>
+              {/* Ended leagues drop the toggle: it exists to keep the screen
+                  clean while picking, which no longer applies, and the header
+                  has no room for it next to the "ENDED" badge. visibleEntries
+                  treats the filter as inactive here to match. */}
+              {!isReadOnly && (
+                <Pressable
+                  onPress={() => setHidePicked((v) => !v)}
+                  hitSlop={6}
+                  style={headerStyles.hideToggle}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: hidePicked }}
+                  accessibilityLabel="Hide picked games"
+                >
+                  <Ionicons
+                    name={hidePicked ? 'checkbox' : 'square-outline'}
+                    size={18}
+                    color={hidePicked ? theme.tint : theme.textMuted}
+                  />
+                  <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>
+                    {' '}Hide Picked
+                  </Text>
+                </Pressable>
+              )}
             </>
           )}
         </View>

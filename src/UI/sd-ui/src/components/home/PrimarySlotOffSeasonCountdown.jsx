@@ -132,6 +132,12 @@ function PrimarySlotOffSeasonCountdown() {
   const seasonYear =
     sportsWithPhrases.find((s) => s.seasonYear)?.seasonYear ?? null;
 
+  // Frame the per-sport countdowns as *kickoff* dates so "NCAAFB in 35 days"
+  // isn't misread against the earlier "leagues open Aug 18" gate. Drop "Kickoffs"
+  // once everything's underway (nothing is counting down anymore).
+  const seasonLabel = seasonYear ? `${seasonYear} Season` : "Upcoming Season";
+  const eyebrow = allLive ? seasonLabel : `${seasonLabel} Kickoffs`;
+
   // Headline strategy:
   //   - All sports kicked off → "Picks are live" mode, drive users to picks.
   //   - Any sport still upcoming (or coming soon) → render each sport's phrase
@@ -148,10 +154,10 @@ function PrimarySlotOffSeasonCountdown() {
   const body = allLive
     ? "Jump into your leagues and lock in your picks before the next kickoff."
     : allGated
-    ? "Leagues open soon — we'll be ready before Week 1."
+    ? "Leagues open soon — we'll be ready before Week\u00A01."
     : seasonYear
-    ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week 1.`
-    : "Spin up your pick'em league now so you're ready for Week 1.";
+    ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week\u00A01.`
+    : "Spin up your pick'em league now so you're ready for Week\u00A01.";
 
   // CTAs — per-sport when any sport is still upcoming, single collapsed
   // button when all sports are live. For a sport that's already live, the
@@ -211,7 +217,7 @@ function PrimarySlotOffSeasonCountdown() {
 
   return (
     <div className="home-primary home-primary--countdown">
-      <div className="home-primary__eyebrow">{seasonYear ? `${seasonYear} Season` : "Upcoming Season"}</div>
+      <div className="home-primary__eyebrow">{eyebrow}</div>
       <h1 className="home-primary__headline">{headline}</h1>
       <p className="home-primary__body">{body}</p>
       <div className="home-primary__actions">{renderActions()}</div>

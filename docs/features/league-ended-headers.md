@@ -18,7 +18,7 @@ The picks-page header treats an ended league like an active one:
 For an ended league the user's question is "how did I do?", not "how far along
 am I?". Replace the progress slot with a results glance:
 
-```
+```text
 X | Y | Z
 ```
 

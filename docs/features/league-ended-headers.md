@@ -1,6 +1,6 @@
 # Ended-League Picks Header: Results Glance
 
-Status: design approved pending implementation authorization
+Status: implemented (PR #563)
 Date: 2026-07-26
 Surfaces: SportsData.Api, sd-mobile, sd-ui
 

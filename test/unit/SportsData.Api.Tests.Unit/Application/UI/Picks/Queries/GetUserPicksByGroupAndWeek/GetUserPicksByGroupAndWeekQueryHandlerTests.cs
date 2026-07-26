@@ -75,7 +75,8 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
         await DataContext.UserPicks.AddAsync(pick);
 
         // The matchup the pick belongs to — a pick without its matchup is an
-        // impossible state, and TotalMatchups should reflect it.
+        // impossible state, and TotalMatchups should reflect it. Fixed instant:
+        // the handler never consumes time, so seed timestamps are inert.
         await DataContext.PickemGroupMatchups.AddAsync(new PickemGroupMatchup
         {
             Id = Guid.NewGuid(),
@@ -84,7 +85,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
             SeasonYear = 2025,
             SeasonWeek = 5,
             SeasonWeekId = Guid.NewGuid(),
-            StartDateUtc = DateTime.UtcNow
+            StartDateUtc = new DateTime(2025, 10, 4, 12, 0, 0, DateTimeKind.Utc)
         });
         await DataContext.SaveChangesAsync();
 
@@ -253,6 +254,9 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
         var userId = Guid.NewGuid();
         var groupId = Guid.NewGuid();
         const int week = 5;
+        // Fixed instant: the handler never consumes time, so seed timestamps are
+        // inert — a literal keeps the fixture fully deterministic.
+        var seededUtc = new DateTime(2025, 10, 4, 12, 0, 0, DateTimeKind.Utc);
 
         var user = new UserEntity
         {
@@ -262,7 +266,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
             Email = "test@test.com",
             DisplayName = "Test User",
             SignInProvider = "test",
-            LastLoginUtc = DateTime.UtcNow
+            LastLoginUtc = seededUtc
         };
         await DataContext.Users.AddAsync(user);
 
@@ -277,7 +281,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
                 SeasonYear = 2025,
                 SeasonWeek = week,
                 SeasonWeekId = Guid.NewGuid(),
-                StartDateUtc = DateTime.UtcNow
+                StartDateUtc = seededUtc
             });
         }
 
@@ -290,7 +294,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
             SeasonYear = 2025,
             SeasonWeek = week + 1,
             SeasonWeekId = Guid.NewGuid(),
-            StartDateUtc = DateTime.UtcNow
+            StartDateUtc = seededUtc
         });
 
         bool?[] outcomes = [true, true, false, null]; // contestIds[4] stays unpicked

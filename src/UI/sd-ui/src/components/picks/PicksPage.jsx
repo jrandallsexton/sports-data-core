@@ -759,7 +759,11 @@ function PicksPage() {
   ).length;
   const allPicked = totalGames > 0 && picksMade === totalGames;
 
-  const visibleMatchups = hidePicked
+  // hidePicked is inert for read-only leagues: its toggle is suppressed there,
+  // and in an ended league every game is locked, so honoring a stale value
+  // carried over from an active league would render an empty page with no
+  // in-UI escape. Mirrors mobile's visibleEntries gating.
+  const visibleMatchups = hidePicked && !isReadOnly
     ? enrichedMatchups.filter((m) => {
         const isPicked = !!userPicks[m.contestId];
         

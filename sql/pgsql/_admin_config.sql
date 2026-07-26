@@ -1,6 +1,11 @@
 -- Global limits / usage
 SHOW max_connections; SHOW shared_buffers; SHOW work_mem; SHOW effective_cache_size;
 
+-- ALTER SYSTEM SET shared_buffers = '12GB';        -- 25% of 48
+-- ALTER SYSTEM SET effective_cache_size = '36GB';  -- 75% (planner hint)
+-- ALTER SYSTEM SET work_mem = '64MB';              -- safe with the higher max_connections
+-- ALTER SYSTEM SET max_connections = 1200;         -- above your ~1,000 peak → headroom
+
  --ALTER SYSTEM SET max_connections = 700;
 SELECT pg_reload_conf();
 

@@ -1,7 +1,7 @@
 info:
   name: notifications-test-push
   type: http
-  seq: 99
+  seq: 20
 
 http:
   method: POST

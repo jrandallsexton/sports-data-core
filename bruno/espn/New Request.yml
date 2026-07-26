@@ -1,7 +1,7 @@
 info:
   name: New Request
   type: http
-  seq: 20
+  seq: 23
 
 http:
   method: GET

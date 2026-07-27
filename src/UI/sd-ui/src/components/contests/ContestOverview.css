@@ -46,8 +46,15 @@
   box-sizing: border-box;
 }
 
-/* Center column max width and centering */
+/* Center column max width and centering.
+   width: 100% is load-bearing: on a grid item, auto side margins defeat the
+   default justify-self: stretch and drop the column to fit-content sizing.
+   When this column's only child is the Win Probability card (no video, no
+   metrics — e.g. MLB), fit-content collapses to the chart legend's intrinsic
+   width (~180px). An explicit width restores the track width; the auto
+   margins then only center once max-width actually caps the column. */
 .contest-overview-col:nth-child(2) {
+  width: 100%;
   max-width: 600px;
   margin-left: auto;
   margin-right: auto;
@@ -81,6 +88,8 @@
   align-items: center;
   min-width: 120px;
   max-width: 160px;
+}
+
 .contest-team-logo-wrap {
   width: 60px;
   height: 60px;
@@ -92,6 +101,8 @@
      Show the mark bare, matching mobile. */
   border-radius: 8px;
 }
+
+.contest-team-name {
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 2px;

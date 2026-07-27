@@ -89,12 +89,12 @@ namespace SportsData.Api.Application.Scoring
             {
                 if (matchupResultResponse.Status == ResultStatus.NotFound)
                 {
-                    _logger.LogWarning("Matchup result not found for contest {ContestId}. Skipping scoring.", command.ContestId);
+                    _logger.LogWarning("Matchup result not found for {Sport} contest {ContestId}. Skipping scoring.", sport.Value, command.ContestId);
                     return;
                 }
 
-                _logger.LogError("Failed to retrieve matchup result for contest {ContestId}. Status={Status}", command.ContestId, matchupResultResponse.Status);
-                throw new InvalidOperationException($"Failed to retrieve matchup result for contest {command.ContestId}");
+                _logger.LogError("Failed to retrieve matchup result for {Sport} contest {ContestId}. Status={Status}", sport.Value, command.ContestId, matchupResultResponse.Status);
+                throw new InvalidOperationException($"Failed to retrieve matchup result for {sport.Value} contest {command.ContestId}");
             }
 
             var result = matchupResultResponse.Value;
@@ -110,7 +110,8 @@ namespace SportsData.Api.Application.Scoring
             if (result.FinalizedUtc is null)
             {
                 _logger.LogWarning(
-                    "Matchup result has no FinalizedUtc — contest is not yet enriched. Skipping scoring. ContestId={ContestId}",
+                    "Matchup result has no FinalizedUtc — contest is not yet enriched. Skipping scoring. Sport={Sport}, ContestId={ContestId}",
+                    sport.Value,
                     command.ContestId);
                 return;
             }

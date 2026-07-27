@@ -314,6 +314,7 @@ function SettingsPage() {
               <div className="settings-row-control">
                 {(showAllZones || !isCurated) && allZones.length > 0 ? (
                   <select
+                    className="settings-select"
                     value={effectiveTimezone}
                     onChange={(e) => handleTimezoneChange(e.target.value)}
                     disabled={tzSaving}
@@ -324,6 +325,7 @@ function SettingsPage() {
                   </select>
                 ) : (
                   <select
+                    className="settings-select"
                     value={effectiveTimezone}
                     onChange={(e) => {
                       if (e.target.value === "__other__") {

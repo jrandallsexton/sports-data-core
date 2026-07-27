@@ -102,30 +102,32 @@
   justify-content: flex-end;
 }
 
-.settings-input {
+/* Shared chrome for the page's text input and selects. Class-scoped (not
+   element-scoped) so unrelated controls — e.g. anything BadgesPanel renders —
+   don't inherit it. */
+.settings-input,
+.settings-select {
   background-color: var(--bg-input);
   color: var(--text-primary);
   border: 1px solid var(--border-primary);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 0.9rem;
+}
+
+.settings-input {
   width: 180px;
   max-width: 100%;
 }
 
-.settings-input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+.settings-select {
+  max-width: 260px;
 }
 
-.settings-page select {
-  background-color: var(--bg-input);
-  color: var(--text-primary);
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border-primary);
-  font-size: 0.9rem;
-  max-width: 260px;
+.settings-input:focus-visible,
+.settings-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* ── Notification switches ────────────────────────────────────────────────── */

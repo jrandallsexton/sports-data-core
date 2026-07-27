@@ -55,11 +55,12 @@ activity (own API).
 
 ### 1.4 Play account-deletion web requirement
 
-In-app deletion exists (`profile.tsx` → `usersApi.deleteAccount`) — the hard
-part is done. Play additionally requires a **web URL** for account deletion in
-the Data Safety section (users who uninstalled must be able to request
-deletion without reinstalling). Ensure sportdeets.com has (or gets) that page
-before filling in the form.
+PARTIALLY RESOLVED 2026-07-27: in-app deletion already existed (`profile.tsx`
+→ `usersApi.deleteAccount`), and the public web page Play requires now exists
+at `/account-deletion` in sd-ui (built alongside this review; describes the
+verified anonymize-and-retain handler behavior). REMAINING: deploy sd-ui and
+submit `https://www.sportdeets.com/account-deletion` in the Play Console Data
+Safety form.
 
 ## 2. Security
 
@@ -182,12 +183,16 @@ it's a real utility (nvm-pinned clean reinstall), not cruft.
   accounts; if the account is a business/org account this may not apply —
   check which rules bind before planning the timeline.
 
-## Suggested order of attack
+## Remaining work
 
-1. Remove TEMP diagnostics once deep-link confirmed on device (1.1)
-2. Settle version identity (1.2) — one-line decisions, do before first build
-3. Drop email from Sentry.setUser (1.3)
-4. Account-deletion web URL + Data Safety form (1.4)
-5. Decide Android notification prompt strategy (§5)
-6. `UserPick` index signature + gitignore/cruft (4.2, 4.5)
-7. Backlog: SecureStore persistence, SignalR groups, screen tests, expo-image
+All pre-build code items (1.1–1.3, 4.2, 4.5, and the §5 Android prompt) are
+RESOLVED — see their sections. What's left:
+
+1. Deploy sd-ui, then submit `https://www.sportdeets.com/account-deletion`
+   and the privacy-policy URL in the Play Console Data Safety form (1.4)
+2. Post-build fresh-install device pass: Android permission prompt at
+   sign-in, corrected launcher icon, league-invite deep link (§5)
+3. Verify which closed-testing tester rules bind this Play account (§5)
+4. Backlog (deliberately deferred): SecureStore persistence (2.1),
+   league-invite join semantics decision (2.2), SignalR groups (3.1),
+   screen tests (4.4), `as never` sweep (4.3), expo-image (3.3)

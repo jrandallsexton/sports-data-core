@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
 import { toast } from "react-hot-toast";
@@ -93,6 +93,16 @@ function SettingsPage() {
   const [deleteConfirming, setDeleteConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+
+  // Focus lands on the confirmation container when it mounts: the Delete…
+  // trigger that held focus unmounts with the branch switch, which would
+  // otherwise drop keyboard focus to <body> and announce nothing. Focusing the
+  // labeled, described group reads the warning before the user can reach the
+  // destructive button.
+  const deleteConfirmRef = useRef(null);
+  useEffect(() => {
+    if (deleteConfirming) deleteConfirmRef.current?.focus();
+  }, [deleteConfirming]);
 
   const allZones = useMemo(() => getAllIanaZones(), []);
   const browserTz = useMemo(() => detectBrowserTimezone(), []);
@@ -400,8 +410,15 @@ function SettingsPage() {
                 </button>
               </div>
             ) : (
-              <div className="settings-danger-confirm">
-                <p>
+              <div
+                className="settings-danger-confirm"
+                ref={deleteConfirmRef}
+                tabIndex={-1}
+                role="group"
+                aria-label="Confirm account deletion"
+                aria-describedby="delete-confirm-desc"
+              >
+                <p id="delete-confirm-desc">
                   This permanently deletes your account and removes your personal
                   data. Your league history stays (anonymized). This cannot be
                   undone.

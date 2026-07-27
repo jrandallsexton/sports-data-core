@@ -9,20 +9,35 @@ import { DEFAULT_TIMEZONE } from "../../utils/timeUtils";
 import "./SettingsPage.css";
 import BadgesPanel from "../../components/badges/BadgesPanel.tsx";
 
-// Notification categories, in the same order as the mobile settings screen.
+// Notification categories, grouped the same way as the mobile settings screen.
 // The API owns these flags (canonical) and projects changes to the Notification
 // service, which gates sends. Six are actively enforced today; matchup previews
 // and schedule changes are projected-but-not-yet-gated (exposed for parity).
 // See docs/mobile/notification-preferences.md.
-const NOTIFICATION_CATEGORIES = [
-  { key: "pickResultEnabled", label: "Pick results" },
-  { key: "pickDeadlineReminderEnabled", label: "Pick deadline reminders" },
-  { key: "contestStartReminderEnabled", label: "Kickoff reminders" },
-  { key: "leagueInviteEnabled", label: "League invites" },
-  { key: "membershipEnabled", label: "League membership updates" },
-  { key: "matchupPreviewEnabled", label: "Matchup previews" },
-  { key: "scheduleChangeEnabled", label: "Schedule changes" },
-  { key: "oddsChangedEnabled", label: "Line moves" },
+const NOTIFICATION_GROUPS = [
+  {
+    title: "Your picks",
+    items: [
+      { key: "pickResultEnabled", label: "Pick results" },
+      { key: "pickDeadlineReminderEnabled", label: "Pick deadline reminders" },
+    ],
+  },
+  {
+    title: "Your leagues",
+    items: [
+      { key: "leagueInviteEnabled", label: "League invites" },
+      { key: "membershipEnabled", label: "League membership updates" },
+    ],
+  },
+  {
+    title: "Games",
+    items: [
+      { key: "contestStartReminderEnabled", label: "Kickoff reminders" },
+      { key: "matchupPreviewEnabled", label: "Matchup previews" },
+      { key: "scheduleChangeEnabled", label: "Schedule changes" },
+      { key: "oddsChangedEnabled", label: "Line moves" },
+    ],
+  },
 ];
 
 const CURATED_TIMEZONES = [
@@ -241,170 +256,215 @@ function SettingsPage() {
       {error && <p className="error">{error}</p>}
 
       <div className="settings-grid">
-        <section className="settings-section">
-          <h2>Profile</h2>
-          <div className="settings-item">
-            <span className="label">Email:</span>
-            <span>{user?.email || "Not set"}</span>
-          </div>
-          <div className="settings-item">
-            <span className="label">Username:</span>
-            <span>{user?.username ? `@${user.username}` : "Not set"}</span>
-          </div>
-          <div className="settings-item">
-            <span className="label">Display Name:</span>
-            <span>
-              <input
-                type="text"
-                aria-label="Display Name"
-                value={displayNameInput}
-                onChange={(e) => setDisplayNameInput(e.target.value)}
-                disabled={displayNameSaving}
-                maxLength={25}
-                style={{ marginRight: 8 }}
-              />
-              <button onClick={handleDisplayNameSave} disabled={displayNameSaving}>
-                {displayNameSaving ? "Saving…" : "Save"}
-              </button>
-              {displayNameMessage && (
-                <span style={{ marginLeft: 8, fontSize: "0.85em" }}>{displayNameMessage}</span>
-              )}
-            </span>
-          </div>
-          <div className="settings-item">
-            <span className="label">Timezone:</span>
-            <span>
-              {(showAllZones || !isCurated) && allZones.length > 0 ? (
-                <select
-                  value={effectiveTimezone}
-                  onChange={(e) => handleTimezoneChange(e.target.value)}
-                  disabled={tzSaving}
-                >
-                  {allZones.map((z) => (
-                    <option key={z} value={z}>{z}</option>
-                  ))}
-                </select>
-              ) : (
-                <select
-                  value={effectiveTimezone}
-                  onChange={(e) => {
-                    if (e.target.value === "__other__") {
-                      setShowAllZones(true);
-                    } else {
-                      handleTimezoneChange(e.target.value);
-                    }
-                  }}
-                  disabled={tzSaving}
-                >
-                  {/* Fallback option for a non-curated saved zone (e.g.
-                      Europe/London) when the host lacks Intl.supportedValuesOf —
-                      without this the <select> has no matching <option> and
-                      visually defaults to Eastern, hiding the user's real saved
-                      value. */}
-                  {!isCurated && (
-                    <option value={effectiveTimezone}>{effectiveTimezone}</option>
-                  )}
-                  {CURATED_TIMEZONES.map((z) => (
-                    <option key={z.value} value={z.value}>{z.label}</option>
-                  ))}
-                  <option value="__other__">Other…</option>
-                </select>
-              )}
-              {!user?.timezone && (
-                <span style={{ marginLeft: 8, fontSize: "0.85em", opacity: 0.7 }}>
-                  (using browser default — pick one to save)
-                </span>
-              )}
-              {tzMessage && (
-                <span style={{ marginLeft: 8, fontSize: "0.85em" }}>{tzMessage}</span>
-              )}
-            </span>
-          </div>
-        </section>
-
-        <section className="settings-section">
-          <h2>Theme</h2>
-          <div className="settings-item">
-            <span className="label">Theme:</span>
-            <div className="theme-toggle" onClick={toggleTheme} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && toggleTheme()}>
-              <span className={`theme-toggle-option ${theme === 'light' ? 'active' : ''}`}>Light</span>
-              <span className={`theme-toggle-option ${theme === 'dark' ? 'active' : ''}`}>Dark</span>
+        <div className="settings-col">
+          <section className="settings-section">
+            <h3>Profile</h3>
+            <div className="settings-row">
+              <div className="settings-row-label">
+                <span className="settings-row-title">Email</span>
+              </div>
+              <span className="settings-row-value">{user?.email || "Not set"}</span>
             </div>
-          </div>
-        </section>
-
-        <section className="settings-section">
-          <h2>Notifications</h2>
-          <p style={{ fontSize: "0.85em", opacity: 0.7, marginTop: 0 }}>
-            Choose which push notifications you receive on your devices.
-          </p>
-          {prefsError ? (
-            <p className="error">{prefsError}</p>
-          ) : !prefs ? (
-            <p style={{ fontSize: "0.85em", opacity: 0.7 }}>Loading…</p>
-          ) : (
-            <>
-              {NOTIFICATION_CATEGORIES.map(({ key, label }) => (
-                <div className="settings-item" key={key}>
-                  <span className="label">{label}:</span>
-                  <input
-                    type="checkbox"
-                    aria-label={label}
-                    checked={!!prefs[key]}
-                    disabled={prefsSaving}
-                    onChange={() => handleToggleNotification(key)}
-                  />
-                </div>
-              ))}
-              {prefsMessage && (
-                <span style={{ fontSize: "0.85em" }}>{prefsMessage}</span>
-              )}
-            </>
-          )}
-        </section>
-
-        <section className="settings-section">
-          <h2>Account</h2>
-          {!deleteConfirming ? (
-            <div className="settings-item">
-              <span className="label">Delete Account:</span>
-              <button
-                onClick={() => {
-                  setDeleteError("");
-                  setDeleteConfirming(true);
-                }}
-              >
-                Delete…
-              </button>
+            <div className="settings-row">
+              <div className="settings-row-label">
+                <span className="settings-row-title">Username</span>
+              </div>
+              <span className="settings-row-value">
+                {user?.username ? `@${user.username}` : "Not set"}
+              </span>
             </div>
-          ) : (
-            <div>
-              <p style={{ fontSize: "0.85em", marginTop: 0 }}>
-                This permanently deletes your account and removes your personal
-                data. Your league history stays (anonymized). This cannot be undone.
-              </p>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <button
-                  className="settings-button-secondary"
-                  onClick={() => setDeleteConfirming(false)}
-                  disabled={deleting}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="settings-button-danger"
-                  onClick={handleDeleteAccount}
-                  disabled={deleting}
-                >
-                  {deleting ? "Deleting…" : "Yes, delete my account"}
+            <div className="settings-row">
+              <div className="settings-row-label">
+                <span className="settings-row-title">Display name</span>
+                {displayNameMessage && (
+                  <span className="settings-row-hint" aria-live="polite">
+                    {displayNameMessage}
+                  </span>
+                )}
+              </div>
+              <div className="settings-row-control">
+                <input
+                  type="text"
+                  className="settings-input"
+                  aria-label="Display Name"
+                  value={displayNameInput}
+                  onChange={(e) => setDisplayNameInput(e.target.value)}
+                  disabled={displayNameSaving}
+                  maxLength={25}
+                />
+                <button onClick={handleDisplayNameSave} disabled={displayNameSaving}>
+                  {displayNameSaving ? "Saving…" : "Save"}
                 </button>
               </div>
-              {deleteError && (
-                <p className="error" style={{ marginTop: 8 }}>{deleteError}</p>
-              )}
             </div>
-          )}
-        </section>
+            <div className="settings-row">
+              <div className="settings-row-label">
+                <span className="settings-row-title">Timezone</span>
+                {!user?.timezone && (
+                  <span className="settings-row-hint">
+                    Using your browser default — pick one to save
+                  </span>
+                )}
+                {tzMessage && (
+                  <span className="settings-row-hint" aria-live="polite">
+                    {tzMessage}
+                  </span>
+                )}
+              </div>
+              <div className="settings-row-control">
+                {(showAllZones || !isCurated) && allZones.length > 0 ? (
+                  <select
+                    value={effectiveTimezone}
+                    onChange={(e) => handleTimezoneChange(e.target.value)}
+                    disabled={tzSaving}
+                  >
+                    {allZones.map((z) => (
+                      <option key={z} value={z}>{z}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <select
+                    value={effectiveTimezone}
+                    onChange={(e) => {
+                      if (e.target.value === "__other__") {
+                        setShowAllZones(true);
+                      } else {
+                        handleTimezoneChange(e.target.value);
+                      }
+                    }}
+                    disabled={tzSaving}
+                  >
+                    {/* Fallback option for a non-curated saved zone (e.g.
+                        Europe/London) when the host lacks Intl.supportedValuesOf —
+                        without this the <select> has no matching <option> and
+                        visually defaults to Eastern, hiding the user's real saved
+                        value. */}
+                    {!isCurated && (
+                      <option value={effectiveTimezone}>{effectiveTimezone}</option>
+                    )}
+                    {CURATED_TIMEZONES.map((z) => (
+                      <option key={z.value} value={z.value}>{z.label}</option>
+                    ))}
+                    <option value="__other__">Other…</option>
+                  </select>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="settings-section">
+            <h3>Appearance</h3>
+            <div className="settings-row">
+              <div className="settings-row-label">
+                <span className="settings-row-title">Theme</span>
+              </div>
+              <div
+                className="theme-toggle"
+                onClick={toggleTheme}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === "Enter" && toggleTheme()}
+              >
+                <span className={`theme-toggle-option ${theme === "light" ? "active" : ""}`}>
+                  Light
+                </span>
+                <span className={`theme-toggle-option ${theme === "dark" ? "active" : ""}`}>
+                  Dark
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section className="settings-section settings-section--danger">
+            <h3>Account</h3>
+            {!deleteConfirming ? (
+              <div className="settings-row">
+                <div className="settings-row-label">
+                  <span className="settings-row-title">Delete account</span>
+                  <span className="settings-row-hint">
+                    Permanently removes your login and personal data
+                  </span>
+                </div>
+                <button
+                  className="settings-button-danger-outline"
+                  onClick={() => {
+                    setDeleteError("");
+                    setDeleteConfirming(true);
+                  }}
+                >
+                  Delete…
+                </button>
+              </div>
+            ) : (
+              <div className="settings-danger-confirm">
+                <p>
+                  This permanently deletes your account and removes your personal
+                  data. Your league history stays (anonymized). This cannot be
+                  undone.
+                </p>
+                <div className="settings-danger-actions">
+                  <button
+                    className="settings-button-secondary"
+                    onClick={() => setDeleteConfirming(false)}
+                    disabled={deleting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="settings-button-danger"
+                    onClick={handleDeleteAccount}
+                    disabled={deleting}
+                  >
+                    {deleting ? "Deleting…" : "Yes, delete my account"}
+                  </button>
+                </div>
+                {deleteError && <p className="error">{deleteError}</p>}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <div className="settings-col">
+          <section className="settings-section">
+            <h3>Notifications</h3>
+            <p className="settings-section-sub">
+              Choose which push notifications you receive on your devices.
+              {prefsMessage && (
+                <span className="settings-row-hint" aria-live="polite">
+                  {" "}{prefsMessage}
+                </span>
+              )}
+            </p>
+            {prefsError ? (
+              <p className="error">{prefsError}</p>
+            ) : !prefs ? (
+              <p className="settings-section-sub">Loading…</p>
+            ) : (
+              NOTIFICATION_GROUPS.map(({ title, items }) => (
+                <div className="settings-toggle-group" key={title}>
+                  <h4>{title}</h4>
+                  {items.map(({ key, label }) => (
+                    <div className="settings-row" key={key}>
+                      <div className="settings-row-label">
+                        <span className="settings-row-title">{label}</span>
+                      </div>
+                      <label className="settings-switch">
+                        <input
+                          type="checkbox"
+                          aria-label={label}
+                          checked={!!prefs[key]}
+                          disabled={prefsSaving}
+                          onChange={() => handleToggleNotification(key)}
+                        />
+                        <span className="settings-switch-track" aria-hidden="true" />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
+          </section>
+        </div>
       </div>
 
       <BadgesPanel />

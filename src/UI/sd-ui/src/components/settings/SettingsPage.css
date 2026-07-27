@@ -292,7 +292,7 @@
 /* ── Danger zone ──────────────────────────────────────────────────────────── */
 
 .settings-section--danger {
-  border-color: var(--error-bg);
+  border-color: var(--error);
 }
 
 .settings-section--danger h3 {

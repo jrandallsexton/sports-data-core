@@ -2,8 +2,12 @@
 
 Scope: full review of `src/UI/sd-mobile` (~15k LOC, 90 source files) ahead of
 Play Store submission and closed testing. Lenses: structural, best practices,
-security, performance. Every claim below was verified against the code, not
-inferred.
+security, performance. Code-level findings were verified against the source,
+not inferred. Store-policy and operational statements (Google Play / App Store
+requirements, e.g. the closed-testing tester rule in §5) reflect published
+policies as understood at the time of writing and are NOT code-verifiable —
+confirm current requirements in the Play Console / App Store Connect when
+acting on them.
 
 ## Verdict
 

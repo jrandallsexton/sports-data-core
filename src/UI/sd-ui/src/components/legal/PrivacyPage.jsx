@@ -203,11 +203,20 @@ function PrivacyPage() {
         </p>
         <p>
           You can delete your sportDeets account at any time from the
-          Profile screen in the mobile app. Account deletion removes
-          your account record, your picks, your league memberships,
-          and your push notification tokens within 30 days. We may
-          retain a limited record of the deletion request (without
+          Profile screen in the mobile app or the Settings page on the
+          web. Deletion immediately removes your login and permanently
+          removes your personal information (email address, username,
+          and display name) from your account record; your push
+          notification tokens and notification preferences are removed
+          promptly after deletion, and no later than 24 hours.
+          Picks and results you submitted in leagues
+          are retained so other members&apos; leagues and standings
+          stay intact, but they are anonymized — after deletion they
+          carry no email, name, or other identifying information. We
+          may retain a limited record of the deletion request (without
           personal data) for fraud prevention and legal compliance.
+          See <Link to="/account-deletion">Delete Your Account</Link>{" "}
+          for details.
         </p>
         <p>
           To request deletion if you cannot access the app, email{" "}

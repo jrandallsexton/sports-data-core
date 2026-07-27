@@ -1,9 +1,21 @@
 import { useEffect, useRef } from 'react';
 import { AppState, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useAuth } from './useAuth';
 import { registerThisDevice } from '@/src/lib/notifications/registerPushDevice';
+
+// One-time Android permission prompt marker. Android 13+ makes
+// POST_NOTIFICATIONS a runtime permission that starts undetermined, and the
+// silent registration path never prompts — so without this, an Android install
+// receives ZERO pushes until the user finds Settings → Notifications on their
+// own (which is exactly how the founder's own device went unregistered).
+// Asked once ever, at the first authenticated attempt; a denial is respected
+// (no re-nag) and the settings screen's prompt=true action stays the recovery
+// path. iOS keeps the fully silent strategy — its one-shot prompt is too
+// precious to spend at sign-in.
+const ANDROID_PROMPTED_KEY = 'push-permission-prompted';
 
 /**
  * Silently registers this device's FCM token with the API once the user is
@@ -45,14 +57,43 @@ export function useRegisterPushDevice(): void {
     registeredRef.current = false;
 
     let cancelled = false;
+    // Serializes attempts. The Android permission dialog fires an AppState
+    // active transition when dismissed, which would re-enter attempt() while
+    // the first call is still resolving — without this guard that second
+    // entry could double-prompt (the prompted flag isn't written until the
+    // first attempt completes).
+    let attemptInFlight = false;
 
-    // Silent attempt, gated on not-yet-succeeded. A cheap permission check
-    // short-circuits inside registerThisDevice when permission isn't granted,
-    // so foreground retries don't POST-spam while denied.
+    // Gated on not-yet-succeeded. Android's FIRST attempt ever prompts for
+    // permission (see ANDROID_PROMPTED_KEY); every other attempt is silent —
+    // a cheap permission check short-circuits inside registerThisDevice when
+    // permission isn't granted, so foreground retries don't POST-spam while
+    // denied.
     const attempt = async () => {
-      if (cancelled || registeredRef.current) return;
-      const outcome = await registerThisDevice();
-      if (!cancelled && outcome.ok) registeredRef.current = true;
+      if (cancelled || registeredRef.current || attemptInFlight) return;
+      attemptInFlight = true;
+      try {
+        let prompt = false;
+        if (Platform.OS === 'android') {
+          try {
+            prompt = (await AsyncStorage.getItem(ANDROID_PROMPTED_KEY)) === null;
+          } catch {
+            // Storage read failed — stay silent rather than risk re-nagging
+            // a user who was already asked.
+          }
+        }
+        const outcome = await registerThisDevice({ prompt });
+        if (prompt) {
+          // Mark AFTER the dialog resolved so a crash mid-prompt retries next
+          // launch. Written regardless of outcome — the user answered; a
+          // denial must not be re-nagged (the settings action is the
+          // deliberate re-ask path).
+          await AsyncStorage.setItem(ANDROID_PROMPTED_KEY, '1').catch(() => undefined);
+        }
+        if (!cancelled && outcome.ok) registeredRef.current = true;
+      } finally {
+        attemptInFlight = false;
+      }
     };
 
     // Initial attempt for this sign-in.

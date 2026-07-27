@@ -436,3 +436,8 @@ Desktop.ini
 
 # Bruno secret environment files
 bruno/**/.env
+
+# sd-mobile local artifacts (build output, test reports) — never commit
+src/UI/sd-mobile/dist/
+src/UI/sd-mobile/coverage/
+src/UI/sd-mobile/junit.xml

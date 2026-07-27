@@ -15,6 +15,7 @@ import SignupPage from "./components/signup/SignupPage";
 import LandingPage from "./components/landing/LandingPage";
 import TermsPage from "./components/legal/TermsPage";
 import PrivacyPage from "./components/legal/PrivacyPage";
+import AccountDeletionPage from "./components/legal/AccountDeletionPage";
 import ErrorPage from "components/common/ErrorPage"; // ✅ reusable component
 import Gallery from "./components/gallery/Gallery";
 import ResultsPage from "./components/results/ResultsPage";
@@ -64,7 +65,17 @@ function AppRoutes() {
   return (
     <>
       <Toaster position="top-center" reverseOrder={false} />
-      {apiOffline ? (
+      {/* Static legal pages stay reachable during an API outage: they make no
+          API calls, and /account-deletion is the URL submitted to Google
+          Play's Data Safety section — a reviewer (or an uninstalled user)
+          must never hit the offline error page there. All other routes keep
+          the existing ErrorPage short-circuit. Trailing slashes are stripped
+          before matching — the router itself treats /terms/ as /terms, so the
+          allowlist must too. */}
+      {apiOffline &&
+      !["/terms", "/privacy", "/account-deletion"].includes(
+        location.pathname.replace(/\/+$/, "") || "/"
+      ) ? (
         <ErrorPage message="We lost the ball trying to contact the server." />
       ) : (
         <Routes>
@@ -86,6 +97,9 @@ function AppRoutes() {
           />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          {/* Public account-deletion page — the URL submitted in Google
+              Play's Data Safety section. Must stay reachable without auth. */}
+          <Route path="/account-deletion" element={<AccountDeletionPage />} />
         </Routes>
       )}
     </>

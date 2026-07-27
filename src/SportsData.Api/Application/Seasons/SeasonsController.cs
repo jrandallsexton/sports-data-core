@@ -19,6 +19,7 @@ public class SeasonsController : ApiControllerBase
     /// </summary>
     [HttpGet("current", Name = "GetCurrentSeason")]
     [ProducesResponseType(typeof(CurrentSeasonDto), StatusCodes.Status200OK)]
+    [ResponseCache(Duration = 6000, Location = ResponseCacheLocation.Client)]
     public async Task<ActionResult<CurrentSeasonDto>> GetCurrentSeason(
         [FromServices] IGetCurrentSeasonQueryHandler handler,
         [FromRoute] string sport,

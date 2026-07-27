@@ -69,9 +69,13 @@ function AppRoutes() {
           API calls, and /account-deletion is the URL submitted to Google
           Play's Data Safety section — a reviewer (or an uninstalled user)
           must never hit the offline error page there. All other routes keep
-          the existing ErrorPage short-circuit. */}
+          the existing ErrorPage short-circuit. Trailing slashes are stripped
+          before matching — the router itself treats /terms/ as /terms, so the
+          allowlist must too. */}
       {apiOffline &&
-      !["/terms", "/privacy", "/account-deletion"].includes(location.pathname) ? (
+      !["/terms", "/privacy", "/account-deletion"].includes(
+        location.pathname.replace(/\/+$/, "") || "/"
+      ) ? (
         <ErrorPage message="We lost the ball trying to contact the server." />
       ) : (
         <Routes>

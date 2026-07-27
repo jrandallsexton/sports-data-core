@@ -276,11 +276,11 @@ function SettingsPage() {
             <div className="settings-row">
               <div className="settings-row-label">
                 <span className="settings-row-title">Display name</span>
-                {displayNameMessage && (
-                  <span className="settings-row-hint" aria-live="polite">
-                    {displayNameMessage}
-                  </span>
-                )}
+                {/* Persistently mounted: an aria-live region only announces
+                    reliably when it exists BEFORE its content changes. */}
+                <span className="settings-row-hint" aria-live="polite">
+                  {displayNameMessage}
+                </span>
               </div>
               <div className="settings-row-control">
                 <input
@@ -305,11 +305,10 @@ function SettingsPage() {
                     Using your browser default — pick one to save
                   </span>
                 )}
-                {tzMessage && (
-                  <span className="settings-row-hint" aria-live="polite">
-                    {tzMessage}
-                  </span>
-                )}
+                {/* Persistently mounted — see the display-name hint. */}
+                <span className="settings-row-hint" aria-live="polite">
+                  {tzMessage}
+                </span>
               </div>
               <div className="settings-row-control">
                 {(showAllZones || !isCurated) && allZones.length > 0 ? (
@@ -431,11 +430,10 @@ function SettingsPage() {
             <h3>Notifications</h3>
             <p className="settings-section-sub">
               Choose which push notifications you receive on your devices.
-              {prefsMessage && (
-                <span className="settings-row-hint" aria-live="polite">
-                  {" "}{prefsMessage}
-                </span>
-              )}
+              {/* Persistently mounted — see the display-name hint. */}
+              <span className="settings-row-hint" aria-live="polite">
+                {" "}{prefsMessage}
+              </span>
             </p>
             {prefsError ? (
               <p className="error">{prefsError}</p>

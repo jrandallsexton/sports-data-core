@@ -207,14 +207,21 @@
 
 /* ── Theme toggle (pre-existing look, kept) ───────────────────────────────── */
 
-.theme-toggle {
+/* Now a native <button>; selector specificity must beat the page's generic
+   `.settings-page button` accent styling, and hover must not accent-fill. */
+.settings-page button.theme-toggle {
   display: inline-flex;
+  padding: 0;
   background-color: var(--bg-input);
   border: 1px solid var(--border-primary);
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
   user-select: none;
+}
+
+.settings-page button.theme-toggle:hover:not(:disabled) {
+  background-color: var(--bg-input);
 }
 
 .theme-toggle-option {

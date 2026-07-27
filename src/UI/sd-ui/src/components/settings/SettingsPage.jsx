@@ -359,12 +359,15 @@ function SettingsPage() {
               <div className="settings-row-label">
                 <span className="settings-row-title">Theme</span>
               </div>
-              <div
+              {/* Native button: Enter AND Space activate without a keyboard
+                  handler; aria-pressed exposes the current state ("Dark theme,
+                  toggle button, pressed"). */}
+              <button
+                type="button"
                 className="theme-toggle"
                 onClick={toggleTheme}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === "Enter" && toggleTheme()}
+                aria-pressed={theme === "dark"}
+                aria-label="Dark theme"
               >
                 <span className={`theme-toggle-option ${theme === "light" ? "active" : ""}`}>
                   Light
@@ -372,7 +375,7 @@ function SettingsPage() {
                 <span className={`theme-toggle-option ${theme === "dark" ? "active" : ""}`}>
                   Dark
                 </span>
-              </div>
+              </button>
             </div>
           </section>
 

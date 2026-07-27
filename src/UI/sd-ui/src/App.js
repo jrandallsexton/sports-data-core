@@ -15,6 +15,7 @@ import SignupPage from "./components/signup/SignupPage";
 import LandingPage from "./components/landing/LandingPage";
 import TermsPage from "./components/legal/TermsPage";
 import PrivacyPage from "./components/legal/PrivacyPage";
+import AccountDeletionPage from "./components/legal/AccountDeletionPage";
 import ErrorPage from "components/common/ErrorPage"; // ✅ reusable component
 import Gallery from "./components/gallery/Gallery";
 import ResultsPage from "./components/results/ResultsPage";
@@ -86,6 +87,9 @@ function AppRoutes() {
           />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          {/* Public account-deletion page — the URL submitted in Google
+              Play's Data Safety section. Must stay reachable without auth. */}
+          <Route path="/account-deletion" element={<AccountDeletionPage />} />
         </Routes>
       )}
     </>

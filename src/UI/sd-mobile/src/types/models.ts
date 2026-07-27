@@ -217,7 +217,6 @@ export interface UserPick {
   isCorrect?: boolean | null;
   pointsAwarded?: number | null;
   isSynthetic?: boolean;
-  [key: string]: unknown;
 }
 
 // ─── Standings ───────────────────────────────────────────────────────────────

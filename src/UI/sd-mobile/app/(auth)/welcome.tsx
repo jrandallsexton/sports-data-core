@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { Text } from '@/src/components/ui/AppText';
 import { Wordmark } from '@/src/components/brand/Wordmark';
 import { Button } from '@/src/components/ui/Button';
@@ -116,6 +117,29 @@ export default function WelcomeScreen() {
               <Text style={[styles.signInLinkAccent, { color: theme.tint }]}>Sign in</Text>
             </Text>
           </TouchableOpacity>
+          {/* Clickwrap notice. The web pages are canonical; nested Text
+              onPress keeps the tap targets inline with the sentence. */}
+          <Text style={[styles.legalText, { color: theme.textMuted }]}>
+            By continuing, you agree to our{' '}
+            <Text
+              style={[styles.legalLink, { color: theme.tint }]}
+              onPress={() =>
+                void WebBrowser.openBrowserAsync('https://www.sportdeets.com/terms')
+              }
+            >
+              Terms of Service
+            </Text>{' '}
+            and{' '}
+            <Text
+              style={[styles.legalLink, { color: theme.tint }]}
+              onPress={() =>
+                void WebBrowser.openBrowserAsync('https://www.sportdeets.com/privacy')
+              }
+            >
+              Privacy Policy
+            </Text>
+            .
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -187,5 +211,14 @@ const styles = StyleSheet.create({
   },
   signInLinkAccent: {
     fontWeight: '700',
+  },
+  legalText: {
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+    paddingHorizontal: 16,
+  },
+  legalLink: {
+    fontWeight: '600',
   },
 });

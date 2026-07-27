@@ -9,6 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
+import * as WebBrowser from 'expo-web-browser';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { signOutGoogle } from '@/src/lib/googleSignIn';
@@ -443,6 +444,22 @@ export default function ProfileScreen() {
         <SettingsRow label="Notifications" onPress={() => router.push('/settings/notifications')} />
         <SettingsRow label="Sign Out" onPress={handleSignOut} destructive />
         <SettingsRow label="Delete Account" onPress={handleDeleteAccount} destructive />
+      </View>
+
+      {/* Legal — both stores require the privacy policy to be reachable from
+          WITHIN the app (Google User Data policy; Apple 5.1.1), not just the
+          store listing. The web pages are the single source of truth; open
+          them in the in-app browser rather than duplicating content. */}
+      <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>About</Text>
+        <SettingsRow
+          label="Terms of Service"
+          onPress={() => void WebBrowser.openBrowserAsync('https://www.sportdeets.com/terms')}
+        />
+        <SettingsRow
+          label="Privacy Policy"
+          onPress={() => void WebBrowser.openBrowserAsync('https://www.sportdeets.com/privacy')}
+        />
       </View>
 
       {/* Developer — admin-only diagnostics. Gated on isAdmin so it

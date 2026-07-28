@@ -23,11 +23,11 @@ import { useMatchups } from '@/src/hooks/useMatchups';
 import { useCurrentUser } from '@/src/hooks/useStandings';
 import { useImportAvailability, useImportPicks } from '@/src/hooks/useImportPicks';
 import { ImportPicksModal } from '@/src/components/features/picks/ImportPicksModal';
+import { ConfidencePickerModal } from '@/src/components/features/picks/ConfidencePickerModal';
 import { getLeagues } from '@/src/lib/leagues';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
 import { useQuery } from '@tanstack/react-query';
-import { leaguesApi } from '@/src/services/api/leaguesApi';
-import { leaguesKeys } from '../leagues';
+import { leaguesApi, leaguesKeys } from '@/src/services/api/leaguesApi';
 import type { League, UserPick } from '@/src/types/models';
 import Toast from 'react-native-toast-message';
 
@@ -190,6 +190,7 @@ export default function PicksScreen() {
   );
   const submitPick = useSubmitPick();
   const pickType = matchupsResponse?.pickType ?? 'StraightUp';
+  const useConfidence = matchupsResponse?.useConfidencePoints ?? false;
   // Resolves LeagueWeekMatchupsDto.Sport ("FootballNcaa" | "FootballNfl" |
   // "BaseballMlb") to {sport, league} URL segments. null when the response
   // hasn't arrived yet or the sport enum isn't in the known map — in that
@@ -219,6 +220,34 @@ export default function PicksScreen() {
   // on screen.
   const made = entries.filter((e) => e.pick !== null).length;
   const allPicked = total > 0 && made >= total;
+
+  // ── Confidence points (web ConfidencePicker parity) ─────────────────────────
+  // In a confidence league a pick isn't submittable without a distinct 1..N
+  // value (the BE rejects it), so tapping a team stashes the choice and opens
+  // the picker; the POST fires on point selection. usedPoints derives from
+  // entries so it always matches what's on screen.
+  const [pendingPick, setPendingPick] = useState<{
+    contestId: string;
+    franchiseSeasonId: string;
+    currentPoint: number | null;
+  } | null>(null);
+  // Reserves just-selected points until their mutations settle: entries only
+  // reflect a new pick after invalidation/refetch, so without this a rapid
+  // second selection could reuse a value. A SET (not a single value) because
+  // several submissions can be in flight at once — each mutation's onSettled
+  // releases only its own point, never another submission's reservation.
+  const [inFlightPoints, setInFlightPoints] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
+  const usedConfidencePoints = useMemo(() => {
+    const used = entries
+      .map((e) => e.pick?.confidencePoints)
+      .filter((p): p is number => p != null);
+    for (const p of inFlightPoints) {
+      if (!used.includes(p)) used.push(p);
+    }
+    return used;
+  }, [entries, inFlightPoints]);
 
   // Header display cascade — actionable first (one slot on mobile; see
   // docs/features/league-ended-headers.md):
@@ -585,6 +614,7 @@ export default function PicksScreen() {
               leagueSport={matchupsResponse?.sport ?? null}
               leagueAsOfDate={matchupsResponse?.asOfDate ?? null}
               pickType={pickType}
+              deferSelection={useConfidence}
               onPress={() => {
                 if (!sportLeague) {
                   // Sport hasn't resolved yet (matchups response still in flight)
@@ -652,6 +682,16 @@ export default function PicksScreen() {
                   return;
                 }
                 if (!leagueId || !selectedWeek) return;
+                if (useConfidence) {
+                  // Confidence league: the POST fires from the picker's
+                  // onSelect — a pick without a point value is rejected.
+                  setPendingPick({
+                    contestId: m.contestId,
+                    franchiseSeasonId,
+                    currentPoint: pickMap.get(m.contestId)?.confidencePoints ?? null,
+                  });
+                  return;
+                }
                 submitPick.mutate({
                   pickemGroupId: leagueId,
                   contestId: m.contestId,
@@ -681,6 +721,46 @@ export default function PicksScreen() {
           }
         />
       )}
+
+      <ConfidencePickerModal
+        visible={pendingPick !== null}
+        totalGames={total}
+        usedPoints={usedConfidencePoints}
+        currentPoint={pendingPick?.currentPoint ?? null}
+        onClose={() => setPendingPick(null)}
+        onSelect={(point) => {
+          if (!pendingPick || !leagueId || !selectedWeek) return;
+          setInFlightPoints((prev) => new Set(prev).add(point));
+          submitPick.mutate(
+            {
+              pickemGroupId: leagueId,
+              contestId: pendingPick.contestId,
+              pickType,
+              franchiseSeasonId: pendingPick.franchiseSeasonId,
+              week: selectedWeek,
+              confidencePoints: point,
+            },
+            {
+              // Settled either way: on success the refetched entries carry the
+              // point; on failure it must be selectable again. Releases only
+              // THIS mutation's point — other in-flight reservations stand.
+              onSettled: () =>
+                setInFlightPoints((prev) => {
+                  const next = new Set(prev);
+                  next.delete(point);
+                  return next;
+                }),
+              onError: () =>
+                Toast.show({
+                  type: 'error',
+                  text1: 'Could not save your pick',
+                  text2: 'Please try again.',
+                }),
+            },
+          );
+          setPendingPick(null);
+        }}
+      />
 
       <ImportPicksModal
         visible={!isReadOnly && importOpen}

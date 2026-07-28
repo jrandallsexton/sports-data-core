@@ -56,6 +56,23 @@ export interface LeagueMember {
   role: string;
 }
 
+/**
+ * React Query key factory for league data — colocated with the API module so
+ * screens and shared components import it from one place (route modules must
+ * not be the home of shared cache keys).
+ */
+export const leaguesKeys = {
+  mine: ['leagues', 'mine'] as const,
+  detail: (id: string) => ['league', id] as const,
+};
+
+/** A registered user invitable to a league (from invite search). No email. */
+export interface InviteableUser {
+  userId: string;
+  username: string;
+  displayName: string;
+}
+
 // Subset of the BE LeagueDetailDto used by the invite preview and the
 // expandable league overview on My Leagues. Mirrors what sd-ui's LeagueDetail
 // page renders, minus its Danger Zone (mobile has no delete affordance).
@@ -75,6 +92,8 @@ export interface LeagueDetail {
   /** League window. Null on either side = open-ended; both null = full season. */
   startsOn: string | null;
   endsOn: string | null;
+  /** Non-null once the league's season has passed — read-only everywhere. */
+  deactivatedUtc?: string | null;
   members: LeagueMember[];
 }
 
@@ -155,6 +174,32 @@ export const leaguesApi = {
   // POST /ui/leagues/{id}/join — join a league by id.
   joinLeague: (id: string) =>
     apiClient.post<void>(`/ui/leagues/${id}/join`),
+
+  // DELETE /ui/leagues/{id} — commissioner-only; the BE enforces role and
+  // refuses e.g. leagues with recorded picks (surface its error message).
+  deleteLeague: (id: string) =>
+    apiClient.delete<void>(`/ui/leagues/${id}`),
+
+  // POST /ui/leagues/{id}/invite — email an invitation to a non-member.
+  sendInvite: (id: string, email: string, inviteeName: string | null = null) =>
+    apiClient.post<void>(`/ui/leagues/${id}/invite`, {
+      leagueId: id,
+      email,
+      inviteeName,
+    }),
+
+  // GET /ui/leagues/{id}/invite/search?q= — registered users invitable to the
+  // league (BE requires >= 2 chars; excludes self, members, synthetic users).
+  searchInviteableUsers: (id: string, q: string) =>
+    apiClient.get<InviteableUser[]>(`/ui/leagues/${id}/invite/search`, {
+      params: { q },
+    }),
+
+  // POST /ui/leagues/{id}/invite/user — invite a registered user (from
+  // search). Triggers the LeagueInvite push, which deep-links into the mobile
+  // league-invite screen; no email.
+  inviteUser: (id: string, userId: string) =>
+    apiClient.post<void>(`/ui/leagues/${id}/invite/user`, { userId }),
 
   // GET /ui/leagues — the current user's leagues. The BE excludes deactivated
   // (past-season) leagues unless includeDeactivated is passed; those rows come

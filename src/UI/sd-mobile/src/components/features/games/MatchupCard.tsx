@@ -350,12 +350,15 @@ function PickButton({
   pickResult,
   isLocked,
   onPress,
+  confidence,
 }: {
   teamShort: string;
   isSelected: boolean;
   pickResult: 'correct' | 'incorrect' | null;
   isLocked: boolean;
   onPress: () => void;
+  /** Assigned confidence points — badged on the selected button. */
+  confidence?: number | null;
 }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -405,6 +408,14 @@ function PickButton({
       <Text style={[styles.pickBtnTeam, { color: teamColor }]} numberOfLines={1}>
         {teamShort}
       </Text>
+      {/* Confidence badge — only ever non-null in confidence leagues. */}
+      {isSelected && confidence != null && (
+        <View style={[styles.confidenceBadge, { borderColor: teamColor }]}>
+          <Text style={[styles.confidenceBadgeText, { color: teamColor }]}>
+            {confidence}
+          </Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -414,6 +425,7 @@ function PickButton({
 function PickButtons({
   matchup,
   pickedFranchiseId,
+  confidence,
   isPickCorrect,
   isFinal,
   locked,
@@ -429,6 +441,7 @@ function PickButtons({
   onPick: (choice: PickChoice, franchiseSeasonId: string) => void;
   onOpenStats?: () => void;
   onOpenPreview?: () => void;
+  confidence?: number | null;
 }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -449,6 +462,7 @@ function PickButtons({
         pickResult={pickedAway ? pickResultStr : null}
         isLocked={locked}
         onPress={() => onPick('away', matchup.awayFranchiseSeasonId)}
+        confidence={pickedAway ? confidence : null}
       />
       <TouchableOpacity
         style={[styles.actionBtn, { backgroundColor: theme.separator }]}
@@ -479,6 +493,7 @@ function PickButtons({
         pickResult={pickedHome ? pickResultStr : null}
         isLocked={locked}
         onPress={() => onPick('home', matchup.homeFranchiseSeasonId)}
+        confidence={pickedHome ? confidence : null}
       />
     </View>
   );
@@ -494,6 +509,12 @@ export interface MatchupCardProps {
   /** Tap on a team row → opens that team's page. */
   onPressTeam?: (side: 'home' | 'away') => void;
   onPick?: (matchup: Matchup, choice: PickChoice, franchiseSeasonId: string) => void;
+  /**
+   * Suppress the instant optimistic selection on tap. Set by confidence
+   * leagues, where the tap only opens the point picker — the pick isn't
+   * submitted (and may be canceled) until a point is chosen.
+   */
+  deferSelection?: boolean;
   /** Season year used for team stats API calls. Defaults to the game start year. */
   seasonYear?: number;
   /**
@@ -520,7 +541,7 @@ export interface MatchupCardProps {
   pickType?: PickType | null;
 }
 
-export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seasonYear, leagueSport, pickType }: MatchupCardProps) {
+export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, deferSelection, seasonYear, leagueSport, pickType }: MatchupCardProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
@@ -761,7 +782,11 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   }
 
   const handlePick = (choice: PickChoice, franchiseSeasonId: string) => {
-    setOptimisticFranchiseId(franchiseSeasonId);
+    // Confidence leagues defer: the tap only OPENS the point picker — no
+    // submission happens until a point is chosen, and canceling must not
+    // leave a phantom selection. The server pick arriving via invalidation
+    // renders the selection once the point is confirmed.
+    if (!deferSelection) setOptimisticFranchiseId(franchiseSeasonId);
     onPick?.(matchup, choice, franchiseSeasonId);
   };
 
@@ -888,6 +913,14 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         <PickButtons
           matchup={matchup}
           pickedFranchiseId={effectiveFranchiseId ?? null}
+          confidence={
+            // Badge only when the PERSISTED pick is the displayed selection —
+            // an optimistic/pending selection of the other team must not
+            // inherit the old pick's point value.
+            pick && pick.franchiseSeasonId === effectiveFranchiseId
+              ? pick.confidencePoints ?? null
+              : null
+          }
           isPickCorrect={isPickCorrect}
           isFinal={isFinal}
           locked={locked}
@@ -1116,6 +1149,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     gap: 4,
   },
+  confidenceBadge: {
+    marginLeft: 6,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  confidenceBadgeText: { fontSize: 11, fontWeight: '800' },
   pickIcon: {
     fontSize: 13,
     fontWeight: '800',

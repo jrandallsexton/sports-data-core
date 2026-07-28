@@ -7,7 +7,7 @@ import { Text } from '@/src/components/ui/AppText';
 import { Button } from '@/src/components/ui/Button';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
-import { leaguesApi } from '@/src/services/api/leaguesApi';
+import { leaguesApi, leaguesKeys } from '@/src/services/api/leaguesApi';
 import { standingsKeys } from '@/src/hooks/useStandings';
 
 // League ids are GUIDs. Used to reject malformed/array-like route params
@@ -42,7 +42,7 @@ export default function LeagueInviteScreen() {
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['league', leagueId],
+    queryKey: leaguesKeys.detail(leagueId ?? 'invalid'),
     enabled: !!leagueId,
     queryFn: async () => (await leaguesApi.getLeagueById(leagueId!)).data,
   });

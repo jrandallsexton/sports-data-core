@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Image,
@@ -12,6 +12,7 @@ import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
+import { ConfidencePickerModal } from '@/src/components/features/picks/ConfidencePickerModal';
 import { useMatchups } from '@/src/hooks/useMatchups';
 import { usePicks, useSubmitPick, useContestOverview } from '@/src/hooks/useContest';
 import type {
@@ -432,7 +433,20 @@ export default function GameDetailScreen() {
     matchupStatus === 'completed' ||
     (!isNaN(kickoffMs) && Date.now() >= kickoffMs - 5 * 60 * 1000);
 
-  const handlePick = async (choice: PickChoice, franchiseSeasonId: string) => {
+  // Confidence-league support (web parity): a pick without a distinct 1..N
+  // value is rejected by the BE, so the picker gates the POST. usedPoints
+  // spans the whole week's picks (the envelope is week-scoped).
+  const useConfidence = matchupsResponse?.useConfidencePoints ?? false;
+  const [pendingFranchiseId, setPendingFranchiseId] = useState<string | null>(null);
+  const usedConfidencePoints = useMemo(
+    () =>
+      (picksResult?.picks ?? [])
+        .map((p) => p.confidencePoints)
+        .filter((p): p is number => p != null),
+    [picksResult],
+  );
+
+  const submitWithConfidence = async (franchiseSeasonId: string, confidencePoints?: number) => {
     if (!matchup || !leagueId || !weekNumber) return;
     try {
       await submitPick.mutateAsync({
@@ -441,10 +455,20 @@ export default function GameDetailScreen() {
         pickType,
         franchiseSeasonId,
         week: weekNumber,
+        ...(confidencePoints != null ? { confidencePoints } : {}),
       });
     } catch {
       Alert.alert('Error', 'Could not save your pick. Please try again.');
     }
+  };
+
+  const handlePick = async (choice: PickChoice, franchiseSeasonId: string) => {
+    if (!matchup || !leagueId || !weekNumber) return;
+    if (useConfidence) {
+      setPendingFranchiseId(franchiseSeasonId);
+      return;
+    }
+    await submitWithConfidence(franchiseSeasonId);
   };
 
   const screenTitle = overview
@@ -510,6 +534,19 @@ export default function GameDetailScreen() {
           />
         ) : null}
       </ScrollView>
+
+      <ConfidencePickerModal
+        visible={pendingFranchiseId !== null}
+        totalGames={matchupsResponse?.matchups.length ?? 1}
+        usedPoints={usedConfidencePoints}
+        currentPoint={existingPick?.confidencePoints ?? null}
+        onClose={() => setPendingFranchiseId(null)}
+        onSelect={(point) => {
+          const franchiseSeasonId = pendingFranchiseId;
+          setPendingFranchiseId(null);
+          if (franchiseSeasonId) void submitWithConfidence(franchiseSeasonId, point);
+        }}
+      />
     </>
   );
 }

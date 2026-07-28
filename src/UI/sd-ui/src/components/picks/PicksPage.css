@@ -138,6 +138,12 @@
   color: var(--error-text);
 }
 
+/* Mid-flight variant: ✓Y ✗Z only (no X — it would count in-progress games as
+   no-results). Rendered beside the progress badge until the week resolves. */
+.pick-live-chip {
+  gap: 8px;
+}
+
 .pick-mode-badge {
   display: inline-flex;
   align-items: center;

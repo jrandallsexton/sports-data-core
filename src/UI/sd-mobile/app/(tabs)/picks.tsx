@@ -90,6 +90,14 @@ export default function PicksScreen() {
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [hidePicked, setHidePicked] = useState(false);
+  // 15s clock tick, matching web's PicksPage ticker: time-based derivations
+  // (anyActionable) re-evaluate as matchup lock times pass, so the header
+  // cascade flips at kickoff without waiting for a refetch or SignalR event.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, []);
   const [importOpen, setImportOpen] = useState(false);
 
   // Latest week = last element of the ascending seasonWeeks list.
@@ -212,21 +220,42 @@ export default function PicksScreen() {
   const made = entries.filter((e) => e.pick !== null).length;
   const allPicked = total > 0 && made >= total;
 
-  // Ended-league header glance (X|Y|Z): counts come from the picks envelope,
-  // not client math over entries — the server owns the result semantics.
-  // X (no scored pick: unpicked + never-resolved games) is derived from the
+  // Header display cascade — actionable first (one slot on mobile; see
+  // docs/features/league-ended-headers.md):
+  //   1. Resolved (server: pendingCount 0) or ended league → full X|Y|Z glance.
+  //   2. Any unpicked game still open (5-min lock buffer, matching web's
+  //      usePickLocking rule) → progress n/N + Hide Picked: acting matters.
+  //   3. Anything scored → live ✓/✗ chip. The full glance's X waits for
+  //      resolution — mid-flight it would count in-progress games as
+  //      no-results.
+  //   4. Otherwise → the existing All Picks Made / n/N display.
+  // A failed-to-make pick locks at kickoff and drops out of "actionable" AND
+  // out of "pending" (a decided no-result), so it can never block the swap.
+  const weekResolved = picksResult?.pendingCount === 0;
+  const showGlance = isReadOnly || weekResolved;
+  const anyScored =
+    !!picksResult && picksResult.correctCount + picksResult.incorrectCount > 0;
+  const anyActionable = entries.some(
+    (e) =>
+      e.pick === null &&
+      new Date(e.matchup.startDateUtc).getTime() - 5 * 60 * 1000 > nowMs,
+  );
+
+  // Full results glance (X|Y|Z): counts come from the picks envelope, not
+  // client math over entries — the server owns the result semantics. X (no
+  // scored pick: unpicked-locked + never-resolved games) is derived from the
   // other three so the glance always sums to the week's matchup total; clamped
   // defensively so a server miscount can't render a negative. null until the
-  // envelope loads. See docs/features/league-ended-headers.md.
+  // envelope loads.
   const resultsGlance = useMemo(() => {
-    if (!isReadOnly || !picksResult) return null;
+    if (!showGlance || !picksResult) return null;
     const { totalMatchups, correctCount, incorrectCount } = picksResult;
     return {
       noResult: Math.max(0, totalMatchups - correctCount - incorrectCount),
       correct: correctCount,
       incorrect: incorrectCount,
     };
-  }, [isReadOnly, picksResult]);
+  }, [showGlance, picksResult]);
 
   // ── Cross-league pick import ────────────────────────────────────────────────
   // Only check availability once picks + matchups have loaded and there are
@@ -303,20 +332,17 @@ export default function PicksScreen() {
     [isReadOnly, leagueId, selectedWeek, importPicks],
   );
 
-  // Hide Picked is a no-op wherever its toggle isn't rendered, otherwise a
-  // filter left switched on would strand the user with an empty FlatList
-  // ("No games this week") and no in-UI escape. Two such cases:
-  //   - allPicked — keeps the cards visible after the final pick while the
-  //     header reads "All Picks Made".
-  //   - isReadOnly — an ended league is a record to review, not a surface to
-  //     keep clean while picking, and the header has no room for the toggle
-  //     alongside the "ENDED" badge.
+  // Hide Picked is a no-op wherever its toggle isn't rendered (i.e. whenever
+  // nothing is actionable — the only cascade state that shows the toggle),
+  // otherwise a filter left switched on would strand the user with an empty
+  // FlatList ("No games this week") and no in-UI escape. anyActionable is
+  // false for allPicked, read-only, and locked-out weeks alike.
   const visibleEntries = useMemo(
     () =>
-      hidePicked && !allPicked && !isReadOnly
+      hidePicked && anyActionable
         ? entries.filter((e) => !e.pick)
         : entries,
-    [entries, hidePicked, allPicked, isReadOnly],
+    [entries, hidePicked, anyActionable],
   );
 
   // Responsive columns: phones stay single-column; tablets get a multi-column
@@ -383,9 +409,11 @@ export default function PicksScreen() {
               </Text>
             </View>
           ) : null}
-          {isReadOnly ? (
-            // Results glance replaces pick progress: "how did I do?", not "how
-            // far along am I?". X muted | correct green | incorrect red. Slot
+          {/* One slot; actionable-first cascade — see the derivation comment
+              above the resultsGlance memo. */}
+          {showGlance ? (
+            // 1. Resolved (or ended league): "how did I do?", not "how far
+            // along am I?". X muted | correct green | incorrect red. Slot
             // stays empty (badges only) until the picks envelope loads.
             resultsGlance && (
               <Text
@@ -405,19 +433,13 @@ export default function PicksScreen() {
                 </Text>
               </Text>
             )
-          ) : allPicked ? (
-            <Text style={[headerStyles.pillText, { color: theme.tint }]}>
-              All Picks Made
-            </Text>
-          ) : (
+          ) : anyActionable ? (
+            // 2. Picks can still be made — progress + Hide Picked. Acting
+            // beats watching: an open pick left unmade is a guaranteed miss.
             <>
               <Text style={[headerStyles.pillText, { color: theme.tint }]}>
                 {made}/{total}
               </Text>
-              {/* Ended leagues never reach this branch (the glance above owns
-                  the isReadOnly slot), so Hide Picked only renders while
-                  picking — where it belongs. visibleEntries still treats the
-                  filter as inactive for read-only leagues to match. */}
               <Pressable
                 onPress={() => setHidePicked((v) => !v)}
                 hitSlop={6}
@@ -436,11 +458,37 @@ export default function PicksScreen() {
                 </Text>
               </Pressable>
             </>
+          ) : anyScored ? (
+            // 3. Nothing actionable, results landing — live ✓/✗ ("am I
+            // winning?"). No X: mid-flight it would count in-progress games
+            // as no-results; the full glance waits for resolution.
+            <Text
+              style={headerStyles.pillText}
+              accessibilityLabel={`${picksResult!.correctCount} correct, ${picksResult!.incorrectCount} incorrect so far`}
+            >
+              <Text style={[headerStyles.pillText, { color: theme.successText }]}>
+                ✓{picksResult!.correctCount}
+              </Text>
+              <Text style={[headerStyles.pillSub, { color: theme.textMuted }]}>{'  '}</Text>
+              <Text style={[headerStyles.pillText, { color: theme.errorText }]}>
+                ✗{picksResult!.incorrectCount}
+              </Text>
+            </Text>
+          ) : allPicked ? (
+            // 4. Everything picked, nothing scored yet.
+            <Text style={[headerStyles.pillText, { color: theme.tint }]}>
+              All Picks Made
+            </Text>
+          ) : (
+            // 4b. Locked out of remaining picks, nothing scored yet.
+            <Text style={[headerStyles.pillText, { color: theme.tint }]}>
+              {made}/{total}
+            </Text>
           )}
         </View>
       ),
     });
-  }, [made, total, allPicked, hidePicked, theme, pickModeLabel, isReadOnly, resultsGlance]);
+  }, [made, total, allPicked, hidePicked, theme, pickModeLabel, isReadOnly, resultsGlance, showGlance, anyActionable, anyScored, picksResult]);
 
   if (meLoading) {
     return <LoadingSpinner message="Loading picks…" fullScreen />;

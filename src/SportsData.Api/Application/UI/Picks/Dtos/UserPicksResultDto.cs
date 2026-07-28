@@ -23,4 +23,16 @@ public record UserPicksResultDto
 
     /// <summary>Picks with <c>IsCorrect == false</c>.</summary>
     public int IncorrectCount { get; init; }
+
+    /// <summary>
+    /// Matchups whose outcome for THIS user is still open: unpicked games that
+    /// haven't started (still actionable) plus picked games not yet scored
+    /// (<c>IsCorrect == null</c>, within 24h of kickoff — beyond that a
+    /// never-scored pick, e.g. a canceled game, folds into the X bucket).
+    /// Unpicked-and-started games are excluded — they're a decided no-result.
+    /// When zero, the user's results are final for the week and clients show
+    /// the results glance instead of pick progress, without waiting for league
+    /// deactivation (which lags the league's end date by ~7 days).
+    /// </summary>
+    public int PendingCount { get; init; }
 }

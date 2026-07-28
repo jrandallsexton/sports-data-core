@@ -413,7 +413,7 @@ function PicksPage() {
 
         // UserPicksResultDto envelope: picks + server-computed result counts
         // (was a raw array; see docs/features/league-ended-headers.md).
-        const { picks, totalMatchups, correctCount, incorrectCount } =
+        const { picks, totalMatchups, correctCount, incorrectCount, pendingCount } =
           response.data;
 
         const picksByContest = {};
@@ -422,7 +422,7 @@ function PicksPage() {
         }
 
         setUserPicks(picksByContest);
-        setPicksSummary({ totalMatchups, correctCount, incorrectCount });
+        setPicksSummary({ totalMatchups, correctCount, incorrectCount, pendingCount });
         setPicksLoadedKey(`${routeLeagueId}:${selectedWeek}`);
       } catch (error) {
         if (cancelled) return;
@@ -759,14 +759,35 @@ function PicksPage() {
   ).length;
   const allPicked = totalGames > 0 && picksMade === totalGames;
 
-  // hidePicked is inert for read-only leagues: its toggle is suppressed there,
-  // and in an ended league every game is locked, so honoring a stale value
-  // carried over from an active league would render an empty page with no
-  // in-UI escape. Mirrors mobile's visibleEntries gating.
-  const visibleMatchups = hidePicked && !isReadOnly
+  // Header display cascade (see docs/features/league-ended-headers.md):
+  //   - weekResolved: server says nothing is pending for THIS user (every
+  //     pick scored; unpicked-and-started games are decided no-results), so
+  //     the full X|Y|Z glance is final — no waiting for league deactivation,
+  //     which lags the end date by ~7 days.
+  //   - anyActionable: an unpicked game the user can still pick (5-min lock
+  //     buffer, same rule as usePickLocking). Drives the Hide Picked toggle
+  //     and keeps progress front-and-center while acting matters.
+  //   - anyScored: at least one result is in — mid-flight the header adds a
+  //     live ✓/✗ chip. The full glance's X would be misleading here (it
+  //     would count still-pending games as no-results), so X waits for
+  //     weekResolved.
+  const weekResolved = picksSummary?.pendingCount === 0;
+  const showGlance = isReadOnly || weekResolved;
+  const anyScored =
+    !!picksSummary && picksSummary.correctCount + picksSummary.incorrectCount > 0;
+  const anyActionable = enrichedMatchups.some((m) => {
+    if (userPicks[m.contestId]) return false;
+    const lockTime = new Date(new Date(m.startDateUtc).getTime() - 5 * 60 * 1000);
+    return now <= lockTime;
+  });
+
+  // hidePicked is inert whenever nothing is actionable: the filter keeps only
+  // pickable games, so honoring a stale value in a read-only/locked-out week
+  // would render an empty page with no in-UI escape. Mirrors mobile.
+  const visibleMatchups = hidePicked && anyActionable
     ? enrichedMatchups.filter((m) => {
         const isPicked = !!userPicks[m.contestId];
-        
+
         // Replicate locking logic from usePickLocking (5 min buffer)
         // We do NOT hide based on isReadOnly, only based on time
         const startTime = new Date(m.startDateUtc);
@@ -815,11 +836,14 @@ function PicksPage() {
                 </span>
               );
             })()}
-            {isReadOnly ? (
-              // Ended league: pick progress is irrelevant — show the results
-              // glance instead. X (no scored pick: unpicked + never-resolved)
-              // is derived from the server's counts so the three always sum to
-              // the week's matchup total. Empty until the envelope loads.
+            {showGlance ? (
+              // Resolved week (or ended league): pick progress is irrelevant —
+              // show the results glance. X (no scored pick: unpicked-locked +
+              // never-resolved) is derived from the server's counts so the
+              // three always sum to the week's matchup total, and is only
+              // rendered once nothing is pending — mid-flight it would count
+              // in-progress games as no-results. Empty until the envelope
+              // loads.
               picksSummary && (
                 <span
                   className="pick-results-glance"
@@ -844,15 +868,32 @@ function PicksPage() {
                 </span>
               )
             ) : (
-              <span
-                className={`pick-status-badge${allPicked ? " complete" : ""}`}
-                title="Picks made"
-              >
-                {allPicked && "✓ "}
-                {picksMade}/{totalGames}
-              </span>
+              <>
+                <span
+                  className={`pick-status-badge${allPicked ? " complete" : ""}`}
+                  title="Picks made"
+                >
+                  {allPicked && "✓ "}
+                  {picksMade}/{totalGames}
+                </span>
+                {/* Mid-flight live results: web has room for progress AND a
+                    ✓/✗ chip once results start landing. No X — see above. */}
+                {anyScored && (
+                  <span
+                    className="pick-results-glance pick-live-chip"
+                    title="Correct / incorrect so far"
+                  >
+                    <span className="glance-correct">
+                      ✓{picksSummary.correctCount}
+                    </span>
+                    <span className="glance-incorrect">
+                      ✗{picksSummary.incorrectCount}
+                    </span>
+                  </span>
+                )}
+              </>
             )}
-            {!allPicked && !isReadOnly && (
+            {anyActionable && !allPicked && (
               <button
                 type="button"
                 className={`hide-picked-toggle${hidePicked ? " active" : ""}`}

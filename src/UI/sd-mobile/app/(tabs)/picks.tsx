@@ -23,6 +23,7 @@ import { useMatchups } from '@/src/hooks/useMatchups';
 import { useCurrentUser } from '@/src/hooks/useStandings';
 import { useImportAvailability, useImportPicks } from '@/src/hooks/useImportPicks';
 import { ImportPicksModal } from '@/src/components/features/picks/ImportPicksModal';
+import { ConfidencePickerModal } from '@/src/components/features/picks/ConfidencePickerModal';
 import { getLeagues } from '@/src/lib/leagues';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
 import { useQuery } from '@tanstack/react-query';
@@ -190,6 +191,7 @@ export default function PicksScreen() {
   );
   const submitPick = useSubmitPick();
   const pickType = matchupsResponse?.pickType ?? 'StraightUp';
+  const useConfidence = matchupsResponse?.useConfidencePoints ?? false;
   // Resolves LeagueWeekMatchupsDto.Sport ("FootballNcaa" | "FootballNfl" |
   // "BaseballMlb") to {sport, league} URL segments. null when the response
   // hasn't arrived yet or the sport enum isn't in the known map — in that
@@ -219,6 +221,24 @@ export default function PicksScreen() {
   // on screen.
   const made = entries.filter((e) => e.pick !== null).length;
   const allPicked = total > 0 && made >= total;
+
+  // ── Confidence points (web ConfidencePicker parity) ─────────────────────────
+  // In a confidence league a pick isn't submittable without a distinct 1..N
+  // value (the BE rejects it), so tapping a team stashes the choice and opens
+  // the picker; the POST fires on point selection. usedPoints derives from
+  // entries so it always matches what's on screen.
+  const [pendingPick, setPendingPick] = useState<{
+    contestId: string;
+    franchiseSeasonId: string;
+    currentPoint: number | null;
+  } | null>(null);
+  const usedConfidencePoints = useMemo(
+    () =>
+      entries
+        .map((e) => e.pick?.confidencePoints)
+        .filter((p): p is number => p != null),
+    [entries],
+  );
 
   // Header display cascade — actionable first (one slot on mobile; see
   // docs/features/league-ended-headers.md):
@@ -652,6 +672,16 @@ export default function PicksScreen() {
                   return;
                 }
                 if (!leagueId || !selectedWeek) return;
+                if (useConfidence) {
+                  // Confidence league: the POST fires from the picker's
+                  // onSelect — a pick without a point value is rejected.
+                  setPendingPick({
+                    contestId: m.contestId,
+                    franchiseSeasonId,
+                    currentPoint: pickMap.get(m.contestId)?.confidencePoints ?? null,
+                  });
+                  return;
+                }
                 submitPick.mutate({
                   pickemGroupId: leagueId,
                   contestId: m.contestId,
@@ -681,6 +711,26 @@ export default function PicksScreen() {
           }
         />
       )}
+
+      <ConfidencePickerModal
+        visible={pendingPick !== null}
+        totalGames={total}
+        usedPoints={usedConfidencePoints}
+        currentPoint={pendingPick?.currentPoint ?? null}
+        onClose={() => setPendingPick(null)}
+        onSelect={(point) => {
+          if (!pendingPick || !leagueId || !selectedWeek) return;
+          submitPick.mutate({
+            pickemGroupId: leagueId,
+            contestId: pendingPick.contestId,
+            pickType,
+            franchiseSeasonId: pendingPick.franchiseSeasonId,
+            week: selectedWeek,
+            confidencePoints: point,
+          });
+          setPendingPick(null);
+        }}
+      />
 
       <ImportPicksModal
         visible={!isReadOnly && importOpen}

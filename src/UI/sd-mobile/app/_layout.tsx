@@ -344,6 +344,9 @@ function RootLayoutNav() {
         <Stack.Screen name="leagues" options={{ title: 'My Leagues' }} />
         <Stack.Screen name="create-league" options={{ presentation: 'modal' }} />
         <Stack.Screen name="league-invite/[leagueId]" options={{ presentation: 'modal' }} />
+        {/* League detail — post-create landing page (invite / review / delete);
+            title is set by the screen once the league loads. */}
+        <Stack.Screen name="league/[leagueId]" />
         <Stack.Screen name="admin/push-token" options={{ title: 'Push Token' }} />
         <Stack.Screen name="+not-found" />
       </Stack>

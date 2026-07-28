@@ -350,12 +350,15 @@ function PickButton({
   pickResult,
   isLocked,
   onPress,
+  confidence,
 }: {
   teamShort: string;
   isSelected: boolean;
   pickResult: 'correct' | 'incorrect' | null;
   isLocked: boolean;
   onPress: () => void;
+  /** Assigned confidence points — badged on the selected button. */
+  confidence?: number | null;
 }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -405,6 +408,14 @@ function PickButton({
       <Text style={[styles.pickBtnTeam, { color: teamColor }]} numberOfLines={1}>
         {teamShort}
       </Text>
+      {/* Confidence badge — only ever non-null in confidence leagues. */}
+      {isSelected && confidence != null && (
+        <View style={[styles.confidenceBadge, { borderColor: teamColor }]}>
+          <Text style={[styles.confidenceBadgeText, { color: teamColor }]}>
+            {confidence}
+          </Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -414,6 +425,7 @@ function PickButton({
 function PickButtons({
   matchup,
   pickedFranchiseId,
+  confidence,
   isPickCorrect,
   isFinal,
   locked,
@@ -429,6 +441,7 @@ function PickButtons({
   onPick: (choice: PickChoice, franchiseSeasonId: string) => void;
   onOpenStats?: () => void;
   onOpenPreview?: () => void;
+  confidence?: number | null;
 }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -449,6 +462,7 @@ function PickButtons({
         pickResult={pickedAway ? pickResultStr : null}
         isLocked={locked}
         onPress={() => onPick('away', matchup.awayFranchiseSeasonId)}
+        confidence={pickedAway ? confidence : null}
       />
       <TouchableOpacity
         style={[styles.actionBtn, { backgroundColor: theme.separator }]}
@@ -479,6 +493,7 @@ function PickButtons({
         pickResult={pickedHome ? pickResultStr : null}
         isLocked={locked}
         onPress={() => onPick('home', matchup.homeFranchiseSeasonId)}
+        confidence={pickedHome ? confidence : null}
       />
     </View>
   );
@@ -888,6 +903,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         <PickButtons
           matchup={matchup}
           pickedFranchiseId={effectiveFranchiseId ?? null}
+          confidence={pick?.confidencePoints ?? null}
           isPickCorrect={isPickCorrect}
           isFinal={isFinal}
           locked={locked}
@@ -1116,6 +1132,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     gap: 4,
   },
+  confidenceBadge: {
+    marginLeft: 6,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  confidenceBadgeText: { fontSize: 11, fontWeight: '800' },
   pickIcon: {
     fontSize: 13,
     fontWeight: '800',

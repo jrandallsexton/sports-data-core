@@ -751,9 +751,16 @@ export default function CreateLeagueScreen() {
       };
       return leaguesApi.createBaseballMlbLeague(payload).then((r) => r.data);
     },
-    onSuccess: async () => {
+    onSuccess: async (created) => {
       await queryClient.invalidateQueries({ queryKey: standingsKeys.me });
-      router.back();
+      // Parity with web: land on the new league's detail page (invite
+      // friends, review settings, or delete if you changed your mind) rather
+      // than bouncing back to wherever creation started. replace() so Back
+      // doesn't return to the spent create form.
+      router.replace({
+        pathname: '/league/[leagueId]',
+        params: { leagueId: created.id },
+      } as never);
     },
     onError: (err: unknown) => {
       const serverMessage =
@@ -766,9 +773,24 @@ export default function CreateLeagueScreen() {
     },
   });
 
+  // Two-step submit, parity with web's "Confirm League Settings" dialog:
+  // a valid form opens a summary the user confirms before the POST fires.
+  // The validated snapshot is held in state so the modal renders from what
+  // will actually be sent, not live form values.
+  const [pendingData, setPendingData] = useState<FormData | null>(null);
+
   const onSubmit = (data: FormData) => {
     if (allSportsLocked) return; // nothing creatable; the button is also disabled
-    createMutation.mutate(data);
+    setPendingData(data);
+  };
+
+  const confirmCreate = () => {
+    if (!pendingData || createMutation.isPending) return;
+    createMutation.mutate(pendingData, {
+      // Close the modal on success only — on error it stays up behind the
+      // Alert so the user can retry without re-validating the form.
+      onSuccess: () => setPendingData(null),
+    });
   };
 
   // Tiebreaker options use sport-aware labels for the "total" variant.
@@ -1174,8 +1196,123 @@ export default function CreateLeagueScreen() {
           />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Confirm League Settings — parity with web's pre-create summary
+          dialog. Renders from the validated pendingData snapshot, not live
+          form values. Stays open on a failed POST (behind the error Alert)
+          so the user can retry without re-validating. */}
+      <Modal
+        visible={pendingData !== null}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => {
+          if (!createMutation.isPending) setPendingData(null);
+        }}
+      >
+        {pendingData && (
+          <View style={[styles.confirmContainer, { backgroundColor: theme.background }]}>
+            <View style={[styles.confirmHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.confirmTitle, { color: theme.text }]}>
+                Confirm League Settings
+              </Text>
+            </View>
+            <ScrollView contentContainerStyle={styles.confirmBody}>
+              {buildConfirmRows(pendingData).map(({ label, value }) => (
+                <View
+                  key={label}
+                  style={[styles.confirmRow, { borderBottomColor: theme.border }]}
+                >
+                  <Text style={[styles.confirmLabel, { color: theme.textMuted }]}>
+                    {label}
+                  </Text>
+                  <Text style={[styles.confirmValue, { color: theme.text }]}>
+                    {value}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+            <View style={[styles.confirmFooter, { borderTopColor: theme.border }]}>
+              <Button
+                title="Back"
+                onPress={() => setPendingData(null)}
+                variant="secondary"
+                size="md"
+                disabled={createMutation.isPending}
+                style={styles.confirmFooterButton}
+              />
+              <Button
+                title="Confirm & Create"
+                onPress={confirmCreate}
+                loading={createMutation.isPending}
+                size="md"
+                style={styles.confirmFooterButton}
+              />
+            </View>
+          </View>
+        )}
+      </Modal>
     </>
   );
+}
+
+// ─── Confirm-dialog summary rows ──────────────────────────────────────────────
+
+// Mirrors the field list of web's "Confirm League Settings" dialog, derived
+// from the validated form snapshot. Kept outside the component so it stays a
+// pure FormData -> rows mapping.
+function buildConfirmRows(data: FormData): { label: string; value: string }[] {
+  const copy = SPORT_COPY[data.sport];
+
+  const divisionNames =
+    data.sport === 'FootballNfl'
+      ? NFL_DIVISIONS
+      : data.sport === 'BaseballMlb'
+        ? MLB_DIVISIONS
+        : [];
+  const selectedDivisions = data.divisionSlugs
+    .map((slug) => divisionNames.find((d) => d.slug === slug)?.shortName ?? slug)
+    .join(', ');
+
+  const pickTypeLabel =
+    PICK_TYPE_OPTIONS.find((o) => o.value === data.pickType)?.label ?? data.pickType;
+  const tiebreakerLabel =
+    data.tiebreakerType === 'TotalPoints' ? copy.tiebreakerTotalLabel : 'Earliest Pick';
+
+  const windowLabel =
+    data.durationMode === DURATION_DATES
+      ? `${data.startsOn ? formatDateOnlyDisplay(data.startsOn) : '—'} to ${
+          data.endsOn ? formatDateOnlyDisplay(data.endsOn) : '—'
+        }`
+      : 'Full Season';
+
+  const rows: { label: string; value: string }[] = [
+    { label: 'Name', value: data.name.trim() },
+    { label: 'Sport', value: copy.label },
+  ];
+  if (divisionNames.length > 0) {
+    rows.push({ label: 'Divisions', value: selectedDivisions || 'None selected' });
+  }
+  if (data.sport === 'FootballNcaa') {
+    rows.push({
+      label: 'Ranking Filter',
+      value:
+        RANKING_OPTIONS.find((o) => o.value === data.rankingFilter)?.label ?? 'All',
+    });
+  }
+  rows.push(
+    { label: 'Pick Type', value: pickTypeLabel },
+    { label: 'Tiebreaker', value: tiebreakerLabel },
+    { label: 'Confidence Points', value: data.useConfidencePoints ? 'Yes' : 'No' },
+    {
+      label: 'Drop Low Weeks',
+      value: data.dropLowWeeksCount === 0 ? 'None. Use All Weeks' : `${data.dropLowWeeksCount}`,
+    },
+    { label: 'League Window', value: windowLabel },
+    { label: 'Visibility', value: data.isPublic ? 'Public' : 'Private' },
+    { label: 'Pick Deadline', value: '5 minutes before kickoff (not configurable)' },
+    { label: 'Description', value: data.description?.trim() || 'None' },
+  );
+  return rows;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -1277,4 +1414,30 @@ const styles = StyleSheet.create({
   pickerBarTitle: { fontSize: 15, fontWeight: '700' },
   pickerBarAction: { fontSize: 16 },
   pickerBarDone: { fontWeight: '700' },
+  // Confirm League Settings sheet.
+  confirmContainer: { flex: 1 },
+  confirmHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  confirmTitle: { fontSize: 18, fontWeight: '700' },
+  confirmBody: { paddingHorizontal: 20, paddingBottom: 12 },
+  confirmRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+    paddingVertical: 11,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  confirmLabel: { fontSize: 13, fontWeight: '600', flexShrink: 0 },
+  confirmValue: { fontSize: 13, textAlign: 'right', flex: 1 },
+  confirmFooter: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  confirmFooterButton: { flex: 1 },
 });

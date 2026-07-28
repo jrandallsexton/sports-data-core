@@ -231,19 +231,23 @@ export default function PicksScreen() {
     franchiseSeasonId: string;
     currentPoint: number | null;
   } | null>(null);
-  // Reserves a just-selected point until its mutation settles: entries only
-  // reflect the new pick after invalidation/refetch, so without this a rapid
-  // second selection could reuse the same value.
-  const [inFlightPoint, setInFlightPoint] = useState<number | null>(null);
+  // Reserves just-selected points until their mutations settle: entries only
+  // reflect a new pick after invalidation/refetch, so without this a rapid
+  // second selection could reuse a value. A SET (not a single value) because
+  // several submissions can be in flight at once — each mutation's onSettled
+  // releases only its own point, never another submission's reservation.
+  const [inFlightPoints, setInFlightPoints] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
   const usedConfidencePoints = useMemo(() => {
     const used = entries
       .map((e) => e.pick?.confidencePoints)
       .filter((p): p is number => p != null);
-    if (inFlightPoint != null && !used.includes(inFlightPoint)) {
-      used.push(inFlightPoint);
+    for (const p of inFlightPoints) {
+      if (!used.includes(p)) used.push(p);
     }
     return used;
-  }, [entries, inFlightPoint]);
+  }, [entries, inFlightPoints]);
 
   // Header display cascade — actionable first (one slot on mobile; see
   // docs/features/league-ended-headers.md):
@@ -726,7 +730,7 @@ export default function PicksScreen() {
         onClose={() => setPendingPick(null)}
         onSelect={(point) => {
           if (!pendingPick || !leagueId || !selectedWeek) return;
-          setInFlightPoint(point);
+          setInFlightPoints((prev) => new Set(prev).add(point));
           submitPick.mutate(
             {
               pickemGroupId: leagueId,
@@ -738,8 +742,14 @@ export default function PicksScreen() {
             },
             {
               // Settled either way: on success the refetched entries carry the
-              // point; on failure it must be selectable again.
-              onSettled: () => setInFlightPoint(null),
+              // point; on failure it must be selectable again. Releases only
+              // THIS mutation's point — other in-flight reservations stand.
+              onSettled: () =>
+                setInFlightPoints((prev) => {
+                  const next = new Set(prev);
+                  next.delete(point);
+                  return next;
+                }),
               onError: () =>
                 Toast.show({
                   type: 'error',

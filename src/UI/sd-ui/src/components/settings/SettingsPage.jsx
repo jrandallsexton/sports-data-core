@@ -74,17 +74,26 @@ function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
   const { refreshUserDto, userOptions, updateUserOptions } = useUserDto();
   const [optionsMessage, setOptionsMessage] = useState("");
+  const [optionsSaving, setOptionsSaving] = useState(false);
 
   // Optimistic write-through lives in UserContext (apply → PATCH → revert on
-  // failure); this handler just wraps it with user-facing feedback.
+  // failure); this handler wraps it with user-facing feedback and serializes
+  // saves — a second toggle built from a stale base would clobber the
+  // in-flight full-replacement PATCH (same guard as the notification
+  // preferences toggle).
   const handleToggleShowGambling = async () => {
-    if (userOptions === null) return;
+    if (userOptions === null || optionsSaving) return;
+    setOptionsSaving(true);
     setOptionsMessage("");
-    const ok = await updateUserOptions({
-      ...userOptions,
-      showGamblingContent: !userOptions.showGamblingContent,
-    });
-    setOptionsMessage(ok ? "Saved." : "Could not save. Please try again.");
+    try {
+      const ok = await updateUserOptions({
+        ...userOptions,
+        showGamblingContent: !userOptions.showGamblingContent,
+      });
+      setOptionsMessage(ok ? "Saved." : "Could not save. Please try again.");
+    } finally {
+      setOptionsSaving(false);
+    }
   };
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
@@ -422,7 +431,7 @@ function SettingsPage() {
                   type="checkbox"
                   aria-label="Show gambling content"
                   checked={userOptions?.showGamblingContent === true}
-                  disabled={userOptions === null}
+                  disabled={userOptions === null || optionsSaving}
                   onChange={handleToggleShowGambling}
                 />
                 <span className="settings-switch-track" aria-hidden="true" />

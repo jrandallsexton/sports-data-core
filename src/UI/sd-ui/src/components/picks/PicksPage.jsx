@@ -14,9 +14,10 @@ import LeaguesApi from "../../api/leagues/leaguesApi";
 import LeagueWeekSelector from "./LeagueWeekSelector.jsx";
 import MatchupList from "../matchups/MatchupList.jsx";
 import MatchupGrid from "../matchups/MatchupGrid.jsx";
+import { shouldShowGambling } from "../../utils/gamblingContent";
 
 function PicksPage() {
-  const { userDto, loading: userLoading, refreshUserDto } = useUserDto();
+  const { userDto, loading: userLoading, refreshUserDto, userOptions } = useUserDto();
   const {
     selectedLeagueId: globalLeagueId,
     setSelectedLeagueId: setGlobalLeagueId,
@@ -949,6 +950,7 @@ function PicksPage() {
                 onViewInsight={handleViewInsight}
                 isSubscribed={isSubscribed}
                 fadingOut={fadingOut}
+                showGambling={shouldShowGambling(pickType, userOptions)}
               />
             )}
           </>

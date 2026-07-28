@@ -15,6 +15,7 @@ import { resolveSportLeague } from "../../utils/sportLinks";
 import { useTheme } from "../../contexts/ThemeContext";
 import PickButton from "./PickButton";
 import { SpreadAndOverUnderDisplay } from "./BettingDisplays";
+import { shouldShowGambling } from "../../utils/gamblingContent";
 import DeetsMeter from "./DeetsMeter";
 import ConfidencePicker from "./ConfidencePicker";
 
@@ -33,7 +34,10 @@ function MatchupCard({
   leagueSport, // Backend Sport enum name (e.g. "BaseballMlb") — drives team-link routing
   leagueSeasonYear // From LeagueWeekMatchupsDto.SeasonYear — canonical for all matchups in this response
 }) {
-  const { userDto } = useUserDto();
+  const { userDto, userOptions } = useUserDto();
+  // Gambling-content gate: ATS/O-U leagues always show lines (they ARE the
+  // game); Straight-Up leagues show them only when the user opted in.
+  const showGambling = shouldShowGambling(pickType, userOptions);
   // seasonYear is authoritative from leagueSeasonYear (set by the backend
   // handler from PickemGroupMatchup.SeasonYear); fall through to the matchup
   // itself only if the response shape ever changes. No hardcoded year fallback
@@ -222,14 +226,16 @@ function MatchupCard({
           asOfDate={scheduleAsOfDate}
         />
 
-        {/* Spread and Over/Under */}
-        <SpreadAndOverUnderDisplay
-          spread={matchup.spreadCurrent}
-          spreadOpen={matchup.spreadOpen}
-          overUnder={matchup.overUnderCurrent}
-          overUnderOpen={matchup.overUnderOpen}
-          providerName={matchup.providerName}
-        />
+        {/* Spread and Over/Under — gated: see utils/gamblingContent.js */}
+        {showGambling && (
+          <SpreadAndOverUnderDisplay
+            spread={matchup.spreadCurrent}
+            spreadOpen={matchup.spreadOpen}
+            overUnder={matchup.overUnderCurrent}
+            overUnderOpen={matchup.overUnderOpen}
+            providerName={matchup.providerName}
+          />
+        )}
 
         {/* Game Status */}
         <GameStatus

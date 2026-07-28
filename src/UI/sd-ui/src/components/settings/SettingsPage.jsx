@@ -72,7 +72,20 @@ function detectBrowserTimezone() {
 function SettingsPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { refreshUserDto } = useUserDto();
+  const { refreshUserDto, userOptions, updateUserOptions } = useUserDto();
+  const [optionsMessage, setOptionsMessage] = useState("");
+
+  // Optimistic write-through lives in UserContext (apply → PATCH → revert on
+  // failure); this handler just wraps it with user-facing feedback.
+  const handleToggleShowGambling = async () => {
+    if (userOptions === null) return;
+    setOptionsMessage("");
+    const ok = await updateUserOptions({
+      ...userOptions,
+      showGamblingContent: !userOptions.showGamblingContent,
+    });
+    setOptionsMessage(ok ? "Saved." : "Could not save. Please try again.");
+  };
   const [user, setUser] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -386,6 +399,34 @@ function SettingsPage() {
                   Dark
                 </span>
               </button>
+            </div>
+          </section>
+
+          <section className="settings-section">
+            <h3>Content</h3>
+            <div className="settings-row">
+              <div className="settings-row-label">
+                <span className="settings-row-title">Show gambling content</span>
+                <span className="settings-row-hint">
+                  Spreads, totals, and odds in leagues that don&apos;t require
+                  them
+                </span>
+                {/* Persistently mounted aria-live region — see the display-name
+                    hint on this page for why. */}
+                <span className="settings-row-hint" aria-live="polite">
+                  {optionsMessage}
+                </span>
+              </div>
+              <label className="settings-switch">
+                <input
+                  type="checkbox"
+                  aria-label="Show gambling content"
+                  checked={userOptions?.showGamblingContent === true}
+                  disabled={userOptions === null}
+                  onChange={handleToggleShowGambling}
+                />
+                <span className="settings-switch-track" aria-hidden="true" />
+              </label>
             </div>
           </section>
 

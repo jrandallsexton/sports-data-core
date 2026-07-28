@@ -7,10 +7,11 @@ import {
   Alert,
   Platform,
   ScrollView,
+  Switch,
 } from 'react-native';
 import { signOut } from 'firebase/auth';
 import * as WebBrowser from 'expo-web-browser';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { signOutGoogle } from '@/src/lib/googleSignIn';
 import { Text } from '@/src/components/ui/AppText';
@@ -20,6 +21,8 @@ import { getTheme } from '@/constants/Colors';
 import { auth } from '@/src/lib/firebase';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useCurrentUser, standingsKeys } from '@/src/hooks/useStandings';
+import { useUserOptions, userOptionsKeys } from '@/src/hooks/useUserOptions';
+import type { UserOptions } from '@/src/types/models';
 import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 import { usersApi } from '@/src/services/api/usersApi';
 import { devicesApi } from '@/src/services/api/devicesApi';
@@ -118,6 +121,32 @@ export default function ProfileScreen() {
   const { mode, setMode } = useThemeMode();
   const { size: textSize, setSize: setTextSize } = useTextSize();
   const queryClient = useQueryClient();
+
+  // Per-user options (see docs/features/user-options.md). Optimistic toggle
+  // mirroring the notifications-settings pattern: apply to the cache, PATCH,
+  // revert on failure.
+  const { data: userOptions } = useUserOptions();
+  const [optionsMessage, setOptionsMessage] = useState('');
+  const optionsMutation = useMutation<unknown, unknown, UserOptions, { previous?: UserOptions }>({
+    mutationFn: (next) => usersApi.updateUserOptions(next),
+    onMutate: (next) => {
+      const previous = queryClient.getQueryData<UserOptions>(userOptionsKeys.me);
+      queryClient.setQueryData(userOptionsKeys.me, next);
+      setOptionsMessage('');
+      return { previous };
+    },
+    onError: (_err, _next, context) => {
+      if (context?.previous) queryClient.setQueryData(userOptionsKeys.me, context.previous);
+      setOptionsMessage('Could not save. Please try again.');
+    },
+  });
+  const handleToggleShowGambling = () => {
+    if (!userOptions || optionsMutation.isPending) return;
+    optionsMutation.mutate({
+      ...userOptions,
+      showGamblingContent: !userOptions.showGamblingContent,
+    });
+  };
   const router = useRouter();
 
   const deviceTz = useMemo(() => detectDeviceTimezone(), []);
@@ -382,6 +411,35 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      {/* Content — per-user options (see docs/features/user-options.md).
+          Mirrors web's Settings "Content" section. */}
+      <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Content</Text>
+        <View style={[styles.settingsRow, { borderBottomColor: theme.separator }]}>
+          <View style={styles.optionTextWrap}>
+            <Text style={[styles.settingsLabel, { color: theme.text }]}>
+              Show Gambling Content
+            </Text>
+            <Text style={[styles.sectionHint, { color: theme.textMuted }]}>
+              Spreads, totals, and odds in leagues that don&rsquo;t require them
+            </Text>
+            {optionsMessage ? (
+              <Text style={[styles.sectionHint, { color: theme.error }]}>
+                {optionsMessage}
+              </Text>
+            ) : null}
+          </View>
+          <Switch
+            value={userOptions?.showGamblingContent === true}
+            disabled={!userOptions || optionsMutation.isPending}
+            onValueChange={handleToggleShowGambling}
+            trackColor={{ false: theme.border, true: theme.tint }}
+            thumbColor="#fff"
+            accessibilityLabel="Show gambling content"
+          />
+        </View>
+      </View>
+
       {/* Account */}
       <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Account</Text>
@@ -562,6 +620,9 @@ const styles = StyleSheet.create({
   },
   settingsLabel: { fontSize: 16 },
   settingsValue: { fontSize: 14 },
+  // Content-option rows: label + hint stack left of the Switch; flex so long
+  // hints wrap instead of pushing the control off-screen.
+  optionTextWrap: { flex: 1, gap: 2, paddingRight: 12 },
   destructive: { fontWeight: '600' },
   fieldEditor: {
     paddingHorizontal: 16,

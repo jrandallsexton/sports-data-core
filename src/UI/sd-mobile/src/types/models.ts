@@ -185,6 +185,21 @@ export interface LeagueMatchupsResponse {
   sport: string;
 }
 
+// ─── User options ────────────────────────────────────────────────────────────
+
+/**
+ * Matches UserOptionsDto from GET /user/me/options — the typed projection of
+ * the per-user key/value UserOption rows. Absent rows yield defaults, so this
+ * is always a full set. See docs/features/user-options.md.
+ */
+export interface UserOptions {
+  /**
+   * Default false: gambling content (spreads, totals, odds) renders only
+   * where the league's pick type requires it (ATS/OU) until the user opts in.
+   */
+  showGamblingContent: boolean;
+}
+
 // ─── Picks ───────────────────────────────────────────────────────────────────
 
 /**

@@ -9,6 +9,8 @@ import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
 import { useContestUpdate } from '@/src/stores/contestUpdatesStore';
 import { useCurrentUser } from '@/src/hooks/useStandings';
+import { useUserOptions } from '@/src/hooks/useUserOptions';
+import { shouldShowGambling } from '@/src/lib/gamblingContent';
 import { useTeamFinalizedGames } from '@/src/hooks/useTeamFinalizedGames';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
 import { InsightModal } from './InsightModal';
@@ -522,6 +524,11 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
+  // Gambling-content gate (see lib/gamblingContent.ts): ATS/O-U leagues
+  // always show lines; Straight-Up leagues only when the user opted in.
+  const { data: userOptions } = useUserOptions();
+  const showGambling = shouldShowGambling(pickType, userOptions);
+
   // Live-update subscription. Only re-renders this card when its own
   // contestId's record changes — see contestUpdatesStore selector design.
   const live = useContestUpdate(matchup.contestId);
@@ -852,14 +859,18 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, seaso
         )}
       </View>
 
-      {/* Spread & O/U — tap goes to the contest overview. */}
-      <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={onPress ? 0.75 : 1}
-        disabled={!onPress}
-      >
-        <OddsRow matchup={enrichedMatchup} />
-      </TouchableOpacity>
+      {/* Spread & O/U — tap goes to the contest overview. Gated: ATS/O-U
+          leagues always show lines (they ARE the game); Straight-Up leagues
+          only when the user opted in. See lib/gamblingContent.ts. */}
+      {showGambling && (
+        <TouchableOpacity
+          onPress={onPress}
+          activeOpacity={onPress ? 0.75 : 1}
+          disabled={!onPress}
+        >
+          <OddsRow matchup={enrichedMatchup} />
+        </TouchableOpacity>
+      )}
 
       {/* Game status — time/score/live; GameStatus owns its own touchable
           and routes to the contest overview via onPressGameDetail.

@@ -151,6 +151,13 @@
     padding: 10px;
   }
 
+  /* The desktop no-gambling override outranks the rule above on specificity
+     (media queries add none), so restate the mobile track list for the
+     variant — cells auto-flow, so the two removed cells simply reflow. */
+  .matchup-grid--no-gambling .grid-row {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
   .grid-header {
     display: none; /* Hide header on mobile */
   }

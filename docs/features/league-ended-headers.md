@@ -139,7 +139,10 @@ Branch: off latest `origin/main` (not the #561 branch). Separate PR from #561.
 Deactivation lags a league's end date by ~7 days, so `isReadOnly` alone showed
 the glance far too late. The envelope gained `PendingCount`: matchups whose
 outcome for THIS user is still open — unpicked games that haven't started
-(still actionable) plus picked games not yet scored (`IsCorrect == null`).
+(still actionable) plus picked games not yet scored (`IsCorrect == null`,
+bounded to 24h after kickoff: canceled/void contests never get scored, and
+beyond the horizon a never-scored pick folds into the X bucket instead of
+holding the glance hostage until deactivation).
 Unpicked-and-started games are excluded: they are a decided no-result (the X
 bucket), so a failed-to-make pick can never block resolution. Computed
 entirely from local API data (matchup `StartDateUtc` + the user's picks) via

@@ -14,10 +14,19 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Picks.Queries.GetUserPicksByG
 
 public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPicksByGroupAndWeekQueryHandler>
 {
+    // Every test must pin the clock: the handler computes a 24h scoring
+    // horizon (now - 24h), and the unmocked IDateTimeProvider default of
+    // DateTime.MinValue makes that subtraction throw.
+    private void PinClock(DateTime utc) =>
+        Mocker.GetMock<SportsData.Core.Common.IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(utc);
+
     [Fact]
     public async Task ExecuteAsync_ShouldReturnEmptyList_WhenNoPicksExist()
     {
         // Arrange
+        PinClock(new DateTime(2025, 10, 5, 12, 0, 0, DateTimeKind.Utc));
         var handler = Mocker.CreateInstance<GetUserPicksByGroupAndWeekQueryHandler>();
         var query = new GetUserPicksByGroupAndWeekQuery
         {
@@ -89,6 +98,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
         });
         await DataContext.SaveChangesAsync();
 
+        PinClock(new DateTime(2025, 10, 4, 14, 0, 0, DateTimeKind.Utc));
         var handler = Mocker.CreateInstance<GetUserPicksByGroupAndWeekQueryHandler>();
         var query = new GetUserPicksByGroupAndWeekQuery
         {
@@ -157,6 +167,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
         await DataContext.UserPicks.AddRangeAsync(pick1, pick2);
         await DataContext.SaveChangesAsync();
 
+        PinClock(new DateTime(2025, 10, 5, 12, 0, 0, DateTimeKind.Utc));
         var handler = Mocker.CreateInstance<GetUserPicksByGroupAndWeekQueryHandler>();
         var query = new GetUserPicksByGroupAndWeekQuery
         {
@@ -227,6 +238,7 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
         await DataContext.UserPicks.AddRangeAsync(pick1, pick2);
         await DataContext.SaveChangesAsync();
 
+        PinClock(new DateTime(2025, 10, 5, 12, 0, 0, DateTimeKind.Utc));
         var handler = Mocker.CreateInstance<GetUserPicksByGroupAndWeekQueryHandler>();
         var query = new GetUserPicksByGroupAndWeekQuery
         {
@@ -416,5 +428,76 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
         after.Value.PendingCount.Should().Be(0);
         after.Value.TotalMatchups.Should().Be(2);
         after.Value.CorrectCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_NeverScoredPick_StopsPendingAfterScoringHorizon()
+    {
+        // A canceled/void contest never gets scored (PickScoringProcessor
+        // skips result-less matchups), so its pick keeps IsCorrect == null
+        // forever. Within 24h of kickoff it pends (scoring/backfill lag);
+        // beyond the horizon it folds into the X bucket so one canceled game
+        // can't hold the glance hostage until league deactivation.
+        var userId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+        const int week = 4;
+        var kickoffUtc = new DateTime(2025, 11, 8, 16, 0, 0, DateTimeKind.Utc);
+
+        var user = new UserEntity
+        {
+            Username = "test_user_21",
+            Id = userId,
+            FirebaseUid = Guid.NewGuid().ToString(),
+            Email = "test@test.com",
+            DisplayName = "Test User",
+            SignInProvider = "test",
+            LastLoginUtc = kickoffUtc
+        };
+        await DataContext.Users.AddAsync(user);
+
+        var contestId = Guid.NewGuid();
+        await DataContext.PickemGroupMatchups.AddAsync(new PickemGroupMatchup
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            ContestId = contestId,
+            SeasonYear = 2025,
+            SeasonWeek = week,
+            SeasonWeekId = Guid.NewGuid(),
+            StartDateUtc = kickoffUtc
+        });
+        await DataContext.UserPicks.AddAsync(new PickemGroupUserPick
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            PickemGroupId = groupId,
+            ContestId = contestId,
+            Week = week,
+            PickType = PickType.StraightUp,
+            IsCorrect = null,
+            TiebreakerType = TiebreakerType.TotalPoints
+        });
+        await DataContext.SaveChangesAsync();
+
+        var clock = Mocker.GetMock<SportsData.Core.Common.IDateTimeProvider>();
+        var handler = Mocker.CreateInstance<GetUserPicksByGroupAndWeekQueryHandler>();
+        var query = new GetUserPicksByGroupAndWeekQuery
+        {
+            UserId = userId,
+            GroupId = groupId,
+            WeekNumber = week
+        };
+
+        // Inside the horizon: awaiting a score -> pending.
+        clock.Setup(x => x.UtcNow()).Returns(kickoffUtc.AddHours(23));
+        (await handler.ExecuteAsync(query)).Value.PendingCount.Should().Be(1);
+
+        // Beyond the horizon: never-scored -> decided no-result (X bucket).
+        clock.Setup(x => x.UtcNow()).Returns(kickoffUtc.AddHours(25));
+        var resolved = await handler.ExecuteAsync(query);
+        resolved.Value.PendingCount.Should().Be(0);
+        resolved.Value.CorrectCount.Should().Be(0);
+        resolved.Value.IncorrectCount.Should().Be(0);
+        resolved.Value.TotalMatchups.Should().Be(1);
     }
 }

@@ -73,16 +73,26 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
         // change or is still being resolved:
         //   - unpicked and the game hasn't started (still actionable), or
         //   - picked but not yet scored (IsCorrect == null: game in progress
-        //     or awaiting the scoring processor).
+        //     or awaiting the scoring processor) — bounded by a window after
+        //     kickoff.
         // Unpicked-and-started games are NOT pending — they can never be
         // picked, so they're already a decided no-result (the X bucket).
         // PendingCount == 0 therefore means the user's results glance is
         // final, even if a game they skipped is still in progress.
+        //
+        // The window exists because canceled/void contests never get scored:
+        // PickScoringProcessor skips result-less and unfinalized matchups, so
+        // their picks keep IsCorrect == null forever. Unbounded, one canceled
+        // game would hold PendingCount above zero until league deactivation.
+        // 24h generously covers the longest games plus scoring/backfill lag;
+        // beyond it a never-scored pick folds into the X bucket — the same
+        // semantics deactivated leagues already display.
         var now = _dateTimeProvider.UtcNow();
+        var scoringHorizon = now - TimeSpan.FromHours(24);
         var picksByContest = picks.ToDictionary(p => p.ContestId);
         var pendingCount = matchups.Count(m =>
             picksByContest.TryGetValue(m.ContestId, out var pick)
-                ? pick.IsCorrect is null
+                ? pick.IsCorrect is null && m.StartDateUtc > scoringHorizon
                 : m.StartDateUtc > now);
 
         return new Success<UserPicksResultDto>(new UserPicksResultDto

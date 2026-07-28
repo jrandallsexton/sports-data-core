@@ -19,13 +19,16 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
 {
     private readonly ILogger<GetUserPicksByGroupAndWeekQueryHandler> _logger;
     private readonly AppDataContext _dataContext;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetUserPicksByGroupAndWeekQueryHandler(
         ILogger<GetUserPicksByGroupAndWeekQueryHandler> logger,
-        AppDataContext dataContext)
+        AppDataContext dataContext,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<UserPicksResultDto>> ExecuteAsync(
@@ -54,23 +57,41 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
             })
             .ToListAsync(cancellationToken);
 
-        // Total for the group-week (picked or not) — covered by the
-        // (GroupId, SeasonYear, SeasonWeek) index on PickemGroupMatchup.
-        // Correct/incorrect are counted from the already-materialized picks
-        // rather than issuing further queries.
-        var totalMatchups = await _dataContext.PickemGroupMatchups
+        // The group-week's matchups (picked or not) — covered by the
+        // (GroupId, SeasonYear, SeasonWeek) index on PickemGroupMatchup. A
+        // week holds at most a few dozen rows, so the projection is cheap and
+        // lets pending be computed without a Contest-service round-trip.
+        var matchups = await _dataContext.PickemGroupMatchups
             .AsNoTracking()
-            .CountAsync(m =>
+            .Where(m =>
                 m.GroupId == query.GroupId &&
-                m.SeasonWeek == query.WeekNumber,
-                cancellationToken);
+                m.SeasonWeek == query.WeekNumber)
+            .Select(m => new { m.ContestId, m.StartDateUtc })
+            .ToListAsync(cancellationToken);
+
+        // A matchup is PENDING for this user when their week-outcome can still
+        // change or is still being resolved:
+        //   - unpicked and the game hasn't started (still actionable), or
+        //   - picked but not yet scored (IsCorrect == null: game in progress
+        //     or awaiting the scoring processor).
+        // Unpicked-and-started games are NOT pending — they can never be
+        // picked, so they're already a decided no-result (the X bucket).
+        // PendingCount == 0 therefore means the user's results glance is
+        // final, even if a game they skipped is still in progress.
+        var now = _dateTimeProvider.UtcNow();
+        var picksByContest = picks.ToDictionary(p => p.ContestId);
+        var pendingCount = matchups.Count(m =>
+            picksByContest.TryGetValue(m.ContestId, out var pick)
+                ? pick.IsCorrect is null
+                : m.StartDateUtc > now);
 
         return new Success<UserPicksResultDto>(new UserPicksResultDto
         {
             Picks = picks,
-            TotalMatchups = totalMatchups,
+            TotalMatchups = matchups.Count,
             CorrectCount = picks.Count(p => p.IsCorrect == true),
-            IncorrectCount = picks.Count(p => p.IsCorrect == false)
+            IncorrectCount = picks.Count(p => p.IsCorrect == false),
+            PendingCount = pendingCount
         });
     }
 }

@@ -203,6 +203,13 @@ export interface UserPicksResult {
   correctCount: number;
   /** Picks with isCorrect === false. */
   incorrectCount: number;
+  /**
+   * Matchups whose outcome for THIS user is still open: unpicked games that
+   * haven't started, plus picked games not yet scored. Zero means the user's
+   * results are final for the week (the full glance can render) — no waiting
+   * for league deactivation, which lags the end date by ~7 days.
+   */
+  pendingCount: number;
 }
 
 /** Matches UserPickDto from GET /ui/picks/{groupId}/week/{week} */

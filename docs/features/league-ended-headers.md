@@ -134,6 +134,32 @@ array→object break never has a window on web. Mobile:
 
 Branch: off latest `origin/main` (not the #561 branch). Separate PR from #561.
 
+## Addendum 2026-07-28 — PendingCount and the actionable-first cascade
+
+Deactivation lags a league's end date by ~7 days, so `isReadOnly` alone showed
+the glance far too late. The envelope gained `PendingCount`: matchups whose
+outcome for THIS user is still open — unpicked games that haven't started
+(still actionable) plus picked games not yet scored (`IsCorrect == null`).
+Unpicked-and-started games are excluded: they are a decided no-result (the X
+bucket), so a failed-to-make pick can never block resolution. Computed
+entirely from local API data (matchup `StartDateUtc` + the user's picks) via
+`IDateTimeProvider` — no Contest-service round-trip.
+
+Display rules ("actionable = unpicked AND not yet started"):
+
+- **Mobile (one header slot), cascade:**
+  1. `isReadOnly || pendingCount == 0` → full X|Y|Z glance (X is only honest
+     once nothing pends — mid-flight it would count in-progress games as
+     no-results)
+  2. any actionable pick → progress n/N + Hide Picked (acting beats watching)
+  3. anything scored → live ✓Y ✗Z chip (no X)
+  4. else → All Picks Made / static n/N
+- **Web (room for both):** same rules, except mid-flight it shows the progress
+  badge AND the ✓/✗ chip side by side once results start landing.
+- Hide Picked (both platforms) renders — and its filter applies — only in the
+  actionable state, preventing the stale-filter empty-page trap in every
+  locked-out configuration.
+
 ## Out of scope
 
 - The global `Response<T>` envelope initiative (`project_api_response_envelope`)

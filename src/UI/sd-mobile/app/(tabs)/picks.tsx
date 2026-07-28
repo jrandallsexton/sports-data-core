@@ -90,6 +90,14 @@ export default function PicksScreen() {
   const [leagueId, setLeagueId] = useState<string | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [hidePicked, setHidePicked] = useState(false);
+  // 15s clock tick, matching web's PicksPage ticker: time-based derivations
+  // (anyActionable) re-evaluate as matchup lock times pass, so the header
+  // cascade flips at kickoff without waiting for a refetch or SignalR event.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, []);
   const [importOpen, setImportOpen] = useState(false);
 
   // Latest week = last element of the ascending seasonWeeks list.
@@ -230,7 +238,7 @@ export default function PicksScreen() {
   const anyActionable = entries.some(
     (e) =>
       e.pick === null &&
-      new Date(e.matchup.startDateUtc).getTime() - 5 * 60 * 1000 > Date.now(),
+      new Date(e.matchup.startDateUtc).getTime() - 5 * 60 * 1000 > nowMs,
   );
 
   // Full results glance (X|Y|Z): counts come from the picks envelope, not

@@ -18,12 +18,11 @@ import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { CloneLeagueModal } from '@/src/components/features/leagues/CloneLeagueModal';
 import { LeagueCard } from '@/src/components/features/leagues/LeagueCard';
-import { leaguesApi, type LeagueSummary } from '@/src/services/api/leaguesApi';
+import { leaguesApi, leaguesKeys, type LeagueSummary } from '@/src/services/api/leaguesApi';
 import { standingsKeys } from '@/src/hooks/useStandings';
 
-export const leaguesKeys = {
-  mine: ['leagues', 'mine'] as const,
-};
+// leaguesKeys moved to services/api/leaguesApi.ts — shared cache keys must
+// not live in a route module (see PR #570 review).
 
 const ALL_LEAGUES = 'All';
 

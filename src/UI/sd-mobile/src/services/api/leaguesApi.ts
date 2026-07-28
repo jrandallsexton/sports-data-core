@@ -56,6 +56,16 @@ export interface LeagueMember {
   role: string;
 }
 
+/**
+ * React Query key factory for league data — colocated with the API module so
+ * screens and shared components import it from one place (route modules must
+ * not be the home of shared cache keys).
+ */
+export const leaguesKeys = {
+  mine: ['leagues', 'mine'] as const,
+  detail: (id: string) => ['league', id] as const,
+};
+
 /** A registered user invitable to a league (from invite search). No email. */
 export interface InviteableUser {
   userId: string;

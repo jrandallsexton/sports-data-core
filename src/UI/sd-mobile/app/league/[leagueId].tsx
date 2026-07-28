@@ -19,11 +19,11 @@ import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import {
   leaguesApi,
+  leaguesKeys,
   type InviteableUser,
   type LeagueDetail,
 } from '@/src/services/api/leaguesApi';
 import { useCurrentUser, standingsKeys } from '@/src/hooks/useStandings';
-import { leaguesKeys } from '../leagues';
 
 // League ids are GUIDs — same guard as the league-invite deep-link screen.
 const GUID_RE =
@@ -76,7 +76,7 @@ export default function LeagueDetailScreen() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['league', leagueId],
+    queryKey: leaguesKeys.detail(leagueId ?? 'invalid'),
     enabled: !!leagueId,
     queryFn: async () => (await leaguesApi.getLeagueById(leagueId!)).data,
   });
@@ -172,6 +172,9 @@ export default function LeagueDetailScreen() {
   const deleteMutation = useMutation({
     mutationFn: () => leaguesApi.deleteLeague(leagueId!),
     onSuccess: async () => {
+      // The league is gone — drop its detail cache entirely (an invalidate
+      // would just refetch a 404) and refresh the lists that contained it.
+      queryClient.removeQueries({ queryKey: leaguesKeys.detail(leagueId!) });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: leaguesKeys.mine }),
         queryClient.invalidateQueries({ queryKey: standingsKeys.me }),
@@ -226,7 +229,20 @@ export default function LeagueDetailScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        {isLoading ? (
+        {!leagueId ? (
+          // Malformed/missing id: the query never ran, so a retry can't help —
+          // distinct from a fetch failure on a valid id below.
+          <View style={styles.centered}>
+            <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+              This league link isn&rsquo;t valid.
+            </Text>
+            <Button
+              title="Back"
+              variant="secondary"
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)' as never))}
+            />
+          </View>
+        ) : isLoading ? (
           <ActivityIndicator style={styles.loading} color={theme.tint} />
         ) : isError || !league ? (
           <View style={styles.centered}>

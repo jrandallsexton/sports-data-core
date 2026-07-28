@@ -90,6 +90,17 @@ public class DeleteAccountCommandHandler : IDeleteAccountCommandHandler
         user.Timezone = null;
         user.DeletedUtc = _clock.UtcNow();
 
+        // Purge the user's option rows. The anonymize-in-place strategy keeps
+        // the User row, so the UserOption FK cascade never fires — and option
+        // VALUES can themselves be sensitive (e.g. the gambling-content
+        // preference can signal recovery or religious context), so deletion
+        // means they go. Loaded + RemoveRange (not ExecuteDelete) so the purge
+        // commits atomically with the anonymization in the same SaveChanges.
+        var options = await _db.UserOptions
+            .Where(o => o.UserId == userId)
+            .ToListAsync(cancellationToken);
+        _db.UserOptions.RemoveRange(options);
+
         // Publish before SaveChanges so the outbox row persists atomically with
         // the anonymization (EF bus outbox flushes on save).
         await _eventBus.Publish(

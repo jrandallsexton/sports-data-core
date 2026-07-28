@@ -120,9 +120,12 @@ predicate.
 
 ## Open items
 
-- `UserDeleted` purge: add UserOption rows to the Notification/API-side
-  deletion path so deleted accounts leave no orphan rows (harmless but
-  untidy; the rows carry no PII).
+- ~~`UserDeleted` purge~~ RESOLVED in this PR: `DeleteAccountCommandHandler`
+  purges the user's UserOption rows atomically with the anonymization. The
+  anonymize-in-place strategy keeps the User row, so the FK cascade never
+  fires on its own — and option values can themselves be sensitive (the
+  gambling-content preference can signal recovery or religious context), so
+  they must not survive deletion.
 - Future options ride the same registry + DTO; if the option count grows a
   dedicated preferences screen replaces the settings section (deferred).
 - **Kids / under-13 mode (idea, 2026-07-28):** a future policy layer could

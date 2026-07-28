@@ -12,6 +12,10 @@ function MatchupGrid({
   onViewInsight,
   isSubscribed,
   fadingOut = [],
+  // Gambling-content gate (see utils/gamblingContent.js — computed by the
+  // caller, which knows the league's pick type). Defaults to the historical
+  // behavior so other consumers are unaffected until they opt in.
+  showGambling = true,
 }) {
   if (loading) {
     return (
@@ -23,14 +27,14 @@ function MatchupGrid({
   }
 
   return (
-    <div className="matchup-grid">
+    <div className={`matchup-grid${showGambling ? "" : " matchup-grid--no-gambling"}`}>
       {/* Grid Header */}
       <div className="grid-row grid-header">
         <div>Game</div>
         <div>Time</div>
         <div>Location</div>
-        <div>Spread</div>
-        <div>O/U</div>
+        {showGambling && <div>Spread</div>}
+        {showGambling && <div>O/U</div>}
         <div>Pick</div>
         <div>Consensus</div>
         <div>Insight</div>
@@ -98,18 +102,22 @@ function MatchupGrid({
             </div>
 
             {/* Spread */}
-            <div className="grid-cell">
-              <div className="spread" style={{ fontSize: "0.9rem" }}>
-                {spread}
+            {showGambling && (
+              <div className="grid-cell">
+                <div className="spread" style={{ fontSize: "0.9rem" }}>
+                  {spread}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Over/Under */}
-            <div className="grid-cell">
-              <div className="over-under" style={{ fontSize: "0.9rem" }}>
-                {overUnder}
+            {showGambling && (
+              <div className="grid-cell">
+                <div className="over-under" style={{ fontSize: "0.9rem" }}>
+                  {overUnder}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Pick */}
             <div className="grid-cell">

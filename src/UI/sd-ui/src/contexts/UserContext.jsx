@@ -8,10 +8,15 @@ export const UserProvider = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
   const [userDto, setUserDto] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Typed per-user options (UserOptionsDto). null until loaded — consumers
+  // treat null as all-defaults via shouldShowGambling & co., so a fetch
+  // failure degrades to the safe defaults rather than blocking render.
+  const [userOptions, setUserOptions] = useState(null);
 
   const loadUserDto = useCallback(async () => {
     if (!user) {
       setUserDto(null);
+      setUserOptions(null);
       setLoading(false);
       return;
     }
@@ -24,6 +29,16 @@ export const UserProvider = ({ children }) => {
       setUserDto(null);
     } finally {
       setLoading(false);
+    }
+
+    // Off the critical path: options only refine display (safe defaults
+    // apply until they arrive), so they must not delay first render.
+    try {
+      const options = await UsersApi.getUserOptions();
+      setUserOptions(options.data);
+    } catch (err) {
+      console.error('Failed to load user options:', err);
+      setUserOptions(null);
     }
   }, [user]);
 
@@ -44,8 +59,25 @@ export const UserProvider = ({ children }) => {
     }
   }, [user, authLoading, loadUserDto]);
 
+  // Optimistic write-through for the settings toggle: apply locally, PATCH,
+  // revert on failure. Returns true on success so the caller can message.
+  const updateUserOptions = useCallback(async (next) => {
+    const previous = userOptions;
+    setUserOptions(next);
+    try {
+      await UsersApi.updateUserOptions(next);
+      return true;
+    } catch (err) {
+      console.error('Failed to update user options:', err);
+      setUserOptions(previous);
+      return false;
+    }
+  }, [userOptions]);
+
   return (
-    <UserContext.Provider value={{ userDto, loading, refreshUserDto }}>
+    <UserContext.Provider
+      value={{ userDto, loading, refreshUserDto, userOptions, updateUserOptions }}
+    >
       {children}
     </UserContext.Provider>
   );

@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { NotificationPreferences, UserDto } from '@/src/types/models';
+import type { NotificationPreferences, UserDto, UserOptions } from '@/src/types/models';
 
 /**
  * Wrapper for /user/* endpoints. Mirrors the web app's `src/api/usersApi.js`.
@@ -36,4 +36,12 @@ export const usersApi = {
   // PATCH /user/me/notification-preferences — full replacement; send every flag.
   updateNotificationPreferences: (prefs: NotificationPreferences) =>
     apiClient.patch('/user/me/notification-preferences', prefs),
+
+  // GET /user/me/options → typed per-user options (defaults when the user has
+  // never changed anything). PATCH is a full replacement of KNOWN options —
+  // unknown/newer options are never touched server-side.
+  // See docs/features/user-options.md.
+  getUserOptions: () => apiClient.get<UserOptions>('/user/me/options'),
+  updateUserOptions: (options: UserOptions) =>
+    apiClient.patch('/user/me/options', options),
 };

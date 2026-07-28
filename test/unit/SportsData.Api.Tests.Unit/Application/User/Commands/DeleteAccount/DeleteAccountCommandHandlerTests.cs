@@ -2,6 +2,8 @@ using FluentAssertions;
 
 using FluentValidation;
 
+using Microsoft.EntityFrameworkCore;
+
 using Moq;
 
 using SportsData.Api.Application.User.Commands.DeleteAccount;
@@ -13,6 +15,7 @@ using SportsData.Core.Eventing.Events.Users;
 using Xunit;
 
 using UserEntity = SportsData.Api.Infrastructure.Data.Entities.User;
+using UserOptionEntity = SportsData.Api.Infrastructure.Data.Entities.UserOption;
 
 namespace SportsData.Api.Tests.Unit.Application.User.Commands.DeleteAccount;
 
@@ -123,5 +126,33 @@ public class DeleteAccountCommandHandlerTests : ApiTestBase<DeleteAccountCommand
         reloaded.Username.Should().Be("del_prior");
         reloaded.DisplayName.Should().Be("Deleted user");
         reloaded.FirebaseUid.Should().Be("deleted-prior");
+    }
+
+    [Fact]
+    public async Task Execute_PurgesUserOptions()
+    {
+        // Option values can themselves be sensitive (the gambling-content
+        // preference can signal recovery or religious context). The
+        // anonymize-in-place strategy keeps the User row, so the FK cascade
+        // never fires — the handler must purge the rows explicitly.
+        var userId = await SeedUserAsync();
+        await DataContext.UserOptions.AddAsync(new UserOptionEntity
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            Key = SportsData.Api.Application.User.UserOptionKeys.ShowGamblingContent,
+            Value = "True",
+            CreatedUtc = FixedNow,
+            CreatedBy = userId
+        });
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<DeleteAccountCommandHandler>();
+        var result = await handler.ExecuteAsync(new DeleteAccountCommand { UserId = userId });
+
+        result.IsSuccess.Should().BeTrue();
+        DataContext.ChangeTracker.Clear();
+        (await DataContext.UserOptions.AnyAsync(o => o.UserId == userId))
+            .Should().BeFalse("deletion must leave no option rows behind");
     }
 }

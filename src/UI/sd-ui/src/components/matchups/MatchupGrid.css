@@ -14,6 +14,16 @@
   display: grid;
   grid-template-columns: 2fr 1fr 2fr 1fr 1fr 2fr 1fr 0.5fr;
   gap: 10px;
+}
+
+/* Hide-gambling variant: the Spread and O/U columns are omitted entirely
+   (cells conditionally unrendered in JSX), so the template drops their two
+   1fr tracks. See utils/gamblingContent.js. */
+.matchup-grid--no-gambling .grid-row {
+  grid-template-columns: 2fr 1fr 2fr 2fr 1fr 0.5fr;
+}
+
+.grid-row {
   padding: 16px;
   align-items: center;
   border-bottom: 1px solid var(--border-primary);
@@ -139,6 +149,13 @@
       "game spread insight"
       "ou pick pick";
     padding: 10px;
+  }
+
+  /* The desktop no-gambling override outranks the rule above on specificity
+     (media queries add none), so restate the mobile track list for the
+     variant — cells auto-flow, so the two removed cells simply reflow. */
+  .matchup-grid--no-gambling .grid-row {
+    grid-template-columns: 1fr 1fr 1fr;
   }
 
   .grid-header {

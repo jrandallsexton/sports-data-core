@@ -5,11 +5,13 @@ using SportsData.Api.Application.User.Commands.DeleteAccount;
 using SportsData.Api.Application.User.Commands.UpdateDisplayName;
 using SportsData.Api.Application.User.Commands.UpdateNotificationPreferences;
 using SportsData.Api.Application.User.Commands.UpdateUsername;
+using SportsData.Api.Application.User.Commands.UpdateUserOptions;
 using SportsData.Api.Application.User.Commands.UpdateUserTimezone;
 using SportsData.Api.Application.User.Commands.UpsertUser;
 using SportsData.Api.Application.User.Dtos;
 using SportsData.Api.Application.User.Queries.GetMe;
 using SportsData.Api.Application.User.Queries.GetNotificationPreferences;
+using SportsData.Api.Application.User.Queries.GetUserOptions;
 using SportsData.Api.Extensions;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
@@ -109,6 +111,29 @@ public class UserController : ApiControllerBase
     public async Task<ActionResult<Guid>> UpdateNotificationPreferences(
         [FromBody] UpdateNotificationPreferencesCommand command,
         [FromServices] IUpdateNotificationPreferencesCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+        var result = await handler.ExecuteAsync(userId, command, cancellationToken);
+        return result.ToActionResult();
+    }
+
+    [HttpGet("me/options")]
+    [Authorize]
+    public async Task<ActionResult<UserOptionsDto>> GetUserOptions(
+        [FromServices] IGetUserOptionsQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetUserOptionsQuery { UserId = HttpContext.GetCurrentUserId() };
+        var result = await handler.ExecuteAsync(query, cancellationToken);
+        return result.ToActionResult();
+    }
+
+    [HttpPatch("me/options")]
+    [Authorize]
+    public async Task<ActionResult<Guid>> UpdateUserOptions(
+        [FromBody] UpdateUserOptionsCommand command,
+        [FromServices] IUpdateUserOptionsCommandHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();

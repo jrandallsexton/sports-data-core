@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase"; // ✅ centralized Firebase setup
-import { useAuth } from "../../contexts/AuthContext";
 import { FaEnvelope, FaLock } from "react-icons/fa";
 import "./Login.css";
 
@@ -13,15 +12,16 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
-  const { setToken } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg("");
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      await setToken(userCredential.user);
+      // Auth is header-based (apiClient attaches a per-request bearer token);
+      // there is no cookie exchange step. The backend user already exists, or
+      // is provisioned server-side on the first authenticated request.
+      await signInWithEmailAndPassword(auth, email, password);
       navigate("/app");
     } catch (error) {
       setErrorMsg(error.message || "Login failed");

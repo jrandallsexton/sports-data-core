@@ -6,10 +6,9 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { FaEnvelope } from "react-icons/fa";
-import apiWrapper from "../../api/apiWrapper";
 import "./EmailSignupForm.css"; // reuse existing styling
 
-function EmailSignupForm({ onSuccess, onCancel }) {
+function EmailSignupForm({ onCancel }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -53,33 +52,12 @@ function EmailSignupForm({ onSuccess, onCancel }) {
         console.log("🔁 Firebase user reloaded.");
       }
 
-      const token = await result.user.getIdToken(true);
-      console.log("🔑 Fetched Firebase ID token");
-
-      // (Optional) Log token claims for debugging
-      //const decoded = JSON.parse(atob(token.split(".")[1]));
-      const decoded = await result.user.getIdTokenResult(true);
-      console.log("🧾 Decoded token claims:", decoded);
-
-      await apiWrapper.Auth.setToken(token);
-      console.log("✅ Token sent to backend");
-
-      const response = await fetch("/api/user/me", {
-        credentials: "include",
-      });
-
-      console.log("🔁 /api/user/me response:", response.status);
-
-      if (response.status === 404) {
-        console.log("🆕 Backend user not found — invoking onSuccess");
-        onSuccess(result.user);
-      } else if (response.ok) {
-        const redirectPath = location.state?.from?.pathname || "/app";
-        console.log("🚀 Redirecting to:", redirectPath);
-        navigate(redirectPath);
-      } else {
-        throw new Error(`Unexpected response: ${response.status}`);
-      }
+      // The backend user is provisioned server-side on the first
+      // authenticated request (FirebaseAuthenticationMiddleware →
+      // UserService.GetOrCreateUserAsync) — the client just navigates.
+      const redirectPath = location.state?.from?.pathname || "/app";
+      console.log("🚀 Redirecting to:", redirectPath);
+      navigate(redirectPath);
     } catch (err) {
       console.error("❌ Signup error:", err);
       setError(err.message || "Signup failed.");

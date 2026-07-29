@@ -3,13 +3,15 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import Login from "../login/Login.jsx";
-import UserSummaryCard from "../usersummary/UserSummaryCard.jsx";
 import "./SignupPage.css";
-import apiWrapper from "../../api/apiWrapper";
 import EmailSignupForm from "./EmailSignupForm.jsx";
 
+// Account provisioning is server-side: FirebaseAuthenticationMiddleware calls
+// UserService.GetOrCreateUserAsync on the first authenticated request. The
+// client does not create the backend user — it just signs in and navigates.
+// (The cookie-exchange + /api/user/me probe + onboarding-card flow that used
+// to live here was dead since the 2025-12-08 header-based auth migration.)
 function SignupPage() {
-  const [firebaseUser, setFirebaseUser] = useState(null);
   const [showEmailForm, setShowEmailForm] = useState(false);
 
   const navigate = useNavigate();
@@ -32,53 +34,13 @@ function SignupPage() {
     }
 
     try {
-      const result = await signInWithPopup(auth, provider);
-      const token = await result.user.getIdToken();
-
-      // Send token to backend to set HttpOnly cookie
-      await apiWrapper.Auth.setToken(token);
-
-      // 🔍 Check if backend has this user
-      const response = await fetch("/api/user/me", {
-        credentials: "include", // Include cookies in the request
-      });
-
-      if (response.status === 404) {
-        setFirebaseUser(result.user); // Show onboarding
-      } else if (response.ok) {
-        const redirectPath = location.state?.from?.pathname || "/app";
-        navigate(redirectPath);
-      } else {
-        throw new Error(`Unexpected status ${response.status}`);
-      }
+      await signInWithPopup(auth, provider);
+      const redirectPath = location.state?.from?.pathname || "/app";
+      navigate(redirectPath);
     } catch (err) {
       console.error(err);
       alert("Sign-in failed.");
     }
-  }
-
-  function handleOnboardingSubmit(data) {
-    console.log("User onboarding data:", data);
-    // TODO: Save user data to backend via API
-    // TODO: Navigate to /app or show success screen
-  }
-
-  // 🔀 Show onboarding if Firebase user is ready
-  if (firebaseUser) {
-    return (
-      <div className="signup-page">
-        <div className="signup-card">
-          <UserSummaryCard
-            user={firebaseUser}
-            onSubmit={handleOnboardingSubmit}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  function handleEmailSignupSuccess(firebaseUser) {
-    setFirebaseUser(firebaseUser);
   }
 
   return (
@@ -125,10 +87,7 @@ function SignupPage() {
             </button>
           </>
         ) : (
-          <EmailSignupForm
-            onSuccess={handleEmailSignupSuccess}
-            onCancel={() => setShowEmailForm(false)}
-          />
+          <EmailSignupForm onCancel={() => setShowEmailForm(false)} />
         )}
 
         <hr className="divider" />

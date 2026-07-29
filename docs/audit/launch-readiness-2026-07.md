@@ -66,9 +66,12 @@ the durable part, and the design record for the fix is
 ### P0-1 — IDOR: league data readable by GUID
 
 > **Resolved in #572.** A shared `ILeagueMembershipGuard` now guards every
-> by-group read. The invite-preview constraint called out below was handled by
-> tiering `GET {id}` rather than exempting it: non-members receive settings and
-> a `MemberCount` with the roster withheld.
+> member-only league read — leaderboard, week overview, scores, matchups, user
+> picks, and the message board. Two non-member reads are preserved by design:
+> public-league discovery (`GetPublicLeaguesQueryHandler`) is unguarded, and
+> `GET {id}` is *tiered* rather than guarded, which is how the invite-preview
+> constraint called out below was handled without exempting it — non-members
+> receive the league's settings and a `MemberCount`, with the roster withheld.
 
 No membership verification on by-group reads. **Structurally impossible in at least one case:** `GetLeagueByIdQuery` (`Application/UI/Leagues/Queries/GetLeagueById/GetLeagueByIdQuery.cs`) carries only `LeagueId` — the handler has no caller identity to check against.
 

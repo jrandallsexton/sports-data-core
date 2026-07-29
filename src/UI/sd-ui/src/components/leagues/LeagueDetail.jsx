@@ -83,8 +83,15 @@ const LeagueDetail = () => {
   const isPast = !!league.deactivatedUtc;
 
   // The BE withholds the roster from non-members and rejects their writes.
-  // Older payloads predate the flag, so treat a missing value as "member" —
-  // the API is the enforcement boundary; this only shapes the UI.
+  //
+  // Deliberately `!== false` rather than `=== true`. This flag shapes the UI
+  // only — every affordance it gates (picks, invitations) is independently
+  // enforced server-side, so showing one to a non-member costs a 403, not a
+  // leak. Failing closed on a missing value would be the worse trade: if web
+  // ever deploys ahead of the API, `=== true` strips the picks button and
+  // invite panel from *every* member and renders "undefined members", while
+  // `!== false` degrades only the non-member's path. The API is the
+  // enforcement boundary; this is presentation.
   const isMember = league.isMember !== false;
 
   const startLabel = formatWindowBound(league.startsOn);

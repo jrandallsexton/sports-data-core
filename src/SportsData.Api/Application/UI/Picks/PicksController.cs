@@ -63,6 +63,7 @@ public class PicksController : ApiControllerBase
     }
 
     [HttpGet("{groupId}/week/{week}")]
+    [Authorize]
     public async Task<ActionResult<UserPicksResultDto>> GetUserPicksByGroupAndWeek(
         Guid groupId,
         int week,

@@ -260,13 +260,17 @@ export default function LeagueDetailScreen() {
                   {league.description}
                 </Text>
               ) : null}
-              <Button
-                title={isPast ? 'View Picks' : 'Make Your Picks'}
-                onPress={openPicks}
-                fullWidth
-                size="md"
-                style={styles.picksButton}
-              />
+              {/* Non-members reach this screen by deep link. Their picks and
+                  invites would 403 at the API — don't offer the affordance. */}
+              {league.isMember && (
+                <Button
+                  title={isPast ? 'View Picks' : 'Make Your Picks'}
+                  onPress={openPicks}
+                  fullWidth
+                  size="md"
+                  style={styles.picksButton}
+                />
+              )}
               {(
                 [
                   ['Pick Type', league.pickType],
@@ -321,8 +325,9 @@ export default function LeagueDetailScreen() {
               )}
             </View>
 
-            {/* Invite — hidden for past leagues (read-only records) */}
-            {!isPast && (
+            {/* Invite — hidden for past leagues (read-only records) and for
+                non-members (only members may invite; the BE enforces it). */}
+            {!isPast && league.isMember && (
               <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
                 <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
                   Invite Friends

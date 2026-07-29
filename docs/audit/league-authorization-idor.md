@@ -2,7 +2,8 @@
 
 Status: **implemented (Option A)** — see "What shipped" below
 Date: 2026-07-29
-Addresses: `docs/audit/launch-readiness-2026-07.md` P0-1 and P0-2 (the two remaining launch blockers alongside the database-hardware question)
+Addresses: `docs/audit/launch-readiness-2026-07.md` P0-1, P0-2, and P0-4
+Still open after this: P0-3 (`OutboxTestController`), P0-5 (PostgreSQL availability), P0-6 (password reset), P0-7 (placeholder content)
 Surfaces: SportsData.Api (primary), sd-mobile + sd-ui (one small client change)
 
 ## Problem

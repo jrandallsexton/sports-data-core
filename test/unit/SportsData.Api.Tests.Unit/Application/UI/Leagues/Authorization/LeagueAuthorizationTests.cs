@@ -99,16 +99,66 @@ public class LeagueAuthorizationTests : ApiTestBase<LeagueMembershipGuard>
         (await guard.IsMemberAsync(Guid.NewGuid(), memberId)).Should().BeFalse("an unknown league grants nothing");
     }
 
+    /// <summary>Seeds a thread with one post in <paramref name="leagueId"/>.</summary>
+    private async Task<(Guid ThreadId, Guid PostId)> SeedThreadWithPostAsync(Guid leagueId, Guid authorId)
+    {
+        var threadId = Guid.NewGuid();
+        var postId = Guid.NewGuid();
+        await DataContext.AddAsync(new MessageThread
+        {
+            Id = threadId,
+            GroupId = leagueId,
+            Title = "Trash talk",
+            Slug = "trash-talk",
+            LastActivityAt = FixedNow,
+            CreatedUtc = FixedNow,
+            CreatedBy = authorId
+        });
+        await DataContext.AddAsync(new MessagePost
+        {
+            Id = postId,
+            ThreadId = threadId,
+            Content = "Roll Tide",
+            Path = "0001",
+            CreatedUtc = FixedNow,
+            CreatedBy = authorId
+        });
+        await DataContext.SaveChangesAsync();
+        return (threadId, postId);
+    }
+
+    [Fact]
+    public async Task Guard_ThreadAndPostVariants_ResolveTheOwningLeague()
+    {
+        var memberId = Guid.NewGuid();
+        var leagueId = await SeedLeagueAsync(memberId);
+        var (threadId, postId) = await SeedThreadWithPostAsync(leagueId, memberId);
+        var guard = new LeagueMembershipGuard(DataContext);
+
+        // The member of the league that owns the thread/post gets through...
+        (await guard.IsMemberOfThreadGroupAsync(threadId, memberId)).Should().BeTrue();
+        (await guard.IsMemberOfPostGroupAsync(postId, memberId)).Should().BeTrue();
+
+        // ...and a stranger does not, even holding a real thread/post id.
+        var strangerId = Guid.NewGuid();
+        (await guard.IsMemberOfThreadGroupAsync(threadId, strangerId)).Should().BeFalse();
+        (await guard.IsMemberOfPostGroupAsync(postId, strangerId)).Should().BeFalse();
+    }
+
     [Fact]
     public async Task Guard_ThreadAndPostVariants_FalseForUnknownIds()
     {
+        var memberId = Guid.NewGuid();
+        var leagueId = await SeedLeagueAsync(memberId);
+        await SeedThreadWithPostAsync(leagueId, memberId);
         var guard = new LeagueMembershipGuard(DataContext);
 
-        // A bogus thread/post id must be denied, not error.
-        (await guard.IsMemberOfThreadGroupAsync(Guid.NewGuid(), Guid.NewGuid())).Should().BeFalse();
-        (await guard.IsMemberOfPostGroupAsync(Guid.NewGuid(), Guid.NewGuid())).Should().BeFalse();
-        (await guard.IsMemberOfThreadGroupAsync(Guid.Empty, Guid.NewGuid())).Should().BeFalse();
-        (await guard.IsMemberOfPostGroupAsync(Guid.Empty, Guid.NewGuid())).Should().BeFalse();
+        // A bogus thread/post id must be denied, not error — even for a user
+        // who legitimately belongs to a league.
+        (await guard.IsMemberOfThreadGroupAsync(Guid.NewGuid(), memberId)).Should().BeFalse();
+        (await guard.IsMemberOfPostGroupAsync(Guid.NewGuid(), memberId)).Should().BeFalse();
+        (await guard.IsMemberOfThreadGroupAsync(Guid.Empty, memberId)).Should().BeFalse();
+        (await guard.IsMemberOfPostGroupAsync(Guid.Empty, memberId)).Should().BeFalse();
     }
 
     // ── Tiered league detail ──────────────────────────────────────────────────

@@ -82,6 +82,11 @@ const LeagueDetail = () => {
   // affordances (invite members, delete) entirely.
   const isPast = !!league.deactivatedUtc;
 
+  // The BE withholds the roster from non-members and rejects their writes.
+  // Older payloads predate the flag, so treat a missing value as "member" —
+  // the API is the enforcement boundary; this only shapes the UI.
+  const isMember = league.isMember !== false;
+
   const startLabel = formatWindowBound(league.startsOn);
   const endLabel = formatWindowBound(league.endsOn);
   let windowLabel;
@@ -103,10 +108,14 @@ const LeagueDetail = () => {
             <p className="league-detail-byline">{league.description}</p>
           )}
           {/* Past leagues open the picks page read-only ("View Picks"); active
-              leagues go there to make picks. */}
-          <Link to={`/app/picks/${league.id}`} className="make-picks-button">
-            {isPast ? "View Picks" : "Make Your Picks"}
-          </Link>
+              leagues go there to make picks. Hidden for non-members, who can
+              reach this page from public-league discovery — their picks would
+              403 at the API, so don't offer the affordance. */}
+          {isMember && (
+            <Link to={`/app/picks/${league.id}`} className="make-picks-button">
+              {isPast ? "View Picks" : "Make Your Picks"}
+            </Link>
+          )}
           <ul className="league-details-list">
             <li><strong>Pick Type:</strong> {league.pickType}</li>
             <li><strong>Tiebreaker:</strong> {league.tiebreakerType}</li>
@@ -129,7 +138,7 @@ const LeagueDetail = () => {
       <div className="league-detail-sidebar">
         <div className="members-section">
           <h2>Members</h2>
-          {league.isMember === false ? (
+          {!isMember ? (
             // The BE withholds the roster from non-members. Show the size
             // rather than an empty list — "No members yet" would be a lie.
             <p className="no-members-message">
@@ -158,7 +167,7 @@ const LeagueDetail = () => {
           )}
         </div>
 
-        {!isPast && (
+        {!isPast && isMember && (
           <LeagueInvitation leagueId={league.id} leagueName={league.name} />
         )}
 

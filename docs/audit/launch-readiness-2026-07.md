@@ -79,7 +79,9 @@ Affected: `GetLeagueByIdQueryHandler` (roster, settings), `GetLeaderboardQueryHa
 
 League GUIDs are not secret: they appear in invite links, share sheets, screenshots, and logs. A user who receives an invite to League A can enumerate nothing — but anyone who *obtains* a GUID reads that league's full roster and standings.
 
-**Fix:** a shared membership guard applied to every by-group read. **Design constraint you must preserve:** the mobile league-invite preview (`app/league-invite/[leagueId].tsx`) deliberately calls `getLeagueById` as a *non-member* — a naive guard breaks the invite flow shipped in #570. Either scope the guard to exclude a minimal invite-preview projection, or split a public "invite preview" DTO from the full detail read.
+**Fix as recommended at audit time (superseded — see the resolution note above):** a shared membership guard applied to every by-group read. **Design constraint you must preserve:** the mobile league-invite preview (`app/league-invite/[leagueId].tsx`) deliberately calls `getLeagueById` as a *non-member* — a naive guard breaks the invite flow shipped in #570. Either scope the guard to exclude a minimal invite-preview projection, or split a public "invite preview" DTO from the full detail read.
+
+The constraint held; the two remedies did not. #572 took a third route — one endpoint, two shapes. `GetLeagueByIdQueryHandler` stays on the guard-free path and varies its *payload* by membership (`Members` withheld, `MemberCount` and `IsMember` added), so there is no exemption to maintain and no second DTO to keep in sync.
 
 Note the asymmetry: the *invite* paths (`SendLeagueInvite`, `InviteUserToLeague`, `GetInviteableUsers`, `CloneLeague`) all verify membership correctly. The read paths were simply never given the same treatment.
 

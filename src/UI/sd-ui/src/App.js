@@ -12,6 +12,7 @@ import "./App.css";
 
 import MainApp from "./MainApp";
 import SignupPage from "./components/signup/SignupPage";
+import ForgotPassword from "./components/login/ForgotPassword";
 import LandingPage from "./components/landing/LandingPage";
 import TermsPage from "./components/legal/TermsPage";
 import PrivacyPage from "./components/legal/PrivacyPage";
@@ -81,6 +82,7 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route
             path="/results/:sport/:league/:seasonYear"

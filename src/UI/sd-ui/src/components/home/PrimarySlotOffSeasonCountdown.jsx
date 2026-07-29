@@ -195,13 +195,25 @@ function PrimarySlotOffSeasonCountdown({ hasLeagues = true }) {
     return sportsWithPhrases.map((s) => {
       const isLive = s.phrase.status === "live";
       if (isLive) {
-        return (
+        // Same dead-end guard as the all-live branch above: "pick games" is
+        // meaningless without a league, so a member-less user gets creation
+        // instead. A live sport is never creation-gated, so this needs no
+        // isGated check.
+        return hasLeagues ? (
           <Link
             key={s.key}
             to="/app/picks"
             className="home-primary__cta home-primary__cta--primary"
           >
             {`Pick ${s.label} games`}
+          </Link>
+        ) : (
+          <Link
+            key={s.key}
+            to={`/app/league/create?sport=${s.sportEnum}`}
+            className="home-primary__cta home-primary__cta--primary"
+          >
+            {`Create ${s.label} league`}
           </Link>
         );
       }

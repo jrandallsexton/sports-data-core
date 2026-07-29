@@ -94,9 +94,11 @@ This is precisely the class of unauthenticated ops endpoint that got Producer/Pr
 
 The Seq analysis is unambiguous: of 50 Error events in 72 hours, **~90% are one infrastructure story**, and the other ~68 hours were error-silent.
 
-Three windows on 2026-07-28 (17:08, 18:47, 21:10 UTC) where `192.168.0.251:5432` was unreachable — 30 health-check failures at ~26s connection timeouts, across **every sport and every service role simultaneously** (Provider NFL/NCAA/MLB, Producer NFL). The 18:47 window dropped *established* connections mid-transaction ("connection reset by peer"), not merely refusing new ones.
+On 2026-07-28 the primary PostgreSQL instance was unreachable across **three separate windows within roughly four hours**, producing 30 health-check failures at connection-timeout duration, across **every sport and every service role simultaneously**. One of the three windows dropped *established* connections mid-transaction, not merely refusing new ones — a materially worse failure mode than a restart.
 
-This is the Postgres VM on Bender — the documented workstation stopgap. During a live game window, this is total platform outage: no picks submitted, no scores updated, no live events.
+This is the database VM still hosted on the primary workstation — the documented stopgap. During a live game window, an outage of this shape is a total platform outage: no picks submitted, no scores updated, no live events.
+
+> **Note (this repository is public).** Host addresses, exact timestamps, and raw log excerpts are deliberately omitted here. Full incident detail lives in the operator's private notes; correlate by searching Seq for `@Level = 'Error'` on 2026-07-28.
 
 **This validates the pre-season data-hardware migration as mandatory, not aspirational.** Before public users: explain 2026-07-28 (host memory pressure? VM restart? backup job? network flap?) or move off that host. Three incidents in one afternoon is not a fluke to launch on.
 
@@ -205,38 +207,17 @@ Email/password is an offered sign-in path on both platforms. Any user who forget
 
 ## P3 — Low / informational
 
-### Dead cookie-auth subsystem in sd-ui (re-filed from the first draft's P0 — see the Verdict correction)
+### ~~Dead cookie-auth subsystem in sd-ui~~ — RESOLVED in PR #571
 
-**Root cause, traced 2026-07-29:** commit `1daad92e0` — *"auth changes (header-based)"*, 2025-12-08 — migrated the web app from cookie-based auth to a per-request `Authorization: Bearer` header. It removed `setToken` and the cookie machinery from `AuthContext`, but **left every call site standing**. Everything below is a fossil of that migration.
+*Historical record. Re-filed here from the first draft's P0 (see the Verdict correction), then fixed in the same PR that published this document. Retained because the root cause is instructive, not because action remains.*
 
-**Nothing here is broken in practice**, because user provisioning never depended on any of it: `FirebaseAuthenticationMiddleware.cs:153` calls `UserService.GetOrCreateUserAsync` on the **first authenticated request**. The API creates the user itself. (Operator-confirmed: a brand-new email account lands in Settings with correct data.)
+**Root cause:** commit `1daad92e0` — *"auth changes (header-based)", 2025-12-08* — migrated the web app to a per-request `Authorization: Bearer` header. It removed `setToken` and the cookie machinery from `AuthContext` but **left every call site standing**: a throwing `setToken` call in `Login.jsx`, cookie-exchange + unreachable `/api/user/me` probe in `EmailSignupForm.jsx` and `SignupPage.jsx` (Google path included), a never-rendering onboarding branch with a stub submit handler, and the orphaned `UserSummaryCard`. The API's `set-token` action — itself unauthenticated — still set a cookie no client sent.
 
-| Fossil | Status |
-|---|---|
-| `Login.jsx:16,24` — `setToken` from `useAuth()` | Context member deleted in `1daad92e0`; the call always throws `TypeError` into the `catch` at :27. Harmless: `onAuthStateChanged` has already fired and `App.js:44-52` navigates to `/app`, unmounting `Login` before the error state matters. |
-| `EmailSignupForm.jsx:64` — `apiWrapper.Auth.setToken(token)` | Sets an `authToken` cookie that `sd-ui` never sends (`apiClient.js:16` → `withCredentials: false`). |
-| `EmailSignupForm.jsx:67` — `fetch("/api/user/me")` | Relative URL; no `/api` proxy in `nginx.conf:14-18`, so the SPA fallback returns 200 and the `404 → onboarding` branch is unreachable. The `.ok` branch it *does* hit is the correct outcome. |
-| `SignupPage.jsx:68-78` — onboarding via `UserSummaryCard` | Gated on state only `handleEmailSignupSuccess` sets, which only the dead 404 branch calls. Never renders. |
-| `SignupPage.jsx:60-64` — `handleOnboardingSubmit` | `console.log` + two TODOs. |
-| `AuthController.SetToken` (API) | Still sets the cookie. The API *can* read it (`Program.cs:80-92` promotes cookie → bearer), but no known client sends it — mobile also uses a bearer header. |
+Nothing was broken in practice: provisioning happens server-side via `FirebaseAuthenticationMiddleware` → `UserService.GetOrCreateUserAsync` on the first authenticated request.
 
-**Why this matters beyond tidiness:** these five artifacts tell a coherent, mutually-reinforcing story about a login flow that has not existed since December. That is exactly what led the first draft of this document to file two launch blockers against working functionality. Dead code doesn't just rot — it actively misinforms whoever reads the codebase next, human or otherwise.
+**Resolution (PR #571):** all five client fossils, the orphaned component, and the server `set-token` action removed; `clear-token` retained (sign-out and account deletion still call it). Operator-verified afterward: email signup, email sign-in, and Google sign-in all continue to work unchanged.
 
-**Fix:** delete the lot as one change — the `setToken` call, the probe, the onboarding branch, `UserSummaryCard`'s signup usage, and the stub handler. Before removing `AuthController.SetToken` server-side, confirm nothing else sends the cookie (SignalR negotiate, JobsDashboard, Bruno collections) — see open question #4. If onboarding is genuinely wanted, build it deliberately rather than reviving this path.
-
-- **`Login.jsx`'s `setToken` call always throws and is always swallowed.** `Login.jsx:16` destructures `setToken` from `useAuth()`; `AuthContext.jsx:103` provides only `{ user, loading, handleSignOut }`, so line 24's `await setToken(...)` raises `TypeError` into the `catch` at line 27.
-
-  **Why it's harmless:** `signInWithEmailAndPassword` has already succeeded, so `onAuthStateChanged` fires and `App.js:44-52` navigates to `/app` — the redirect unmounts `Login` before the error state is meaningfully visible. And the call isn't load-bearing anyway: `apiClient.js:16` sets `withCredentials: false` and line 41 attaches `Authorization: Bearer <firebase-token>` per request, so web auth never depends on the `authToken` cookie that `POST /auth/set-token` sets.
-
-  **Note the contrast:** `EmailSignupForm.jsx:64` calls the *correct* thing — `apiWrapper.Auth.setToken(token)` — which is why signup captures the backend user properly. `Login.jsx` reaches for a context member that doesn't exist.
-
-  **Fix:** delete the call, or replace it with `apiWrapper.Auth.setToken` for symmetry — after answering open question #4 about whether the cookie has any remaining consumer. Leaving a permanently-throwing call in the sign-in path will eventually mask a real error.
-
-- **The signup onboarding branch is unreachable, and its submit handler is a stub.** `SignupPage.jsx:42` / `EmailSignupForm.jsx:67` probe with a relative `fetch("/api/user/me")`; under the container's nginx (`nginx.conf:14-18`, no `/api` proxy) the SPA fallback returns `index.html` with 200, so the `404 → onboarding` branch never fires.
-
-  **Why it's harmless:** the `.ok` branch is the correct outcome — the backend user was already created by `apiWrapper.Auth.setToken` at line 64, so the flow proceeds to `/app` with a fully populated account (operator-verified). `SignupPage.jsx:60-64`'s `handleOnboardingSubmit` is a `console.log` plus TODOs, so the branch would be a dead end even if it fired.
-
-  **Fix:** delete the probe and the stub onboarding path, *or* build the onboarding step deliberately and point the probe at the real API base URL. The current shape is a feature that looks implemented and isn't.
+**Why it earned a permanent entry:** these artifacts told a coherent, mutually-reinforcing story about a login flow that had not existed since December — coherent enough that the first draft of this document filed **two false launch blockers** against working functionality on the strength of it. Dead code doesn't merely rot; it actively misinforms the next reader, human or otherwise. That is the argument for deleting rather than annotating it.
 
 ### Other
 
@@ -257,9 +238,11 @@ Email/password is an offered sign-in path on both platforms. Any user who forget
 
 ---
 
-## Verified clean
+## Spot-checked clean
 
 Recording these so absence of findings is distinguishable from absence of looking.
+
+**Read this section as scoped spot checks, not exhaustive proofs.** Each claim below was checked against the named file or symbol at the time of writing; none is a guarantee of coverage across every call path, and none was executed against a running system. Where a claim generalizes ("no SQL injection", "no hardcoded secrets"), it means *the search performed found none* — the searches were: grep for raw-SQL construction and string interpolation into queries; grep for key/token/connection-string literals under `src/SportsData.Api`; enumeration of all 25 controllers for authorization attributes; reading every EF entity configuration and the model snapshot. Anything outside those searches is untested, not clean. Treat this as a starting point for a security review, not a substitute for one.
 
 **Security:** Firebase JWT validation is correct (issuer, audience `sportdeets`, lifetime all validated — not skipped). No SQL injection: the only raw SQL is static and parameterless. No hardcoded secrets under `src/SportsData.Api`; `.env.prod` verified clean (Maps key pipeline-injected). No stack-trace or developer-exception leakage; `EnableSensitiveDataLogging` is Development-gated. Commissioner authorization **is** enforced server-side for league delete and matchup add. Invite paths verify inviter membership. Pick submission is caller-scoped (a user cannot read or write another user's picks). Nginx security headers are strong: enforcing CSP without `unsafe-inline` scripts, HSTS, XFO, nosniff, Permissions-Policy.
 
@@ -286,7 +269,7 @@ Recording these so absence of findings is distinguishable from absence of lookin
 One shared membership guard, applied to every by-group read and the message-board writes. **Design the invite-preview exemption first** — a naive guard breaks the mobile invite flow. Add membership verification to pick submission while you're in there.
 
 **Day 3 — Password reset and placeholder removal (P0-6, P0-7)**
-Implement `sendPasswordResetEmail` on both platforms (~10 lines each) and wire mobile's dead button. Remove the simulated badges panel, the debug JSON dump, and the hardcoded mobile profile records. Optionally clear the dead-auth-code cleanup in P3 while in these files.
+Implement `sendPasswordResetEmail` on both platforms (~10 lines each) and wire mobile's dead button. Remove the simulated badges panel, the debug JSON dump, and the hardcoded mobile profile records. (The P3 dead-auth cleanup that also lived in these files is already done — PR #571.)
 
 **Day 4 — Data layer + caching (the game-day set)**
 Two index additions (`MatchupPreview.ContestId`, `PickemGroupMatchup.ContestId`) + migration. Rewrite the two N+1 handlers. Add the contest-overview and matchup-envelope caches. Fix the synthetic-accuracy unbounded query.
@@ -302,7 +285,7 @@ Mobile deep links (the invite loop), the 2025 team-page constant, live game deta
 
 1. **Does the k8s ingress proxy `/api`?** Not launch-critical (the signup probe lands on the correct branch either way), but it determines whether the dead onboarding path in P3 should be repaired or deleted.
 2. **Does Cloudflare provide rate limiting and response compression** for `api.sportdeets.com`? Two P1 items collapse to non-issues if so.
-3. **What happened on 2026-07-28** between 17:00 and 21:15 on the Bender host?
-4. **Does anything still depend on the `authToken` cookie set by `POST /auth/set-token`?** The web client sends `withCredentials: false` and authenticates by bearer header, so the cookie appears vestigial for `sd-ui` — confirm SignalR negotiate and any non-browser caller before deleting the dead call in P3.
+3. **What happened on 2026-07-28** during the three database-outage windows? (Host memory pressure, VM restart, backup job, network flap — see your private notes for the raw timestamps.)
+4. ~~**Does anything still depend on the `authToken` cookie set by `POST /auth/set-token`?**~~ **ANSWERED:** nothing did. A repo-wide search (including `bruno/` and `JobsDashboard`) found no consumer; both clients authenticate by bearer header. The endpoint was removed in PR #571. `clear-token` remains, still called by sign-out and account deletion.
 5. **Are Message Board / War Room / Map / Discover in scope for launch on mobile,** or is web-only acceptable for v1?
 6. **What is the launch audience size?** The caching work is optional at 50 users and mandatory at 5,000.

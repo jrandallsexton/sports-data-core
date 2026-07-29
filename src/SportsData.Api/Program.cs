@@ -115,8 +115,15 @@ namespace SportsData.Api
             // Add memory cache for user authentication caching
             builder.Services.AddMemoryCache();
 
-            // 3. Add Authorization middleware
-            //builder.Services.AddAuthorization();
+            // 3. Authorization services
+            // No explicit AddAuthorization() call is needed here: AddControllers()
+            // above registers the services AuthorizationMiddleware resolves, so the
+            // [Authorize] attributes across this API are live. If they weren't,
+            // UseAuthorization() further down would throw on the first request
+            // rather than silently allow anonymous callers through — and anonymous
+            // requests do come back 401, verified against the deployed API.
+            // Add the explicit call only when there is something to *configure*:
+            // named policies, a fallback policy, or custom requirements.
 
             builder.UseCommon();
 

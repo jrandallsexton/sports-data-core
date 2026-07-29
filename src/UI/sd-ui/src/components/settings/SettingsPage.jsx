@@ -72,7 +72,7 @@ function detectBrowserTimezone() {
 function SettingsPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { refreshUserDto, userOptions, updateUserOptions } = useUserDto();
+  const { refreshUserDto, userOptions, updateUserOptions, userDto } = useUserDto();
   const [optionsMessage, setOptionsMessage] = useState("");
   const [optionsSaving, setOptionsSaving] = useState(false);
 
@@ -537,7 +537,14 @@ function SettingsPage() {
         </div>
       </div>
 
-      <BadgesPanel />
+      {/* Badges are still fed by a static /data/badges.json fixture, so the
+          panel advertises achievements nobody actually earned. Admin-only
+          until it is driven by real data — the feature is wanted eventually
+          (it would make good sign-up marketing), so the panel stays wired up
+          and visible to the operator rather than being deleted. Gating here
+          rather than inside the component also skips the fixture fetch for
+          everyone else. */}
+      {userDto?.isAdmin && <BadgesPanel />}
     </div>
   );
 }

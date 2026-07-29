@@ -36,6 +36,7 @@ public class MessageboardController : ApiControllerBase
 
     // GET /api/messageboard/my/threads-by-group?perGroupLimit=5
     [HttpGet("my/threads-by-group")]
+    [Authorize]
     public async Task<ActionResult<IDictionary<Guid, PageResult<MessageThread>>>> GetMyThreadsByGroup(
         [FromQuery] int perGroupLimit,
         [FromServices] IGetThreadsByUserGroupsQueryHandler handler,

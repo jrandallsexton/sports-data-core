@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.TeamCard.Queries.GetTeamCard;
@@ -15,6 +16,7 @@ using SportsData.Api.Application.Common.Enums;
 namespace SportsData.Api.Application.UI.TeamCard;
 
 [ApiController]
+[Authorize]
 [Route("ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}")]
 public class TeamCardController : ApiControllerBase
 {

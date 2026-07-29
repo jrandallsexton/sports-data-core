@@ -53,7 +53,7 @@ Estimated work to clear P0 + P1: **3–4 focused days**, dominated by the IDOR s
 |---|---|---|---|
 | P0-1 | IDOR: any authenticated user can read any league's data by GUID | API security | **Resolved** (#572) |
 | P0-2 | IDOR: any authenticated user can write to any league's message board | API security | **Resolved** (#572) |
-| P0-3 | Unauthenticated endpoint publishes bus events and discloses outbox contents | API security | Open |
+| P0-3 | Unauthenticated endpoint publishes bus events and discloses outbox contents | API security | **Resolved** (#573) |
 | P0-4 | Unauthenticated endpoint triggers AI preview generation (cost) | API security | **Resolved** (#572) |
 | P0-5 | PostgreSQL unreachable 3× in 4 hours on 2026-07-28 | Infrastructure | Open |
 | P0-6 | "Forgot password?" is a dead button; no password reset exists on any platform | Auth (both) | Open |
@@ -97,6 +97,15 @@ Note the asymmetry: the *invite* paths (`SendLeagueInvite`, `InviteUserToLeague`
 **Related, same class:** `SubmitPickCommandHandler` — verified no membership check. A non-member can submit picks into any league whose GUID they know, appearing in its leaderboard.
 
 ### P0-3 — `OutboxTestController` is exposed
+
+> **Resolved in #573.** Deleted. The audit found the API copy; there were
+> three — Producer and Provider carried byte-for-byte the same unauthenticated
+> controller on the same `api/test/outbox` route. All three are gone. The
+> supporting test scaffolding (`OutboxTestEvent`, `OutboxTestEventHandler`, the
+> two test document processors, and `DocumentType` 98/99) survives as
+> now-unreachable-by-HTTP dead code; removing it touches the processor factory,
+> a MassTransit consumer registration, and a shared Core enum, so it is its own
+> change.
 
 `src/SportsData.Api/Controllers/OutboxTestController.cs` — **verified:** no `[Authorize]`, no admin gate, no environment gating in `Program.cs`. Routed at `api/test/outbox`.
 
@@ -281,8 +290,8 @@ Recording these so absence of findings is distinguishable from absence of lookin
 ## Suggested sequencing
 
 **Day 1 — Stop the bleeding (security)**
-1. Delete `OutboxTestController` (P0-3). One file.
-2. Add `[Authorize]` to `TeamCardController`, `PicksController.cs:65`, `MessageboardController.cs:37`. (`previews/generate` is done — #572.) Note these three are *not* data-disclosure holes: `GetCurrentUserId()` throws `UnauthorizedAccessException` when no user is in context, so an anonymous caller already gets nothing. The defect is the shape of the response — an unhandled exception where a 401 belongs.
+1. ~~Delete `OutboxTestController` (P0-3).~~ Done — #573. Three files, not one.
+2. ~~Add `[Authorize]` to `TeamCardController`, `PicksController.cs:65`, `MessageboardController.cs:37`.~~ Done — #573. (`previews/generate` was done in #572.) These three were *not* data-disclosure holes: `GetCurrentUserId()` throws `UnauthorizedAccessException` when no user is in context, so an anonymous caller already got nothing. The defect was the shape of the response — an unhandled exception where a 401 belongs. `TeamCardController` is the odd one out: it never reads the current user, so gating it was a policy call rather than a fix. Verified safe first — its routes live inside the web app's `PrivateRoute`, and the one public page (`ResultsPage`) uses a different API.
 3. Move contest refresh/finalize and preview approve/reject behind `[AdminApiToken]`.
 4. `[Authorize]` on the SignalR hub; delete client-invocable `SendMessageToUser*`.
 5. Remove the connection-string `Console.WriteLine`; gate `Include Error Detail` to Development.

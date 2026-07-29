@@ -188,7 +188,7 @@ export function LeagueCard({
               />
 
               <Text style={[styles.membersHeading, { color: theme.text }]}>
-                Members ({detail.members.length})
+                Members ({detail.memberCount})
               </Text>
               {detail.members.map((m) => (
                 <View key={m.userId} style={styles.memberRow}>

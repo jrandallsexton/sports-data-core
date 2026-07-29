@@ -94,6 +94,15 @@ export interface LeagueDetail {
   endsOn: string | null;
   /** Non-null once the league's season has passed — read-only everywhere. */
   deactivatedUtc?: string | null;
+  /**
+   * Roster size. Always populated, including for non-members — unlike
+   * `members`, which the BE withholds from non-members. Render counts from
+   * this, never from `members.length`.
+   */
+  memberCount: number;
+  /** True when the caller belongs to this league. Gates the roster below. */
+  isMember: boolean;
+  /** The roster. Empty for non-members (invite preview, public browse). */
   members: LeagueMember[];
 }
 

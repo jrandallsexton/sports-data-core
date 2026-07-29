@@ -40,6 +40,7 @@ using SportsData.Api.Application.UI.Contest.Queries.GetContestOverview;
 using SportsData.Api.Application.UI.Contest.Queries.GetContestPlayLog;
 using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboard;
 using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboardWidget;
+using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
@@ -130,6 +131,9 @@ namespace SportsData.Api.DependencyInjection
                 Application.UI.Leagues.LeagueCreationAvailability>();
 
             // League Queries
+            // Single authority for by-group authorization — see
+            // docs/audit/league-authorization-idor.md.
+            services.AddScoped<ILeagueMembershipGuard, LeagueMembershipGuard>();
             services.AddScoped<IGetLeagueByIdQueryHandler, GetLeagueByIdQueryHandler>();
             services.AddScoped<
                 Application.UI.Leagues.Queries.GetLeagueGameDates.IGetLeagueGameDatesQueryHandler,

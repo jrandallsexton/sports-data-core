@@ -3,6 +3,7 @@ using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leaderboard.Dtos;
+using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
@@ -19,13 +20,16 @@ public class GetLeaderboardQueryHandler : IGetLeaderboardQueryHandler
 {
     private readonly ILogger<GetLeaderboardQueryHandler> _logger;
     private readonly AppDataContext _dataContext;
+    private readonly ILeagueMembershipGuard _membershipGuard;
 
     public GetLeaderboardQueryHandler(
         ILogger<GetLeaderboardQueryHandler> logger,
-        AppDataContext dataContext)
+        AppDataContext dataContext,
+        ILeagueMembershipGuard membershipGuard)
     {
         _logger = logger;
         _dataContext = dataContext;
+        _membershipGuard = membershipGuard;
     }
 
     public async Task<Result<List<LeaderboardUserDto>>> ExecuteAsync(
@@ -38,6 +42,16 @@ public class GetLeaderboardQueryHandler : IGetLeaderboardQueryHandler
                 default!,
                 ResultStatus.Validation,
                 [new ValidationFailure(nameof(query.GroupId), "Group ID cannot be empty")]);
+        }
+
+        // Every member's points and accuracy — members only.
+        // See docs/audit/league-authorization-idor.md.
+        if (!await _membershipGuard.IsMemberAsync(query.GroupId, query.UserId, cancellationToken))
+        {
+            return new Failure<List<LeaderboardUserDto>>(
+                default!,
+                ResultStatus.Forbid,
+                [new ValidationFailure(nameof(query.GroupId), "You are not a member of this league.")]);
         }
 
         // Fetch group to verify it exists and get its name

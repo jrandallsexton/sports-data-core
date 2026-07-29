@@ -22,7 +22,11 @@ public class LeaderboardController : ApiControllerBase
         [FromServices] IGetLeaderboardQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        var query = new GetLeaderboardQuery { GroupId = groupId };
+        var query = new GetLeaderboardQuery
+        {
+            GroupId = groupId,
+            UserId = HttpContext.GetCurrentUserId()
+        };
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();

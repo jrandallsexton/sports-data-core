@@ -10,6 +10,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Picks;
 
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.UI.Leagues.Authorization;
 
 namespace SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
 
@@ -26,23 +27,37 @@ public class SubmitPickCommandHandler : ISubmitPickCommandHandler
     private readonly AppDataContext _dataContext;
     private readonly IEventBus _eventBus;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ILeagueMembershipGuard _membershipGuard;
 
     public SubmitPickCommandHandler(
         ILogger<SubmitPickCommandHandler> logger,
         AppDataContext dataContext,
         IEventBus eventBus,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ILeagueMembershipGuard membershipGuard)
     {
         _logger = logger;
         _dataContext = dataContext;
         _eventBus = eventBus;
         _dateTimeProvider = dateTimeProvider;
+        _membershipGuard = membershipGuard;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
         SubmitPickCommand command,
         CancellationToken cancellationToken = default)
     {
+        // A non-member must not transact against a league at all — an unguarded
+        // submit put a stranger on the league's leaderboard.
+        // See docs/audit/league-authorization-idor.md.
+        if (!await _membershipGuard.IsMemberAsync(command.PickemGroupId, command.UserId, cancellationToken))
+        {
+            return new Failure<Guid>(
+                default,
+                ResultStatus.Forbid,
+                [new ValidationFailure(nameof(command.PickemGroupId), "You are not a member of this league.")]);
+        }
+
         var group = await _dataContext.PickemGroups
             .AsNoTracking()
             .FirstOrDefaultAsync(g => g.Id == command.PickemGroupId, cancellationToken);

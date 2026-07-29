@@ -49,17 +49,29 @@ Estimated work to clear P0 + P1: **3–4 focused days**, dominated by the IDOR s
 
 ## P0 — Launch blockers
 
-| # | Finding | Area |
-|---|---|---|
-| P0-1 | IDOR: any authenticated user can read any league's data by GUID | API security |
-| P0-2 | IDOR: any authenticated user can write to any league's message board | API security |
-| P0-3 | Unauthenticated endpoint publishes bus events and discloses outbox contents | API security |
-| P0-4 | Unauthenticated endpoint triggers AI preview generation (cost) | API security |
-| P0-5 | PostgreSQL unreachable 3× in 4 hours on 2026-07-28 | Infrastructure |
-| P0-6 | "Forgot password?" is a dead button; no password reset exists on any platform | Auth (both) |
-| P0-7 | Simulated/placeholder content shown to real users | Product |
+| # | Finding | Area | Status |
+|---|---|---|---|
+| P0-1 | IDOR: any authenticated user can read any league's data by GUID | API security | **Resolved** (#572) |
+| P0-2 | IDOR: any authenticated user can write to any league's message board | API security | **Resolved** (#572) |
+| P0-3 | Unauthenticated endpoint publishes bus events and discloses outbox contents | API security | Open |
+| P0-4 | Unauthenticated endpoint triggers AI preview generation (cost) | API security | **Resolved** (#572) |
+| P0-5 | PostgreSQL unreachable 3× in 4 hours on 2026-07-28 | Infrastructure | Open |
+| P0-6 | "Forgot password?" is a dead button; no password reset exists on any platform | Auth (both) | Open |
+| P0-7 | Simulated/placeholder content shown to real users | Product | Open |
+
+Resolved findings are kept in full below rather than deleted — the reasoning is
+the durable part, and the design record for the fix is
+`docs/audit/league-authorization-idor.md`.
 
 ### P0-1 — IDOR: league data readable by GUID
+
+> **Resolved in #572.** A shared `ILeagueMembershipGuard` now guards every
+> member-only league read — leaderboard, week overview, scores, matchups, user
+> picks, and the message board. Two non-member reads are preserved by design:
+> public-league discovery (`GetPublicLeaguesQueryHandler`) is unguarded, and
+> `GET {id}` is *tiered* rather than guarded, which is how the invite-preview
+> constraint called out below was handled without exempting it — non-members
+> receive the league's settings and a `MemberCount`, with the roster withheld.
 
 No membership verification on by-group reads. **Structurally impossible in at least one case:** `GetLeagueByIdQuery` (`Application/UI/Leagues/Queries/GetLeagueById/GetLeagueByIdQuery.cs`) carries only `LeagueId` — the handler has no caller identity to check against.
 
@@ -67,11 +79,18 @@ Affected: `GetLeagueByIdQueryHandler` (roster, settings), `GetLeaderboardQueryHa
 
 League GUIDs are not secret: they appear in invite links, share sheets, screenshots, and logs. A user who receives an invite to League A can enumerate nothing — but anyone who *obtains* a GUID reads that league's full roster and standings.
 
-**Fix:** a shared membership guard applied to every by-group read. **Design constraint you must preserve:** the mobile league-invite preview (`app/league-invite/[leagueId].tsx`) deliberately calls `getLeagueById` as a *non-member* — a naive guard breaks the invite flow shipped in #570. Either scope the guard to exclude a minimal invite-preview projection, or split a public "invite preview" DTO from the full detail read.
+**Fix as recommended at audit time (superseded — see the resolution note above):** a shared membership guard applied to every by-group read. **Design constraint you must preserve:** the mobile league-invite preview (`app/league-invite/[leagueId].tsx`) deliberately calls `getLeagueById` as a *non-member* — a naive guard breaks the invite flow shipped in #570. Either scope the guard to exclude a minimal invite-preview projection, or split a public "invite preview" DTO from the full detail read.
+
+The constraint held; the two remedies did not. #572 took a third route — one endpoint, two shapes. `GetLeagueByIdQueryHandler` stays on the guard-free path and varies its *payload* by membership (`Members` withheld, `MemberCount` and `IsMember` added), so there is no exemption to maintain and no second DTO to keep in sync.
 
 Note the asymmetry: the *invite* paths (`SendLeagueInvite`, `InviteUserToLeague`, `GetInviteableUsers`, `CloneLeague`) all verify membership correctly. The read paths were simply never given the same treatment.
 
 ### P0-2 — IDOR: message board writes
+
+> **Resolved in #572.** All six message-board actions are guarded, as is
+> `SubmitPickCommandHandler`. The board guards live in `MessageboardController`
+> because the two read handlers return `PageResult<T>`, which has no failure
+> channel.
 
 `CreateThreadCommandHandler.cs:25` and `CreateReplyCommandHandler` persist using the route `GroupId` with no membership check. Any authenticated user can post into any league's board. On a social feature this is a harassment vector, not just a data-integrity one.
 
@@ -87,6 +106,9 @@ Note the asymmetry: the *invite* paths (`SendLeagueInvite`, `InviteUserToLeague`
 This is precisely the class of unauthenticated ops endpoint that got Producer/Provider pulled off public ingress on 2026-07-23. **Fix:** delete it; it is a development artifact.
 
 ### P0-4 — Unauthenticated AI preview generation
+
+> **Resolved in #572.** The action now carries `[Authorize]` plus a membership
+> guard.
 
 `LeagueController.cs:355` — `POST /ui/leagues/{id}/previews/{weekId}/generate` lacks `[Authorize]`. **Verified:** the class has 19 `[Authorize]` attributes across 20 actions — exactly this one was missed. Anonymous callers enqueue AI-generation jobs, driving inference cost and Hangfire queue depth.
 
@@ -260,13 +282,12 @@ Recording these so absence of findings is distinguishable from absence of lookin
 
 **Day 1 — Stop the bleeding (security)**
 1. Delete `OutboxTestController` (P0-3). One file.
-2. Add `[Authorize]` to `previews/generate` (P0-4), `TeamCardController`, `PicksController.cs:65`, `MessageboardController.cs:37`.
+2. Add `[Authorize]` to `TeamCardController`, `PicksController.cs:65`, `MessageboardController.cs:37`. (`previews/generate` is done — #572.) Note these three are *not* data-disclosure holes: `GetCurrentUserId()` throws `UnauthorizedAccessException` when no user is in context, so an anonymous caller already gets nothing. The defect is the shape of the response — an unhandled exception where a 401 belongs.
 3. Move contest refresh/finalize and preview approve/reject behind `[AdminApiToken]`.
 4. `[Authorize]` on the SignalR hub; delete client-invocable `SendMessageToUser*`.
 5. Remove the connection-string `Console.WriteLine`; gate `Include Error Detail` to Development.
 
-**Day 2 — The IDOR sweep (P0-1, P0-2)**
-One shared membership guard, applied to every by-group read and the message-board writes. **Design the invite-preview exemption first** — a naive guard breaks the mobile invite flow. Add membership verification to pick submission while you're in there.
+**~~Day 2 — The IDOR sweep (P0-1, P0-2)~~ — done in #572.** One shared membership guard across every by-group read, the message-board writes, and pick submission. The invite-preview constraint was resolved by tiering the league-detail response rather than exempting it. Design record: `docs/audit/league-authorization-idor.md`.
 
 **Day 3 — Password reset and placeholder removal (P0-6, P0-7)**
 Implement `sendPasswordResetEmail` on both platforms (~10 lines each) and wire mobile's dead button. Remove the simulated badges panel, the debug JSON dump, and the hardcoded mobile profile records. (The P3 dead-auth cleanup that also lived in these files is already done — PR #571.)

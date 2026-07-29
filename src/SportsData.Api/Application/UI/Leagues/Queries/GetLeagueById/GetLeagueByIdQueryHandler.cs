@@ -42,6 +42,14 @@ public class GetLeagueByIdQueryHandler : IGetLeagueByIdQueryHandler
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(query.LeagueId), $"League with ID {query.LeagueId} not found.")]);
 
+        // Tiered response (docs/audit/league-authorization-idor.md). A league id
+        // is an identifier, not a secret — it travels in invite links and share
+        // sheets — so the ROSTER (real people's display names) is withheld from
+        // non-members. Settings and size are not withheld: a public league
+        // advertises them by design, and the invite-preview screen needs them
+        // to show a prospective member what they'd be joining.
+        var isMember = league.Members.Any(m => m.UserId == query.UserId);
+
         var dto = new LeagueDetailDto
         {
             Id = league.Id,
@@ -57,12 +65,18 @@ public class GetLeagueByIdQueryHandler : IGetLeagueByIdQueryHandler
             StartsOn = league.StartsOn,
             EndsOn = league.EndsOn,
             DeactivatedUtc = league.DeactivatedUtc,
-            Members = league.Members.Select(m => new LeagueDetailDto.LeagueMemberDto
-            {
-                UserId = m.UserId,
-                Username = m.User?.DisplayName ?? "UNKNOWN",
-                Role = m.Role.ToString().ToLowerInvariant()
-            }).ToList()
+            // Always populated — clients render "N members" without needing the
+            // roster itself.
+            MemberCount = league.Members.Count,
+            IsMember = isMember,
+            Members = isMember
+                ? league.Members.Select(m => new LeagueDetailDto.LeagueMemberDto
+                {
+                    UserId = m.UserId,
+                    Username = m.User?.DisplayName ?? "UNKNOWN",
+                    Role = m.Role.ToString().ToLowerInvariant()
+                }).ToList()
+                : []
         };
 
         return new Success<LeagueDetailDto>(dto);

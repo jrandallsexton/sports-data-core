@@ -82,6 +82,18 @@ const LeagueDetail = () => {
   // affordances (invite members, delete) entirely.
   const isPast = !!league.deactivatedUtc;
 
+  // The BE withholds the roster from non-members and rejects their writes.
+  //
+  // Deliberately `!== false` rather than `=== true`. This flag shapes the UI
+  // only — every affordance it gates (picks, invitations) is independently
+  // enforced server-side, so showing one to a non-member costs a 403, not a
+  // leak. Failing closed on a missing value would be the worse trade: if web
+  // ever deploys ahead of the API, `=== true` strips the picks button and
+  // invite panel from *every* member and renders "undefined members", while
+  // `!== false` degrades only the non-member's path. The API is the
+  // enforcement boundary; this is presentation.
+  const isMember = league.isMember !== false;
+
   const startLabel = formatWindowBound(league.startsOn);
   const endLabel = formatWindowBound(league.endsOn);
   let windowLabel;
@@ -103,10 +115,14 @@ const LeagueDetail = () => {
             <p className="league-detail-byline">{league.description}</p>
           )}
           {/* Past leagues open the picks page read-only ("View Picks"); active
-              leagues go there to make picks. */}
-          <Link to={`/app/picks/${league.id}`} className="make-picks-button">
-            {isPast ? "View Picks" : "Make Your Picks"}
-          </Link>
+              leagues go there to make picks. Hidden for non-members, who can
+              reach this page from public-league discovery — their picks would
+              403 at the API, so don't offer the affordance. */}
+          {isMember && (
+            <Link to={`/app/picks/${league.id}`} className="make-picks-button">
+              {isPast ? "View Picks" : "Make Your Picks"}
+            </Link>
+          )}
           <ul className="league-details-list">
             <li><strong>Pick Type:</strong> {league.pickType}</li>
             <li><strong>Tiebreaker:</strong> {league.tiebreakerType}</li>
@@ -129,7 +145,14 @@ const LeagueDetail = () => {
       <div className="league-detail-sidebar">
         <div className="members-section">
           <h2>Members</h2>
-          {league.members?.length > 0 ? (
+          {!isMember ? (
+            // The BE withholds the roster from non-members. Show the size
+            // rather than an empty list — "No members yet" would be a lie.
+            <p className="no-members-message">
+              {league.memberCount} {league.memberCount === 1 ? "member" : "members"}.
+              Join to see who&apos;s in it.
+            </p>
+          ) : league.members?.length > 0 ? (
             <ul className="members-list">
               {league.members.map((member) => (
                 <li key={member.userId}>
@@ -151,7 +174,7 @@ const LeagueDetail = () => {
           )}
         </div>
 
-        {!isPast && (
+        {!isPast && isMember && (
           <LeagueInvitation leagueId={league.id} leagueName={league.name} />
         )}
 

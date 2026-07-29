@@ -1,5 +1,8 @@
+using FluentValidation.Results;
+
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Picks.Dtos;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
@@ -20,21 +23,39 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
     private readonly ILogger<GetUserPicksByGroupAndWeekQueryHandler> _logger;
     private readonly AppDataContext _dataContext;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ILeagueMembershipGuard _membershipGuard;
 
     public GetUserPicksByGroupAndWeekQueryHandler(
         ILogger<GetUserPicksByGroupAndWeekQueryHandler> logger,
         AppDataContext dataContext,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ILeagueMembershipGuard membershipGuard)
     {
         _logger = logger;
         _dataContext = dataContext;
         _dateTimeProvider = dateTimeProvider;
+        _membershipGuard = membershipGuard;
     }
 
     public async Task<Result<UserPicksResultDto>> ExecuteAsync(
         GetUserPicksByGroupAndWeekQuery query,
         CancellationToken cancellationToken = default)
     {
+        // Already caller-scoped (a non-member's pick list is empty), but
+        // TotalMatchups would still disclose the league's slate size, and a
+        // non-member has no business transacting against the league at all.
+        // Note: GetLeagueWeekOverview calls this once per member, so the guard
+        // runs redundantly there — an index seek each, and that handler is
+        // already slated for an N+1 rewrite (audit P1).
+        // See docs/audit/league-authorization-idor.md.
+        if (!await _membershipGuard.IsMemberAsync(query.GroupId, query.UserId, cancellationToken))
+        {
+            return new Failure<UserPicksResultDto>(
+                default!,
+                ResultStatus.Forbid,
+                [new ValidationFailure(nameof(query.GroupId), "You are not a member of this league.")]);
+        }
+
         var picks = await _dataContext.UserPicks
             .AsNoTracking()
             .Where(p =>

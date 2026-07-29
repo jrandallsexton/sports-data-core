@@ -20,7 +20,8 @@ public class GetLeagueScoresByWeekQueryHandlerTests : ApiTestBase<GetLeagueScore
     {
         // Arrange
         var handler = Mocker.CreateInstance<GetLeagueScoresByWeekQueryHandler>();
-        var query = new GetLeagueScoresByWeekQuery { LeagueId = Guid.NewGuid() };
+        var query = new GetLeagueScoresByWeekQuery { LeagueId = Guid.NewGuid() ,
+            UserId = Guid.NewGuid()};
 
         // Act
         var result = await handler.ExecuteAsync(query);
@@ -41,7 +42,8 @@ public class GetLeagueScoresByWeekQueryHandlerTests : ApiTestBase<GetLeagueScore
         await DataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<GetLeagueScoresByWeekQueryHandler>();
-        var query = new GetLeagueScoresByWeekQuery { LeagueId = league.Id };
+        var query = new GetLeagueScoresByWeekQuery { LeagueId = league.Id ,
+            UserId = Guid.NewGuid()};
 
         // Act
         var result = await handler.ExecuteAsync(query);
@@ -76,7 +78,8 @@ public class GetLeagueScoresByWeekQueryHandlerTests : ApiTestBase<GetLeagueScore
         await DataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<GetLeagueScoresByWeekQueryHandler>();
-        var query = new GetLeagueScoresByWeekQuery { LeagueId = league.Id };
+        var query = new GetLeagueScoresByWeekQuery { LeagueId = league.Id ,
+            UserId = Guid.NewGuid()};
 
         // Act
         var result = await handler.ExecuteAsync(query);
@@ -120,7 +123,8 @@ public class GetLeagueScoresByWeekQueryHandlerTests : ApiTestBase<GetLeagueScore
         await DataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<GetLeagueScoresByWeekQueryHandler>();
-        var query = new GetLeagueScoresByWeekQuery { LeagueId = league.Id };
+        var query = new GetLeagueScoresByWeekQuery { LeagueId = league.Id ,
+            UserId = Guid.NewGuid()};
 
         // Act
         var result = await handler.ExecuteAsync(query);
@@ -160,7 +164,8 @@ public class GetLeagueScoresByWeekQueryHandlerTests : ApiTestBase<GetLeagueScore
         await DataContext.SaveChangesAsync();
 
         var handler = Mocker.CreateInstance<GetLeagueScoresByWeekQueryHandler>();
-        var query = new GetLeagueScoresByWeekQuery { LeagueId = league.Id };
+        var query = new GetLeagueScoresByWeekQuery { LeagueId = league.Id ,
+            UserId = Guid.NewGuid()};
 
         // Act
         var result = await handler.ExecuteAsync(query);

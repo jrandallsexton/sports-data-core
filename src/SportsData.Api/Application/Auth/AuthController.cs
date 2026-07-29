@@ -62,41 +62,12 @@ namespace SportsData.Api.Application.Auth
             return Ok(userClaims);
         }
 
-        [HttpPost("set-token")]
-        public IActionResult SetToken([FromBody] SetTokenRequest request)
-        {
-            try
-            {
-                var domain = GetCookieDomain();
-                var remoteIp = Request.HttpContext.Connection.RemoteIpAddress;
-                _logger.LogInformation("Setting token cookie for request from {RemoteIp}. Domain: {Domain}, Origin: {Origin}", 
-                    remoteIp, domain, Request.Headers["Origin"].ToString());
-
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.None,
-                    Domain = domain,
-                    Path = "/"
-                };
-
-                _logger.LogInformation("Cookie set with options: HttpOnly={HttpOnly}, Secure={Secure}, SameSite={SameSite}, Domain={Domain}, Path={Path}",
-                    cookieOptions.HttpOnly, cookieOptions.Secure, cookieOptions.SameSite, cookieOptions.Domain, cookieOptions.Path);
-
-                Response.Cookies.Append("authToken", request.Token, cookieOptions);
-
-                var setCookieHeader = Response.Headers["Set-Cookie"].ToString();
-                _logger.LogInformation("Set-Cookie header: {SetCookieHeader}", setCookieHeader);
-
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error setting token cookie");
-                return StatusCode(500, "Internal server error");
-            }
-        }
+        // POST set-token removed 2026-07-29. Clients are header-based since the
+        // 2025-12-08 migration (sd-ui sends withCredentials: false + a
+        // per-request bearer token; sd-mobile likewise), so nothing consumed
+        // the cookie this set — and being unauthenticated, it let any caller
+        // write an authToken cookie on the domain. clear-token below is kept:
+        // sign-out and account deletion still call it to clear legacy cookies.
 
         [HttpPost("clear-token")]
         public IActionResult ClearToken()
@@ -153,10 +124,5 @@ namespace SportsData.Api.Application.Auth
                 ? Ok(new { message = "User synced", userId = result.Value })
                 : Unauthorized();
         }
-    }
-
-    public class SetTokenRequest
-    {
-        public string Token { get; set; } = null!;
     }
 }

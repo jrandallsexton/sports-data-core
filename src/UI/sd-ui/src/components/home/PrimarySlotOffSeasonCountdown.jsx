@@ -57,7 +57,15 @@ function sportPhrase(sport, nowMs) {
   };
 }
 
-function PrimarySlotOffSeasonCountdown() {
+/**
+ * @param {object} props
+ * @param {boolean} [props.hasLeagues] Whether the signed-in user belongs to
+ *   any league. Only affects the all-sports-live state: "go make your picks"
+ *   is meaningless to someone who hasn't joined a league yet, so that user is
+ *   pointed at league creation instead. Defaults true so existing callers
+ *   keep the member-oriented copy.
+ */
+function PrimarySlotOffSeasonCountdown({ hasLeagues = true }) {
   // { NCAAFB: { kickoff, seasonYear } | null, ... } once loaded.
   const [seasons, setSeasons] = useState(null);
   // Active creation gates keyed by backend Sport enum: { FootballNcaa: opensUtc }.
@@ -152,7 +160,9 @@ function PrimarySlotOffSeasonCountdown() {
       ));
 
   const body = allLive
-    ? "Jump into your leagues and lock in your picks before the next kickoff."
+    ? hasLeagues
+      ? "Jump into your leagues and lock in your picks before the next kickoff."
+      : "You're not in a league yet — start one and make your first picks."
     : allGated
     ? "Leagues open soon — we'll be ready before Week\u00A01."
     : seasonYear
@@ -166,9 +176,18 @@ function PrimarySlotOffSeasonCountdown() {
   // ?sport= so LeagueCreatePage preselects the correct tab.
   const renderActions = () => {
     if (allLive) {
-      return (
+      // "Go to picks" is a dead end for a user with no leagues — send them to
+      // creation instead (unGated by definition once every sport is live).
+      return hasLeagues ? (
         <Link to="/app/picks" className="home-primary__cta home-primary__cta--primary">
           Go to picks
+        </Link>
+      ) : (
+        <Link
+          to="/app/league/create"
+          className="home-primary__cta home-primary__cta--primary"
+        >
+          Create a league
         </Link>
       );
     }

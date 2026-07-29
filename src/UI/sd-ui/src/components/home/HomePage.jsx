@@ -1,6 +1,5 @@
 import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
-import PrimarySlotNewUser from "./PrimarySlotNewUser";
 import PrimarySlotOffSeasonCountdown from "./PrimarySlotOffSeasonCountdown";
 import YourLeaguesCard from "./YourLeaguesCard";
 
@@ -14,16 +13,18 @@ import YourLeaguesCard from "./YourLeaguesCard";
  *   Tier 2 (context) — sport-specific context cards. Stubbed this session.
  *   Tier 3 (secondary) — compact adjacent surfaces. Stubbed this session.
  *
- * Session 1 ships Tier 1 with two of the seven rules wired up:
- *   - New user (no leagues)       → PrimarySlotNewUser
- *   - Fallback (any other state)  → PrimarySlotOffSeasonCountdown
+ * Tier 1 currently resolves to PrimarySlotOffSeasonCountdown for EVERY user.
+ * The old zero-league branch (PrimarySlotNewUser) was removed 2026-07-29: it
+ * hardcoded the season year and led with "Create a league" — an action the
+ * per-sport creation gates block until each sport opens (NCAAFB Aug 18, NFL
+ * Sep 1). The countdown is gate-aware and states exactly when each sport
+ * opens, so it is correct for members and non-members alike; it takes
+ * hasLeagues so its in-season copy can address users who haven't joined one.
  *
- * Covers every real user today (April 2026: NCAAFB + NFL are off-season;
- * MLB is dev-only, not product-facing). Remaining rules — pick deadline
- * within 48h, new matchups available, standings delta, commissioner
- * action pending, welcome-back fallback — land in session 2 once we
- * have per-league deadline data plumbed through /user/me or a new
- * dashboard endpoint.
+ * Remaining rules — pick deadline within 48h, new matchups available,
+ * standings delta, commissioner action pending, welcome-back fallback — land
+ * once per-league deadline data is plumbed through /user/me or a dashboard
+ * endpoint.
  */
 function HomePage() {
   const { userDto, loading: userLoading } = useUserDto();
@@ -41,18 +42,10 @@ function HomePage() {
     : Object.values(userDto?.leagues || {});
   const hasLeagues = leagues.length > 0;
 
-  // Rule resolver for Tier 1. Add cases here as session 2 lands — pick
-  // deadlines, standings deltas, etc. — keeping the cascade top-down so
-  // the most-urgent state always wins.
-  const renderPrimary = () => {
-    if (!hasLeagues) return <PrimarySlotNewUser />;
-    return <PrimarySlotOffSeasonCountdown />;
-  };
-
   return (
     <div className="home-page">
       <section className="home-tier home-tier--primary">
-        {renderPrimary()}
+        <PrimarySlotOffSeasonCountdown hasLeagues={hasLeagues} />
       </section>
 
       {/* Tier 2 — "Your Leagues" list. Mirrors sd-mobile's YourLeaguesCard

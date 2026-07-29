@@ -39,6 +39,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         var query = new GetLeagueWeekOverviewQuery
         {
             LeagueId = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
             Week = 1
         };
 
@@ -77,6 +78,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         var query = new GetLeagueWeekOverviewQuery
         {
             LeagueId = league.Id,
+            UserId = Guid.NewGuid(),
             Week = 1
         };
 
@@ -113,6 +115,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         var query = new GetLeagueWeekOverviewQuery
         {
             LeagueId = league.Id,
+            UserId = Guid.NewGuid(),
             Week = 5
         };
 
@@ -158,6 +161,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         var query = new GetLeagueWeekOverviewQuery
         {
             LeagueId = league.Id,
+            UserId = Guid.NewGuid(),
             Week = 5
         };
 
@@ -212,6 +216,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         var query = new GetLeagueWeekOverviewQuery
         {
             LeagueId = league.Id,
+            UserId = Guid.NewGuid(),
             Week = 5
         };
 
@@ -262,6 +267,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         var query = new GetLeagueWeekOverviewQuery
         {
             LeagueId = league.Id,
+            UserId = Guid.NewGuid(),
             Week = 5
         };
 

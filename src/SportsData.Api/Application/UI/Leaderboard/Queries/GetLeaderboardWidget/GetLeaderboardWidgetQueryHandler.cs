@@ -84,7 +84,13 @@ public class GetLeaderboardWidgetQueryHandler : IGetLeaderboardWidgetQueryHandle
 
         foreach (var groupId in groupIds)
         {
-            var leaderboardQuery = new GetLeaderboardQuery { GroupId = groupId };
+            // groupIds came from this user's own memberships above, so the
+            // membership guard inside GetLeaderboard always passes here.
+            var leaderboardQuery = new GetLeaderboardQuery
+            {
+                GroupId = groupId,
+                UserId = query.UserId
+            };
             var leaderboardResult = await _getLeaderboardQueryHandler.ExecuteAsync(leaderboardQuery, cancellationToken);
 
             if (!leaderboardResult.IsSuccess)

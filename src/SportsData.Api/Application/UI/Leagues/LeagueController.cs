@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
 using SportsData.Api.Application.UI.Leagues.Commands.CloneLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague;
@@ -166,7 +167,11 @@ public class LeagueController : ApiControllerBase
         [FromServices] IGetLeagueByIdQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        var query = new GetLeagueByIdQuery { LeagueId = id };
+        var query = new GetLeagueByIdQuery
+        {
+            LeagueId = id,
+            UserId = HttpContext.GetCurrentUserId()
+        };
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
@@ -345,20 +350,30 @@ public class LeagueController : ApiControllerBase
         var query = new GetLeagueWeekOverviewQuery
         {
             LeagueId = id,
-            Week = week
+            Week = week,
+            UserId = HttpContext.GetCurrentUserId()
         };
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }
 
+    // [Authorize] + membership guard added 2026-07-29: this action was the one
+    // endpoint in this controller missing the attribute (19 of 20 had it), so
+    // anonymous callers could enqueue AI-generation jobs — inference cost and
+    // Hangfire queue depth. See docs/audit/league-authorization-idor.md.
     [HttpPost("{id}/previews/{weekId}/generate")]
+    [Authorize]
     public async Task<ActionResult<Guid>> GenerateMatchupPreviews(
         [FromRoute] Guid id,
         [FromRoute] int weekId,
         [FromServices] IGenerateLeagueWeekPreviewsCommandHandler handler,
+        [FromServices] ILeagueMembershipGuard membershipGuard,
         CancellationToken cancellationToken)
     {
+        if (!await membershipGuard.IsMemberAsync(id, HttpContext.GetCurrentUserId(), cancellationToken))
+            return Forbid();
+
         var command = new GenerateLeagueWeekPreviewsCommand
         {
             LeagueId = id,
@@ -386,7 +401,11 @@ public class LeagueController : ApiControllerBase
         [FromServices] IGetLeagueScoresByWeekQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        var query = new GetLeagueScoresByWeekQuery { LeagueId = id };
+        var query = new GetLeagueScoresByWeekQuery
+        {
+            LeagueId = id,
+            UserId = HttpContext.GetCurrentUserId()
+        };
         var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();

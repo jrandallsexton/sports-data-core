@@ -129,7 +129,14 @@ const LeagueDetail = () => {
       <div className="league-detail-sidebar">
         <div className="members-section">
           <h2>Members</h2>
-          {league.members?.length > 0 ? (
+          {league.isMember === false ? (
+            // The BE withholds the roster from non-members. Show the size
+            // rather than an empty list — "No members yet" would be a lie.
+            <p className="no-members-message">
+              {league.memberCount} {league.memberCount === 1 ? "member" : "members"}.
+              Join to see who&apos;s in it.
+            </p>
+          ) : league.members?.length > 0 ? (
             <ul className="members-list">
               {league.members.map((member) => (
                 <li key={member.userId}>

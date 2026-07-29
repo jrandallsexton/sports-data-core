@@ -36,6 +36,23 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
         /// </summary>
         public DateTime? DeactivatedUtc { get; set; }
 
+        /// <summary>
+        /// Always populated. Clients render "N members" from this rather than
+        /// <see cref="Members"/>, which is empty for non-members.
+        /// </summary>
+        public int MemberCount { get; set; }
+
+        /// <summary>
+        /// Whether the caller belongs to this league. False means
+        /// <see cref="Members"/> is withheld — see
+        /// docs/audit/league-authorization-idor.md.
+        /// </summary>
+        public bool IsMember { get; set; }
+
+        /// <summary>
+        /// The roster — members only. Empty for non-members (invite preview,
+        /// public-league browsing).
+        /// </summary>
         public List<LeagueMemberDto> Members { get; set; } = [];
 
         public class LeagueMemberDto

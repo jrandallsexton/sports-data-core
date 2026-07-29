@@ -2,6 +2,7 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
 using SportsData.Api.Infrastructure.Data;
@@ -25,23 +26,36 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
     private readonly AppDataContext _dbContext;
     private readonly IContestClientFactory _contestClientFactory;
     private readonly IGetUserPicksByGroupAndWeekQueryHandler _userPicksQueryHandler;
+    private readonly ILeagueMembershipGuard _membershipGuard;
 
     public GetLeagueWeekOverviewQueryHandler(
         ILogger<GetLeagueWeekOverviewQueryHandler> logger,
         AppDataContext dbContext,
         IContestClientFactory contestClientFactory,
-        IGetUserPicksByGroupAndWeekQueryHandler userPicksQueryHandler)
+        IGetUserPicksByGroupAndWeekQueryHandler userPicksQueryHandler,
+        ILeagueMembershipGuard membershipGuard)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contestClientFactory = contestClientFactory;
         _userPicksQueryHandler = userPicksQueryHandler;
+        _membershipGuard = membershipGuard;
     }
 
     public async Task<Result<LeagueWeekOverviewDto>> ExecuteAsync(
         GetLeagueWeekOverviewQuery query,
         CancellationToken cancellationToken = default)
     {
+        // Every member's picks for the week — members only.
+        // See docs/audit/league-authorization-idor.md.
+        if (!await _membershipGuard.IsMemberAsync(query.LeagueId, query.UserId, cancellationToken))
+        {
+            return new Failure<LeagueWeekOverviewDto>(
+                default!,
+                ResultStatus.Forbid,
+                [new ValidationFailure(nameof(query.LeagueId), "You are not a member of this league.")]);
+        }
+
         var league = await _dbContext.PickemGroups
             .AsNoTracking()
             .Include(x => x.Members)

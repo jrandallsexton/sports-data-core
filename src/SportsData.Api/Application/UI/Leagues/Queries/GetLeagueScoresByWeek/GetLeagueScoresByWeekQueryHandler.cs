@@ -2,6 +2,7 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
@@ -21,19 +22,32 @@ public class GetLeagueScoresByWeekQueryHandler : IGetLeagueScoresByWeekQueryHand
 {
     private readonly ILogger<GetLeagueScoresByWeekQueryHandler> _logger;
     private readonly AppDataContext _dbContext;
+    private readonly ILeagueMembershipGuard _membershipGuard;
 
     public GetLeagueScoresByWeekQueryHandler(
         ILogger<GetLeagueScoresByWeekQueryHandler> logger,
-        AppDataContext dbContext)
+        AppDataContext dbContext,
+        ILeagueMembershipGuard membershipGuard)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _membershipGuard = membershipGuard;
     }
 
     public async Task<Result<LeagueScoresByWeekDto>> ExecuteAsync(
         GetLeagueScoresByWeekQuery query,
         CancellationToken cancellationToken = default)
     {
+        // Per-member weekly scores — members only.
+        // See docs/audit/league-authorization-idor.md.
+        if (!await _membershipGuard.IsMemberAsync(query.LeagueId, query.UserId, cancellationToken))
+        {
+            return new Failure<LeagueScoresByWeekDto>(
+                default!,
+                ResultStatus.Forbid,
+                [new ValidationFailure(nameof(query.LeagueId), "You are not a member of this league.")]);
+        }
+
         var league = await _dbContext.PickemGroups
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == query.LeagueId, cancellationToken);

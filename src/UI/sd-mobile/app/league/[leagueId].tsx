@@ -295,7 +295,15 @@ export default function LeagueDetailScreen() {
             {/* Members */}
             <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>Members</Text>
-              {league.members.length > 0 ? (
+              {!league.isMember ? (
+                // The BE withholds the roster from non-members (this screen is
+                // deep-link reachable). Show the size, not an empty list —
+                // "No members yet" would be a lie.
+                <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+                  {league.memberCount} {league.memberCount === 1 ? 'member' : 'members'}.
+                  Join to see who&apos;s in it.
+                </Text>
+              ) : league.members.length > 0 ? (
                 league.members.map((member) => (
                   <View key={member.userId} style={styles.memberRow}>
                     {member.role === 'commissioner' && (

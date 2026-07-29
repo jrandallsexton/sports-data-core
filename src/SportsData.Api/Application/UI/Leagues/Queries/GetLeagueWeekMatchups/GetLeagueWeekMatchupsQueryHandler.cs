@@ -3,6 +3,7 @@ using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Contest.Dtos;
+using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.Mapping;
 using SportsData.Api.Infrastructure.Data;
@@ -26,23 +27,36 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
     private readonly AppDataContext _dbContext;
     private readonly IContestClientFactory _contestClientFactory;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly ILeagueMembershipGuard _membershipGuard;
 
     public GetLeagueWeekMatchupsQueryHandler(
         ILogger<GetLeagueWeekMatchupsQueryHandler> logger,
         AppDataContext dbContext,
         IContestClientFactory contestClientFactory,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        ILeagueMembershipGuard membershipGuard)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contestClientFactory = contestClientFactory;
         _dateTimeProvider = dateTimeProvider;
+        _membershipGuard = membershipGuard;
     }
 
     public async Task<Result<LeagueWeekMatchupsDto>> ExecuteAsync(
         GetLeagueWeekMatchupsQuery query,
         CancellationToken cancellationToken = default)
     {
+        // The league's slate + spreads — members only.
+        // See docs/audit/league-authorization-idor.md.
+        if (!await _membershipGuard.IsMemberAsync(query.LeagueId, query.UserId, cancellationToken))
+        {
+            return new Failure<LeagueWeekMatchupsDto>(
+                default!,
+                ResultStatus.Forbid,
+                [new ValidationFailure(nameof(query.LeagueId), "You are not a member of this league.")]);
+        }
+
         _logger.LogInformation(
             "GetLeagueWeekMatchupsQueryHandler.ExecuteAsync called with userId={UserId}, leagueId={LeagueId}, week={Week}",
             query.UserId,

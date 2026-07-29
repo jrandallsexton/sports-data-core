@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Picks.Commands.SubmitPick;
 using SportsData.Api.Application.UI.Picks.PickImport.Commands.ImportPicks;
 using SportsData.Api.Application.UI.Picks.PickImport.Planner;
@@ -19,6 +20,17 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Picks.PickImport;
 
 public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHandler>
 {
+    // Pick import runs on behalf of a user who is already a member of the target
+    // league, so the guard is permissive here; membership denial is covered by
+    // SubmitPickCommandHandler's own authorization tests.
+    private static ILeagueMembershipGuard PermissiveGuard()
+    {
+        var guard = new Mock<ILeagueMembershipGuard>();
+        guard.Setup(x => x.IsMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        return guard.Object;
+    }
+
     // Both the plan service and the (real) SubmitPickCommandHandler are driven by
     // this mocked clock, so lock state is fully deterministic regardless of the
     // calendar.
@@ -37,7 +49,8 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
             NullLogger<SubmitPickCommandHandler>.Instance,
             DataContext,
             new Mock<IEventBus>().Object,
-            dateTime.Object);
+            dateTime.Object,
+            PermissiveGuard());
 
         return new ImportPicksCommandHandler(
             NullLogger<ImportPicksCommandHandler>.Instance,
@@ -396,7 +409,8 @@ public class ImportPicksCommandHandlerTests : ApiTestBase<ImportPicksCommandHand
             NullLogger<SubmitPickCommandHandler>.Instance,
             DataContext,
             new Mock<IEventBus>().Object,
-            realSubmitClock.Object);
+            realSubmitClock.Object,
+            PermissiveGuard());
 
         var submit = new Mock<ISubmitPickCommandHandler>();
         submit.Setup(x => x.ExecuteAsync(

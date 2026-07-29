@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using SportsData.Api.Application.UI.Leagues.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.UI.Messageboard.Commands.CreateReply;
@@ -59,8 +60,12 @@ public class MessageboardController : ApiControllerBase
         [FromRoute] Guid groupId,
         [FromQuery] PageQuery q,
         [FromServices] IGetThreadsQueryHandler handler,
+        [FromServices] ILeagueMembershipGuard membershipGuard,
         CancellationToken ct)
     {
+        if (!await membershipGuard.IsMemberAsync(groupId, HttpContext.GetCurrentUserId(), ct))
+            return Forbid();
+
         var query = new GetThreadsQuery
         {
             GroupId = groupId,
@@ -78,9 +83,13 @@ public class MessageboardController : ApiControllerBase
         [FromRoute] Guid groupId,
         [FromBody] CreateThreadRequest body,
         [FromServices] ICreateThreadCommandHandler handler,
+        [FromServices] ILeagueMembershipGuard membershipGuard,
         CancellationToken ct)
     {
         var userId = HttpContext.GetCurrentUserId();
+        if (!await membershipGuard.IsMemberAsync(groupId, userId, ct))
+            return Forbid();
+
         var command = new CreateThreadCommand
         {
             GroupId = groupId,
@@ -102,8 +111,12 @@ public class MessageboardController : ApiControllerBase
         [FromQuery] Guid? parentId,
         [FromQuery] PageQuery q,
         [FromServices] IGetRepliesQueryHandler handler,
+        [FromServices] ILeagueMembershipGuard membershipGuard,
         CancellationToken ct)
     {
+        if (!await membershipGuard.IsMemberOfThreadGroupAsync(threadId, HttpContext.GetCurrentUserId(), ct))
+            return Forbid();
+
         var query = new GetRepliesQuery
         {
             ThreadId = threadId,
@@ -122,9 +135,13 @@ public class MessageboardController : ApiControllerBase
         [FromRoute] Guid threadId,
         [FromBody] CreatePostRequest body,
         [FromServices] ICreateReplyCommandHandler handler,
+        [FromServices] ILeagueMembershipGuard membershipGuard,
         CancellationToken ct)
     {
         var userId = HttpContext.GetCurrentUserId();
+        if (!await membershipGuard.IsMemberOfThreadGroupAsync(threadId, userId, ct))
+            return Forbid();
+
         var command = new CreateReplyCommand
         {
             ThreadId = threadId,
@@ -167,9 +184,13 @@ public class MessageboardController : ApiControllerBase
         [FromRoute] Guid postId,
         [FromBody] ToggleReactionRequest body,
         [FromServices] IToggleReactionCommandHandler handler,
+        [FromServices] ILeagueMembershipGuard membershipGuard,
         CancellationToken ct)
     {
         var userId = HttpContext.GetCurrentUserId();
+        if (!await membershipGuard.IsMemberOfPostGroupAsync(postId, userId, ct))
+            return Forbid();
+
         var command = new ToggleReactionCommand
         {
             PostId = postId,
@@ -186,9 +207,13 @@ public class MessageboardController : ApiControllerBase
     public async Task<IActionResult> DeleteReaction(
         [FromRoute] Guid postId,
         [FromServices] IToggleReactionCommandHandler handler,
+        [FromServices] ILeagueMembershipGuard membershipGuard,
         CancellationToken ct)
     {
         var userId = HttpContext.GetCurrentUserId();
+        if (!await membershipGuard.IsMemberOfPostGroupAsync(postId, userId, ct))
+            return Forbid();
+
         var command = new ToggleReactionCommand
         {
             PostId = postId,

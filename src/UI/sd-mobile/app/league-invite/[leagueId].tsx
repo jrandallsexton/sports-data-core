@@ -94,8 +94,8 @@ export default function LeagueInviteScreen() {
 
             <View style={[styles.metaCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <Text style={[styles.metaRow, { color: theme.text }]}>
-                {league.members.length}{' '}
-                {league.members.length === 1 ? 'member' : 'members'}
+                {league.memberCount}{' '}
+                {league.memberCount === 1 ? 'member' : 'members'}
               </Text>
               <Text style={[styles.metaRow, { color: theme.textMuted }]}>
                 {league.isPublic ? 'Public league' : 'Private league'}

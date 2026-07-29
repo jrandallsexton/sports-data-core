@@ -17,7 +17,8 @@ public class GetLeaderboardQueryHandlerTests : ApiTestBase<GetLeaderboardQueryHa
     {
         // Arrange
         var sut = Mocker.CreateInstance<GetLeaderboardQueryHandler>();
-        var query = new GetLeaderboardQuery { GroupId = Guid.Empty };
+        var query = new GetLeaderboardQuery { GroupId = Guid.Empty ,
+            UserId = Guid.NewGuid()};
 
         // Act
         var result = await sut.ExecuteAsync(query);
@@ -33,7 +34,8 @@ public class GetLeaderboardQueryHandlerTests : ApiTestBase<GetLeaderboardQueryHa
         // Arrange
         var groupId = Guid.NewGuid();
         var sut = Mocker.CreateInstance<GetLeaderboardQueryHandler>();
-        var query = new GetLeaderboardQuery { GroupId = groupId };
+        var query = new GetLeaderboardQuery { GroupId = groupId ,
+            UserId = Guid.NewGuid()};
 
         // Act
         var result = await sut.ExecuteAsync(query);
@@ -62,7 +64,8 @@ public class GetLeaderboardQueryHandlerTests : ApiTestBase<GetLeaderboardQueryHa
         await DataContext.SaveChangesAsync();
 
         var sut = Mocker.CreateInstance<GetLeaderboardQueryHandler>();
-        var query = new GetLeaderboardQuery { GroupId = groupId };
+        var query = new GetLeaderboardQuery { GroupId = groupId ,
+            UserId = Guid.NewGuid()};
 
         // Act
         var result = await sut.ExecuteAsync(query);

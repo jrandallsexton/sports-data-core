@@ -39,13 +39,16 @@ export default function ForgotPasswordScreen() {
   // retype it after a failed login.
   const { email: prefilledEmail } = useLocalSearchParams<{ email?: string }>();
 
+  // The address the reset was actually requested for. Captured at submit
+  // rather than read back from the form so the confirmation cannot drift from
+  // what was sent.
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const {
     control,
     handleSubmit,
-    getValues,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -54,8 +57,10 @@ export default function ForgotPasswordScreen() {
 
   const onSubmit = async (data: FormData) => {
     setFormError(null);
+    const address = data.email.trim();
+    setSubmittedEmail(address);
     try {
-      await sendPasswordResetEmail(auth, data.email.trim());
+      await sendPasswordResetEmail(auth, address);
       setSent(true);
     } catch (e) {
       const code = (e as { code?: string })?.code ?? '';
@@ -106,7 +111,7 @@ export default function ForgotPasswordScreen() {
           <View style={styles.card}>
             <Text style={[styles.title, { color: theme.text }]}>Check your email</Text>
             <Text style={[styles.body, { color: theme.textMuted }]}>
-              If an account exists for {getValues('email').trim()}, we&apos;ve sent a
+              If an account exists for {submittedEmail}, we&apos;ve sent a
               link to reset your password. It may take a minute to arrive — check
               your spam folder if you don&apos;t see it.
             </Text>

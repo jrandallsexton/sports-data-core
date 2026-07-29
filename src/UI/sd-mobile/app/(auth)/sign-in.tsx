@@ -13,6 +13,7 @@ import { Text } from '@/src/components/ui/AppText';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { router } from 'expo-router';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/src/lib/firebase';
 import {
@@ -57,6 +58,7 @@ export default function SignInScreen() {
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
     setError,
     clearErrors,
@@ -64,6 +66,14 @@ export default function SignInScreen() {
     resolver: zodResolver(schema),
     defaultValues: { email: '', password: '' },
   });
+
+  const goToForgotPassword = () => {
+    const typed = getValues('email').trim();
+    router.push({
+      pathname: '/(auth)/forgot-password',
+      params: typed ? { email: typed } : {},
+    });
+  };
 
   const onSubmit = async ({ email, password }: FormData) => {
     try {
@@ -268,13 +278,9 @@ export default function SignInScreen() {
             style={{ marginTop: 8 }}
           />
 
-          {/* TODO: wire password-reset flow. TouchableOpacity has no onPress
-              today — visually a button, functionally a no-op. Two paths when
-              we pick this up: (a) call Firebase `sendPasswordResetEmail(auth,
-              email)` inline with a simple prompt for the address, or (b)
-              navigate to a dedicated reset screen. CodeRabbit flagged this on
-              PR #274; deferred pending product decision on the flow. */}
-          <TouchableOpacity style={styles.forgotLink}>
+          {/* Carries whatever address is already typed so the user doesn't
+              retype it after a failed sign-in. */}
+          <TouchableOpacity style={styles.forgotLink} onPress={goToForgotPassword}>
             <Text style={[styles.forgotText, { color: theme.tint }]}>
               Forgot password?
             </Text>

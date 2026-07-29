@@ -1,6 +1,6 @@
 // src/components/Login.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase"; // ✅ centralized Firebase setup
 import { FaEnvelope, FaLock } from "react-icons/fa";
@@ -66,6 +66,14 @@ const Login = () => {
             Sign In
           </button>
         </form>
+
+        {/* Carries whatever address is already typed so the user doesn't
+            retype it after a failed sign-in. */}
+        <p className="forgot-password-link">
+          <Link to="/forgot-password" state={{ email }}>
+            Forgot password?
+          </Link>
+        </p>
       </div>
     </div>
   );

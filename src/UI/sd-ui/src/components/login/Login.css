@@ -142,3 +142,47 @@
 .input-wrapper input::placeholder {
   color: var(--text-muted);
 }
+
+/* ── Password reset ─────────────────────────────────────────────────────────
+   Shared by the "Forgot password?" affordance on the embedded sign-in card
+   and by the standalone /forgot-password page, which reuses .login-card. */
+
+.forgot-password-link,
+.forgot-back {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.forgot-password-link a,
+.forgot-back a {
+  color: #4da3ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.forgot-password-link a:hover,
+.forgot-back a:hover {
+  text-decoration: underline;
+}
+
+.forgot-blurb {
+  margin: 0 0 18px;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  opacity: 0.85;
+}
+
+.login-card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* .error-message was only ever styled under .email-signup-form, so the
+   sign-in card's errors have been rendering as unstyled body text. Matches
+   the signup form's treatment. */
+.login-card .error-message {
+  color: var(--error);
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}

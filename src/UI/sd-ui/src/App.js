@@ -12,6 +12,7 @@ import "./App.css";
 
 import MainApp from "./MainApp";
 import SignupPage from "./components/signup/SignupPage";
+import ForgotPassword from "./components/login/ForgotPassword";
 import LandingPage from "./components/landing/LandingPage";
 import TermsPage from "./components/legal/TermsPage";
 import PrivacyPage from "./components/legal/PrivacyPage";
@@ -68,12 +69,14 @@ function AppRoutes() {
       {/* Static legal pages stay reachable during an API outage: they make no
           API calls, and /account-deletion is the URL submitted to Google
           Play's Data Safety section — a reviewer (or an uninstalled user)
-          must never hit the offline error page there. All other routes keep
-          the existing ErrorPage short-circuit. Trailing slashes are stripped
-          before matching — the router itself treats /terms/ as /terms, so the
-          allowlist must too. */}
+          must never hit the offline error page there. /forgot-password belongs
+          here for the same reason and one more: it talks only to Firebase, and
+          an API outage is exactly when a locked-out user is most likely to be
+          trying to get back in. All other routes keep the existing ErrorPage
+          short-circuit. Trailing slashes are stripped before matching — the
+          router itself treats /terms/ as /terms, so the allowlist must too. */}
       {apiOffline &&
-      !["/terms", "/privacy", "/account-deletion"].includes(
+      !["/terms", "/privacy", "/account-deletion", "/forgot-password"].includes(
         location.pathname.replace(/\/+$/, "") || "/"
       ) ? (
         <ErrorPage message="We lost the ball trying to contact the server." />
@@ -81,6 +84,7 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route
             path="/results/:sport/:league/:seasonYear"

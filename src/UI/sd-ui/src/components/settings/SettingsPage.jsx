@@ -542,8 +542,10 @@ function SettingsPage() {
           until it is driven by real data — the feature is wanted eventually
           (it would make good sign-up marketing), so the panel stays wired up
           and visible to the operator rather than being deleted. Gating here
-          rather than inside the component also skips the fixture fetch for
-          everyone else. */}
+          rather than inside the component also stops the APP from fetching the
+          fixture for non-admins — a UI gate, not access control: the file is a
+          public static asset and stays directly fetchable by URL. That is fine
+          because the data is fabricated; nothing sensitive lives there. */}
       {userDto?.isAdmin && <BadgesPanel />}
     </div>
   );

@@ -72,6 +72,12 @@ const buildShared = ({
   isPublic,
   // BE enum name; absent/null falls back to Open server-side.
   joinPolicy: joinPolicy || "Open",
+  // Explicit window shape — the BE stores this rather than inferring it
+  // from the dates. Mapping matches the form's duration modes.
+  leagueWindow:
+    durationMode === "dates" ? "DateRange"
+    : durationMode === "weeks" ? "WeekRange"
+    : "FullSeason",
   dropLowWeeksCount: toNonNegativeInt(dropLowWeeksCount),
   ...buildWindow({ durationMode, startsOn, endsOn }),
 });

@@ -79,6 +79,17 @@ namespace SportsData.Api.Application.PickemGroups
                 @event.GroupId,
                 @event.CorrelationId);
             _backgroundJobProvider.Enqueue<IBootstrapLeagueMatchups>(p => p.Process(cmd));
+
+            // Initial join-expiry, computed off the creation event itself
+            // (thin-shim rule: enqueued, not inline). Open leagues resolve
+            // immediately from EndsOn / the season calendar without waiting
+            // on the slate; drop-week leagues get their calendar-provisional
+            // value now. This also covers the bootstrap's zero-weeks path,
+            // which runs no per-week job (the later refinement trigger).
+            // Races with the bootstrap jobs are harmless — the calculator is
+            // an idempotent recompute-from-scratch.
+            _backgroundJobProvider.Enqueue<ILeagueJoinExpiryCalculator>(
+                c => c.RecomputeAsync(@event.GroupId, CancellationToken.None));
         }
     }
 }

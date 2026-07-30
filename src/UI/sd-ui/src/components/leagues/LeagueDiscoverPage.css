@@ -34,7 +34,7 @@
   background-color: var(--bg-tooltip);
   border-bottom: 2px solid var(--accent);
   display: grid;
-  grid-template-columns: 2.5fr 1fr 1fr 1.2fr 1.3fr 1fr;
+  grid-template-columns: 2.5fr 1fr 1.1fr 0.9fr 1.2fr 1.3fr 1fr;
   gap: 16px;
   padding: 16px 20px;
   font-weight: 600;
@@ -46,7 +46,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 2.5fr 1fr 1fr 1.2fr 1.3fr 1fr;
+  grid-template-columns: 2.5fr 1fr 1.1fr 0.9fr 1.2fr 1.3fr 1fr;
   gap: 16px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-strong);
@@ -217,3 +217,15 @@
   opacity: 0.7;
   margin-top: 2px;
 }
+
+/* Join-closes label states (shared by discover, home rail, detail) */
+.join-closes--countdown {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.join-closes--closed {
+  opacity: 0.7;
+}
+
+

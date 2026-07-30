@@ -141,6 +141,39 @@ public class JoinLeagueJoinPolicyTests : ApiTestBase<JoinLeagueCommandHandler>
     }
 
     [Fact]
+    public async Task StoredExpiry_InThePast_Rejects_EvenForOpenPolicy()
+    {
+        // The stored expiry (LeagueJoinExpiryCalculator's output) is the
+        // authority: an Open league whose last pickable moment has passed is
+        // closed, no matter what the policy enum says.
+        var leagueId = await SeedLeagueAsync(JoinPolicy.Open);
+        var league = await DataContext.PickemGroups.FindAsync(leagueId);
+        league!.InvitationsExpireUtc = Now.AddHours(-2);
+        await DataContext.SaveChangesAsync();
+
+        var result = await CreateHandler().ExecuteAsync(Join(leagueId));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.Validation);
+    }
+
+    [Fact]
+    public async Task StoredExpiry_InTheFuture_Allows_EvenPastFirstGame()
+    {
+        // Drop-week leagues stay open past kickoff by design; the stored
+        // value wins over the CloseAtFirstGame fallback derivation.
+        var leagueId = await SeedLeagueAsync(JoinPolicy.CloseAtFirstGame,
+            matchupStarts: [Now.AddHours(-1)]);
+        var league = await DataContext.PickemGroups.FindAsync(leagueId);
+        league!.InvitationsExpireUtc = Now.AddDays(10);
+        await DataContext.SaveChangesAsync();
+
+        var result = await CreateHandler().ExecuteAsync(Join(leagueId));
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task DeactivatedLeague_IsNeverJoinable_RegardlessOfPolicy()
     {
         // Pre-existing bug fixed by this feature: a finished season was joinable.

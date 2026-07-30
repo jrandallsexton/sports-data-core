@@ -4,6 +4,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import leaguesApi from "../../api/leagues/leaguesApi";
 import "./LeagueDetail.css";
 import LeagueInvitation from "./LeagueInvitation";
+import JoinClosesLabel from "./JoinClosesLabel";
 
 // Render the league window as a human-readable date range, or "Full Season"
 // when both bounds are null (the league was created without a custom window).
@@ -131,13 +132,9 @@ const LeagueDetail = () => {
             <li><strong>Ranking Filter:</strong> {league.rankingFilter || "None"}</li>
             <li><strong>League Window:</strong> {windowLabel}</li>
             <li><strong>Visibility:</strong> {league.isPublic ? "Public" : "Private"}</li>
-            <li><strong>Joining:</strong> {
-              league.isJoinable === false
-                ? "Closed to new members"
-                : league.joinPolicy === "closeatfirstgame"
-                  ? "Open until the first game starts"
-                  : "Open"
-            }</li>
+            <li><strong>Joining:</strong>{" "}
+              <JoinClosesLabel closesAtUtc={league.closesAtUtc} isJoinable={league.isJoinable} />
+            </li>
             <li><strong>Conferences:</strong> {
               (() => {
                 const slugs = Array.isArray(league.conferenceSlugs) ? league.conferenceSlugs : [];

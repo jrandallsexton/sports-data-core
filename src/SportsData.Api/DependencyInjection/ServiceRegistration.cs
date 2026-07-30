@@ -16,6 +16,7 @@ using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutMetrics;
 using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Jobs;
+using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Processors;
 using SportsData.Api.Application.Scoring;
@@ -315,6 +316,8 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<PickScoringJob>();
             services.AddScoped<LeagueWeekScoringJob>();
             services.AddScoped<LeagueDeactivationJob>();
+            services.AddScoped<ILeagueJoinExpiryCalculator, LeagueJoinExpiryCalculator>();
+            services.AddScoped<LeagueJoinExpiryAuditJob>();
 
             // TODO: Restore after Contest processing is refactored
             // services.AddScoped<ContestRecapJob>();
@@ -381,6 +384,15 @@ namespace SportsData.Api.DependencyInjection
                 nameof(LeagueDeactivationJob),
                 job => job.ExecuteAsync(),
                 Cron.Daily(4));
+
+            // Hourly: drop-week expiries refine from calendar-provisional to
+            // first-kickoff-precise as weekly slates land, and this sweep is
+            // also the backfill for pre-existing leagues. Cost is a handful
+            // of indexed queries per active league.
+            recurringJobManager.AddOrUpdate<LeagueJoinExpiryAuditJob>(
+                nameof(LeagueJoinExpiryAuditJob),
+                job => job.ExecuteAsync(),
+                Cron.Hourly());
 
             recurringJobManager.AddOrUpdate<MatchupPreviewGenerator>(
                 nameof(MatchupPreviewGenerator),

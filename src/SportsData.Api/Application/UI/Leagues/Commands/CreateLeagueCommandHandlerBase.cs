@@ -181,6 +181,15 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
             ? JoinPolicy.Open
             : Enum.Parse<JoinPolicy>(request.JoinPolicy, ignoreCase: true);
 
+        // Absent -> infer from the dates. Exact for legacy clients: WeekRange
+        // has never been submittable, so dates mean DateRange and their
+        // absence means FullSeason.
+        var leagueWindow = request.LeagueWindow is not null
+            ? Enum.Parse<LeagueWindow>(request.LeagueWindow, ignoreCase: true)
+            : (request.StartsOn is null && request.EffectiveEndsOn is null
+                ? LeagueWindow.FullSeason
+                : LeagueWindow.DateRange);
+
         var seasonYear = request.SeasonYear ?? _dateTimeProvider.UtcNow().Year;
         var slugs = GetGroupingSlugs(request);
         var groupingIds = slugs.Count > 0
@@ -207,6 +216,7 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
             Description = request.Description?.Trim(),
             IsPublic = request.IsPublic,
             JoinPolicy = joinPolicy,
+            LeagueWindow = leagueWindow,
             League = LeagueMode,
             MaxUsers = DefaultMaxUsers,
             Name = request.Name.Trim(),

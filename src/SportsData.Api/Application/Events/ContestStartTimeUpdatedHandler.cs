@@ -1,7 +1,8 @@
-﻿using MassTransit;
+using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Eventing.Events.Contests;
 
@@ -11,13 +12,16 @@ namespace SportsData.Api.Application.Events
     {
         private readonly ILogger<ContestStartTimeUpdatedHandler> _logger;
         private readonly AppDataContext _dataContext;
+        private readonly ILeagueJoinExpiryCalculator _joinExpiryCalculator;
 
         public ContestStartTimeUpdatedHandler(
             ILogger<ContestStartTimeUpdatedHandler> logger,
-            AppDataContext dataContext)
+            AppDataContext dataContext,
+            ILeagueJoinExpiryCalculator joinExpiryCalculator)
         {
             _logger = logger;
             _dataContext = dataContext;
+            _joinExpiryCalculator = joinExpiryCalculator;
         }
 
         public async Task Consume(ConsumeContext<ContestStartTimeUpdated> context)
@@ -44,6 +48,15 @@ namespace SportsData.Api.Application.Events
             if (saveChanges)
             {
                 await _dataContext.SaveChangesAsync(context.CancellationToken);
+
+                // A moved kickoff can shift a league's join expiry (first-game
+                // and drop-week expiries derive from these times). Stored
+                // values must follow — this handler is the freshness hook the
+                // design doc's stored-DateTime decision relies on.
+                foreach (var groupId in matchups.Select(m => m.GroupId).Distinct())
+                {
+                    await _joinExpiryCalculator.RecomputeAsync(groupId, context.CancellationToken);
+                }
             }
         }
     }

@@ -34,6 +34,22 @@ public abstract class CreateLeagueRequestBaseValidator<TRequest> : AbstractValid
             .Must(v => v is null || IsDefinedEnumName<JoinPolicy>(v))
             .WithMessage(x => $"Invalid join policy: {x.JoinPolicy}");
 
+        RuleFor(x => x.LeagueWindow)
+            .Must(v => v is null || IsDefinedEnumName<LeagueWindow>(v))
+            .WithMessage(x => $"Invalid league window: {x.LeagueWindow}");
+
+        // A window claim must match the dates that came with it — a
+        // FullSeason request carrying EndsOn (or a DateRange one without)
+        // means the client is confused, and the expiry calculator would
+        // compute from a lie.
+        RuleFor(x => x)
+            .Must(x => x.LeagueWindow is null
+                || (Enum.TryParse<LeagueWindow>(x.LeagueWindow, true, out var w)
+                    && (w == LeagueWindow.FullSeason
+                        ? x.StartsOn is null && x.EndsOn is null
+                        : x.EffectiveEndsOn is not null)))
+            .WithMessage("LeagueWindow does not match the StartsOn/EndsOn values supplied.");
+
         RuleFor(x => x.TiebreakerTiePolicy)
             .Must(IsDefinedEnumName<TiebreakerTiePolicy>)
             .WithMessage(x => $"Invalid tiebreaker tie policy: {x.TiebreakerTiePolicy}");

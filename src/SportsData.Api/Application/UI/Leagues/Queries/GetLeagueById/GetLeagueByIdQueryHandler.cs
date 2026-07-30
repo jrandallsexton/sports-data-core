@@ -54,10 +54,11 @@ public class GetLeagueByIdQueryHandler : IGetLeagueByIdQueryHandler
         // to show a prospective member what they'd be joining.
         var isMember = league.Members.Any(m => m.UserId == query.UserId);
 
-        // Derived at read time, never stored (kickoff times move after slates
-        // generate). Empty slate -> null -> joinable: nothing has started.
-        DateTime? closesAtUtc = null;
-        if (league.JoinPolicy == JoinPolicy.CloseAtFirstGame)
+        // Stored expiry (LeagueJoinExpiryCalculator) is the authority; the
+        // derived first-game query only covers the uncomputed gap for
+        // CloseAtFirstGame leagues (fresh slate, pre-backfill rows).
+        var closesAtUtc = league.InvitationsExpireUtc;
+        if (closesAtUtc is null && league.JoinPolicy == JoinPolicy.CloseAtFirstGame)
         {
             closesAtUtc = await _dbContext.PickemGroupMatchups
                 .AsNoTracking()

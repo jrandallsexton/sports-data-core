@@ -1,0 +1,89 @@
+/* JoinableLeaguesCard — Tier 3 "Leagues you can join" rail. Visual parity
+   with YourLeaguesCard above it: same card chrome, width, and row rhythm. */
+.joinable-leagues-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--accent-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  padding: 1rem 1.25rem;
+  max-width: 880px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  color: var(--text-primary);
+}
+
+.joinable-leagues-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.joinable-leagues-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.joinable-leagues-more {
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.joinable-leagues-more:hover {
+  text-decoration: underline;
+}
+
+.joinable-leagues-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.joinable-league-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--accent-subtle);
+}
+
+.joinable-league-row:first-child {
+  border-top: none;
+}
+
+.joinable-league-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.joinable-league-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.joinable-league-meta {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.joinable-league-join {
+  flex-shrink: 0;
+  padding: 0.35rem 0.9rem;
+  border-radius: 8px;
+  background-color: var(--accent);
+  color: var(--text-on-accent, #fff);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.joinable-league-join:hover {
+  filter: brightness(1.1);
+}

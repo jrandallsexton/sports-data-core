@@ -176,6 +176,10 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
         var pickType = Enum.Parse<PickType>(request.PickType, ignoreCase: true);
         var tiebreakerType = Enum.Parse<TiebreakerType>(request.TiebreakerType, ignoreCase: true);
         var tiebreakerTiePolicy = Enum.Parse<TiebreakerTiePolicy>(request.TiebreakerTiePolicy, ignoreCase: true);
+        // Absent -> Open: pre-existing clients keep today's always-joinable behavior.
+        var joinPolicy = request.JoinPolicy is null
+            ? JoinPolicy.Open
+            : Enum.Parse<JoinPolicy>(request.JoinPolicy, ignoreCase: true);
 
         var seasonYear = request.SeasonYear ?? _dateTimeProvider.UtcNow().Year;
         var slugs = GetGroupingSlugs(request);
@@ -202,6 +206,7 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
             CreatedBy = currentUserId,
             Description = request.Description?.Trim(),
             IsPublic = request.IsPublic,
+            JoinPolicy = joinPolicy,
             League = LeagueMode,
             MaxUsers = DefaultMaxUsers,
             Name = request.Name.Trim(),

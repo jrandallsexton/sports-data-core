@@ -168,7 +168,7 @@ public class LeagueAuthorizationTests : ApiTestBase<LeagueMembershipGuard>
     {
         var memberId = Guid.NewGuid();
         var leagueId = await SeedLeagueAsync(memberId);
-        var handler = new GetLeagueByIdQueryHandler(DataContext);
+        var handler = new GetLeagueByIdQueryHandler(DataContext, new DateTimeProvider());
 
         var result = await handler.ExecuteAsync(new GetLeagueByIdQuery
         {
@@ -189,7 +189,7 @@ public class LeagueAuthorizationTests : ApiTestBase<LeagueMembershipGuard>
         // the league is and how big it is, but not WHO is in it.
         var memberId = Guid.NewGuid();
         var leagueId = await SeedLeagueAsync(memberId);
-        var handler = new GetLeagueByIdQueryHandler(DataContext);
+        var handler = new GetLeagueByIdQueryHandler(DataContext, new DateTimeProvider());
 
         var result = await handler.ExecuteAsync(new GetLeagueByIdQuery
         {

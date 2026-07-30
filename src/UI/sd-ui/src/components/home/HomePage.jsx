@@ -2,6 +2,7 @@ import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
 import PrimarySlotOffSeasonCountdown from "./PrimarySlotOffSeasonCountdown";
 import YourLeaguesCard from "./YourLeaguesCard";
+import JoinableLeaguesCard from "./JoinableLeaguesCard";
 
 /**
  * Post-login landing — date-aware, segment-aware.
@@ -58,8 +59,13 @@ function HomePage() {
         </section>
       )}
 
-      {/* Tier 3 — compact secondary row. Stub; session 3. */}
-      <section className="home-tier home-tier--secondary home-tier--stub" aria-hidden="true" />
+      {/* Tier 3 — public-league discovery. THE content driver for
+          league-less users: actionable joins instead of a bare countdown.
+          The card renders null when nothing is joinable, leaving the
+          prior stub behavior. */}
+      <section className="home-tier home-tier--secondary">
+        <JoinableLeaguesCard />
+      </section>
     </div>
   );
 }

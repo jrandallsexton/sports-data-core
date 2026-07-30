@@ -867,6 +867,12 @@ const LeagueCreatePage = () => {
               <li>
                 <strong>Visibility:</strong> {isPublic ? "Public" : "Private"}
               </li>
+              <li>
+                <strong>Joining:</strong>{" "}
+                {joinPolicy === "CloseAtFirstGame"
+                  ? "Locked at kickoff — closes when the first game starts"
+                  : "Open while the league is live"}
+              </li>
             </ul>
             <div className="modal-actions">
               <button onClick={() => setShowConfirmDialog(false)}>

@@ -93,7 +93,7 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.JoinLeague
             {
                 Id = Guid.NewGuid(),
                 CreatedBy = command.UserId,
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = _dateTimeProvider.UtcNow(),
                 PickemGroupId = command.PickemGroupId,
                 Role = LeagueRole.Member,
                 UserId = command.UserId

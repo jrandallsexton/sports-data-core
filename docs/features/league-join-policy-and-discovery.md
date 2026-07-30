@@ -10,11 +10,11 @@ single-day MLB test leagues surfaced the "when does a league close?" question.
 
 1. **The commissioner decides, per league, at creation.** No platform-wide
    default behavior — join policy is an explicit choice on the create form,
-   alongside pick type and visibility. Editable in league settings until
-   deactivation.
+   alongside pick type and visibility. Post-creation editing is DEFERRED —
+   no update-league command exists (league settings are create-only today);
+   see the Phase 1 notes below.
 2. **Exactly two options.** Deliberately no custom date in v1:
-   - `Open` — joinable while the league is live (implemented name; the
-     working name `OpenUntilLastLock` was shortened)
+   - `Open` — joinable while the league is live
    - `CloseAtFirstGame` — closed once the league's first contest starts
 3. **Applies to ALL leagues, not just public ones.** Visibility (`IsPublic`)
    controls who can *find* a league; join policy controls until when anyone can
@@ -23,10 +23,11 @@ single-day MLB test leagues surfaced the "when does a league close?" question.
    links therefore expire naturally when the league closes. That was the
    operator's instinct ("if the commissioner sends an invite, it should expire
    at a certain time") and it is the zero-extra-work outcome.
-4. **No "close now" button.** Flipping `OpenUntilLastLock` →
-   `CloseAtFirstGame` after the first game has started closes the league
-   immediately; flipping back re-opens it. Two enum values give close-now and
-   re-open as consequences, not features.
+4. **No "close now" button.** Once policy editing ships (deferred with the
+   settings-edit feature), flipping `Open` → `CloseAtFirstGame` after the
+   first game has started closes the league immediately; flipping back
+   re-opens it. Two enum values give close-now and re-open as consequences,
+   not features.
 
 ## Current state (verified 2026-07-30)
 
@@ -53,7 +54,7 @@ stored: the slate builds asynchronously after league creation (see
 league-slate-async quirk), so a stored close date computed at creation would
 be wrong/absent. Empty slate → league is open (nothing has started).
 
-**`OpenUntilLastLock`** — joinable until `DeactivatedUtc` is set. NOT
+**`Open`** — joinable until `DeactivatedUtc` is set. NOT
 implemented as `max(StartDateUtc) < now`: weekly slates build progressively,
 so the max over *existing* matchups would wrongly close a football league in
 the gap between week N's last kickoff and week N+1's slate build.
@@ -75,13 +76,13 @@ v1 because it is a standing consistency job, not a one-time backfill:
   time silently drifts unless every reschedule also resyncs it. Same failure
   class as the countdown-anchoring bug: precomputed time values rot, derived
   ones cannot.
-- **`OpenUntilLastLock` has no storable value.** Weekly slates build
+- **`Open` has no storable value.** Weekly slates build
   progressively; the "last game time" is unknowable until season end. The
   column would hold null-meaning-open — the enum again, hidden in a nullable.
 
 The read-side cleanliness is kept anyway: DTOs expose a **computed
 `closesAtUtc`** (`CloseAtFirstGame` → `min(matchup.StartDateUtc)` at read
-time; `OpenUntilLastLock` → null). Clients render a concrete timestamp;
+time; `Open` → null). Clients render a concrete timestamp;
 nothing is stored that can go stale.
 
 If commissioner-set custom close dates ever ship (cut from v1), those are
@@ -118,9 +119,9 @@ change, no migration) and `DropLowWeeksCount` already exists on
 
 ### Phase 1 — API
 
-1. `JoinPolicy` enum (string-stored) + `PickemGroup.JoinPolicy`, migration
-   backfilling `OpenUntilLastLock` (today's de-facto behavior — existing MLB
-   test leagues unchanged).
+1. `JoinPolicy` enum (int-stored via `HasConversion<int>`, house style) +
+   `PickemGroup.JoinPolicy`, migration backfilling `Open` (today's de-facto
+   behavior — existing MLB test leagues unchanged).
 2. `JoinLeagueCommandHandler`: reject deactivated (bug fix) and
    policy-closed joins with human-readable `Validation` failures ("This
    league closed when its first game started.").

@@ -2,7 +2,8 @@ namespace SportsData.Api.Application.Common.Enums;
 
 /// <summary>
 /// Until when a league accepts new members. Chosen by the commissioner at
-/// creation and editable until deactivation. Applies to ALL leagues — public
+/// creation (post-creation editing is deferred with the league-settings-edit
+/// feature — settings are create-only today). Applies to ALL leagues — public
 /// browse joins and invite-link joins flow through the same gate, so a shared
 /// invite link to a closed league dies with the listing.
 ///

@@ -36,8 +36,9 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         /// <summary>
         /// Until when this league accepts new members. Commissioner-chosen at
-        /// creation, editable until deactivation. The CloseAtFirstGame close
-        /// moment is derived from matchups at read time, never stored.
+        /// creation (editing deferred — league settings are create-only
+        /// today). The CloseAtFirstGame close moment is derived from
+        /// matchups at read time, never stored.
         /// </summary>
         public JoinPolicy JoinPolicy { get; set; } = JoinPolicy.Open;
 

@@ -177,7 +177,7 @@ Email/password is an offered sign-in path on both platforms. Any user who forget
 ### Security
 
 - **Ops endpoints gated by authentication only, not admin.** `ContestController` — any logged-in user can `POST {id}/refresh`, `{id}/media/refresh`, `{id}/finalize`, mutating canonical results that drive scoring. `PreviewController.cs:25/48` — any authenticated user can approve/reject any AI preview. Move behind `[AdminApiToken]`.
-- ~~**`TeamCardController` has no class-level `[Authorize]`**; `PATCH .../logos/{logoId}/dark-bg` (:132) is anonymous and writes shared presentation state.~~ **Resolved in #575**: the PATCH carries `[Authorize]`; the GETs are deliberately anonymous (reference data, smoke-testable, SEO-able).
+- ~~**`TeamCardController` has no class-level `[Authorize]`**; `PATCH .../logos/{logoId}/dark-bg` is anonymous and writes shared presentation state.~~ **Resolved in #575**: the PATCH carries `[Authorize]`; the GETs are deliberately anonymous (reference data, smoke-testable, SEO-able).
 - **SignalR hub is unauthenticated** (`NotificationHub.cs`, `Program.cs:416`). Client-invocable `SendMessageToUser(userId, message)` lets any socket push arbitrary payloads to any user — spoofing/spam vector. Add `[Authorize]`; remove client-invocable send methods.
 - **CORS allows `localhost:3000/3001/8081` with `AllowCredentials()` in the production build** (`Program.cs:318-337`), plus wildcard `*.sportdeets.com`. Environment-scope the origin list.
 - **No rate limiting anywhere** (no `AddRateLimiter`) and **no length cap on message-board content** — unbounded posts, no throttling, on a public social feature. Confirm whether Cloudflare provides rate limiting; if not, this is a P0-adjacent abuse vector at launch.

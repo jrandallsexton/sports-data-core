@@ -131,6 +131,13 @@ const LeagueDetail = () => {
             <li><strong>Ranking Filter:</strong> {league.rankingFilter || "None"}</li>
             <li><strong>League Window:</strong> {windowLabel}</li>
             <li><strong>Visibility:</strong> {league.isPublic ? "Public" : "Private"}</li>
+            <li><strong>Joining:</strong> {
+              league.isJoinable === false
+                ? "Closed to new members"
+                : league.joinPolicy === "closeatfirstgame"
+                  ? "Open until the first game starts"
+                  : "Open"
+            }</li>
             <li><strong>Conferences:</strong> {
               (() => {
                 const slugs = Array.isArray(league.conferenceSlugs) ? league.conferenceSlugs : [];
@@ -174,7 +181,7 @@ const LeagueDetail = () => {
           )}
         </div>
 
-        {!isPast && isMember && (
+        {!isPast && isMember && league.isJoinable !== false && (
           <LeagueInvitation leagueId={league.id} leagueName={league.name} />
         )}
 

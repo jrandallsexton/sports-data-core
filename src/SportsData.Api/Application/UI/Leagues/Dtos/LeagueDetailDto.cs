@@ -49,6 +49,20 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
         /// </summary>
         public bool IsMember { get; set; }
 
+        /// <summary>JoinPolicy enum name, lowercased like the other enums here.</summary>
+        public string JoinPolicy { get; set; } = "open";
+
+        /// <summary>
+        /// When this league stops (or stopped) accepting members. Derived at
+        /// read time from the slate for close-at-first-game leagues; null for
+        /// open leagues or an ungenerated slate.
+        /// </summary>
+        public DateTime? ClosesAtUtc { get; set; }
+
+        /// <summary>False once closed or deactivated — the invite preview and
+        /// browse detail render a closed state instead of a Join button.</summary>
+        public bool IsJoinable { get; set; }
+
         /// <summary>
         /// The roster — members only. Empty for non-members (invite preview,
         /// public-league browsing).

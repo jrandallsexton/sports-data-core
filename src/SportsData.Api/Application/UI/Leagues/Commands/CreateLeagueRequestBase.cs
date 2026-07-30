@@ -19,6 +19,13 @@ public abstract class CreateLeagueRequestBase
 
     public bool IsPublic { get; set; }
 
+    /// <summary>
+    /// JoinPolicy enum name. Optional so pre-existing clients that do not
+    /// send it keep today's behavior (Open); the create forms surface it as
+    /// an explicit choice.
+    /// </summary>
+    public string? JoinPolicy { get; set; }
+
     public int? DropLowWeeksCount { get; set; }
 
     /// <summary>

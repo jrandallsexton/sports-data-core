@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using SportsData.Api.Application.Common.Enums;
@@ -33,6 +33,14 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public bool UseConfidencePoints { get; set; }
 
         public bool IsPublic { get; set; }
+
+        /// <summary>
+        /// Until when this league accepts new members. Commissioner-chosen at
+        /// creation (editing deferred — league settings are create-only
+        /// today). The CloseAtFirstGame close moment is derived from
+        /// matchups at read time, never stored.
+        /// </summary>
+        public JoinPolicy JoinPolicy { get; set; } = JoinPolicy.Open;
 
         public int? MaxUsers { get; set; }
 
@@ -112,6 +120,13 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
                 builder.Property(x => x.TiebreakerTiePolicy)
                     .HasConversion<int>() // store as int
+                    .IsRequired();
+
+                // DB default 0 (Open) backfills pre-existing rows — Open is
+                // today's de-facto behavior, so existing leagues are unchanged.
+                builder.Property(x => x.JoinPolicy)
+                    .HasConversion<int>()
+                    .HasDefaultValue(JoinPolicy.Open)
                     .IsRequired();
 
                 builder

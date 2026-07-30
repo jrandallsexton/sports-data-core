@@ -56,6 +56,7 @@ const buildShared = ({
   tiebreaker,
   useConfidencePoints,
   isPublic,
+  joinPolicy,
   dropLowWeeksCount,
   durationMode,
   startsOn,
@@ -69,6 +70,8 @@ const buildShared = ({
   tiebreakerTiePolicy: "EarliestSubmission",
   useConfidencePoints,
   isPublic,
+  // BE enum name; absent/null falls back to Open server-side.
+  joinPolicy: joinPolicy || "Open",
   dropLowWeeksCount: toNonNegativeInt(dropLowWeeksCount),
   ...buildWindow({ durationMode, startsOn, endsOn }),
 });

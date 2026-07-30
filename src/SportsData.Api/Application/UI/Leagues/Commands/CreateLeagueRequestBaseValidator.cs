@@ -30,6 +30,10 @@ public abstract class CreateLeagueRequestBaseValidator<TRequest> : AbstractValid
             .Must(IsDefinedEnumName<TiebreakerType>)
             .WithMessage(x => $"Invalid tiebreaker type: {x.TiebreakerType}");
 
+        RuleFor(x => x.JoinPolicy)
+            .Must(v => v is null || IsDefinedEnumName<JoinPolicy>(v))
+            .WithMessage(x => $"Invalid join policy: {x.JoinPolicy}");
+
         RuleFor(x => x.TiebreakerTiePolicy)
             .Must(IsDefinedEnumName<TiebreakerTiePolicy>)
             .WithMessage(x => $"Invalid tiebreaker tie policy: {x.TiebreakerTiePolicy}");

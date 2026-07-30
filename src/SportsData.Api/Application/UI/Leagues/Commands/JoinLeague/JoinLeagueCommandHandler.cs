@@ -22,15 +22,18 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.JoinLeague
         private readonly ILogger<JoinLeagueCommandHandler> _logger;
         private readonly AppDataContext _dbContext;
         private readonly IEventBus _eventBus;
+        private readonly IDateTimeProvider _dateTimeProvider;
 
         public JoinLeagueCommandHandler(
             ILogger<JoinLeagueCommandHandler> logger,
             AppDataContext dbContext,
-            IEventBus eventBus)
+            IEventBus eventBus,
+            IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dbContext = dbContext;
             _eventBus = eventBus;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task<Result<Guid?>> ExecuteAsync(
@@ -53,6 +56,34 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.JoinLeague
                     ResultStatus.Validation,
                     [new ValidationFailure(nameof(command.UserId), "User is already a member of this league")]);
 
+            // This gate covers BOTH public-browse joins and invite-link joins
+            // (they share this handler), so a shared invite link to a closed
+            // league dies with the listing. See
+            // docs/features/league-join-policy-and-discovery.md.
+            if (league.DeactivatedUtc is not null)
+                return new Failure<Guid?>(
+                    command.PickemGroupId,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(command.PickemGroupId), "This league's season has ended.")]);
+
+            if (league.JoinPolicy == JoinPolicy.CloseAtFirstGame)
+            {
+                // Derived at join time, never stored: kickoff times move after
+                // slates generate. An empty slate (built asynchronously after
+                // creation) yields null — nothing has started, league is open.
+                var firstGameUtc = await _dbContext.PickemGroupMatchups
+                    .AsNoTracking()
+                    .Where(m => m.GroupId == league.Id)
+                    .Select(m => (DateTime?)m.StartDateUtc)
+                    .MinAsync(cancellationToken);
+
+                if (firstGameUtc is not null && firstGameUtc <= _dateTimeProvider.UtcNow())
+                    return new Failure<Guid?>(
+                        command.PickemGroupId,
+                        ResultStatus.Validation,
+                        [new ValidationFailure(nameof(command.PickemGroupId), "This league closed to new members when its first game started.")]);
+            }
+
             _logger.LogInformation(
                 "User {UserId} joining league {LeagueId}",
                 command.UserId,
@@ -62,7 +93,7 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.JoinLeague
             {
                 Id = Guid.NewGuid(),
                 CreatedBy = command.UserId,
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = _dateTimeProvider.UtcNow(),
                 PickemGroupId = command.PickemGroupId,
                 Role = LeagueRole.Member,
                 UserId = command.UserId

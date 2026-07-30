@@ -17,13 +17,16 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
 {
     private readonly ILogger<GetPublicLeaguesQueryHandler> _logger;
     private readonly AppDataContext _dbContext;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetPublicLeaguesQueryHandler(
         ILogger<GetPublicLeaguesQueryHandler> logger,
-        AppDataContext dbContext)
+        AppDataContext dbContext,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dbContext = dbContext;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<List<PublicLeagueDto>>> ExecuteAsync(
@@ -32,23 +35,64 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
     {
         _logger.LogDebug("Getting public leagues for user {UserId}", query.UserId);
 
+        // Deactivated leagues are finished seasons — never browsable. Closed
+        // ones ARE returned (badged unjoinable) so a nearly-started league
+        // still advertises itself.
         var leagues = await _dbContext.PickemGroups
-            .Include(g => g.CommissionerUser)
-            .Include(g => g.Members)
-            .Where(g => g.IsPublic && !g.Members.Any(x => x.UserId == query.UserId))
             .AsNoTracking()
+            .Where(g => g.IsPublic
+                && g.DeactivatedUtc == null
+                && !g.Members.Any(x => x.UserId == query.UserId))
+            .Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.Description,
+                Commissioner = x.CommissionerUser != null ? x.CommissionerUser.DisplayName : null,
+                x.RankingFilter,
+                x.PickType,
+                x.UseConfidencePoints,
+                x.DropLowWeeksCount,
+                x.Sport,
+                x.League,
+                x.SeasonYear,
+                x.StartsOn,
+                x.EndsOn,
+                x.JoinPolicy,
+                MemberCount = x.Members.Count,
+                // Derived, never stored: kickoff times move after slates
+                // generate. Null when the slate hasn't been built yet.
+                FirstGameUtc = _dbContext.PickemGroupMatchups
+                    .Where(m => m.GroupId == x.Id)
+                    .Select(m => (DateTime?)m.StartDateUtc)
+                    .Min()
+            })
             .ToListAsync(cancellationToken);
 
-        var result = leagues.Select(x => new PublicLeagueDto
+        var now = _dateTimeProvider.UtcNow();
+        var result = leagues.Select(x =>
         {
-            Id = x.Id,
-            Name = x.Name,
-            Description = x.Description ?? string.Empty,
-            Commissioner = x.CommissionerUser?.DisplayName ?? "Unknown",
-            RankingFilter = (int?)x.RankingFilter ?? 0,
-            PickType = (int)x.PickType,
-            UseConfidencePoints = x.UseConfidencePoints,
-            DropLowWeeksCount = x.DropLowWeeksCount ?? 0
+            var closesAtUtc = x.JoinPolicy == JoinPolicy.CloseAtFirstGame ? x.FirstGameUtc : null;
+            return new PublicLeagueDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Description = x.Description ?? string.Empty,
+                Commissioner = x.Commissioner ?? "Unknown",
+                RankingFilter = (int?)x.RankingFilter ?? 0,
+                PickType = (int)x.PickType,
+                UseConfidencePoints = x.UseConfidencePoints,
+                DropLowWeeksCount = x.DropLowWeeksCount ?? 0,
+                Sport = x.Sport,
+                League = x.League,
+                SeasonYear = x.SeasonYear,
+                MemberCount = x.MemberCount,
+                StartsOn = x.StartsOn,
+                EndsOn = x.EndsOn,
+                JoinPolicy = x.JoinPolicy,
+                ClosesAtUtc = closesAtUtc,
+                IsJoinable = closesAtUtc is null || closesAtUtc > now
+            };
         }).ToList();
 
         _logger.LogInformation(

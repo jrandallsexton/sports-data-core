@@ -18,10 +18,14 @@ public interface IGetLeagueByIdQueryHandler
 public class GetLeagueByIdQueryHandler : IGetLeagueByIdQueryHandler
 {
     private readonly AppDataContext _dbContext;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public GetLeagueByIdQueryHandler(AppDataContext dbContext)
+    public GetLeagueByIdQueryHandler(
+        AppDataContext dbContext,
+        IDateTimeProvider dateTimeProvider)
     {
         _dbContext = dbContext;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<LeagueDetailDto>> ExecuteAsync(
@@ -50,6 +54,21 @@ public class GetLeagueByIdQueryHandler : IGetLeagueByIdQueryHandler
         // to show a prospective member what they'd be joining.
         var isMember = league.Members.Any(m => m.UserId == query.UserId);
 
+        // Derived at read time, never stored (kickoff times move after slates
+        // generate). Empty slate -> null -> joinable: nothing has started.
+        DateTime? closesAtUtc = null;
+        if (league.JoinPolicy == JoinPolicy.CloseAtFirstGame)
+        {
+            closesAtUtc = await _dbContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.GroupId == league.Id)
+                .Select(m => (DateTime?)m.StartDateUtc)
+                .MinAsync(cancellationToken);
+        }
+
+        var isJoinable = league.DeactivatedUtc is null
+            && (closesAtUtc is null || closesAtUtc > _dateTimeProvider.UtcNow());
+
         var dto = new LeagueDetailDto
         {
             Id = league.Id,
@@ -69,6 +88,9 @@ public class GetLeagueByIdQueryHandler : IGetLeagueByIdQueryHandler
             // roster itself.
             MemberCount = league.Members.Count,
             IsMember = isMember,
+            JoinPolicy = league.JoinPolicy.ToString().ToLowerInvariant(),
+            ClosesAtUtc = closesAtUtc,
+            IsJoinable = isJoinable,
             Members = isMember
                 ? league.Members.Select(m => new LeagueDetailDto.LeagueMemberDto
                 {

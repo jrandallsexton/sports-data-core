@@ -2,6 +2,8 @@ using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Moq;
+
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.UI.Leaderboard.Queries.GetLeaderboard;
 using SportsData.Api.Application.UI.Leagues.Authorization;
@@ -29,6 +31,13 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Authorization;
 public class LeagueAuthorizationTests : ApiTestBase<LeagueMembershipGuard>
 {
     private static readonly DateTime FixedNow = new(2026, 7, 29, 12, 0, 0, DateTimeKind.Utc);
+
+    private static IDateTimeProvider FixedClock()
+    {
+        var clock = new Mock<IDateTimeProvider>();
+        clock.Setup(x => x.UtcNow()).Returns(FixedNow);
+        return clock.Object;
+    }
 
     private static UserEntity NewUser(Guid id) => new()
     {
@@ -168,7 +177,7 @@ public class LeagueAuthorizationTests : ApiTestBase<LeagueMembershipGuard>
     {
         var memberId = Guid.NewGuid();
         var leagueId = await SeedLeagueAsync(memberId);
-        var handler = new GetLeagueByIdQueryHandler(DataContext);
+        var handler = new GetLeagueByIdQueryHandler(DataContext, FixedClock());
 
         var result = await handler.ExecuteAsync(new GetLeagueByIdQuery
         {
@@ -189,7 +198,7 @@ public class LeagueAuthorizationTests : ApiTestBase<LeagueMembershipGuard>
         // the league is and how big it is, but not WHO is in it.
         var memberId = Guid.NewGuid();
         var leagueId = await SeedLeagueAsync(memberId);
-        var handler = new GetLeagueByIdQueryHandler(DataContext);
+        var handler = new GetLeagueByIdQueryHandler(DataContext, FixedClock());
 
         var result = await handler.ExecuteAsync(new GetLeagueByIdQuery
         {

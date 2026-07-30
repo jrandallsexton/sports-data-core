@@ -156,6 +156,9 @@ const LeagueCreatePage = () => {
   const [rankingFilter, setRankingFilter] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isPublic, setIsPublic] = useState(false);
+  // BE JoinPolicy enum name. "Open" = joinable while the league is live;
+  // "CloseAtFirstGame" = roster locks when the first scheduled game starts.
+  const [joinPolicy, setJoinPolicy] = useState("Open");
   const [dropLowWeeksCount, setDropLowWeeksCount] = useState(0);
   const [allConferences, setAllConferences] = useState([]);
   const [fbsOnly, setFbsOnly] = useState(true);
@@ -371,6 +374,7 @@ const LeagueCreatePage = () => {
       rankingFilter,
       teamFilter,
       isPublic,
+      joinPolicy,
       dropLowWeeksCount,
       durationMode,
       startsOn,
@@ -742,6 +746,32 @@ const LeagueCreatePage = () => {
                   Make this league public (anyone can join)
                 </label>
               </div>
+
+              {/* Applies to invite links too, not just public discovery — a
+                  shared link to a closed league stops working at kickoff. */}
+              <h4>🚪 Who can join, and until when?</h4>
+              <div className="inline-options join-policy-options">
+                <label>
+                  <input
+                    type="radio"
+                    name="joinPolicy"
+                    value="Open"
+                    checked={joinPolicy === "Open"}
+                    onChange={() => setJoinPolicy("Open")}
+                  />{" "}
+                  Open — new members can join any time while the league is live
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="joinPolicy"
+                    value="CloseAtFirstGame"
+                    checked={joinPolicy === "CloseAtFirstGame"}
+                    onChange={() => setJoinPolicy("CloseAtFirstGame")}
+                  />{" "}
+                  Locked at kickoff — closes when the first game starts
+                </label>
+              </div>
             </div>
           </div>
 
@@ -836,6 +866,12 @@ const LeagueCreatePage = () => {
               </li>
               <li>
                 <strong>Visibility:</strong> {isPublic ? "Public" : "Private"}
+              </li>
+              <li>
+                <strong>Joining:</strong>{" "}
+                {joinPolicy === "CloseAtFirstGame"
+                  ? "Locked at kickoff — closes when the first game starts"
+                  : "Open while the league is live"}
               </li>
             </ul>
             <div className="modal-actions">

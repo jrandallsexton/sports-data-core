@@ -8,6 +8,10 @@ const COUNTDOWN_WINDOW_MS = 10 * 24 * 60 * 60 * 1000;
 // 60s tick keeps idle browse tabs cheap.
 const TICK_MS = 60 * 1000;
 
+// setTimeout treats delays above 2^31-1 ms (~24.8 days) as 0 — clamp so a
+// far-future boundary timer doesn't fire immediately.
+const MAX_TIMEOUT_MS = 2 ** 31 - 1;
+
 const formatRemaining = (ms) => {
   const totalMinutes = Math.max(0, Math.floor(ms / 60000));
   const days = Math.floor(totalMinutes / (60 * 24));
@@ -35,10 +39,21 @@ function JoinClosesLabel({ closesAtUtc, isJoinable }) {
     Number.isFinite(closesMs) && remaining > 0 && remaining <= COUNTDOWN_WINDOW_MS;
 
   useEffect(() => {
-    if (!inCountdownWindow) return undefined;
-    const id = setInterval(() => setNow(Date.now()), TICK_MS);
-    return () => clearInterval(id);
-  }, [inCountdownWindow]);
+    if (!Number.isFinite(closesMs) || remaining <= 0) return undefined;
+
+    if (inCountdownWindow) {
+      const id = setInterval(() => setNow(Date.now()), TICK_MS);
+      return () => clearInterval(id);
+    }
+
+    // Outside the window: one timer aimed at the boundary, so a long-lived
+    // tab still transitions date -> countdown -> Closed without a reload.
+    const untilWindow = Math.min(remaining - COUNTDOWN_WINDOW_MS, MAX_TIMEOUT_MS);
+    const id = setTimeout(() => setNow(Date.now()), Math.max(untilWindow, TICK_MS));
+    return () => clearTimeout(id);
+    // `remaining` is derived from `now`, which only changes when a timer
+    // fires — so this effect re-arms exactly once per transition.
+  }, [closesMs, inCountdownWindow, remaining]);
 
   if (isJoinable === false || (Number.isFinite(closesMs) && remaining <= 0)) {
     return <span className="join-closes join-closes--closed">Closed</span>;

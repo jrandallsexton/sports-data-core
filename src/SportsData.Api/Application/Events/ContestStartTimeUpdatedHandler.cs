@@ -55,7 +55,22 @@ namespace SportsData.Api.Application.Events
                 // design doc's stored-DateTime decision relies on.
                 foreach (var groupId in matchups.Select(m => m.GroupId).Distinct())
                 {
-                    await _joinExpiryCalculator.RecomputeAsync(groupId, context.CancellationToken);
+                    // Per-group isolation, and deliberately NOT rethrown: the
+                    // start times are already persisted, so a MassTransit
+                    // retry would find saveChanges == false and skip this
+                    // whole block -- the failed recompute would be stranded
+                    // until the hourly sweep anyway. Log and let the sweep
+                    // self-heal instead of faulting the message.
+                    try
+                    {
+                        await _joinExpiryCalculator.RecomputeAsync(groupId, context.CancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Join-expiry recompute failed for league {GroupId} after start-time update; hourly sweep will self-heal.",
+                            groupId);
+                    }
                 }
             }
         }

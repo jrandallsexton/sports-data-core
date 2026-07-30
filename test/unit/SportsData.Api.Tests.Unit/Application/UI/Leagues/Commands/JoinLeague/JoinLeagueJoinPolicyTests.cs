@@ -32,6 +32,8 @@ public class JoinLeagueJoinPolicyTests : ApiTestBase<JoinLeagueCommandHandler>
     private async Task<Guid> SeedLeagueAsync(
         JoinPolicy policy,
         DateTime? deactivatedUtc = null,
+        int? dropLowWeeks = null,
+        LeagueWindow window = LeagueWindow.DateRange,
         params DateTime[] matchupStarts)
     {
         var commissionerId = Guid.NewGuid();
@@ -60,6 +62,8 @@ public class JoinLeagueJoinPolicyTests : ApiTestBase<JoinLeagueCommandHandler>
             TiebreakerTiePolicy = TiebreakerTiePolicy.EarliestSubmission,
             SeasonYear = 2026,
             JoinPolicy = policy,
+            LeagueWindow = window,
+            DropLowWeeksCount = dropLowWeeks,
             DeactivatedUtc = deactivatedUtc,
             CreatedUtc = Now,
             CreatedBy = commissionerId
@@ -167,6 +171,23 @@ public class JoinLeagueJoinPolicyTests : ApiTestBase<JoinLeagueCommandHandler>
         var league = await DataContext.PickemGroups.FindAsync(leagueId);
         league!.InvitationsExpireUtc = Now.AddDays(10);
         await DataContext.SaveChangesAsync();
+
+        var result = await CreateHandler().ExecuteAsync(Join(leagueId));
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UncomputedExpiry_DropWeekLeague_IgnoresFirstGameFallback()
+    {
+        // FullSeason + drop weeks: the calculator's week-(N+1) override means
+        // first-game is the WRONG close moment, so the fallback must not
+        // reject while the stored expiry is still uncomputed -- even though
+        // the policy says CloseAtFirstGame and the first game has started.
+        var leagueId = await SeedLeagueAsync(JoinPolicy.CloseAtFirstGame,
+            dropLowWeeks: 3,
+            window: LeagueWindow.FullSeason,
+            matchupStarts: [Now.AddHours(-1)]);
 
         var result = await CreateHandler().ExecuteAsync(Join(leagueId));
 

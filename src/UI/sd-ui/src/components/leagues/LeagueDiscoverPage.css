@@ -229,3 +229,17 @@
 }
 
 
+
+/* Column alignment: text reads left (Name, Sport, Commissioner, Joinable);
+   short categorical data and actions center (Format, Members, Action) —
+   headers and cells together so each column is internally consistent.
+   Header children are positional; keep in sync with the column order in
+   LeagueDiscoverPage.jsx. */
+.table-header div:nth-child(3),
+.table-header div:nth-child(4),
+.table-header div:nth-child(7),
+.league-format,
+.league-members,
+.join-action {
+  text-align: center;
+}

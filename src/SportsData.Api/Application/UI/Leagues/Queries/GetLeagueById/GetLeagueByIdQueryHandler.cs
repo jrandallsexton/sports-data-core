@@ -58,7 +58,11 @@ public class GetLeagueByIdQueryHandler : IGetLeagueByIdQueryHandler
         // derived first-game query only covers the uncomputed gap for
         // CloseAtFirstGame leagues (fresh slate, pre-backfill rows).
         var closesAtUtc = league.InvitationsExpireUtc;
-        if (closesAtUtc is null && league.JoinPolicy == JoinPolicy.CloseAtFirstGame)
+        // Drop-week exclusion mirrors LeagueJoinExpiryCalculator: first-game
+        // is the wrong close moment for FullSeason+drop-week leagues.
+        if (closesAtUtc is null
+            && league.JoinPolicy == JoinPolicy.CloseAtFirstGame
+            && !(league.LeagueWindow == LeagueWindow.FullSeason && league.DropLowWeeksCount is > 0))
         {
             closesAtUtc = await _dbContext.PickemGroupMatchups
                 .AsNoTracking()

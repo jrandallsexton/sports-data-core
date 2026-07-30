@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import JoinClosesLabel from "./JoinClosesLabel";
 import "./JoinLeagueConfirmDialog.css";
 
@@ -43,11 +44,52 @@ const windowLabel = (league) => {
 };
 
 function JoinLeagueConfirmDialog({ league, onCancel, onConfirm }) {
+  const dialogRef = useRef(null);
+
+  // Keyboard modality: aria-modal alone constrains nothing. On open, move
+  // focus into the dialog and remember the trigger; trap Tab inside; Escape
+  // cancels; on close, hand focus back to whatever opened us.
+  useEffect(() => {
+    if (!league) return undefined;
+    const previouslyFocused = document.activeElement;
+    dialogRef.current?.focus();
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+        return;
+      }
+      if (e.key !== "Tab" || !dialogRef.current) return;
+      const focusables = dialogRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+    };
+  }, [league, onCancel]);
+
   if (!league) return null;
 
   return (
     <div className="join-confirm-overlay" role="presentation" onClick={onCancel}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="join-confirm-dialog"
         role="dialog"
         aria-modal="true"

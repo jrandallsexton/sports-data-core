@@ -151,7 +151,10 @@ change, no migration) and `DropLowWeeksCount` already exists on
 2. League settings: same control, commissioner-only, hidden when past.
 3. Home page: "Leagues you can join" rail fed by the fattened query — the
    content-gap driver for this feature.
-4. `LeagueDiscoverPage`: closed badges, join CTA disabled when unjoinable.
+4. ~~`LeagueDiscoverPage`: closed badges, join CTA disabled when
+   unjoinable.~~ Superseded in v2 — browse FILTERS closed leagues (see the
+   Phase-1 item-4 note); the closed rendering survives client-side only as a
+   defensive path for a league expiring between fetch and render.
 5. Invite affordances hidden when league is closed (mirrors `isPast`
    treatment).
 
@@ -262,25 +265,40 @@ day: last first-pitch; DateRange: bounded by authored EndsOn; FullSeason:
 season's final game from the calendar). "Open" no longer means "forever";
 it means "while there is anything left to pick."
 
-### Open decisions before implementation
+### Decisions — settled (operator-approved 2026-07-30, implemented)
 
-1. **Drop-week expiry instant** — end of week N vs FIRST KICKOFF of week
-   N+1 (N = DropLowWeeksCount). Proposal: first kickoff of week N+1 — the
-   exact moment joining starts costing points.
-2. **Does drop-week default override or precede the commissioner's choice?**
-   Operator note says "allow that to be the default expiration date during
-   league creation" — reading: it becomes the pre-selected option for
-   FullSeason-with-drop-weeks leagues, commissioner can still pick
-   LockedAtKickoff. Confirm.
-3. **Open + FullSeason last-game source** — league matchups build
-   progressively, so "last game" must come from the season calendar
-   (final week end), not max(matchup start). Same trap v1 documented.
-4. **Backfill** — existing leagues need InvitationsExpireUtc computed once
-   (a sweep job in the audit-job idiom doubles as the backfill, as with
-   the metrics design).
-5. **Does the countdown render for Open leagues far from expiry?** A
-   "closes in 4 months" countdown is noise; likely render countdown only
-   inside some window (e.g. < 7 days), plain date otherwise. UI call.
+1. **Drop-week expiry instant**: FIRST KICKOFF of week N+1
+   (N = DropLowWeeksCount) — the exact moment joining starts costing points.
+2. **Drop-week default vs commissioner choice**: as implemented, the
+   FullSeason+drop-weeks rule OVERRIDES the commissioner's
+   Open/CloseAtFirstGame selection in the calculator (verified by test:
+   a CloseAtFirstGame league with 3 drop weeks expires at week 4's first
+   kickoff, not at its first game). The join gate, browse, and detail
+   fallbacks mirror the same exclusion so no surface contradicts the
+   calculator while a value is uncomputed.
+3. **Open + FullSeason last-game source**: season calendar
+   (`GetSeasonOverview().EndDate`), never max(matchup start).
+4. **Backfill**: the hourly audit-job sweep IS the backfill.
+5. **Countdown window**: live countdown inside 10 days (operator-set),
+   plain date beyond, `JoinClosesLabel` transitions in place via a
+   boundary timer.
+
+### Review positions declined (PR #577, recorded)
+
+- **Optimistic concurrency (`xmin` RowVersion) on `PickemGroup` for expiry
+  writes**: declined. Every writer is the same idempotent
+  recompute-from-scratch, so "stale overwrite" is a correct recomputation of
+  marginally older inputs; divergence is bounded by the next trigger and the
+  hourly sweep. A concurrency token on `PickemGroup` would put
+  `DbUpdateConcurrencyException` handling obligations on EVERY write path to
+  the entity (creation, deactivation, future settings-edit) to protect a
+  self-healing column. Revisit only if a non-idempotent writer ever touches
+  the row concurrently.
+- **WeekRange submitted with null bounds fails BE validation**: intended.
+  The create form blocks the mode upstream; if it ever slips through, a loud
+  window/dates-mismatch rejection is strictly better than the
+  pre-`LeagueWindow` behavior (silently creating a mislabeled FullSeason
+  league). Documented at the builder.
 
 ### v2 migration note
 

@@ -72,12 +72,8 @@ function JoinableLeaguesCard() {
                 <span aria-hidden="true">{SPORT_ICON[league.sport] ?? "🏆"}</span>{" "}
                 {SPORT_LABEL[league.sport] ?? league.sport} {league.seasonYear} ·{" "}
                 {league.memberCount} {league.memberCount === 1 ? "member" : "members"}
-                {league.closesAtUtc ? (
-                  <>
-                    {" · "}
-                    <JoinClosesLabel closesAtUtc={league.closesAtUtc} isJoinable={league.isJoinable} />
-                  </>
-                ) : null}
+                {" · "}
+                <JoinClosesLabel closesAtUtc={league.closesAtUtc} isJoinable={league.isJoinable} />
               </span>
             </div>
             <button

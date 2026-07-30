@@ -58,6 +58,7 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
                 x.EndsOn,
                 x.TiebreakerType,
                 x.TiebreakerTiePolicy,
+                x.LeagueWindow,
                 x.JoinPolicy,
                 x.InvitationsExpireUtc,
                 MemberCount = x.Members.Count,
@@ -73,9 +74,15 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
         var result = leagues.Select(x =>
         {
             // Stored expiry is the authority; derived first-game only covers
-            // the uncomputed gap for CloseAtFirstGame leagues.
+            // the uncomputed gap for CloseAtFirstGame leagues -- and NOT for
+            // FullSeason+drop-week leagues, where the calculator's week-(N+1)
+            // override applies and first-game would be wrong. Uncomputed
+            // there means "open"; the creation trigger fills it in seconds.
+            var dropWeekOverride = x.LeagueWindow == LeagueWindow.FullSeason
+                && x.DropLowWeeksCount is > 0;
             var closesAtUtc = x.InvitationsExpireUtc
-                ?? (x.JoinPolicy == JoinPolicy.CloseAtFirstGame ? x.FirstGameUtc : null);
+                ?? (x.JoinPolicy == JoinPolicy.CloseAtFirstGame && !dropWeekOverride
+                    ? x.FirstGameUtc : null);
             return new PublicLeagueDto
             {
                 Id = x.Id,

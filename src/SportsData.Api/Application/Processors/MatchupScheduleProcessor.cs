@@ -340,10 +340,22 @@ namespace SportsData.Api.Application.Processors
             await _dataContext.SaveChangesAsync();
 
             // Slates build progressively (full-season leagues advance weekly),
-            // so each landed week may sharpen the league's join expiry —
+            // so each landed week may sharpen the league's join expiry --
             // e.g. a drop-week expiry refining from the calendar boundary to
-            // the actual first kickoff of week N+1.
-            await _joinExpiryCalculator.RecomputeAsync(command.GroupId);
+            // the actual first kickoff of week N+1. Log-and-continue: the
+            // matchups are already committed, and a recompute failure must
+            // not fault an otherwise-successful run (the hourly sweep
+            // self-heals).
+            try
+            {
+                await _joinExpiryCalculator.RecomputeAsync(command.GroupId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Join-expiry recompute failed for league {GroupId} after matchup scheduling; hourly sweep will self-heal.",
+                    command.GroupId);
+            }
         }
     }
 }

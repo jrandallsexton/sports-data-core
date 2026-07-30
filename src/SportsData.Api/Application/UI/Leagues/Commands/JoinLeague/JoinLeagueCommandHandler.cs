@@ -77,8 +77,16 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.JoinLeague
                         ResultStatus.Validation,
                         [new ValidationFailure(nameof(command.PickemGroupId), "This league is no longer accepting new members.")]);
             }
-            else if (league.JoinPolicy == JoinPolicy.CloseAtFirstGame)
+            else if (league.JoinPolicy == JoinPolicy.CloseAtFirstGame
+                && !(league.LeagueWindow == LeagueWindow.FullSeason && league.DropLowWeeksCount is > 0))
             {
+                // The drop-week exclusion mirrors LeagueJoinExpiryCalculator:
+                // a FullSeason league with drop weeks stays open through week
+                // N+1 REGARDLESS of the CloseAtFirstGame choice, so the
+                // first-game fallback would wrongly reject during that window.
+                // For those leagues an uncomputed expiry means "open" -- the
+                // creation-event trigger fills it within seconds.
+
                 // Fallback while the expiry is uncomputed (fresh league whose
                 // slate is still building, or pre-backfill rows before the
                 // sweep runs): derive first-game start directly, exactly as

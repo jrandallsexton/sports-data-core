@@ -38,7 +38,16 @@ export default function ContestOverview() {
   if (error) return <div>Error loading contest overview.</div>;
   const dto = data?.data || data;
   if (!dto || !dto.header) {
-    return <div>No contest data available. (Debug: {JSON.stringify(data)})</div>;
+    // The raw payload used to be stringified into this message for everyone.
+    // It is genuinely useful when a contest fails to shape correctly, so it is
+    // kept — behind the same isAdmin gate the rest of this page uses — rather
+    // than dropped. Regular users get a plain message.
+    return (
+      <div>
+        No contest data available.
+        {isAdmin && <pre className="contest-overview-debug">{JSON.stringify(data, null, 2)}</pre>}
+      </div>
+    );
   }
 
   const { header, info, leaders, playLog, winProbability, homeMetrics, awayMetrics, mediaItems } = dto;

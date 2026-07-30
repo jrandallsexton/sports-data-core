@@ -16,7 +16,11 @@ using SportsData.Api.Application.Common.Enums;
 namespace SportsData.Api.Application.UI.TeamCard;
 
 [ApiController]
-[Authorize]
+// GETs here are deliberately anonymous: team cards, schedules, statistics, and
+// logos are reference data with no user context. Anonymous access keeps the
+// smoke suite able to exercise the real query path (it authenticates with the
+// admin API key, which cannot satisfy Firebase JWT [Authorize]) and keeps team
+// pages available for SEO later. The one mutation below carries its own gate.
 [Route("ui/teamcard/sport/{sport}/league/{league}/team/{slug}/{seasonYear}")]
 public class TeamCardController : ApiControllerBase
 {
@@ -131,6 +135,10 @@ public class TeamCardController : ApiControllerBase
         return result.ToActionResult();
     }
 
+    // The only mutation on this controller — and it was ANONYMOUS until #573
+    // added a class-level gate. Keep it authorized even though the GETs above
+    // are not; the web client additionally gates this behind isAdmin UI-side.
+    [Authorize]
     [HttpPatch("logos/{logoId}/dark-bg")]
     public async Task<ActionResult<bool>> UpdateLogoDarkBg(
         string sport,

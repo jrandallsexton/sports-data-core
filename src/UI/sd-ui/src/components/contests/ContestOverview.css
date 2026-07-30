@@ -604,3 +604,18 @@
     padding: 8px 0;
   }
 }
+
+/* Admin-only diagnostic dump shown when a contest DTO fails to shape.
+   Constrained so a large payload cannot blow out the page. */
+.contest-overview-debug {
+  margin-top: 12px;
+  padding: 12px;
+  max-height: 400px;
+  overflow: auto;
+  font-size: 0.8rem;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+}

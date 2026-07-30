@@ -57,7 +57,7 @@ Estimated work to clear P0 + P1: **3–4 focused days**, dominated by the IDOR s
 | P0-4 | Unauthenticated endpoint triggers AI preview generation (cost) | API security | **Resolved** (#572) |
 | P0-5 | PostgreSQL unreachable 3× in 4 hours on 2026-07-28 | Infrastructure | Open |
 | P0-6 | "Forgot password?" is a dead button; no password reset exists on any platform | Auth (both) | Open |
-| P0-7 | Simulated/placeholder content shown to real users | Product | Open |
+| P0-7 | Simulated/placeholder content shown to real users | Product | **Partial** (#575) — see section |
 
 Resolved findings are kept in full below rather than deleted — the reasoning is
 the durable part, and the design record for the fix is
@@ -145,6 +145,26 @@ Email/password is an offered sign-in path on both platforms. Any user who forget
 
 ### P0-7 — Placeholder content visible to users
 
+> **Partially resolved in #575.** The two items that leaked or advertised
+> fabricated data to regular users are gated behind `isAdmin`: the badges panel
+> and the contest-overview debug dump. Both are *gated, not deleted* — the
+> badges feature is wanted eventually (the operator sees it as good sign-up
+> marketing once real), and the debug dump is genuinely useful when a contest
+> DTO fails to shape.
+>
+> **Deliberately deferred**, by the operator's call, as lower priority than
+> franchise season metrics and StatBot preview generation:
+> - Mobile profile `seasonRecord`/`careerRecord` hardcoded to zeros. Still
+>   shows "0-0" on a top-level tab. Fixing it properly needs the stats on
+>   `/user/me`; hiding the cards is a layout change the operator wants to make
+>   on-device. Note: badges never appeared on mobile at all, so only this item
+>   applies there.
+> - `WarRoomPage.jsx` "More Widgets Coming Soon" on a first-class nav item —
+>   a product decision about whether War Room ships, not a code fix.
+
+**As found at audit time (before #575)** — the first two bullets are now
+`isAdmin`-gated; the last two remain current:
+
 - **Web:** `SettingsPage.jsx:540` unconditionally renders `BadgesPanel`, titled **"🏅 Your Badges (simulated)"** (`BadgesPanel.tsx:47`), loading static fake data from `public/data/badges.json` (file exists — it renders).
 - **Web:** `ContestOverview.jsx:41` renders `No contest data available. (Debug: {JSON.stringify(data)})` to users.
 - **Mobile:** `app/(tabs)/profile.tsx:342-344` — **verified verbatim** — `seasonRecord`/`careerRecord` hardcoded to `{0,0,0}`. Every user sees "0-0 / —%" This Season and Career cards on a top-level tab. They look broken, not empty.
@@ -157,7 +177,7 @@ Email/password is an offered sign-in path on both platforms. Any user who forget
 ### Security
 
 - **Ops endpoints gated by authentication only, not admin.** `ContestController` — any logged-in user can `POST {id}/refresh`, `{id}/media/refresh`, `{id}/finalize`, mutating canonical results that drive scoring. `PreviewController.cs:25/48` — any authenticated user can approve/reject any AI preview. Move behind `[AdminApiToken]`.
-- **`TeamCardController` has no class-level `[Authorize]`**; `PATCH .../logos/{logoId}/dark-bg` (:132) is anonymous and writes shared presentation state.
+- ~~**`TeamCardController` has no class-level `[Authorize]`**; `PATCH .../logos/{logoId}/dark-bg` is anonymous and writes shared presentation state.~~ **Resolved in #575**: the PATCH carries `[Authorize]`; the GETs are deliberately anonymous (reference data, smoke-testable, SEO-able).
 - **SignalR hub is unauthenticated** (`NotificationHub.cs`, `Program.cs:416`). Client-invocable `SendMessageToUser(userId, message)` lets any socket push arbitrary payloads to any user — spoofing/spam vector. Add `[Authorize]`; remove client-invocable send methods.
 - **CORS allows `localhost:3000/3001/8081` with `AllowCredentials()` in the production build** (`Program.cs:318-337`), plus wildcard `*.sportdeets.com`. Environment-scope the origin list.
 - **No rate limiting anywhere** (no `AddRateLimiter`) and **no length cap on message-board content** — unbounded posts, no throttling, on a public social feature. Confirm whether Cloudflare provides rate limiting; if not, this is a P0-adjacent abuse vector at launch.
@@ -291,7 +311,7 @@ Recording these so absence of findings is distinguishable from absence of lookin
 
 **Day 1 — Stop the bleeding (security)**
 1. ~~Delete `OutboxTestController` (P0-3).~~ Done — #573. Three files, not one.
-2. ~~Add `[Authorize]` to `TeamCardController`, `PicksController.cs:65`, `MessageboardController.cs:37`.~~ Done — #573. (`previews/generate` was done in #572.) These three were *not* data-disclosure holes: `GetCurrentUserId()` throws `UnauthorizedAccessException` when no user is in context, so an anonymous caller already got nothing. The defect was the shape of the response — an unhandled exception where a 401 belongs. `TeamCardController` is the odd one out: it never reads the current user, so gating it was a policy call rather than a fix. Verified safe first — its routes live inside the web app's `PrivateRoute`, and the one public page (`ResultsPage`) uses a different API.
+2. ~~Add `[Authorize]` to `TeamCardController`, `PicksController.cs:65`, `MessageboardController.cs:37`.~~ Done — #573. (`previews/generate` was done in #572.) These three were *not* data-disclosure holes: `GetCurrentUserId()` throws `UnauthorizedAccessException` when no user is in context, so an anonymous caller already got nothing. The defect was the shape of the response — an unhandled exception where a 401 belongs. `TeamCardController` is the odd one out, and its posture was **revised in #575**: the class-level gate from #573 broke the smoke suite (it authenticates with the admin API key, which cannot satisfy Firebase JWT auth) and silently made `GetTeamCard_DoesNotReturn500` vacuous. The GETs are reference data and are anonymous again; `[Authorize]` moved to the one mutation, `PATCH logos/{logoId}/dark-bg` — which the P1 list below had correctly flagged as an anonymous write all along. Net: the real hole stays closed, the smoke coverage came back.
 3. Move contest refresh/finalize and preview approve/reject behind `[AdminApiToken]`.
 4. `[Authorize]` on the SignalR hub; delete client-invocable `SendMessageToUser*`.
 5. Remove the connection-string `Console.WriteLine`; gate `Include Error Detail` to Development.

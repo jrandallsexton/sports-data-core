@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Config;
+using SportsData.Core.Extensions;
 
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace SportsData.Api.Application.Admin;
@@ -56,8 +58,12 @@ public class AdminOpsProxyController : ControllerBase
                 _ => null
             };
 
+            // Segment boundary required: "api/franchise-seasons" must not
+            // admit "api/franchise-seasons-admin-delete". Exact match or the
+            // prefix followed by '/'.
             return prefixes is not null && prefixes.Any(p =>
-                path.StartsWith(p, StringComparison.OrdinalIgnoreCase));
+                path.StartsWith(p, StringComparison.OrdinalIgnoreCase)
+                && (path.Length == p.Length || path[p.Length] == '/'));
         }
     }
 
@@ -98,7 +104,7 @@ public class AdminOpsProxyController : ControllerBase
         {
             _logger.LogWarning(
                 "Ops proxy refused non-allowlisted path. Service={Service}, Path={Path}",
-                service, opPath);
+                service.Sanitize(), opPath.Sanitize());
             return NotFound();
         }
 
@@ -107,7 +113,7 @@ public class AdminOpsProxyController : ControllerBase
         {
             _logger.LogError(
                 "Ops proxy has no base URL configured. Service={Service}, Mode={Mode}",
-                service, mode);
+                service.Sanitize(), mode);
             return StatusCode(StatusCodes.Status502BadGateway,
                 $"No internal base URL configured for {service}/{mode}.");
         }
@@ -124,23 +130,37 @@ public class AdminOpsProxyController : ControllerBase
         {
             using var reader = new StreamReader(Request.Body);
             var body = await reader.ReadToEndAsync(cancellationToken);
-            upstreamRequest.Content = new StringContent(
-                body, Encoding.UTF8, Request.ContentType ?? "application/json");
+            // NOT the 3-arg StringContent overload: it feeds the raw media
+            // type to MediaTypeHeaderValue's bare type/subtype parser, so a
+            // normal "application/json; charset=utf-8" would throw
+            // FormatException before SendAsync. Parse-or-default instead.
+            var content = new StringContent(body, Encoding.UTF8);
+            content.Headers.ContentType =
+                MediaTypeHeaderValue.TryParse(Request.ContentType, out var parsed)
+                    ? parsed
+                    : new MediaTypeHeaderValue("application/json") { CharSet = "utf-8" };
+            upstreamRequest.Content = content;
         }
 
         _logger.LogInformation(
             "Ops proxy relaying {Method} {Target}. Service={Service}, Mode={Mode}",
-            Request.Method, targetUri, service, mode);
+            Request.Method, targetUri.ToString().Sanitize(), service.Sanitize(), mode);
 
         var client = _httpClientFactory.CreateClient(nameof(AdminOpsProxyController));
         using var upstreamResponse = await client.SendAsync(upstreamRequest, cancellationToken);
         var responseBody = await upstreamResponse.Content.ReadAsStringAsync(cancellationToken);
 
+        // The response content type is PINNED to JSON and marked nosniff
+        // rather than echoing the upstream header: the ops surface speaks
+        // JSON, and reflecting an upstream-declared type would let a
+        // text/html body render in a browser — the classic reflected-XSS
+        // sink CodeQL flags on proxies.
+        Response.Headers["X-Content-Type-Options"] = "nosniff";
         return new ContentResult
         {
             StatusCode = (int)upstreamResponse.StatusCode,
             Content = responseBody,
-            ContentType = upstreamResponse.Content.Headers.ContentType?.ToString() ?? "application/json"
+            ContentType = "application/json"
         };
     }
 

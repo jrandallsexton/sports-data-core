@@ -65,6 +65,40 @@ public class AdminOpsProxyController : ControllerBase
                 path.StartsWith(p, StringComparison.OrdinalIgnoreCase)
                 && (path.Length == p.Length || path[p.Length] == '/'));
         }
+
+        /// <summary>
+        /// Resolves the target URI and checks the allowlist against the
+        /// CANONICAL path that will actually be sent — not the raw opPath.
+        /// URI construction normalizes dot-segments, so a raw check alone is
+        /// bypassable: "api/contests/../../hangfire" starts with an allowed
+        /// family but relays to /hangfire. Checking post-normalization closes
+        /// literal traversal; rejecting any residual percent-escapes in the
+        /// canonical path closes encoded and double-encoded variants (ops
+        /// paths are plain segments — guids, years, slugs — so '%' has no
+        /// legitimate use here).
+        /// </summary>
+        public static bool TryResolveAllowedTarget(
+            string service,
+            Uri baseUri,
+            string opPath,
+            string queryString,
+            out Uri targetUri)
+        {
+            targetUri = new Uri(baseUri, opPath + queryString);
+
+            if (!baseUri.IsBaseOf(targetUri))
+                return false;
+
+            var canonical = baseUri.MakeRelativeUri(targetUri).ToString();
+            var queryIndex = canonical.IndexOf('?');
+            if (queryIndex >= 0)
+                canonical = canonical[..queryIndex];
+
+            if (canonical.Contains('%'))
+                return false;
+
+            return IsAllowed(service, canonical);
+        }
     }
 
     private readonly ILogger<AdminOpsProxyController> _logger;
@@ -100,14 +134,6 @@ public class AdminOpsProxyController : ControllerBase
             return BadRequest($"Unsupported sport/league: {sport}/{league}");
         }
 
-        if (!Allowlist.IsAllowed(service, opPath))
-        {
-            _logger.LogWarning(
-                "Ops proxy refused non-allowlisted path. Service={Service}, Path={Path}",
-                service.Sanitize(), opPath.Sanitize());
-            return NotFound();
-        }
-
         var baseUrl = ResolveBaseUrl(service, mode);
         if (baseUrl is null)
         {
@@ -118,19 +144,25 @@ public class AdminOpsProxyController : ControllerBase
                 $"No internal base URL configured for {service}/{mode}.");
         }
 
-        var baseUri = new Uri(baseUrl.TrimEnd('/') + "/");
-        var targetUri = new Uri(baseUri, opPath + Request.QueryString);
-
-        // Belt-and-braces: the allowlist's "api/..." prefix requirement
-        // already prevents an absolute-URI opPath from surviving, but the
-        // final URI must still live under the configured base — if URI
-        // composition ever surprises us, the relay refuses rather than
-        // wanders.
-        if (!baseUri.IsBaseOf(targetUri))
+        // Resolve first, THEN allowlist-check the canonical result — the
+        // check must see what will actually be sent, not the raw opPath
+        // (dot-segment normalization would otherwise let a traversal path
+        // relay outside its allowed family). See Allowlist.TryResolveAllowedTarget.
+        var baseUri = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
+        Uri targetUri;
+        try
         {
-            _logger.LogError(
-                "Ops proxy target escaped the configured base. Base={Base}, Target={Target}",
-                baseUri, targetUri.ToString().Sanitize());
+            if (!Allowlist.TryResolveAllowedTarget(
+                    service, baseUri, opPath, Request.QueryString.Value ?? string.Empty, out targetUri))
+            {
+                _logger.LogWarning(
+                    "Ops proxy refused path outside the allowlist after canonicalization. Service={Service}, Path={Path}",
+                    service.Sanitize(), opPath.Sanitize());
+                return NotFound();
+            }
+        }
+        catch (UriFormatException)
+        {
             return BadRequest("Invalid ops path.");
         }
 

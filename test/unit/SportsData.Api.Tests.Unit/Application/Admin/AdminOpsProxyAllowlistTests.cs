@@ -38,4 +38,32 @@ public class AdminOpsProxyAllowlistTests
     {
         AdminOpsProxyController.Allowlist.IsAllowed(service, path).Should().BeFalse(because);
     }
+
+    private static readonly Uri BaseUri = new("http://producer.internal/");
+
+    [Theory]
+    [InlineData("api/contests/../../hangfire", "literal dot-segments normalize OUT of the family")]
+    [InlineData("api/franchise-seasons/../test/outbox", "traversal into the deleted test surface")]
+    [InlineData("api/contests/%2e%2e/%2e%2e/hangfire", "percent-encoded traversal")]
+    [InlineData("api/contests/%252e%252e/hangfire", "double-encoded traversal (residual escape rejected)")]
+    public void TraversalPaths_AreDenied_AfterCanonicalization(string opPath, string because)
+    {
+        AdminOpsProxyController.Allowlist
+            .TryResolveAllowedTarget("producer", BaseUri, opPath, string.Empty, out _)
+            .Should().BeFalse(because);
+    }
+
+    [Fact]
+    public void InFamilyDotSegments_NormalizeAndStayAllowed()
+    {
+        // Normalization that stays INSIDE the family is fine — the check is
+        // on the canonical destination, not on cosmetic path shape.
+        AdminOpsProxyController.Allowlist
+            .TryResolveAllowedTarget(
+                "producer", BaseUri, "api/contests/ignored/../refresh", "?seasonYear=2026", out var target)
+            .Should().BeTrue();
+
+        target.AbsolutePath.Should().Be("/api/contests/refresh");
+        target.Query.Should().Be("?seasonYear=2026");
+    }
 }

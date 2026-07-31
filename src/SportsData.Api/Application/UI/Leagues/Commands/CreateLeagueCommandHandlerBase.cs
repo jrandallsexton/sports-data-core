@@ -127,17 +127,38 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
         var opensUtc = _availability.GetOpensUtc(SportMode);
         if (opensUtc is not null)
         {
-            _logger.LogInformation(
-                "Rejecting create-league: {Sport} creation opens {OpensUtc:o}.",
-                SportMode, opensUtc);
+            // Admin bypass, mirroring the creation-availability endpoint: the
+            // operator needs to exercise gated sports (e.g. NFL) before their
+            // season opens. One indexed read, only on the gated path.
+            // Deliberately FRESH from the database (not the middleware's
+            // 15-minute cached identity the endpoint uses): enforcement
+            // decisions never ride a cache; only UI shaping does.
+            var isAdmin = await _dbContext.Users
+                .AsNoTracking()
+                .Where(u => u.Id == currentUserId)
+                .Select(u => u.IsAdmin)
+                .FirstOrDefaultAsync(cancellationToken);
 
-            return new Failure<Guid>(
-                default!,
-                ResultStatus.Validation,
-                // User-facing copy — no raw Sport enum; the user is already in a
-                // specific sport's create flow.
-                [new ValidationFailure(nameof(request),
-                    $"League creation opens {opensUtc:MMMM d, yyyy}. Check back then.")]);
+            if (isAdmin)
+            {
+                _logger.LogInformation(
+                    "Creation gate bypassed by admin {UserId}: {Sport} opens {OpensUtc:o}.",
+                    currentUserId, SportMode, opensUtc);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Rejecting create-league: {Sport} creation opens {OpensUtc:o}.",
+                    SportMode, opensUtc);
+
+                return new Failure<Guid>(
+                    default!,
+                    ResultStatus.Validation,
+                    // User-facing copy — no raw Sport enum; the user is already in a
+                    // specific sport's create flow.
+                    [new ValidationFailure(nameof(request),
+                        $"League creation opens {opensUtc:MMMM d, yyyy}. Check back then.")]);
+            }
         }
 
         // Blackout guard: a windowed league whose date range contains no games

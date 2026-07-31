@@ -143,6 +143,29 @@ const getPublicLeagues = async () => {
  * are returned; a sport not listed is open.
  * @returns {Promise<{ gates: { sport: string, opensUtc: string }[] }>}
  */
+/**
+ * Fetches the season calendar for a sport — every week that can hold games
+ * (Off Season excluded), StartDate-ordered, labeled with its phase where
+ * numbering is ambiguous ("Week 4" vs "Preseason - Week 4"; week numbers
+ * restart per phase). Drives the Week Range picker and drop-week limits.
+ * @param {string} sport BE Sport enum name, e.g. "FootballNfl"
+ * @returns {Promise<{ seasonYear: number, weeks: { id: string, number: number, label: string, phaseName: string, startDateUtc: string, endDateUtc: string }[] }>}
+ */
+const SPORT_ROUTE = {
+  FootballNcaa: "football/ncaa",
+  FootballNfl: "football/nfl",
+  BaseballMlb: "baseball/mlb",
+};
+
+const getSeasonWeeks = async (sport) => {
+  // Route follows the API's {sport}/{league}/{resource} convention (same as
+  // game-dates), so the BE enum name translates to route slugs here.
+  const route = SPORT_ROUTE[sport];
+  if (!route) throw new Error(`Unknown sport: ${sport}`);
+  const response = await apiClient.get(`${BASE_PATH}/${route}/season-weeks`);
+  return response.data;
+};
+
 const getCreationAvailability = async () => {
   const response = await apiClient.get(`${BASE_PATH}/creation-availability`);
   return response.data;
@@ -178,6 +201,7 @@ const LeaguesApi = {
   inviteUser,
   getPublicLeagues,
   getCreationAvailability,
+  getSeasonWeeks,
   getLeagueWeekOverview,
   getLeagueScores
 };

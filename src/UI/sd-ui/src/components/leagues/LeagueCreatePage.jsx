@@ -11,6 +11,8 @@ import {
 import "./LeagueCreatePage.css";
 
 import {
+  toStartOfDayIso,
+  toEndOfDayIso,
   buildCreateFootballNcaaLeagueRequest,
   buildCreateFootballNflLeagueRequest,
   buildCreateBaseballMlbLeagueRequest,
@@ -49,7 +51,6 @@ const SPORT_COPY = {
     tiebreakerTotalLabel: "Closest to Total Points",
     namePlaceholder: "e.g., Saturday Showdown",
     descPlaceholder: "A fun league for SEC fans.",
-    maxWeeks: 16,
   },
   [SPORT_NFL]: {
     label: "NFL",
@@ -58,7 +59,6 @@ const SPORT_COPY = {
     tiebreakerTotalLabel: "Closest to Total Points",
     namePlaceholder: "e.g., Sunday Funday",
     descPlaceholder: "A fun league for NFL fans.",
-    maxWeeks: 22,
   },
   [SPORT_MLB]: {
     label: "MLB",
@@ -67,7 +67,6 @@ const SPORT_COPY = {
     tiebreakerTotalLabel: "Closest to Total Runs",
     namePlaceholder: "e.g., Ninth Inning",
     descPlaceholder: "A fun league for MLB fans.",
-    maxWeeks: 26,
   },
 };
 
@@ -163,8 +162,16 @@ const LeagueCreatePage = () => {
   const [allConferences, setAllConferences] = useState([]);
   const [fbsOnly, setFbsOnly] = useState(true);
   const [durationMode, setDurationMode] = useState(DURATION_FULL);
-  const [startWeek, setStartWeek] = useState(1);
-  const [endWeek, setEndWeek] = useState(1);
+  // Week Range selections are SeasonWeek ids from the season calendar, not
+  // bare numbers -- week numbers restart per phase ("Week 4" exists in both
+  // Preseason and Regular Season), so only the id is unambiguous.
+  const [startWeekId, setStartWeekId] = useState("");
+  const [endWeekId, setEndWeekId] = useState("");
+  // The sport's season calendar (all phases except Off Season, StartDate
+  // order). Drives the Week Range picker, the week->date translation at
+  // submit, and the drop-week limit for every window mode.
+  const [seasonWeeks, setSeasonWeeks] = useState([]);
+  const [seasonWeeksLoaded, setSeasonWeeksLoaded] = useState(false);
   const [startsOn, setStartsOn] = useState("");
   const [endsOn, setEndsOn] = useState("");
 
@@ -238,13 +245,82 @@ const LeagueCreatePage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gatesLoaded, userLoading, creationGates, sport, eligibleSports]);
 
+  const startWeekIndex = seasonWeeks.findIndex((w) => w.id === startWeekId);
+  const endWeekIndex = seasonWeeks.findIndex((w) => w.id === endWeekId);
+  const startWeekObj = startWeekIndex >= 0 ? seasonWeeks[startWeekIndex] : null;
+  const endWeekObj = endWeekIndex >= 0 ? seasonWeeks[endWeekIndex] : null;
+
+  // End >= Start: if the start moves past the end (or end is unset), pull the
+  // end up to match.
+  useEffect(() => {
+    if (!startWeekId) return;
+    if (!endWeekId || (endWeekIndex >= 0 && startWeekIndex > endWeekIndex)) {
+      setEndWeekId(startWeekId);
+    }
+  }, [startWeekId, endWeekId, startWeekIndex, endWeekIndex]);
+
+  // "MM/DD" from the week's UTC boundary instants. Formatted in UTC so the
+  // authored wall-clock day isn't shifted in western timezones (same trick as
+  // formatGateDate).
+  const fmtWeekDate = (iso) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime())
+      ? ""
+      : d.toLocaleDateString(undefined, {
+          month: "2-digit",
+          day: "2-digit",
+          timeZone: "UTC",
+        });
+  };
+  const weekOptionLabel = (w) =>
+    `${w.label}: ${fmtWeekDate(w.startDateUtc)}-${fmtWeekDate(w.endDateUtc)}`;
+  const isWeekPast = (w) => new Date(w.endDateUtc).getTime() <= Date.now();
+
+  // How many weeks the chosen window spans -- the drop-week ceiling is one
+  // less ("drop all weeks" is not a league). null = unknown (calendar not
+  // loaded / dates not chosen) -> legacy cap of 3.
+  const leagueWeekCount = (() => {
+    if (!seasonWeeksLoaded || seasonWeeks.length === 0) return null;
+    if (durationMode === DURATION_WEEKS) {
+      if (startWeekIndex < 0 || endWeekIndex < 0) return null;
+      return endWeekIndex - startWeekIndex + 1;
+    }
+    if (durationMode === DURATION_DATES) {
+      if (!startsOn || !endsOn) return null;
+      // Same LOCAL-day boundary convention the submission uses
+      // (toStartOfDayIso/toEndOfDayIso) -- forced-UTC bounds here would
+      // count a different week set than the range actually submitted for
+      // users outside UTC.
+      const from = new Date(toStartOfDayIso(startsOn)).getTime();
+      const to = new Date(toEndOfDayIso(endsOn)).getTime();
+      const count = seasonWeeks.filter((w) => {
+        const ws = new Date(w.startDateUtc).getTime();
+        const we = new Date(w.endDateUtc).getTime();
+        return ws <= to && we >= from;
+      }).length;
+      return count > 0 ? count : null;
+    }
+    // Full season scores over the regular season.
+    const reg = seasonWeeks.filter((w) =>
+      /regular/i.test(w.phaseName)
+    ).length;
+    return reg > 0 ? reg : null;
+  })();
+  const maxDropWeeks = leagueWeekCount === null ? 3 : Math.max(leagueWeekCount - 1, 0);
+
+  // Keep the selection valid as the window shrinks.
+  useEffect(() => {
+    setDropLowWeeksCount((c) => Math.min(c, maxDropWeeks));
+  }, [maxDropWeeks]);
+
   // Human-readable window for the suggested description: a single day, a date
   // range, a single week, or a week range. null for a full-season league.
   const descriptionWindowLabel = (() => {
     if (durationMode === DURATION_WEEKS) {
-      return startWeek === endWeek
-        ? `Week ${startWeek}`
-        : `Weeks ${startWeek}–${endWeek}`;
+      if (!startWeekObj || !endWeekObj) return null;
+      return startWeekObj.id === endWeekObj.id
+        ? startWeekObj.label
+        : `${startWeekObj.label} – ${endWeekObj.label}`;
     }
     if (durationMode === DURATION_DATES) {
       const s = formatDateShort(startsOn);
@@ -305,11 +381,35 @@ const LeagueCreatePage = () => {
     if (!isNcaa) {
       setRankingFilter("");
     }
-    // Clamp week selection if switching to a sport with fewer weeks.
-    const max = SPORT_COPY[sport].maxWeeks;
-    setStartWeek((w) => Math.min(w, max));
-    setEndWeek((w) => Math.min(w, max));
+    // Week selections don't survive a sport switch -- ids are season-scoped.
+    setStartWeekId("");
+    setEndWeekId("");
   }, [sport, isNcaa]);
+
+  // Season calendar per sport. Needed beyond Week Range: drop-week limits for
+  // Full Season and Date Range derive from it too. Fails soft -- an empty
+  // list disables the Week Range tab and leaves drop weeks on a legacy cap.
+  useEffect(() => {
+    let cancelled = false;
+    setSeasonWeeksLoaded(false);
+    setSeasonWeeks([]);
+    LeaguesApi.getSeasonWeeks(sport)
+      .then((data) => {
+        if (cancelled) return;
+        setSeasonWeeks(data?.weeks ?? []);
+        setSeasonWeeksLoaded(true);
+      })
+      .catch((err) => {
+        console.error("Failed to load season weeks:", err);
+        if (cancelled) return;
+        setSeasonWeeks([]);
+        setSeasonWeeksLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [sport]);
+
 
   const chunk = (array, size) => {
     const result = [];
@@ -354,17 +454,15 @@ const LeagueCreatePage = () => {
       }
     }
 
+    if (durationMode === DURATION_WEEKS && (!startWeekObj || !endWeekObj)) {
+      toast.error("Choose a start and end week for your league.");
+      return;
+    }
+
     setShowConfirmDialog(true);
   };
 
   const finalizeLeagueCreation = async () => {
-    if (durationMode === DURATION_WEEKS) {
-      toast.error(
-        "Week Range isn't wired up yet — it needs the season calendar endpoint. Use Full Season or Date Range for now."
-      );
-      return;
-    }
-
     const formState = {
       leagueName,
       description: effectiveDescription,
@@ -379,6 +477,10 @@ const LeagueCreatePage = () => {
       durationMode,
       startsOn,
       endsOn,
+      // Week Range translated to the selected weeks' real UTC boundaries --
+      // raw ISO pass-through, NOT the date-input local-midnight conversion.
+      weekStartsOnIso: startWeekObj?.startDateUtc ?? null,
+      weekEndsOnIso: endWeekObj?.endDateUtc ?? null,
     };
 
     const dispatch = {
@@ -543,20 +645,6 @@ const LeagueCreatePage = () => {
               </select>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="dropLowWeeksCount">Drop Low Weeks</label>
-              <select
-                id="dropLowWeeksCount"
-                name="dropLowWeeksCount"
-                value={dropLowWeeksCount}
-                onChange={(e) => setDropLowWeeksCount(Number(e.target.value))}
-              >
-                <option value={0}>None. Use All Weeks</option>
-                <option value={1}>1</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
-              </select>
-            </div>
           </div>
 
           <div className="form-group">
@@ -581,6 +669,12 @@ const LeagueCreatePage = () => {
                 type="button"
                 role="tab"
                 aria-selected={durationMode === DURATION_WEEKS}
+                disabled={seasonWeeksLoaded && seasonWeeks.length === 0}
+                title={
+                  seasonWeeksLoaded && seasonWeeks.length === 0
+                    ? "Season calendar unavailable"
+                    : undefined
+                }
                 className={`segmented-tab${
                   durationMode === DURATION_WEEKS ? " active" : ""
                 }`}
@@ -607,15 +701,16 @@ const LeagueCreatePage = () => {
                   <label htmlFor="startWeek">Start Week</label>
                   <select
                     id="startWeek"
-                    value={startWeek}
-                    onChange={(e) => setStartWeek(Number(e.target.value))}
+                    value={startWeekId}
+                    onChange={(e) => setStartWeekId(e.target.value)}
                   >
-                    {Array.from(
-                      { length: copy.maxWeeks },
-                      (_, i) => i + 1
-                    ).map((w) => (
-                      <option key={w} value={w}>
-                        Week {w}
+                    <option value="">Select...</option>
+                    {/* Past weeks stay visible but disabled; an in-progress
+                        week remains selectable (you can still pick its
+                        remaining games). */}
+                    {seasonWeeks.map((w) => (
+                      <option key={w.id} value={w.id} disabled={isWeekPast(w)}>
+                        {weekOptionLabel(w)}
                       </option>
                     ))}
                   </select>
@@ -624,15 +719,20 @@ const LeagueCreatePage = () => {
                   <label htmlFor="endWeek">End Week</label>
                   <select
                     id="endWeek"
-                    value={endWeek}
-                    onChange={(e) => setEndWeek(Number(e.target.value))}
+                    value={endWeekId}
+                    onChange={(e) => setEndWeekId(e.target.value)}
                   >
-                    {Array.from(
-                      { length: copy.maxWeeks },
-                      (_, i) => i + 1
-                    ).map((w) => (
-                      <option key={w} value={w}>
-                        Week {w}
+                    <option value="">Select...</option>
+                    {seasonWeeks.map((w, i) => (
+                      <option
+                        key={w.id}
+                        value={w.id}
+                        disabled={
+                          isWeekPast(w) ||
+                          (startWeekIndex >= 0 && i < startWeekIndex)
+                        }
+                      >
+                        {weekOptionLabel(w)}
                       </option>
                     ))}
                   </select>
@@ -664,6 +764,30 @@ const LeagueCreatePage = () => {
                 </div>
               </div>
             )}
+
+            {/* Below League Window because the window drives its ceiling:
+                a league can drop at most LeagueWeekCount - 1 weeks. The
+                count derives from the season calendar for every mode
+                (selected span for Week Range, overlapping weeks for Date
+                Range, regular-season weeks for Full Season). */}
+            <div className="form-group duration-detail">
+              <label htmlFor="dropLowWeeksCount">Drop Low Weeks</label>
+              <select
+                id="dropLowWeeksCount"
+                name="dropLowWeeksCount"
+                value={dropLowWeeksCount}
+                onChange={(e) => setDropLowWeeksCount(Number(e.target.value))}
+              >
+                <option value={0}>None. Use All Weeks</option>
+                {Array.from({ length: maxDropWeeks }, (_, i) => i + 1).map(
+                  (n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  )
+                )}
+              </select>
+            </div>
           </div>
 
           <div className="form-group">
@@ -860,7 +984,11 @@ const LeagueCreatePage = () => {
                 <strong>League Window:</strong>{" "}
                 {durationMode === DURATION_FULL && "Full Season"}
                 {durationMode === DURATION_WEEKS &&
-                  `Weeks ${startWeek}–${endWeek}`}
+                  (startWeekObj && endWeekObj
+                    ? startWeekObj.id === endWeekObj.id
+                      ? startWeekObj.label
+                      : `${startWeekObj.label} – ${endWeekObj.label}`
+                    : "—")}
                 {durationMode === DURATION_DATES &&
                   `${startsOn || "—"} to ${endsOn || "—"}`}
               </li>

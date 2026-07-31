@@ -148,10 +148,13 @@ public class AdminOpsProxyController : ControllerBase
         // check must see what will actually be sent, not the raw opPath
         // (dot-segment normalization would otherwise let a traversal path
         // relay outside its allowed family). See Allowlist.TryResolveAllowedTarget.
-        var baseUri = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
         Uri targetUri;
         try
         {
+            // baseUri inside the try too: a malformed configured base is as
+            // much a UriFormatException source as a malformed opPath, and
+            // both should surface as 400, not an unhandled 500.
+            var baseUri = new Uri(baseUrl.TrimEnd('/') + "/", UriKind.Absolute);
             if (!Allowlist.TryResolveAllowedTarget(
                     service, baseUri, opPath, Request.QueryString.Value ?? string.Empty, out targetUri))
             {

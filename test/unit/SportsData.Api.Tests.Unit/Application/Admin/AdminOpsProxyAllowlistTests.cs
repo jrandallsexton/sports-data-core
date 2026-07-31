@@ -46,6 +46,8 @@ public class AdminOpsProxyAllowlistTests
     [InlineData("api/franchise-seasons/../test/outbox", "traversal into the deleted test surface")]
     [InlineData("api/contests/%2e%2e/%2e%2e/hangfire", "percent-encoded traversal")]
     [InlineData("api/contests/%252e%252e/hangfire", "double-encoded traversal (residual escape rejected)")]
+    [InlineData("http://attacker.internal/api/contests/refresh", "absolute-URI opPath escapes the base host")]
+    [InlineData("//attacker.internal/api/contests/refresh", "scheme-relative opPath escapes to another host")]
     public void TraversalPaths_AreDenied_AfterCanonicalization(string opPath, string because)
     {
         AdminOpsProxyController.Allowlist

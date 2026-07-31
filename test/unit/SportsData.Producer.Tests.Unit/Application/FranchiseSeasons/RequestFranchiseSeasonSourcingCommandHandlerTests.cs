@@ -136,6 +136,17 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
     }
 
     [Fact]
+    public async Task SeasonYear2000_IsTheInclusiveFloor_PassesValidation()
+    {
+        // 2000 is a SOURCED season (the historical floor). NotFound (no
+        // seeded franchise seasons) proves the command got past validation.
+        var result = await CreateHandler().ExecuteAsync(
+            new RequestFranchiseSeasonSourcingCommand(2000, Sport.FootballNfl));
+
+        result.Status.Should().Be(ResultStatus.NotFound);
+    }
+
+    [Fact]
     public async Task ImplausibleSeasonYear_FailsValidation_PublishesNothing()
     {
         var result = await CreateHandler().ExecuteAsync(

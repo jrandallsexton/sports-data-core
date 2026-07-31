@@ -118,7 +118,21 @@ public class AdminOpsProxyController : ControllerBase
                 $"No internal base URL configured for {service}/{mode}.");
         }
 
-        var targetUri = new Uri(new Uri(baseUrl.TrimEnd('/') + "/"), opPath + Request.QueryString);
+        var baseUri = new Uri(baseUrl.TrimEnd('/') + "/");
+        var targetUri = new Uri(baseUri, opPath + Request.QueryString);
+
+        // Belt-and-braces: the allowlist's "api/..." prefix requirement
+        // already prevents an absolute-URI opPath from surviving, but the
+        // final URI must still live under the configured base — if URI
+        // composition ever surprises us, the relay refuses rather than
+        // wanders.
+        if (!baseUri.IsBaseOf(targetUri))
+        {
+            _logger.LogError(
+                "Ops proxy target escaped the configured base. Base={Base}, Target={Target}",
+                baseUri, targetUri.ToString().Sanitize());
+            return BadRequest("Invalid ops path.");
+        }
 
         using var upstreamRequest = new HttpRequestMessage(
             HttpMethod.Parse(Request.Method), targetUri);

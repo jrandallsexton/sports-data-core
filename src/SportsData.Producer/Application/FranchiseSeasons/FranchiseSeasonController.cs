@@ -6,6 +6,7 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
+using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranchiseSeasonSourcing;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonCompetitionResults;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsBySeasonYear;
@@ -38,6 +39,28 @@ public class FranchiseSeasonController : ControllerBase
     {
         var query = new GetFranchiseSeasonMetricsBySeasonYearQuery(seasonYear);
         var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Requests ESPN sourcing for every FranchiseSeason in the season year:
+    /// one DocumentRequested (TeamSeason) per franchise, full cascade — the
+    /// linked-document filter is deliberately omitted so events (the
+    /// schedule), rosters, and the rest of the tree source along with it.
+    /// </summary>
+    [HttpPost("seasonYear/{seasonYear}/source")]
+    public async Task<ActionResult<Guid>> RequestFranchiseSeasonSourcing(
+        [FromRoute] int seasonYear,
+        [FromServices] IRequestFranchiseSeasonSourcingCommandHandler handler,
+        [FromServices] IAppMode appMode,
+        CancellationToken cancellationToken)
+    {
+        var command = new RequestFranchiseSeasonSourcingCommand(
+            seasonYear,
+            appMode.CurrentSport);
+
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();
     }

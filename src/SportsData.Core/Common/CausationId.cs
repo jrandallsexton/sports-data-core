@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace SportsData.Core.Common
 {
@@ -36,6 +36,7 @@ namespace SportsData.Core.Common
             public static Guid FranchiseDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000011");
             public static Guid FranchiseSeasonCreated = new Guid("10000000-0000-0000-0000-000000000012");
             public static Guid FranchiseSeasonEnrichmentProcessor = new Guid("10000001-0000-0000-0000-00000000001F");
+            public static Guid FranchiseSeasonService = new Guid("10000A00-0000-0000-0000-000000000007");
             public static Guid GroupSeasonDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000013");
             public static Guid ImageRequestedProcessor = new Guid("10000000-0000-0000-0000-000000000014");
             public static Guid PositionDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000015");

@@ -135,6 +135,26 @@ namespace SportsData.Api.DependencyInjection
             // Single authority for by-group authorization — see
             // docs/audit/league-authorization-idor.md.
             services.AddScoped<ILeagueMembershipGuard, LeagueMembershipGuard>();
+
+            // The ops proxy's named client: redirects are NOT followed (an
+            // allowlisted upstream must not bounce the relay to an
+            // unvalidated target) and cookies are NOT retained (the pooled
+            // handler would otherwise replay upstream Set-Cookie values on
+            // later relays to the same host). The relay goes exactly where
+            // the allowlist said, carries nothing it wasn't given, or goes
+            // nowhere.
+            //
+            // No BaseAddress on purpose: the target varies PER REQUEST
+            // (service x sport mode), so the controller resolves the full
+            // URI per call from the same AppConfig-backed CommonConfig keys
+            // the typed client factories use, then verifies the resolved
+            // base actually owns the final URI.
+            services.AddHttpClient(nameof(Application.Admin.AdminOpsProxyController))
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                {
+                    AllowAutoRedirect = false,
+                    UseCookies = false
+                });
             services.AddScoped<IGetLeagueByIdQueryHandler, GetLeagueByIdQueryHandler>();
             services.AddScoped<
                 Application.UI.Leagues.Queries.GetLeagueGameDates.IGetLeagueGameDatesQueryHandler,

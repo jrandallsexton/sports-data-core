@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 using Hangfire;
 
@@ -48,6 +48,7 @@ using SportsData.Producer.Application.FranchiseSeasonRankings.Queries.GetRanking
 using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
+using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranchiseSeasonSourcing;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonById;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonCompetitionResults;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
@@ -275,6 +276,8 @@ namespace SportsData.Producer.DependencyInjection
 
             // FranchiseSeason Commands
             services.AddScoped<IEnqueueFranchiseSeasonMetricsGenerationCommandHandler, EnqueueFranchiseSeasonMetricsGenerationCommandHandler>();
+            services.AddScoped<IRequestFranchiseSeasonSourcingCommandHandler, RequestFranchiseSeasonSourcingCommandHandler>();
+            services.AddScoped<FluentValidation.IValidator<RequestFranchiseSeasonSourcingCommand>, RequestFranchiseSeasonSourcingCommandValidator>();
             services.AddScoped<IEnqueueFranchiseSeasonEnrichmentCommandHandler, EnqueueFranchiseSeasonEnrichmentCommandHandler>();
             if (mode is Sport.FootballNcaa or Sport.FootballNfl)
             {

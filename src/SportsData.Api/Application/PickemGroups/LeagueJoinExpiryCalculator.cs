@@ -122,10 +122,14 @@ public class LeagueJoinExpiryCalculator : ILeagueJoinExpiryCalculator
                 return firstKickoff;
 
             // Provisional: the season calendar's week-(N+1) boundary.
+            // EXACT phase match — week numbers restart per phase, and the
+            // overview is StartDate-ordered, so a Contains("post") exclusion
+            // would resolve NFL "week 4" to PRESEASON week 4 (five weeks
+            // early). Verified against the real Season/SeasonPhase/SeasonWeek
+            // schema, 2026-07-31.
             var overview = await GetSeasonOverviewAsync(group, cancellationToken);
             return overview?.Weeks
-                // Regular-season weeks only — postseason numbering restarts.
-                .Where(w => !w.SeasonPhaseName.Contains("post", StringComparison.OrdinalIgnoreCase))
+                .Where(w => w.SeasonPhaseName.Equals("Regular Season", StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault(w => w.Number == targetWeek)?.StartDate;
         }
 

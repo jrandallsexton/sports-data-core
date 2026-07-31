@@ -17,14 +17,19 @@ const toEndOfDayIso = (dateStr) => {
   return new Date(year, month - 1, day, 23, 59, 59).toISOString();
 };
 
-const buildWindow = ({ durationMode, startsOn, endsOn }) => {
+const buildWindow = ({ durationMode, startsOn, endsOn, weekStartsOnIso, weekEndsOnIso }) => {
   if (durationMode === "dates") {
     return {
       startsOn: toStartOfDayIso(startsOn),
       endsOn: toEndOfDayIso(endsOn),
     };
   }
-  // Full season or Week Range (week→date translation is a BE follow-up).
+  if (durationMode === "weeks") {
+    // The selected SeasonWeeks' real UTC boundaries, passed through raw --
+    // these are authored instants from the season calendar, NOT date-input
+    // values needing local-midnight conversion.
+    return { startsOn: weekStartsOnIso ?? null, endsOn: weekEndsOnIso ?? null };
+  }
   return { startsOn: null, endsOn: null };
 };
 
@@ -61,6 +66,8 @@ const buildShared = ({
   durationMode,
   startsOn,
   endsOn,
+  weekStartsOnIso,
+  weekEndsOnIso,
 }) => ({
   name: leagueName,
   description: description?.trim() || null,
@@ -75,17 +82,15 @@ const buildShared = ({
   // Explicit window shape — the BE stores this rather than inferring it
   // from the dates. Mapping matches the form's duration modes.
   //
-  // "weeks" is DELIBERATELY sent as WeekRange even though buildWindow can't
-  // yet resolve its date bounds (the create form blocks submission upstream).
-  // If it ever slips through, the BE validator rejects the window/dates
-  // mismatch loudly — strictly better than the pre-LeagueWindow behavior,
-  // where null bounds silently created a mislabeled FullSeason league.
+  // "weeks" carries the selected SeasonWeeks' boundaries via buildWindow; a
+  // WeekRange submission without them is rejected by the BE validator's
+  // window/dates consistency check.
   leagueWindow:
     durationMode === "dates" ? "DateRange"
     : durationMode === "weeks" ? "WeekRange"
     : "FullSeason",
   dropLowWeeksCount: toNonNegativeInt(dropLowWeeksCount),
-  ...buildWindow({ durationMode, startsOn, endsOn }),
+  ...buildWindow({ durationMode, startsOn, endsOn, weekStartsOnIso, weekEndsOnIso }),
 });
 
 export const buildCreateFootballNcaaLeagueRequest = (form) => ({

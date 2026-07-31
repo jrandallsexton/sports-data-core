@@ -170,3 +170,19 @@ the worst case is a slightly worse UX on a transient outage, never a broken leag
    Aug 17, 2026; other sports unset (absent = no gate).
 2. **NFL — leave open for now.** Only NCAAFB is gated in this pass. Setting NFL's
    config value later locks it with **no code change**.
+
+## Admin bypass (2026-07-31)
+
+Admins bypass creation gates entirely, on both sides of the contract:
+
+- `GET /ui/leagues/creation-availability` returns an **empty gate list** for
+  admin callers — the FE locks exactly the sports this endpoint returns, so
+  every tab unlocks with zero client changes.
+- The create handlers apply the same bypass at enforcement (one indexed
+  `IsAdmin` read, only on the gated path), so the deep-link / direct-API path
+  agrees with the UI. Bypass is logged with the admin's user id.
+
+Driver: the operator needs to exercise gated sports before their season opens
+— immediately, NFL league creation for the WeekRange window work (MLB is a
+poor WeekRange candidate: ~100 games per "week" on the picks page; NCAAFB/NFL
+are the focus). Regular users still see and hit the gate unchanged.

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
+using SportsData.Core.Infrastructure.Clients.Season;
+
 using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
 using SportsData.Api.Application.UI.Leagues.Commands.CloneLeague;
@@ -123,11 +125,58 @@ public class LeagueController : ApiControllerBase
     /// and shows an "opens {date}" affordance. The create endpoints enforce the same
     /// gate server-side. See docs/features/league-creation-availability-gate.md.
     /// </summary>
+    /// <summary>
+    /// The season calendar for a sport's current (or given) season year — the
+    /// labeled week list the create-league form's Week Range picker and
+    /// drop-week limits are driven by. Thin pass-through to Producer's season
+    /// overview; week numbers restart per phase, so labels carry the phase.
+    /// </summary>
+    [HttpGet("season-weeks")]
+    [Authorize]
+    public async Task<ActionResult<LeagueSeasonWeeksDto>> GetSeasonWeeks(
+        [FromQuery] string sport,
+        [FromQuery] int? seasonYear,
+        [FromServices] ISeasonClientFactory seasonClientFactory,
+        [FromServices] IDateTimeProvider dateTimeProvider,
+        CancellationToken cancellationToken)
+    {
+        if (!Enum.TryParse<Sport>(sport, ignoreCase: true, out var parsedSport))
+            return BadRequest($"Unknown sport: {sport}");
+
+        // Same convention as league creation (request.SeasonYear ?? current
+        // year) so the picker and the created league agree on the season.
+        var year = seasonYear ?? dateTimeProvider.UtcNow().Year;
+
+        var overview = await seasonClientFactory
+            .Resolve(parsedSport)
+            .GetSeasonOverview(year, cancellationToken);
+
+        if (!overview.IsSuccess)
+            return NotFound($"Season calendar unavailable for {parsedSport} {year}.");
+
+        var weeks = overview.Value.Weeks
+            .Where(w => !w.SeasonPhaseName.Equals("Off Season", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(w => w.StartDate)
+            .Select(w => new LeagueSeasonWeekOptionDto(
+                w.Id, w.Number, w.Label, w.SeasonPhaseName, w.StartDate, w.EndDate))
+            .ToList();
+
+        return Ok(new LeagueSeasonWeeksDto(year, weeks));
+    }
+
     [HttpGet("creation-availability")]
     [Authorize]
     public ActionResult<LeagueCreationAvailabilityDto> GetCreationAvailability(
         [FromServices] ILeagueCreationAvailability availability)
     {
+        // Admins bypass creation gates entirely (e.g. testing NFL WeekRange
+        // work before the season opens). The FE locks exactly the sports this
+        // returns, so an empty list unlocks every tab with zero client
+        // changes; the create handlers apply the same admin bypass so the
+        // deep-link path agrees.
+        if (HttpContext.GetCurrentUser().IsAdmin)
+            return Ok(new LeagueCreationAvailabilityDto([]));
+
         return Ok(new LeagueCreationAvailabilityDto(availability.GetActiveGates()));
     }
 

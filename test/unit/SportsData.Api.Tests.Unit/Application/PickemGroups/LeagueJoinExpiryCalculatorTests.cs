@@ -106,6 +106,10 @@ public class LeagueJoinExpiryCalculatorTests : ApiTestBase<LeagueJoinExpiryCalcu
         EndDate = new DateTime(2027, 1, 20, 0, 0, 0, DateTimeKind.Utc),
         Weeks =
         [
+            // Preseason week 4 shares its NUMBER with regular-season week 4 and
+            // sorts FIRST (StartDate order) — the real NFL shape. The drop-week
+            // fallback must resolve to the REGULAR SEASON week.
+            new SeasonWeekDto { Id = Guid.NewGuid(), Number = 4, SeasonPhaseName = "Preseason", StartDate = new DateTime(2026, 8, 27), EndDate = new DateTime(2026, 9, 8) },
             new SeasonWeekDto { Id = Guid.NewGuid(), Number = 3, SeasonPhaseName = "Regular Season", StartDate = new DateTime(2026, 9, 8), EndDate = new DateTime(2026, 9, 14) },
             new SeasonWeekDto { Id = Guid.NewGuid(), Number = 4, SeasonPhaseName = "Regular Season", StartDate = new DateTime(2026, 9, 15), EndDate = new DateTime(2026, 9, 21) },
             // Postseason numbering restarts — must NOT satisfy a week-4 lookup.
@@ -142,7 +146,8 @@ public class LeagueJoinExpiryCalculatorTests : ApiTestBase<LeagueJoinExpiryCalcu
 
         await CreateCalculator(Overview()).RecomputeAsync(league.Id);
 
-        league.InvitationsExpireUtc.Should().Be(new DateTime(2026, 9, 15));
+        league.InvitationsExpireUtc.Should().Be(new DateTime(2026, 9, 15),
+            "the REGULAR SEASON week 4 boundary — not preseason week 4, which shares the number and sorts first");
     }
 
     // ── CloseAtFirstGame ──────────────────────────────────────────────────────

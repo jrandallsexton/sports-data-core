@@ -130,6 +130,9 @@ public abstract class CreateLeagueCommandHandlerBase<TRequest>
             // Admin bypass, mirroring the creation-availability endpoint: the
             // operator needs to exercise gated sports (e.g. NFL) before their
             // season opens. One indexed read, only on the gated path.
+            // Deliberately FRESH from the database (not the middleware's
+            // 15-minute cached identity the endpoint uses): enforcement
+            // decisions never ride a cache; only UI shaping does.
             var isAdmin = await _dbContext.Users
                 .AsNoTracking()
                 .Where(u => u.Id == currentUserId)

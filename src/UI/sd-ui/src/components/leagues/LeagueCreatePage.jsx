@@ -11,6 +11,8 @@ import {
 import "./LeagueCreatePage.css";
 
 import {
+  toStartOfDayIso,
+  toEndOfDayIso,
   buildCreateFootballNcaaLeagueRequest,
   buildCreateFootballNflLeagueRequest,
   buildCreateBaseballMlbLeagueRequest,
@@ -285,8 +287,12 @@ const LeagueCreatePage = () => {
     }
     if (durationMode === DURATION_DATES) {
       if (!startsOn || !endsOn) return null;
-      const from = new Date(`${startsOn}T00:00:00Z`).getTime();
-      const to = new Date(`${endsOn}T23:59:59Z`).getTime();
+      // Same LOCAL-day boundary convention the submission uses
+      // (toStartOfDayIso/toEndOfDayIso) -- forced-UTC bounds here would
+      // count a different week set than the range actually submitted for
+      // users outside UTC.
+      const from = new Date(toStartOfDayIso(startsOn)).getTime();
+      const to = new Date(toEndOfDayIso(endsOn)).getTime();
       const count = seasonWeeks.filter((w) => {
         const ws = new Date(w.startDateUtc).getTime();
         const we = new Date(w.endDateUtc).getTime();

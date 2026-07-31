@@ -173,16 +173,22 @@ the worst case is a slightly worse UX on a transient outage, never a broken leag
 
 ## Admin bypass (2026-07-31)
 
-Admins bypass creation gates entirely, on both sides of the contract:
+Admins bypass the league-creation availability gate on both sides of the contract (request validation and the blackout guard still apply):
 
 - `GET /ui/leagues/creation-availability` returns an **empty gate list** for
   admin callers — the FE locks exactly the sports this endpoint returns, so
   every tab unlocks with zero client changes.
-- The create handlers apply the same bypass at enforcement (one indexed
+- The create handlers apply the same availability-gate bypass at enforcement (one indexed
   `IsAdmin` read, only on the gated path), so the deep-link / direct-API path
   agrees with the UI. Bypass is logged with the admin's user id.
 
-Driver: the operator needs to exercise gated sports before their season opens
-— immediately, NFL league creation for the WeekRange window work (MLB is a
-poor WeekRange candidate: ~100 games per "week" on the picks page; NCAAFB/NFL
-are the focus). Regular users still see and hit the gate unchanged.
+Driver: the operator needs to exercise gated sports before their season
+opens. The immediate focus is NFL Week Range league-creation work (MLB is a
+poor Week Range candidate: ~100 games per "week" on the picks page; NCAAFB
+and NFL are the focus). Regular users still see and hit the gate unchanged.
+
+Note on admin-status sources (deliberate asymmetry): the availability
+endpoint's bypass reads the middleware's cached identity (house norm for
+isAdmin-driven UI; up to 15 minutes stale after an admin change, cosmetic),
+while the create handlers' enforcement bypass reads `IsAdmin` fresh from the
+database. UI may briefly lag an admin change; enforcement never does.

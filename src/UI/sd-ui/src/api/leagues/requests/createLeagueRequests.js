@@ -5,13 +5,13 @@
 // instant that represents midnight/end-of-day in the caller's local timezone.
 // Appending "Z" would wrongly treat the local calendar date as UTC, skewing
 // the window by up to 24 hours for non-UTC users.
-const toStartOfDayIso = (dateStr) => {
+export const toStartOfDayIso = (dateStr) => {
   if (!dateStr) return null;
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day, 0, 0, 0).toISOString();
 };
 
-const toEndOfDayIso = (dateStr) => {
+export const toEndOfDayIso = (dateStr) => {
   if (!dateStr) return null;
   const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day, 23, 59, 59).toISOString();

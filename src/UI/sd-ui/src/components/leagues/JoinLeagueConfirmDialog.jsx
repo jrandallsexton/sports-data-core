@@ -67,10 +67,25 @@ function JoinLeagueConfirmDialog({ league, onCancel, onConfirm }) {
       if (focusables.length === 0) return;
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
+      const active = document.activeElement;
+
+      // Right after open, focus sits on the dialog CONTAINER (tabIndex=-1),
+      // which is neither boundary — and focus can conceivably sit outside
+      // the dialog entirely. In both cases the trap must still capture Tab:
+      // forward goes to the first control, backward to the last.
+      const activeIsInsideControls =
+        active instanceof HTMLElement &&
+        Array.prototype.includes.call(focusables, active);
+      if (!activeIsInsideControls) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+        return;
+      }
+
+      if (e.shiftKey && active === first) {
         e.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
+      } else if (!e.shiftKey && active === last) {
         e.preventDefault();
         first.focus();
       }

@@ -1,3 +1,5 @@
+using FluentValidation;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -33,23 +35,30 @@ public class RequestFranchiseSeasonSourcingCommandHandler : IRequestFranchiseSea
     private readonly TeamSportDataContext _dataContext;
     private readonly IEventBus _eventBus;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
+    private readonly IValidator<RequestFranchiseSeasonSourcingCommand> _validator;
 
     public RequestFranchiseSeasonSourcingCommandHandler(
         ILogger<RequestFranchiseSeasonSourcingCommandHandler> logger,
         TeamSportDataContext dataContext,
         IEventBus eventBus,
-        IGenerateExternalRefIdentities externalRefIdentityGenerator)
+        IGenerateExternalRefIdentities externalRefIdentityGenerator,
+        IValidator<RequestFranchiseSeasonSourcingCommand> validator)
     {
         _logger = logger;
         _dataContext = dataContext;
         _eventBus = eventBus;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
+        _validator = validator;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
         RequestFranchiseSeasonSourcingCommand command,
         CancellationToken cancellationToken = default)
     {
+        var validation = await _validator.ValidateAsync(command, cancellationToken);
+        if (!validation.IsValid)
+            return new Failure<Guid>(default!, ResultStatus.Validation, validation.Errors);
+
         var franchiseSeasons = await _dataContext.FranchiseSeasons
             .AsNoTracking()
             .Include(fs => fs.Franchise)

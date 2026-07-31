@@ -23,6 +23,9 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
 {
     private const int SeasonYear = 2026;
 
+    // Fixed clock: deterministic seed data, per the no-DateTime.UtcNow rule.
+    private static readonly DateTime FixedNow = new(2026, 7, 31, 12, 0, 0, DateTimeKind.Utc);
+
 #nullable enable
     private async Task<FranchiseSeason> SeedFranchiseSeasonAsync(string? sourceUrl)
     {
@@ -41,7 +44,7 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
             DisplayNameShort = "Test",
             Slug = $"team-{franchiseId:N}"[..20],
             ColorCodeHex = "000000",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         });
 
@@ -58,7 +61,7 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
             DisplayNameShort = "Test",
             ColorCodeHex = "000000",
             IsActive = true,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         };
 
@@ -72,7 +75,7 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
                 Value = fsId.ToString(),
                 SourceUrlHash = fsId.ToString("N"),
                 SourceUrl = sourceUrl,
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = FixedNow,
                 CreatedBy = Guid.NewGuid()
             });
         }
@@ -84,6 +87,11 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
 
     private RequestFranchiseSeasonSourcingCommandHandler CreateHandler()
     {
+        // Real validator with a fixed clock — bounds behavior is part of the
+        // contract, not something to mock away.
+        Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(FixedNow);
+        Mocker.Use<FluentValidation.IValidator<RequestFranchiseSeasonSourcingCommand>>(
+            new RequestFranchiseSeasonSourcingCommandValidator(Mocker.Get<IDateTimeProvider>()));
         Mocker.GetMock<IGenerateExternalRefIdentities>()
             .Setup(x => x.Generate(It.IsAny<Uri>()))
             .Returns((Uri u) => new ExternalRefIdentity(
@@ -103,9 +111,11 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
             new RequestFranchiseSeasonSourcingCommand(SeasonYear, Sport.FootballNfl));
 
         result.IsSuccess.Should().BeTrue();
+        var published = new List<DocumentRequested>();
         Mocker.GetMock<IEventBus>().Verify(
             x => x.Publish(
                 It.Is<DocumentRequested>(e =>
+                    CaptureAndMatch(published, e) &&
                     e.DocumentType == DocumentType.TeamSeason &&
                     e.Sport == Sport.FootballNfl &&
                     e.SeasonYear == SeasonYear &&
@@ -114,6 +124,27 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
                     e.IncludeLinkedDocumentTypes == null),
                 It.IsAny<CancellationToken>()),
             Times.Exactly(2));
+
+        // One batch, one correlation id — the stated Seq handle for the run.
+        published.Select(e => e.CorrelationId).Distinct().Should().ContainSingle();
+    }
+
+    private static bool CaptureAndMatch(List<DocumentRequested> sink, DocumentRequested e)
+    {
+        sink.Add(e);
+        return true;
+    }
+
+    [Fact]
+    public async Task ImplausibleSeasonYear_FailsValidation_PublishesNothing()
+    {
+        var result = await CreateHandler().ExecuteAsync(
+            new RequestFranchiseSeasonSourcingCommand(1999, Sport.FootballNfl));
+
+        result.Status.Should().Be(ResultStatus.Validation);
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

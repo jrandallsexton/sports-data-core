@@ -20,9 +20,15 @@
   margin-bottom: 0.5rem;
 }
 
+/* Matches YourLeaguesCard's eyebrow treatment so the two home cards read as
+   siblings (accent, uppercase, tracked-out). */
 .joinable-leagues-header h3 {
   margin: 0;
-  font-size: 1rem;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }
 
 .joinable-leagues-more {
@@ -74,6 +80,8 @@
 }
 
 .joinable-league-join {
+  border: none;
+  cursor: pointer;
   flex-shrink: 0;
   padding: 0.35rem 0.9rem;
   border-radius: 8px;

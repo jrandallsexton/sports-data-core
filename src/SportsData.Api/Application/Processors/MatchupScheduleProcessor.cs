@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.PickemGroups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Dtos.Canonical;
@@ -22,19 +23,22 @@ namespace SportsData.Api.Application.Processors
         private readonly IContestClientFactory _contestClientFactory;
         private readonly IEventBus _eventBus;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly ILeagueJoinExpiryCalculator _joinExpiryCalculator;
 
         public MatchupScheduleProcessor(
             AppDataContext dataContext,
             ILogger<MatchupScheduleProcessor> logger,
             IContestClientFactory contestClientFactory,
             IEventBus eventBus,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            ILeagueJoinExpiryCalculator joinExpiryCalculator)
         {
             _dataContext = dataContext;
             _logger = logger;
             _contestClientFactory = contestClientFactory;
             _eventBus = eventBus;
             _dateTimeProvider = dateTimeProvider;
+            _joinExpiryCalculator = joinExpiryCalculator;
         }
 
         public async Task Process(ScheduleGroupWeekMatchupsCommand command)
@@ -334,6 +338,24 @@ namespace SportsData.Api.Application.Processors
             }
 
             await _dataContext.SaveChangesAsync();
+
+            // Slates build progressively (full-season leagues advance weekly),
+            // so each landed week may sharpen the league's join expiry --
+            // e.g. a drop-week expiry refining from the calendar boundary to
+            // the actual first kickoff of week N+1. Log-and-continue: the
+            // matchups are already committed, and a recompute failure must
+            // not fault an otherwise-successful run (the hourly sweep
+            // self-heals).
+            try
+            {
+                await _joinExpiryCalculator.RecomputeAsync(command.GroupId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Join-expiry recompute failed for league {GroupId} after matchup scheduling; hourly sweep will self-heal.",
+                    command.GroupId);
+            }
         }
     }
 }

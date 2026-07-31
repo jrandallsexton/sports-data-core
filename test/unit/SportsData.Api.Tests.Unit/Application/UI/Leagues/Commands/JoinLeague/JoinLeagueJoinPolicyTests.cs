@@ -32,6 +32,8 @@ public class JoinLeagueJoinPolicyTests : ApiTestBase<JoinLeagueCommandHandler>
     private async Task<Guid> SeedLeagueAsync(
         JoinPolicy policy,
         DateTime? deactivatedUtc = null,
+        int? dropLowWeeks = null,
+        LeagueWindow window = LeagueWindow.DateRange,
         params DateTime[] matchupStarts)
     {
         var commissionerId = Guid.NewGuid();
@@ -60,6 +62,8 @@ public class JoinLeagueJoinPolicyTests : ApiTestBase<JoinLeagueCommandHandler>
             TiebreakerTiePolicy = TiebreakerTiePolicy.EarliestSubmission,
             SeasonYear = 2026,
             JoinPolicy = policy,
+            LeagueWindow = window,
+            DropLowWeeksCount = dropLowWeeks,
             DeactivatedUtc = deactivatedUtc,
             CreatedUtc = Now,
             CreatedBy = commissionerId
@@ -134,6 +138,56 @@ public class JoinLeagueJoinPolicyTests : ApiTestBase<JoinLeagueCommandHandler>
         // The slate builds asynchronously after creation. No matchups yet
         // means nothing has started — the league must be open, not closed.
         var leagueId = await SeedLeagueAsync(JoinPolicy.CloseAtFirstGame);
+
+        var result = await CreateHandler().ExecuteAsync(Join(leagueId));
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task StoredExpiry_InThePast_Rejects_EvenForOpenPolicy()
+    {
+        // The stored expiry (LeagueJoinExpiryCalculator's output) is the
+        // authority: an Open league whose last pickable moment has passed is
+        // closed, no matter what the policy enum says.
+        var leagueId = await SeedLeagueAsync(JoinPolicy.Open);
+        var league = await DataContext.PickemGroups.FindAsync(leagueId);
+        league!.InvitationsExpireUtc = Now.AddHours(-2);
+        await DataContext.SaveChangesAsync();
+
+        var result = await CreateHandler().ExecuteAsync(Join(leagueId));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.Validation);
+    }
+
+    [Fact]
+    public async Task StoredExpiry_InTheFuture_Allows_EvenPastFirstGame()
+    {
+        // Drop-week leagues stay open past kickoff by design; the stored
+        // value wins over the CloseAtFirstGame fallback derivation.
+        var leagueId = await SeedLeagueAsync(JoinPolicy.CloseAtFirstGame,
+            matchupStarts: [Now.AddHours(-1)]);
+        var league = await DataContext.PickemGroups.FindAsync(leagueId);
+        league!.InvitationsExpireUtc = Now.AddDays(10);
+        await DataContext.SaveChangesAsync();
+
+        var result = await CreateHandler().ExecuteAsync(Join(leagueId));
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task UncomputedExpiry_DropWeekLeague_IgnoresFirstGameFallback()
+    {
+        // FullSeason + drop weeks: the calculator's week-(N+1) override means
+        // first-game is the WRONG close moment, so the fallback must not
+        // reject while the stored expiry is still uncomputed -- even though
+        // the policy says CloseAtFirstGame and the first game has started.
+        var leagueId = await SeedLeagueAsync(JoinPolicy.CloseAtFirstGame,
+            dropLowWeeks: 3,
+            window: LeagueWindow.FullSeason,
+            matchupStarts: [Now.AddHours(-1)]);
 
         var result = await CreateHandler().ExecuteAsync(Join(leagueId));
 

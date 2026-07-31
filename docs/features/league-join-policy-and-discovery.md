@@ -133,8 +133,14 @@ change, no migration) and `DropLowWeeksCount` already exists on
    future league-settings-edit feature, not a rider here.
 4. `GetPublicLeaguesQueryHandler`: exclude deactivated; compute
    `IsJoinable`/`ClosesAtFirstGame`; fatten `PublicLeagueDto` (sport, league,
-   seasonYear, memberCount, window label). Filter or badge closed leagues —
-   badge, so a nearly-started league still advertises itself.
+   seasonYear, memberCount, window label). ~~Filter or badge closed leagues —
+   badge, so a nearly-started league still advertises itself.~~ **Superseded
+   in v2**: closed leagues are FILTERED from browse. Badging made sense when
+   "closed" meant "kickoff just passed"; once stored expiries made
+   ended-but-not-yet-deactivated leagues evaluate as closed (observed
+   immediately against restored prod data), badges filled the page with
+   unjoinable rows. Browse answers "what can I join?"; the countdown conveys
+   urgency for soon-closing leagues.
 5. `LeagueDetailDto`: add `joinPolicy` + `isJoinable` so the invite preview
    and browse detail can render truthfully.
 6. Unit tests per guarded path (policy × deactivation × slate-empty).
@@ -145,11 +151,21 @@ change, no migration) and `DropLowWeeksCount` already exists on
 2. League settings: same control, commissioner-only, hidden when past.
 3. Home page: "Leagues you can join" rail fed by the fattened query — the
    content-gap driver for this feature.
-4. `LeagueDiscoverPage`: closed badges, join CTA disabled when unjoinable.
+4. ~~`LeagueDiscoverPage`: closed badges, join CTA disabled when
+   unjoinable.~~ Superseded in v2 — browse FILTERS closed leagues (see the
+   Phase-1 item-4 note); the closed rendering survives client-side only as a
+   defensive path for a league expiring between fetch and render.
 5. Invite affordances hidden when league is closed (mirrors `isPast`
    treatment).
 
-### Phase 3 — Mobile (own PR, ships via EAS)
+### Phase 3 — Mobile (own PR, ships via EAS) — DELIBERATELY HELD
+
+Operator call (2026-07-30): web ships first and gets production soak time
+before mobile parity begins. The join/discovery UX is still being shaped by
+hands-on use (the v2 revision itself came out of one deploy's soak); starting
+mobile now risks paying every subsequent design change twice. Parity starts
+when the operator calls the web design settled.
+
 
 1. Browse screen (new leagues rail on home + full list).
 2. Invite preview screen: closed state ("This league is no longer accepting
@@ -165,3 +181,128 @@ change, no migration) and `DropLowWeeksCount` already exists on
   gate makes stale links safe; UI hiding covers the common path)
 - Late-join scoring adjustments (`DropLowWeeksCount` already softens; revisit
   only if leaderboard complaints materialize)
+
+## v2 revision — stored InvitationsExpireUtc (operator notes, 2026-07-30, post-#576 deploy)
+
+Status: **implemented** — see the approved decisions below; countdown window set at 10 days.
+
+v1 shipped and immediately felt wrong in production. The operator's notes and
+subsequent code verification converged on a revised design.
+
+### What v1 got wrong
+
+**`Open` = "joinable until `DeactivatedUtc`" anchored joinability to a
+mechanism that is not a lifecycle authority.** Verified against
+`LeagueDeactivationJob`: deactivation is a UI-declutter sweep — it fires when
+`EndsOn <= now - 7 days`, and **only when `EndsOn != null`**. Therefore:
+
+- A single-day MLB league remains "joinable" for ~8 days after game day
+  (next-day-UTC EndsOn + 7-day grace) — the wrongness observed on the browse
+  page immediately after deploy.
+- A FullSeason league (EndsOn null) is NEVER deactivated, so an Open
+  full-season league is joinable forever.
+
+Deactivation stays what it is (declutter). Joinability gets its own authority.
+
+### The revision: store `InvitationsExpireUtc` on `PickemGroup`
+
+The v1 "derived, never stored" doctrine is superseded — with reasons, not
+regret:
+
+1. **The countdown requirement changes the calculus.** Browsing users should
+   see how long they have to join. v1 could render nothing for Open leagues
+   (null = open); a countdown needs a concrete instant for EVERY league, and
+   Open leagues had no real value to derive.
+2. **The freshness hooks already exist.** The v1 objection (stored deadlines
+   rot when kickoffs move) is solved by existing machinery:
+   `ContestStartTimeUpdatedHandler` already updates
+   `PickemGroupMatchup.StartDateUtc` on reschedules — extending it to refresh
+   the stored expiry is a few lines in an existing consumer. Slate rebuilds
+   recompute it wholesale.
+3. **Most sources are stable anyway** — authored EndsOn, season-calendar week
+   boundaries. Only LockedAtKickoff depends on movable kickoff times.
+
+### LeagueWindow is captured explicitly
+
+The operator's notes require the handler to know the LeagueWindow (FullSeason,
+WeekRange, DateRange). This is now an explicit int-stored enum on
+`PickemGroup`, chosen at creation from the form's duration mode — NOT inferred
+from StartsOn/EndsOn null-ness. Inference is exact today only by accident
+(WeekRange is unwired, so null/null can only mean FullSeason), and becomes
+unreconstructible the moment WeekRange ships as week-to-date translation.
+The migration backfills existing windowed rows to DateRange, which is exact
+for the same reason. Legacy clients that omit the field get the same
+inference at the API boundary, where it is still sound; a validator rejects
+requests whose window claim contradicts their dates.
+
+### Computation placement
+
+Four trigger points, all converging on the same idempotent calculator:
+
+1. **The creation event itself** — `PickemGroupCreatedHandler` enqueues a
+   recompute alongside the slate bootstrap (the operator's original design).
+   Open leagues resolve immediately from EndsOn / the season calendar with no
+   slate dependency; drop-week leagues get their calendar-provisional value
+   at creation. Also covers the bootstrap's zero-weeks path, which runs no
+   per-week job.
+2. The END of each per-week slate build that event triggers — the first moment first-game
+times and week boundaries are knowable (the async-slate gap closes itself),
+and re-slates recompute for free. Reschedule refresh lives in
+`ContestStartTimeUpdatedHandler`.
+
+### Per-window logic (operator's initial cut)
+
+| LeagueWindow | Rule |
+|---|---|
+| FullSeason, has drop weeks | Expiry derived from the dropped-week window — a joiner inside it pays zero competitive penalty (the missed weeks are exactly the discarded ones). This is the DEFAULT for such leagues. |
+| FullSeason, no drop weeks | Fall back to the commissioner's Open vs LockedAtKickoff. |
+| WeekRange | Fall back to Open vs LockedAtKickoff (simplicity). |
+| DateRange | Fall back to Open vs LockedAtKickoff (simplicity). |
+
+Fallback semantics: LockedAtKickoff → first in-window game start (as v1).
+Open → the league's LAST pickable moment — last in-window game start (single-
+day: last first-pitch; DateRange: bounded by authored EndsOn; FullSeason:
+season's final game from the calendar). "Open" no longer means "forever";
+it means "while there is anything left to pick."
+
+### Decisions — settled (operator-approved 2026-07-30, implemented)
+
+1. **Drop-week expiry instant**: FIRST KICKOFF of week N+1
+   (N = DropLowWeeksCount) — the exact moment joining starts costing points.
+2. **Drop-week default vs commissioner choice**: as implemented, the
+   FullSeason+drop-weeks rule OVERRIDES the commissioner's
+   Open/CloseAtFirstGame selection in the calculator (verified by test:
+   a CloseAtFirstGame league with 3 drop weeks expires at week 4's first
+   kickoff, not at its first game). The join gate, browse, and detail
+   fallbacks mirror the same exclusion so no surface contradicts the
+   calculator while a value is uncomputed.
+3. **Open + FullSeason last-game source**: season calendar
+   (`GetSeasonOverview().EndDate`), never max(matchup start).
+4. **Backfill**: the hourly audit-job sweep IS the backfill.
+5. **Countdown window**: live countdown inside 10 days (operator-set),
+   plain date beyond, `JoinClosesLabel` transitions in place via a
+   boundary timer.
+
+### Review positions declined (PR #577, recorded)
+
+- **Optimistic concurrency (`xmin` RowVersion) on `PickemGroup` for expiry
+  writes**: declined. Every writer is the same idempotent
+  recompute-from-scratch, so "stale overwrite" is a correct recomputation of
+  marginally older inputs; divergence is bounded by the next trigger and the
+  hourly sweep. A concurrency token on `PickemGroup` would put
+  `DbUpdateConcurrencyException` handling obligations on EVERY write path to
+  the entity (creation, deactivation, future settings-edit) to protect a
+  self-healing column. Revisit only if a non-idempotent writer ever touches
+  the row concurrently.
+- **WeekRange submitted with null bounds fails BE validation**: intended.
+  The create form blocks the mode upstream; if it ever slips through, a loud
+  window/dates-mismatch rejection is strictly better than the
+  pre-`LeagueWindow` behavior (silently creating a mislabeled FullSeason
+  league). Documented at the builder.
+
+### v2 migration note
+
+`JoinPolicy` (the commissioner's choice) STAYS — it is an input to the
+computation. `InvitationsExpireUtc` is the computed OUTPUT the gate and the
+UI consume. The v1 derived-at-read-time paths (join gate min() query,
+closesAtUtc projections) collapse to reading the column once it ships.

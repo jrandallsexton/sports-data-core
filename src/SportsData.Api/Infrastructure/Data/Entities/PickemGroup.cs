@@ -42,6 +42,25 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         /// </summary>
         public JoinPolicy JoinPolicy { get; set; } = JoinPolicy.Open;
 
+        /// <summary>
+        /// Explicit window shape chosen at creation (FullSeason / WeekRange /
+        /// DateRange). Captured rather than inferred from StartsOn/EndsOn
+        /// null-ness — see the LeagueWindow enum doc for why inference is a
+        /// trap once WeekRange ships.
+        /// </summary>
+        public LeagueWindow LeagueWindow { get; set; } = LeagueWindow.FullSeason;
+
+        /// <summary>
+        /// The computed instant after which new members can no longer join —
+        /// the OUTPUT of LeagueJoinExpiryCalculator (JoinPolicy and
+        /// DropLowWeeksCount are inputs). The join gate compares it; the
+        /// browse countdown renders it. Null = not yet computed (slate or
+        /// season calendar unavailable) — treated as open, self-healed by
+        /// LeagueJoinExpiryAuditJob. Kept fresh on kickoff reschedules by
+        /// ContestStartTimeUpdatedHandler.
+        /// </summary>
+        public DateTime? InvitationsExpireUtc { get; set; }
+
         public int? MaxUsers { get; set; }
 
         public int? DropLowWeeksCount { get; set; }
@@ -127,6 +146,14 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.JoinPolicy)
                     .HasConversion<int>()
                     .HasDefaultValue(JoinPolicy.Open)
+                    .IsRequired();
+
+                // DB default 0 (FullSeason); the migration backfills existing
+                // windowed rows to DateRange from EndsOn (WeekRange has never
+                // shipped, so no pre-existing row can be one).
+                builder.Property(x => x.LeagueWindow)
+                    .HasConversion<int>()
+                    .HasDefaultValue(LeagueWindow.FullSeason)
                     .IsRequired();
 
                 builder

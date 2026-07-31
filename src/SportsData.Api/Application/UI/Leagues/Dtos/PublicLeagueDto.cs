@@ -23,6 +23,11 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
         public DateTime? StartsOn { get; set; }
         public DateTime? EndsOn { get; set; }
 
+        /// <summary>Enum names (not ints like PickType) — consumed directly
+        /// by the join-confirmation dialog.</summary>
+        public string TiebreakerType { get; set; } = default!;
+        public string TiebreakerTiePolicy { get; set; } = default!;
+
         public JoinPolicy JoinPolicy { get; set; }
 
         /// <summary>

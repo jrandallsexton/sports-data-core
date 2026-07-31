@@ -26,6 +26,14 @@ public abstract class CreateLeagueRequestBase
     /// </summary>
     public string? JoinPolicy { get; set; }
 
+    /// <summary>
+    /// LeagueWindow enum name (FullSeason / WeekRange / DateRange). Optional:
+    /// clients that predate it fall back to inference (dates present ->
+    /// DateRange, else FullSeason), which is exact for every legacy client
+    /// because WeekRange has never been submittable.
+    /// </summary>
+    public string? LeagueWindow { get; set; }
+
     public int? DropLowWeeksCount { get; set; }
 
     /// <summary>

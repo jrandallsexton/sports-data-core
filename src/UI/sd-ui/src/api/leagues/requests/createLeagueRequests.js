@@ -72,6 +72,18 @@ const buildShared = ({
   isPublic,
   // BE enum name; absent/null falls back to Open server-side.
   joinPolicy: joinPolicy || "Open",
+  // Explicit window shape — the BE stores this rather than inferring it
+  // from the dates. Mapping matches the form's duration modes.
+  //
+  // "weeks" is DELIBERATELY sent as WeekRange even though buildWindow can't
+  // yet resolve its date bounds (the create form blocks submission upstream).
+  // If it ever slips through, the BE validator rejects the window/dates
+  // mismatch loudly — strictly better than the pre-LeagueWindow behavior,
+  // where null bounds silently created a mislabeled FullSeason league.
+  leagueWindow:
+    durationMode === "dates" ? "DateRange"
+    : durationMode === "weeks" ? "WeekRange"
+    : "FullSeason",
   dropLowWeeksCount: toNonNegativeInt(dropLowWeeksCount),
   ...buildWindow({ durationMode, startsOn, endsOn }),
 });

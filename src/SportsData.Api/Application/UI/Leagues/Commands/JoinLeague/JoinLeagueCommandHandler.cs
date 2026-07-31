@@ -66,11 +66,31 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.JoinLeague
                     ResultStatus.Validation,
                     [new ValidationFailure(nameof(command.PickemGroupId), "This league's season has ended.")]);
 
-            if (league.JoinPolicy == JoinPolicy.CloseAtFirstGame)
+            // The stored expiry (LeagueJoinExpiryCalculator's output) is the
+            // authority — it covers drop-week windows and Open leagues' last
+            // pickable moment, which the policy alone cannot express.
+            if (league.InvitationsExpireUtc is not null)
             {
-                // Derived at join time, never stored: kickoff times move after
-                // slates generate. An empty slate (built asynchronously after
-                // creation) yields null — nothing has started, league is open.
+                if (league.InvitationsExpireUtc <= _dateTimeProvider.UtcNow())
+                    return new Failure<Guid?>(
+                        command.PickemGroupId,
+                        ResultStatus.Validation,
+                        [new ValidationFailure(nameof(command.PickemGroupId), "This league is no longer accepting new members.")]);
+            }
+            else if (league.JoinPolicy == JoinPolicy.CloseAtFirstGame
+                && !(league.LeagueWindow == LeagueWindow.FullSeason && league.DropLowWeeksCount is > 0))
+            {
+                // The drop-week exclusion mirrors LeagueJoinExpiryCalculator:
+                // a FullSeason league with drop weeks stays open through week
+                // N+1 REGARDLESS of the CloseAtFirstGame choice, so the
+                // first-game fallback would wrongly reject during that window.
+                // For those leagues an uncomputed expiry means "open" -- the
+                // creation-event trigger fills it within seconds.
+
+                // Fallback while the expiry is uncomputed (fresh league whose
+                // slate is still building, or pre-backfill rows before the
+                // sweep runs): derive first-game start directly, exactly as
+                // the calculator would.
                 var firstGameUtc = await _dbContext.PickemGroupMatchups
                     .AsNoTracking()
                     .Where(m => m.GroupId == league.Id)

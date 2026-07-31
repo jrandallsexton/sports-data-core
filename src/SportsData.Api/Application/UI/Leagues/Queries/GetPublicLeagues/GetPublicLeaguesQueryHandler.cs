@@ -35,9 +35,7 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
     {
         _logger.LogDebug("Getting public leagues for user {UserId}", query.UserId);
 
-        // Deactivated leagues are finished seasons — never browsable. Closed
-        // ones ARE returned (badged unjoinable) so a nearly-started league
-        // still advertises itself.
+        // Deactivated leagues are finished seasons — never browsable.
         var leagues = await _dbContext.PickemGroups
             .AsNoTracking()
             .Where(g => g.IsPublic
@@ -58,10 +56,13 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
                 x.SeasonYear,
                 x.StartsOn,
                 x.EndsOn,
+                x.TiebreakerType,
+                x.TiebreakerTiePolicy,
+                x.LeagueWindow,
                 x.JoinPolicy,
+                x.InvitationsExpireUtc,
                 MemberCount = x.Members.Count,
-                // Derived, never stored: kickoff times move after slates
-                // generate. Null when the slate hasn't been built yet.
+                // Fallback for rows the expiry sweep hasn't reached yet.
                 FirstGameUtc = _dbContext.PickemGroupMatchups
                     .Where(m => m.GroupId == x.Id)
                     .Select(m => (DateTime?)m.StartDateUtc)
@@ -72,7 +73,16 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
         var now = _dateTimeProvider.UtcNow();
         var result = leagues.Select(x =>
         {
-            var closesAtUtc = x.JoinPolicy == JoinPolicy.CloseAtFirstGame ? x.FirstGameUtc : null;
+            // Stored expiry is the authority; derived first-game only covers
+            // the uncomputed gap for CloseAtFirstGame leagues -- and NOT for
+            // FullSeason+drop-week leagues, where the calculator's week-(N+1)
+            // override applies and first-game would be wrong. Uncomputed
+            // there means "open"; the creation trigger fills it in seconds.
+            var dropWeekOverride = x.LeagueWindow == LeagueWindow.FullSeason
+                && x.DropLowWeeksCount is > 0;
+            var closesAtUtc = x.InvitationsExpireUtc
+                ?? (x.JoinPolicy == JoinPolicy.CloseAtFirstGame && !dropWeekOverride
+                    ? x.FirstGameUtc : null);
             return new PublicLeagueDto
             {
                 Id = x.Id,
@@ -83,6 +93,8 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
                 PickType = (int)x.PickType,
                 UseConfidencePoints = x.UseConfidencePoints,
                 DropLowWeeksCount = x.DropLowWeeksCount ?? 0,
+                TiebreakerType = x.TiebreakerType.ToString(),
+                TiebreakerTiePolicy = x.TiebreakerTiePolicy.ToString(),
                 Sport = x.Sport,
                 League = x.League,
                 SeasonYear = x.SeasonYear,
@@ -93,7 +105,15 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
                 ClosesAtUtc = closesAtUtc,
                 IsJoinable = closesAtUtc is null || closesAtUtc > now
             };
-        }).ToList();
+        })
+        // Browse answers "what can I join?" — expired leagues are noise, not
+        // advertising. (v1 badged them instead; superseded once stored
+        // expiries made ended-but-not-yet-deactivated leagues evaluate as
+        // closed, which filled the page with unjoinable rows. Urgency for
+        // soon-closing leagues is the countdown's job.) IsJoinable stays on
+        // the DTO as a belt-and-braces signal for clients.
+        .Where(x => x.IsJoinable)
+        .ToList();
 
         _logger.LogInformation(
             "Found {Count} public leagues for user {UserId}",

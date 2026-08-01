@@ -8,6 +8,13 @@ public record TeamCardScheduleItemDto
 
     public int Week { get; init; }
 
+    /// <summary>
+    /// Season phase name ("Preseason", "Regular Season", "Postseason").
+    /// Week numbers restart per phase, so this disambiguates and lets the UI
+    /// group the schedule by phase.
+    /// </summary>
+    public string SeasonPhase { get; init; } = default!;
+
     public DateTime Date { get; init; }
 
     public string Opponent { get; init; } = default!;

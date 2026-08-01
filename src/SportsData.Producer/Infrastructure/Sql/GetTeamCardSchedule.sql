@@ -1,6 +1,7 @@
 SELECT
     C."Id" AS "ContestId",
     sw."Number" AS "Week",
+    sp."Name" AS "SeasonPhase",
     C."StartDateUtc" AS "Date",
     CASE
         WHEN fAway."Slug" = @Slug THEN fHome."DisplayName"
@@ -34,6 +35,7 @@ FROM public."Contest" C
 INNER JOIN public."Competition" COMP on COMP."ContestId" = C."Id"
 INNER JOIN public."CompetitionStatus" CS on CS."CompetitionId" = COMP."Id"
 INNER JOIN public."SeasonWeek" SW on SW."Id" = C."SeasonWeekId"
+INNER JOIN public."SeasonPhase" SP on SP."Id" = SW."SeasonPhaseId"
 INNER JOIN public."FranchiseSeason" fsAway on fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 INNER JOIN public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fAway on fAway."Id" = fsAway."FranchiseId"

@@ -1,4 +1,5 @@
 // src/components/teams/TeamSchedule.jsx
+import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import { formatToUserTime, getZoneAbbreviation, getStartLabel } from "../../utils/timeUtils";
 import { useUserTimeZone } from "../../hooks/useUserTimeZone";
@@ -7,8 +8,18 @@ import "./TeamSchedule.css";
 
 function TeamSchedule({ schedule, seasonYear, sport = 'football', league = 'ncaa' }) {
   const userTz = useUserTimeZone();
-  const zoneAbbrev = getZoneAbbreviation(userTz);
   const startLabel = getStartLabel(sport);
+
+  // Per-game kickoff label: the calendar/time plus the zone abbreviation for
+  // THAT date. A single season-wide header abbreviation is wrong — a season
+  // spans the DST switch, so an August game is EDT and a December game EST.
+  // Midnight ("TBD") carries no meaningful clock zone, so the abbrev is
+  // suppressed there.
+  const kickoffLabel = (game) => {
+    const time = formatToUserTime(game.date, userTz);
+    if (time.endsWith("TBD")) return time;
+    return `${time} ${getZoneAbbreviation(userTz, game.date)}`;
+  };
   // Helper function to format game result
   const formatGameResult = (game) => {
     if (game.status === "STATUS_FINAL") {
@@ -36,7 +47,9 @@ function TeamSchedule({ schedule, seasonYear, sport = 'football', league = 'ncaa
       <table>
         <thead>
           <tr>
-            <th>{startLabel} ({zoneAbbrev})</th>
+            {/* No zone abbreviation here — it's per-row, because the season
+                crosses the DST boundary (see kickoffLabel). */}
+            <th>{startLabel}</th>
             <th>Opponent</th>
             <th>Location</th>
             <th>Result</th>
@@ -44,32 +57,47 @@ function TeamSchedule({ schedule, seasonYear, sport = 'football', league = 'ncaa
         </thead>
         <tbody>
           {schedule?.length ? (
-            schedule.map((game, idx) => (
-              <tr key={idx}>
-                <td>{formatToUserTime(game.date, userTz)}</td>
-                <td>
-                  <Link
-                    to={teamLink(game.opponentSlug, seasonYear, sport, league)}
-                    className="team-link"
-                  >
-                    {game.opponent}
-                  </Link>
-                </td>
-                <td>{game.location}</td>
-                <td className={getResultClass(game)}>
-                  {game.contestId ? (
-                    <Link
-                      to={contestLink(game.contestId, sport, league)}
-                      className="result-link"
-                    >
-                      {formatGameResult(game)}
-                    </Link>
-                  ) : (
-                    formatGameResult(game)
+            schedule.map((game, idx) => {
+              // Schedule is date-ordered and phases are chronologically
+              // contiguous (Preseason -> Regular Season -> Postseason), so a
+              // phase-changed check emits one section header per phase.
+              const prevPhase = idx > 0 ? schedule[idx - 1].seasonPhase : null;
+              const showPhaseHeader =
+                game.seasonPhase && game.seasonPhase !== prevPhase;
+              return (
+                <Fragment key={game.contestId ?? idx}>
+                  {showPhaseHeader && (
+                    <tr className="schedule-phase-row">
+                      <th colSpan="4" scope="colgroup">{game.seasonPhase}</th>
+                    </tr>
                   )}
-                </td>
-              </tr>
-            ))
+                  <tr>
+                    <td>{kickoffLabel(game)}</td>
+                    <td>
+                      <Link
+                        to={teamLink(game.opponentSlug, seasonYear, sport, league)}
+                        className="team-link"
+                      >
+                        {game.opponent}
+                      </Link>
+                    </td>
+                    <td>{game.location}</td>
+                    <td className={getResultClass(game)}>
+                      {game.contestId ? (
+                        <Link
+                          to={contestLink(game.contestId, sport, league)}
+                          className="result-link"
+                        >
+                          {formatGameResult(game)}
+                        </Link>
+                      ) : (
+                        formatGameResult(game)
+                      )}
+                    </td>
+                  </tr>
+                </Fragment>
+              );
+            })
           ) : (
             <tr>
               {/* 4 columns in header → 4 here */}

@@ -36,19 +36,22 @@ public class RequestFranchiseSeasonSourcingCommandHandler : IRequestFranchiseSea
     private readonly IEventBus _eventBus;
     private readonly IGenerateExternalRefIdentities _externalRefIdentityGenerator;
     private readonly IValidator<RequestFranchiseSeasonSourcingCommand> _validator;
+    private readonly IMessageDeliveryScope _deliveryScope;
 
     public RequestFranchiseSeasonSourcingCommandHandler(
         ILogger<RequestFranchiseSeasonSourcingCommandHandler> logger,
         TeamSportDataContext dataContext,
         IEventBus eventBus,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IValidator<RequestFranchiseSeasonSourcingCommand> validator)
+        IValidator<RequestFranchiseSeasonSourcingCommand> validator,
+        IMessageDeliveryScope deliveryScope)
     {
         _logger = logger;
         _dataContext = dataContext;
         _eventBus = eventBus;
         _externalRefIdentityGenerator = externalRefIdentityGenerator;
         _validator = validator;
+        _deliveryScope = deliveryScope;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -79,49 +82,71 @@ public class RequestFranchiseSeasonSourcingCommandHandler : IRequestFranchiseSea
         var correlationId = Guid.NewGuid();
         var requested = 0;
         var skipped = 0;
+        var failed = 0;
 
-        foreach (var fs in franchiseSeasons)
+        // Direct delivery, NOT the bus-outbox: this handler only READS
+        // (AsNoTracking) and writes no entity, so SaveChangesAsync would have
+        // nothing to persist and would never flush the outbox — the events
+        // would be enqueued into the tracker and silently dropped. Publish
+        // straight to the broker instead. See
+        // feedback_direct_publish_no_dbcontext / AdminController's
+        // BroadcastDebugContestStatus.
+        using (_deliveryScope.Use(DeliveryMode.Direct))
         {
-            var externalId = fs.ExternalIds
-                .FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
-
-            if (externalId is null || string.IsNullOrWhiteSpace(externalId.SourceUrl) ||
-                !Uri.TryCreate(externalId.SourceUrl, UriKind.Absolute, out var sourceUrl))
+            foreach (var fs in franchiseSeasons)
             {
-                // Log-and-continue: one franchise's missing/garbage ref must
-                // not stop the other 31. The count surfaces in the summary.
-                _logger.LogWarning(
-                    "Skipping franchise season {FranchiseSeasonId}: no usable ESPN SourceUrl. SeasonYear={SeasonYear}",
-                    fs.Id, command.SeasonYear);
-                skipped++;
-                continue;
+                var externalId = fs.ExternalIds
+                    .FirstOrDefault(x => x.Provider == SourceDataProvider.Espn);
+
+                if (externalId is null || string.IsNullOrWhiteSpace(externalId.SourceUrl) ||
+                    !Uri.TryCreate(externalId.SourceUrl, UriKind.Absolute, out var sourceUrl))
+                {
+                    // Log-and-continue: one franchise's missing/garbage ref must
+                    // not stop the other 31. The count surfaces in the summary.
+                    _logger.LogWarning(
+                        "Skipping franchise season {FranchiseSeasonId}: no usable ESPN SourceUrl. SeasonYear={SeasonYear}",
+                        fs.Id, command.SeasonYear);
+                    skipped++;
+                    continue;
+                }
+
+                var identity = _externalRefIdentityGenerator.Generate(sourceUrl);
+
+                try
+                {
+                    await _eventBus.Publish(new DocumentRequested(
+                        Id: identity.UrlHash,
+                        ParentId: fs.Id.ToString(),
+                        Uri: new Uri(identity.CleanUrl),
+                        Ref: null,
+                        Sport: command.Sport,
+                        SeasonYear: command.SeasonYear,
+                        DocumentType: DocumentType.TeamSeason,
+                        SourceDataProvider: SourceDataProvider.Espn,
+                        CorrelationId: correlationId,
+                        CausationId: CausationId.Producer.FranchiseSeasonService
+                    ), cancellationToken);
+
+                    requested++;
+                }
+                catch (Exception ex)
+                {
+                    // Same log-and-continue contract as the missing-ref skip: a
+                    // broker hiccup on one franchise must not abandon the rest
+                    // of the batch (and the correlation id). Under at-least-once
+                    // this is safe to re-request — a later re-run publishes the
+                    // same idempotent DocumentRequested for the failed ones.
+                    _logger.LogError(ex,
+                        "Failed to publish sourcing request for franchise season {FranchiseSeasonId}. SeasonYear={SeasonYear}",
+                        fs.Id, command.SeasonYear);
+                    failed++;
+                }
             }
-
-            var identity = _externalRefIdentityGenerator.Generate(sourceUrl);
-
-            await _eventBus.Publish(new DocumentRequested(
-                Id: identity.UrlHash,
-                ParentId: fs.Id.ToString(),
-                Uri: new Uri(identity.CleanUrl),
-                Ref: null,
-                Sport: command.Sport,
-                SeasonYear: command.SeasonYear,
-                DocumentType: DocumentType.TeamSeason,
-                SourceDataProvider: SourceDataProvider.Espn,
-                CorrelationId: correlationId,
-                CausationId: CausationId.Producer.FranchiseSeasonService
-            ), cancellationToken);
-
-            requested++;
         }
 
-        // Flush the outbox: with the EF outbox, Publish only enqueues into the
-        // DbContext tracker — SaveChangesAsync persists and dispatches.
-        await _dataContext.SaveChangesAsync(cancellationToken);
-
         _logger.LogInformation(
-            "FranchiseSeason sourcing requested. SeasonYear={SeasonYear}, Sport={Sport}, Requested={Requested}, Skipped={Skipped}, CorrelationId={CorrelationId}",
-            command.SeasonYear, command.Sport, requested, skipped, correlationId);
+            "FranchiseSeason sourcing requested. SeasonYear={SeasonYear}, Sport={Sport}, Requested={Requested}, Skipped={Skipped}, Failed={Failed}, CorrelationId={CorrelationId}",
+            command.SeasonYear, command.Sport, requested, skipped, failed, correlationId);
 
         return new Success<Guid>(correlationId, ResultStatus.Accepted);
     }

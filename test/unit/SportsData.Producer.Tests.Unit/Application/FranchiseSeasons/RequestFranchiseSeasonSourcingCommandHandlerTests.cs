@@ -98,6 +98,11 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
                 Guid.NewGuid(),
                 u.ToString().GetHashCode().ToString("X"),
                 u.ToString()));
+        // Direct delivery is required (read-only handler; the bus-outbox would
+        // never flush). Return a real disposable so `using` is safe.
+        Mocker.GetMock<IMessageDeliveryScope>()
+            .Setup(x => x.Use(It.IsAny<DeliveryMode>()))
+            .Returns(new NoopDisposable());
         return Mocker.CreateInstance<RequestFranchiseSeasonSourcingCommandHandler>();
     }
 
@@ -127,6 +132,17 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
 
         // One batch, one correlation id — the stated Seq handle for the run.
         published.Select(e => e.CorrelationId).Distinct().Should().ContainSingle();
+
+        // Direct delivery, not the bus-outbox — this handler saves nothing, so
+        // the outbox would silently swallow the events (the prod bug that let
+        // Producer log 202 while Provider received nothing).
+        Mocker.GetMock<IMessageDeliveryScope>()
+            .Verify(x => x.Use(DeliveryMode.Direct), Times.Once);
+    }
+
+    private sealed class NoopDisposable : IDisposable
+    {
+        public void Dispose() { }
     }
 
     private static bool CaptureAndMatch(List<DocumentRequested> sink, DocumentRequested e)
@@ -156,6 +172,29 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
         Mocker.GetMock<IEventBus>().Verify(
             x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task PublishFailure_ForOneSeason_DoesNotAbandonTheBatch()
+    {
+        await SeedFranchiseSeasonAsync("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/1");
+        await SeedFranchiseSeasonAsync("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/2");
+
+        // First publish throws (broker hiccup), the second succeeds.
+        Mocker.GetMock<IEventBus>()
+            .SetupSequence(x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("broker hiccup"))
+            .Returns(Task.CompletedTask);
+
+        var result = await CreateHandler().ExecuteAsync(
+            new RequestFranchiseSeasonSourcingCommand(SeasonYear, Sport.FootballNfl));
+
+        // The batch completes (correlation id preserved) and BOTH seasons were
+        // attempted -- a single failure must not strand the rest.
+        result.IsSuccess.Should().BeTrue();
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
     }
 
     [Fact]

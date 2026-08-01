@@ -85,7 +85,13 @@ function TeamCard() {
           <p className="team-conference">
             {team.conferenceName}{team.conferenceShortName ? ` (${team.conferenceShortName})` : ''}
           </p>
-          <p className="team-record">
+          {/* Parenthetical is the division record for pro leagues, conference
+              for college — the DTO field is named conferenceRecord for both.
+              Tooltip so a first-time viewer isn't left guessing. */}
+          <p
+            className="team-record"
+            title={`Overall record (${league?.toLowerCase() === "nfl" ? "Division" : "Conference"} record)`}
+          >
             {team.overallRecord} ({team.conferenceRecord})
           </p>
           <br/>

@@ -132,3 +132,17 @@
   .team-schedule td:nth-child(2):before { content: "Opponent: "; }
   .team-schedule td:nth-child(4):before { content: "Result: "; }
 }
+
+/* Season-phase section header inside the schedule table (Preseason /
+   Regular Season / Postseason). Week numbers restart per phase, so the
+   grouping disambiguates them. */
+.schedule-phase-row th {
+  text-align: left;
+  padding-top: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent-subtle);
+}

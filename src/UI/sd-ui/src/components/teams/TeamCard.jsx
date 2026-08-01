@@ -29,6 +29,14 @@ function TeamCard() {
 
   const resolvedSeason = seasonYear || new Date().getFullYear();
 
+  // Pro leagues stack teams into divisions; college into conferences. The
+  // record DTO field is `conferenceRecord` for both, so the label is chosen
+  // by league. Explicit set rather than an nfl-only check.
+  const DIVISION_LEAGUES = new Set(["nfl", "mlb", "nba"]);
+  const recordScope = DIVISION_LEAGUES.has((league ?? "").toLowerCase())
+    ? "Division"
+    : "Conference";
+
   useEffect(() => {
     const fetchTeam = async () => {
       try {
@@ -85,14 +93,17 @@ function TeamCard() {
           <p className="team-conference">
             {team.conferenceName}{team.conferenceShortName ? ` (${team.conferenceShortName})` : ''}
           </p>
-          {/* Parenthetical is the division record for pro leagues, conference
-              for college — the DTO field is named conferenceRecord for both.
-              Tooltip so a first-time viewer isn't left guessing. */}
-          <p
-            className="team-record"
-            title={`Overall record (${league?.toLowerCase() === "nfl" ? "Division" : "Conference"} record)`}
-          >
+          {/* The parenthetical record is the DIVISION standing for pro leagues
+              and the CONFERENCE standing for college — the DTO field is named
+              conferenceRecord for both. The visually-hidden span makes that
+              explicit for screen readers (a title on a non-focusable <p> is
+              inaccessible); title stays as a supplemental hover for mouse
+              users. */}
+          <p className="team-record" title={`Overall record (${recordScope} record)`}>
             {team.overallRecord} ({team.conferenceRecord})
+            <span className="visually-hidden">
+              {" "}— overall record and {recordScope.toLowerCase()} record
+            </span>
           </p>
           <br/>
           <p className="team-stadium">

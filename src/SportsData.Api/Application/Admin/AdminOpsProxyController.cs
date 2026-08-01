@@ -45,7 +45,7 @@ public class AdminOpsProxyController : ControllerBase
         private static readonly string[] ProducerPrefixes =
         [
             "franchise-seasons",
-            "competition",
+            "competitions",
             "contests"
         ];
 

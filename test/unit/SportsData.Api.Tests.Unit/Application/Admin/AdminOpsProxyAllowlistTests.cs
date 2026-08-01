@@ -15,7 +15,7 @@ public class AdminOpsProxyAllowlistTests
 {
     [Theory]
     [InlineData("producer", "franchise-seasons/seasonYear/2026/source")]
-    [InlineData("producer", "competition/123/metrics")]
+    [InlineData("producer", "competitions/123/metrics")]
     [InlineData("producer", "contests/refresh")]
     [InlineData("producer", "contests")]
     [InlineData("PRODUCER", "Franchise-Seasons/x")]

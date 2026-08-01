@@ -98,6 +98,11 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
                 Guid.NewGuid(),
                 u.ToString().GetHashCode().ToString("X"),
                 u.ToString()));
+        // Direct delivery is required (read-only handler; the bus-outbox would
+        // never flush). Return a real disposable so `using` is safe.
+        Mocker.GetMock<IMessageDeliveryScope>()
+            .Setup(x => x.Use(It.IsAny<DeliveryMode>()))
+            .Returns(new NoopDisposable());
         return Mocker.CreateInstance<RequestFranchiseSeasonSourcingCommandHandler>();
     }
 
@@ -127,6 +132,17 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
 
         // One batch, one correlation id — the stated Seq handle for the run.
         published.Select(e => e.CorrelationId).Distinct().Should().ContainSingle();
+
+        // Direct delivery, not the bus-outbox — this handler saves nothing, so
+        // the outbox would silently swallow the events (the prod bug that let
+        // Producer log 202 while Provider received nothing).
+        Mocker.GetMock<IMessageDeliveryScope>()
+            .Verify(x => x.Use(DeliveryMode.Direct), Times.Once);
+    }
+
+    private sealed class NoopDisposable : IDisposable
+    {
+        public void Dispose() { }
     }
 
     private static bool CaptureAndMatch(List<DocumentRequested> sink, DocumentRequested e)

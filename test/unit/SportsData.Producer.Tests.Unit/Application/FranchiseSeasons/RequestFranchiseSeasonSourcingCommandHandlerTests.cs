@@ -175,6 +175,29 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
     }
 
     [Fact]
+    public async Task PublishFailure_ForOneSeason_DoesNotAbandonTheBatch()
+    {
+        await SeedFranchiseSeasonAsync("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/1");
+        await SeedFranchiseSeasonAsync("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/2");
+
+        // First publish throws (broker hiccup), the second succeeds.
+        Mocker.GetMock<IEventBus>()
+            .SetupSequence(x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("broker hiccup"))
+            .Returns(Task.CompletedTask);
+
+        var result = await CreateHandler().ExecuteAsync(
+            new RequestFranchiseSeasonSourcingCommand(SeasonYear, Sport.FootballNfl));
+
+        // The batch completes (correlation id preserved) and BOTH seasons were
+        // attempted -- a single failure must not strand the rest.
+        result.IsSuccess.Should().BeTrue();
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
+    }
+
+    [Fact]
     public async Task SkipsFranchiseSeasonsWithoutUsableRef_ContinuesBatch()
     {
         await SeedFranchiseSeasonAsync("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/1");

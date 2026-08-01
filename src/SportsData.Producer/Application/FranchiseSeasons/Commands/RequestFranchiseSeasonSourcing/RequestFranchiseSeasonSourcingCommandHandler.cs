@@ -82,6 +82,7 @@ public class RequestFranchiseSeasonSourcingCommandHandler : IRequestFranchiseSea
         var correlationId = Guid.NewGuid();
         var requested = 0;
         var skipped = 0;
+        var failed = 0;
 
         // Direct delivery, NOT the bus-outbox: this handler only READS
         // (AsNoTracking) and writes no entity, so SaveChangesAsync would have
@@ -111,26 +112,41 @@ public class RequestFranchiseSeasonSourcingCommandHandler : IRequestFranchiseSea
 
                 var identity = _externalRefIdentityGenerator.Generate(sourceUrl);
 
-                await _eventBus.Publish(new DocumentRequested(
-                    Id: identity.UrlHash,
-                    ParentId: fs.Id.ToString(),
-                    Uri: new Uri(identity.CleanUrl),
-                    Ref: null,
-                    Sport: command.Sport,
-                    SeasonYear: command.SeasonYear,
-                    DocumentType: DocumentType.TeamSeason,
-                    SourceDataProvider: SourceDataProvider.Espn,
-                    CorrelationId: correlationId,
-                    CausationId: CausationId.Producer.FranchiseSeasonService
-                ), cancellationToken);
+                try
+                {
+                    await _eventBus.Publish(new DocumentRequested(
+                        Id: identity.UrlHash,
+                        ParentId: fs.Id.ToString(),
+                        Uri: new Uri(identity.CleanUrl),
+                        Ref: null,
+                        Sport: command.Sport,
+                        SeasonYear: command.SeasonYear,
+                        DocumentType: DocumentType.TeamSeason,
+                        SourceDataProvider: SourceDataProvider.Espn,
+                        CorrelationId: correlationId,
+                        CausationId: CausationId.Producer.FranchiseSeasonService
+                    ), cancellationToken);
 
-                requested++;
+                    requested++;
+                }
+                catch (Exception ex)
+                {
+                    // Same log-and-continue contract as the missing-ref skip: a
+                    // broker hiccup on one franchise must not abandon the rest
+                    // of the batch (and the correlation id). Under at-least-once
+                    // this is safe to re-request — a later re-run publishes the
+                    // same idempotent DocumentRequested for the failed ones.
+                    _logger.LogError(ex,
+                        "Failed to publish sourcing request for franchise season {FranchiseSeasonId}. SeasonYear={SeasonYear}",
+                        fs.Id, command.SeasonYear);
+                    failed++;
+                }
             }
         }
 
         _logger.LogInformation(
-            "FranchiseSeason sourcing requested. SeasonYear={SeasonYear}, Sport={Sport}, Requested={Requested}, Skipped={Skipped}, CorrelationId={CorrelationId}",
-            command.SeasonYear, command.Sport, requested, skipped, correlationId);
+            "FranchiseSeason sourcing requested. SeasonYear={SeasonYear}, Sport={Sport}, Requested={Requested}, Skipped={Skipped}, Failed={Failed}, CorrelationId={CorrelationId}",
+            command.SeasonYear, command.Sport, requested, skipped, failed, correlationId);
 
         return new Success<Guid>(correlationId, ResultStatus.Accepted);
     }

@@ -1,14 +1,16 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import { Text } from '@/src/components/ui/AppText';
 import { Button } from '@/src/components/ui/Button';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { leaguesApi, leaguesKeys } from '@/src/services/api/leaguesApi';
-import { standingsKeys } from '@/src/hooks/useStandings';
+import { JoinClosesLabel } from '@/src/components/features/leagues/JoinClosesLabel';
+import { useJoinLeagueMutation } from '@/src/hooks/useJoinLeagueMutation';
+import { useLiveJoinState } from '@/src/components/features/leagues/useLiveJoinState';
 
 // League ids are GUIDs. Used to reject malformed/array-like route params
 // before any request is built.
@@ -26,7 +28,6 @@ export default function LeagueInviteScreen() {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const router = useRouter();
-  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ leagueId?: string | string[] }>();
   // Route params can arrive as undefined or an array (duplicate keys); only a
   // single, GUID-shaped string is a real league id. Anything else stays
@@ -47,15 +48,16 @@ export default function LeagueInviteScreen() {
     queryFn: async () => (await leaguesApi.getLeagueById(leagueId!)).data,
   });
 
-  const joinMutation = useMutation({
-    mutationFn: () => leaguesApi.joinLeague(leagueId!),
-    onSuccess: async () => {
-      // Refresh /user/me so the just-joined league appears in the leagues
-      // list the picks screen selects from.
-      await queryClient.invalidateQueries({ queryKey: standingsKeys.me });
-      router.replace({ pathname: '/(tabs)/picks', params: { leagueId } } as never);
-    },
+  // Shared hook: invalidates discovery + My Leagues + /user/me, so a join
+  // here also drops the league from the public browse list.
+  const joinMutation = useJoinLeagueMutation((id) => {
+    router.replace({ pathname: '/(tabs)/picks', params: { leagueId: id } } as never);
   });
+
+  // Live join state — a shared invite link can outlive the join window, and it
+  // can also expire WHILE this screen is open. Both must block the join.
+  const joinState = useLiveJoinState(league?.closesAtUtc ?? null, league?.isJoinable ?? true);
+  const closed = joinState.kind === 'closed';
 
   const dismiss = () => {
     if (router.canGoBack()) router.back();
@@ -100,16 +102,32 @@ export default function LeagueInviteScreen() {
               <Text style={[styles.metaRow, { color: theme.textMuted }]}>
                 {league.isPublic ? 'Public league' : 'Private league'}
               </Text>
+              <JoinClosesLabel
+                closesAtUtc={league.closesAtUtc}
+                isJoinable={league.isJoinable}
+                style={styles.metaRow}
+              />
             </View>
 
-            <View style={styles.actions}>
-              <Button
-                title={joinMutation.isPending ? 'Joining…' : 'Join League'}
-                onPress={() => joinMutation.mutate()}
-                loading={joinMutation.isPending}
-              />
-              <Button title="Not now" variant="ghost" onPress={dismiss} />
-            </View>
+            {closed ? (
+              // The join window has passed (or elapsed while this screen was
+              // open) — the BE gate would reject the join, so don't offer it.
+              <View style={styles.actions}>
+                <Text style={[styles.subtitle, { color: theme.textMuted }]}>
+                  This league is no longer accepting new members.
+                </Text>
+                <Button title="Close" variant="secondary" onPress={dismiss} />
+              </View>
+            ) : (
+              <View style={styles.actions}>
+                <Button
+                  title={joinMutation.isPending ? 'Joining…' : 'Join League'}
+                  onPress={() => joinMutation.mutate(leagueId!)}
+                  loading={joinMutation.isPending}
+                />
+                <Button title="Not now" variant="ghost" onPress={dismiss} />
+              </View>
+            )}
 
             {joinMutation.isError ? (
               <Text style={[styles.errorText, { color: theme.error }]}>

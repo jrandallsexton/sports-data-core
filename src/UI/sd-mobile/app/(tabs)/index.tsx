@@ -8,6 +8,7 @@ import { getLeagues } from '@/src/lib/leagues';
 import { PrimarySlotNewUser } from '@/src/components/features/home/PrimarySlotNewUser';
 import { PrimarySlotOffSeasonCountdown } from '@/src/components/features/home/PrimarySlotOffSeasonCountdown';
 import { YourLeaguesCard } from '@/src/components/features/home/YourLeaguesCard';
+import { JoinableLeaguesCard } from '@/src/components/features/home/JoinableLeaguesCard';
 
 /**
  * Post-login landing — mirrors web's HomePage (PR #272 / docs/post-login-landing-design.md).
@@ -79,6 +80,11 @@ export default function HomeScreen() {
       ) : (
         <PrimarySlotNewUser />
       )}
+
+      {/* Tier 3 — public-league discovery. Rendered for every user (self-nulls
+          when nothing is joinable), so a league-less user lands on actionable
+          joins rather than only the new-user slot. Web parity: HomePage. */}
+      <JoinableLeaguesCard />
     </ScrollView>
   );
 }

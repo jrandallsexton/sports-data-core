@@ -16,7 +16,7 @@ namespace SportsData.Api.Application.Admin;
 /// surface); this is the deliberate, bounded re-exposure: one route, admin
 /// token required, an explicit path allowlist, GET/POST only.
 ///
-///   POST /admin/ops/producer/football/nfl/api/franchise-seasons/seasonYear/2026/source
+///   POST /admin/ops/producer/football/nfl/franchise-seasons/seasonYear/2026/source
 ///
 /// New op FAMILIES are one allowlist line; new endpoints inside an allowed
 /// family need nothing at all. Sport/league resolve via ModeMapper (the house
@@ -37,16 +37,21 @@ public class AdminOpsProxyController : ControllerBase
     /// </summary>
     public static class Allowlist
     {
+        // Resource-relative, NOT "api/..."-prefixed: the configured base URL
+        // is the service's API ROOT (it already ends in /api, the same
+        // convention the typed clients use), so the relayed target is
+        // composed relative to it. A leading "api/" here would double the
+        // segment (base/api + api/... = /api/api/...) and 404 upstream.
         private static readonly string[] ProducerPrefixes =
         [
-            "api/franchise-seasons",
-            "api/competition",
-            "api/contests"
+            "franchise-seasons",
+            "competition",
+            "contests"
         ];
 
         private static readonly string[] ProviderPrefixes =
         [
-            "api/documents"
+            "documents"
         ];
 
         public static bool IsAllowed(string service, string path)

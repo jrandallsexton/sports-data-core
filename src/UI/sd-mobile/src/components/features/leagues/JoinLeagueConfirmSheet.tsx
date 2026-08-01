@@ -1,13 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Modal, View, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Text } from '@/src/components/ui/AppText';
 import { Button } from '@/src/components/ui/Button';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
-import { leaguesApi, leaguesKeys, type PublicLeague } from '@/src/services/api/leaguesApi';
-import { standingsKeys } from '@/src/hooks/useStandings';
+import { type PublicLeague } from '@/src/services/api/leaguesApi';
+import { useJoinLeagueMutation } from '@/src/hooks/useJoinLeagueMutation';
 import { JoinClosesLabel } from './JoinClosesLabel';
 import {
   SPORT_LABEL,
@@ -33,18 +32,18 @@ interface Props {
 export function JoinLeagueConfirmSheet({ league, onCancel, onJoined }: Props) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
-  const queryClient = useQueryClient();
 
-  const joinMutation = useMutation({
-    mutationFn: () => leaguesApi.joinLeague(league!.id),
-    onSuccess: async () => {
-      // The joined league leaves discovery and enters My Leagues/standings.
-      await queryClient.invalidateQueries({ queryKey: leaguesKeys.public });
-      await queryClient.invalidateQueries({ queryKey: leaguesKeys.mine });
-      await queryClient.invalidateQueries({ queryKey: standingsKeys.me });
-      if (league) onJoined(league);
-    },
+  const joinMutation = useJoinLeagueMutation(() => {
+    if (league) onJoined(league);
   });
+
+  // The sheet is a single persistent component reused across leagues; only the
+  // `league` prop changes. Reset the mutation when the target changes so a
+  // prior failure's error doesn't bleed into the next league's sheet.
+  useEffect(() => {
+    joinMutation.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [league?.id]);
 
   const Row = ({ label, value }: { label: string; value: string }) => (
     <View style={styles.row}>
@@ -111,7 +110,7 @@ export function JoinLeagueConfirmSheet({ league, onCancel, onJoined }: Props) {
                 <Button title="Cancel" variant="ghost" onPress={onCancel} />
                 <Button
                   title={joinMutation.isPending ? 'Joining…' : 'Join'}
-                  onPress={() => joinMutation.mutate()}
+                  onPress={() => joinMutation.mutate(league.id)}
                   loading={joinMutation.isPending}
                 />
               </View>

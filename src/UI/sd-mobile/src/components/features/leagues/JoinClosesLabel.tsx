@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import type { StyleProp, TextStyle } from 'react-native';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
@@ -11,7 +12,7 @@ const TICK_MS = 60 * 1000;
 interface Props {
   closesAtUtc: string | null | undefined;
   isJoinable: boolean;
-  style?: object;
+  style?: StyleProp<TextStyle>;
 }
 
 /**
@@ -43,12 +44,8 @@ export function JoinClosesLabel({ closesAtUtc, isJoinable, style }: Props) {
   }, [closesMs, inCountdown, remaining]);
 
   const state = joinClosesState(closesAtUtc, isJoinable, now);
-  const color =
-    state.kind === 'countdown'
-      ? theme.tint
-      : state.kind === 'closed'
-        ? theme.textMuted
-        : theme.textMuted;
+  // Countdown draws attention; every other state is muted.
+  const color = state.kind === 'countdown' ? theme.tint : theme.textMuted;
 
   return <Text style={[{ color, fontWeight: state.kind === 'countdown' ? '600' : '400' }, style]}>{state.text}</Text>;
 }

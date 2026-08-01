@@ -36,6 +36,14 @@ describe('joinClosesState', () => {
     expect(s.text.startsWith('Closes ')).toBe(true);
     expect(s.text).not.toContain('in ');
   });
+
+  it('treats exactly the 10-day boundary as a countdown', () => {
+    expect(joinClosesState(iso(10 * DAY), true, NOW).kind).toBe('countdown');
+  });
+
+  it('falls back to Open on an unparseable close instant', () => {
+    expect(joinClosesState('not-a-date', true, NOW)).toEqual({ text: 'Open', kind: 'open' });
+  });
 });
 
 describe('formatRemaining', () => {

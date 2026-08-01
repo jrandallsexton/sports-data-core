@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import { Text } from '@/src/components/ui/AppText';
 import { Button } from '@/src/components/ui/Button';
@@ -9,7 +9,7 @@ import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { leaguesApi, leaguesKeys } from '@/src/services/api/leaguesApi';
 import { JoinClosesLabel } from '@/src/components/features/leagues/JoinClosesLabel';
-import { standingsKeys } from '@/src/hooks/useStandings';
+import { useJoinLeagueMutation } from '@/src/hooks/useJoinLeagueMutation';
 
 // League ids are GUIDs. Used to reject malformed/array-like route params
 // before any request is built.
@@ -27,7 +27,6 @@ export default function LeagueInviteScreen() {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const router = useRouter();
-  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ leagueId?: string | string[] }>();
   // Route params can arrive as undefined or an array (duplicate keys); only a
   // single, GUID-shaped string is a real league id. Anything else stays
@@ -48,14 +47,10 @@ export default function LeagueInviteScreen() {
     queryFn: async () => (await leaguesApi.getLeagueById(leagueId!)).data,
   });
 
-  const joinMutation = useMutation({
-    mutationFn: () => leaguesApi.joinLeague(leagueId!),
-    onSuccess: async () => {
-      // Refresh /user/me so the just-joined league appears in the leagues
-      // list the picks screen selects from.
-      await queryClient.invalidateQueries({ queryKey: standingsKeys.me });
-      router.replace({ pathname: '/(tabs)/picks', params: { leagueId } } as never);
-    },
+  // Shared hook: invalidates discovery + My Leagues + /user/me, so a join
+  // here also drops the league from the public browse list.
+  const joinMutation = useJoinLeagueMutation((id) => {
+    router.replace({ pathname: '/(tabs)/picks', params: { leagueId: id } } as never);
   });
 
   const dismiss = () => {
@@ -121,7 +116,7 @@ export default function LeagueInviteScreen() {
               <View style={styles.actions}>
                 <Button
                   title={joinMutation.isPending ? 'Joining…' : 'Join League'}
-                  onPress={() => joinMutation.mutate()}
+                  onPress={() => joinMutation.mutate(leagueId!)}
                   loading={joinMutation.isPending}
                 />
                 <Button title="Not now" variant="ghost" onPress={dismiss} />

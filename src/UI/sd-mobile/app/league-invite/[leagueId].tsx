@@ -8,6 +8,7 @@ import { Button } from '@/src/components/ui/Button';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { leaguesApi, leaguesKeys } from '@/src/services/api/leaguesApi';
+import { JoinClosesLabel } from '@/src/components/features/leagues/JoinClosesLabel';
 import { standingsKeys } from '@/src/hooks/useStandings';
 
 // League ids are GUIDs. Used to reject malformed/array-like route params
@@ -100,16 +101,32 @@ export default function LeagueInviteScreen() {
               <Text style={[styles.metaRow, { color: theme.textMuted }]}>
                 {league.isPublic ? 'Public league' : 'Private league'}
               </Text>
+              <JoinClosesLabel
+                closesAtUtc={league.closesAtUtc}
+                isJoinable={league.isJoinable}
+                style={styles.metaRow}
+              />
             </View>
 
-            <View style={styles.actions}>
-              <Button
-                title={joinMutation.isPending ? 'Joining…' : 'Join League'}
-                onPress={() => joinMutation.mutate()}
-                loading={joinMutation.isPending}
-              />
-              <Button title="Not now" variant="ghost" onPress={dismiss} />
-            </View>
+            {league.isJoinable === false ? (
+              // A shared invite link outlives the league's join window — the BE
+              // gate would reject the join, so don't offer it.
+              <View style={styles.actions}>
+                <Text style={[styles.subtitle, { color: theme.textMuted }]}>
+                  This league is no longer accepting new members.
+                </Text>
+                <Button title="Close" variant="secondary" onPress={dismiss} />
+              </View>
+            ) : (
+              <View style={styles.actions}>
+                <Button
+                  title={joinMutation.isPending ? 'Joining…' : 'Join League'}
+                  onPress={() => joinMutation.mutate()}
+                  loading={joinMutation.isPending}
+                />
+                <Button title="Not now" variant="ghost" onPress={dismiss} />
+              </View>
+            )}
 
             {joinMutation.isError ? (
               <Text style={[styles.errorText, { color: theme.error }]}>

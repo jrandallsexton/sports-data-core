@@ -10,6 +10,11 @@ export type TiebreakerType = 'TotalPoints' | 'HomeAndAwayScores' | 'EarliestSubm
 // Only one value today; kept as a union so adding more is a no-code-change lift.
 export type TiebreakerTiePolicy = 'EarliestSubmission';
 
+/** Matches SportsData.Api.Application.Common.Enums.JoinPolicy (by name).
+ *  Commissioner INPUT; the read-side truth for "can I still join?" is
+ *  closesAtUtc / isJoinable on the DTO. */
+export type JoinPolicy = 'Open' | 'CloseAtFirstGame';
+
 // NCAA ranking-filter enum names accepted by the BE (null = no filter).
 export type NcaaRankingFilter =
   | 'AP_TOP_5'
@@ -64,6 +69,7 @@ export interface LeagueMember {
 export const leaguesKeys = {
   mine: ['leagues', 'mine'] as const,
   detail: (id: string) => ['league', id] as const,
+  public: ['leagues', 'public'] as const,
 };
 
 /** A registered user invitable to a league (from invite search). No email. */
@@ -104,6 +110,43 @@ export interface LeagueDetail {
   isMember: boolean;
   /** The roster. Empty for non-members (invite preview, public browse). */
   members: LeagueMember[];
+  /** Join policy the commissioner chose; render `closesAtUtc`/`isJoinable`
+   *  for the actual state, not this. */
+  joinPolicy: JoinPolicy;
+  /** Computed instant joining closes; null = open with no fixed deadline. */
+  closesAtUtc: string | null;
+  /** False once closed/deactivated — gates the Join affordance. */
+  isJoinable: boolean;
+}
+
+/**
+ * A public league the caller can browse and (maybe) join. Mirrors the BE
+ * PublicLeagueDto. Sport/League/PickType are the BE ENUM values (Sport/League
+ * as names, PickType as its int); render helpers map them to labels.
+ */
+export interface PublicLeague {
+  id: string;
+  name: string;
+  description: string;
+  commissioner: string;
+  rankingFilter: number;
+  /** PickType int: 1=StraightUp, 2=AgainstTheSpread, 3=OverUnder. */
+  pickType: number;
+  useConfidencePoints: boolean;
+  dropLowWeeksCount: number;
+  sport: 'FootballNcaa' | 'FootballNfl' | 'BaseballMlb';
+  league: 'NCAAF' | 'NFL' | 'MLB' | 'NBA';
+  seasonYear: number;
+  memberCount: number;
+  startsOn: string | null;
+  endsOn: string | null;
+  tiebreakerType: TiebreakerType;
+  tiebreakerTiePolicy: TiebreakerTiePolicy;
+  joinPolicy: JoinPolicy;
+  /** When joining closes; null = open with no fixed deadline. */
+  closesAtUtc: string | null;
+  /** False once closed — badge/hide rather than offering a Join that 400s. */
+  isJoinable: boolean;
 }
 
 // Matches SportsData.Api.Application.UI.Leagues.Dtos.LeagueSummaryDto.
@@ -175,6 +218,12 @@ export const leaguesApi = {
   // POST /ui/leagues/baseball/mlb — admin-gated on the BE.
   createBaseballMlbLeague: (payload: CreateBaseballMlbLeagueRequest) =>
     apiClient.post<CreateLeagueResponse>('/ui/leagues/baseball/mlb', payload),
+
+  // GET /ui/leagues/discover — public leagues the caller isn't in and that
+  // are still joinable (the BE filters deactivated + already-member; closed
+  // ones may still appear, badged via isJoinable).
+  getPublicLeagues: () =>
+    apiClient.get<PublicLeague[]>('/ui/leagues/discover'),
 
   // GET /ui/leagues/{id} — league detail for the invite preview.
   getLeagueById: (id: string) =>

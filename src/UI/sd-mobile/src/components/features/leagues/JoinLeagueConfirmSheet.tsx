@@ -1,0 +1,153 @@
+import React from 'react';
+import { Modal, View, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+import { Text } from '@/src/components/ui/AppText';
+import { Button } from '@/src/components/ui/Button';
+import { useColorScheme } from '@/src/lib/theme/ThemeContext';
+import { getTheme } from '@/constants/Colors';
+import { leaguesApi, leaguesKeys, type PublicLeague } from '@/src/services/api/leaguesApi';
+import { standingsKeys } from '@/src/hooks/useStandings';
+import { JoinClosesLabel } from './JoinClosesLabel';
+import {
+  SPORT_LABEL,
+  PICK_TYPE_LABEL,
+  TIEBREAKER_LABEL,
+  windowLabel,
+} from './joinDisplay';
+
+interface Props {
+  /** The league to confirm joining; null closes the sheet. */
+  league: PublicLeague | null;
+  onCancel: () => void;
+  /** Called after a successful join (parent navigates / refetches). */
+  onJoined: (league: PublicLeague) => void;
+}
+
+/**
+ * Confirmation sheet shown before joining a public league — joining has no
+ * self-serve undo, so the details render on the join path itself (parity with
+ * sd-ui's JoinLeagueConfirmDialog). Owns the join mutation + cache
+ * invalidation so both the home rail and the browse screen stay thin.
+ */
+export function JoinLeagueConfirmSheet({ league, onCancel, onJoined }: Props) {
+  const scheme = useColorScheme();
+  const theme = getTheme(scheme);
+  const queryClient = useQueryClient();
+
+  const joinMutation = useMutation({
+    mutationFn: () => leaguesApi.joinLeague(league!.id),
+    onSuccess: async () => {
+      // The joined league leaves discovery and enters My Leagues/standings.
+      await queryClient.invalidateQueries({ queryKey: leaguesKeys.public });
+      await queryClient.invalidateQueries({ queryKey: leaguesKeys.mine });
+      await queryClient.invalidateQueries({ queryKey: standingsKeys.me });
+      if (league) onJoined(league);
+    },
+  });
+
+  const Row = ({ label, value }: { label: string; value: string }) => (
+    <View style={styles.row}>
+      <Text style={[styles.rowLabel, { color: theme.textMuted }]}>{label}</Text>
+      <Text style={[styles.rowValue, { color: theme.text }]}>{value}</Text>
+    </View>
+  );
+
+  return (
+    <Modal
+      visible={league != null}
+      transparent
+      animationType="fade"
+      onRequestClose={onCancel}
+    >
+      <Pressable style={styles.backdrop} onPress={onCancel}>
+        {/* Inner press swallows taps so tapping the card doesn't dismiss. */}
+        <Pressable
+          style={[styles.sheet, { backgroundColor: theme.card, borderColor: theme.border }]}
+          onPress={() => {}}
+        >
+          {league && (
+            <>
+              <Text style={[styles.title, { color: theme.text }]}>Join {league.name}?</Text>
+              {league.description ? (
+                <Text style={[styles.desc, { color: theme.textMuted }]}>{league.description}</Text>
+              ) : null}
+
+              <ScrollView style={styles.rows} contentContainerStyle={{ gap: 2 }}>
+                <Row
+                  label="Sport"
+                  value={`${SPORT_LABEL[league.sport] ?? league.sport} ${league.seasonYear}`}
+                />
+                <Row
+                  label="Pick Type"
+                  value={`${PICK_TYPE_LABEL[league.pickType] ?? '—'}${
+                    league.useConfidencePoints ? ' with Confidence Points' : ''
+                  }`}
+                />
+                <Row
+                  label="Tiebreaker"
+                  value={TIEBREAKER_LABEL[league.tiebreakerType] ?? league.tiebreakerType}
+                />
+                <Row
+                  label="Drop Low Weeks"
+                  value={league.dropLowWeeksCount > 0 ? String(league.dropLowWeeksCount) : 'None — all weeks count'}
+                />
+                <Row label="League Window" value={windowLabel(league.startsOn, league.endsOn)} />
+                <Row label="Members" value={String(league.memberCount)} />
+                <Row label="Commissioner" value={league.commissioner} />
+                <View style={styles.row}>
+                  <Text style={[styles.rowLabel, { color: theme.textMuted }]}>Joining</Text>
+                  <JoinClosesLabel closesAtUtc={league.closesAtUtc} isJoinable={league.isJoinable} />
+                </View>
+              </ScrollView>
+
+              {joinMutation.isError ? (
+                <Text style={[styles.error, { color: theme.error }]}>
+                  Couldn&apos;t join the league. Please try again.
+                </Text>
+              ) : null}
+
+              <View style={styles.actions}>
+                <Button title="Cancel" variant="ghost" onPress={onCancel} />
+                <Button
+                  title={joinMutation.isPending ? 'Joining…' : 'Join'}
+                  onPress={() => joinMutation.mutate()}
+                  loading={joinMutation.isPending}
+                />
+              </View>
+            </>
+          )}
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  sheet: {
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 20,
+    maxHeight: '85%',
+  },
+  title: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
+  desc: { fontSize: 14, marginBottom: 10 },
+  rows: { marginBottom: 12 },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    gap: 12,
+  },
+  rowLabel: { fontSize: 13, fontWeight: '600' },
+  rowValue: { fontSize: 13, flexShrink: 1, textAlign: 'right' },
+  error: { fontSize: 13, marginBottom: 8 },
+  actions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
+});

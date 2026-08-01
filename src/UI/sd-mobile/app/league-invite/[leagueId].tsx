@@ -10,6 +10,7 @@ import { getTheme } from '@/constants/Colors';
 import { leaguesApi, leaguesKeys } from '@/src/services/api/leaguesApi';
 import { JoinClosesLabel } from '@/src/components/features/leagues/JoinClosesLabel';
 import { useJoinLeagueMutation } from '@/src/hooks/useJoinLeagueMutation';
+import { useLiveJoinState } from '@/src/components/features/leagues/useLiveJoinState';
 
 // League ids are GUIDs. Used to reject malformed/array-like route params
 // before any request is built.
@@ -52,6 +53,11 @@ export default function LeagueInviteScreen() {
   const joinMutation = useJoinLeagueMutation((id) => {
     router.replace({ pathname: '/(tabs)/picks', params: { leagueId: id } } as never);
   });
+
+  // Live join state — a shared invite link can outlive the join window, and it
+  // can also expire WHILE this screen is open. Both must block the join.
+  const joinState = useLiveJoinState(league?.closesAtUtc ?? null, league?.isJoinable ?? true);
+  const closed = joinState.kind === 'closed';
 
   const dismiss = () => {
     if (router.canGoBack()) router.back();
@@ -103,9 +109,9 @@ export default function LeagueInviteScreen() {
               />
             </View>
 
-            {league.isJoinable === false ? (
-              // A shared invite link outlives the league's join window — the BE
-              // gate would reject the join, so don't offer it.
+            {closed ? (
+              // The join window has passed (or elapsed while this screen was
+              // open) — the BE gate would reject the join, so don't offer it.
               <View style={styles.actions}>
                 <Text style={[styles.subtitle, { color: theme.textMuted }]}>
                   This league is no longer accepting new members.

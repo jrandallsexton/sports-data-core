@@ -8,6 +8,7 @@ import { getTheme } from '@/constants/Colors';
 import { type PublicLeague } from '@/src/services/api/leaguesApi';
 import { useJoinLeagueMutation } from '@/src/hooks/useJoinLeagueMutation';
 import { JoinClosesLabel } from './JoinClosesLabel';
+import { useLiveJoinState } from './useLiveJoinState';
 import {
   SPORT_LABEL,
   PICK_TYPE_LABEL,
@@ -36,6 +37,12 @@ export function JoinLeagueConfirmSheet({ league, onCancel, onJoined }: Props) {
   const joinMutation = useJoinLeagueMutation(() => {
     if (league) onJoined(league);
   });
+
+  // Live join state (ticks past the countdown/close instant) — a league can
+  // close while the sheet is open, so Join disables rather than submitting a
+  // join the BE would reject.
+  const joinState = useLiveJoinState(league?.closesAtUtc ?? null, league?.isJoinable ?? true);
+  const closed = joinState.kind === 'closed';
 
   // The sheet is a single persistent component reused across leagues; only the
   // `league` prop changes. Reset the mutation when the target changes so a
@@ -109,9 +116,10 @@ export function JoinLeagueConfirmSheet({ league, onCancel, onJoined }: Props) {
               <View style={styles.actions}>
                 <Button title="Cancel" variant="ghost" onPress={onCancel} />
                 <Button
-                  title={joinMutation.isPending ? 'Joining…' : 'Join'}
+                  title={closed ? 'Closed' : joinMutation.isPending ? 'Joining…' : 'Join'}
                   onPress={() => joinMutation.mutate(league.id)}
                   loading={joinMutation.isPending}
+                  disabled={closed}
                 />
               </View>
             </>

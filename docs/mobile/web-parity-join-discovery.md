@@ -8,14 +8,17 @@ Web precedent: `docs/features/league-join-policy-and-discovery.md` (#576, #577, 
 
 The join-policy + discovery feature set shipped web-first and was deliberately
 held from mobile through a production soak, so UX changes were paid once, not
-twice (the v2 revision came out of that soak). The web design is now settled;
-this doc pins the shared contracts BEFORE mobile screens are written, so the
-two apps can't drift on the parts that must match.
+twice (the v2 revision came out of that soak). Once the web design settled, the
+hold lifted and this doc pinned the shared contracts before mobile screens were
+written — so the two apps don't drift on the parts that must match. Phase 1
+(find & join) has since shipped (#584); the contracts below remain the
+reference for Phase 2.
 
 ## The gap (verified against the mobile tree, 2026-08-01)
 
-Mobile references **none** of this feature set. The BE is platform-agnostic
-and already live — every endpoint below exists. This is pure client work.
+At the time of writing mobile referenced **none** of this feature set; Phase 1
+has since closed the find-and-join rows below. The BE is platform-agnostic and
+already live — every endpoint exists — so this is pure client work.
 
 | Web surface (PR) | Mobile today | Parity work |
 |---|---|---|

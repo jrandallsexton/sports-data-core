@@ -25,14 +25,21 @@ export function useLiveJoinState(
 
   useEffect(() => {
     if (!Number.isFinite(closesMs) || remaining <= 0) return undefined;
-    if (inCountdown) {
-      // Minute tick; the render after the tick that crosses zero flips to Closed.
-      const id = setInterval(() => setNow(Date.now()), TICK_MS);
-      return () => clearInterval(id);
-    }
-    // Outside the window: one timer aimed at the boundary.
-    const untilWindow = Math.min(remaining - COUNTDOWN_WINDOW_MS, MAX_TIMEOUT_MS);
-    const id = setTimeout(() => setNow(Date.now()), Math.max(untilWindow, TICK_MS));
+
+    // A single re-arming timeout that fires at the EARLIEST instant the state
+    // could change (the effect re-runs on each fire because `now` updates):
+    //   - inside the countdown window: the next minute tick (refresh the
+    //     "Closes in Xm" display) OR the close instant, whichever comes first
+    //     — so a league closing mid-view flips to Closed exactly on time, not
+    //     up to a minute late (which would leave Join enabled in the gap);
+    //   - outside the window: the moment `remaining` crosses into the 10-day
+    //     countdown window.
+    const nextChange = inCountdown
+      ? Math.min(TICK_MS, remaining)
+      : remaining - COUNTDOWN_WINDOW_MS;
+    const delay = Math.max(0, Math.min(nextChange, MAX_TIMEOUT_MS));
+
+    const id = setTimeout(() => setNow(Date.now()), delay);
     return () => clearTimeout(id);
   }, [closesMs, inCountdown, remaining]);
 

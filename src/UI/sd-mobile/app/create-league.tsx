@@ -132,9 +132,13 @@ const chunkInto = <T,>(arr: T[], size: number): T[][] => {
 
 // ─── Validation schema ────────────────────────────────────────────────────────
 
-// League Window. Web's "Week Range" mode is intentionally omitted on mobile —
-// Date Range already covers the same span semantics and the web's Week Range
-// UI itself errors on submit pending a BE season calendar endpoint.
+// League Window. Web's "Week Range" mode is deliberately kept web-only (operator
+// call, 2026-08-02) — Date Range already covers the same span semantics on
+// mobile, and picking a phase-aware week range is a weekday-workbench act, not a
+// phone-on-the-couch one. NOTE: the technical blocker is gone (the BE
+// season-calendar endpoint shipped with #579, so web's Week Range now submits
+// cleanly); reversing this is purely additive if the posture changes. See
+// docs/mobile/web-parity-join-discovery.md.
 const DURATION_FULL = 'full';
 const DURATION_DATES = 'dates';
 
@@ -194,6 +198,7 @@ const schema = z
     rankingFilter: z.enum(['', 'AP_TOP_25', 'AP_TOP_20', 'AP_TOP_15', 'AP_TOP_10', 'AP_TOP_5']),
     divisionSlugs: z.array(z.string()),
     durationMode: z.enum([DURATION_FULL, DURATION_DATES]),
+    joinPolicy: z.enum(['Open', 'CloseAtFirstGame']),
     // YYYY-MM-DD or empty string. Stored as a plain date string (no TZ) so the
     // submit-time conversion to ISO can anchor at local midnight / end-of-day
     // without timezone drift — matches web's toStartOfDayIso / toEndOfDayIso.
@@ -243,6 +248,14 @@ const VISIBILITY_OPTIONS: { value: 'private' | 'public'; label: string }[] = [
 const WINDOW_OPTIONS: { value: 'full' | 'dates'; label: string }[] = [
   { value: DURATION_FULL, label: 'Full Season' },
   { value: DURATION_DATES, label: 'Date Range' },
+];
+
+// Who can join, and until when. Mirrors sd-ui's create form. "Locked at
+// kickoff" = CloseAtFirstGame: the roster closes when the league's first game
+// starts. Applies to invite links too, not just public discovery.
+const JOIN_POLICY_OPTIONS: { value: 'Open' | 'CloseAtFirstGame'; label: string }[] = [
+  { value: 'Open', label: 'Open' },
+  { value: 'CloseAtFirstGame', label: 'Locked at kickoff' },
 ];
 
 // Stringified for SegmentedControl, which keys options by string value. Coerced
@@ -544,6 +557,7 @@ export default function CreateLeagueScreen() {
           ? MLB_DIVISIONS.map((d) => d.slug)
           : [],
       durationMode: DURATION_FULL,
+      joinPolicy: 'Open',
       startsOn: '',
       endsOn: '',
       dropLowWeeksCount: 0,
@@ -723,6 +737,7 @@ export default function CreateLeagueScreen() {
         tiebreakerTiePolicy: 'EarliestSubmission' as const,
         useConfidencePoints: data.useConfidencePoints,
         isPublic: data.isPublic,
+        joinPolicy: data.joinPolicy,
         dropLowWeeksCount: data.dropLowWeeksCount,
         ...window,
       };
@@ -917,6 +932,23 @@ export default function CreateLeagueScreen() {
                   options={DROP_LOW_WEEKS_OPTIONS}
                   onChange={(v) => onChange(Number(v))}
                   accessibilityLabel="Drop Low Weeks"
+                />
+              )}
+            />
+          </View>
+
+          {/* Join Policy — who can join, and until when */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Who can join</Text>
+            <Controller
+              control={control}
+              name="joinPolicy"
+              render={({ field: { onChange, value } }) => (
+                <SegmentedControl
+                  value={value}
+                  options={JOIN_POLICY_OPTIONS}
+                  onChange={(v) => onChange(v as 'Open' | 'CloseAtFirstGame')}
+                  accessibilityLabel="Who can join"
                 />
               )}
             />
@@ -1308,6 +1340,13 @@ function buildConfirmRows(data: FormData): { label: string; value: string }[] {
       value: data.dropLowWeeksCount === 0 ? 'None. Use All Weeks' : `${data.dropLowWeeksCount}`,
     },
     { label: 'League Window', value: windowLabel },
+    {
+      label: 'Joining',
+      value:
+        data.joinPolicy === 'CloseAtFirstGame'
+          ? 'Locked at kickoff'
+          : 'Open while the league is live',
+    },
     { label: 'Visibility', value: data.isPublic ? 'Public' : 'Private' },
     { label: 'Pick Deadline', value: '5 minutes before kickoff (not configurable)' },
     { label: 'Description', value: data.description?.trim() || 'None' },

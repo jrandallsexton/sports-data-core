@@ -29,6 +29,7 @@ const basePayload = {
   tiebreakerTiePolicy: 'EarliestSubmission' as const,
   useConfidencePoints: false,
   isPublic: false,
+  joinPolicy: 'Open' as const,
   dropLowWeeksCount: 0,
   startsOn: null,
   endsOn: null,
@@ -82,6 +83,18 @@ function testCreateLeague<T>(
     it('returns the server response body', async () => {
       const response = await method(payload);
       expect(response.data).toEqual({ id: 'league-1' });
+    });
+
+    // The base fixture is Open; this proves the other JoinPolicy value isn't
+    // dropped or hardcoded on the way to the wire. Runs for every sport helper.
+    it('preserves a CloseAtFirstGame joinPolicy in the POST body', async () => {
+      const locked = { ...payload, joinPolicy: 'CloseAtFirstGame' } as T;
+      await method(locked);
+
+      expect(apiClient.post).toHaveBeenCalledWith(
+        endpoint,
+        expect.objectContaining({ joinPolicy: 'CloseAtFirstGame' }),
+      );
     });
   });
 }

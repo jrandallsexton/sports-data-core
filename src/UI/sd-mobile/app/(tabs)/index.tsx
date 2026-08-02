@@ -5,7 +5,6 @@ import { getTheme } from '@/constants/Colors';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { useCurrentUser } from '@/src/hooks/useStandings';
 import { getLeagues } from '@/src/lib/leagues';
-import { PrimarySlotNewUser } from '@/src/components/features/home/PrimarySlotNewUser';
 import { PrimarySlotOffSeasonCountdown } from '@/src/components/features/home/PrimarySlotOffSeasonCountdown';
 import { YourLeaguesCard } from '@/src/components/features/home/YourLeaguesCard';
 import { JoinableLeaguesCard } from '@/src/components/features/home/JoinableLeaguesCard';
@@ -13,13 +12,17 @@ import { JoinableLeaguesCard } from '@/src/components/features/home/JoinableLeag
 /**
  * Post-login landing — mirrors web's HomePage (PR #272 / docs/post-login-landing-design.md).
  *
- * Rule resolver (top-down, most-urgent wins):
- *   - No leagues            → PrimarySlotNewUser (Tier 1 only; zero-state)
- *   - Has leagues           → PrimarySlotOffSeasonCountdown (Tier 1) + YourLeaguesCard (Tier 2)
+ * Tier 1 is PrimarySlotOffSeasonCountdown for EVERY user (mirrors web's #571
+ * fix): the countdown is gate-aware, so a non-admin sees the kickoff copy with
+ * DISABLED "opens {date}" create CTAs, while an admin (who bypasses the gate)
+ * sees enabled ones. The old zero-league branch (PrimarySlotNewUser) was
+ * removed — it hardcoded the season and led with a "Create a league" action
+ * the per-sport gates block until each sport opens.
  *
- * Tier 2 lists the user's active leagues. The BE filters /user/me to
- * `PickemGroup.DeactivatedUtc IS NULL` (see PR #273), so prior-season
- * leagues never reach this screen.
+ * Tier 2 (YourLeaguesCard) lists the user's active leagues, shown only when
+ * they have any. The BE filters /user/me to `PickemGroup.DeactivatedUtc IS
+ * NULL` (see PR #273), so prior-season leagues never reach this screen.
+ * Tier 3 (JoinableLeaguesCard) is the public-league rail, self-nulling.
  *
  * Pick record + standings widgets were deliberately removed: during off-season
  * they're empty/stale, and the Tier 2 league list is a more useful anchor.
@@ -61,24 +64,20 @@ export default function HomeScreen() {
         />
       }
     >
-      {hasLeagues ? (
-        twoColumn ? (
-          <View style={styles.twoCol}>
-            <View style={styles.col}>
-              <PrimarySlotOffSeasonCountdown />
-            </View>
-            <View style={styles.col}>
-              <YourLeaguesCard leagues={leagues} />
-            </View>
-          </View>
-        ) : (
-          <>
+      {hasLeagues && twoColumn ? (
+        <View style={styles.twoCol}>
+          <View style={styles.col}>
             <PrimarySlotOffSeasonCountdown />
+          </View>
+          <View style={styles.col}>
             <YourLeaguesCard leagues={leagues} />
-          </>
-        )
+          </View>
+        </View>
       ) : (
-        <PrimarySlotNewUser />
+        <>
+          <PrimarySlotOffSeasonCountdown />
+          {hasLeagues && <YourLeaguesCard leagues={leagues} />}
+        </>
       )}
 
       {/* Tier 3 — public-league discovery. Rendered for every user (self-nulls

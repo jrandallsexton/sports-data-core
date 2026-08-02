@@ -29,6 +29,7 @@ const basePayload = {
   tiebreakerTiePolicy: 'EarliestSubmission' as const,
   useConfidencePoints: false,
   isPublic: false,
+  joinPolicy: 'Open' as const,
   dropLowWeeksCount: 0,
   startsOn: null,
   endsOn: null,

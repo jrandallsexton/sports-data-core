@@ -1,6 +1,6 @@
 # Mobile Parity: Join Policy + Public League Discovery
 
-Status: **Phase 1 (find & join) shipped #584; Phase 2 (create-side) not started**
+Status: **Phase 1 (find & join) shipped #584; Phase 2 join-policy shipped; Week Range deliberately kept web-only**
 Surfaces: sd-mobile (client only — the BE and API are done)
 Web precedent: `docs/features/league-join-policy-and-discovery.md` (#576, #577, #579)
 
@@ -26,8 +26,8 @@ already live — every endpoint exists — so this is pure client work.
 | Public discovery / browse (#576) | ~~no browse screen~~ **DONE #584** | `app/league/discover.tsx` |
 | Join confirmation dialog (#577) | ~~raw Join button~~ **DONE #584** | `JoinLeagueConfirmSheet` |
 | Closes countdown / closed state (#577) | ~~no joinability awareness~~ **DONE #584** | `JoinClosesLabel` + invite closed-state |
-| Commissioner join policy at creation (#576) | `create-league.tsx` sends neither `joinPolicy` nor `leagueWindow` | **Phase 2** — Open vs Locked-at-kickoff choice |
-| Week Range creation (#579) | No phase-aware week picker | **Phase 2** — calendar-driven picker |
+| Commissioner join policy at creation (#576) | ~~sends no `joinPolicy`~~ **DONE** | "Who can join" control (Open / Locked-at-kickoff) |
+| Week Range creation (#579) | No phase-aware week picker | **Deliberately web-only** — Date Range covers the span on mobile; reversible/additive if the posture changes |
 
 ## Shared contracts mobile MUST mirror (do not re-derive)
 
@@ -76,11 +76,17 @@ These are settled on web; mobile matches them exactly rather than inventing.
    invite-preview screen gains the closed-state.
 
 **Phase 2 — Commissioner create parity.**
-5. Join-policy choice in `create-league.tsx` (Open / Locked-at-kickoff).
-6. Week Range picker (phase-aware, calendar-driven) + drop-week ceiling.
+5. Join-policy choice in `create-league.tsx` (Open / Locked-at-kickoff) — SHIPPED.
+6. ~~Week Range picker~~ — DELIBERATELY WEB-ONLY (operator, 2026-08-02). Date
+   Range already covers the span on mobile, and a phase-aware week picker is a
+   weekday-workbench act at odds with mobile's weekend posture. The technical
+   blocker is gone (season-calendar endpoint shipped #579), so this is a
+   product choice, not a gap — reversible and purely additive later (the
+   JoinPolicy/LeagueWindow enums and getSeasonWeeks all exist).
 
-Phase 1 lands the landing-page difference the operator noticed and the full
-join loop; Phase 2 is create-side plumbing that skews weekday/web and can wait.
+Phase 1 landed the landing-page difference the operator noticed and the full
+join loop; Phase 2's join-policy choice closes the last create-side capability
+gap. Week Range stays web-only by choice.
 
 ## Out of scope
 

@@ -33,6 +33,9 @@ interface CreateLeagueRequestBase {
   tiebreakerTiePolicy: TiebreakerTiePolicy;
   useConfidencePoints: boolean;
   isPublic: boolean;
+  /** Open (default) or CloseAtFirstGame. Absent ⇒ Open server-side; the mobile
+   *  create form always sends it. */
+  joinPolicy: JoinPolicy;
   dropLowWeeksCount: number;
   startsOn: string | null;
   endsOn: string | null;

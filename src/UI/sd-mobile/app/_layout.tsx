@@ -14,13 +14,14 @@ import { useFonts } from 'expo-font';
 import { Poppins_400Regular, Poppins_700Bold_Italic } from '@expo-google-fonts/poppins';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Notifications from 'expo-notifications';
 // Type-only import — erased at compile time. The runtime module is loaded via a
 // gated dynamic import below so it never enters the web bundle (RNFirebase has
 // no web implementation).
 import { type FirebaseMessagingTypes } from '@react-native-firebase/messaging';
 import { useEffect, useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import { Dimensions, Platform } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react-native';
 import 'react-native-reanimated';
@@ -113,6 +114,32 @@ function RootLayout() {
     Poppins_400Regular,
     Poppins_700Bold_Italic,
   });
+
+  // Orientation policy. app.json declares "default" (rotation allowed) so
+  // Android tablets get real landscape width instead of Android 12L+'s
+  // letterboxed portrait column (portrait-locked apps are pillarboxed on
+  // large screens, which starved the responsive layouts of width). Phones
+  // keep the previous portrait-only behavior via this runtime lock; the
+  // phone layouts are portrait-designed. Smallest screen dimension < 600dp
+  // is the phone/tablet boundary — Android's own sw600dp convention. iPads
+  // already rotated freely (supportsTablet) and are >= 600dp, so iOS
+  // behavior is unchanged.
+  //
+  // PORTRAIT_UP (not PORTRAIT) is deliberate: upside-down portrait is
+  // hardware-unsupported on all Face ID iPhones, and the previous Android
+  // manifest behavior under orientation "portrait" was portrait-up only —
+  // PORTRAIT would newly enable reverse-portrait on Android phones rather
+  // than preserve the old behavior.
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const { width, height } = Dimensions.get('screen');
+    if (Math.min(width, height) < 600) {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch((e) => {
+        // A failed lock leaves rotation enabled — cosmetic, not fatal.
+        Sentry.captureException(e);
+      });
+    }
+  }, []);
 
   // Kick off Firebase auth listener immediately.
   useAuthInit();

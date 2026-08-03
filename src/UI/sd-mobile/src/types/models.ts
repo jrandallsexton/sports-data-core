@@ -423,6 +423,12 @@ export interface ContestOverviewDto {
 
 export interface TeamCardScheduleGame {
   date: string;
+  /**
+   * Season phase name from the backend ("Preseason" | "Regular Season" |
+   * "Postseason"). Drives the phase divider rows in the TeamCard schedule
+   * (parity with web's TeamSchedule). Nullable defensively for legacy rows.
+   */
+  seasonPhase?: string | null;
   opponent: string;
   opponentSlug?: string | null;
   location?: string | null;

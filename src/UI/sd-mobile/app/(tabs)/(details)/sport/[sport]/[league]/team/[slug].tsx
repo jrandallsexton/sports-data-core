@@ -268,16 +268,32 @@ export default function TeamCard() {
             Schedule ({selectedSeason})
           </Text>
           {team.schedule?.length ? (
-            team.schedule.map((game, idx) => (
-              <ScheduleRow
-                key={game.contestId ?? idx}
-                game={game}
-                teamName={team.name}
-                season={selectedSeason}
-                sport={sport}
-                league={league}
-              />
-            ))
+            team.schedule.map((game, idx) => {
+              // Schedule is date-ordered and phases are chronologically
+              // contiguous (Preseason -> Regular Season -> Postseason), so a
+              // phase-changed check emits one divider per phase. Mirrors
+              // web's TeamSchedule phase header rows.
+              const prevPhase = idx > 0 ? team.schedule![idx - 1].seasonPhase : null;
+              const showPhaseHeader = !!game.seasonPhase && game.seasonPhase !== prevPhase;
+              return (
+                <React.Fragment key={game.contestId ?? idx}>
+                  {showPhaseHeader ? (
+                    <View style={[styles.phaseHeaderRow, { borderBottomColor: theme.separator }]}>
+                      <Text style={[styles.phaseHeaderText, { color: theme.tint }]}>
+                        {game.seasonPhase}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <ScheduleRow
+                    game={game}
+                    teamName={team.name}
+                    season={selectedSeason}
+                    sport={sport}
+                    league={league}
+                  />
+                </React.Fragment>
+              );
+            })
           ) : (
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>No games scheduled.</Text>
           )}
@@ -325,6 +341,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 10,
+  },
+  // Season-phase divider row (Preseason / Regular Season / Postseason) —
+  // parity with web's schedule-phase-row. Styled as a compact section
+  // label between game rows.
+  phaseHeaderRow: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  phaseHeaderText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   gameDate: { fontSize: 11, width: 72 },
   gameMiddle: { flex: 1, gap: 2 },

@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Webcam } from "lucide-react";
 import { FaCheck } from "react-icons/fa";
 import { contestLink } from '../../utils/sportLinks';
 import FootballGameStatusInProgress from './FootballGameStatusInProgress';
@@ -84,7 +83,6 @@ function GameStatus({
   leagueSport,
   sport,
   league,
-  streamScheduledTimeUtc,
   // Pick-mode-aware result indicator inputs. pickType drives which
   // outcome we summarize ("X covered" / "Over 8.5 ✓" / "✓ NYY"); the
   // *FranchiseSeasonId fields come off the canonical Contest row and
@@ -239,17 +237,25 @@ function GameStatus({
         {broadcasts && <div>{broadcasts}</div>}
         <div>{venue} | {location}</div>
       </div>
-      {streamScheduledTimeUtc && contestId && (
-        <div className="game-result game-result-stream">
+      {/* Bottom-of-status affordance for "open the Contest Overview" —
+          mirrors mobile's OverviewLink ("Game Preview ›" on scheduled
+          games). Replaces the old webcam icon + "View" block, which was
+          an internal marker for stream-scheduled games but read to users
+          like a watch-the-game link. Renders for every scheduled game
+          with a contestId, matching mobile. The explicit STATUS_SCHEDULED
+          check keeps the link out of this branch's other role as the
+          defensive fallback for unrecognized status strings (mobile
+          renders those as a bare label with no link). */}
+      {contestId && status === 'STATUS_SCHEDULED' && (
+        <div className="game-preview-link-row">
           <Link
             to={contestLink(contestId, sport, league)}
-            className="final-score-link"
+            className="game-preview-link"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`View live stream: ${awayShort ?? 'Away'} at ${homeShort ?? 'Home'}${gameTime ? `, ${gameTime}` : ''}`}
+            aria-label={`Game preview: ${awayShort ?? 'Away'} at ${homeShort ?? 'Home'}${gameTime ? `, ${gameTime}` : ''}`}
           >
-            <Webcam size={16} aria-hidden="true" />
-            <span style={{ marginLeft: 6 }}>View</span>
+            Game Preview ›
           </Link>
         </div>
       )}

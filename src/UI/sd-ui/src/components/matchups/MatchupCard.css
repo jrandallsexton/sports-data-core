@@ -292,6 +292,33 @@
   color: var(--accent);
 }
 
+/* "Game Preview ›" link below the scheduled-game time/venue block.
+   Mirrors mobile's OverviewLink affordance (small accent-colored text
+   link). Replaced the old webcam-icon "View" block, which implied a
+   watchable stream. */
+.game-preview-link-row {
+  text-align: center;
+  margin-top: 4px;
+}
+
+.game-preview-link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.game-preview-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.game-preview-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 .result-label {
   font-size: 0.75rem;
   font-weight: 600;

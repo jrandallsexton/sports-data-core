@@ -314,6 +314,11 @@
   text-decoration: underline;
 }
 
+.game-preview-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 .result-label {
   font-size: 0.75rem;
   font-weight: 600;

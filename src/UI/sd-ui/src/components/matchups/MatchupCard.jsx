@@ -282,7 +282,6 @@ function MatchupCard({
           leagueSport={leagueSport}
           sport={sportLeague?.sport}
           league={sportLeague?.league}
-          streamScheduledTimeUtc={matchup.streamScheduledTimeUtc}
           // Final-score quick-scan indicator inputs. pickType is the
           // league's mode; the *FranchiseSeasonId/Result/spread fields
           // come off the canonical Contest row populated by enrichment.

@@ -124,6 +124,12 @@ function RootLayout() {
   // is the phone/tablet boundary — Android's own sw600dp convention. iPads
   // already rotated freely (supportsTablet) and are >= 600dp, so iOS
   // behavior is unchanged.
+  //
+  // PORTRAIT_UP (not PORTRAIT) is deliberate: upside-down portrait is
+  // hardware-unsupported on all Face ID iPhones, and the previous Android
+  // manifest behavior under orientation "portrait" was portrait-up only —
+  // PORTRAIT would newly enable reverse-portrait on Android phones rather
+  // than preserve the old behavior.
   useEffect(() => {
     if (Platform.OS === 'web') return;
     const { width, height } = Dimensions.get('screen');

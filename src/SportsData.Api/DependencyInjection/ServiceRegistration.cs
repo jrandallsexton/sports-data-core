@@ -124,6 +124,15 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IJoinLeagueCommandHandler, JoinLeagueCommandHandler>();
             services.AddScoped<ISendLeagueInviteCommandHandler, SendLeagueInviteCommandHandler>();
             services.AddScoped<IInviteUserToLeagueCommandHandler, InviteUserToLeagueCommandHandler>();
+            services.AddScoped<
+                Application.UI.Leagues.Commands.AcceptLeagueInvitation.IAcceptLeagueInvitationCommandHandler,
+                Application.UI.Leagues.Commands.AcceptLeagueInvitation.AcceptLeagueInvitationCommandHandler>();
+            services.AddScoped<
+                Application.UI.Leagues.Commands.DeclineLeagueInvitation.IDeclineLeagueInvitationCommandHandler,
+                Application.UI.Leagues.Commands.DeclineLeagueInvitation.DeclineLeagueInvitationCommandHandler>();
+            services.AddScoped<
+                Application.UI.Leagues.Queries.GetPendingInvitations.IGetPendingInvitationsQueryHandler,
+                Application.UI.Leagues.Queries.GetPendingInvitations.GetPendingInvitationsQueryHandler>();
 
             // League creation availability gate (config-driven; used by the create
             // guard and the /ui/leagues/creation-availability endpoint).

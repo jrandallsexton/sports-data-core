@@ -28,6 +28,8 @@ public class AppDataContext : DbContext
 
     public DbSet<PickemGroupMember> PickemGroupMembers { get; set; }
 
+    public DbSet<PickemGroupInvitation> PickemGroupInvitations { get; set; }
+
     public DbSet<PickemGroupUserPick> UserPicks { get; set; }
 
     public DbSet<PickResult> PickResults { get; set; }

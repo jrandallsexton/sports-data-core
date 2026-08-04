@@ -1,11 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, View, StyleSheet, RefreshControl, useWindowDimensions } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import { leaguesKeys } from '@/src/services/api/leaguesApi';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { useCurrentUser } from '@/src/hooks/useStandings';
 import { getLeagues } from '@/src/lib/leagues';
 import { PrimarySlotOffSeasonCountdown } from '@/src/components/features/home/PrimarySlotOffSeasonCountdown';
+import { PendingInvitesCard } from '@/src/components/features/home/PendingInvitesCard';
 import { YourLeaguesCard } from '@/src/components/features/home/YourLeaguesCard';
 import { JoinableLeaguesCard } from '@/src/components/features/home/JoinableLeaguesCard';
 
@@ -34,10 +37,30 @@ export default function HomeScreen() {
   const {
     data: me,
     isLoading: meLoading,
-    isRefetching: meRefetching,
     refetch: refetchMe,
   } = useCurrentUser();
   const leagues = useMemo(() => getLeagues(me), [me]);
+
+  // Pull-to-refresh must refresh EVERYTHING this screen renders, not just
+  // /user/me — the JoinableLeaguesCard runs its own leaguesKeys.public query,
+  // and with a 5-min staleTime + refetchOnWindowFocus off, a league created
+  // elsewhere (e.g. on web) never appeared until app restart. The pull
+  // gesture is the user's explicit freshness request; invalidating the
+  // public list forces its active query to refetch alongside /user/me.
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refetchMe(),
+        queryClient.invalidateQueries({ queryKey: leaguesKeys.public }),
+        queryClient.invalidateQueries({ queryKey: leaguesKeys.invitations }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetchMe, queryClient]);
 
   // On tablet-width screens, place the countdown and leagues side by side so the
   // countdown stops stretching awkwardly across the full width. Same width-driven
@@ -58,8 +81,8 @@ export default function HomeScreen() {
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
-          refreshing={meRefetching}
-          onRefresh={refetchMe}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
           tintColor={theme.tint}
         />
       }
@@ -79,6 +102,12 @@ export default function HomeScreen() {
           {hasLeagues && <YourLeaguesCard leagues={leagues} />}
         </>
       )}
+
+      {/* Pending league invitations — above discovery because an unanswered
+          invite is the most actionable thing on the page. Self-nulls when
+          there are none. Closes the notification-badge-but-nothing-in-app
+          gap. Web parity: HomePage. */}
+      <PendingInvitesCard />
 
       {/* Tier 3 — public-league discovery. Rendered for every user (self-nulls
           when nothing is joinable), so a league-less user lands on actionable

@@ -187,6 +187,30 @@ const getLeagueScores = async (leagueId) => {
   return response.data;
 };
 
+/**
+ * Pending league invitations for the current user — powers the
+ * "Pending Invitations" home card. Each row embeds the league's full
+ * public-league shape (`league`) so the join-confirmation dialog renders
+ * identical details to discovery.
+ * @returns {Promise<{ invitationId: string, invitedBy: string, invitedUtc: string, league: object }[]>}
+ */
+const getPendingInvitations = async () => {
+  const response = await apiClient.get(`${BASE_PATH}/invitations`);
+  return response.data;
+};
+
+/** Accepts an invitation (joins the league). Resolves to the league id. */
+const acceptInvitation = async (invitationId) => {
+  const response = await apiClient.post(`${BASE_PATH}/invitations/${invitationId}/accept`);
+  return response.data;
+};
+
+/** Declines an invitation — drops it off the pending card. */
+const declineInvitation = async (invitationId) => {
+  const response = await apiClient.post(`${BASE_PATH}/invitations/${invitationId}/decline`);
+  return response.data;
+};
+
 const LeaguesApi = {
   createFootballNcaaLeague,
   createFootballNflLeague,
@@ -200,6 +224,9 @@ const LeaguesApi = {
   searchInviteableUsers,
   inviteUser,
   getPublicLeagues,
+  getPendingInvitations,
+  acceptInvitation,
+  declineInvitation,
   getCreationAvailability,
   getSeasonWeeks,
   getLeagueWeekOverview,

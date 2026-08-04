@@ -73,7 +73,22 @@ export const leaguesKeys = {
   mine: ['leagues', 'mine'] as const,
   detail: (id: string) => ['league', id] as const,
   public: ['leagues', 'public'] as const,
+  invitations: ['leagues', 'invitations'] as const,
 };
+
+/**
+ * A pending league invitation awaiting the user's answer. Matches the BE
+ * PendingInvitationDto — powers the "Pending Invitations" home card. Embeds
+ * the league's full PublicLeague shape so JoinLeagueConfirmSheet renders
+ * identical details to public-league discovery.
+ */
+export interface PendingInvitation {
+  invitationId: string;
+  /** Display name of the inviting member. */
+  invitedBy: string;
+  invitedUtc: string;
+  league: PublicLeague;
+}
 
 /** A registered user invitable to a league (from invite search). No email. */
 export interface InviteableUser {
@@ -282,4 +297,17 @@ export const leaguesApi = {
   // listed is open). The create endpoints enforce the same gate server-side.
   getCreationAvailability: () =>
     apiClient.get<LeagueCreationAvailability>('/ui/leagues/creation-availability'),
+
+  // GET /ui/leagues/invitations — pending invitations for the current user.
+  getPendingInvitations: () =>
+    apiClient.get<PendingInvitation[]>('/ui/leagues/invitations'),
+
+  // POST /ui/leagues/invitations/{id}/accept — joins the league via the
+  // standard join path (all join-policy gates apply). Returns the league id.
+  acceptInvitation: (invitationId: string) =>
+    apiClient.post<string>(`/ui/leagues/invitations/${invitationId}/accept`),
+
+  // POST /ui/leagues/invitations/{id}/decline — drops it off the pending card.
+  declineInvitation: (invitationId: string) =>
+    apiClient.post<boolean>(`/ui/leagues/invitations/${invitationId}/decline`),
 };

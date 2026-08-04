@@ -6,7 +6,10 @@ import { Button } from '@/src/components/ui/Button';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { type PublicLeague } from '@/src/services/api/leaguesApi';
-import { useJoinLeagueMutation } from '@/src/hooks/useJoinLeagueMutation';
+import {
+  useAcceptInvitationMutation,
+  useJoinLeagueMutation,
+} from '@/src/hooks/useJoinLeagueMutation';
 import { JoinClosesLabel } from './JoinClosesLabel';
 import { useLiveJoinState } from './useLiveJoinState';
 import {
@@ -19,6 +22,12 @@ import {
 interface Props {
   /** The league to confirm joining; null closes the sheet. */
   league: PublicLeague | null;
+  /**
+   * When set, confirming ACCEPTS this invitation (the invitation endpoint —
+   * the BE delegates to the same join path) instead of a public join. Set by
+   * the Pending Invitations card; discovery surfaces leave it unset.
+   */
+  invitationId?: string | null;
   onCancel: () => void;
   /** Called after a successful join (parent navigates / refetches). */
   onJoined: (league: PublicLeague) => void;
@@ -28,15 +37,21 @@ interface Props {
  * Confirmation sheet shown before joining a public league — joining has no
  * self-serve undo, so the details render on the join path itself (parity with
  * sd-ui's JoinLeagueConfirmDialog). Owns the join mutation + cache
- * invalidation so both the home rail and the browse screen stay thin.
+ * invalidation so both the home rail and the browse screen stay thin. Also
+ * serves invitation accepts (see invitationId) so every join surface shows
+ * identical league details before committing.
  */
-export function JoinLeagueConfirmSheet({ league, onCancel, onJoined }: Props) {
+export function JoinLeagueConfirmSheet({ league, invitationId, onCancel, onJoined }: Props) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
-  const joinMutation = useJoinLeagueMutation(() => {
+  const onJoinedCb = () => {
     if (league) onJoined(league);
-  });
+  };
+  const publicJoin = useJoinLeagueMutation(onJoinedCb);
+  const acceptInvite = useAcceptInvitationMutation(onJoinedCb);
+  // Both hooks always mount (rules of hooks); invitationId picks the active one.
+  const joinMutation = invitationId ? acceptInvite : publicJoin;
 
   // Live join state (ticks past the countdown/close instant) — a league can
   // close while the sheet is open, so Join disables rather than submitting a
@@ -45,10 +60,11 @@ export function JoinLeagueConfirmSheet({ league, onCancel, onJoined }: Props) {
   const closed = joinState.kind === 'closed';
 
   // The sheet is a single persistent component reused across leagues; only the
-  // `league` prop changes. Reset the mutation when the target changes so a
+  // `league` prop changes. Reset both mutations when the target changes so a
   // prior failure's error doesn't bleed into the next league's sheet.
   useEffect(() => {
-    joinMutation.reset();
+    publicJoin.reset();
+    acceptInvite.reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league?.id]);
 
@@ -117,7 +133,7 @@ export function JoinLeagueConfirmSheet({ league, onCancel, onJoined }: Props) {
                 <Button title="Cancel" variant="ghost" onPress={onCancel} />
                 <Button
                   title={closed ? 'Closed' : joinMutation.isPending ? 'Joining…' : 'Join'}
-                  onPress={() => joinMutation.mutate(league.id)}
+                  onPress={() => joinMutation.mutate(invitationId ?? league.id)}
                   loading={joinMutation.isPending}
                   disabled={closed}
                 />

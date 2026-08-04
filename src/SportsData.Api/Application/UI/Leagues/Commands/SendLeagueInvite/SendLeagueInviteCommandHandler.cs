@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
@@ -24,7 +25,7 @@ public class SendLeagueInviteCommandHandler : ISendLeagueInviteCommandHandler
     private readonly INotificationService _notificationService;
     private readonly NotificationConfig _notificationConfig;
     private readonly IEventBus _eventBus;
-    private readonly IMessageDeliveryScope _deliveryScope;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<SendLeagueInviteCommandHandler> _logger;
 
     public SendLeagueInviteCommandHandler(
@@ -32,14 +33,14 @@ public class SendLeagueInviteCommandHandler : ISendLeagueInviteCommandHandler
         INotificationService notificationService,
         IOptions<NotificationConfig> notificationConfig,
         IEventBus eventBus,
-        IMessageDeliveryScope deliveryScope,
+        IDateTimeProvider dateTimeProvider,
         ILogger<SendLeagueInviteCommandHandler> logger)
     {
         _dbContext = dbContext;
         _notificationService = notificationService;
         _notificationConfig = notificationConfig.Value;
         _eventBus = eventBus;
-        _deliveryScope = deliveryScope;
+        _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
 
@@ -100,40 +101,62 @@ public class SendLeagueInviteCommandHandler : ISendLeagueInviteCommandHandler
             if (!alreadyMember)
             {
                 // Best-effort: the invite email has already been sent (and is
-                // non-idempotent — a retry re-sends it), so a broker outage must
-                // not fail the request. Swallow + log publish errors; losing the
-                // push is acceptable, re-emailing on retry is not.
+                // non-idempotent — a retry re-sends it), so a DB/broker outage
+                // must not fail the request. Swallow + log; losing the push and
+                // the home-card row is acceptable, re-emailing on retry is not.
                 //
-                // No DbContext write here, so bypass the MassTransit outbox and
-                // publish straight to the broker (UseBusOutbox would otherwise
-                // require a SaveChangesAsync to flush, which we have nothing to
-                // save).
+                // The invitation row powers the "Pending Invitations" home
+                // card. With a DbContext write in play, the publish now rides
+                // the bus outbox and commits with the row on SaveChanges
+                // (previously DeliveryMode.Direct with nothing to save).
                 try
                 {
-                    using (_deliveryScope.Use(DeliveryMode.Direct))
-                    {
-                        await _eventBus.Publish(
-                            new UserInvitedToPickemGroup(
-                                InviteeUserId: invitee.Id,
-                                GroupId: league.Id,
-                                LeagueName: league.Name,
-                                InvitedByUserId: command.InvitedByUserId,
-                                Sport: league.Sport,
-                                SeasonYear: null,
-                                CorrelationId: Guid.NewGuid(),
-                                CausationId: Guid.NewGuid()),
+                    var hasPending = await _dbContext.PickemGroupInvitations
+                        .AsNoTracking()
+                        .AnyAsync(i =>
+                            i.PickemGroupId == league.Id &&
+                            i.InviteeUserId == invitee.Id &&
+                            i.AcceptedUtc == null &&
+                            i.DeclinedUtc == null &&
+                            !i.IsRevoked,
                             cancellationToken);
+
+                    if (!hasPending)
+                    {
+                        await _dbContext.PickemGroupInvitations.AddAsync(new PickemGroupInvitation
+                        {
+                            Id = Guid.NewGuid(),
+                            CreatedBy = command.InvitedByUserId,
+                            CreatedUtc = _dateTimeProvider.UtcNow(),
+                            PickemGroupId = league.Id,
+                            InvitedByUserId = command.InvitedByUserId,
+                            InviteeUserId = invitee.Id
+                        }, cancellationToken);
                     }
 
+                    await _eventBus.Publish(
+                        new UserInvitedToPickemGroup(
+                            InviteeUserId: invitee.Id,
+                            GroupId: league.Id,
+                            LeagueName: league.Name,
+                            InvitedByUserId: command.InvitedByUserId,
+                            Sport: league.Sport,
+                            SeasonYear: null,
+                            CorrelationId: Guid.NewGuid(),
+                            CausationId: Guid.NewGuid()),
+                        cancellationToken);
+
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+
                     _logger.LogInformation(
-                        "Published UserInvitedToPickemGroup for registered invitee. LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",
+                        "Persisted invitation + published UserInvitedToPickemGroup for registered invitee. LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",
                         league.Id, invitee.Id);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(
                         ex,
-                        "Failed to publish UserInvitedToPickemGroup; invite email already sent so continuing. LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",
+                        "Failed to persist/publish invite; invite email already sent so continuing. LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",
                         league.Id, invitee.Id);
                 }
             }

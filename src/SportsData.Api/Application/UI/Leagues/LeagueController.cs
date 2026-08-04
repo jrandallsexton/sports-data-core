@@ -5,6 +5,7 @@ using SportsData.Core.Common.Mapping;
 using SportsData.Core.Infrastructure.Clients.Season;
 
 using SportsData.Api.Application.UI.Leagues.Authorization;
+using SportsData.Api.Application.UI.Leagues.Commands.AcceptLeagueInvitation;
 using SportsData.Api.Application.UI.Leagues.Commands.AddMatchup;
 using SportsData.Api.Application.UI.Leagues.Commands.CloneLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague;
@@ -13,6 +14,7 @@ using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague.Dtos;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague.Dtos;
+using SportsData.Api.Application.UI.Leagues.Commands.DeclineLeagueInvitation;
 using SportsData.Api.Application.UI.Leagues.Commands.DeleteLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.GenerateLeagueWeekPreviews;
 using SportsData.Api.Application.UI.Leagues.Commands.InviteUserToLeague;
@@ -25,6 +27,7 @@ using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueGameDates;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueScoresByWeek;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
+using SportsData.Api.Application.UI.Leagues.Queries.GetPendingInvitations;
 using SportsData.Api.Application.UI.Leagues.Queries.GetPublicLeagues;
 using SportsData.Api.Application.UI.Leagues.Queries.GetUserLeagues;
 using SportsData.Api.Extensions;
@@ -257,6 +260,52 @@ public class LeagueController : ApiControllerBase
             IncludeDeactivated = includeDeactivated
         };
         var result = await handler.ExecuteAsync(query, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>Pending league invitations for the current user — powers the
+    /// "Pending Invitations" card on the web + mobile home pages.</summary>
+    [HttpGet("invitations")]
+    [Authorize]
+    public async Task<ActionResult<List<PendingInvitationDto>>> GetPendingInvitations(
+        [FromServices] IGetPendingInvitationsQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var result = await handler.ExecuteAsync(userId, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>Accepts an invitation. Joins the league via the standard join
+    /// path (all join-policy gates apply) and returns the league id.</summary>
+    [HttpPost("invitations/{invitationId:guid}/accept")]
+    [Authorize]
+    public async Task<ActionResult<Guid>> AcceptInvitation(
+        [FromRoute] Guid invitationId,
+        [FromServices] IAcceptLeagueInvitationCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var result = await handler.ExecuteAsync(invitationId, userId, cancellationToken);
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>Declines an invitation — drops it off the pending card.</summary>
+    [HttpPost("invitations/{invitationId:guid}/decline")]
+    [Authorize]
+    public async Task<ActionResult<bool>> DeclineInvitation(
+        [FromRoute] Guid invitationId,
+        [FromServices] IDeclineLeagueInvitationCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var result = await handler.ExecuteAsync(invitationId, userId, cancellationToken);
 
         return result.ToActionResult();
     }

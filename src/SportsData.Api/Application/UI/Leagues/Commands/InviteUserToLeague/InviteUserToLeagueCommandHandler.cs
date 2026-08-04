@@ -6,6 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Api.Infrastructure.Data.Entities;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands.InviteUserToLeague;
 
@@ -25,18 +26,18 @@ public class InviteUserToLeagueCommandHandler : IInviteUserToLeagueCommandHandle
 {
     private readonly AppDataContext _dbContext;
     private readonly IEventBus _eventBus;
-    private readonly IMessageDeliveryScope _deliveryScope;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<InviteUserToLeagueCommandHandler> _logger;
 
     public InviteUserToLeagueCommandHandler(
         AppDataContext dbContext,
         IEventBus eventBus,
-        IMessageDeliveryScope deliveryScope,
+        IDateTimeProvider dateTimeProvider,
         ILogger<InviteUserToLeagueCommandHandler> logger)
     {
         _dbContext = dbContext;
         _eventBus = eventBus;
-        _deliveryScope = deliveryScope;
+        _dateTimeProvider = dateTimeProvider;
         _logger = logger;
     }
 
@@ -87,24 +88,51 @@ public class InviteUserToLeagueCommandHandler : IInviteUserToLeagueCommandHandle
                 ResultStatus.Validation,
                 [new ValidationFailure(nameof(command.InviteeUserId), "That user is already a member of this league.")]);
 
-        // No DbContext write here, so bypass the MassTransit outbox and publish
-        // straight to the broker. Unlike the email path, there's no prior
-        // non-idempotent side effect, so a publish failure should fail the
-        // request (the user simply retries) rather than be swallowed.
-        using (_deliveryScope.Use(DeliveryMode.Direct))
-        {
-            await _eventBus.Publish(
-                new UserInvitedToPickemGroup(
-                    InviteeUserId: invitee.Id,
-                    GroupId: league.Id,
-                    LeagueName: league.Name,
-                    InvitedByUserId: command.InvitedByUserId,
-                    Sport: league.Sport,
-                    SeasonYear: null,
-                    CorrelationId: Guid.NewGuid(),
-                    CausationId: Guid.NewGuid()),
+        // Persist the invitation so it appears on the invitee's home page
+        // ("Pending Invitations" card) — the push notification alone is
+        // ephemeral. Dedupe: an existing pending row for this group+invitee
+        // is refreshed-by-no-op (re-inviting doesn't stack rows); a
+        // previously declined/revoked invite gets a fresh row so the league
+        // reappears on their home.
+        var hasPending = await _dbContext.PickemGroupInvitations
+            .AsNoTracking()
+            .AnyAsync(i =>
+                i.PickemGroupId == league.Id &&
+                i.InviteeUserId == invitee.Id &&
+                i.AcceptedUtc == null &&
+                i.DeclinedUtc == null &&
+                !i.IsRevoked,
                 cancellationToken);
+
+        if (!hasPending)
+        {
+            await _dbContext.PickemGroupInvitations.AddAsync(new PickemGroupInvitation
+            {
+                Id = Guid.NewGuid(),
+                CreatedBy = command.InvitedByUserId,
+                CreatedUtc = _dateTimeProvider.UtcNow(),
+                PickemGroupId = league.Id,
+                InvitedByUserId = command.InvitedByUserId,
+                InviteeUserId = invitee.Id
+            }, cancellationToken);
         }
+
+        // Publish BEFORE SaveChanges so the bus-outbox interceptor commits the
+        // event together with the invitation row (this handler previously had
+        // no write and used DeliveryMode.Direct; the write changes that).
+        await _eventBus.Publish(
+            new UserInvitedToPickemGroup(
+                InviteeUserId: invitee.Id,
+                GroupId: league.Id,
+                LeagueName: league.Name,
+                InvitedByUserId: command.InvitedByUserId,
+                Sport: league.Sport,
+                SeasonYear: null,
+                CorrelationId: Guid.NewGuid(),
+                CausationId: Guid.NewGuid()),
+            cancellationToken);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
             "Published UserInvitedToPickemGroup (by username). LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",

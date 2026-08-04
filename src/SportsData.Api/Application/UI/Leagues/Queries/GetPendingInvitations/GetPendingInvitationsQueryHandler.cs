@@ -10,7 +10,7 @@ namespace SportsData.Api.Application.UI.Leagues.Queries.GetPendingInvitations;
 public interface IGetPendingInvitationsQueryHandler
 {
     Task<Result<List<PendingInvitationDto>>> ExecuteAsync(
-        Guid userId,
+        GetPendingInvitationsQuery query,
         CancellationToken cancellationToken = default);
 }
 
@@ -42,9 +42,11 @@ public class GetPendingInvitationsQueryHandler : IGetPendingInvitationsQueryHand
     }
 
     public async Task<Result<List<PendingInvitationDto>>> ExecuteAsync(
-        Guid userId,
+        GetPendingInvitationsQuery query,
         CancellationToken cancellationToken = default)
     {
+        var userId = query.UserId;
+
         var rows = await _dbContext.PickemGroupInvitations
             .AsNoTracking()
             .Where(i =>
@@ -92,11 +94,9 @@ public class GetPendingInvitationsQueryHandler : IGetPendingInvitationsQueryHand
         var now = _dateTimeProvider.UtcNow();
         var invitations = rows.Select(x =>
         {
-            var dropWeekOverride = x.LeagueWindow == LeagueWindow.FullSeason
-                && x.DropLowWeeksCount is > 0;
-            var closesAtUtc = x.InvitationsExpireUtc
-                ?? (x.JoinPolicy == JoinPolicy.CloseAtFirstGame && !dropWeekOverride
-                    ? x.FirstGameUtc : null);
+            var (closesAtUtc, isJoinable) = LeagueJoinability.Compute(
+                x.LeagueWindow, x.DropLowWeeksCount, x.JoinPolicy,
+                x.InvitationsExpireUtc, x.FirstGameUtc, now);
             return new PendingInvitationDto
             {
                 InvitationId = x.InvitationId,
@@ -122,7 +122,7 @@ public class GetPendingInvitationsQueryHandler : IGetPendingInvitationsQueryHand
                     EndsOn = x.EndsOn,
                     JoinPolicy = x.JoinPolicy,
                     ClosesAtUtc = closesAtUtc,
-                    IsJoinable = closesAtUtc is null || closesAtUtc > now
+                    IsJoinable = isJoinable
                 }
             };
         })

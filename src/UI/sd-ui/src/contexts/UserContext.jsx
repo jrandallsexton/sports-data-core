@@ -42,14 +42,19 @@ export const UserProvider = ({ children }) => {
     }
   }, [user]);
 
+  // Returns true when the refresh succeeded — callers that navigate based on
+  // the refreshed DTO (e.g. PendingInvitesCard accepting an invite) check it;
+  // existing fire-and-forget callers ignore the return value unchanged.
   const refreshUserDto = useCallback(async () => {
-    if (!user) return;
-    
+    if (!user) return false;
+
     try {
       const response = await UsersApi.getCurrentUser();
       setUserDto(response.data);
+      return true;
     } catch (err) {
       console.error('Failed to refresh user DTO:', err);
+      return false;
     }
   }, [user]);
 

@@ -21,6 +21,8 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Commands.LeagueInvita
 /// the home cards, and the accept/decline commands. Accept delegates to the
 /// REAL JoinLeagueCommandHandler (not a mock) so join-policy gates are
 /// exercised end-to-end — an invitation must not bypass league rules.
+/// Persistence assertions clear the change tracker first so they read what
+/// was SAVED, not the tracked in-memory instance.
 /// </summary>
 public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHandler>
 {
@@ -41,6 +43,15 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
 
     private GetPendingInvitationsQueryHandler CreateQueryHandler()
         => Mocker.CreateInstance<GetPendingInvitationsQueryHandler>();
+
+    private static AcceptLeagueInvitationCommand Accept(Guid invitationId, Guid userId)
+        => new() { InvitationId = invitationId, UserId = userId };
+
+    private static DeclineLeagueInvitationCommand Decline(Guid invitationId, Guid userId)
+        => new() { InvitationId = invitationId, UserId = userId };
+
+    private static GetPendingInvitationsQuery Pending(Guid userId)
+        => new() { UserId = userId };
 
     private async Task<Guid> SeedUserAsync(string name = "User")
     {
@@ -112,6 +123,20 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
         return id;
     }
 
+    private async Task SeedMembershipAsync(Guid leagueId, Guid userId)
+    {
+        await DataContext.PickemGroupMembers.AddAsync(new PickemGroupMember
+        {
+            Id = Guid.NewGuid(),
+            PickemGroupId = leagueId,
+            UserId = userId,
+            Role = LeagueRole.Member,
+            CreatedUtc = Now,
+            CreatedBy = userId
+        });
+        await DataContext.SaveChangesAsync();
+    }
+
     // ── Accept ────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -122,10 +147,12 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
         var leagueId = await SeedLeagueAsync(inviter);
         var invitationId = await SeedInvitationAsync(leagueId, inviter, invitee);
 
-        var result = await CreateAcceptHandler().ExecuteAsync(invitationId, invitee);
+        var result = await CreateAcceptHandler().ExecuteAsync(Accept(invitationId, invitee));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().Be(leagueId);
+        // Read what was SAVED, not the tracked instances.
+        DataContext.ChangeTracker.Clear();
         DataContext.PickemGroupMembers
             .Any(m => m.PickemGroupId == leagueId && m.UserId == invitee)
             .Should().BeTrue();
@@ -142,10 +169,11 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
         var leagueId = await SeedLeagueAsync(inviter);
         var invitationId = await SeedInvitationAsync(leagueId, inviter, invitee);
 
-        var result = await CreateAcceptHandler().ExecuteAsync(invitationId, interloper);
+        var result = await CreateAcceptHandler().ExecuteAsync(Accept(invitationId, interloper));
 
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.NotFound);
+        DataContext.ChangeTracker.Clear();
         DataContext.PickemGroupMembers.Any(m => m.UserId == interloper).Should().BeFalse();
     }
 
@@ -158,7 +186,7 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
         var invitationId = await SeedInvitationAsync(
             leagueId, inviter, invitee, declinedUtc: Now.AddMinutes(-5));
 
-        var result = await CreateAcceptHandler().ExecuteAsync(invitationId, invitee);
+        var result = await CreateAcceptHandler().ExecuteAsync(Accept(invitationId, invitee));
 
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.Validation);
@@ -175,10 +203,11 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
             inviter, invitationsExpireUtc: Now.AddDays(-1));
         var invitationId = await SeedInvitationAsync(leagueId, inviter, invitee);
 
-        var result = await CreateAcceptHandler().ExecuteAsync(invitationId, invitee);
+        var result = await CreateAcceptHandler().ExecuteAsync(Accept(invitationId, invitee));
 
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.Validation);
+        DataContext.ChangeTracker.Clear();
         DataContext.PickemGroupInvitations.Single(i => i.Id == invitationId)
             .AcceptedUtc.Should().BeNull();
         DataContext.PickemGroupMembers.Any(m => m.UserId == invitee).Should().BeFalse();
@@ -193,22 +222,19 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
         var invitationId = await SeedInvitationAsync(leagueId, inviter, invitee);
 
         // User joined via public browse before touching the invitation.
-        await DataContext.PickemGroupMembers.AddAsync(new PickemGroupMember
-        {
-            Id = Guid.NewGuid(),
-            PickemGroupId = leagueId,
-            UserId = invitee,
-            Role = LeagueRole.Member,
-            CreatedUtc = Now,
-            CreatedBy = invitee
-        });
-        await DataContext.SaveChangesAsync();
+        await SeedMembershipAsync(leagueId, invitee);
 
-        var result = await CreateAcceptHandler().ExecuteAsync(invitationId, invitee);
+        var result = await CreateAcceptHandler().ExecuteAsync(Accept(invitationId, invitee));
 
         result.IsSuccess.Should().BeTrue();
+        DataContext.ChangeTracker.Clear();
         DataContext.PickemGroupInvitations.Single(i => i.Id == invitationId)
             .AcceptedUtc.Should().Be(Now);
+        // The self-heal must NOT insert a second membership row —
+        // (PickemGroupId, UserId) carries a unique index in production.
+        DataContext.PickemGroupMembers
+            .Count(m => m.PickemGroupId == leagueId && m.UserId == invitee)
+            .Should().Be(1);
     }
 
     // ── Decline ───────────────────────────────────────────────────────────────
@@ -221,9 +247,10 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
         var leagueId = await SeedLeagueAsync(inviter);
         var invitationId = await SeedInvitationAsync(leagueId, inviter, invitee);
 
-        var result = await CreateDeclineHandler().ExecuteAsync(invitationId, invitee);
+        var result = await CreateDeclineHandler().ExecuteAsync(Decline(invitationId, invitee));
 
         result.IsSuccess.Should().BeTrue();
+        DataContext.ChangeTracker.Clear();
         DataContext.PickemGroupInvitations.Single(i => i.Id == invitationId)
             .DeclinedUtc.Should().Be(Now);
         DataContext.PickemGroupMembers.Any(m => m.UserId == invitee).Should().BeFalse();
@@ -238,10 +265,69 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
         var leagueId = await SeedLeagueAsync(inviter);
         var invitationId = await SeedInvitationAsync(leagueId, inviter, invitee);
 
-        var result = await CreateDeclineHandler().ExecuteAsync(invitationId, interloper);
+        var result = await CreateDeclineHandler().ExecuteAsync(Decline(invitationId, interloper));
 
         result.IsSuccess.Should().BeFalse();
         result.Status.Should().Be(ResultStatus.NotFound);
+        DataContext.ChangeTracker.Clear();
+        DataContext.PickemGroupInvitations.Single(i => i.Id == invitationId)
+            .DeclinedUtc.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Decline_AlreadyAcceptedInvitation_FailsAndKeepsStamp()
+    {
+        var inviter = await SeedUserAsync();
+        var invitee = await SeedUserAsync();
+        var leagueId = await SeedLeagueAsync(inviter);
+        var acceptedAt = Now.AddMinutes(-30);
+        var invitationId = await SeedInvitationAsync(
+            leagueId, inviter, invitee, acceptedUtc: acceptedAt);
+
+        var result = await CreateDeclineHandler().ExecuteAsync(Decline(invitationId, invitee));
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.Validation);
+        DataContext.ChangeTracker.Clear();
+        var invitation = DataContext.PickemGroupInvitations.Single(i => i.Id == invitationId);
+        invitation.AcceptedUtc.Should().Be(acceptedAt);
+        invitation.DeclinedUtc.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Decline_AlreadyDeclinedInvitation_IsIdempotent()
+    {
+        var inviter = await SeedUserAsync();
+        var invitee = await SeedUserAsync();
+        var leagueId = await SeedLeagueAsync(inviter);
+        var declinedAt = Now.AddMinutes(-30);
+        var invitationId = await SeedInvitationAsync(
+            leagueId, inviter, invitee, declinedUtc: declinedAt);
+
+        var result = await CreateDeclineHandler().ExecuteAsync(Decline(invitationId, invitee));
+
+        result.IsSuccess.Should().BeTrue();
+        DataContext.ChangeTracker.Clear();
+        // Original stamp preserved — not overwritten by the re-decline.
+        DataContext.PickemGroupInvitations.Single(i => i.Id == invitationId)
+            .DeclinedUtc.Should().Be(declinedAt);
+    }
+
+    [Fact]
+    public async Task Decline_RevokedInvitation_IsNoOpSuccess()
+    {
+        var inviter = await SeedUserAsync();
+        var invitee = await SeedUserAsync();
+        var leagueId = await SeedLeagueAsync(inviter);
+        var invitationId = await SeedInvitationAsync(
+            leagueId, inviter, invitee, isRevoked: true);
+
+        var result = await CreateDeclineHandler().ExecuteAsync(Decline(invitationId, invitee));
+
+        // Revoked invitations never show on the card — declining one is a
+        // no-op success, and DeclinedUtc stays unset.
+        result.IsSuccess.Should().BeTrue();
+        DataContext.ChangeTracker.Clear();
         DataContext.PickemGroupInvitations.Single(i => i.Id == invitationId)
             .DeclinedUtc.Should().BeNull();
     }
@@ -254,31 +340,28 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
         var inviter = await SeedUserAsync("Commish");
         var invitee = await SeedUserAsync("Invitee");
 
+        // One league per excluded state — the production unique index allows
+        // only ONE pending row per (league, invitee), and non-pending states
+        // are per-league scenarios anyway.
         var openLeague = await SeedLeagueAsync(inviter);
         var deadLeague = await SeedLeagueAsync(inviter, deactivatedUtc: Now.AddDays(-1));
         var expiredLeague = await SeedLeagueAsync(inviter, invitationsExpireUtc: Now.AddDays(-1));
         var joinedLeague = await SeedLeagueAsync(inviter);
+        var acceptedLeague = await SeedLeagueAsync(inviter);
+        var declinedLeague = await SeedLeagueAsync(inviter);
+        var revokedLeague = await SeedLeagueAsync(inviter);
 
         var pendingId = await SeedInvitationAsync(openLeague, inviter, invitee);
         await SeedInvitationAsync(deadLeague, inviter, invitee);          // league deactivated
         await SeedInvitationAsync(expiredLeague, inviter, invitee);       // league expired
         await SeedInvitationAsync(joinedLeague, inviter, invitee);        // already a member
-        await SeedInvitationAsync(openLeague, inviter, invitee, acceptedUtc: Now);  // accepted
-        await SeedInvitationAsync(openLeague, inviter, invitee, declinedUtc: Now);  // declined
-        await SeedInvitationAsync(openLeague, inviter, invitee, isRevoked: true);   // revoked
+        await SeedInvitationAsync(acceptedLeague, inviter, invitee, acceptedUtc: Now);
+        await SeedInvitationAsync(declinedLeague, inviter, invitee, declinedUtc: Now);
+        await SeedInvitationAsync(revokedLeague, inviter, invitee, isRevoked: true);
 
-        await DataContext.PickemGroupMembers.AddAsync(new PickemGroupMember
-        {
-            Id = Guid.NewGuid(),
-            PickemGroupId = joinedLeague,
-            UserId = invitee,
-            Role = LeagueRole.Member,
-            CreatedUtc = Now,
-            CreatedBy = invitee
-        });
-        await DataContext.SaveChangesAsync();
+        await SeedMembershipAsync(joinedLeague, invitee);
 
-        var result = await CreateQueryHandler().ExecuteAsync(invitee);
+        var result = await CreateQueryHandler().ExecuteAsync(Pending(invitee));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().ContainSingle();
@@ -303,7 +386,7 @@ public class LeagueInvitationTests : ApiTestBase<AcceptLeagueInvitationCommandHa
         var leagueId = await SeedLeagueAsync(inviter);
         await SeedInvitationAsync(leagueId, inviter, invitee);
 
-        var result = await CreateQueryHandler().ExecuteAsync(stranger);
+        var result = await CreateQueryHandler().ExecuteAsync(Pending(stranger));
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEmpty();

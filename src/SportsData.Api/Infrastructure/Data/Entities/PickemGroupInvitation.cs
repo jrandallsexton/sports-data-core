@@ -56,6 +56,17 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
                 // Pending-invitations lookup for the home cards.
                 builder.HasIndex(x => x.InviteeUserId);
+
+                // One PENDING invitation per (league, invitee), enforced in
+                // the DB — the app-level dedupe check in
+                // PendingInvitationWriter can race under concurrent invites;
+                // a lost race surfaces as DbUpdateException instead of a
+                // duplicate home-card row. Partial: accepted / declined /
+                // revoked rows don't count, so re-inviting after a decline
+                // stays legal.
+                builder.HasIndex(x => new { x.PickemGroupId, x.InviteeUserId })
+                    .IsUnique()
+                    .HasFilter("\"AcceptedUtc\" IS NULL AND \"DeclinedUtc\" IS NULL AND NOT \"IsRevoked\"");
             }
         }
     }

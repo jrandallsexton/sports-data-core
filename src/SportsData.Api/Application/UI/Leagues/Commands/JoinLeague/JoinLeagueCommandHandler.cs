@@ -54,7 +54,13 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.JoinLeague
                 return new Failure<Guid?>(
                     command.PickemGroupId,
                     ResultStatus.Validation,
-                    [new ValidationFailure(nameof(command.UserId), "User is already a member of this league")]);
+                    // ErrorCode is a STABLE discriminator consumed by
+                    // AcceptLeagueInvitationCommandHandler's self-heal branch —
+                    // reworded messages must keep the code.
+                    [new ValidationFailure(nameof(command.UserId), "User is already a member of this league")
+                    {
+                        ErrorCode = JoinLeagueErrorCodes.AlreadyMember
+                    }]);
 
             // This gate covers BOTH public-browse joins and invite-link joins
             // (they share this handler), so a shared invite link to a closed

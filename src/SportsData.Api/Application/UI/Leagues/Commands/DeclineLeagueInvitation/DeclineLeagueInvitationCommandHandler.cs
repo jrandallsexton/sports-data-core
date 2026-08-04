@@ -10,8 +10,7 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.DeclineLeagueInvitation
 public interface IDeclineLeagueInvitationCommandHandler
 {
     Task<Result<bool>> ExecuteAsync(
-        Guid invitationId,
-        Guid userId,
+        DeclineLeagueInvitationCommand command,
         CancellationToken cancellationToken = default);
 }
 
@@ -37,38 +36,43 @@ public class DeclineLeagueInvitationCommandHandler : IDeclineLeagueInvitationCom
     }
 
     public async Task<Result<bool>> ExecuteAsync(
-        Guid invitationId,
-        Guid userId,
+        DeclineLeagueInvitationCommand command,
         CancellationToken cancellationToken = default)
     {
         var invitation = await _dbContext.PickemGroupInvitations
-            .FirstOrDefaultAsync(i => i.Id == invitationId, cancellationToken);
+            .FirstOrDefaultAsync(i => i.Id == command.InvitationId, cancellationToken);
 
-        if (invitation is null || invitation.InviteeUserId != userId)
+        if (invitation is null || invitation.InviteeUserId != command.UserId)
         {
             // Same NotFound for "doesn't exist" and "not yours" — no
             // invitation-id probing.
             return new Failure<bool>(
                 false,
                 ResultStatus.NotFound,
-                [new ValidationFailure(nameof(invitationId), "Invitation not found.")]);
+                [new ValidationFailure(nameof(command.InvitationId), "Invitation not found.")]);
         }
 
         if (invitation.AcceptedUtc is not null)
             return new Failure<bool>(
                 false,
                 ResultStatus.Validation,
-                [new ValidationFailure(nameof(invitationId), "This invitation was already accepted.")]);
+                [new ValidationFailure(nameof(command.InvitationId), "This invitation was already accepted.")]);
 
         if (invitation.DeclinedUtc is not null)
             return new Success<bool>(true); // idempotent re-decline
+
+        // A revoked invitation never shows on the pending card; declining it
+        // is a no-op success rather than an error — nothing actionable
+        // remains either way. DeclinedUtc stays unset.
+        if (invitation.IsRevoked)
+            return new Success<bool>(true);
 
         invitation.DeclinedUtc = _dateTimeProvider.UtcNow();
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
             "User {UserId} declined invitation {InvitationId} to league {LeagueId}",
-            userId, invitationId, invitation.PickemGroupId);
+            command.UserId, command.InvitationId, invitation.PickemGroupId);
 
         return new Success<bool>(true);
     }

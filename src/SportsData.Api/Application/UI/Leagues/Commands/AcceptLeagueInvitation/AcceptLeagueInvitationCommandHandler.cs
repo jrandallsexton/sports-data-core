@@ -11,8 +11,7 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.AcceptLeagueInvitation;
 public interface IAcceptLeagueInvitationCommandHandler
 {
     Task<Result<Guid>> ExecuteAsync(
-        Guid invitationId,
-        Guid userId,
+        AcceptLeagueInvitationCommand command,
         CancellationToken cancellationToken = default);
 }
 
@@ -44,28 +43,27 @@ public class AcceptLeagueInvitationCommandHandler : IAcceptLeagueInvitationComma
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
-        Guid invitationId,
-        Guid userId,
+        AcceptLeagueInvitationCommand command,
         CancellationToken cancellationToken = default)
     {
         var invitation = await _dbContext.PickemGroupInvitations
-            .FirstOrDefaultAsync(i => i.Id == invitationId, cancellationToken);
+            .FirstOrDefaultAsync(i => i.Id == command.InvitationId, cancellationToken);
 
-        if (invitation is null || invitation.InviteeUserId != userId)
+        if (invitation is null || invitation.InviteeUserId != command.UserId)
         {
             // Same NotFound for "doesn't exist" and "not yours" — no
             // invitation-id probing.
             return new Failure<Guid>(
-                invitationId,
+                command.InvitationId,
                 ResultStatus.NotFound,
-                [new ValidationFailure(nameof(invitationId), "Invitation not found.")]);
+                [new ValidationFailure(nameof(command.InvitationId), "Invitation not found.")]);
         }
 
         if (invitation.IsRevoked || invitation.DeclinedUtc is not null)
             return new Failure<Guid>(
-                invitationId,
+                command.InvitationId,
                 ResultStatus.Validation,
-                [new ValidationFailure(nameof(invitationId), "This invitation is no longer active.")]);
+                [new ValidationFailure(nameof(command.InvitationId), "This invitation is no longer active.")]);
 
         if (invitation.AcceptedUtc is not null)
             return new Success<Guid>(invitation.PickemGroupId); // idempotent re-accept
@@ -74,17 +72,17 @@ public class AcceptLeagueInvitationCommandHandler : IAcceptLeagueInvitationComma
             new JoinLeagueCommand
             {
                 PickemGroupId = invitation.PickemGroupId,
-                UserId = userId
+                UserId = command.UserId
             },
             cancellationToken);
 
         // "Already a member" from the join path means the user got in some
         // other way (public browse, invite link) — the invitation's purpose
-        // is fulfilled either way, so stamp and succeed. Any other failure
-        // (league closed / deactivated / not found) propagates untouched.
+        // is fulfilled either way, so stamp and succeed. Matched on the
+        // STABLE ErrorCode, not message text. Any other failure (league
+        // closed / deactivated / not found) propagates untouched.
         var alreadyMember = joinResult is Failure<Guid?> f &&
-            f.Status == ResultStatus.Validation &&
-            f.Errors.Any(e => e.ErrorMessage.Contains("already a member", StringComparison.OrdinalIgnoreCase));
+            f.Errors.Any(e => e.ErrorCode == JoinLeagueErrorCodes.AlreadyMember);
 
         if (!joinResult.IsSuccess && !alreadyMember)
             return new Failure<Guid>(
@@ -97,7 +95,7 @@ public class AcceptLeagueInvitationCommandHandler : IAcceptLeagueInvitationComma
 
         _logger.LogInformation(
             "User {UserId} accepted invitation {InvitationId} to league {LeagueId}",
-            userId, invitationId, invitation.PickemGroupId);
+            command.UserId, command.InvitationId, invitation.PickemGroupId);
 
         return new Success<Guid>(invitation.PickemGroupId);
     }

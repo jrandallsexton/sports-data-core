@@ -6,7 +6,6 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Entities;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands.InviteUserToLeague;
 
@@ -93,29 +92,15 @@ public class InviteUserToLeagueCommandHandler : IInviteUserToLeagueCommandHandle
         // ephemeral. Dedupe: an existing pending row for this group+invitee
         // is refreshed-by-no-op (re-inviting doesn't stack rows); a
         // previously declined/revoked invite gets a fresh row so the league
-        // reappears on their home.
-        var hasPending = await _dbContext.PickemGroupInvitations
-            .AsNoTracking()
-            .AnyAsync(i =>
-                i.PickemGroupId == league.Id &&
-                i.InviteeUserId == invitee.Id &&
-                i.AcceptedUtc == null &&
-                i.DeclinedUtc == null &&
-                !i.IsRevoked,
-                cancellationToken);
-
-        if (!hasPending)
-        {
-            await _dbContext.PickemGroupInvitations.AddAsync(new PickemGroupInvitation
-            {
-                Id = Guid.NewGuid(),
-                CreatedBy = command.InvitedByUserId,
-                CreatedUtc = _dateTimeProvider.UtcNow(),
-                PickemGroupId = league.Id,
-                InvitedByUserId = command.InvitedByUserId,
-                InviteeUserId = invitee.Id
-            }, cancellationToken);
-        }
+        // reappears on their home. Shared with SendLeagueInvite so the two
+        // invite paths can't drift.
+        await PendingInvitationWriter.EnsurePendingAsync(
+            _dbContext,
+            league.Id,
+            invitee.Id,
+            command.InvitedByUserId,
+            _dateTimeProvider.UtcNow(),
+            cancellationToken);
 
         // Publish BEFORE SaveChanges so the bus-outbox interceptor commits the
         // event together with the invitation row (this handler previously had

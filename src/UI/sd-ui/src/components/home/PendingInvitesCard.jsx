@@ -62,12 +62,19 @@ function PendingInvitesCard() {
     setBusy((b) => ({ ...b, [invite.invitationId]: "accept" }));
     try {
       const leagueId = await LeaguesApi.acceptInvitation(invite.invitationId);
-      removeRow(invite.invitationId);
       // PicksPage's league dropdown is driven by the cached /user/me DTO —
       // refresh it BEFORE navigating or the new league isn't in the list and
       // the page falls back to its default league. Same pattern as
-      // LeagueCreatePage post-create.
-      await refreshUserDto();
+      // LeagueCreatePage post-create. On refresh failure the join DID
+      // succeed — keep the row with a retryable error instead of navigating
+      // with a stale DTO; re-accepting is idempotent server-side, so the
+      // retry re-runs accept + refresh cleanly.
+      const refreshed = await refreshUserDto();
+      if (!refreshed) {
+        setBusy((b) => ({ ...b, [invite.invitationId]: "error" }));
+        return;
+      }
+      removeRow(invite.invitationId);
       // Land on picks for the newly joined league. PicksPage takes the league
       // as a ROUTE param (/picks/:leagueId — see MainApp.jsx), not a query
       // string; a query param is silently ignored.

@@ -274,7 +274,9 @@ public class LeagueController : ApiControllerBase
     {
         var userId = HttpContext.GetCurrentUserId();
 
-        var result = await handler.ExecuteAsync(userId, cancellationToken);
+        var query = new GetPendingInvitationsQuery { UserId = userId };
+
+        var result = await handler.ExecuteAsync(query, cancellationToken);
 
         return result.ToActionResult();
     }
@@ -288,9 +290,13 @@ public class LeagueController : ApiControllerBase
         [FromServices] IAcceptLeagueInvitationCommandHandler handler,
         CancellationToken cancellationToken)
     {
-        var userId = HttpContext.GetCurrentUserId();
+        var command = new AcceptLeagueInvitationCommand
+        {
+            InvitationId = invitationId,
+            UserId = HttpContext.GetCurrentUserId()
+        };
 
-        var result = await handler.ExecuteAsync(invitationId, userId, cancellationToken);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();
     }
@@ -303,9 +309,13 @@ public class LeagueController : ApiControllerBase
         [FromServices] IDeclineLeagueInvitationCommandHandler handler,
         CancellationToken cancellationToken)
     {
-        var userId = HttpContext.GetCurrentUserId();
+        var command = new DeclineLeagueInvitationCommand
+        {
+            InvitationId = invitationId,
+            UserId = HttpContext.GetCurrentUserId()
+        };
 
-        var result = await handler.ExecuteAsync(invitationId, userId, cancellationToken);
+        var result = await handler.ExecuteAsync(command, cancellationToken);
 
         return result.ToActionResult();
     }

@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Infrastructure.Notifications;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
@@ -111,28 +110,15 @@ public class SendLeagueInviteCommandHandler : ISendLeagueInviteCommandHandler
                 // (previously DeliveryMode.Direct with nothing to save).
                 try
                 {
-                    var hasPending = await _dbContext.PickemGroupInvitations
-                        .AsNoTracking()
-                        .AnyAsync(i =>
-                            i.PickemGroupId == league.Id &&
-                            i.InviteeUserId == invitee.Id &&
-                            i.AcceptedUtc == null &&
-                            i.DeclinedUtc == null &&
-                            !i.IsRevoked,
-                            cancellationToken);
-
-                    if (!hasPending)
-                    {
-                        await _dbContext.PickemGroupInvitations.AddAsync(new PickemGroupInvitation
-                        {
-                            Id = Guid.NewGuid(),
-                            CreatedBy = command.InvitedByUserId,
-                            CreatedUtc = _dateTimeProvider.UtcNow(),
-                            PickemGroupId = league.Id,
-                            InvitedByUserId = command.InvitedByUserId,
-                            InviteeUserId = invitee.Id
-                        }, cancellationToken);
-                    }
+                    // Shared with InviteUserToLeague so the two invite paths
+                    // can't drift on the dedupe rule.
+                    await PendingInvitationWriter.EnsurePendingAsync(
+                        _dbContext,
+                        league.Id,
+                        invitee.Id,
+                        command.InvitedByUserId,
+                        _dateTimeProvider.UtcNow(),
+                        cancellationToken);
 
                     await _eventBus.Publish(
                         new UserInvitedToPickemGroup(
@@ -151,6 +137,11 @@ public class SendLeagueInviteCommandHandler : ISendLeagueInviteCommandHandler
                     _logger.LogInformation(
                         "Persisted invitation + published UserInvitedToPickemGroup for registered invitee. LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",
                         league.Id, invitee.Id);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Client disconnect is not a fault — don't log it as one.
+                    throw;
                 }
                 catch (Exception ex)
                 {

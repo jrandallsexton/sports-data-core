@@ -117,7 +117,22 @@ public class InviteUserToLeagueCommandHandler : IInviteUserToLeagueCommandHandle
                 CausationId: Guid.NewGuid()),
             cancellationToken);
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsPendingInvitationDuplicate(ex))
+        {
+            // Lost a race with a concurrent invite for the same
+            // (league, invitee): the unique filtered index rejected our row.
+            // The pending invitation exists and the winning request's outbox
+            // carried the notification event, so this is idempotent success —
+            // exactly what the pre-check would have concluded a moment later.
+            _logger.LogInformation(
+                "Concurrent invite race lost (pending row already exists). LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",
+                league.Id, invitee.Id);
+            return new Success<bool>(true);
+        }
 
         _logger.LogInformation(
             "Published UserInvitedToPickemGroup (by username). LeagueId={LeagueId}, InviteeUserId={InviteeUserId}",
@@ -125,4 +140,16 @@ public class InviteUserToLeagueCommandHandler : IInviteUserToLeagueCommandHandle
 
         return new Success<bool>(true);
     }
+
+    /// <summary>
+    /// True only for a unique-violation on the pending-invitation filtered
+    /// index (IX_PickemGroupInvitations_PickemGroupId_InviteeUserId). Any
+    /// other database failure re-throws via the exception filter.
+    /// </summary>
+    private static bool IsPendingInvitationDuplicate(DbUpdateException ex) =>
+        ex.InnerException is Npgsql.PostgresException
+        {
+            SqlState: Npgsql.PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "IX_PickemGroupInvitations_PickemGroupId_InviteeUserId"
+        };
 }

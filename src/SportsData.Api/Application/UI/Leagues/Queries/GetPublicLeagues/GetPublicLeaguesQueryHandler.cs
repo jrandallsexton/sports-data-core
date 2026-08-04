@@ -73,16 +73,12 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
         var now = _dateTimeProvider.UtcNow();
         var result = leagues.Select(x =>
         {
-            // Stored expiry is the authority; derived first-game only covers
-            // the uncomputed gap for CloseAtFirstGame leagues -- and NOT for
-            // FullSeason+drop-week leagues, where the calculator's week-(N+1)
-            // override applies and first-game would be wrong. Uncomputed
-            // there means "open"; the creation trigger fills it in seconds.
-            var dropWeekOverride = x.LeagueWindow == LeagueWindow.FullSeason
-                && x.DropLowWeeksCount is > 0;
-            var closesAtUtc = x.InvitationsExpireUtc
-                ?? (x.JoinPolicy == JoinPolicy.CloseAtFirstGame && !dropWeekOverride
-                    ? x.FirstGameUtc : null);
+            // Shared derivation — see LeagueJoinability (also used by the
+            // pending-invitations query so the two read surfaces can't
+            // silently diverge).
+            var (closesAtUtc, isJoinable) = LeagueJoinability.Compute(
+                x.LeagueWindow, x.DropLowWeeksCount, x.JoinPolicy,
+                x.InvitationsExpireUtc, x.FirstGameUtc, now);
             return new PublicLeagueDto
             {
                 Id = x.Id,
@@ -103,7 +99,7 @@ public class GetPublicLeaguesQueryHandler : IGetPublicLeaguesQueryHandler
                 EndsOn = x.EndsOn,
                 JoinPolicy = x.JoinPolicy,
                 ClosesAtUtc = closesAtUtc,
-                IsJoinable = closesAtUtc is null || closesAtUtc > now
+                IsJoinable = isJoinable
             };
         })
         // Browse answers "what can I join?" — expired leagues are noise, not

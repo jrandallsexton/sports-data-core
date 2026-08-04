@@ -124,6 +124,12 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IJoinLeagueCommandHandler, JoinLeagueCommandHandler>();
             services.AddScoped<ISendLeagueInviteCommandHandler, SendLeagueInviteCommandHandler>();
             services.AddScoped<IInviteUserToLeagueCommandHandler, InviteUserToLeagueCommandHandler>();
+            services.AddScoped<
+                Application.UI.Leagues.Commands.AcceptLeagueInvitation.IAcceptLeagueInvitationCommandHandler,
+                Application.UI.Leagues.Commands.AcceptLeagueInvitation.AcceptLeagueInvitationCommandHandler>();
+            services.AddScoped<
+                Application.UI.Leagues.Commands.DeclineLeagueInvitation.IDeclineLeagueInvitationCommandHandler,
+                Application.UI.Leagues.Commands.DeclineLeagueInvitation.DeclineLeagueInvitationCommandHandler>();
 
             // League creation availability gate (config-driven; used by the create
             // guard and the /ui/leagues/creation-availability endpoint).
@@ -135,6 +141,9 @@ namespace SportsData.Api.DependencyInjection
             // Single authority for by-group authorization — see
             // docs/audit/league-authorization-idor.md.
             services.AddScoped<ILeagueMembershipGuard, LeagueMembershipGuard>();
+            services.AddScoped<
+                Application.UI.Leagues.Queries.GetPendingInvitations.IGetPendingInvitationsQueryHandler,
+                Application.UI.Leagues.Queries.GetPendingInvitations.GetPendingInvitationsQueryHandler>();
 
             // The ops proxy's named client: redirects are NOT followed (an
             // allowlisted upstream must not bounce the relay to an

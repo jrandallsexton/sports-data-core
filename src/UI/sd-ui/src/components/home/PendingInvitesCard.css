@@ -1,0 +1,114 @@
+/* PendingInvitesCard — league invites awaiting an answer. Same card chrome
+   and row rhythm as JoinableLeaguesCard / YourLeaguesCard so the home cards
+   read as siblings. */
+.pending-invites-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--accent-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  padding: 1rem 1.25rem;
+  max-width: 880px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  color: var(--text-primary);
+}
+
+.pending-invites-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.pending-invites-header h3 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.pending-invites-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pending-invite-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--accent-subtle);
+}
+
+.pending-invite-row:first-child {
+  border-top: none;
+}
+
+.pending-invite-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pending-invite-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pending-invite-meta {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.pending-invite-error {
+  color: var(--error, #dc2626);
+  opacity: 1;
+}
+
+.pending-invite-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.pending-invite-accept,
+.pending-invite-decline {
+  border: none;
+  cursor: pointer;
+  padding: 0.35rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.pending-invite-accept {
+  background-color: var(--accent);
+  color: var(--text-on-accent, #fff);
+}
+
+.pending-invite-accept:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.pending-invite-decline {
+  background-color: transparent;
+  border: 1px solid var(--accent-subtle);
+  color: var(--text-primary);
+}
+
+.pending-invite-decline:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.pending-invite-accept:disabled,
+.pending-invite-decline:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

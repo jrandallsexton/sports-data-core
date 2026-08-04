@@ -1,6 +1,7 @@
 import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
 import PrimarySlotOffSeasonCountdown from "./PrimarySlotOffSeasonCountdown";
+import PendingInvitesCard from "./PendingInvitesCard";
 import YourLeaguesCard from "./YourLeaguesCard";
 import JoinableLeaguesCard from "./JoinableLeaguesCard";
 
@@ -47,6 +48,14 @@ function HomePage() {
     <div className="home-page">
       <section className="home-tier home-tier--primary">
         <PrimarySlotOffSeasonCountdown hasLeagues={hasLeagues} />
+      </section>
+
+      {/* Pending league invitations — above the league list because an
+          unanswered invite is the most actionable thing on the page. The
+          card renders null when there are none. Closes the gap where a
+          push notification implied something was waiting in-app. */}
+      <section className="home-tier home-tier--context">
+        <PendingInvitesCard />
       </section>
 
       {/* Tier 2 — "Your Leagues" list. Mirrors sd-mobile's YourLeaguesCard

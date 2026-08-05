@@ -30,7 +30,10 @@ const formatRemaining = (ms) => {
  *   - <= 10 days    -> live countdown, minute tick ("Closes in 2d 4h")
  *   - no value      -> "Open"
  */
-function JoinClosesLabel({ closesAtUtc, isJoinable }) {
+// verb: "Closes" (join windows - default) or "Expires" (invitations).
+// An invitation expires; a league's join window closes.
+function JoinClosesLabel({ closesAtUtc, isJoinable, verb = "Closes" }) {
+  const pastVerb = verb === "Expires" ? "Expired" : "Closed";
   const [now, setNow] = useState(() => Date.now());
 
   const closesMs = closesAtUtc ? new Date(closesAtUtc).getTime() : NaN;
@@ -56,7 +59,7 @@ function JoinClosesLabel({ closesAtUtc, isJoinable }) {
   }, [closesMs, inCountdownWindow, remaining]);
 
   if (isJoinable === false || (Number.isFinite(closesMs) && remaining <= 0)) {
-    return <span className="join-closes join-closes--closed">Closed</span>;
+    return <span className="join-closes join-closes--closed">{pastVerb}</span>;
   }
 
   if (!Number.isFinite(closesMs)) {
@@ -66,7 +69,7 @@ function JoinClosesLabel({ closesAtUtc, isJoinable }) {
   if (inCountdownWindow) {
     return (
       <span className="join-closes join-closes--countdown">
-        Closes in {formatRemaining(remaining)}
+        {verb} in {formatRemaining(remaining)}
       </span>
     );
   }
@@ -74,7 +77,7 @@ function JoinClosesLabel({ closesAtUtc, isJoinable }) {
   const d = new Date(closesMs);
   return (
     <span className="join-closes">
-      Closes {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+      {verb} {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
     </span>
   );
 }

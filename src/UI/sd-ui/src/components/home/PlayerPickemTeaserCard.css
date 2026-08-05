@@ -1,0 +1,103 @@
+/* PlayerPickemTeaserCard — "Coming Soon" lineup-slot banner. Same card
+   chrome family as the other home cards; the slot row is the pitch. */
+.pickem-teaser {
+  background-color: var(--bg-card);
+  border: 1px solid var(--accent-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  padding: 1.15rem 1.35rem 1.25rem;
+  max-width: 880px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  color: var(--text-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.pickem-teaser-dismiss {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted, #8d96a0);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.pickem-teaser-dismiss:hover,
+.pickem-teaser-dismiss:focus-visible {
+  color: var(--text-primary);
+  outline: 1px solid var(--accent-subtle);
+}
+
+/* Matches the sibling home cards' eyebrow treatment. */
+.pickem-teaser-eyebrow {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.pickem-teaser-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 2px 0 4px;
+}
+
+.pickem-teaser-pitch {
+  color: var(--text-muted, #8d96a0);
+  font-size: 0.88rem;
+  margin: 0 0 14px;
+}
+
+.pickem-teaser-slots {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pickem-teaser-slot {
+  border: 1px dashed color-mix(in srgb, var(--text-muted, #8d96a0) 55%, transparent);
+  color: var(--text-muted, #8d96a0);
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-width: 34px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.pickem-teaser-slot-count {
+  font-weight: 400;
+  opacity: 0.75;
+  letter-spacing: 0;
+}
+
+.pickem-teaser-slot--filled {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pickem-teaser-slot--filled {
+    animation: pickem-teaser-pulse 3.2s ease-in-out infinite;
+  }
+
+  @keyframes pickem-teaser-pulse {
+    0%,
+    100% {
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+    50% {
+      background: color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+  }
+}

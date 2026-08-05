@@ -119,7 +119,13 @@ export function JoinLeagueConfirmSheet({ league, invitationId, onCancel, onJoine
                 <Row label="Commissioner" value={league.commissioner} />
                 <View style={styles.row}>
                   <Text style={[styles.rowLabel, { color: theme.textMuted }]}>Joining</Text>
-                  <JoinClosesLabel closesAtUtc={league.closesAtUtc} isJoinable={league.isJoinable} />
+                  {/* Invitation accepts phrase this as expiry — an invitation
+                      expires; a league's join window closes. */}
+                  <JoinClosesLabel
+                    closesAtUtc={league.closesAtUtc}
+                    isJoinable={league.isJoinable}
+                    verb={invitationId ? 'Expires' : 'Closes'}
+                  />
                 </View>
               </ScrollView>
 

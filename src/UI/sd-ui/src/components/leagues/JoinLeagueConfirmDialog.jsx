@@ -43,7 +43,9 @@ const windowLabel = (league) => {
   return start ? `From ${start}` : `Through ${end}`;
 };
 
-function JoinLeagueConfirmDialog({ league, onCancel, onConfirm }) {
+// closesVerb: "Closes" (public joins - default) or "Expires" (invitation
+// accepts) - an invitation expires; a league's join window closes.
+function JoinLeagueConfirmDialog({ league, onCancel, onConfirm, closesVerb = "Closes" }) {
   const dialogRef = useRef(null);
 
   // Keyboard modality: aria-modal alone constrains nothing. On open, move
@@ -145,7 +147,7 @@ function JoinLeagueConfirmDialog({ league, onCancel, onConfirm }) {
           </li>
           <li>
             <strong>Joining:</strong>{" "}
-            <JoinClosesLabel closesAtUtc={league.closesAtUtc} isJoinable={league.isJoinable} />
+            <JoinClosesLabel closesAtUtc={league.closesAtUtc} isJoinable={league.isJoinable} verb={closesVerb} />
           </li>
         </ul>
         <div className="join-confirm-actions">

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LeaguesApi from "api/leagues/leaguesApi";
 import { useUserDto } from "../../contexts/UserContext";
+import JoinClosesLabel from "../leagues/JoinClosesLabel";
 import JoinLeagueConfirmDialog from "../leagues/JoinLeagueConfirmDialog";
 import "./PendingInvitesCard.css";
 
@@ -114,6 +115,12 @@ function PendingInvitesCard() {
                   <span aria-hidden="true">{SPORT_ICON[league.sport] ?? "🏆"}</span>{" "}
                   {SPORT_LABEL[league.sport] ?? league.sport} {league.seasonYear} ·
                   Invited by {invite.invitedBy}
+                  {" · "}
+                  <JoinClosesLabel
+                    closesAtUtc={league.closesAtUtc}
+                    isJoinable={league.isJoinable}
+                    verb="Expires"
+                  />
                   {state === "error" && (
                     <span className="pending-invite-error"> · Failed — try again</span>
                   )}
@@ -144,6 +151,7 @@ function PendingInvitesCard() {
       {/* Same dialog as discovery — league parameters shown before joining. */}
       <JoinLeagueConfirmDialog
         league={confirming?.league ?? null}
+        closesVerb="Expires"
         onCancel={() => setConfirming(null)}
         onConfirm={() => confirming && accept(confirming)}
       />

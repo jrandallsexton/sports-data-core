@@ -12,6 +12,7 @@ import {
   type PendingInvitation,
 } from '@/src/services/api/leaguesApi';
 import { JoinLeagueConfirmSheet } from '@/src/components/features/leagues/JoinLeagueConfirmSheet';
+import { JoinClosesLabel } from '@/src/components/features/leagues/JoinClosesLabel';
 import { SPORT_ICON, SPORT_LABEL } from '@/src/components/features/leagues/joinDisplay';
 
 /**
@@ -69,10 +70,21 @@ export function PendingInvitesCard() {
                 <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
                   {league.name}
                 </Text>
-                <Text style={[styles.meta, { color: theme.textMuted }]} numberOfLines={1}>
-                  {SPORT_ICON[league.sport] ?? '🏆'} {SPORT_LABEL[league.sport] ?? league.sport}{' '}
-                  {league.seasonYear} · Invited by {invite.invitedBy}
-                </Text>
+                {/* Wrapping row so the JoinClosesLabel (with its live
+                    countdown) can flow after the static meta — same shape
+                    as JoinableLeaguesCard's metaRow. */}
+                <View style={styles.metaRow}>
+                  <Text style={[styles.meta, { color: theme.textMuted }]}>
+                    {SPORT_ICON[league.sport] ?? '🏆'} {SPORT_LABEL[league.sport] ?? league.sport}{' '}
+                    {league.seasonYear} · Invited by {invite.invitedBy} ·{' '}
+                  </Text>
+                  <JoinClosesLabel
+                    closesAtUtc={league.closesAtUtc}
+                    isJoinable={league.isJoinable}
+                    verb="Expires"
+                    style={styles.meta}
+                  />
+                </View>
                 {errorId === invite.invitationId ? (
                   <Text style={[styles.errorText, { color: theme.error }]}>
                     Failed — try again
@@ -144,7 +156,8 @@ const styles = StyleSheet.create({
   },
   info: { flex: 1, minWidth: 0 },
   name: { fontSize: 15, fontWeight: '600' },
-  meta: { fontSize: 12, marginTop: 2 },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 2 },
+  meta: { fontSize: 12 },
   errorText: { fontSize: 12, marginTop: 2, fontWeight: '600' },
   actions: { flexDirection: 'row', gap: 8 },
   declineBtn: {

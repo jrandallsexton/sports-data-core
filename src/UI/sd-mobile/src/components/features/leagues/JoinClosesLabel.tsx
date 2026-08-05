@@ -4,10 +4,13 @@ import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import { useLiveJoinState } from './useLiveJoinState';
+import type { JoinClosesVerb } from './joinDisplay';
 
 interface Props {
   closesAtUtc: string | null | undefined;
   isJoinable: boolean;
+  /** "Closes" (join windows — default) or "Expires" (invitations). */
+  verb?: JoinClosesVerb;
   style?: StyleProp<TextStyle>;
 }
 
@@ -17,10 +20,10 @@ interface Props {
  * boundary timer so a long-lived screen transitions date -> countdown ->
  * Closed without a reload.
  */
-export function JoinClosesLabel({ closesAtUtc, isJoinable, style }: Props) {
+export function JoinClosesLabel({ closesAtUtc, isJoinable, verb, style }: Props) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
-  const state = useLiveJoinState(closesAtUtc, isJoinable);
+  const state = useLiveJoinState(closesAtUtc, isJoinable, verb);
   // Countdown draws attention; every other state is muted.
   const color = state.kind === 'countdown' ? theme.tint : theme.textMuted;
 

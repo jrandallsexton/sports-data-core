@@ -1,6 +1,7 @@
 import "./HomePage.css";
 import { useUserDto } from "../../contexts/UserContext";
 import PrimarySlotOffSeasonCountdown from "./PrimarySlotOffSeasonCountdown";
+import PlayerPickemTeaserCard from "./PlayerPickemTeaserCard";
 import PendingInvitesCard from "./PendingInvitesCard";
 import YourLeaguesCard from "./YourLeaguesCard";
 import JoinableLeaguesCard from "./JoinableLeaguesCard";
@@ -48,6 +49,13 @@ function HomePage() {
     <div className="home-page">
       <section className="home-tier home-tier--primary">
         <PrimarySlotOffSeasonCountdown hasLeagues={hasLeagues} />
+      </section>
+
+      {/* Player Pick'em teaser — the coming-soon lineup-slot banner
+          (docs/features/player-pickem.md). Directly below the countdown;
+          dismissible, self-nulls once dismissed. */}
+      <section className="home-tier home-tier--context">
+        <PlayerPickemTeaserCard />
       </section>
 
       {/* Pending league invitations — above the league list because an

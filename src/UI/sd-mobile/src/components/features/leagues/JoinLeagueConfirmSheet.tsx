@@ -17,6 +17,7 @@ import {
   PICK_TYPE_LABEL,
   TIEBREAKER_LABEL,
   windowLabel,
+  type JoinClosesVerb,
 } from './joinDisplay';
 
 interface Props {
@@ -53,10 +54,19 @@ export function JoinLeagueConfirmSheet({ league, invitationId, onCancel, onJoine
   // Both hooks always mount (rules of hooks); invitationId picks the active one.
   const joinMutation = invitationId ? acceptInvite : publicJoin;
 
+  // Single verb derivation for every surface in the sheet — the "Joining"
+  // row AND the disabled button title. An invitation expires; a league's
+  // join window closes.
+  const closesVerb: JoinClosesVerb = invitationId ? 'Expires' : 'Closes';
+
   // Live join state (ticks past the countdown/close instant) — a league can
   // close while the sheet is open, so Join disables rather than submitting a
   // join the BE would reject.
-  const joinState = useLiveJoinState(league?.closesAtUtc ?? null, league?.isJoinable ?? true);
+  const joinState = useLiveJoinState(
+    league?.closesAtUtc ?? null,
+    league?.isJoinable ?? true,
+    closesVerb,
+  );
   const closed = joinState.kind === 'closed';
 
   // The sheet is a single persistent component reused across leagues; only the
@@ -119,7 +129,11 @@ export function JoinLeagueConfirmSheet({ league, invitationId, onCancel, onJoine
                 <Row label="Commissioner" value={league.commissioner} />
                 <View style={styles.row}>
                   <Text style={[styles.rowLabel, { color: theme.textMuted }]}>Joining</Text>
-                  <JoinClosesLabel closesAtUtc={league.closesAtUtc} isJoinable={league.isJoinable} />
+                  <JoinClosesLabel
+                    closesAtUtc={league.closesAtUtc}
+                    isJoinable={league.isJoinable}
+                    verb={closesVerb}
+                  />
                 </View>
               </ScrollView>
 
@@ -132,7 +146,9 @@ export function JoinLeagueConfirmSheet({ league, invitationId, onCancel, onJoine
               <View style={styles.actions}>
                 <Button title="Cancel" variant="ghost" onPress={onCancel} />
                 <Button
-                  title={closed ? 'Closed' : joinMutation.isPending ? 'Joining…' : 'Join'}
+                  // joinState.text is "Closed" / "Expired" in the closed
+                  // state, matching the sheet's verb.
+                  title={closed ? joinState.text : joinMutation.isPending ? 'Joining…' : 'Join'}
                   onPress={() => joinMutation.mutate(invitationId ?? league.id)}
                   loading={joinMutation.isPending}
                   disabled={closed}

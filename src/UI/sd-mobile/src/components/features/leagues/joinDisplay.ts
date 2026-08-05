@@ -44,9 +44,13 @@ export interface JoinClosesState {
   kind: 'open' | 'date' | 'countdown' | 'closed';
 }
 
+/** "Closes" for league join windows (default); "Expires" for invitations —
+ *  an invitation expires, a league's join window closes. */
+export type JoinClosesVerb = 'Closes' | 'Expires';
+
 /**
  * The join-status text for a league at time `now`. Mirrors sd-ui:
- *   closed / past   -> "Closed"
+ *   closed / past   -> "Closed" (or "Expired" with verb "Expires")
  *   > 10 days out   -> "Closes Sep 15"
  *   <= 10 days      -> "Closes in 2d 4h"
  *   no closesAtUtc  -> "Open"
@@ -55,11 +59,13 @@ export function joinClosesState(
   closesAtUtc: string | null | undefined,
   isJoinable: boolean,
   now: number,
+  verb: JoinClosesVerb = 'Closes',
 ): JoinClosesState {
   const closesMs = closesAtUtc ? new Date(closesAtUtc).getTime() : NaN;
+  const pastVerb = verb === 'Expires' ? 'Expired' : 'Closed';
 
   if (isJoinable === false || (Number.isFinite(closesMs) && closesMs - now <= 0)) {
-    return { text: 'Closed', kind: 'closed' };
+    return { text: pastVerb, kind: 'closed' };
   }
   if (!Number.isFinite(closesMs)) {
     return { text: 'Open', kind: 'open' };
@@ -67,12 +73,12 @@ export function joinClosesState(
 
   const remaining = closesMs - now;
   if (remaining <= COUNTDOWN_WINDOW_MS) {
-    return { text: `Closes in ${formatRemaining(remaining)}`, kind: 'countdown' };
+    return { text: `${verb} in ${formatRemaining(remaining)}`, kind: 'countdown' };
   }
 
   const d = new Date(closesMs);
   const label = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return { text: `Closes ${label}`, kind: 'date' };
+  return { text: `${verb} ${label}`, kind: 'date' };
 }
 
 // BE enum names -> user-facing phrasing (mirrors sd-ui's create form).

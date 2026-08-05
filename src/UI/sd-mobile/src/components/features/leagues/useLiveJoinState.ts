@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { COUNTDOWN_WINDOW_MS, joinClosesState, type JoinClosesState } from './joinDisplay';
+import {
+  COUNTDOWN_WINDOW_MS,
+  joinClosesState,
+  type JoinClosesState,
+  type JoinClosesVerb,
+} from './joinDisplay';
 
 // setTimeout treats delays above 2^31-1 ms (~24.8 days) as 0.
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
@@ -15,6 +20,7 @@ const TICK_MS = 60 * 1000;
 export function useLiveJoinState(
   closesAtUtc: string | null | undefined,
   isJoinable: boolean,
+  verb?: JoinClosesVerb,
 ): JoinClosesState {
   const [now, setNow] = useState(() => Date.now());
 
@@ -43,5 +49,5 @@ export function useLiveJoinState(
     return () => clearTimeout(id);
   }, [closesMs, inCountdown, remaining]);
 
-  return joinClosesState(closesAtUtc, isJoinable, now);
+  return joinClosesState(closesAtUtc, isJoinable, now, verb);
 }

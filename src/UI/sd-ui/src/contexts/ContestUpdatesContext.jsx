@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 // DIAG (refresh-loses-updates investigation): module-level counter so
 // each ContestUpdatesProvider mount gets a unique instance ID. If the
@@ -25,6 +25,11 @@ export const ContestUpdatesProvider = ({ children }) => {
   const [instanceId] = useState(() => ++_ctxInstanceCounter);
   // Map of contestId -> live update data
   const [contests, setContests] = useState({});
+
+  // Per-contest pending "clear scoring celebration" timer handles — see the
+  // scoring-play auto-clear below. A ref (not state): timer bookkeeping must
+  // not trigger renders.
+  const scoringClearTimersRef = useRef(new Map());
 
   console.log(`[ContestCtx#${instanceId}] render, contests size:`, Object.keys(contests).length, 'keys:', Object.keys(contests));
 
@@ -89,9 +94,12 @@ export const ContestUpdatesProvider = ({ children }) => {
         homeScore: data.homeScore,
         possessionFranchiseSeasonId: data.possessionFranchiseSeasonId,
         isScoringPlay: data.isScoringPlay || false,
-        // ESPN scoringType displayName ("Touchdown", "Field Goal", ...) or
-        // null - drives the celebration label; null falls back to "SCORE!"
-        scoringPlayType: data.scoringPlayType ?? null,
+        // Canonical scoringType NAME slug ('touchdown', 'field-goal', ...)
+        // or null. Preserved as-received: omitted (older messages) stays
+        // undefined so downstream merges can fall back to fetched data,
+        // while an explicit null means "this score has no published type"
+        // and must CLEAR any stale value (label falls back to SCORE!).
+        scoringPlayType: data.scoringPlayType,
         ballOnYardLine: data.ballOnYardLine,
         lastPlayId: data.playId,
         lastPlayDescription: data.playDescription,
@@ -100,9 +108,17 @@ export const ContestUpdatesProvider = ({ children }) => {
       }
     }));
 
-    // Auto-clear scoring play flag after animation duration
+    // Auto-clear scoring play flag after animation duration. Timers are
+    // per-contest and re-armed on each scoring play: two scores within 2s
+    // (e.g. TD then a quick turnover score) must not have the first timer
+    // truncate the second celebration. Mirrors the mobile store's
+    // per-contest timer map.
     if (data.isScoringPlay) {
-      setTimeout(() => {
+      const pending = scoringClearTimersRef.current;
+      const existing = pending.get(data.contestId);
+      if (existing) clearTimeout(existing);
+      const timerId = setTimeout(() => {
+        pending.delete(data.contestId);
         setContests(prev => ({
           ...prev,
           [data.contestId]: {
@@ -112,6 +128,7 @@ export const ContestUpdatesProvider = ({ children }) => {
           }
         }));
       }, 2000);
+      pending.set(data.contestId, timerId);
     }
   }, [instanceId]);
 

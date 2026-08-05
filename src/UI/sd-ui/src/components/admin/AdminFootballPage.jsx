@@ -70,7 +70,10 @@ export default function AdminFootballPage() {
       possessionFranchiseSeasonId:
         live.possessionFranchiseSeasonId ?? matchup.possessionFranchiseSeasonId,
       isScoringPlay: live.isScoringPlay ?? matchup.isScoringPlay,
-      scoringPlayType: live.scoringPlayType ?? matchup.scoringPlayType,
+      // Omitted falls back; explicit null clears (see PicksPage).
+      scoringPlayType: live.scoringPlayType !== undefined
+        ? live.scoringPlayType
+        : matchup.scoringPlayType,
       ballOnYardLine: live.ballOnYardLine ?? matchup.ballOnYardLine,
       lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
     };

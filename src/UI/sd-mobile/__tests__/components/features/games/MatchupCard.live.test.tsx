@@ -238,6 +238,8 @@ describe('MatchupCard — live updates', () => {
     ['touchdown', /🎉 TOUCHDOWN!/],
     ['field-goal', /FIELD GOAL!/],
     ['defensive-two-point-conversion', /DEF 2-PT!/],
+    // Unrecognized slug must NOT be echoed as a label — neutral fallback.
+    ['unexpected-type', /SCORE!/],
     [null, /SCORE!/],
   ])('renders the celebration label for scoringPlayType=%s', (scoringPlayType, expected) => {
     const matchup = buildFootballMatchup();
@@ -261,6 +263,59 @@ describe('MatchupCard — live updates', () => {
     });
 
     expect(screen.getByText(expected)).toBeTruthy();
+  });
+
+  // Omitted vs explicit null are DIFFERENT states (CR #592): an event from
+  // an older publisher that omits scoringPlayType falls back to the fetched
+  // matchup's type; an explicit null means "this score has no published
+  // type" and must CLEAR the stale value, not resurrect it via ??.
+  it('falls back to the fetched scoring type when the event omits the field', () => {
+    const matchup = buildFootballMatchup({ scoringPlayType: 'touchdown' });
+    renderWithProviders(<MatchupCard matchup={matchup} leagueSport="FootballNfl" />);
+
+    act(() => {
+      useContestUpdatesStore.getState().handleFootballPlayCompleted({
+        contestId: CID,
+        competitionId: '00000000-0000-0000-0000-0000000000ee',
+        playId: '00000000-0000-0000-0000-0000000000ff',
+        playDescription: 'Scoring play!',
+        period: 'Q4',
+        clock: '0:32',
+        awayScore: 21,
+        homeScore: 17,
+        possessionFranchiseSeasonId: '00000000-0000-0000-0000-0000000000b1',
+        isScoringPlay: true,
+        // scoringPlayType deliberately omitted (pre-upgrade message shape)
+        ballOnYardLine: 0,
+      });
+    });
+
+    expect(screen.getByText(/🎉 TOUCHDOWN!/)).toBeTruthy();
+  });
+
+  it('clears a stale fetched scoring type when the event carries an explicit null', () => {
+    const matchup = buildFootballMatchup({ scoringPlayType: 'touchdown' });
+    renderWithProviders(<MatchupCard matchup={matchup} leagueSport="FootballNfl" />);
+
+    act(() => {
+      useContestUpdatesStore.getState().handleFootballPlayCompleted({
+        contestId: CID,
+        competitionId: '00000000-0000-0000-0000-0000000000ee',
+        playId: '00000000-0000-0000-0000-0000000000ff',
+        playDescription: 'Scoring play!',
+        period: 'Q4',
+        clock: '0:32',
+        awayScore: 24,
+        homeScore: 17,
+        possessionFranchiseSeasonId: '00000000-0000-0000-0000-0000000000b1',
+        isScoringPlay: true,
+        scoringPlayType: null,
+        ballOnYardLine: 0,
+      });
+    });
+
+    expect(screen.getByText(/SCORE!/)).toBeTruthy();
+    expect(screen.queryByText(/TOUCHDOWN/)).toBeNull();
   });
 
   it('does not subscribe to events for a different contestId', () => {

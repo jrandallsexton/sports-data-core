@@ -23,7 +23,9 @@ function FootballGameStatusInProgress({
   homeFranchiseSeasonId,
   possessionFranchiseSeasonId,
   isScoringPlay,
-  // ESPN scoringType displayName ("Touchdown", "Field Goal", ...) or null.
+  // Nullable canonical scoring-type NAME slug ('touchdown', 'field-goal',
+  // 'safety', 'defensive-two-point-conversion') - NOT a display name. The
+  // SCORING_LABELS lookup below requires these slugs.
   scoringPlayType,
   lastPlayDescription,
   // See BaseballGameStatusInProgress isDelayed comment — same

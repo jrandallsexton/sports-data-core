@@ -116,7 +116,7 @@
   margin-top: auto;
 }
 
-.team-row {
+.matchup-card .team-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -129,7 +129,7 @@
 
 /* Per-team score at the row's far right (mobile parity). Neutral while the
    game is live; the winner's score takes the accent once FINAL. */
-.team-score {
+.matchup-card .team-score {
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -137,7 +137,7 @@
   flex-shrink: 0;
 }
 
-.team-score--winner {
+.matchup-card .team-score--winner {
   color: var(--accent);
 }
 
@@ -663,7 +663,7 @@
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
-  .team-row {
+  .matchup-card .team-row {
     padding: 0.75rem;
     gap: 0.5rem;
   }
@@ -715,7 +715,7 @@
 }
 
 @media (max-width: 480px) {
-  .team-row {
+  .matchup-card .team-row {
     padding: 0.5rem;
     flex-wrap: wrap; /* Allow wrapping on very small screens */
   }

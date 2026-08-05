@@ -577,6 +577,11 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
       possessionFranchiseSeasonId:
         live.possessionFranchiseSeasonId ?? matchup.possessionFranchiseSeasonId,
       isScoringPlay: live.isScoringPlay ?? matchup.isScoringPlay,
+      // Omitted (older messages) falls back to fetched data; an explicit
+      // null CLEARS a stale type (?? would resurrect it).
+      scoringPlayType: live.scoringPlayType !== undefined
+        ? live.scoringPlayType
+        : matchup.scoringPlayType,
       ballOnYardLine: live.ballOnYardLine ?? matchup.ballOnYardLine,
       // Baseball live fields
       inning: live.inning ?? matchup.inning,

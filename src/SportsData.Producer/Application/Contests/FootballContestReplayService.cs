@@ -168,6 +168,7 @@ namespace SportsData.Producer.Application.Contests
                         HomeScore: play.HomeScore,
                         PossessionFranchiseSeasonId: play.StartFranchiseSeasonId,
                         IsScoringPlay: play.ScoringPlay,
+                        ScoringPlayType: play.ScoringTypeName,
                         BallOnYardLine: play.EndYardLine ?? play.StartYardLine,
                         Ref: null,
                         Sport: contest.Sport,

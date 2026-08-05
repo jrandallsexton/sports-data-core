@@ -3,8 +3,10 @@ import { contestLink } from '../../utils/sportLinks';
 
 /**
  * Football per-play live block. Renders LIVE label, period+clock, score
- * with 🏈 next to the team in possession, scoring flash + 🎉 TOUCHDOWN!
- * indicator, and a last-play description row (mirrors baseball).
+ * with 🏈 next to the team in possession, scoring flash + a typed
+ * celebration label (🎉 TOUCHDOWN! / FIELD GOAL! / SAFETY! / neutral
+ * SCORE! when the type is unknown - issue #45), and a last-play
+ * description row (mirrors baseball).
  *
  * Class names are intentionally kept (`.game-result`, `.final-score`,
  * `.score-display`, etc.) — the broader status-neutral rename is a
@@ -21,6 +23,10 @@ function FootballGameStatusInProgress({
   homeFranchiseSeasonId,
   possessionFranchiseSeasonId,
   isScoringPlay,
+  // Nullable canonical scoring-type NAME slug ('touchdown', 'field-goal',
+  // 'safety', 'defensive-two-point-conversion') - NOT a display name. The
+  // SCORING_LABELS lookup below requires these slugs.
+  scoringPlayType,
   lastPlayDescription,
   // See BaseballGameStatusInProgress isDelayed comment — same
   // semantics, mirrors the LIVE → delay-status text swap.
@@ -46,6 +52,30 @@ function FootballGameStatusInProgress({
   const hasLastPlayRow =
     typeof lastPlayDescription === 'string' && lastPlayDescription.length > 0;
 
+  // Three-tier scoring-label resolution (issue #45):
+  //   1. ESPN scoringType NAME slug - closed vocabulary verified against
+  //      canon: touchdown | field-goal | safety |
+  //      defensive-two-point-conversion.
+  //   2. Slug null (all pre-capture historical rows, so REPLAYS land here)
+  //      -> sniff the play description. TD is checked FIRST so "field goal
+  //      BLOCKED ... returned for a TOUCHDOWN" resolves to the actual score.
+  //   3. Neutral SCORE! as the honest last resort.
+  const SCORING_LABELS = {
+    'touchdown': { label: 'TOUCHDOWN!', emoji: true },
+    'field-goal': { label: 'FIELD GOAL!' },
+    'safety': { label: 'SAFETY!' },
+    'defensive-two-point-conversion': { label: 'DEF 2-PT!' },
+  };
+  const sniffScoringType = (text) => {
+    if (!text) return null;
+    if (/touchdown|\bTD\b/i.test(text)) return 'touchdown';
+    if (/safety/i.test(text)) return 'safety';
+    if (/field goal|\bFG\b/i.test(text)) return 'field-goal';
+    return null;
+  };
+  const resolvedType = scoringPlayType ?? sniffScoringType(lastPlayDescription);
+  const scoring = SCORING_LABELS[resolvedType] ?? { label: 'SCORE!' };
+
   const liveContent = (
     <>
       {isDelayed ? (
@@ -62,8 +92,10 @@ function FootballGameStatusInProgress({
         {homeHasPossession && <span className="possession-indicator">🏈</span>}
       </span>
       {isScoringPlay && (
-        // TODO: Determine score type (TD, FG, etc.) for better indicator
-        <span className="touchdown-indicator">🎉 TOUCHDOWN!</span>
+        <span className="touchdown-indicator">
+          {scoring.emoji ? '🎉 ' : ''}
+          {scoring.label}
+        </span>
       )}
       {hasLastPlayRow && (
         <span className="live-state-lastplay" title={lastPlayDescription}>

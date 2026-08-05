@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 
 // DIAG (refresh-loses-updates investigation): module-level counter so
 // each ContestUpdatesProvider mount gets a unique instance ID. If the
@@ -25,6 +25,11 @@ export const ContestUpdatesProvider = ({ children }) => {
   const [instanceId] = useState(() => ++_ctxInstanceCounter);
   // Map of contestId -> live update data
   const [contests, setContests] = useState({});
+
+  // Per-contest pending "clear scoring celebration" timer handles — see the
+  // scoring-play auto-clear below. A ref (not state): timer bookkeeping must
+  // not trigger renders.
+  const scoringClearTimersRef = useRef(new Map());
 
   console.log(`[ContestCtx#${instanceId}] render, contests size:`, Object.keys(contests).length, 'keys:', Object.keys(contests));
 
@@ -89,6 +94,12 @@ export const ContestUpdatesProvider = ({ children }) => {
         homeScore: data.homeScore,
         possessionFranchiseSeasonId: data.possessionFranchiseSeasonId,
         isScoringPlay: data.isScoringPlay || false,
+        // Canonical scoringType NAME slug ('touchdown', 'field-goal', ...)
+        // or null. Preserved as-received: omitted (older messages) stays
+        // undefined so downstream merges can fall back to fetched data,
+        // while an explicit null means "this score has no published type"
+        // and must CLEAR any stale value (label falls back to SCORE!).
+        scoringPlayType: data.scoringPlayType,
         ballOnYardLine: data.ballOnYardLine,
         lastPlayId: data.playId,
         lastPlayDescription: data.playDescription,
@@ -97,17 +108,33 @@ export const ContestUpdatesProvider = ({ children }) => {
       }
     }));
 
-    // Auto-clear scoring play flag after animation duration
+    // Auto-clear scoring play flag after animation duration. Timers are
+    // per-contest and re-armed on each scoring play: two scores within 2s
+    // (e.g. TD then a quick turnover score) must not have the first timer
+    // truncate the second celebration. Mirrors the mobile store's
+    // per-contest timer map.
     if (data.isScoringPlay) {
-      setTimeout(() => {
-        setContests(prev => ({
-          ...prev,
-          [data.contestId]: {
-            ...prev[data.contestId],
-            isScoringPlay: false
-          }
-        }));
+      const pending = scoringClearTimersRef.current;
+      const existing = pending.get(data.contestId);
+      if (existing) clearTimeout(existing);
+      const timerId = setTimeout(() => {
+        pending.delete(data.contestId);
+        setContests(prev => {
+          // Only update a contest that still exists — spreading an entry
+          // that clearContestUpdate/clearAllUpdates removed would CREATE a
+          // phantom record holding nothing but the cleared flags.
+          if (!prev[data.contestId]) return prev;
+          return {
+            ...prev,
+            [data.contestId]: {
+              ...prev[data.contestId],
+              isScoringPlay: false,
+              scoringPlayType: null
+            }
+          };
+        });
       }, 2000);
+      pending.set(data.contestId, timerId);
     }
   }, [instanceId]);
 
@@ -239,6 +266,14 @@ export const ContestUpdatesProvider = ({ children }) => {
    * @param {string} contestId
    */
   const clearContestUpdate = useCallback((contestId) => {
+    // Cancel the contest's pending scoring-clear timer alongside its state —
+    // a stale timer firing later must not touch reloaded state.
+    const pending = scoringClearTimersRef.current;
+    const existing = pending.get(contestId);
+    if (existing) {
+      clearTimeout(existing);
+      pending.delete(contestId);
+    }
     setContests(prev => {
       const { [contestId]: removed, ...rest } = prev;
       return rest;
@@ -249,7 +284,20 @@ export const ContestUpdatesProvider = ({ children }) => {
    * Clear all contest updates (e.g., on logout or league change)
    */
   const clearAllUpdates = useCallback(() => {
+    const pending = scoringClearTimersRef.current;
+    for (const timerId of pending.values()) clearTimeout(timerId);
+    pending.clear();
     setContests({});
+  }, []);
+
+  // Drain any remaining scoring-clear timers on unmount — a timer firing
+  // after teardown would call setContests on an unmounted provider.
+  useEffect(() => {
+    const pending = scoringClearTimersRef.current;
+    return () => {
+      for (const timerId of pending.values()) clearTimeout(timerId);
+      pending.clear();
+    };
   }, []);
 
   const value = {

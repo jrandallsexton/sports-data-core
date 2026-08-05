@@ -256,6 +256,7 @@ function MatchupCard({
           homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
           possessionFranchiseSeasonId={matchup.possessionFranchiseSeasonId}
           isScoringPlay={matchup.isScoringPlay}
+          scoringPlayType={matchup.scoringPlayType}
           // Baseball-shaped live fields (populated by ContestUpdatesContext
           // on BaseballPlayCompleted; ignored on the football branch)
           inning={matchup.inning}

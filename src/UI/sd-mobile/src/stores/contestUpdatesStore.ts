@@ -26,6 +26,10 @@ export interface ContestLiveRecord {
   clock?: string;
   possessionFranchiseSeasonId?: string | null;
   isScoringPlay?: boolean;
+  /** Canonical scoring-type NAME slug ('touchdown', 'field-goal', ...) or
+   *  null. Omitted (older messages) stays undefined so merges can fall back
+   *  to fetched data; explicit null means "no published type" and clears. */
+  scoringPlayType?: string | null;
   ballOnYardLine?: number | null;
 
   // Baseball fields
@@ -163,6 +167,9 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
           homeScore: data.homeScore,
           possessionFranchiseSeasonId: data.possessionFranchiseSeasonId,
           isScoringPlay: data.isScoringPlay ?? false,
+          // Preserved as-received: omitted stays undefined (merge falls back
+          // to fetched data), explicit null clears a stale type.
+          scoringPlayType: data.scoringPlayType,
           ballOnYardLine: data.ballOnYardLine,
           lastPlayId: data.playId,
           lastPlayDescription: data.playDescription,
@@ -187,7 +194,7 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
           return {
             contests: {
               ...state.contests,
-              [data.contestId]: { ...existing, isScoringPlay: false },
+              [data.contestId]: { ...existing, isScoringPlay: false, scoringPlayType: null },
             },
           };
         });

@@ -62,6 +62,7 @@ function GameStatus({
   homeFranchiseSeasonId,
   possessionFranchiseSeasonId,
   isScoringPlay,
+  scoringPlayType,
   // Baseball-specific live fields (populated by ContestUpdatesContext
   // on BaseballPlayCompleted). Ignored on the football branch.
   inning,
@@ -179,6 +180,7 @@ function GameStatus({
         pitchingPositionAbbreviation={pitchingPositionAbbreviation}
         pitchingHeadshotUrl={pitchingHeadshotUrl}
         isScoringPlay={isScoringPlay}
+        scoringPlayType={scoringPlayType}
         isDelayed={isDelayed}
         statusDescription={statusDescription}
         status={status}
@@ -201,6 +203,7 @@ function GameStatus({
         homeFranchiseSeasonId={homeFranchiseSeasonId}
         possessionFranchiseSeasonId={possessionFranchiseSeasonId}
         isScoringPlay={isScoringPlay}
+        scoringPlayType={scoringPlayType}
         isDelayed={isDelayed}
         statusDescription={statusDescription}
         status={status}

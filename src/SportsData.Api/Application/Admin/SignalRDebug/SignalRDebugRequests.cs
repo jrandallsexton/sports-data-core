@@ -37,6 +37,10 @@ public record DebugFootballPlayRequest(
     int HomeScore,
     Guid? PossessionFranchiseSeasonId,
     bool IsScoringPlay,
+    // ESPN-style scoring type displayName ("Touchdown", "Field Goal", ...);
+    // null exercises the clients' neutral "SCORE!" fallback. Optional so
+    // existing debug tooling keeps working unchanged.
+    string? ScoringPlayType,
     int? BallOnYardLine);
 
 /// <summary>

@@ -85,6 +85,9 @@ export interface Matchup {
   clock?: string | null;
   possessionFranchiseSeasonId?: string | null;
   isScoringPlay?: boolean | null;
+  /** Canonical scoring-type NAME slug ('touchdown', 'field-goal', 'safety',
+   *  'defensive-two-point-conversion') or null - NOT a display name. */
+  scoringPlayType?: string | null;
   /** 0–100 yards from the away (visitor) goal line. Null pre-snap / halftime / post-game. */
   ballOnYardLine?: number | null;
 

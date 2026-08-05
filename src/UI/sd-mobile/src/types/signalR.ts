@@ -32,6 +32,10 @@ export interface FootballPlayCompletedPayload {
   homeScore: number;
   possessionFranchiseSeasonId: string | null;
   isScoringPlay: boolean;
+  /** Canonical scoring-type NAME slug ('touchdown', 'field-goal', 'safety',
+   *  'defensive-two-point-conversion'); null when the play isn't a score or
+   *  the type wasn't captured; absent entirely on pre-upgrade messages. */
+  scoringPlayType?: string | null;
   /**
    * 0–100 yards from the away (visitor) goal line. Null at pre-snap,
    * halftime, or post-game — match ESPN's YardLine convention.

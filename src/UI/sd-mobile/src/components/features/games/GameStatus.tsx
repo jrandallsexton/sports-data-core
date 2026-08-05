@@ -38,6 +38,27 @@ interface GameStatusProps {
 // block beneath a banner that names the reason via statusDescription.
 const DELAY_STATUSES = new Set(['STATUS_DELAYED', 'STATUS_RAIN_DELAY', 'STATUS_SUSPENDED']);
 
+// Scoring-celebration labels keyed by ESPN scoringType NAME slug (the real,
+// closed vocabulary — see FootballPlayCompleted). Party emoji reserved for
+// touchdowns.
+const SCORING_LABELS: Record<string, { label: string; emoji?: boolean }> = {
+  'touchdown': { label: 'TOUCHDOWN!', emoji: true },
+  'field-goal': { label: 'FIELD GOAL!' },
+  'safety': { label: 'SAFETY!' },
+  'defensive-two-point-conversion': { label: 'DEF 2-PT!' },
+};
+
+// Fallback for untyped scoring plays: the play text reliably names the
+// score. TD first — "field goal BLOCKED ... returned for a TOUCHDOWN" must
+// resolve to the actual score.
+function sniffScoringType(text: string | null | undefined): string | null {
+  if (!text) return null;
+  if (/touchdown|\bTD\b/i.test(text)) return 'touchdown';
+  if (/safety/i.test(text)) return 'safety';
+  if (/field goal|\bFG\b/i.test(text)) return 'field-goal';
+  return null;
+}
+
 // Terminal "game won't be played as scheduled" states. Same struck-through
 // gameTime visual; statusDescription drives the label.
 const TERMINAL_STATUSES = new Set(['STATUS_POSTPONED', 'STATUS_CANCELED']);
@@ -288,14 +309,18 @@ function FootballInProgress({
     typeof matchup.lastPlayDescription === 'string' &&
     matchup.lastPlayDescription.length > 0;
 
-  // ESPN's displayName is human-ready ("Field Goal") — uppercase it rather
-  // than maintaining a lookup table. The party emoji stays reserved for
-  // touchdowns; unknown-but-scoring falls back to a neutral SCORE!
-  // (issue #45). Mirrors web's FootballGameStatusInProgress.
-  const isTouchdown = /touchdown/i.test(matchup.scoringPlayType ?? '');
-  const scoringLabel = matchup.scoringPlayType
-    ? `${matchup.scoringPlayType.toUpperCase()}!`
-    : 'SCORE!';
+  // Three-tier scoring-label resolution (issue #45), mirroring web's
+  // FootballGameStatusInProgress:
+  //   1. ESPN scoringType NAME slug — closed vocabulary verified against
+  //      canon: touchdown | field-goal | safety |
+  //      defensive-two-point-conversion.
+  //   2. Slug null (all pre-capture historical rows, so REPLAYS land here)
+  //      → sniff the play description. TD is checked FIRST so "field goal
+  //      BLOCKED ... returned for a TOUCHDOWN" resolves to the actual score.
+  //   3. Neutral SCORE! as the honest last resort.
+  const resolvedType =
+    matchup.scoringPlayType ?? sniffScoringType(matchup.lastPlayDescription);
+  const scoring = SCORING_LABELS[resolvedType ?? ''] ?? { label: 'SCORE!' };
 
   return (
     <View style={styles.statusSection}>
@@ -331,8 +356,8 @@ function FootballInProgress({
 
       {matchup.isScoringPlay ? (
         <Text style={styles.scoringPlayText}>
-          {isTouchdown ? '🎉 ' : ''}
-          {scoringLabel}
+          {scoring.emoji ? '🎉 ' : ''}
+          {scoring.label}
         </Text>
       ) : null}
 

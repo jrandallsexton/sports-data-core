@@ -209,7 +209,7 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
             HomeScore: footballPlay.HomeScore,
             PossessionFranchiseSeasonId: footballPlay.StartFranchiseSeasonId,
             IsScoringPlay: footballPlay.ScoringPlay,
-            ScoringPlayType: footballPlay.ScoringTypeDisplayName,
+            ScoringPlayType: footballPlay.ScoringTypeName,
             BallOnYardLine: footballPlay.EndYardLine ?? footballPlay.StartYardLine,
             Ref: null,
             Sport: command.Sport,

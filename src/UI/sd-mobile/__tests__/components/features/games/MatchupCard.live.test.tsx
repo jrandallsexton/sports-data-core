@@ -231,11 +231,13 @@ describe('MatchupCard — live updates', () => {
   // observed. The score-row flash style is applied via the same flag;
   // asserting the text presence is sufficient to confirm the path ran.
   // (Style-prop assertions against StyleSheet IDs are brittle.)
-  // Label derives from scoringPlayType (issue #45): typed plays get their
-  // uppercased displayName; unknown-but-scoring falls back to SCORE!.
+  // Label derives from the scoringType NAME slug (issue #45); untyped plays
+  // fall back to sniffing the play description (all historical/replay rows
+  // are untyped), then to a neutral SCORE!.
   it.each([
-    ['Touchdown', /🎉 TOUCHDOWN!/],
-    ['Field Goal', /FIELD GOAL!/],
+    ['touchdown', /🎉 TOUCHDOWN!/],
+    ['field-goal', /FIELD GOAL!/],
+    ['defensive-two-point-conversion', /DEF 2-PT!/],
     [null, /SCORE!/],
   ])('renders the celebration label for scoringPlayType=%s', (scoringPlayType, expected) => {
     const matchup = buildFootballMatchup();

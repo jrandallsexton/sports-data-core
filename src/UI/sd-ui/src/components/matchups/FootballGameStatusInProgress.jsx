@@ -50,13 +50,29 @@ function FootballGameStatusInProgress({
   const hasLastPlayRow =
     typeof lastPlayDescription === 'string' && lastPlayDescription.length > 0;
 
-  // ESPN's displayName is human-ready ("Field Goal") - uppercase it rather
-  // than maintaining a lookup table. The party emoji stays reserved for
-  // touchdowns; unknown-but-scoring falls back to a neutral SCORE!.
-  const isTouchdown = /touchdown/i.test(scoringPlayType || '');
-  const scoringLabel = scoringPlayType
-    ? `${scoringPlayType.toUpperCase()}!`
-    : 'SCORE!';
+  // Three-tier scoring-label resolution (issue #45):
+  //   1. ESPN scoringType NAME slug - closed vocabulary verified against
+  //      canon: touchdown | field-goal | safety |
+  //      defensive-two-point-conversion.
+  //   2. Slug null (all pre-capture historical rows, so REPLAYS land here)
+  //      -> sniff the play description. TD is checked FIRST so "field goal
+  //      BLOCKED ... returned for a TOUCHDOWN" resolves to the actual score.
+  //   3. Neutral SCORE! as the honest last resort.
+  const SCORING_LABELS = {
+    'touchdown': { label: 'TOUCHDOWN!', emoji: true },
+    'field-goal': { label: 'FIELD GOAL!' },
+    'safety': { label: 'SAFETY!' },
+    'defensive-two-point-conversion': { label: 'DEF 2-PT!' },
+  };
+  const sniffScoringType = (text) => {
+    if (!text) return null;
+    if (/touchdown|\bTD\b/i.test(text)) return 'touchdown';
+    if (/safety/i.test(text)) return 'safety';
+    if (/field goal|\bFG\b/i.test(text)) return 'field-goal';
+    return null;
+  };
+  const resolvedType = scoringPlayType ?? sniffScoringType(lastPlayDescription);
+  const scoring = SCORING_LABELS[resolvedType] ?? { label: 'SCORE!' };
 
   const liveContent = (
     <>
@@ -75,8 +91,8 @@ function FootballGameStatusInProgress({
       </span>
       {isScoringPlay && (
         <span className="touchdown-indicator">
-          {isTouchdown ? '🎉 ' : ''}
-          {scoringLabel}
+          {scoring.emoji ? '🎉 ' : ''}
+          {scoring.label}
         </span>
       )}
       {hasLastPlayRow && (

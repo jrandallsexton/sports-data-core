@@ -22,6 +22,11 @@ import TeamLogo from "../common/TeamLogo";
  * @param {boolean} props.loading - Schedule loading state
  * @param {string} props.error - Schedule error message
  * @param {object} [props.probablePitcher] - MLB only; { displayName, headshotUrl }
+ * @param {number} [props.score] - This team's score; renders at the row's far
+ *   right whenever present (live or final). Mobile parity: MatchupCard.tsx's
+ *   TeamRow scoreBox.
+ * @param {boolean} [props.isWinner] - True when the game is FINAL and this
+ *   team scored strictly more; accents the score.
  */
 function TeamRow({
   teamName,
@@ -42,7 +47,9 @@ function TeamRow({
   loading,
   error,
   probablePitcher,
-  asOfDate
+  asOfDate,
+  score,
+  isWinner
 }) {
   // resolveSportLeague returns null for unknown/missing enums so unsupported
   // sports don't silently render as an NCAA football route. Fall back to a
@@ -109,6 +116,11 @@ function TeamRow({
             )}
           </div>
         </div>
+        {score != null && (
+          <div className={`team-score${isWinner ? " team-score--winner" : ""}`}>
+            {score}
+          </div>
+        )}
       </div>
       {showSchedule && (
         loading ? (

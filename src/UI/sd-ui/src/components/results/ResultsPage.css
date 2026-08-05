@@ -121,21 +121,26 @@
   transform: translateY(-1px);
 }
 
-.team-row {
+/* Scoped to .results-page: these generic class names (.team-row,
+   .team-name, .team-score) also exist in MatchupCard.css, and CRA css is
+   one global sheet - the bare selectors here were overriding the matchup
+   card's rules bundle-order-dependently (found via the winner-score accent
+   being stomped by the bare .team-score color). */
+.results-page .team-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   color: #c6cdd6;
   font-variant-numeric: tabular-nums;
 }
-.team-row.picked {
+.results-page .team-row.picked {
   color: #f4f4f5;
   font-weight: 600;
 }
-.team-name {
+.results-page .team-name {
   letter-spacing: 0.02em;
 }
-.team-score {
+.results-page .team-score {
   color: #e6e6e6;
 }
 

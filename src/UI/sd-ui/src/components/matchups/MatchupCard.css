@@ -127,6 +127,20 @@
   gap: 1rem;
 }
 
+/* Per-team score at the row's far right (mobile parity). Neutral while the
+   game is live; the winner's score takes the accent once FINAL. */
+.team-score {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.team-score--winner {
+  color: var(--accent);
+}
+
 .team-info {
   display: flex;
   align-items: center;

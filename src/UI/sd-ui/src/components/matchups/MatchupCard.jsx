@@ -102,6 +102,15 @@ function MatchupCard({
 
   const userTz = useUserTimeZone();
 
+  // Per-team score display (mobile parity): score renders in each team row
+  // whenever present (live via the SignalR merge, or final from the DTO);
+  // the winner's score accents only once the game is FINAL — during play
+  // both render neutral. Strict > means a tie accents neither.
+  const isFinalStatus = matchup.status === 'STATUS_FINAL';
+  const bothScored = matchup.awayScore != null && matchup.homeScore != null;
+  const awayIsWinner = isFinalStatus && bothScored && matchup.awayScore > matchup.homeScore;
+  const homeIsWinner = isFinalStatus && bothScored && matchup.homeScore > matchup.awayScore;
+
   // Game details
   const gameTime = formatToUserTime(matchup.startDateUtc, userTz);
   const venue = matchup.venue ?? "TBD";
@@ -201,6 +210,8 @@ function MatchupCard({
           error={awayError}
           probablePitcher={matchup.awayProbablePitcher}
           asOfDate={scheduleAsOfDate}
+          score={matchup.awayScore}
+          isWinner={awayIsWinner}
         />
 
         {/* Home Team Row */}
@@ -224,6 +235,8 @@ function MatchupCard({
           error={homeError}
           probablePitcher={matchup.homeProbablePitcher}
           asOfDate={scheduleAsOfDate}
+          score={matchup.homeScore}
+          isWinner={homeIsWinner}
         />
 
         {/* Spread and Over/Under — gated: see utils/gamblingContent.js */}

@@ -2,12 +2,23 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Smooth scrolling is motion - honor the OS-level opt-out. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 /* Header + hero together own exactly one viewport (features start below
    the fold). The hero flex-fills the space under the header, so its
    flex-centered content lands on the visible viewport's optical center -
    no hardcoded header height, no phantom scroll. */
 .landing-above-fold {
-  min-height: 100vh;
+  min-height: 100vh; /* fallback for browsers without dvh */
+  /* Dynamic viewport height: on mobile, 100vh includes the space behind
+     the browser chrome, overflowing the visible area; dvh tracks the
+     actual visible viewport as the chrome expands/collapses. */
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }

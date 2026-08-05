@@ -24,6 +24,12 @@ namespace SportsData.Core.Eventing.Events.Contests.Football
         int HomeScore,
         Guid? PossessionFranchiseSeasonId,
         bool IsScoringPlay,
+        // ESPN scoringType displayName ("Touchdown", "Field Goal", ...) from
+        // FootballCompetitionPlay.ScoringTypeDisplayName. Null when the play
+        // isn't a score or the type wasn't published — clients fall back to a
+        // neutral "SCORE!" label (issue #45). Nullable keeps old in-flight
+        // messages deserializable, so deploy order doesn't matter.
+        string? ScoringPlayType,
         // Ball position on the field, expressed as 0–100 yards from the
         // away (visitor) goal line. Matches ESPN's YardLine convention.
         // Null means unknown (e.g. pre-snap, halftime, post-game).

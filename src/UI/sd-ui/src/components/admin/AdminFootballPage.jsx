@@ -70,6 +70,7 @@ export default function AdminFootballPage() {
       possessionFranchiseSeasonId:
         live.possessionFranchiseSeasonId ?? matchup.possessionFranchiseSeasonId,
       isScoringPlay: live.isScoringPlay ?? matchup.isScoringPlay,
+      scoringPlayType: live.scoringPlayType ?? matchup.scoringPlayType,
       ballOnYardLine: live.ballOnYardLine ?? matchup.ballOnYardLine,
       lastPlayDescription: live.lastPlayDescription ?? matchup.lastPlayDescription,
     };

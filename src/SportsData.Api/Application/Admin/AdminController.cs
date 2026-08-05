@@ -649,6 +649,7 @@ namespace SportsData.Api.Application.Admin
                     HomeScore: request.HomeScore,
                     PossessionFranchiseSeasonId: request.PossessionFranchiseSeasonId,
                     IsScoringPlay: request.IsScoringPlay,
+                    ScoringPlayType: request.ScoringPlayType,
                     BallOnYardLine: request.BallOnYardLine,
                     Ref: null,
                     Sport: sport,

@@ -87,6 +87,7 @@ export default function FootballDebugCard() {
       homeScore: home ? homeScore + 3 : homeScore,
       possessionFranchiseSeasonId: possession,
       isScoringPlay: true,
+      scoringPlayType: 'Field Goal',
       ballOnYardLine,
     };
     setAwayScore(p.awayScore); setHomeScore(p.homeScore); setIsScoringPlay(true);
@@ -105,6 +106,7 @@ export default function FootballDebugCard() {
       homeScore: home ? homeScore + 6 : homeScore,
       possessionFranchiseSeasonId: possession,
       isScoringPlay: true,
+      scoringPlayType: 'Touchdown',
       ballOnYardLine: endYard,
     };
     setAwayScore(p.awayScore); setHomeScore(p.homeScore); setIsScoringPlay(true);
@@ -121,6 +123,7 @@ export default function FootballDebugCard() {
       homeScore: home ? homeScore + points : homeScore,
       possessionFranchiseSeasonId: possession,
       isScoringPlay: true,
+      scoringPlayType: points === 1 ? 'Extra Point' : 'Two-Point Conversion',
       ballOnYardLine,
     };
     setAwayScore(p.awayScore); setHomeScore(p.homeScore); setIsScoringPlay(true);

@@ -257,6 +257,7 @@ function PicksPage() {
           clock: liveUpdate.clock ?? matchup.clock,
           possessionFranchiseSeasonId: liveUpdate.possessionFranchiseSeasonId ?? matchup.possessionFranchiseSeasonId,
           isScoringPlay: liveUpdate.isScoringPlay ?? matchup.isScoringPlay,
+          scoringPlayType: liveUpdate.scoringPlayType ?? matchup.scoringPlayType,
           // Baseball-shaped — nullish-fallback so a future partial-update
           // handler that doesn't carry the full set can't silently undefine
           // a previously-populated field (mirrors the score/status pattern).

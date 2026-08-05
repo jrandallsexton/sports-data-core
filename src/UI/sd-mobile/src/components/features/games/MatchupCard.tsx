@@ -577,6 +577,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
       possessionFranchiseSeasonId:
         live.possessionFranchiseSeasonId ?? matchup.possessionFranchiseSeasonId,
       isScoringPlay: live.isScoringPlay ?? matchup.isScoringPlay,
+      scoringPlayType: live.scoringPlayType ?? matchup.scoringPlayType,
       ballOnYardLine: live.ballOnYardLine ?? matchup.ballOnYardLine,
       // Baseball live fields
       inning: live.inning ?? matchup.inning,

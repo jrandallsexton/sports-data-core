@@ -89,6 +89,9 @@ export const ContestUpdatesProvider = ({ children }) => {
         homeScore: data.homeScore,
         possessionFranchiseSeasonId: data.possessionFranchiseSeasonId,
         isScoringPlay: data.isScoringPlay || false,
+        // ESPN scoringType displayName ("Touchdown", "Field Goal", ...) or
+        // null - drives the celebration label; null falls back to "SCORE!"
+        scoringPlayType: data.scoringPlayType ?? null,
         ballOnYardLine: data.ballOnYardLine,
         lastPlayId: data.playId,
         lastPlayDescription: data.playDescription,
@@ -104,7 +107,8 @@ export const ContestUpdatesProvider = ({ children }) => {
           ...prev,
           [data.contestId]: {
             ...prev[data.contestId],
-            isScoringPlay: false
+            isScoringPlay: false,
+            scoringPlayType: null
           }
         }));
       }, 2000);

@@ -288,6 +288,15 @@ function FootballInProgress({
     typeof matchup.lastPlayDescription === 'string' &&
     matchup.lastPlayDescription.length > 0;
 
+  // ESPN's displayName is human-ready ("Field Goal") — uppercase it rather
+  // than maintaining a lookup table. The party emoji stays reserved for
+  // touchdowns; unknown-but-scoring falls back to a neutral SCORE!
+  // (issue #45). Mirrors web's FootballGameStatusInProgress.
+  const isTouchdown = /touchdown/i.test(matchup.scoringPlayType ?? '');
+  const scoringLabel = matchup.scoringPlayType
+    ? `${matchup.scoringPlayType.toUpperCase()}!`
+    : 'SCORE!';
+
   return (
     <View style={styles.statusSection}>
       <View style={styles.liveRow}>
@@ -321,7 +330,10 @@ function FootballInProgress({
       </View>
 
       {matchup.isScoringPlay ? (
-        <Text style={styles.scoringPlayText}>🎉 TOUCHDOWN!</Text>
+        <Text style={styles.scoringPlayText}>
+          {isTouchdown ? '🎉 ' : ''}
+          {scoringLabel}
+        </Text>
       ) : null}
 
       {hasLastPlay ? (

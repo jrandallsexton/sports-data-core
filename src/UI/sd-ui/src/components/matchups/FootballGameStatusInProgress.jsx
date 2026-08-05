@@ -3,8 +3,10 @@ import { contestLink } from '../../utils/sportLinks';
 
 /**
  * Football per-play live block. Renders LIVE label, period+clock, score
- * with 🏈 next to the team in possession, scoring flash + 🎉 TOUCHDOWN!
- * indicator, and a last-play description row (mirrors baseball).
+ * with 🏈 next to the team in possession, scoring flash + a typed
+ * celebration label (🎉 TOUCHDOWN! / FIELD GOAL! / SAFETY! / neutral
+ * SCORE! when the type is unknown - issue #45), and a last-play
+ * description row (mirrors baseball).
  *
  * Class names are intentionally kept (`.game-result`, `.final-score`,
  * `.score-display`, etc.) — the broader status-neutral rename is a
@@ -21,6 +23,8 @@ function FootballGameStatusInProgress({
   homeFranchiseSeasonId,
   possessionFranchiseSeasonId,
   isScoringPlay,
+  // ESPN scoringType displayName ("Touchdown", "Field Goal", ...) or null.
+  scoringPlayType,
   lastPlayDescription,
   // See BaseballGameStatusInProgress isDelayed comment — same
   // semantics, mirrors the LIVE → delay-status text swap.
@@ -46,6 +50,14 @@ function FootballGameStatusInProgress({
   const hasLastPlayRow =
     typeof lastPlayDescription === 'string' && lastPlayDescription.length > 0;
 
+  // ESPN's displayName is human-ready ("Field Goal") - uppercase it rather
+  // than maintaining a lookup table. The party emoji stays reserved for
+  // touchdowns; unknown-but-scoring falls back to a neutral SCORE!.
+  const isTouchdown = /touchdown/i.test(scoringPlayType || '');
+  const scoringLabel = scoringPlayType
+    ? `${scoringPlayType.toUpperCase()}!`
+    : 'SCORE!';
+
   const liveContent = (
     <>
       {isDelayed ? (
@@ -62,8 +74,10 @@ function FootballGameStatusInProgress({
         {homeHasPossession && <span className="possession-indicator">🏈</span>}
       </span>
       {isScoringPlay && (
-        // TODO: Determine score type (TD, FG, etc.) for better indicator
-        <span className="touchdown-indicator">🎉 TOUCHDOWN!</span>
+        <span className="touchdown-indicator">
+          {isTouchdown ? '🎉 ' : ''}
+          {scoringLabel}
+        </span>
       )}
       {hasLastPlayRow && (
         <span className="live-state-lastplay" title={lastPlayDescription}>

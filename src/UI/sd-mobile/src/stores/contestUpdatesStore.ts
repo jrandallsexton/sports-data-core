@@ -26,6 +26,8 @@ export interface ContestLiveRecord {
   clock?: string;
   possessionFranchiseSeasonId?: string | null;
   isScoringPlay?: boolean;
+  /** ESPN scoringType displayName ("Touchdown", "Field Goal", ...) or null. */
+  scoringPlayType?: string | null;
   ballOnYardLine?: number | null;
 
   // Baseball fields
@@ -163,6 +165,7 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
           homeScore: data.homeScore,
           possessionFranchiseSeasonId: data.possessionFranchiseSeasonId,
           isScoringPlay: data.isScoringPlay ?? false,
+          scoringPlayType: data.scoringPlayType ?? null,
           ballOnYardLine: data.ballOnYardLine,
           lastPlayId: data.playId,
           lastPlayDescription: data.playDescription,
@@ -187,7 +190,7 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
           return {
             contests: {
               ...state.contests,
-              [data.contestId]: { ...existing, isScoringPlay: false },
+              [data.contestId]: { ...existing, isScoringPlay: false, scoringPlayType: null },
             },
           };
         });

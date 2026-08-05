@@ -227,7 +227,17 @@ describe('MatchupCard — live updates', () => {
     expect(screen.getByText(/Mahomes 18-yard pass/)).toBeTruthy();
   });
 
-  it('applies the score-flash style on the score row when isScoringPlay is true', () => {
+  // The celebration text is the visible signal that isScoringPlay was
+  // observed. The score-row flash style is applied via the same flag;
+  // asserting the text presence is sufficient to confirm the path ran.
+  // (Style-prop assertions against StyleSheet IDs are brittle.)
+  // Label derives from scoringPlayType (issue #45): typed plays get their
+  // uppercased displayName; unknown-but-scoring falls back to SCORE!.
+  it.each([
+    ['Touchdown', /🎉 TOUCHDOWN!/],
+    ['Field Goal', /FIELD GOAL!/],
+    [null, /SCORE!/],
+  ])('renders the celebration label for scoringPlayType=%s', (scoringPlayType, expected) => {
     const matchup = buildFootballMatchup();
     renderWithProviders(<MatchupCard matchup={matchup} leagueSport="FootballNfl" />);
 
@@ -236,22 +246,19 @@ describe('MatchupCard — live updates', () => {
         contestId: CID,
         competitionId: '00000000-0000-0000-0000-0000000000ee',
         playId: '00000000-0000-0000-0000-0000000000ff',
-        playDescription: 'Touchdown!',
+        playDescription: 'Scoring play!',
         period: 'Q4',
         clock: '0:32',
         awayScore: 21,
         homeScore: 17,
         possessionFranchiseSeasonId: '00000000-0000-0000-0000-0000000000b1',
         isScoringPlay: true,
+        scoringPlayType,
         ballOnYardLine: 0,
       });
     });
 
-    // The TOUCHDOWN! text is the visible signal that isScoringPlay was
-    // observed. The score-row flash style is applied via the same flag;
-    // asserting the text presence is sufficient to confirm the path
-    // ran. (Style-prop assertions against StyleSheet IDs are brittle.)
-    expect(screen.getByText(/TOUCHDOWN/)).toBeTruthy();
+    expect(screen.getByText(expected)).toBeTruthy();
   });
 
   it('does not subscribe to events for a different contestId', () => {

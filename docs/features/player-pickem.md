@@ -245,9 +245,12 @@ New pieces (names illustrative):
 
 A "Coming Soon: Player Pick'em" card on the web + mobile home pages.
 Design chosen (2026-08-04): the **lineup-slot banner** — an empty roster
-row (QB filled/pulsing accent, the rest dashed) that shows the game
-rather than describing it. Built entirely from existing tokens; one
-flourish (field hash marks along the bottom edge).
+row (QB filled in accent, the rest dashed) that shows the game rather
+than describing it. Built entirely from existing tokens. Platform
+difference: the web QB slot pulses; mobile renders it static
+(deliberate — an infinite animation on a phone home screen costs
+battery for no message gain). The field hash-mark flourish was cut
+during preview.
 
 - Slot row uses COUNTS, not duplicates: "RB ×2", "WR ×2" — density wins
   in an advertisement. The gameplay lineup UI uses individual slots

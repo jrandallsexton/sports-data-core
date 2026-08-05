@@ -20,6 +20,18 @@ const { withAndroidManifest, AndroidConfig } = require('@expo/config-plugins');
  */
 const withFirebaseNotificationDefaults = (config) => {
   return withAndroidManifest(config, (config) => {
+    // react-native-firebase_messaging's library manifest ships its OWN
+    // default_notification_color (@color/white). The manifest merger
+    // refuses two different values for the same key, so our color entry
+    // must carry tools:replace="android:resource" ("ours wins") — which
+    // requires the tools namespace on the manifest root. The icon entry
+    // has no library-side counterpart and needs no override.
+    const manifest = config.modResults.manifest;
+    manifest.$ = manifest.$ ?? {};
+    if (!manifest.$['xmlns:tools']) {
+      manifest.$['xmlns:tools'] = 'http://schemas.android.com/tools';
+    }
+
     const app = AndroidConfig.Manifest.getMainApplicationOrThrow(config.modResults);
 
     AndroidConfig.Manifest.addMetaDataItemToMainApplication(
@@ -28,12 +40,27 @@ const withFirebaseNotificationDefaults = (config) => {
       '@drawable/notification_icon',
       'resource',
     );
-    AndroidConfig.Manifest.addMetaDataItemToMainApplication(
-      app,
-      'com.google.firebase.messaging.default_notification_color',
-      '@color/notification_icon_color',
-      'resource',
+
+    // Added manually (not via addMetaDataItemToMainApplication) because the
+    // helper has no way to attach the tools:replace attribute.
+    app['meta-data'] = app['meta-data'] ?? [];
+    const colorAttrs = {
+      'android:name': 'com.google.firebase.messaging.default_notification_color',
+      'android:resource': '@color/notification_icon_color',
+      'tools:replace': 'android:resource',
+    };
+    const existing = app['meta-data'].find(
+      (item) => item.$?.['android:name'] === colorAttrs['android:name'],
     );
+    if (existing) {
+      // Merge rather than replace so unrelated attributes another plugin may
+      // have set survive; android:value is removed explicitly because value
+      // and resource are mutually exclusive forms of the same meta-data.
+      existing.$ = { ...existing.$, ...colorAttrs };
+      delete existing.$['android:value'];
+    } else {
+      app['meta-data'].push({ $: colorAttrs });
+    }
 
     return config;
   });

@@ -53,7 +53,11 @@ const withFirebaseNotificationDefaults = (config) => {
       (item) => item.$?.['android:name'] === colorAttrs['android:name'],
     );
     if (existing) {
-      existing.$ = colorAttrs;
+      // Merge rather than replace so unrelated attributes another plugin may
+      // have set survive; android:value is removed explicitly because value
+      // and resource are mutually exclusive forms of the same meta-data.
+      existing.$ = { ...existing.$, ...colorAttrs };
+      delete existing.$['android:value'];
     } else {
       app['meta-data'].push({ $: colorAttrs });
     }

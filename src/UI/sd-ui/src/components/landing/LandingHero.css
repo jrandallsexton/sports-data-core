@@ -1,5 +1,10 @@
 .landing-hero {
-  min-height: 100vh;
+  /* Fill the viewport MINUS the header (parent .landing-above-fold is a
+     flex column holding only the header + this hero). The old
+     min-height: 100vh sat below the in-flow header, which pushed the
+     flex-centered content a header-height below the viewport's optical
+     center and added phantom scroll. */
+  flex: 1;
   background: linear-gradient(to bottom, var(--bg-primary), var(--bg-card));
   display: flex;
   justify-content: center;

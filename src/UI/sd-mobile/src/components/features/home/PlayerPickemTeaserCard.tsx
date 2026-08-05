@@ -77,7 +77,7 @@ export function PlayerPickemTeaserCard() {
       <Text style={[styles.eyebrow, { color: theme.tint }]}>COMING SOON</Text>
       <Text style={[styles.title, { color: theme.text }]}>Player Pick’em</Text>
       <Text style={[styles.pitch, { color: theme.textMuted }]}>
-        Pick any players, any week — no draft, no ownership. Know the matchups
+        Pick any players, any week - no draft, no ownership. Know the matchups
         better than your league and prove it.
       </Text>
 

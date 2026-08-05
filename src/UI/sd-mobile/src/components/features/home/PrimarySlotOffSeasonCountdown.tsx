@@ -113,7 +113,7 @@ export function PrimarySlotOffSeasonCountdown() {
   const body = allLive
     ? 'Jump into your leagues and lock in your picks before the next kickoff.'
     : allGated
-      ? "Leagues open soon — we'll be ready before Week\u00A01."
+      ? "Leagues open soon - we'll be ready before Week\u00A01."
       : seasonYear
         ? `Spin up your ${seasonYear} pick'em league now so you're ready for Week\u00A01.`
         : "Spin up your pick'em league now so you're ready for Week\u00A01.";

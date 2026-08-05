@@ -6,13 +6,6 @@
   box-sizing: border-box;
 }
 
-.login-card form {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 16px;
-}
-
 .login-card h2 {
   margin: 0 0 12px 0;
   font-size: 1.5rem;
@@ -46,8 +39,10 @@
 }
 
 .login-card button {
-  align-self: flex-start;
-  margin-left: 102px;
+  /* True flex centering — replaces a margin-left magic number that only
+     fake-centered the button at one specific card width, leaving it
+     visibly right of the centered heading and Forgot-password link. */
+  align-self: center;
   padding: 10px 20px;
   background-color: var(--accent);
   color: var(--text-on-accent);

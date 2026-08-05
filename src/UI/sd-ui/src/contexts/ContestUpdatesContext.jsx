@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 
 // DIAG (refresh-loses-updates investigation): module-level counter so
 // each ContestUpdatesProvider mount gets a unique instance ID. If the
@@ -119,14 +119,20 @@ export const ContestUpdatesProvider = ({ children }) => {
       if (existing) clearTimeout(existing);
       const timerId = setTimeout(() => {
         pending.delete(data.contestId);
-        setContests(prev => ({
-          ...prev,
-          [data.contestId]: {
-            ...prev[data.contestId],
-            isScoringPlay: false,
-            scoringPlayType: null
-          }
-        }));
+        setContests(prev => {
+          // Only update a contest that still exists — spreading an entry
+          // that clearContestUpdate/clearAllUpdates removed would CREATE a
+          // phantom record holding nothing but the cleared flags.
+          if (!prev[data.contestId]) return prev;
+          return {
+            ...prev,
+            [data.contestId]: {
+              ...prev[data.contestId],
+              isScoringPlay: false,
+              scoringPlayType: null
+            }
+          };
+        });
       }, 2000);
       pending.set(data.contestId, timerId);
     }
@@ -260,6 +266,14 @@ export const ContestUpdatesProvider = ({ children }) => {
    * @param {string} contestId
    */
   const clearContestUpdate = useCallback((contestId) => {
+    // Cancel the contest's pending scoring-clear timer alongside its state —
+    // a stale timer firing later must not touch reloaded state.
+    const pending = scoringClearTimersRef.current;
+    const existing = pending.get(contestId);
+    if (existing) {
+      clearTimeout(existing);
+      pending.delete(contestId);
+    }
     setContests(prev => {
       const { [contestId]: removed, ...rest } = prev;
       return rest;
@@ -270,7 +284,20 @@ export const ContestUpdatesProvider = ({ children }) => {
    * Clear all contest updates (e.g., on logout or league change)
    */
   const clearAllUpdates = useCallback(() => {
+    const pending = scoringClearTimersRef.current;
+    for (const timerId of pending.values()) clearTimeout(timerId);
+    pending.clear();
     setContests({});
+  }, []);
+
+  // Drain any remaining scoring-clear timers on unmount — a timer firing
+  // after teardown would call setContests on an unmounted provider.
+  useEffect(() => {
+    const pending = scoringClearTimersRef.current;
+    return () => {
+      for (const timerId of pending.values()) clearTimeout(timerId);
+      pending.clear();
+    };
   }, []);
 
   const value = {

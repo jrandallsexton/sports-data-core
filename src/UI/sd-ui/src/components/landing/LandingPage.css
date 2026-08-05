@@ -1,4 +1,14 @@
 html {
-    scroll-behavior: smooth;
-  }
+  scroll-behavior: smooth;
+}
+
+/* Header + hero together own exactly one viewport (features start below
+   the fold). The hero flex-fills the space under the header, so its
+   flex-centered content lands on the visible viewport's optical center -
+   no hardcoded header height, no phantom scroll. */
+.landing-above-fold {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
   

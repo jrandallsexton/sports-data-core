@@ -9,8 +9,13 @@ import LandingHeader from "./LandingHeader";
 function LandingPage() {
   return (
     <div className="landing-page">
-      <LandingHeader />
-      <LandingHero />
+      {/* Header + hero own exactly the first viewport: the hero flex-fills
+          the remainder under the header, so its content centers on the
+          visible screen and the feature sections start below the fold. */}
+      <div className="landing-above-fold">
+        <LandingHeader />
+        <LandingHero />
+      </div>
       <FeatureHighlights />
       <HowItWorks />
       <LandingFooter />

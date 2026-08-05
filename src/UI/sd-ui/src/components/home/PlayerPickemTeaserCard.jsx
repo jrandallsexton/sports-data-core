@@ -51,7 +51,7 @@ function PlayerPickemTeaserCard() {
       <div className="pickem-teaser-eyebrow">Coming Soon</div>
       <div className="pickem-teaser-title">Player Pick&rsquo;em</div>
       <p className="pickem-teaser-pitch">
-        Pick any players, any week &mdash; no draft, no ownership. Know the
+        Pick any players, any week - no draft, no ownership. Know the
         matchups better than your league and prove it.
       </p>
       <div className="pickem-teaser-slots" aria-hidden="true">

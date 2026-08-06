@@ -8,9 +8,10 @@ const MatchupsApi = {
     ),
   getPreviewByContestId: (contestId) =>
     apiClient.get(`/ui/matchup/${encodeURIComponent(contestId)}/preview`),
-  resetPreviewByContestId: (contestId) =>
+  // sport: backend Sport enum name (e.g. "FootballNfl"); omitted = NCAA.
+  resetPreviewByContestId: (contestId, sport) =>
     apiClient.post(
-      `/admin/matchup/preview/${encodeURIComponent(contestId)}/reset`
+      `/admin/matchup/preview/${encodeURIComponent(contestId)}/reset${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
     )
 };
 

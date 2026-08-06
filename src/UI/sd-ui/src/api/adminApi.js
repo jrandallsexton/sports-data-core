@@ -10,8 +10,11 @@ const AdminApi = {
     apiClient.get('/admin/errors/competitions-without-drives'),
   getCompetitionsWithoutMetrics: () =>
     apiClient.get('/admin/errors/competitions-without-metrics'),
-  resetPreview: (contestId) =>
-    apiClient.post(`/admin/matchup/preview/${contestId}/reset`),
+  // sport: backend Sport enum name (e.g. "FootballNfl"); omitted = NCAA.
+  resetPreview: (contestId, sport) =>
+    apiClient.post(
+      `/admin/matchup/preview/${contestId}/reset${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+    ),
 
   // Returns one MLB matchup in the same shape as the picks page so the
   // baseball SignalR debug page can render a real <MatchupCard /> for a

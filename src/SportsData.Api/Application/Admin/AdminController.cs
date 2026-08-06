@@ -117,11 +117,18 @@ namespace SportsData.Api.Application.Admin
 
         [HttpPost]
         [Route("matchup/preview/{contestId}/reset")]
-        public IActionResult ResetContestPreview([FromRoute] Guid contestId)
+        public IActionResult ResetContestPreview(
+            [FromRoute] Guid contestId,
+            // Sport enum name (e.g. "FootballNfl"); omitted = NCAA for
+            // backward compatibility. The processor validates by resolving
+            // the contest against this sport's canonical client — a wrong
+            // sport 404s there and is logged as a skip.
+            [FromQuery] Sport sport = Sport.FootballNcaa)
         {
             var cmd = new GenerateMatchupPreviewsCommand
             {
-                ContestId = contestId
+                ContestId = contestId,
+                Sport = sport
             };
             _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
             return Accepted(new { cmd.CorrelationId });

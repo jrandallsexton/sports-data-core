@@ -50,8 +50,7 @@ namespace SportsData.Api.Application.Previews
                 .OrderByDescending(x => x.CreatedUtc)
                 .FirstOrDefaultAsync(x => x.ContestId == command.ContestId && x.RejectedUtc != null);
 
-            // TODO: multi-sport
-            var previewResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupForPreview(command.ContestId);
+            var previewResult = await _contestClientFactory.Resolve(command.Sport).GetMatchupForPreview(command.ContestId);
             var matchup = previewResult.IsSuccess ? previewResult.Value : null;
 
             if (matchup is null)
@@ -68,8 +67,7 @@ namespace SportsData.Api.Application.Previews
                 return;
             }
 
-            // TODO: Support multiple sports - currently hardcoded to FootballNcaa
-            var franchiseClient = _franchiseClientFactory.Resolve(Sport.FootballNcaa);
+            var franchiseClient = _franchiseClientFactory.Resolve(command.Sport);
 
             matchup.AwayStats = await franchiseClient
                 .GetFranchiseSeasonPreviewStats(matchup.AwayFranchiseSeasonId);

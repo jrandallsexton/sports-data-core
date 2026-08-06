@@ -104,7 +104,8 @@ namespace SportsData.Api.Application.PickemGroups
             {
                 var cmd = new GenerateMatchupPreviewsCommand()
                 {
-                    ContestId = contestId
+                    ContestId = contestId,
+                    Sport = @event.Sport
                 };
 
                 _backgroundJobProvider.Enqueue<MatchupPreviewProcessor>(p => p.Process(cmd));

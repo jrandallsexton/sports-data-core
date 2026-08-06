@@ -50,8 +50,21 @@ public class GetMatchupPreviewQueryHandler : IGetMatchupPreviewQueryHandler
                 [new ValidationFailure(nameof(query.ContestId), "Matchup preview not found")]);
         }
 
-        // TODO: multi-sport
-        var previewResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupForPreview(query.ContestId);
+        // Derive the sport server-side from the contest's league — every
+        // previewed contest is in a PickemGroup by construction (previews
+        // are generated off group events / league weeks). Falls back to
+        // NCAA for any orphan so legacy behavior is preserved.
+        var sport = await _dbContext.PickemGroupMatchups
+            .AsNoTracking()
+            .Where(m => m.ContestId == query.ContestId)
+            .Join(
+                _dbContext.PickemGroups,
+                m => m.GroupId,
+                g => g.Id,
+                (m, g) => (Sport?)g.Sport)
+            .FirstOrDefaultAsync(cancellationToken) ?? Sport.FootballNcaa;
+
+        var previewResult = await _contestClientFactory.Resolve(sport).GetMatchupForPreview(query.ContestId);
         var canonical = previewResult.IsSuccess ? previewResult.Value : null;
 
         if (canonical is null)
@@ -87,7 +100,11 @@ public class GetMatchupPreviewQueryHandler : IGetMatchupPreviewQueryHandler
             AwayScore = preview.AwayScore,
             HomeScore = preview.HomeScore,
             VegasImpliedScore = implied,
-            GeneratedUtc = preview.CreatedUtc
+            GeneratedUtc = preview.CreatedUtc,
+            // Canonical status is authoritative — approve/reject is
+            // meaningless once the game has been played, so clients hide
+            // those admin affordances when this is true.
+            IsContestCompleted = canonical.Status == "STATUS_FINAL"
         };
 
         return new Success<MatchupPreviewDto>(result);

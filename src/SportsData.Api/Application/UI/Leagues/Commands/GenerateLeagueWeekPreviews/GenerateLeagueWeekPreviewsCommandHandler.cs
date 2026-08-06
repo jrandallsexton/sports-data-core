@@ -70,7 +70,8 @@ public class GenerateLeagueWeekPreviewsCommandHandler : IGenerateLeagueWeekPrevi
 
             var cmd = new GenerateMatchupPreviewsCommand
             {
-                ContestId = contestId
+                ContestId = contestId,
+                Sport = league.Sport
             };
             _backgroundJobProvider.Enqueue<MatchupPreviewProcessor>(p => p.Process(cmd));
             enqueuedCount++;

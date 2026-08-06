@@ -63,7 +63,7 @@ jobs:
           # Daemon patches are present per-sport once that sport's daemon Deployment ships in sports-data-config
           # (MLB only as of PR B in the contest-finalization-reconcile-backstop workstream).
           # Must stay in sync with deploy-services-prod-auto.yml.
-          for patch in producer-patch.yaml producer-ingest-patch.yaml producer-api-patch.yaml producer-nfl-patch.yaml producer-nfl-ingest-patch.yaml producer-nfl-api-patch.yaml producer-mlb-patch.yaml producer-mlb-ingest-patch.yaml producer-mlb-api-patch.yaml producer-mlb-daemon-patch.yaml; do
+          for patch in producer-patch.yaml producer-ncaa-daemon-patch.yaml producer-ingest-patch.yaml producer-api-patch.yaml producer-nfl-patch.yaml producer-nfl-daemon-patch.yaml producer-nfl-ingest-patch.yaml producer-nfl-api-patch.yaml producer-mlb-patch.yaml producer-mlb-ingest-patch.yaml producer-mlb-api-patch.yaml producer-mlb-daemon-patch.yaml; do
             FILE="app/overlays/04_prod/$patch"
             if [ ! -f "$FILE" ]; then
               echo "::error::Missing producer patch file: $FILE"

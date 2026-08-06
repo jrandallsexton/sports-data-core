@@ -246,13 +246,17 @@ namespace SportsData.Producer.DependencyInjection
             // FinalizationReconcileJob: durable backstop that recovers stranded
             // CompetitionStream rows when the streamer fails to publish ContestCompleted
             // (KEDA scale-down mid-game, OOM, 5h MaxStreamDuration). Same closed-generic
-            // pattern as ContestEnrichmentJob; only MLB is wired up initially per the
-            // sequencing in docs/contest-finalization-reconcile-backstop.md. Football
-            // joins when its Daemon Deployments ship pre-season.
+            // pattern as ContestEnrichmentJob; see
+            // docs/contest-finalization-reconcile-backstop.md. Football joined
+            // 2026-08-06 alongside its Daemon Deployments (NFL preseason).
             switch (mode)
             {
                 case Sport.BaseballMlb:
                     services.AddScoped<IFinalizationReconcileJob, FinalizationReconcileJob<BaseballDataContext>>();
+                    break;
+                case Sport.FootballNcaa:
+                case Sport.FootballNfl:
+                    services.AddScoped<IFinalizationReconcileJob, FinalizationReconcileJob<FootballDataContext>>();
                     break;
             }
 
@@ -452,13 +456,19 @@ namespace SportsData.Producer.DependencyInjection
                     nameof(CompetitionStreamScheduler),
                     job => job.Execute(),
                     "0 7 * * *"); // Daily at 07:00 UTC
+            }
 
+            if (mode is Sport.FootballNcaa or Sport.FootballNfl or Sport.BaseballMlb)
+            {
                 // FinalizationReconcileJob — durable backstop. Every 15 minutes
                 // it sweeps for CompetitionStream rows whose streamer process
                 // died before publishing ContestCompleted, re-checks ESPN status,
                 // and publishes the finalization events if the game is now FINAL.
                 // [Queue("daemon")] on IFinalizationReconcileJob.ExecuteAsync
-                // routes the trigger to the daemon queue.
+                // routes the trigger to the daemon queue. Football joined
+                // 2026-08-06 alongside its Daemon Deployments (each sport's
+                // Producer has its own Hangfire storage, so the shared job id
+                // cannot collide across sports).
                 recurringJobManager.AddOrUpdate<IFinalizationReconcileJob>(
                     "FinalizationReconcileJob",
                     job => job.ExecuteAsync(CancellationToken.None),

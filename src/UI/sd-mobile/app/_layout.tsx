@@ -14,7 +14,6 @@ import { useFonts } from 'expo-font';
 import { Poppins_400Regular, Poppins_700Bold_Italic } from '@expo-google-fonts/poppins';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { AppMetrics, AppMetricsRoot } from 'expo-observe';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Notifications from 'expo-notifications';
 // Type-only import — erased at compile time. The runtime module is loaded via a
@@ -40,6 +39,23 @@ export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
+
+// EAS Observe (expo-observe) calls requireNativeModule at module-init, so a
+// static import would crash any environment lacking the native module
+// (web bundle, Expo Go). Runtime-guarded require: absent module -> both
+// stay null and every usage below no-ops.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let AppMetrics: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let AppMetricsRoot: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    ({ AppMetrics, AppMetricsRoot } = require('expo-observe'));
+  } catch {
+    // Native module unavailable (e.g. Expo Go) - run without metrics.
+  }
+}
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',
@@ -196,10 +212,9 @@ function RootLayout() {
 // - Sentry: navigation breadcrumbs + root error boundary — outermost so it
 //   also captures anything the Observe wrapper throws.
 // - AppMetricsRoot (EAS Observe): production performance metrics (cold/warm
-//   start, time-to-interactive). Native-only — Observe supports
-//   Android/iOS; the web bundle skips the wrapper entirely.
-const MetricsWrappedRoot =
-  Platform.OS === 'web' ? RootLayout : AppMetricsRoot.wrap(RootLayout);
+//   start, time-to-interactive). Null when the native module is absent
+//   (web bundle, Expo Go) — see the guarded require above.
+const MetricsWrappedRoot = AppMetricsRoot ? AppMetricsRoot.wrap(RootLayout) : RootLayout;
 export default Sentry.wrap(MetricsWrappedRoot);
 
 /**
@@ -370,13 +385,14 @@ function RootLayoutNav() {
   // This is also the app's true time-to-interactive — the first frame the
   // user can actually see and touch — so EAS Observe's marker lives here.
   // Observe only records the FIRST call per session, so re-renders are
-  // harmless.
+  // harmless. Deliberately NOT gated on auth/AuthGuard's initial redirect:
+  // the splash-hide is a consistent measurement point, while auth settle
+  // varies with network conditions and would pollute the startup metric
+  // with backend latency.
   useEffect(() => {
     if (themeHydrated && textSizeHydrated) {
       SplashScreen.hideAsync();
-      if (Platform.OS !== 'web') {
-        AppMetrics.markInteractive();
-      }
+      AppMetrics?.markInteractive();
     }
   }, [themeHydrated, textSizeHydrated]);
 

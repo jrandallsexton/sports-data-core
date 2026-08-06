@@ -12,7 +12,7 @@ GitHub: github.com/jrandallsexton/sports-data-core
 - **Hosting**: Self-hosted Kubernetes on bare metal (NOT Azure Container Apps)
 - **Observability**: OpenTelemetry + Seq at `logging.sportdeets.com`. See `docs/seq-mcp.md` and `docs/seq-mcp-usage.md`.
 - **CI**: Azure Pipelines for .NET services (self-hosted agent pool `Default`, agent `Bender`), GitHub Actions for mobile app
-- **Mobile**: Expo SDK 55 / React Native 0.83.2 at `src/UI/sd-mobile`. Jest 29 required (Jest 30 incompatible with Expo 55).
+- **Mobile**: Expo SDK 55 / React Native 0.83.x (0.83.6 as of 2026-08) at `src/UI/sd-mobile`. Jest 29 required (Jest 30 incompatible with Expo 55).
 - **Web**: React at `src/UI/sd-ui`
 
 ## Key Patterns

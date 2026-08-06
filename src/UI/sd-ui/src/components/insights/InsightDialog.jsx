@@ -121,7 +121,10 @@ function InsightDialog({
           )}
         </div>
 
-        {isAdmin && !loading && (
+        {/* Approve/reject is meaningless once the game has been played —
+            isContestCompleted is server-authoritative (canonical
+            STATUS_FINAL) off the preview DTO. */}
+        {isAdmin && !loading && !matchup.isContestCompleted && (
           <div className="admin-controls">
             <textarea
               className="admin-rejection-note"

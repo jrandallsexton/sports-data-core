@@ -27,17 +27,47 @@ namespace SportsData.Api.Application.Jobs
             _backgroundJobProvider = backgroundJobProvider;
         }
 
+        /// <summary>
+        /// Sports the preview pipeline can currently serve. The prompt blobs
+        /// are football-generic; baseball (and future sports) stay excluded
+        /// until a sport-appropriate prompt exists, even if active leagues
+        /// for them appear.
+        /// </summary>
+        private static readonly Sport[] SupportedSports =
+        [
+            Sport.FootballNcaa,
+            Sport.FootballNfl
+        ];
+
         public async Task ExecuteAsync()
         {
+            // Sports come from ACTIVE leagues, not a hardcoded list — a sport
+            // with no leagues generates nothing, and a new sport onboards
+            // itself the day its first league exists (subject to
+            // SupportedSports above).
+            var activeSports = await _dataContext.PickemGroups
+                .AsNoTracking()
+                .Where(g => g.DeactivatedUtc == null)
+                .Select(g => g.Sport)
+                .Distinct()
+                .ToListAsync();
+
+            foreach (var sport in activeSports.Where(SupportedSports.Contains))
+            {
+                await GenerateForSportAsync(sport);
+            }
+        }
+
+        private async Task GenerateForSportAsync(Sport sport)
+        {
             // Get all matchups for the current week
-            // TODO: multi-sport
-            var matchupsResult = await _contestClientFactory.Resolve(SportsData.Core.Common.Sport.FootballNcaa).GetMatchupsForCurrentWeek();
-            if (!matchupsResult.IsSuccess) { _logger.LogWarning("Failed to retrieve matchups from Producer."); return; }
+            var matchupsResult = await _contestClientFactory.Resolve(sport).GetMatchupsForCurrentWeek();
+            if (!matchupsResult.IsSuccess) { _logger.LogWarning("Failed to retrieve matchups from Producer for {Sport}.", sport); return; }
             var matchups = matchupsResult.Value;
 
             if (matchups is null || !matchups.Any())
             {
-                _logger.LogWarning("No matchups found for the current week; skipping preview generation");
+                _logger.LogWarning("No matchups found for the current week ({Sport}); skipping preview generation", sport);
                 return;
             }
 
@@ -85,7 +115,8 @@ namespace SportsData.Api.Application.Jobs
             {
                 var cmd = new GenerateMatchupPreviewsCommand
                 {
-                    ContestId = contestId
+                    ContestId = contestId,
+                    Sport = sport
                 };
 
                 // TODO: Replace with prioritized queue via Service Bus
@@ -97,7 +128,7 @@ namespace SportsData.Api.Application.Jobs
                 return previews.TryGetValue(contestId, out var errors) && string.IsNullOrWhiteSpace(errors);
             }
 
-            _logger.LogInformation("Enqueued {LeagueCount} league matchups for preview generation.", leagueMatchupCount);
+            _logger.LogInformation("Enqueued {LeagueCount} league matchups for preview generation ({Sport}).", leagueMatchupCount, sport);
         }
 
     }

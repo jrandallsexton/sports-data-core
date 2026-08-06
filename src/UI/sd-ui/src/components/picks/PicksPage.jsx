@@ -628,10 +628,15 @@ function PicksPage() {
   }
 
   async function handleViewInsight(matchup) {
-    // If no preview available and user is admin, trigger preview generation
+    // If no preview available and user is admin, trigger preview generation —
+    // but never for a completed game (generating a "preview" of a played
+    // game is as meaningless as approving one; same rule as InsightDialog's
+    // hidden approve/reject). Completed + no preview = nothing to generate
+    // AND nothing to fetch, so no-op rather than falling through to a 404.
     if (!matchup.isPreviewAvailable && userDto?.isAdmin) {
+      if (matchup.status === 'STATUS_FINAL') return;
       try {
-        await apiWrapper.Admin.resetPreview(matchup.contestId);
+        await apiWrapper.Admin.resetPreview(matchup.contestId, leagueSport);
         toast.success("Preview generation initiated. Please refresh in a moment.");
       } catch (error) {
         console.error("Error resetting preview:", error);
@@ -667,7 +672,10 @@ function PicksPage() {
         awayScore: preview.awayScore,
         homeScore: preview.homeScore,
         vegasImpliedScore: preview.vegasImpliedScore,
-        generatedUtc: preview.generatedUtc
+        generatedUtc: preview.generatedUtc,
+        // Server-authoritative: hides the admin approve/reject block for
+        // completed games (see InsightDialog).
+        isContestCompleted: preview.isContestCompleted
       }));
     } catch (error) {
       console.error("Error fetching insight preview:", error);
@@ -688,6 +696,9 @@ function PicksPage() {
         PreviewId,
         ContestId,
         RejectionNote,
+        // Regeneration after rejection resolves canonical data for THIS
+        // league's sport (backend Sport enum name).
+        Sport: leagueSport,
       });
       toast.success("Preview rejection sent.");
     } catch (error) {

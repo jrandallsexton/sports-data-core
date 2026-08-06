@@ -63,7 +63,8 @@ namespace SportsData.Api.Application.Previews
 
             var cmd = new GenerateMatchupPreviewsCommand
             {
-                ContestId = command.ContestId
+                ContestId = command.ContestId,
+                Sport = command.Sport
             };
 
             _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));

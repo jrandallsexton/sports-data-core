@@ -2,6 +2,7 @@ using FluentAssertions;
 
 using Moq;
 
+using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.UI.Matchups.Queries.GetMatchupPreview;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
@@ -14,6 +15,12 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Matchups.Queries.GetMatchupPr
 
 public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQueryHandler>
 {
+    // Deterministic clock for all seeded timestamps (repo rule: no direct
+    // DateTime.UtcNow). The handler itself takes no IDateTimeProvider, so a
+    // fixed constant - the same pattern as LeagueInvitationTests - is the
+    // minimal compliant form.
+    private static readonly DateTime Now = new(2026, 8, 6, 12, 0, 0, DateTimeKind.Utc);
+
     private readonly Mock<IProvideContests> _contestClientMock = new();
 
     public GetMatchupPreviewQueryHandlerTests()
@@ -47,7 +54,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Now,
             Overview = "Test overview",
             Analysis = "Test analysis",
             Prediction = "Test prediction"
@@ -82,7 +89,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Now,
             Overview = "Test overview",
             Analysis = "Test analysis",
             Prediction = "Test prediction",
@@ -130,6 +137,135 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         result.Value.AtsWinner.Should().Be("Home Team");
         result.Value.AwayScore.Should().Be(24);
         result.Value.HomeScore.Should().Be(21);
+        // No canonical status seeded -> not completed.
+        result.Value.IsContestCompleted.Should().BeFalse();
+    }
+
+    // IsContestCompleted derives from the canonical status — the admin
+    // approve/reject affordances hide once the game has been played.
+    [Theory]
+    [InlineData("STATUS_FINAL", true)]
+    [InlineData("STATUS_SCHEDULED", false)]
+    [InlineData("STATUS_IN_PROGRESS", false)]
+    [InlineData(null, false)]
+    public async Task ExecuteAsync_SetsIsContestCompleted_FromCanonicalStatus(
+        string? canonicalStatus, bool expected)
+    {
+        // Arrange
+        var contestId = Guid.NewGuid();
+        var preview = new MatchupPreview
+        {
+            Id = Guid.NewGuid(),
+            ContestId = contestId,
+            CreatedUtc = Now,
+            Overview = "Test overview",
+            Analysis = "Test analysis",
+            Prediction = "Test prediction"
+        };
+        await DataContext.MatchupPreviews.AddAsync(preview);
+        await DataContext.SaveChangesAsync();
+
+        var canonicalData = new MatchupForPreviewDto
+        {
+            ContestId = contestId,
+            Status = canonicalStatus,
+            Away = "Away Team",
+            Home = "Home Team",
+            AwaySlug = "away-team",
+            HomeSlug = "home-team",
+            AwayConferenceSlug = "conf-a",
+            HomeConferenceSlug = "conf-b",
+            Venue = "Stadium",
+            VenueCity = "City"
+        };
+
+        _contestClientMock
+            .Setup(x => x.GetMatchupForPreview(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<MatchupForPreviewDto>(canonicalData));
+
+        var sut = Mocker.CreateInstance<GetMatchupPreviewQueryHandler>();
+        var query = new GetMatchupPreviewQuery { ContestId = contestId };
+
+        // Act
+        var result = await sut.ExecuteAsync(query);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.IsContestCompleted.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ResolvesSportFromContestsLeague()
+    {
+        // Arrange — the contest belongs to an NFL league, so the canonical
+        // client must be resolved for FootballNfl, not the NCAA fallback.
+        var contestId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+        var commissionerId = Guid.NewGuid();
+
+        await DataContext.PickemGroups.AddAsync(new PickemGroup
+        {
+            Id = groupId,
+            Name = "NFL League",
+            CommissionerUserId = commissionerId,
+            Sport = Sport.FootballNfl,
+            League = League.NFL,
+            PickType = PickType.StraightUp,
+            TiebreakerType = TiebreakerType.TotalPoints,
+            TiebreakerTiePolicy = TiebreakerTiePolicy.EarliestSubmission,
+            SeasonYear = 2026,
+            CreatedUtc = Now,
+            CreatedBy = commissionerId
+        });
+        await DataContext.PickemGroupMatchups.AddAsync(new PickemGroupMatchup
+        {
+            Id = Guid.NewGuid(),
+            GroupId = groupId,
+            SeasonWeekId = Guid.NewGuid(),
+            ContestId = contestId,
+            StartDateUtc = Now.AddDays(3),
+            SeasonYear = 2026,
+            SeasonWeek = 1,
+            CreatedUtc = Now,
+            CreatedBy = commissionerId
+        });
+        await DataContext.MatchupPreviews.AddAsync(new MatchupPreview
+        {
+            Id = Guid.NewGuid(),
+            ContestId = contestId,
+            CreatedUtc = Now,
+            Overview = "Test overview",
+            Analysis = "Test analysis",
+            Prediction = "Test prediction"
+        });
+        await DataContext.SaveChangesAsync();
+
+        _contestClientMock
+            .Setup(x => x.GetMatchupForPreview(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<MatchupForPreviewDto>(new MatchupForPreviewDto
+            {
+                ContestId = contestId,
+                Away = "Away Team",
+                Home = "Home Team",
+                AwaySlug = "away-team",
+                HomeSlug = "home-team",
+                AwayConferenceSlug = "conf-a",
+                HomeConferenceSlug = "conf-b",
+                Venue = "Stadium",
+                VenueCity = "City"
+            }));
+
+        var sut = Mocker.CreateInstance<GetMatchupPreviewQueryHandler>();
+
+        // Act
+        var result = await sut.ExecuteAsync(new GetMatchupPreviewQuery { ContestId = contestId });
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        Mocker.GetMock<IContestClientFactory>()
+            .Verify(x => x.Resolve(Sport.FootballNfl), Times.Once);
+        Mocker.GetMock<IContestClientFactory>()
+            .Verify(x => x.Resolve(Sport.FootballNcaa), Times.Never);
     }
 }
 

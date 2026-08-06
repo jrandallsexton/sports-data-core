@@ -64,7 +64,7 @@ public class GetMatchupPreviewQueryHandler : IGetMatchupPreviewQueryHandler
                 (m, g) => (Sport?)g.Sport)
             .FirstOrDefaultAsync(cancellationToken) ?? Sport.FootballNcaa;
 
-        var previewResult = await _contestClientFactory.Resolve(sport).GetMatchupForPreview(query.ContestId);
+        var previewResult = await _contestClientFactory.Resolve(sport).GetMatchupForPreview(query.ContestId, cancellationToken);
         var canonical = previewResult.IsSuccess ? previewResult.Value : null;
 
         if (canonical is null)

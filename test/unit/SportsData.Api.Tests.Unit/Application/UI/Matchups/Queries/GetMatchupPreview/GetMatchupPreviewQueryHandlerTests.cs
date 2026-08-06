@@ -15,6 +15,12 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Matchups.Queries.GetMatchupPr
 
 public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQueryHandler>
 {
+    // Deterministic clock for all seeded timestamps (repo rule: no direct
+    // DateTime.UtcNow). The handler itself takes no IDateTimeProvider, so a
+    // fixed constant - the same pattern as LeagueInvitationTests - is the
+    // minimal compliant form.
+    private static readonly DateTime Now = new(2026, 8, 6, 12, 0, 0, DateTimeKind.Utc);
+
     private readonly Mock<IProvideContests> _contestClientMock = new();
 
     public GetMatchupPreviewQueryHandlerTests()
@@ -48,7 +54,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Now,
             Overview = "Test overview",
             Analysis = "Test analysis",
             Prediction = "Test prediction"
@@ -83,7 +89,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Now,
             Overview = "Test overview",
             Analysis = "Test analysis",
             Prediction = "Test prediction",
@@ -151,7 +157,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Now,
             Overview = "Test overview",
             Analysis = "Test analysis",
             Prediction = "Test prediction"
@@ -208,7 +214,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
             TiebreakerType = TiebreakerType.TotalPoints,
             TiebreakerTiePolicy = TiebreakerTiePolicy.EarliestSubmission,
             SeasonYear = 2026,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Now,
             CreatedBy = commissionerId
         });
         await DataContext.PickemGroupMatchups.AddAsync(new PickemGroupMatchup
@@ -217,17 +223,17 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
             GroupId = groupId,
             SeasonWeekId = Guid.NewGuid(),
             ContestId = contestId,
-            StartDateUtc = DateTime.UtcNow.AddDays(3),
+            StartDateUtc = Now.AddDays(3),
             SeasonYear = 2026,
             SeasonWeek = 1,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Now,
             CreatedBy = commissionerId
         });
         await DataContext.MatchupPreviews.AddAsync(new MatchupPreview
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = Now,
             Overview = "Test overview",
             Analysis = "Test analysis",
             Prediction = "Test prediction"

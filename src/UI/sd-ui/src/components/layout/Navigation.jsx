@@ -13,9 +13,16 @@ import {
   FaMapMarkedAlt
 } from "react-icons/fa";
 import Wordmark from '../brand/Wordmark';
+import { useUserDto } from '../../contexts/UserContext';
 import './Navigation.css';
 
 function Navigation({ isSideNav, onToggle, onSignOut }) {
+  // Game Map is admin-only until the feature is launch-ready — hidden from
+  // regular users in BOTH nav variants (the /app/map route is AdminRoute-
+  // gated too, so a typed URL bounces).
+  const { userDto } = useUserDto();
+  const isAdmin = userDto?.isAdmin === true;
+
   // Auto-close menu on mobile when navigation link is clicked
   const handleNavLinkClick = () => {
     // Only auto-close on mobile/small screens when in side nav mode
@@ -48,13 +55,15 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
               <FaTrophy className="nav-icon" />
               <span>Leaderboard</span>
             </NavLink>
-            <NavLink to="/app/map" className="nav-link" onClick={handleNavLinkClick}>
-              <FaMapMarkedAlt className="nav-icon" />
-              <span>Game Map</span>
-            </NavLink>
+            {isAdmin && (
+              <NavLink to="/app/map" className="nav-link" onClick={handleNavLinkClick}>
+                <FaMapMarkedAlt className="nav-icon" />
+                <span>Game Map</span>
+              </NavLink>
+            )}
             <NavLink to="/app/messageboard" className="nav-link" onClick={handleNavLinkClick}>
               <FaComments className="nav-icon" />
-              <span>Message Board</span>
+              <span>Locker Room</span>
             </NavLink>
             <NavLink to="/app/settings" className="nav-link" onClick={handleNavLinkClick}>
               <FaCog className="nav-icon" />
@@ -120,16 +129,18 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
                   <span>Leaderboard</span>
                 </NavLink>
               </td>
-              <td>
-                <NavLink to="/app/map" className="nav-link">
-                  <FaMapMarkedAlt className="nav-icon" />
-                  <span>Map</span>
-                </NavLink>
-              </td>
+              {isAdmin && (
+                <td>
+                  <NavLink to="/app/map" className="nav-link">
+                    <FaMapMarkedAlt className="nav-icon" />
+                    <span>Map</span>
+                  </NavLink>
+                </td>
+              )}
               <td>
                 <NavLink to="/app/messageboard" className="nav-link">
                   <FaComments className="nav-icon" />
-                  <span>Message Board</span>
+                  <span>Locker Room</span>
                 </NavLink>
               </td>
             </tr>

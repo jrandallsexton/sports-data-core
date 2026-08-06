@@ -72,7 +72,10 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                     // Newest-first so a just-created league lands at the top of
                     // YourLeaguesCard on the next /me fetch — matches the
                     // commissioner's mental model coming out of the create flow.
-                    .OrderByDescending(m => m.Group.CreatedUtc)
+                    // StartsOn is null for FullSeason leagues, and Postgres sorts DESC
+                    // with NULLS FIRST - coalesce so undated leagues sink below
+                    // dated ones instead of pinning to the top of Your Leagues.
+                    .OrderByDescending(m => m.Group.StartsOn ?? DateTime.MinValue)
                     .Select(m => new UserDto.UserLeagueMembership
                     {
                         Id = m.Group.Id,

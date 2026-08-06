@@ -72,7 +72,7 @@ function Gallery() {
       src: '/media/Screenshot 2025-10-30 181706.png',
       type: 'image',
       alt: 'Screenshot 10',
-      title: 'Message Board'
+      title: 'Locker Room'
     },
     {
       src: '/media/Screenshot 2025-10-30 181717.png',

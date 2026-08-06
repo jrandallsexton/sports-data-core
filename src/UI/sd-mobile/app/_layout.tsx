@@ -14,6 +14,7 @@ import { useFonts } from 'expo-font';
 import { Poppins_400Regular, Poppins_700Bold_Italic } from '@expo-google-fonts/poppins';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { AppMetrics, AppMetricsRoot } from 'expo-observe';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as Notifications from 'expo-notifications';
 // Type-only import — erased at compile time. The runtime module is loaded via a
@@ -191,9 +192,15 @@ function RootLayout() {
   );
 }
 
-// Wrap with Sentry so navigation transitions become breadcrumbs and the
-// root error boundary forwards into the SDK.
-export default Sentry.wrap(RootLayout);
+// Wrap order (outermost first):
+// - Sentry: navigation breadcrumbs + root error boundary — outermost so it
+//   also captures anything the Observe wrapper throws.
+// - AppMetricsRoot (EAS Observe): production performance metrics (cold/warm
+//   start, time-to-interactive). Native-only — Observe supports
+//   Android/iOS; the web bundle skips the wrapper entirely.
+const MetricsWrappedRoot =
+  Platform.OS === 'web' ? RootLayout : AppMetricsRoot.wrap(RootLayout);
+export default Sentry.wrap(MetricsWrappedRoot);
 
 /**
  * Native-only push notification receive + tap handling. Logs a privacy-safe
@@ -359,8 +366,18 @@ function RootLayoutNav() {
   // AsyncStorage. Keeps the splash visible through the full startup path
   // so the first painted pixels already reflect every stored preference
   // (no theme flash, no font-size flash on launch).
+  //
+  // This is also the app's true time-to-interactive — the first frame the
+  // user can actually see and touch — so EAS Observe's marker lives here.
+  // Observe only records the FIRST call per session, so re-renders are
+  // harmless.
   useEffect(() => {
-    if (themeHydrated && textSizeHydrated) SplashScreen.hideAsync();
+    if (themeHydrated && textSizeHydrated) {
+      SplashScreen.hideAsync();
+      if (Platform.OS !== 'web') {
+        AppMetrics.markInteractive();
+      }
+    }
   }, [themeHydrated, textSizeHydrated]);
 
   return (

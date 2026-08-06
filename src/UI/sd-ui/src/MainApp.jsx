@@ -167,7 +167,16 @@ function MainApp() {
             <Route path="/picks/:leagueId/weeks/:week" element={<PicksPage />} />
             <Route path="/warroom" element={<WarRoomPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
-            <Route path="/map" element={<GameMap />} />
+            {/* Admin-only until launch-ready — the nav link is hidden for
+                non-admins too (Navigation.jsx). */}
+            <Route
+              path="/map"
+              element={
+                <AdminRoute>
+                  <GameMap />
+                </AdminRoute>
+              }
+            />
             <Route path="/messageboard" element={<MessageBoardPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route

@@ -33,7 +33,7 @@ function SystemNews() {
           AI-powered matchup previews{" "}
           <em>(hint: look between the pick buttons)</em>
         </li>
-        <li>Group-based smack talk threads aka: Messageboards</li>
+        <li>The Locker Room: group-based smack talk threads</li>
         <li>
           Picks can be submitted individually instead of all at once{" "}
           <em>(ahem, you know who you are, someWebsite!)</em>

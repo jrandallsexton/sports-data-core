@@ -36,6 +36,24 @@ const EMPTY_PICKS: UserPick[] = [];
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
+// Latest week = last element of the ascending seasonWeeks list.
+const latestWeek = (l: { seasonWeeks?: number[] } | null | undefined) =>
+  l?.seasonWeeks?.length ? l.seasonWeeks[l.seasonWeeks.length - 1] : null;
+
+// Default landing week — web parity (PicksPage): the league's CURRENT week
+// when the server provides one and it exists in seasonWeeks; otherwise the
+// latest week. Landing on latest was the bug that dropped users into
+// preseason Week 4 when the league was in Week 2. Past-league summaries
+// carry no currentSeasonWeek, so they still land on latest — correct for a
+// finished season. Module scope: pure helpers, stable across renders, no
+// effect-dependency noise.
+const defaultWeek = (
+  l: { seasonWeeks?: number[]; currentSeasonWeek?: number | null } | null | undefined,
+) =>
+  l?.currentSeasonWeek != null && l.seasonWeeks?.includes(l.currentSeasonWeek)
+    ? l.currentSeasonWeek
+    : latestWeek(l);
+
 export default function PicksScreen() {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -100,22 +118,6 @@ export default function PicksScreen() {
   }, []);
   const [importOpen, setImportOpen] = useState(false);
 
-  // Latest week = last element of the ascending seasonWeeks list.
-  const latestWeek = (l: { seasonWeeks?: number[] } | null | undefined) =>
-    l?.seasonWeeks?.length ? l.seasonWeeks[l.seasonWeeks.length - 1] : null;
-
-  // Default landing week — web parity (PicksPage): the league's CURRENT
-  // week when the server provides one and it exists in seasonWeeks;
-  // otherwise the latest week. Landing on latest was the bug that dropped
-  // users into preseason Week 4 when the league was in Week 2. Past-league
-  // summaries carry no currentSeasonWeek, so they still land on latest —
-  // correct for a finished season.
-  const defaultWeek = (
-    l: { seasonWeeks?: number[]; currentSeasonWeek?: number | null } | null | undefined,
-  ) =>
-    l?.currentSeasonWeek != null && l.seasonWeeks?.includes(l.currentSeasonWeek)
-      ? l.currentSeasonWeek
-      : latestWeek(l);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps — intentionally excluding leagueId to only initialize/target, not rerun on user selection
   useEffect(() => {
@@ -167,7 +169,8 @@ export default function PicksScreen() {
     refetchMe();
   }, [selectedLeague, seasonWeeks.length, refetchMe]);
 
-  // Snap to the latest week once the weeks actually arrive. The init effect
+  // Snap to the DEFAULT week (current, falling back to latest) once the
+  // weeks actually arrive. The init effect
   // above only runs on league/param change, so without this a heal-refetch
   // would land the data and still leave no week selected.
   useEffect(() => {

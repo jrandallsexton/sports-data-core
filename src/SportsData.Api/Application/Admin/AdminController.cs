@@ -15,6 +15,7 @@ using SportsData.Api.Application.Admin.Queries.GetCompetitionsWithoutPlays;
 using SportsData.Api.Application.Admin.Queries.GetLeagueWeekContests;
 using SportsData.Api.Application.Admin.Queries.GetMatchupForContest;
 using SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
+using SportsData.Api.Application.Admin.Queries.GetMatchupPreviewCaptures;
 using SportsData.Api.Application.Admin.SignalRDebug;
 using SportsData.Api.Application.Admin.Commands.ReenrichContest;
 using SportsData.Api.Application.Previews;
@@ -132,6 +133,70 @@ namespace SportsData.Api.Application.Admin
             };
             _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
             return Accepted(new { cmd.CorrelationId });
+        }
+
+        /// <summary>
+        /// Dry run: assemble and persist the exact prompt payload for a
+        /// contest WITHOUT calling the model or writing a preview. Completed
+        /// contests are allowed (backtest capture). Completion is announced
+        /// via SignalR (PreviewPromptCaptured); retrieve results from the
+        /// captures endpoint below.
+        /// </summary>
+        [HttpPost]
+        [Route("matchup/preview/{contestId}/capture")]
+        public IActionResult CaptureContestPreviewPrompt(
+            [FromRoute] Guid contestId,
+            [FromQuery] Sport sport = Sport.FootballNcaa)
+        {
+            var cmd = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = contestId,
+                Sport = sport,
+                Mode = PreviewGenerationMode.Capture
+            };
+            _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
+            return Accepted(new { cmd.CorrelationId });
+        }
+
+        /// <summary>
+        /// Eval run: assemble the prompt, call the model, and store the raw
+        /// response on the capture row. NEVER writes a MatchupPreview — safe
+        /// to run against contests that already have a real preview from a
+        /// prior season (the picks page reads newest-non-rejected, so an
+        /// experimental preview row would shadow the real one). Completed
+        /// contests allowed. Completion announced via SignalR
+        /// (PreviewPromptCaptured).
+        /// </summary>
+        [HttpPost]
+        [Route("matchup/preview/{contestId}/experiment")]
+        public IActionResult RunContestPreviewExperiment(
+            [FromRoute] Guid contestId,
+            [FromQuery] Sport sport = Sport.FootballNcaa)
+        {
+            var cmd = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = contestId,
+                Sport = sport,
+                Mode = PreviewGenerationMode.Experiment
+            };
+            _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
+            return Accepted(new { cmd.CorrelationId });
+        }
+
+        /// <summary>
+        /// Persisted prompt captures for a contest, newest first — payload,
+        /// metadata, and the full rendered prompt exactly as the model would
+        /// receive it (instruction blob + payload + editor note).
+        /// </summary>
+        [HttpGet]
+        [Route("matchup/preview/{contestId}/captures")]
+        public async Task<ActionResult<List<MatchupPreviewCaptureDto>>> GetContestPreviewPromptCaptures(
+            [FromRoute] Guid contestId,
+            [FromServices] IGetMatchupPreviewCapturesQueryHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(new GetMatchupPreviewCapturesQuery(contestId), cancellationToken);
+            return result.ToActionResult();
         }
 
         [HttpPost]

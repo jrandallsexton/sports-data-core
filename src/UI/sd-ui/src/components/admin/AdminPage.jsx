@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import './AdminPage.css';
 import apiWrapper from '../../api/apiWrapper';
 import AdminHeader from './AdminHeader';
@@ -131,6 +132,11 @@ export default function AdminPage() {
       <AdminHeader />
 
       {/* SignalR debug cards moved to /admin/football and /admin/baseball. */}
+      <div style={{ display: 'flex', gap: 16, margin: '8px 0 16px' }}>
+        <Link to="/admin/football">Football debug</Link>
+        <Link to="/admin/baseball">Baseball debug</Link>
+        <Link to="/admin/preview-lab">Preview Lab</Link>
+      </div>
 
       <div className="admin-grid">
         <div className="admin-main">

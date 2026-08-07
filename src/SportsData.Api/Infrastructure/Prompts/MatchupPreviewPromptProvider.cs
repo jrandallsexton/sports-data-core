@@ -22,25 +22,21 @@ public class MatchupPreviewPromptProvider
 
     public Task<(string PromptText, string PromptName)> GetPreviewInsightPromptAsync(bool hasStats)
     {
-        if (hasStats)
-        {
-            if (_cachedPromptWithStatsTask != null)
-                return _cachedPromptWithStatsTask;
-        }
-        else
-        {
-            if (_cachedPromptTask != null)
-                return _cachedPromptTask;
-        }
-
+        // Evict faulted tasks so a transient blob failure doesn't poison the
+        // cache until process restart — every later call would receive the
+        // same faulted task and the whole preview pipeline stays down.
         lock (_lock)
         {
             if (hasStats)
             {
+                if (_cachedPromptWithStatsTask is { IsFaulted: true } or { IsCanceled: true })
+                    _cachedPromptWithStatsTask = null;
                 return _cachedPromptWithStatsTask ??= LoadPromptAsync(BlobWithStats);
             }
             else
             {
+                if (_cachedPromptTask is { IsFaulted: true } or { IsCanceled: true })
+                    _cachedPromptTask = null;
                 return _cachedPromptTask ??= LoadPromptAsync(Blob);
             }
         }

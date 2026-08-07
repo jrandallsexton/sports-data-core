@@ -23,7 +23,8 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<Result<GetFranchiseSeasonsResponse>> GetFranchiseSeasons(Guid franchiseId, CancellationToken cancellationToken = default);
     Task<Result<GetFranchiseSeasonByIdResponse>> GetFranchiseSeasonById(Guid franchiseId, int seasonYear, CancellationToken cancellationToken = default);
     Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear, CancellationToken cancellationToken = default);
-    Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
+    /// <summary>Null when Producer has no metrics row for the franchise season (404) — normal missing data.</summary>
+    Task<FranchiseSeasonMetricsDto?> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default);
     Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default);
     Task<TeamCardDto?> GetTeamCard(string slug, int seasonYear, CancellationToken cancellationToken = default);
     Task<Result<List<TeamCardScheduleItemDto>>> GetTeamFinalizedGames(string slug, int seasonYear, DateTime? asOfDate = null, CancellationToken cancellationToken = default);
@@ -118,12 +119,23 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             cancellationToken);
     }
 
-    public async Task<FranchiseSeasonMetricsDto> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default)
+    public async Task<FranchiseSeasonMetricsDto?> GetFranchiseSeasonMetricsByFranchiseSeasonId(Guid franchiseSeasonId, CancellationToken cancellationToken = default)
     {
-        return await GetOrDefaultAsync(
-            $"franchise-seasons/id/{franchiseSeasonId}/metrics",
-            new FranchiseSeasonMetricsDto(),
-            cancellationToken);
+        // Producer 404s when no metrics row exists for the franchise season.
+        // That is normal missing data (early season, uncovered historical
+        // seasons), not an error — callers null-check for both-or-nothing
+        // handling. Other HTTP failures still throw so jobs retry.
+        try
+        {
+            return await GetOrDefaultAsync(
+                $"franchise-seasons/id/{franchiseSeasonId}/metrics",
+                new FranchiseSeasonMetricsDto(),
+                cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
     }
 
     public async Task<List<FranchiseSeasonPollDto>> GetFranchiseSeasonRankings(int seasonYear, CancellationToken cancellationToken = default)
@@ -194,18 +206,35 @@ public class FranchiseClient : ClientBase, IProvideFranchises
 
     public async Task<FranchiseSeasonModelStatsDto> GetFranchiseSeasonPreviewStats(Guid franchiseSeasonId, CancellationToken cancellationToken = default)
     {
-        return await GetOrDefaultAsync(
-            $"franchise-seasons/id/{franchiseSeasonId}/preview-stats",
-            new FranchiseSeasonModelStatsDto(),
-            cancellationToken);
+        // 404 = no stats yet (e.g. weeks 1-2) — empty DTO feeds the
+        // hasStats=false prompt path. Other failures still throw.
+        try
+        {
+            return await GetOrDefaultAsync(
+                $"franchise-seasons/id/{franchiseSeasonId}/preview-stats",
+                new FranchiseSeasonModelStatsDto(),
+                cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return new FranchiseSeasonModelStatsDto();
+        }
     }
 
     public async Task<List<FranchiseSeasonCompetitionResultDto>> GetFranchiseSeasonCompetitionResults(Guid franchiseSeasonId, CancellationToken cancellationToken = default)
     {
-        return await GetOrDefaultAsync(
-            $"franchise-seasons/id/{franchiseSeasonId}/competition-results",
-            new List<FranchiseSeasonCompetitionResultDto>(),
-            cancellationToken);
+        // 404 = no games recorded — empty list, not an error.
+        try
+        {
+            return await GetOrDefaultAsync(
+                $"franchise-seasons/id/{franchiseSeasonId}/competition-results",
+                new List<FranchiseSeasonCompetitionResultDto>(),
+                cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return [];
+        }
     }
 
     public async Task<List<ConferenceDivisionNameAndSlugDto>> GetConferenceNamesAndSlugs(int seasonYear, CancellationToken cancellationToken = default)

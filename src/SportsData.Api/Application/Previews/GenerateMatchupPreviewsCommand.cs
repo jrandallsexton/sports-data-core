@@ -13,5 +13,13 @@ public class GenerateMatchupPreviewsCommand
     /// </summary>
     public Sport Sport { get; set; } = Sport.FootballNcaa;
 
+    /// <summary>
+    /// Generate (default, prod), Capture (prompt only, no model call), or
+    /// Experiment (model call, result stored on the capture row, no
+    /// MatchupPreview written). Defaults to Generate so payloads serialized
+    /// before this property existed behave exactly as before.
+    /// </summary>
+    public PreviewGenerationMode Mode { get; set; } = PreviewGenerationMode.Generate;
+
     public Guid CorrelationId { get; set; } = Guid.NewGuid();
 }

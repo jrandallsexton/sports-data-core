@@ -33,6 +33,7 @@ import ContestOverview from "./components/contests/ContestOverview";
 import AdminPage from "./components/admin/AdminPage";
 import AdminFootballPage from "./components/admin/AdminFootballPage";
 import AdminBaseballPage from "./components/admin/AdminBaseballPage";
+import AdminPreviewLabPage from "./components/admin/AdminPreviewLabPage";
 import AdminRoute from "./routes/AdminRoute";
 import SeasonOverview from "./components/season/SeasonOverview";
 
@@ -231,6 +232,14 @@ function MainApp() {
               element={
                 <AdminRoute>
                   <AdminBaseballPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/preview-lab"
+              element={
+                <AdminRoute>
+                  <AdminPreviewLabPage />
                 </AdminRoute>
               }
             />

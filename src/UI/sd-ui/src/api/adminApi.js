@@ -11,10 +11,29 @@ const AdminApi = {
   getCompetitionsWithoutMetrics: () =>
     apiClient.get('/admin/errors/competitions-without-metrics'),
   // sport: backend Sport enum name (e.g. "FootballNfl"); omitted = NCAA.
+  // contestId is encoded everywhere it enters the path — it comes from
+  // free-text admin inputs, and a stray ?/#// would change the request target.
   resetPreview: (contestId, sport) =>
     apiClient.post(
-      `/admin/matchup/preview/${contestId}/reset${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+      `/admin/matchup/preview/${encodeURIComponent(contestId)}/reset${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
     ),
+
+  // Preview Lab (docs/metrics-modeling/matchup-preview-data-inputs.md §3.6).
+  // capture = persist the exact prompt payload without a model call;
+  // experiment = call the model but store the result on the capture row
+  // ONLY — never writes a MatchupPreview, so a prior season's real preview
+  // can't be shadowed on the picks page. Both allow completed contests and
+  // announce completion via SignalR (PreviewPromptCaptured).
+  capturePreviewPrompt: (contestId, sport) =>
+    apiClient.post(
+      `/admin/matchup/preview/${encodeURIComponent(contestId)}/capture${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+    ),
+  runPreviewExperiment: (contestId, sport) =>
+    apiClient.post(
+      `/admin/matchup/preview/${encodeURIComponent(contestId)}/experiment${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+    ),
+  getPreviewCaptures: (contestId) =>
+    apiClient.get(`/admin/matchup/preview/${encodeURIComponent(contestId)}/captures`),
 
   // Returns one MLB matchup in the same shape as the picks page so the
   // baseball SignalR debug page can render a real <MatchupCard /> for a

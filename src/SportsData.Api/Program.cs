@@ -292,6 +292,7 @@ namespace SportsData.Api
                     typeof(PickemGroupsRequestedConsumer),
                     typeof(PickemGroupWeekMatchupsGeneratedHandler),
                     typeof(PreviewGeneratedHandler),
+                    typeof(PreviewPromptCapturedHandler),
                     typeof(SeasonPollWeekCreatedHandler),
                     typeof(UsersRequestedConsumer)
                 ]);

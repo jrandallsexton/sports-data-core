@@ -117,6 +117,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Null(capture.Model);
             Assert.Null(capture.RawResponse);
             Assert.Equal("prediction-insights-with-stats-schedule", capture.PromptVersion);
+            Assert.Equal(PromptText, capture.PromptText);
             Assert.Contains("arizona-cardinals", capture.PayloadJson);
             Assert.Null(capture.EditorNote);
             Assert.True(capture.CharCount > PromptText.Length);

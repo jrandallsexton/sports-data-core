@@ -14,10 +14,10 @@ namespace SportsData.Api.Infrastructure.Data.Entities
     /// experiment runs (which also store the model's raw response here and
     /// NEVER write a MatchupPreview — the picks page reads newest-non-
     /// rejected per contest, so an experimental preview row would shadow a
-    /// prior season's real preview). The full prompt is reconstructable as
-    /// blob(PromptVersion) + "\n\n" + PayloadJson + EditorNote; instruction
-    /// text is never stored here. Rows are kept forever — they are the
-    /// backtest corpus (payload x model x prompt vs actual outcome).
+    /// prior season's real preview). The full prompt is
+    /// PromptText + "\n\n" + PayloadJson + EditorNote, all stored here.
+    /// Rows are kept forever — they are the backtest corpus
+    /// (payload x model x prompt vs actual outcome).
     /// </summary>
     public class MatchupPreviewPrompt : CanonicalEntityBase<Guid>
     {
@@ -31,6 +31,13 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public MatchupPreview? MatchupPreview { get; set; }
 
         public required string PromptVersion { get; set; }
+
+        /// <summary>
+        /// The instruction text EXACTLY as sent — stored per capture because
+        /// a blob can be edited in place (ReloadPromptAsync), which would
+        /// make version-based reconstruction lie about what the model saw.
+        /// </summary>
+        public required string PromptText { get; set; }
 
         /// <summary>The serialized matchup DTO appended to the prompt — the data part.</summary>
         public required string PayloadJson { get; set; }

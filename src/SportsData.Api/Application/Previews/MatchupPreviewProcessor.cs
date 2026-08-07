@@ -56,6 +56,7 @@ namespace SportsData.Api.Application.Previews
         internal sealed record AssembledPrompt(
             MatchupForPreviewDto Matchup,
             string PromptName,
+            string InstructionText,
             string PayloadJson,
             string? EditorNote,
             string FullPrompt);
@@ -113,7 +114,7 @@ namespace SportsData.Api.Application.Previews
             {
                 await _eventBus.Publish(new PreviewPromptCaptured(
                     matchup.ContestId,
-                    $"{matchup.Home} @ {matchup.Away} prompt captured ({capture.EstTokens} est. tokens)",
+                    $"{matchup.Away} @ {matchup.Home} prompt captured ({capture.EstTokens} est. tokens)",
                     null,
                     matchup.Sport,
                     matchup.SeasonYear,
@@ -176,7 +177,7 @@ namespace SportsData.Api.Application.Previews
 
                 await _eventBus.Publish(new PreviewPromptCaptured(
                     matchup.ContestId,
-                    $"{matchup.Home} @ {matchup.Away} experiment completed ({capture.Model}{(capture.ResponseValidationErrors is null ? "" : ", with validation errors")})",
+                    $"{matchup.Away} @ {matchup.Home} experiment completed ({capture.Model}{(capture.ResponseValidationErrors is null ? "" : ", with validation errors")})",
                     null,
                     matchup.Sport,
                     matchup.SeasonYear,
@@ -259,7 +260,7 @@ namespace SportsData.Api.Application.Previews
 
             await _eventBus.Publish(new PreviewGenerated(
                 assembled.Matchup.ContestId,
-                $"{assembled.Matchup.Home} @ {assembled.Matchup.Away} preview generated",
+                $"{assembled.Matchup.Away} @ {assembled.Matchup.Home} preview generated",
                 null,
                 assembled.Matchup.Sport,
                 assembled.Matchup.SeasonYear,
@@ -316,6 +317,7 @@ namespace SportsData.Api.Application.Previews
             return new AssembledPrompt(
                 matchup,
                 promptData.PromptName,
+                promptData.PromptText,
                 jsonInput,
                 string.IsNullOrEmpty(editorNote) ? null : rejectionNote,
                 fullPrompt);
@@ -331,6 +333,7 @@ namespace SportsData.Api.Application.Previews
                 ContestId = command.ContestId,
                 Sport = command.Sport,
                 PromptVersion = assembled.PromptName,
+                PromptText = assembled.InstructionText,
                 PayloadJson = assembled.PayloadJson,
                 EditorNote = assembled.EditorNote,
                 CharCount = assembled.FullPrompt.Length,

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import './AdminPage.css';
 import AdminHeader from './AdminHeader';
@@ -52,7 +52,13 @@ export default function AdminPreviewLabPage() {
     [league]
   );
 
+  // Request sequence token: concurrent loads are reachable (manual submit,
+  // contest switch, SignalR refresh) and an out-of-order response must not
+  // overwrite newer data — same discipline as AdminPage's cancelled flags.
+  const loadSeqRef = useRef(0);
+
   const loadCaptures = useCallback(async (id) => {
+    const seq = ++loadSeqRef.current;
     if (!id) {
       setCaptures([]);
       return;
@@ -60,8 +66,10 @@ export default function AdminPreviewLabPage() {
     setLoading(true);
     try {
       const res = await apiWrapper.Admin.getPreviewCaptures(id);
+      if (seq !== loadSeqRef.current) return; // stale response
       setCaptures(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
+      if (seq !== loadSeqRef.current) return;
       // 404 just means no captures yet — an empty lab, not an error.
       if (err?.response?.status === 404) {
         setCaptures([]);
@@ -69,7 +77,7 @@ export default function AdminPreviewLabPage() {
         toast.error(err?.message ?? 'Failed to load captures');
       }
     } finally {
-      setLoading(false);
+      if (seq === loadSeqRef.current) setLoading(false);
     }
   }, []);
 
@@ -77,15 +85,24 @@ export default function AdminPreviewLabPage() {
     loadCaptures(contestId);
   }, [contestId, loadCaptures]);
 
+  // The SignalR callback reads contestId through a ref so its identity stays
+  // stable — a changing identity would tear down and renegotiate the hub
+  // connection on every contest switch (useSignalRClient keys its effect on
+  // the handler), and a completion landing in that window would be lost.
+  const contestIdRef = useRef(contestId);
+  contestIdRef.current = contestId;
+
   // Refresh the list when the async run completes for the contest we're
-  // looking at (SignalR payload is camelCase per the hub JSON options).
+  // looking at. SignalR payload is camelCase; server GUIDs arrive lowercase
+  // while the pasted ID may be uppercase — compare case-insensitively.
   const handlePromptCaptured = useCallback(
     (data) => {
-      if (!contestId || data?.contestId !== contestId) return;
+      const current = contestIdRef.current;
+      if (!current || data?.contestId?.toLowerCase() !== current.toLowerCase()) return;
       toast.success(data?.message ?? 'Prompt capture completed');
-      loadCaptures(contestId);
+      loadCaptures(current);
     },
-    [contestId, loadCaptures]
+    [loadCaptures]
   );
 
   useSignalRClient({
@@ -262,16 +279,19 @@ function CaptureCard({ capture }) {
 }
 
 function PromptBlock({ label, text, pretty = false }) {
-  if (!text) return null;
-
-  let display = text;
-  if (pretty) {
+  // Memoized: reformatting large JSON on every parent re-render is wasted
+  // work — recompute only when the text itself changes.
+  const display = useMemo(() => {
+    if (!text || !pretty) return text;
     try {
-      display = JSON.stringify(JSON.parse(text), null, 2);
+      return JSON.stringify(JSON.parse(text), null, 2);
     } catch {
       // Malformed JSON (that's the data, for experiment failures) — show raw.
+      return text;
     }
-  }
+  }, [text, pretty]);
+
+  if (!text) return null;
 
   const handleCopy = async () => {
     try {

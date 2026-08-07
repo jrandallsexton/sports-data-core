@@ -2,8 +2,9 @@
 
 Status: analysis + design, 2026-08-07. Captures exactly what the preview
 model received during the 2025-season alpha (and receives today), then
-proposes the historical-data enrichment for early-season quality. No
-implementation authorized yet.
+proposes the historical-data enrichment for early-season quality. The
+prompt-capture / experiment tooling (§3.6) is IMPLEMENTED (PR #601);
+only the historical enrichment (§3–3.5) remains unapproved.
 
 Relevant code: `MatchupPreviewProcessor` (SportsData.Api),
 `MatchupForPreviewDto` (SportsData.Core), `MatchupPreviewPromptProvider`,
@@ -324,6 +325,7 @@ capture row, SKIP the LLM call, the `MatchupPreview` row, and the
 | Id, ContestId, Sport | |
 | MatchupPreviewId (nullable FK) | null for dry-run captures; set when a real generation wrote a preview |
 | PromptVersion | blob name, as today |
+| PromptText | instruction text EXACTLY as sent — stored per capture because a blob can be edited in place, which would make version-based reconstruction lie (CR finding on #601) |
 | PayloadJson (jsonb) | the serialized matchup DTO — the data part |
 | EditorNote (nullable) | rejection-feedback text if it was appended |
 | CharCount, EstTokens | chars/4 estimate — pre-flight budget visibility |
@@ -331,11 +333,13 @@ capture row, SKIP the LLM call, the `MatchupPreview` row, and the
 | Model, RawResponse, ResponseValidationErrors | model-call runs; RawResponse is deliberately `text` NOT `jsonb` — malformed responses are exactly the failures an experiment must record |
 | CreatedUtc, CorrelationId | |
 
-Store the DATA + prompt name, not the rendered instruction text:
-instructions are already versioned in blob (policy: edits get a new
-blob name, never in-place), and duplicating ~8 KB of secret sauce into
-thousands of rows adds nothing. Full prompt is reconstructable:
-blob(PromptVersion) + "\n\n" + PayloadJson + EditorNote.
+Originally the plan stored only PromptVersion + payload and
+reconstructed via the blob — rejected during review: `ReloadPromptAsync`
+can replace a blob in place, so version-based reconstruction could show
+text that differs from what the model actually received. Each capture
+stores its instruction text; the DB is private, and ~10 KB per row at a
+few thousand rows/season is noise. Full prompt = PromptText + "\n\n" +
+PayloadJson + EditorNote, all from the row.
 
 **4. Admin capture endpoint** — new
 `POST /admin/matchup/preview/{contestId}/capture?sport=...`, ASYNC via

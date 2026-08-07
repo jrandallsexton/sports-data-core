@@ -16,6 +16,23 @@ const AdminApi = {
       `/admin/matchup/preview/${contestId}/reset${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
     ),
 
+  // Preview Lab (docs/metrics-modeling/matchup-preview-data-inputs.md §3.6).
+  // capture = persist the exact prompt payload without a model call;
+  // experiment = call the model but store the result on the capture row
+  // ONLY — never writes a MatchupPreview, so a prior season's real preview
+  // can't be shadowed on the picks page. Both allow completed contests and
+  // announce completion via SignalR (PreviewPromptCaptured).
+  capturePreviewPrompt: (contestId, sport) =>
+    apiClient.post(
+      `/admin/matchup/preview/${contestId}/capture${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+    ),
+  runPreviewExperiment: (contestId, sport) =>
+    apiClient.post(
+      `/admin/matchup/preview/${contestId}/experiment${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+    ),
+  getPreviewCaptures: (contestId) =>
+    apiClient.get(`/admin/matchup/preview/${contestId}/captures`),
+
   // Returns one MLB matchup in the same shape as the picks page so the
   // baseball SignalR debug page can render a real <MatchupCard /> for a
   // chosen contest. League-context fields (Predictions, AiWinner,

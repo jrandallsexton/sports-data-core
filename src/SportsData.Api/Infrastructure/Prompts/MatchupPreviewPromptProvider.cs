@@ -10,6 +10,8 @@ public class MatchupPreviewPromptProvider
     private Task<(string, string)>? _cachedPromptTask;
     private Task<(string, string)>? _cachedPromptWithStatsTask;
 
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, Task<string>> _promptTextByVersion = new();
+
     private const string Container = "prompts";
 
     private const string Blob = "prediction-insights-v1.txt";
@@ -44,6 +46,19 @@ public class MatchupPreviewPromptProvider
                 return _cachedPromptTask ??= LoadPromptAsync(Blob);
             }
         }
+    }
+
+    /// <summary>
+    /// Fetch prompt text by stored PromptVersion (blob name without
+    /// extension) — used to reconstruct the full prompt for persisted
+    /// captures, which may reference older blob versions than the two
+    /// active ones above.
+    /// </summary>
+    public Task<string> GetPromptTextByVersionAsync(string promptVersion)
+    {
+        return _promptTextByVersion.GetOrAdd(
+            promptVersion,
+            v => LoadPromptTextOnlyAsync($"{v}.txt"));
     }
 
     public async Task<string> ReloadPromptAsync(bool hasStats)

@@ -441,3 +441,8 @@ bruno/**/.env
 src/UI/sd-mobile/dist/
 src/UI/sd-mobile/coverage/
 src/UI/sd-mobile/junit.xml
+
+# LLM prompts are proprietary (the 'secret sauce') and live in Azure Blob
+# storage ONLY - the repo is public. Local exports for analysis are fine;
+# they must never be committed.
+docs/metrics-modeling/prompts/

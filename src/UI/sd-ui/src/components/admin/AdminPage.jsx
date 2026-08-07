@@ -131,6 +131,11 @@ export default function AdminPage() {
       <AdminHeader />
 
       {/* SignalR debug cards moved to /admin/football and /admin/baseball. */}
+      <div style={{ display: 'flex', gap: 16, margin: '8px 0 16px' }}>
+        <a href="/admin/football">Football debug</a>
+        <a href="/admin/baseball">Baseball debug</a>
+        <a href="/admin/preview-lab">Preview Lab</a>
+      </div>
 
       <div className="admin-grid">
         <div className="admin-main">

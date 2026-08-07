@@ -7,6 +7,7 @@ export default function useSignalRClient({
   userId,
   leagueId,
   onPreviewCompleted,
+  onPreviewPromptCaptured,
   onContestStatusChanged,
   onContestFinalized,
   onFootballPlayCompleted,
@@ -40,6 +41,12 @@ export default function useSignalRClient({
       .build();
 
     connection.on("PreviewGenerated", onPreviewCompleted);
+
+    // Preview Lab completions (capture / experiment runs) — admin-only
+    // consumers; broadcast is global like PreviewGenerated.
+    if (onPreviewPromptCaptured) {
+      connection.on("PreviewPromptCaptured", onPreviewPromptCaptured);
+    }
 
     // Lifecycle (Scheduled→InProgress→Final) — sport-neutral.
     if (onContestStatusChanged) {
@@ -86,6 +93,7 @@ export default function useSignalRClient({
     userId,
     leagueId,
     onPreviewCompleted,
+    onPreviewPromptCaptured,
     onContestStatusChanged,
     onContestFinalized,
     onFootballPlayCompleted,

@@ -60,7 +60,11 @@ export default function AdminPreviewLabPage() {
   const loadCaptures = useCallback(async (id) => {
     const seq = ++loadSeqRef.current;
     if (!id) {
+      // Clearing the contest ID invalidates any in-flight load (seq bump
+      // above), whose finally will therefore skip its setLoading(false) —
+      // clear it here so the page can't be stuck on "Loading captures…".
       setCaptures([]);
+      setLoading(false);
       return;
     }
     setLoading(true);

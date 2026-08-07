@@ -254,7 +254,7 @@ by the model verbatim. Structural choices worth noting:
 
 ---
 
-## 3.6 Prompt capture + persistence plan (2026-08-07, pre-implementation)
+## 3.6 Prompt capture + persistence (designed 2026-08-07, implemented in PR #601)
 
 Goal (user): run locally, trigger generation for one game from admin,
 and see EXACTLY what would be sent to the model — without burning
@@ -349,7 +349,8 @@ regeneration). Capture completion publishes a lightweight event through
 the same notification path. Retrieval is a companion
 `GET /admin/matchup/preview/{contestId}/captures` (list, newest first)
 returning payload + metadata, with the full prompt reconstructed
-(blob text + payload + editor note) so the admin sees exactly what the
+(persisted PromptText + PayloadJson + EditorNote — no blob round-trip,
+matching BuildCapture) so the admin sees exactly what the
 model would receive. The existing `/reset` endpoint stays untouched.
 
 **5. Always-on persistence** — the real generation path writes the same

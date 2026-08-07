@@ -104,6 +104,19 @@ export default function PicksScreen() {
   const latestWeek = (l: { seasonWeeks?: number[] } | null | undefined) =>
     l?.seasonWeeks?.length ? l.seasonWeeks[l.seasonWeeks.length - 1] : null;
 
+  // Default landing week — web parity (PicksPage): the league's CURRENT
+  // week when the server provides one and it exists in seasonWeeks;
+  // otherwise the latest week. Landing on latest was the bug that dropped
+  // users into preseason Week 4 when the league was in Week 2. Past-league
+  // summaries carry no currentSeasonWeek, so they still land on latest —
+  // correct for a finished season.
+  const defaultWeek = (
+    l: { seasonWeeks?: number[]; currentSeasonWeek?: number | null } | null | undefined,
+  ) =>
+    l?.currentSeasonWeek != null && l.seasonWeeks?.includes(l.currentSeasonWeek)
+      ? l.currentSeasonWeek
+      : latestWeek(l);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps — intentionally excluding leagueId to only initialize/target, not rerun on user selection
   useEffect(() => {
     // Deep-link param wins: an active league, or the on-demand past league.
@@ -111,12 +124,12 @@ export default function PicksScreen() {
       const active = leagues.find((l) => l.id === leagueIdParam);
       if (active) {
         setLeagueId(active.id);
-        setSelectedWeek(latestWeek(active));
+        setSelectedWeek(defaultWeek(active));
         return;
       }
       if (pastLeagueAsLeague && pastLeagueAsLeague.id === leagueIdParam) {
         setLeagueId(pastLeagueAsLeague.id);
-        setSelectedWeek(latestWeek(pastLeagueAsLeague));
+        setSelectedWeek(defaultWeek(pastLeagueAsLeague));
         return;
       }
       // Param is a past league still being fetched → wait rather than default to
@@ -128,7 +141,7 @@ export default function PicksScreen() {
     // Initialize once to the first active league.
     if (!leagueId && leagues.length > 0) {
       setLeagueId(leagues[0].id);
-      setSelectedWeek(latestWeek(leagues[0]));
+      setSelectedWeek(defaultWeek(leagues[0]));
     }
   }, [leagues, leagueIdParam, pastLeagueAsLeague, candidatePastId, allLeaguesFetched]);
 
@@ -159,7 +172,7 @@ export default function PicksScreen() {
   // would land the data and still leave no week selected.
   useEffect(() => {
     if (selectedWeek !== null) return;
-    const week = latestWeek(selectedLeague);
+    const week = defaultWeek(selectedLeague);
     if (week !== null) setSelectedWeek(week);
   }, [selectedLeague, selectedWeek]);
 
@@ -169,7 +182,7 @@ export default function PicksScreen() {
       // Search selectableLeagues (active + viewed past) so switching to the past
       // league resolves its weeks instead of transiently clearing selectedWeek.
       const league = selectableLeagues.find((l) => l.id === id);
-      setSelectedWeek(latestWeek(league));
+      setSelectedWeek(defaultWeek(league));
     },
     [selectableLeagues],
   );

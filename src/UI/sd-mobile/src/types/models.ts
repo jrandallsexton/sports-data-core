@@ -24,6 +24,13 @@ export interface League {
    * Custom-window leagues may contain a subset (e.g. [4]) rather than 1..N.
    */
   seasonWeeks?: number[];
+  /**
+   * The league's CURRENT week (server-computed from game dates). The picks
+   * page lands here by default — web parity: PicksPage prefers this over
+   * the latest week. Optional: older payloads and past-league summaries
+   * don't carry it, in which case latest-week is the fallback.
+   */
+  currentSeasonWeek?: number | null;
 }
 
 // ─── Probable Pitcher (MLB only) ─────────────────────────────────────────────

@@ -76,6 +76,16 @@ public class UpdatePromptCommandHandler : IUpdatePromptCommandHandler
         // A prompt that generated real output is IMMUTABLE — its text is
         // part of the provenance record for those previews. Experiments
         // (capture rows) don't freeze a prompt; only MatchupPreview does.
+        //
+        // Known TOCTOU window (reviewed, accepted): a generation in flight
+        // can read the old text, this update can commit, and the preview
+        // can then persist referencing this PromptId. This check is a UX
+        // guardrail, NOT the provenance source of truth — every generation
+        // persists the EXACT text it sent on its capture row
+        // (MatchupPreviewPrompt.PromptText, linked to the preview), so
+        // provenance survives the race by construction. Serializing prompt
+        // updates against multi-minute generation runs would buy nothing
+        // the capture doesn't already guarantee.
         var usedByPreviews = await _dataContext.MatchupPreviews
             .AsNoTracking()
             .AnyAsync(mp => mp.PromptId == command.PromptId, cancellationToken);

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import './AdminPage.css';
 import AdminHeader from './AdminHeader';
@@ -53,6 +53,12 @@ export default function AdminPromptsPage() {
 
   const isImmutable = form.usedByPreviewCount > 0;
 
+  // Request-generation token: two prompt loads can resolve out of order
+  // (double-click, slow network) and the stale response must not
+  // overwrite the editor for the newer selection — same discipline as
+  // the Preview Lab's loadCaptures.
+  const promptLoadSeqRef = useRef(0);
+
   const loadPrompts = useCallback(async () => {
     setLoading(true);
     try {
@@ -90,11 +96,15 @@ export default function AdminPromptsPage() {
   };
 
   const handleSelect = async (promptId) => {
+    const seq = ++promptLoadSeqRef.current;
     try {
+      const loaded = await fetchPrompt(promptId);
+      if (seq !== promptLoadSeqRef.current) return; // stale response
       setMode('edit');
       setSelectedId(promptId);
-      setForm(await fetchPrompt(promptId));
+      setForm(loaded);
     } catch (err) {
+      if (seq !== promptLoadSeqRef.current) return;
       toast.error(err?.message ?? 'Failed to load prompt');
     }
   };
@@ -102,8 +112,10 @@ export default function AdminPromptsPage() {
   // Per-row copy-as-new-version: loads the prompt and drops the editor
   // straight into create mode with the same slot and text.
   const handleNewVersionOf = async (promptId) => {
+    const seq = ++promptLoadSeqRef.current;
     try {
       const loaded = await fetchPrompt(promptId);
+      if (seq !== promptLoadSeqRef.current) return; // stale response
       resetToCreate({
         ...loaded,
         name: `${loaded.name}-v`,
@@ -112,6 +124,7 @@ export default function AdminPromptsPage() {
       });
       toast('Editing a NEW version — give it a name and save.', { icon: '📝' });
     } catch (err) {
+      if (seq !== promptLoadSeqRef.current) return;
       toast.error(err?.message ?? 'Failed to load prompt');
     }
   };

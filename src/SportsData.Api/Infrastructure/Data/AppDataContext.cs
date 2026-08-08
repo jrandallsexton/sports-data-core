@@ -42,6 +42,10 @@ public class AppDataContext : DbContext
 
     public DbSet<Prompt> Prompts { get; set; }
 
+    public DbSet<ModelProvider> ModelProviders { get; set; }
+
+    public DbSet<Model> Models { get; set; }
+
     public DbSet<Article> Articles { get; set; }
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();

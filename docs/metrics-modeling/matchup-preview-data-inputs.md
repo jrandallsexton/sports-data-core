@@ -621,6 +621,23 @@ model/prompt choice before real generations start):
      and are EXCLUDED from contamination-labeled scoring**, and new
      experiment captures require the resolved identity before the FK
      goes non-nullable.
+
+     **Provider strategy — DECIDED 2026-08-08: first-party clients
+     only.** Keep the existing DeepSeek client; add sibling
+     IProvideAiCommunication implementations for Anthropic, OpenAI, and
+     Google, resolved by a factory keyed off the Model row's provider —
+     the platform's established typed-client/factory idiom. Evaluated
+     and passed: **OpenRouter** (unified API, pass-through pricing —
+     but puts a third party in the prompt path, and provider routing
+     blurs open-weight model identity/quantization; acceptable
+     mitigations existed but first-party wins on IP-path and exact
+     identity; can be added later as just another ModelProvider row +
+     client if the long tail — Qwen/Kimi/MiniMax/xAI — ever earns its
+     way in) and **Ollama Cloud** (open-weight only — no
+     Claude/GPT/Gemini; per-tier model-count caps fight matrix sweeps;
+     subscription economics invert for bursty batch usage). The four
+     first-party fleets contain a sufficient lower-risk pool per
+     llm-training-dates.md.
    - **Batch runner**: enqueue experiments for every finalized game in a
      (season, week/league) range × models × prompts. Cost is trivial
      (~2k tokens/run; a 3-model × 2-prompt NFL season ≈ 3.5M tokens).

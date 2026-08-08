@@ -350,6 +350,13 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<Application.Admin.Prompts.IGetPromptByIdQueryHandler, Application.Admin.Prompts.GetPromptByIdQueryHandler>();
             services.AddScoped<Application.Admin.Prompts.IUpdatePromptCommandHandler, Application.Admin.Prompts.UpdatePromptCommandHandler>();
             services.AddScoped<Application.Admin.Prompts.ISetDefaultPromptCommandHandler, Application.Admin.Prompts.SetDefaultPromptCommandHandler>();
+            services.AddScoped<Application.Admin.Models.ICreateModelProviderCommandHandler, Application.Admin.Models.CreateModelProviderCommandHandler>();
+            services.AddScoped<Application.Admin.Models.IGetModelProvidersQueryHandler, Application.Admin.Models.GetModelProvidersQueryHandler>();
+            services.AddScoped<Application.Admin.Models.ICreateModelCommandHandler, Application.Admin.Models.CreateModelCommandHandler>();
+            services.AddScoped<Application.Admin.Models.IGetModelsQueryHandler, Application.Admin.Models.GetModelsQueryHandler>();
+            services.AddScoped<Application.Admin.Models.IGetModelByIdQueryHandler, Application.Admin.Models.GetModelByIdQueryHandler>();
+            services.AddScoped<Application.Admin.Models.IUpdateModelCommandHandler, Application.Admin.Models.UpdateModelCommandHandler>();
+            services.AddScoped<Application.Admin.Models.ISetDefaultModelCommandHandler, Application.Admin.Models.SetDefaultModelCommandHandler>();
             services.AddSingleton<GameRecapPromptProvider>();
             services.AddScoped<PickScoringJob>();
             services.AddScoped<LeagueWeekScoringJob>();

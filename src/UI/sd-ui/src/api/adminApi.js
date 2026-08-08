@@ -54,6 +54,20 @@ const AdminApi = {
     apiClient.post(`/admin/prompts/${encodeURIComponent(promptId)}/set-default`),
   importPromptFromBlob: (body) => apiClient.post('/admin/prompts/import-blob', body),
 
+  // Model management (provider fleets + model identity records driving
+  // the experiment harness and production routing; seed data in
+  // docs/metrics-modeling/llm-training-dates.md). Identity fields are
+  // immutable after creation; set-default flips THE production model.
+  getModelProviders: () => apiClient.get('/admin/model-providers'),
+  createModelProvider: (body) => apiClient.post('/admin/model-providers', body),
+  getModels: () => apiClient.get('/admin/models'),
+  getModel: (modelId) => apiClient.get(`/admin/models/${encodeURIComponent(modelId)}`),
+  createModel: (body) => apiClient.post('/admin/models', body),
+  updateModel: (modelId, body) =>
+    apiClient.put(`/admin/models/${encodeURIComponent(modelId)}`, body),
+  setDefaultModel: (modelId) =>
+    apiClient.post(`/admin/models/${encodeURIComponent(modelId)}/set-default`),
+
   // Returns one MLB matchup in the same shape as the picks page so the
   // baseball SignalR debug page can render a real <MatchupCard /> for a
   // chosen contest. League-context fields (Predictions, AiWinner,

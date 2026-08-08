@@ -24,7 +24,7 @@ namespace SportsData.Api.Application.Previews
         private readonly IContestClientFactory _contestClientFactory;
         private readonly IFranchiseClientFactory _franchiseClientFactory;
         private readonly IProvideAiCommunication _aiCommunication;
-        private readonly MatchupPreviewPromptProvider _promptProvider;
+        private readonly IMatchupPreviewPromptProvider _promptProvider;
         private readonly IEventBus _eventBus;
         private readonly IDateTimeProvider _dateTimeProvider;
 
@@ -34,7 +34,7 @@ namespace SportsData.Api.Application.Previews
             IContestClientFactory contestClientFactory,
             IFranchiseClientFactory franchiseClientFactory,
             IProvideAiCommunication aiCommunication,
-            MatchupPreviewPromptProvider promptProvider,
+            IMatchupPreviewPromptProvider promptProvider,
             IEventBus eventBus,
             IDateTimeProvider dateTimeProvider)
         {
@@ -55,6 +55,7 @@ namespace SportsData.Api.Application.Previews
         /// </summary>
         internal sealed record AssembledPrompt(
             MatchupForPreviewDto Matchup,
+            Guid PromptId,
             string PromptName,
             string InstructionText,
             string PayloadJson,
@@ -96,7 +97,17 @@ namespace SportsData.Api.Application.Previews
                 return;
             }
 
-            var assembled = await AssemblePromptAsync(matchup, command.Sport, command.Mode, rejectedPreview?.RejectionNote);
+            if (command.PromptId is not null && command.Mode == PreviewGenerationMode.Generate)
+            {
+                // Guard rail: an experiment prompt override must never leak
+                // into production previews.
+                _logger.LogWarning(
+                    "PromptId {PromptId} ignored for Generate mode on {ContestId} — overrides are Capture/Experiment only.",
+                    command.PromptId, command.ContestId);
+            }
+
+            var assembled = await AssemblePromptAsync(matchup, command.Sport, command.Mode, rejectedPreview?.RejectionNote,
+                command.Mode == PreviewGenerationMode.Generate ? null : command.PromptId);
 
             _logger.LogInformation(
                 "Prompt assembled for {ContestId}. PromptVersion: {PromptVersion}, CharCount: {CharCount}, UsedMetrics: {UsedMetrics}, AwayResults: {AwayResults}, HomeResults: {HomeResults}",
@@ -276,7 +287,8 @@ namespace SportsData.Api.Application.Previews
             MatchupForPreviewDto matchup,
             Sport sport,
             PreviewGenerationMode mode,
-            string? rejectionNote)
+            string? rejectionNote,
+            Guid? promptId = null)
         {
             // Historical context (last 5 H2H + prior-season last 5, preview-
             // safe semantics baked into Producer's queries). Degrades
@@ -358,7 +370,8 @@ namespace SportsData.Api.Application.Previews
             var hasStats = (matchup.AwayStats.RushingYardsPerGame.HasValue &&
                             matchup.HomeStats.RushingYardsPerGame.HasValue);
 
-            var promptData = await _promptProvider.GetPreviewInsightPromptAsync(hasStats);
+            var promptData = await _promptProvider.GetPromptAsync(
+                new PreviewPromptRequest(sport, hasStats, promptId));
 
             var jsonInput = SerializePromptPayload(matchup);
 
@@ -370,6 +383,7 @@ namespace SportsData.Api.Application.Previews
 
             return new AssembledPrompt(
                 matchup,
+                promptData.PromptId,
                 promptData.PromptName,
                 promptData.PromptText,
                 jsonInput,
@@ -432,6 +446,7 @@ namespace SportsData.Api.Application.Previews
                 Id = Guid.NewGuid(),
                 ContestId = command.ContestId,
                 Sport = command.Sport,
+                PromptId = assembled.PromptId,
                 PromptVersion = assembled.PromptName,
                 PromptText = assembled.InstructionText,
                 PayloadJson = assembled.PayloadJson,

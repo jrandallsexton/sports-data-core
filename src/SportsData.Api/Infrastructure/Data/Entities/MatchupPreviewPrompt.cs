@@ -33,6 +33,14 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public required string PromptVersion { get; set; }
 
         /// <summary>
+        /// The Prompt entity that supplied the instructions; null for
+        /// captures from the blob era. Deliberately no FK — prompts may be
+        /// deleted by the management UI, and the capture's PromptText is the
+        /// provenance record either way.
+        /// </summary>
+        public Guid? PromptId { get; set; }
+
+        /// <summary>
         /// The instruction text EXACTLY as sent — stored per capture because
         /// a blob can be edited in place (ReloadPromptAsync), which would
         /// make version-based reconstruction lie about what the model saw.

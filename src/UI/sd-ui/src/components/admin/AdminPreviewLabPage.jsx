@@ -8,6 +8,7 @@ import { useUserDto } from '../../contexts/UserContext';
 
 const CONTEST_ID_STORAGE_KEY = 'admin.previewlab.contestId';
 const LEAGUE_STORAGE_KEY = 'admin.previewlab.league';
+const PROMPT_ID_STORAGE_KEY = 'admin.previewlab.promptId';
 
 const LEAGUE_OPTIONS = [
   { value: 'ncaa', label: 'NCAAFB', sport: 'FootballNcaa' },
@@ -43,6 +44,9 @@ export default function AdminPreviewLabPage() {
     () => localStorage.getItem(CONTEST_ID_STORAGE_KEY) ?? ''
   );
   const [pendingId, setPendingId] = useState(contestId);
+  const [promptId, setPromptId] = useState(
+    () => localStorage.getItem(PROMPT_ID_STORAGE_KEY) ?? ''
+  );
   const [captures, setCaptures] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -137,6 +141,16 @@ export default function AdminPreviewLabPage() {
     localStorage.setItem(LEAGUE_STORAGE_KEY, next);
   };
 
+  const handlePromptIdChange = (e) => {
+    const next = e.target.value;
+    setPromptId(next);
+    if (next.trim()) {
+      localStorage.setItem(PROMPT_ID_STORAGE_KEY, next);
+    } else {
+      localStorage.removeItem(PROMPT_ID_STORAGE_KEY);
+    }
+  };
+
   const runAction = async (action, queuedMessage) => {
     if (!contestId) {
       toast.error('Set a contest ID first.');
@@ -144,11 +158,12 @@ export default function AdminPreviewLabPage() {
     }
     setSubmitting(true);
     try {
-      await action(contestId, leagueSport);
+      await action(contestId, leagueSport, promptId.trim() || undefined);
       toast.success(queuedMessage);
     } catch (err) {
       toast.error(
         err?.response?.data?.errors?.[0]?.errorMessage
+          ?? err?.response?.data
           ?? err.message
           ?? 'Request failed'
       );
@@ -193,6 +208,16 @@ export default function AdminPreviewLabPage() {
             style={{ flex: 1, padding: '6px 8px', minWidth: 240 }}
           />
           <button type="submit">Load captures</button>
+          <label htmlFor="previewlab-prompt-id" style={{ fontWeight: 600 }}>Prompt ID:</label>
+          <input
+            id="previewlab-prompt-id"
+            type="text"
+            value={promptId}
+            onChange={handlePromptIdChange}
+            placeholder="optional — Prompt GUID from GET /admin/prompts"
+            title="Explicit Prompt entity override for this run (Guid). Blank = the sport/variant default. An unknown id fails the run rather than silently using a default."
+            style={{ flex: 1, padding: '6px 8px', minWidth: 240 }}
+          />
           <button
             type="button"
             disabled={submitting || !contestId}

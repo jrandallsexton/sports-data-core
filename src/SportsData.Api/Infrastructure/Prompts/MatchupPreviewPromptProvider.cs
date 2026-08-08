@@ -1,79 +1,88 @@
-﻿using SportsData.Core.Infrastructure.Blobs;
+using Microsoft.EntityFrameworkCore;
+
+using SportsData.Api.Infrastructure.Data;
+using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
 
 namespace SportsData.Api.Infrastructure.Prompts;
 
-public class MatchupPreviewPromptProvider
+/// <summary>
+/// What the preview pipeline needs to resolve prompt instructions.
+/// </summary>
+/// <param name="Sport">Drives sport-specific default resolution.</param>
+/// <param name="HasStats">Selects the with-stats vs no-stats default slot.</param>
+/// <param name="PromptId">
+/// Explicit Prompt entity override for Preview Lab experiments — when set,
+/// default resolution is bypassed entirely.
+/// </param>
+public sealed record PreviewPromptRequest(Sport Sport, bool HasStats, Guid? PromptId = null);
+
+public sealed record PreviewPrompt(Guid PromptId, string PromptText, string PromptName);
+
+public interface IMatchupPreviewPromptProvider
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly object _lock = new();
+    /// <summary>
+    /// Resolve prompt instructions. Throws when an explicit PromptId does
+    /// not exist (an operator typo must fail loudly, never silently fall
+    /// back to a default) or when no default is configured for the slot.
+    /// </summary>
+    Task<PreviewPrompt> GetPromptAsync(PreviewPromptRequest request, CancellationToken cancellationToken = default);
+}
 
-    private Task<(string, string)>? _cachedPromptTask;
-    private Task<(string, string)>? _cachedPromptWithStatsTask;
+/// <summary>
+/// Database-backed prompt resolution. Prompt text lives in the (private)
+/// API database as first-class Prompt entities — no blob storage, no
+/// Azurite for local dev, and the coming management UI is plain CRUD.
+///
+/// Resolution order:
+/// 1. Explicit <c>PromptId</c> → that Prompt row (must be a MatchupPreview
+///    prompt), no fallback.
+/// 2. Default for the slot (Type=MatchupPreview, WithStats, Sport):
+///    a sport-specific default outranks a Sport=null (any-sport) default.
+///    Creating/flipping defaults takes effect on the next run — no deploy.
+///
+/// No caching: a scoped indexed read per generation is noise, and its
+/// absence removes the fault-eviction/staleness machinery the blob era
+/// needed.
+/// </summary>
+public class MatchupPreviewPromptProvider : IMatchupPreviewPromptProvider
+{
+    private readonly AppDataContext _dataContext;
 
-    private const string Container = "prompts";
-
-    private const string Blob = "prediction-insights-v1.txt";
-    private const string BlobWithStats = "prediction-insights-with-stats-schedule.txt";
-
-    public MatchupPreviewPromptProvider(IServiceProvider serviceProvider)
+    public MatchupPreviewPromptProvider(AppDataContext dataContext)
     {
-        _serviceProvider = serviceProvider;
+        _dataContext = dataContext;
     }
 
-    public Task<(string PromptText, string PromptName)> GetPreviewInsightPromptAsync(bool hasStats)
+    public async Task<PreviewPrompt> GetPromptAsync(PreviewPromptRequest request, CancellationToken cancellationToken = default)
     {
-        // Evict faulted tasks so a transient blob failure doesn't poison the
-        // cache until process restart — every later call would receive the
-        // same faulted task and the whole preview pipeline stays down.
-        lock (_lock)
+        if (request.PromptId is { } promptId)
         {
-            if (hasStats)
-            {
-                if (_cachedPromptWithStatsTask is { IsFaulted: true } or { IsCanceled: true })
-                    _cachedPromptWithStatsTask = null;
-                return _cachedPromptWithStatsTask ??= LoadPromptAsync(BlobWithStats);
-            }
-            else
-            {
-                if (_cachedPromptTask is { IsFaulted: true } or { IsCanceled: true })
-                    _cachedPromptTask = null;
-                return _cachedPromptTask ??= LoadPromptAsync(Blob);
-            }
-        }
-    }
+            var prompt = await _dataContext.Prompts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == promptId, cancellationToken)
+                ?? throw new InvalidOperationException(
+                    $"Prompt {promptId} does not exist. Experiment overrides fail loudly rather than falling back to a default.");
 
-    public async Task<string> ReloadPromptAsync(bool hasStats)
-    {
-        var blobName = hasStats ? BlobWithStats : Blob;
-        var newPrompt = await LoadPromptTextOnlyAsync(blobName);
+            if (prompt.Type != PromptType.MatchupPreview)
+                throw new InvalidOperationException(
+                    $"Prompt {promptId} ('{prompt.Name}') is a {prompt.Type} prompt, not a MatchupPreview prompt.");
 
-        lock (_lock)
-        {
-            if (hasStats)
-                _cachedPromptWithStatsTask = Task.FromResult((newPrompt, Path.GetFileNameWithoutExtension(blobName)));
-            else
-                _cachedPromptTask = Task.FromResult((newPrompt, Path.GetFileNameWithoutExtension(blobName)));
+            return new PreviewPrompt(prompt.Id!, prompt.Text, prompt.Name);
         }
 
-        return newPrompt;
-    }
+        var resolved = await _dataContext.Prompts
+            .AsNoTracking()
+            .Where(p => p.Type == PromptType.MatchupPreview
+                     && p.IsDefault
+                     && p.WithStats == request.HasStats
+                     && (p.Sport == request.Sport || p.Sport == null))
+            .OrderByDescending(p => p.Sport != null) // sport-specific outranks any-sport
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new InvalidOperationException(
+                $"No default matchup-preview prompt configured for Sport={request.Sport}, WithStats={request.HasStats}. " +
+                "Seed one via POST /admin/prompts or POST /admin/prompts/import-blob.");
 
-    private async Task<(string, string)> LoadPromptAsync(string blobName, bool forceReload = false)
-    {
-        using var scope = _serviceProvider.CreateScope();
-        var blobStorage = scope.ServiceProvider.GetRequiredService<IProvideBlobStorage>();
-
-        var promptText = await blobStorage.GetFileContentsAsync(Container, blobName);
-        var promptName = Path.GetFileNameWithoutExtension(blobName);
-
-        return (promptText, promptName);
-    }
-
-    private async Task<string> LoadPromptTextOnlyAsync(string blobName)
-    {
-        using var scope = _serviceProvider.CreateScope();
-        var blobStorage = scope.ServiceProvider.GetRequiredService<IProvideBlobStorage>();
-
-        return await blobStorage.GetFileContentsAsync(Container, blobName);
+        return new PreviewPrompt(resolved.Id!, resolved.Text, resolved.Name);
     }
 }

@@ -146,13 +146,17 @@ namespace SportsData.Api.Application.Admin
         [Route("matchup/preview/{contestId}/capture")]
         public IActionResult CaptureContestPreviewPrompt(
             [FromRoute] Guid contestId,
-            [FromQuery] Sport sport = Sport.FootballNcaa)
+            [FromQuery] Sport sport = Sport.FootballNcaa,
+            // Prompt entity Guid — model binding rejects malformed values
+            // with a 400 before anything reaches Hangfire.
+            [FromQuery] Guid? promptId = null)
         {
             var cmd = new GenerateMatchupPreviewsCommand
             {
                 ContestId = contestId,
                 Sport = sport,
-                Mode = PreviewGenerationMode.Capture
+                Mode = PreviewGenerationMode.Capture,
+                PromptId = promptId
             };
             _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
             return Accepted(new { cmd.CorrelationId });
@@ -171,16 +175,69 @@ namespace SportsData.Api.Application.Admin
         [Route("matchup/preview/{contestId}/experiment")]
         public IActionResult RunContestPreviewExperiment(
             [FromRoute] Guid contestId,
-            [FromQuery] Sport sport = Sport.FootballNcaa)
+            [FromQuery] Sport sport = Sport.FootballNcaa,
+            [FromQuery] Guid? promptId = null)
         {
             var cmd = new GenerateMatchupPreviewsCommand
             {
                 ContestId = contestId,
                 Sport = sport,
-                Mode = PreviewGenerationMode.Experiment
+                Mode = PreviewGenerationMode.Experiment,
+                PromptId = promptId
             };
             _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
             return Accepted(new { cmd.CorrelationId });
+        }
+
+        /// <summary>
+        /// Create a prompt (text lives in the DB — the repo is public, the
+        /// DB is not). IsDefault=true flips the (Sport, WithStats) slot.
+        /// </summary>
+        [HttpPost]
+        [Route("prompts")]
+        public async Task<ActionResult<Guid>> CreatePrompt(
+            [FromBody] Application.Admin.Prompts.CreatePromptCommand command,
+            [FromServices] Application.Admin.Prompts.ICreatePromptCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// One-time seeding: import a legacy prompt blob from the "prompts"
+        /// container into the Prompt table.
+        /// </summary>
+        [HttpPost]
+        [Route("prompts/import-blob")]
+        public async Task<ActionResult<Guid>> ImportPromptFromBlob(
+            [FromBody] Application.Admin.Prompts.ImportPromptFromBlobCommand command,
+            [FromServices] Application.Admin.Prompts.IImportPromptFromBlobCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet]
+        [Route("prompts")]
+        public async Task<ActionResult<List<Application.Admin.Prompts.PromptSummaryDto>>> GetPrompts(
+            [FromServices] Application.Admin.Prompts.IGetPromptsQueryHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet]
+        [Route("prompts/{promptId}")]
+        public async Task<ActionResult<Application.Admin.Prompts.PromptDetailDto>> GetPromptById(
+            [FromRoute] Guid promptId,
+            [FromServices] Application.Admin.Prompts.IGetPromptByIdQueryHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(promptId, cancellationToken);
+            return result.ToActionResult();
         }
 
         /// <summary>

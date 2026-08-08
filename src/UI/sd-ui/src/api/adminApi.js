@@ -24,13 +24,20 @@ const AdminApi = {
   // ONLY — never writes a MatchupPreview, so a prior season's real preview
   // can't be shadowed on the picks page. Both allow completed contests and
   // announce completion via SignalR (PreviewPromptCaptured).
-  capturePreviewPrompt: (contestId, sport) =>
+  // promptId (optional): explicit prompt blob override (name without
+  // extension) for prompt-variant experiments. Server validates shape and
+  // fails the run loudly if the blob doesn't exist.
+  capturePreviewPrompt: (contestId, sport, promptId) =>
     apiClient.post(
-      `/admin/matchup/preview/${encodeURIComponent(contestId)}/capture${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+      `/admin/matchup/preview/${encodeURIComponent(contestId)}/capture`,
+      null,
+      { params: { ...(sport ? { sport } : {}), ...(promptId ? { promptId } : {}) } }
     ),
-  runPreviewExperiment: (contestId, sport) =>
+  runPreviewExperiment: (contestId, sport, promptId) =>
     apiClient.post(
-      `/admin/matchup/preview/${encodeURIComponent(contestId)}/experiment${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+      `/admin/matchup/preview/${encodeURIComponent(contestId)}/experiment`,
+      null,
+      { params: { ...(sport ? { sport } : {}), ...(promptId ? { promptId } : {}) } }
     ),
   getPreviewCaptures: (contestId) =>
     apiClient.get(`/admin/matchup/preview/${encodeURIComponent(contestId)}/captures`),

@@ -571,6 +571,19 @@ model/prompt choice before real generations start):
    GameRecapPromptProvider deliberately untouched (still blob) — unify
    when recap work resumes.
 
+   **Follow-up (2026-08-08, deployed + seeded — 3 blobs imported):
+   used-prompt immutability.** `MatchupPreview.PromptId` (nullable Guid
+   FK → Prompt, Restrict delete; the processor stamps it on every new
+   generation). Transition plan: operator SQL backfills historical rows
+   from PromptVersion, THEN a later migration makes the column
+   non-nullable. Rule (enforced in UpdatePromptCommandHandler + shown in
+   the Prompt Manager as USED badges / read-only editor): **a prompt
+   whose Id appears in MatchupPreview.PromptId is IMMUTABLE — and
+   undeletable via the FK** — its text is provenance for real output;
+   iterate via "New version". Experiments (capture rows) do NOT freeze a
+   prompt — the lab iterates freely. Prompt Manager also gained explicit
+   Open / per-row New version actions.
+
 2. **with-history prompt blob** (user authors; blob-only per policy).
    Must teach: the metrics block (un-briefed since forever), HeadToHead
    + prior-season blocks (incl. "history excludes preseason by
@@ -578,16 +591,133 @@ model/prompt choice before real generations start):
    voice (no more "college football analyst" for NFL), updated example
    inputs (no AwaySpread, string Sport, hygiene shape). New blob name =
    provenance; selection logic gains the with-history variant.
-3. **Backtest harness MVP**: batch experiment enqueue ("every 2025
-   week-N game") + a scoring query joining MatchupPreviewPrompt captures
-   to Contest outcomes — SU accuracy, ATS accuracy, O/U accuracy, score
-   MAE, grouped by PromptVersion × Model. Mostly SQL over existing
-   tables; the lab already persists everything needed.
-4. **Model routing for experiments**: optional model override on
-   GenerateMatchupPreviewsCommand (capture rows already record Model) so
-   the harness compares prompt × model, not just prompts.
-   IProvideAiCommunication is single-bound today; see
-   ai-provider-routing-per-sport.md for prior art.
+3. **Backtest harness spec** (expanded 2026-08-08 from user's automated
+   multi-model experiment idea). Pieces already in place: sandboxed
+   Experiment mode (as-of filtered = pre-kickoff information state),
+   PromptId variant selection, captures recording model + prompt +
+   response, Contest holding ground truth (winner / spread winner / O/U
+   result). To build:
+   - **Model routing** (design sketched 2026-08-08, user thinking
+     aloud — mirrors the Prompt-entity pattern): new `ModelProvider`
+     (name, credentials/config reference) and `Model` entities in
+     API's DB. Model rows are IMMUTABLE identity records with a unique
+     (provider, api model id, revision) key: exact API identifier,
+     display name, release date, **KnowledgeCutoffUtc + its evidence
+     source and verification date** — the cutoff is a DECLARED
+     classification input from provider documentation, not proof a
+     game was unseen. The scoring join labels each experiment
+     lower-risk vs contaminated by comparing game StartDateUtc against
+     the declared cutoff — a triage query, not a verdict. IsActive,
+     IsDefault, cost metadata ride along. `ModelId` on
+     GenerateMatchupPreviewsCommand routes generation through a
+     multi-provider IProvideAiCommunication registration (single-bound
+     to DeepSeek today; prior art in ai-provider-routing-per-sport.md).
+     Same guardrail as PromptId: override honored Capture/Experiment
+     only — the UI runs on the default Model row, so the pre-season
+     "single-model selection" is literally one IsDefault flag.
+     `MatchupPreview` + capture rows gain ModelId FKs with the same
+     transition as PromptId — with one rule: **backfill only
+     unambiguous Model-string matches; ambiguous rows stay unmapped
+     and are EXCLUDED from contamination-labeled scoring**, and new
+     experiment captures require the resolved identity before the FK
+     goes non-nullable.
+   - **Batch runner**: enqueue experiments for every finalized game in a
+     (season, week/league) range × models × prompts. Cost is trivial
+     (~2k tokens/run; a 3-model × 2-prompt NFL season ≈ 3.5M tokens).
+     **Idempotent by construction**: each batch gets an ExperimentRunId
+     and rows are unique on (RunId, ContestId, ModelId, PromptId) —
+     reruns and provider retries cannot double-count; intentional
+     repeats are explicit replicate numbers, not duplicates.
+   - **Scoring query**: captures → Contest, scoring a) straight-up
+     winner, b) ATS winner, c) over/under, plus score MAE, grouped by
+     PromptVersion × Model. **Persist the full tuple per group — raw
+     metric, baseline, edge, valid-sample count, excluded count, and
+     uncertainty** (edge-over-baseline is the headline, but absolutes
+     are retained: beating a weak baseline can still be unusable).
+     Denominators are defined up front: pushes/voids/ties and
+     missing-outcome rows are EXCLUDED and counted, not zeroed;
+     unparseable responses are excluded-and-counted (they already
+     carry ResponseValidationErrors). Baselines computed alongside:
+     pick-the-favorite SU (~66-67% NFL — a 62% model UNDERPERFORMS
+     chalk), home-ATS, always-Under. Break-even ATS is odds-derived
+     per row where odds exist (52.4% is only the standard -110
+     reference); one NFL season (~285 games) has ~3% standard error,
+     so ATS deltas need both leagues and humility. Score MAE
+     discriminates best at these sample sizes.
+
+   **⚠️ THE MEMORIZATION GOTCHA (user-flagged, load-bearing):** every
+   currently available model was trained through late-2025/2026, so
+   2025 results are plausibly IN the training data — the payload names
+   teams and dates, and a model can "predict" a memorized outcome.
+   A great backtest number is evidence of memorization before it is
+   evidence of forecasting. **Prompt-level mitigation ("do not use
+   prior knowledge of this game") does NOT work and must not be
+   trusted**: parametric knowledge is not a queryable store the model
+   can decline to consult — it is baked into the same weights doing the
+   reasoning, models cannot introspect which memories shaped an output,
+   and compliance claims are performance, not capability. Real
+   mitigations, strongest first:
+   1. **Forward-testing is the only clean eval**: run experiments
+      before each 2026 week, score after. Capture timestamps make this
+      free starting week 1.
+   2. Prefer models whose knowledge cutoff predates the tested games.
+   3. Use backtests mainly to rank PROMPTS within a model
+      (memorization contaminates all prompts of a model roughly
+      equally); rank MODELS via forward-tests.
+   4. (Partial, backtest-only) team pseudonymization in the payload
+      ("Team A/B") strips the lookup handle — but degrades the
+      program-identity signal prompts rely on, and history rows can
+      still fingerprint the matchup. Optional experiment variant, not
+      a default.
+
+   **Knowledge-cutoff triage — provider-agnostic protocol.** No
+   assumption that any provider's models are best for this reasoning
+   (user explicit: perhaps DeepSeek — unknown; the incumbent DeepSeek
+   is in the bake-off). Build the same map per candidate fleet
+   (DeepSeek, OpenAI, Google, ...): clean-for-2025 models join the
+   prompt-refinement pool; current models join the stability/detector
+   check. Example map (Claude fleet, user-supplied 2026-08-08) vs the
+   2025 season (games Sep 2025 – Feb 2026):
+   | Model | Declared cutoff | 2025-season risk label |
+   |---|---|---|
+   | Claude Sonnet 4.6 / Opus 4.6 | Aug 2025 | **Lower-risk — declared cutoff predates the season; preferred backtest models** |
+   | Claude Haiku 4.5 | Jul 2025 | Lower-risk (cheap floor) |
+   | Sonnet 5 / Fable 5 / Opus 4.8 / 4.7 | Jan 2026 | Higher-risk Sep–Dec; late playoffs ambiguous |
+   | Claude Opus 5 | May 2026 | Higher-risk, full season |
+   | Claude Opus 3 | Aug 2023 | Lower-risk but 2 capability generations old — skip |
+
+   Labels are RISK TIERS, not certainties: a pre-cutoff declaration
+   lowers direct-training risk but does not exclude provider-side
+   updates, retrieval, or benchmark leakage — and "Opus 3" style
+   family names are not concrete API identifiers. When the Model table
+   is built, each row records the exact API identifier, release date,
+   documented cutoff, evidence source, and verification date; forward
+   validation is required before any backtest result is treated as
+   forecasting evidence.
+
+   **Sequencing (agreed):** (1) refine prompts on the LOWER-RISK
+   models — full-2025 backtests there are the most trustworthy
+   comparisons available pre-season. Do NOT lean on higher-risk models
+   for prompt ranking: contamination is not uniform across prompts
+   (different wording/context can activate different memorized
+   associations, so a contaminated model can rank prompts by leakage
+   rather than forecasting quality); (2) transfer caveat: prompt×model
+   interaction is real — run finalists across the higher-risk/current
+   models reading only STABILITY (valid, well-calibrated output), not
+   accuracy; (3) memorization SCREEN for higher-risk models:
+   EXACT-SCORE MATCH RATE vs actual finals — a screening signal, not a
+   detector: a high rate is strong evidence of recall, but a low rate
+   does NOT prove memorization is absent; predeclare the decision rule
+   (e.g. exact-match rate vs the lower-risk models' own base rate as
+   the null) before discounting any model; (4) pre-season single-model
+   pick for the UI is PROVISIONAL — lower-risk-model backtests +
+   stability/screen reads decide the starting lineup. **Swap rule is
+   predeclared, not vibes**: early-season swaps trigger on
+   validity/stability failures (unparseable output, calibration
+   collapse), NOT on 1–3 weeks of accuracy — that sample is far too
+   noisy for ATS/O-U conclusions; accuracy-driven swaps wait for a
+   predeclared minimum sample. Rinse & repeat weekly.
+4. ~~Model routing~~ — folded into item 3.
 
 Deliberately NOT doing now: Preview Lab UX polish (compare/diff views —
 curl-grade is fine for a single operator); NCAA-specific H2H tuning

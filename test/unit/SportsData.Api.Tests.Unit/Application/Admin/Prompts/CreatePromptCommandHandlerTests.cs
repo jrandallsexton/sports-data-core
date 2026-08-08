@@ -148,6 +148,50 @@ namespace SportsData.Api.Tests.Unit.Application.Admin.Prompts
         }
 
         [Fact]
+        public async Task Update_Rejected_WhenPromptGeneratedRealPreviews()
+        {
+            // Arrange — the prompt has produced actual output; its text is
+            // provenance and must be immutable.
+            var prompt = new Prompt { Id = Guid.NewGuid(), Name = "used-v1", WithStats = true, IsDefault = true, Text = "USED" };
+            await DataContext.Prompts.AddAsync(prompt);
+            await DataContext.MatchupPreviews.AddAsync(new MatchupPreview
+            {
+                Id = Guid.NewGuid(),
+                ContestId = Guid.NewGuid(),
+                PromptId = prompt.Id
+            });
+            await DataContext.SaveChangesAsync();
+
+            Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(Now);
+            var sut = Mocker.CreateInstance<UpdatePromptCommandHandler>();
+
+            // Act
+            var result = await sut.ExecuteAsync(new UpdatePromptCommand
+            {
+                PromptId = prompt.Id,
+                Text = "CHANGED"
+            }, CancellationToken.None);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal("USED", DataContext.Prompts.Single(p => p.Id == prompt.Id).Text);
+
+            // A prompt only used by EXPERIMENTS (capture rows) stays
+            // editable — only MatchupPreview freezes it.
+            var labOnly = new Prompt { Id = Guid.NewGuid(), Name = "lab-v1", WithStats = true, Text = "LAB" };
+            await DataContext.Prompts.AddAsync(labOnly);
+            await DataContext.SaveChangesAsync();
+
+            var labResult = await sut.ExecuteAsync(new UpdatePromptCommand
+            {
+                PromptId = labOnly.Id,
+                Text = "TUNED"
+            }, CancellationToken.None);
+
+            Assert.True(labResult.IsSuccess);
+        }
+
+        [Fact]
         public async Task ImportFromBlob_CreatesPrompt_WithBlobText()
         {
             Mocker.GetMock<IProvideBlobStorage>()

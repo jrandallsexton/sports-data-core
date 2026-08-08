@@ -34,7 +34,7 @@ public class CreatePromptCommandHandler : ICreatePromptCommandHandler
         var validation = await new CreatePromptCommandValidator().ValidateAsync(command, cancellationToken);
         if (!validation.IsValid)
         {
-            return new Failure<Guid>(default, ResultStatus.Validation, validation.Errors);
+            return new Failure<Guid>(default!, ResultStatus.Validation, validation.Errors);
         }
 
         var name = command.Name.Trim();
@@ -46,7 +46,7 @@ public class CreatePromptCommandHandler : ICreatePromptCommandHandler
         if (nameTaken)
         {
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.Validation,
                 [new ValidationFailure(nameof(command.Name), $"A prompt named '{name}' already exists. Prompt names are immutable provenance — create a new version name instead.")]);
         }
@@ -86,11 +86,26 @@ public class CreatePromptCommandHandler : ICreatePromptCommandHandler
         };
 
         await _dataContext.Prompts.AddAsync(prompt, cancellationToken);
-        await _dataContext.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            // Clear-old-default + insert commit in ONE SaveChanges (single
+            // transaction); the partial unique indexes on default slots turn
+            // a concurrent race into a constraint violation here.
+            await _dataContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (command.IsDefault)
+        {
+            _logger.LogWarning(ex, "Concurrent default-slot change detected while creating prompt {PromptId}.", prompt.Id);
+            return new Failure<Guid>(
+                default!,
+                ResultStatus.BadRequest,
+                [new ValidationFailure(nameof(command.IsDefault), "The slot's default changed concurrently — reload and retry.")]);
+        }
 
         _logger.LogInformation(
             "Prompt created. Id: {PromptId}, Name: {Name}, Sport: {Sport}, WithStats: {WithStats}, IsDefault: {IsDefault}, Length: {Length}",
-            prompt.Id, prompt.Name, prompt.Sport, prompt.WithStats, prompt.IsDefault, prompt.Text.Length);
+            prompt.Id, LogSanitizer.Clean(prompt.Name), prompt.Sport, prompt.WithStats, prompt.IsDefault, prompt.Text.Length);
 
         return new Success<Guid>(prompt.Id);
     }

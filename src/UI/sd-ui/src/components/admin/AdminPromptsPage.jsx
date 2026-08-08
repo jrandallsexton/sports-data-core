@@ -43,6 +43,12 @@ export default function AdminPromptsPage() {
   const [mode, setMode] = useState('create');
   const [selectedId, setSelectedId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [importForm, setImportForm] = useState({
+    blobName: '',
+    sport: '',
+    withStats: false,
+    isDefault: false,
+  });
 
   const loadPrompts = useCallback(async () => {
     setLoading(true);
@@ -152,6 +158,29 @@ export default function AdminPromptsPage() {
     }
   };
 
+  const handleImport = async () => {
+    setSubmitting(true);
+    try {
+      await apiWrapper.Admin.importPromptFromBlob({
+        blobName: importForm.blobName.trim(),
+        sport: importForm.sport || null,
+        withStats: importForm.withStats,
+        isDefault: importForm.isDefault,
+      });
+      toast.success('Imported.');
+      setImportForm(f => ({ ...f, blobName: '' }));
+      loadPrompts();
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.errors?.[0]?.errorMessage
+          ?? err.message
+          ?? 'Import failed'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleCopyId = async (promptId) => {
     try {
       await navigator.clipboard.writeText(promptId);
@@ -180,9 +209,56 @@ export default function AdminPromptsPage() {
             {!loading && prompts.length === 0 && (
               <div style={{ color: 'var(--text-secondary)' }}>
                 No prompts yet — create one, or seed from the legacy blobs
-                via POST /admin/prompts/import-blob.
+                below.
               </div>
             )}
+
+            <details style={{ marginBottom: 12 }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 600 }}>
+                Import from legacy blob
+              </summary>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0' }}>
+                <input
+                  type="text"
+                  aria-label="Blob name"
+                  value={importForm.blobName}
+                  onChange={(e) => setImportForm(f => ({ ...f, blobName: e.target.value }))}
+                  placeholder="blob name — e.g. prediction-insights-v1"
+                  style={{ padding: '6px 8px' }}
+                />
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <select
+                    aria-label="Sport scope for imported prompt"
+                    value={importForm.sport}
+                    onChange={(e) => setImportForm(f => ({ ...f, sport: e.target.value }))}
+                    style={{ padding: '6px 8px' }}
+                  >
+                    {SPORT_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={importForm.withStats}
+                      onChange={(e) => setImportForm(f => ({ ...f, withStats: e.target.checked }))}
+                    />
+                    with-stats variant
+                  </label>
+                  <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={importForm.isDefault}
+                      onChange={(e) => setImportForm(f => ({ ...f, isDefault: e.target.checked }))}
+                    />
+                    make default
+                  </label>
+                  <button type="button" disabled={submitting || !importForm.blobName.trim()} onClick={handleImport}>
+                    Import
+                  </button>
+                </div>
+              </div>
+            </details>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {prompts.map((p) => (
                 <div
@@ -241,6 +317,7 @@ export default function AdminPromptsPage() {
                 <>
                   <input
                     type="text"
+                    aria-label="Prompt name"
                     value={form.name}
                     onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
                     placeholder="name (immutable, unique — e.g. prediction-insights-nfl-v2)"
@@ -248,6 +325,7 @@ export default function AdminPromptsPage() {
                   />
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                     <select
+                      aria-label="Sport scope"
                       value={form.sport}
                       onChange={(e) => setForm(f => ({ ...f, sport: e.target.value }))}
                       style={{ padding: '6px 8px' }}
@@ -279,6 +357,7 @@ export default function AdminPromptsPage() {
 
               <input
                 type="text"
+                aria-label="Description"
                 value={form.description}
                 onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
                 placeholder="description (optional operator note)"
@@ -286,6 +365,7 @@ export default function AdminPromptsPage() {
               />
 
               <textarea
+                aria-label="Prompt instruction text"
                 value={form.text}
                 onChange={(e) => setForm(f => ({ ...f, text: e.target.value }))}
                 placeholder="prompt instruction text"

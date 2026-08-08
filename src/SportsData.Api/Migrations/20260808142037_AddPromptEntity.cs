@@ -29,6 +29,7 @@ namespace SportsData.Api.Migrations
                     IsDefault = table.Column<bool>(type: "boolean", nullable: false),
                     Description = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Text = table.Column<string>(type: "text", nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     CreatedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     ModifiedUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: false),
@@ -40,15 +41,24 @@ namespace SportsData.Api.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_Prompt_DefaultSlot_AnySport",
+                table: "Prompt",
+                columns: new[] { "Type", "WithStats" },
+                unique: true,
+                filter: "\"IsDefault\" AND \"Sport\" IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Prompt_DefaultSlot_Sport",
+                table: "Prompt",
+                columns: new[] { "Type", "Sport", "WithStats" },
+                unique: true,
+                filter: "\"IsDefault\" AND \"Sport\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Prompt_Name",
                 table: "Prompt",
                 column: "Name",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Prompt_Type_IsDefault",
-                table: "Prompt",
-                columns: new[] { "Type", "IsDefault" });
         }
 
         /// <inheritdoc />

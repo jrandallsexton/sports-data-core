@@ -60,15 +60,17 @@ public class MatchupPreviewPromptProvider : IMatchupPreviewPromptProvider
         {
             var prompt = await _dataContext.Prompts
                 .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.Id == promptId, cancellationToken)
+                .Where(p => p.Id == promptId)
+                .Select(p => new { p.Id, p.Name, p.Text, p.Type })
+                .FirstOrDefaultAsync(cancellationToken)
                 ?? throw new InvalidOperationException(
                     $"Prompt {promptId} does not exist. Experiment overrides fail loudly rather than falling back to a default.");
 
             if (prompt.Type != PromptType.MatchupPreview)
                 throw new InvalidOperationException(
-                    $"Prompt {promptId} ('{prompt.Name}') is a {prompt.Type} prompt, not a MatchupPreview prompt.");
+                    $"Prompt {promptId} is a {prompt.Type} prompt, not a MatchupPreview prompt.");
 
-            return new PreviewPrompt(prompt.Id!, prompt.Text, prompt.Name);
+            return new PreviewPrompt(prompt.Id, prompt.Text, prompt.Name);
         }
 
         var resolved = await _dataContext.Prompts
@@ -78,11 +80,12 @@ public class MatchupPreviewPromptProvider : IMatchupPreviewPromptProvider
                      && p.WithStats == request.HasStats
                      && (p.Sport == request.Sport || p.Sport == null))
             .OrderByDescending(p => p.Sport != null) // sport-specific outranks any-sport
+            .Select(p => new PreviewPrompt(p.Id, p.Text, p.Name))
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new InvalidOperationException(
                 $"No default matchup-preview prompt configured for Sport={request.Sport}, WithStats={request.HasStats}. " +
                 "Seed one via POST /admin/prompts or POST /admin/prompts/import-blob.");
 
-        return new PreviewPrompt(resolved.Id!, resolved.Text, resolved.Name);
+        return resolved;
     }
 }

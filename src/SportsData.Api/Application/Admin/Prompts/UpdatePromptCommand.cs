@@ -59,7 +59,7 @@ public class UpdatePromptCommandHandler : IUpdatePromptCommandHandler
         var validation = await new UpdatePromptCommandValidator().ValidateAsync(command, cancellationToken);
         if (!validation.IsValid)
         {
-            return new Failure<Guid>(default, ResultStatus.Validation, validation.Errors);
+            return new Failure<Guid>(default!, ResultStatus.Validation, validation.Errors);
         }
 
         var prompt = await _dataContext.Prompts
@@ -68,7 +68,7 @@ public class UpdatePromptCommandHandler : IUpdatePromptCommandHandler
         if (prompt is null)
         {
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(command.PromptId), "Prompt not found")]);
         }
@@ -81,7 +81,7 @@ public class UpdatePromptCommandHandler : IUpdatePromptCommandHandler
 
         _logger.LogInformation(
             "Prompt updated. Id: {PromptId}, Name: {Name}, Length: {Length}",
-            prompt.Id, prompt.Name, prompt.Text.Length);
+            prompt.Id, LogSanitizer.Clean(prompt.Name), prompt.Text.Length);
 
         return new Success<Guid>(prompt.Id);
     }

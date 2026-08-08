@@ -51,6 +51,14 @@ public class ImportPromptFromBlobCommandHandler : IImportPromptFromBlobCommandHa
     public async Task<Result<Guid>> ExecuteAsync(ImportPromptFromBlobCommand command, CancellationToken cancellationToken)
     {
         var blobName = command.BlobName.Trim();
+        if (string.IsNullOrWhiteSpace(blobName))
+        {
+            return new Failure<Guid>(
+                default!,
+                ResultStatus.BadRequest,
+                [new FluentValidation.Results.ValidationFailure(nameof(command.BlobName), "Blob name cannot be empty")]);
+        }
+
         if (!blobName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
             blobName += ".txt";
 
@@ -58,7 +66,7 @@ public class ImportPromptFromBlobCommandHandler : IImportPromptFromBlobCommandHa
 
         _logger.LogInformation(
             "Importing prompt blob {BlobName} ({Length} chars) into the Prompt table.",
-            blobName, text.Length);
+            LogSanitizer.Clean(blobName), text.Length);
 
         return await _createHandler.ExecuteAsync(new CreatePromptCommand
         {

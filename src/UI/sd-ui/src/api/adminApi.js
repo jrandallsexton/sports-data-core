@@ -24,9 +24,9 @@ const AdminApi = {
   // ONLY — never writes a MatchupPreview, so a prior season's real preview
   // can't be shadowed on the picks page. Both allow completed contests and
   // announce completion via SignalR (PreviewPromptCaptured).
-  // promptId (optional): explicit prompt blob override (name without
-  // extension) for prompt-variant experiments. Server validates shape and
-  // fails the run loudly if the blob doesn't exist.
+  // promptId (optional): Prompt entity GUID selecting a specific prompt
+  // version from the API database for this run. An unknown id fails the
+  // run loudly rather than silently using the slot default.
   capturePreviewPrompt: (contestId, sport, promptId) =>
     apiClient.post(
       `/admin/matchup/preview/${encodeURIComponent(contestId)}/capture`,

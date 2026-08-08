@@ -41,6 +41,9 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         /// <summary>The full instruction text.</summary>
         public required string Text { get; set; }
 
+        /// <summary>PostgreSQL xmin concurrency token — prompts are operator-edited via the management UI.</summary>
+        public uint RowVersion { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<Prompt>
         {
             public void Configure(EntityTypeBuilder<Prompt> builder)
@@ -62,9 +65,25 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
                 builder.Property(x => x.Text).IsRequired();
 
-                // Default lookups: slot scan is tiny, but index the flag for
-                // the management UI's "what's live" view.
-                builder.HasIndex(x => new { x.Type, x.IsDefault });
+                builder.Property(x => x.RowVersion)
+                    .HasColumnName("xmin")
+                    .HasColumnType("xid")
+                    .IsRowVersion();
+
+                // One default per (Type, Sport, WithStats) slot, enforced at
+                // the database so concurrent create/set-default requests
+                // cannot race two defaults into one slot. Postgres treats
+                // NULLs as distinct in unique indexes, so the any-sport slot
+                // (Sport IS NULL) needs its own partial index.
+                builder.HasIndex(x => new { x.Type, x.Sport, x.WithStats })
+                    .IsUnique()
+                    .HasFilter("\"IsDefault\" AND \"Sport\" IS NOT NULL")
+                    .HasDatabaseName("IX_Prompt_DefaultSlot_Sport");
+
+                builder.HasIndex(x => new { x.Type, x.WithStats })
+                    .IsUnique()
+                    .HasFilter("\"IsDefault\" AND \"Sport\" IS NULL")
+                    .HasDatabaseName("IX_Prompt_DefaultSlot_AnySport");
             }
         }
     }

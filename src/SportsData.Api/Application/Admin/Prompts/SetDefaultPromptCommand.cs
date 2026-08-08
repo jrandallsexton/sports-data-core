@@ -41,7 +41,7 @@ public class SetDefaultPromptCommandHandler : ISetDefaultPromptCommandHandler
         if (prompt is null)
         {
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.NotFound,
                 [new ValidationFailure(nameof(promptId), "Prompt not found")]);
         }
@@ -65,11 +65,25 @@ public class SetDefaultPromptCommandHandler : ISetDefaultPromptCommandHandler
             prompt.IsDefault = true;
             prompt.ModifiedUtc = _dateTimeProvider.UtcNow();
 
-            await _dataContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                // Clear + promote commit in ONE SaveChanges (single
+                // transaction); the partial unique indexes turn a concurrent
+                // promotion race into a constraint violation here.
+                await _dataContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogWarning(ex, "Concurrent default-slot change detected while promoting prompt {PromptId}.", prompt.Id);
+                return new Failure<Guid>(
+                    default!,
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure(nameof(promptId), "The slot's default changed concurrently — reload and retry.")]);
+            }
 
             _logger.LogInformation(
                 "Prompt {PromptId} ('{Name}') is now the default for slot (Sport: {Sport}, WithStats: {WithStats}); {Cleared} previous default(s) cleared.",
-                prompt.Id, prompt.Name, prompt.Sport, prompt.WithStats, currentDefaults.Count);
+                prompt.Id, LogSanitizer.Clean(prompt.Name), prompt.Sport, prompt.WithStats, currentDefaults.Count);
         }
 
         return new Success<Guid>(prompt.Id);

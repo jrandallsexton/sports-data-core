@@ -12,7 +12,7 @@ using SportsData.Api.Infrastructure.Data;
 namespace SportsData.Api.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20260808135010_AddPromptEntity")]
+    [Migration("20260808142037_AddPromptEntity")]
     partial class AddPromptEntity
     {
         /// <inheritdoc />
@@ -1453,6 +1453,12 @@ namespace SportsData.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.Property<int?>("Sport")
                         .HasColumnType("integer");
 
@@ -1471,7 +1477,15 @@ namespace SportsData.Api.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.HasIndex("Type", "IsDefault");
+                    b.HasIndex("Type", "WithStats")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Prompt_DefaultSlot_AnySport")
+                        .HasFilter("\"IsDefault\" AND \"Sport\" IS NULL");
+
+                    b.HasIndex("Type", "Sport", "WithStats")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Prompt_DefaultSlot_Sport")
+                        .HasFilter("\"IsDefault\" AND \"Sport\" IS NOT NULL");
 
                     b.ToTable("Prompt", (string)null);
                 });

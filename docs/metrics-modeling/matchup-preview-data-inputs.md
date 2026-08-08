@@ -178,9 +178,12 @@ test pair):
 - **GUID trap:** historical Contest rows carry per-season
   FranchiseSeasonIds. If serialized, the model can echo one into
   `predictedStraightUpWinner` (the output contract demands a
-  FranchiseSeasonId). Rule: **exactly two GUIDs in the entire payload** —
-  the live Away/Home FranchiseSeasonIds. Every historical block is
-  names/labels only.
+  FranchiseSeasonId). Rule: **historical blocks contribute ZERO GUIDs**
+  (names/labels only — implemented and regression-tested in the
+  preview-history PR). Today's raw payload therefore carries exactly
+  three GUIDs: ContestId plus the two live Away/Home
+  FranchiseSeasonIds. The 3e projection below drops ContestId (the
+  model has no use for it), landing on two.
 
 Draft shape (also implements the 3e hygiene projection — this IS the
 purpose-built prompt payload, not the wire DTO):
@@ -380,6 +383,51 @@ prediction vs `Contest` final score / spread result. The capture table
 deliberately stores everything that run needs; the harness itself is
 not part of this build.
 
+### ⚠️ First prod capture finding (2026-08-08): the answer leaks into completed-game payloads
+
+Captured the Hall of Fame Game (completed) via the lab. The payload's
+`Away/HomeCompetitionResults` contain **the target game itself** — same
+ContestId, final score 33-30, `WinnerFranchiseSeasonId`,
+`SpreadWinnerFranchiseSeasonId`, `OverUnderResult` — plus
+`Status: "STATUS_FINAL"`. An experiment against any completed game hands
+the model the answer; every such result is invalid as an eval signal.
+In-season real generation never hits this (completed-contest skip =
+generation is always pre-game), so this is an EXPERIMENT-MODE problem.
+
+**Required before the eval harness is trusted:** as-of filtering during
+assembly for Experiment mode — exclude from both CompetitionResults
+lists any game with `StartDateUtc >= target.StartDateUtc` (which
+removes the target itself and later games), and mask
+`Status`/`StatusDescription` to a pre-game value. This recreates the
+information state the model would have had before kickoff. Not yet
+implemented.
+
+Other confirmations from the same capture (§3.5 hygiene case, now
+quantified): 28 serialized null stat fields across the two teams,
+`"Sport": 3` as a bare int the prompt can't interpret (user 2026-08-08:
+resolve — string enums in the projection), six-decimal odds
+(`34.500000`), and the same result row duplicated verbatim in both
+teams' lists. And the no-stats path selected `prediction-insights-v1`,
+which never documents CompetitionResults — the model received schedule
+data the v1 prompt gives no guidance on.
+
+**POLICY — NFL preseason is system-testing data ONLY** (user decision
+2026-08-08). A finalized preseason game DOES flow into current-season
+CompetitionResults — but preseason is a proving ground for the roster
+bubble (final 53-man cuts land Aug 30); outcomes say nothing about the
+September team. Decision: preseason results are **excluded, not
+labeled** — they NEVER appear in matchup-preview payloads (season
+results, recency bridge, head-to-head — note the Hall of Fame Game
+itself is a preseason "meeting" and must not count in CAR/ARI H2H) and
+NEVER contribute to anything metrics-based, including the Python
+scripts that power the DeetsMeter. Their only value is exercising the
+live pipeline before the season.
+
+Scoping note for the build: filter at the preview/metrics CONSUMPTION
+layer (SeasonPhase on the game), not blanket at Producer's
+competition-results endpoint — user-facing schedule surfaces (team
+cards) legitimately show preseason games.
+
 ### Admin UI — Preview Lab (built with the above, 2026-08-07)
 
 `/admin/preview-lab` (AdminRoute-gated): league selector + ContestId
@@ -411,17 +459,29 @@ logic is untouched by design.
 
 ## 5. Open decisions
 
-1. N for head-to-head (proposed 5) and recency bridge (proposed 5 games).
-2. One combined Producer "preview history" endpoint vs. composing existing
-   per-piece endpoints (proposed: one endpoint — one HTTP hop, one place
-   to evolve).
+1. ~~N for head-to-head and recency bridge~~ — DECIDED 2026-08-08: 5 and
+   5 (defaults on `GetContestPreviewHistoryQuery`). **Implemented**: 3b
+   (head-to-head) + 3c (recency bridge) shipped as
+   `GET /contests/{contestId}/preview-history` with preview-safe
+   semantics in the SQL (finalized/non-cancelled, preseason excluded per
+   policy, as-of `< target.StartDateUtc` so the target never leaks into
+   its own history). New blocks use the names-only GameResult shape —
+   the payload's only GUIDs remain ContestId + the two live
+   FranchiseSeasonIds (regression-tested). 3a (prior-season
+   record/metrics block) still pending.
+2. ~~One endpoint vs compose~~ — DECIDED: one endpoint (implemented as
+   above).
 3. Payload-hygiene projection (3e) first, or accept token growth and do it
-   later (proposed: first).
+   later (proposed: first — PARTIALLY superseded: new history blocks are
+   born clean; the hygiene work now covers only the legacy fields).
 4. Prompt authoring workflow for with-history-v1. Prompts stay blob-only
    (secret sauce, public repo — decided 2026-08-07); author against local
    gitignored working copies, upload to blob, PromptVersion tracks it.
-5. Whether the DTO gains blocks (wire change through Producer client) or
-   the API composes history separately — follows from decision 2.
+5. ~~DTO gains blocks vs API composes~~ — DECIDED: `MatchupForPreviewDto`
+   gained nullable HeadToHead / AwayPriorSeasonGames /
+   HomePriorSeasonGames; the API's assembly populates them from the
+   preview-history endpoint with graceful degradation (history fetch
+   failure logs and proceeds without blocks — never fails generation).
 
 ## Sequencing
 

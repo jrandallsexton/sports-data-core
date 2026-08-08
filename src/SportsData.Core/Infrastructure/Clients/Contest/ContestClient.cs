@@ -97,6 +97,7 @@ public interface IProvideContests : IProvideHealthChecks
     Task<Result<Matchup>> GetMatchupByContestId(Guid contestId, CancellationToken ct = default);
     Task<Result<List<LeagueMatchupDto>>> GetMatchupsByContestIds(List<Guid> contestIds, MarkDirection direction, CancellationToken ct = default);
     Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default);
+    Task<Result<ContestPreviewHistoryDto>> GetContestPreviewHistory(Guid contestId, CancellationToken ct = default);
     Task<Result<Dictionary<Guid, MatchupForPreviewDto>>> GetMatchupsForPreviewBatch(List<Guid> contestIds, CancellationToken ct = default);
     Task<Result<MatchupResult>> GetMatchupResult(Guid contestId, CancellationToken ct = default);
     Task<Result<List<ContestResultDto>>> GetContestResultsByContestIds(List<Guid> contestIds, CancellationToken ct = default);
@@ -414,6 +415,17 @@ public class ContestClient : ClientBase, IProvideContests
         return await GetAsync<MatchupForPreviewDto>(
             $"contests/{contestId}/matchup-preview",
             default!, "Matchup preview", ResultStatus.NotFound, ct);
+    }
+
+    public async Task<Result<ContestPreviewHistoryDto>> GetContestPreviewHistory(Guid contestId, CancellationToken ct = default)
+    {
+        if (contestId == Guid.Empty)
+            return new Failure<ContestPreviewHistoryDto>(default!, ResultStatus.BadRequest,
+                [new ValidationFailure("contestId", "Contest ID cannot be empty")]);
+
+        return await GetAsync<ContestPreviewHistoryDto>(
+            $"contests/{contestId}/preview-history",
+            default!, "Contest preview history", ResultStatus.NotFound, ct);
     }
 
     public async Task<Result<Dictionary<Guid, MatchupForPreviewDto>>> GetMatchupsForPreviewBatch(List<Guid> contestIds, CancellationToken ct = default)

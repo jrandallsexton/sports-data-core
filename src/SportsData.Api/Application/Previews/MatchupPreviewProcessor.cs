@@ -277,6 +277,26 @@ namespace SportsData.Api.Application.Previews
             Sport sport,
             string? rejectionNote)
         {
+            // Historical context (last 5 H2H + prior-season last 5, preview-
+            // safe semantics baked into Producer's queries). Degrades
+            // gracefully: a failed fetch logs and the preview proceeds
+            // without history rather than failing the job.
+            var historyResult = await _contestClientFactory.Resolve(sport)
+                .GetContestPreviewHistory(matchup.ContestId);
+
+            if (historyResult.IsSuccess && historyResult.Value is not null)
+            {
+                matchup.HeadToHead = historyResult.Value.HeadToHead;
+                matchup.AwayPriorSeasonGames = historyResult.Value.AwayPriorSeasonGames;
+                matchup.HomePriorSeasonGames = historyResult.Value.HomePriorSeasonGames;
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Preview history unavailable for {ContestId}; proceeding without historical blocks.",
+                    matchup.ContestId);
+            }
+
             var franchiseClient = _franchiseClientFactory.Resolve(sport);
 
             matchup.AwayStats = await franchiseClient

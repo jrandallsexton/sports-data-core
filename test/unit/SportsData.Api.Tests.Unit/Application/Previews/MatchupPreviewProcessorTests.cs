@@ -46,12 +46,51 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             AwayFranchiseSeasonId = _awayFranchiseSeasonId
         };
 
-        private void SetupPipeline(MatchupForPreviewDto matchup)
+        private static ContestPreviewHistoryDto BuildHistory() => new()
+        {
+            HeadToHead =
+            [
+                new PreviewGameResultDto
+                {
+                    GameDate = new DateTime(2025, 9, 14, 16, 5, 0, DateTimeKind.Utc),
+                    SeasonYear = 2025,
+                    Phase = "Regular Season",
+                    HomeTeam = "Arizona Cardinals",
+                    AwayTeam = "Carolina Panthers",
+                    HomeScore = 27,
+                    AwayScore = 22,
+                    Winner = "Arizona Cardinals",
+                    SpreadWinner = "Carolina Panthers",
+                    OverUnderResult = "Over"
+                }
+            ],
+            AwayPriorSeasonGames =
+            [
+                new PreviewGameResultDto
+                {
+                    GameDate = new DateTime(2026, 1, 10, 21, 30, 0, DateTimeKind.Utc),
+                    SeasonYear = 2025,
+                    Phase = "Postseason",
+                    Note = "NFC Wild Card",
+                    HomeTeam = "Carolina Panthers",
+                    AwayTeam = "Los Angeles Rams",
+                    HomeScore = 31,
+                    AwayScore = 34,
+                    Winner = "Los Angeles Rams"
+                }
+            ],
+            HomePriorSeasonGames = []
+        };
+
+        private void SetupPipeline(MatchupForPreviewDto matchup, Result<ContestPreviewHistoryDto>? history = null)
         {
             var contestClient = new Mock<IProvideContests>();
             contestClient
                 .Setup(x => x.GetMatchupForPreview(_contestId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Success<MatchupForPreviewDto>(matchup));
+            contestClient
+                .Setup(x => x.GetContestPreviewHistory(_contestId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(history ?? new Success<ContestPreviewHistoryDto>(BuildHistory()));
 
             Mocker.GetMock<IContestClientFactory>()
                 .Setup(x => x.Resolve(It.IsAny<Sport>()))
@@ -119,6 +158,16 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Equal("prediction-insights-with-stats-schedule", capture.PromptVersion);
             Assert.Equal(PromptText, capture.PromptText);
             Assert.Contains("arizona-cardinals", capture.PayloadJson);
+
+            // Historical blocks flow into the payload, names only — the only
+            // GUIDs in the whole payload are the two live FranchiseSeasonIds
+            // (plus ContestId), never per-season ids from historical rows.
+            Assert.Contains("HeadToHead", capture.PayloadJson);
+            Assert.Contains("NFC Wild Card", capture.PayloadJson);
+            var guidCount = System.Text.RegularExpressions.Regex.Matches(
+                capture.PayloadJson,
+                "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").Count;
+            Assert.Equal(3, guidCount);
             Assert.Null(capture.EditorNote);
             Assert.True(capture.CharCount > PromptText.Length);
             Assert.Equal(capture.CharCount / 4, capture.EstTokens);
@@ -302,6 +351,35 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                 .Verify(x => x.Publish(It.IsAny<PreviewPromptCaptured>(), It.IsAny<CancellationToken>()), Times.Once);
             Mocker.GetMock<IEventBus>()
                 .Verify(x => x.Publish(It.IsAny<PreviewGenerated>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Capture_ProceedsWithoutHistory_WhenHistoryFetchFails()
+        {
+            // Arrange — history endpoint down: preview assembly must degrade
+            // gracefully, not fail the job.
+            SetupPipeline(
+                BuildMatchup("STATUS_SCHEDULED"),
+                new Failure<ContestPreviewHistoryDto>(
+                    default!,
+                    ResultStatus.Error,
+                    [new FluentValidation.Results.ValidationFailure("history", "unavailable")]));
+
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl,
+                Mode = PreviewGenerationMode.Capture
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+            Assert.DoesNotContain("NFC Wild Card", capture.PayloadJson);
         }
 
         [Fact]

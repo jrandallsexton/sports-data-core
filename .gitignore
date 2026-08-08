@@ -446,3 +446,6 @@ src/UI/sd-mobile/junit.xml
 # storage ONLY - the repo is public. Local exports for analysis are fine;
 # they must never be committed.
 docs/metrics-modeling/prompts/
+
+# Preview Lab exports (capture.txt contains full prompt instruction text)
+docs/metrics-modeling/previews/

@@ -42,6 +42,18 @@ const AdminApi = {
   getPreviewCaptures: (contestId) =>
     apiClient.get(`/admin/matchup/preview/${encodeURIComponent(contestId)}/captures`),
 
+  // Prompt management (per-sport-league prompt entities; text lives in
+  // the API database). Name and slot (sport, withStats) are immutable —
+  // a different slot means creating a new version.
+  getPrompts: () => apiClient.get('/admin/prompts'),
+  getPrompt: (promptId) => apiClient.get(`/admin/prompts/${encodeURIComponent(promptId)}`),
+  createPrompt: (body) => apiClient.post('/admin/prompts', body),
+  updatePrompt: (promptId, body) =>
+    apiClient.put(`/admin/prompts/${encodeURIComponent(promptId)}`, body),
+  setDefaultPrompt: (promptId) =>
+    apiClient.post(`/admin/prompts/${encodeURIComponent(promptId)}/set-default`),
+  importPromptFromBlob: (body) => apiClient.post('/admin/prompts/import-blob', body),
+
   // Returns one MLB matchup in the same shape as the picks page so the
   // baseball SignalR debug page can render a real <MatchupCard /> for a
   // chosen contest. League-context fields (Predictions, AiWinner,

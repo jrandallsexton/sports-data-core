@@ -136,6 +136,7 @@ export default function AdminPage() {
         <Link to="/admin/football">Football debug</Link>
         <Link to="/admin/baseball">Baseball debug</Link>
         <Link to="/admin/preview-lab">Preview Lab</Link>
+        <Link to="/admin/prompts">Prompt Manager</Link>
       </div>
 
       <div className="admin-grid">

@@ -348,6 +348,8 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<Application.Admin.Prompts.IImportPromptFromBlobCommandHandler, Application.Admin.Prompts.ImportPromptFromBlobCommandHandler>();
             services.AddScoped<Application.Admin.Prompts.IGetPromptsQueryHandler, Application.Admin.Prompts.GetPromptsQueryHandler>();
             services.AddScoped<Application.Admin.Prompts.IGetPromptByIdQueryHandler, Application.Admin.Prompts.GetPromptByIdQueryHandler>();
+            services.AddScoped<Application.Admin.Prompts.IUpdatePromptCommandHandler, Application.Admin.Prompts.UpdatePromptCommandHandler>();
+            services.AddScoped<Application.Admin.Prompts.ISetDefaultPromptCommandHandler, Application.Admin.Prompts.SetDefaultPromptCommandHandler>();
             services.AddSingleton<GameRecapPromptProvider>();
             services.AddScoped<PickScoringJob>();
             services.AddScoped<LeagueWeekScoringJob>();

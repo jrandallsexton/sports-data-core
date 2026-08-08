@@ -241,6 +241,38 @@ namespace SportsData.Api.Application.Admin
         }
 
         /// <summary>
+        /// Edit a prompt's Text/Description. Name and slot (Sport,
+        /// WithStats) are immutable — a different slot is a new version.
+        /// </summary>
+        [HttpPut]
+        [Route("prompts/{promptId}")]
+        public async Task<ActionResult<Guid>> UpdatePrompt(
+            [FromRoute] Guid promptId,
+            [FromBody] Application.Admin.Prompts.UpdatePromptCommand command,
+            [FromServices] Application.Admin.Prompts.IUpdatePromptCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            command.PromptId = promptId;
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Make a prompt the default for its own (Sport, WithStats) slot;
+        /// clears the slot's previous default. Effective next run.
+        /// </summary>
+        [HttpPost]
+        [Route("prompts/{promptId}/set-default")]
+        public async Task<ActionResult<Guid>> SetDefaultPrompt(
+            [FromRoute] Guid promptId,
+            [FromServices] Application.Admin.Prompts.ISetDefaultPromptCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(promptId, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
         /// Persisted prompt captures for a contest, newest first — payload,
         /// metadata, and the full rendered prompt exactly as the model would
         /// receive it (instruction blob + payload + editor note).

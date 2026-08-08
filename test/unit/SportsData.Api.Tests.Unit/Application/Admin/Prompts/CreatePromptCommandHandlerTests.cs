@@ -97,6 +97,57 @@ namespace SportsData.Api.Tests.Unit.Application.Admin.Prompts
         }
 
         [Fact]
+        public async Task SetDefault_FlipsOnlyItsOwnSlot()
+        {
+            // Arrange — two slots, each with a default; a challenger in slot 1
+            var oldDefault = new Prompt { Id = Guid.NewGuid(), Name = "v1", Sport = Sport.FootballNfl, WithStats = false, IsDefault = true, Text = "OLD" };
+            var challenger = new Prompt { Id = Guid.NewGuid(), Name = "v2", Sport = Sport.FootballNfl, WithStats = false, IsDefault = false, Text = "NEW" };
+            var otherSlot = new Prompt { Id = Guid.NewGuid(), Name = "any-sport", Sport = null, WithStats = false, IsDefault = true, Text = "ANY" };
+            await DataContext.Prompts.AddRangeAsync(oldDefault, challenger, otherSlot);
+            await DataContext.SaveChangesAsync();
+
+            Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(Now);
+            var sut = Mocker.CreateInstance<SetDefaultPromptCommandHandler>();
+
+            // Act
+            var result = await sut.ExecuteAsync(challenger.Id, CancellationToken.None);
+
+            // Assert — slot (FootballNfl, false) flipped; any-sport slot untouched
+            Assert.True(result.IsSuccess);
+            Assert.True(DataContext.Prompts.Single(p => p.Id == challenger.Id).IsDefault);
+            Assert.False(DataContext.Prompts.Single(p => p.Id == oldDefault.Id).IsDefault);
+            Assert.True(DataContext.Prompts.Single(p => p.Id == otherSlot.Id).IsDefault);
+        }
+
+        [Fact]
+        public async Task Update_EditsTextAndDescription_Only()
+        {
+            var prompt = new Prompt { Id = Guid.NewGuid(), Name = "v1", Sport = Sport.FootballNcaa, WithStats = true, IsDefault = true, Text = "OLD" };
+            await DataContext.Prompts.AddAsync(prompt);
+            await DataContext.SaveChangesAsync();
+
+            Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(Now);
+            var sut = Mocker.CreateInstance<UpdatePromptCommandHandler>();
+
+            var result = await sut.ExecuteAsync(new UpdatePromptCommand
+            {
+                PromptId = prompt.Id,
+                Description = "tuned",
+                Text = "NEW\r\nTEXT"
+            }, CancellationToken.None);
+
+            Assert.True(result.IsSuccess);
+            var updated = DataContext.Prompts.Single(p => p.Id == prompt.Id);
+            Assert.Equal("NEW\nTEXT", updated.Text); // CRLF normalized
+            Assert.Equal("tuned", updated.Description);
+            // Identity and slot untouched
+            Assert.Equal("v1", updated.Name);
+            Assert.Equal(Sport.FootballNcaa, updated.Sport);
+            Assert.True(updated.WithStats);
+            Assert.True(updated.IsDefault);
+        }
+
+        [Fact]
         public async Task ImportFromBlob_CreatesPrompt_WithBlobText()
         {
             Mocker.GetMock<IProvideBlobStorage>()

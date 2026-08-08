@@ -57,6 +57,18 @@ namespace SportsData.Core.Dtos.Canonical
         public FranchiseSeasonMetricsDto? HomeMetrics { get; set; }
         public List<FranchiseSeasonCompetitionResultDto>? HomeCompetitionResults { get; set; }
 
+        /// <summary>
+        /// Historical blocks (docs/metrics-modeling/matchup-preview-data-inputs.md
+        /// §3b/3c): last 5 head-to-head meetings and each team's last 5
+        /// prior-season games. Names-only rows (no GUIDs — the model must
+        /// only ever echo the two live FranchiseSeasonIds above). Populated
+        /// by the API's preview assembly; null when history fetch fails
+        /// (graceful degradation).
+        /// </summary>
+        public List<PreviewGameResultDto>? HeadToHead { get; set; }
+        public List<PreviewGameResultDto>? AwayPriorSeasonGames { get; set; }
+        public List<PreviewGameResultDto>? HomePriorSeasonGames { get; set; }
+
         public string? Spread { get; set; }             // co."Details"
         public double? AwaySpread { get; set; }
         public double? HomeSpread { get; set; }

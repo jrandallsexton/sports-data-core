@@ -497,6 +497,23 @@ namespace SportsData.Producer.Application.Contests
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Historical context for a matchup preview: last N head-to-head
+        /// meetings between the two franchises (cross-season) and each
+        /// team's last N games of the prior season. Preview-safe semantics
+        /// baked into the queries: finalized/non-cancelled only, preseason
+        /// excluded, and no game on/after the target's start date.
+        /// </summary>
+        [HttpGet("{contestId}/preview-history")]
+        public async Task<ActionResult<ContestPreviewHistoryDto>> GetContestPreviewHistory(
+            [FromRoute] Guid contestId,
+            [FromServices] Queries.Matchups.GetContestPreviewHistory.IGetContestPreviewHistoryQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetContestPreviewHistory.GetContestPreviewHistoryQuery(contestId), cancellationToken);
+            return result.ToActionResult();
+        }
+
         [HttpPost("matchups/previews")]
         public async Task<ActionResult<Dictionary<Guid, MatchupForPreviewDto>>> GetMatchupsForPreviewBatch(
             [FromBody] Guid[] contestIds,

@@ -23,23 +23,44 @@ SELECT
     c."SeasonYear",
     sp."Name" AS "Phase",
     c."EventNote" AS "Note",
-    fHome."Name" AS "HomeTeam",
-    fAway."Name" AS "AwayTeam",
+    fHome."DisplayName" AS "HomeTeam",
+    fAway."DisplayName" AS "AwayTeam",
     c."HomeScore",
     c."AwayScore",
     CASE
-        WHEN c."WinnerFranchiseSeasonId" = c."HomeTeamFranchiseSeasonId" THEN fHome."Name"
-        WHEN c."WinnerFranchiseSeasonId" = c."AwayTeamFranchiseSeasonId" THEN fAway."Name"
+        WHEN c."WinnerFranchiseSeasonId" = c."HomeTeamFranchiseSeasonId" THEN fHome."DisplayName"
+        WHEN c."WinnerFranchiseSeasonId" = c."AwayTeamFranchiseSeasonId" THEN fAway."DisplayName"
         ELSE NULL
     END AS "Winner",
     CASE
-        WHEN c."SpreadWinnerFranchiseSeasonId" = c."HomeTeamFranchiseSeasonId" THEN fHome."Name"
-        WHEN c."SpreadWinnerFranchiseSeasonId" = c."AwayTeamFranchiseSeasonId" THEN fAway."Name"
+        WHEN c."SpreadWinnerFranchiseSeasonId" = c."HomeTeamFranchiseSeasonId" THEN fHome."DisplayName"
+        WHEN c."SpreadWinnerFranchiseSeasonId" = c."AwayTeamFranchiseSeasonId" THEN fAway."DisplayName"
         ELSE NULL
     END AS "SpreadWinner",
+    -- Market context (preferred-provider lateral, same vocabulary as the
+    -- live matchup payload: Spread = details text e.g. "ARI -6.5",
+    -- HomeSpread home-relative). Open values expose line movement.
+    -- NULL for pre-odds-era games (~pre-2022) — result-only context there.
+    co."Details" AS "Spread",
+    co."Spread" AS "HomeSpread",
+    cto."SpreadPointsOpen" AS "HomeSpreadOpen",
+    co."OverUnder" AS "OverUnder",
+    co."TotalPointsOpen" AS "OverUnderOpen",
+    co."OverOdds" AS "OverOdds",
+    co."UnderOdds" AS "UnderOdds",
     CASE c."OverUnder" WHEN 1 THEN 'Over' WHEN 2 THEN 'Under' ELSE NULL END AS "OverUnderResult"
 FROM target t
 INNER JOIN public."Contest" c ON c."Id" <> t."Id"
+INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
+LEFT JOIN LATERAL (
+    SELECT *
+    FROM public."CompetitionOdds"
+    WHERE "CompetitionId" = comp."Id"
+      AND "ProviderId" IN ('{PreferredOddsProviderId}', '{FallbackOddsProviderId}')
+    ORDER BY CASE WHEN "ProviderId" = '{PreferredOddsProviderId}' THEN 1 ELSE 2 END
+    LIMIT 1
+) co ON TRUE
+LEFT JOIN public."CompetitionTeamOdds" cto ON cto."CompetitionOddsId" = co."Id" AND cto."Side" = 'Home'
 INNER JOIN public."FranchiseSeason" fsAway ON fsAway."Id" = c."AwayTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fAway ON fAway."Id" = fsAway."FranchiseId"
 INNER JOIN public."FranchiseSeason" fsHome ON fsHome."Id" = c."HomeTeamFranchiseSeasonId"

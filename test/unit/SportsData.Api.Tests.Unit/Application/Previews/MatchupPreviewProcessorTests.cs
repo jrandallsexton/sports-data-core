@@ -27,12 +27,15 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
         private readonly Guid _homeFranchiseSeasonId = Guid.NewGuid();
         private readonly Guid _awayFranchiseSeasonId = Guid.NewGuid();
 
+        private static readonly DateTime TargetStartUtc = new(2026, 8, 7, 0, 0, 0, DateTimeKind.Utc);
+
         private MatchupForPreviewDto BuildMatchup(string status) => new()
         {
             Sport = Sport.FootballNfl,
             SeasonYear = 2025,
             WeekNumber = 2,
             ContestId = _contestId,
+            StartDateUtc = TargetStartUtc,
             Status = status,
             Venue = "State Farm Stadium",
             VenueCity = "Glendale",
@@ -61,6 +64,13 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                     AwayScore = 22,
                     Winner = "Arizona Cardinals",
                     SpreadWinner = "Carolina Panthers",
+                    Spread = "ARI -6.5",
+                    HomeSpread = -6.5,
+                    HomeSpreadOpen = -6.5,
+                    OverUnder = 45.5,
+                    OverUnderOpen = 45.5,
+                    OverOdds = -105,
+                    UnderOdds = -115,
                     OverUnderResult = "Over"
                 }
             ],
@@ -164,6 +174,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             // (plus ContestId), never per-season ids from historical rows.
             Assert.Contains("HeadToHead", capture.PayloadJson);
             Assert.Contains("NFC Wild Card", capture.PayloadJson);
+            Assert.Contains("ARI -6.5", capture.PayloadJson);
             var guidCount = System.Text.RegularExpressions.Regex.Matches(
                 capture.PayloadJson,
                 "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").Count;
@@ -351,6 +362,78 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                 .Verify(x => x.Publish(It.IsAny<PreviewPromptCaptured>(), It.IsAny<CancellationToken>()), Times.Once);
             Mocker.GetMock<IEventBus>()
                 .Verify(x => x.Publish(It.IsAny<PreviewGenerated>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Capture_OnCompletedContest_ExcludesTargetGameAndMasksStatus()
+        {
+            // Arrange — the raw CompetitionResults for a completed target
+            // contain the TARGET GAME ITSELF (the answer) plus an earlier
+            // game. Only the earlier game may reach the payload, and the
+            // completed status must read as pre-game.
+            SetupPipeline(BuildMatchup("STATUS_FINAL"));
+
+            var targetRow = new FranchiseSeasonCompetitionResultDto
+            {
+                ContestId = _contestId,
+                StartDateUtc = TargetStartUtc,
+                AwaySlug = "carolina-panthers",
+                HomeSlug = "arizona-cardinals",
+                AwayShort = "CAR",
+                HomeShort = "ARI",
+                AwayScore = 33,
+                HomeScore = 30
+            };
+            var earlierRow = new FranchiseSeasonCompetitionResultDto
+            {
+                ContestId = Guid.NewGuid(),
+                StartDateUtc = TargetStartUtc.AddDays(-210),
+                AwaySlug = "carolina-panthers",
+                HomeSlug = "tampa-bay-buccaneers",
+                AwayShort = "CAR",
+                HomeShort = "TB",
+                AwayScore = 14,
+                HomeScore = 16
+            };
+
+            var franchiseClient = new Mock<IProvideFranchises>();
+            franchiseClient
+                .Setup(x => x.GetFranchiseSeasonPreviewStats(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new FranchiseSeasonModelStatsDto { RushingYardsPerGame = 150.0 });
+            franchiseClient
+                .Setup(x => x.GetFranchiseSeasonMetricsByFranchiseSeasonId(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((FranchiseSeasonMetricsDto?)null!);
+            franchiseClient
+                .Setup(x => x.GetFranchiseSeasonCompetitionResults(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([targetRow, earlierRow]);
+            Mocker.GetMock<IFranchiseClientFactory>()
+                .Setup(x => x.Resolve(It.IsAny<Sport>()))
+                .Returns(franchiseClient.Object);
+
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl,
+                Mode = PreviewGenerationMode.Capture
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert — the answer is gone, the earlier game survives, and the
+            // status reads pre-game.
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+
+            using var payload = System.Text.Json.JsonDocument.Parse(capture.PayloadJson);
+            var awayResults = payload.RootElement.GetProperty("AwayCompetitionResults");
+            Assert.Equal(1, awayResults.GetArrayLength());
+            Assert.Equal("tampa-bay-buccaneers", awayResults[0].GetProperty("HomeSlug").GetString());
+            Assert.DoesNotContain(_contestId.ToString(), awayResults.GetRawText());
+
+            Assert.DoesNotContain("STATUS_FINAL", capture.PayloadJson);
+            Assert.Contains("STATUS_SCHEDULED", capture.PayloadJson);
         }
 
         [Fact]

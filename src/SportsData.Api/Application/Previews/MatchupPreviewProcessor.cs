@@ -96,7 +96,7 @@ namespace SportsData.Api.Application.Previews
                 return;
             }
 
-            var assembled = await AssemblePromptAsync(matchup, command.Sport, rejectedPreview?.RejectionNote);
+            var assembled = await AssemblePromptAsync(matchup, command.Sport, command.Mode, rejectedPreview?.RejectionNote);
 
             _logger.LogInformation(
                 "Prompt assembled for {ContestId}. PromptVersion: {PromptVersion}, CharCount: {CharCount}, UsedMetrics: {UsedMetrics}, AwayResults: {AwayResults}, HomeResults: {HomeResults}",
@@ -275,6 +275,7 @@ namespace SportsData.Api.Application.Previews
         private async Task<AssembledPrompt> AssemblePromptAsync(
             MatchupForPreviewDto matchup,
             Sport sport,
+            PreviewGenerationMode mode,
             string? rejectionNote)
         {
             // Historical context (last 5 H2H + prior-season last 5, preview-
@@ -320,6 +321,28 @@ namespace SportsData.Api.Application.Previews
                 .GetFranchiseSeasonCompetitionResults(matchup.AwayFranchiseSeasonId);
             matchup.HomeCompetitionResults = await franchiseClient
                 .GetFranchiseSeasonCompetitionResults(matchup.HomeFranchiseSeasonId);
+
+            // As-of rule: the payload must never contain any game starting on
+            // or after the target. For a completed target (capture/experiment
+            // on a historical game) the raw CompetitionResults include the
+            // TARGET ITSELF — final score, winner, spread winner: the answer.
+            // For a pre-game target this is a no-op (those games haven't been
+            // played), so applying it uniformly keeps captures byte-identical
+            // to what real generation sends.
+            matchup.AwayCompetitionResults = matchup.AwayCompetitionResults?
+                .Where(r => r.StartDateUtc < matchup.StartDateUtc).ToList();
+            matchup.HomeCompetitionResults = matchup.HomeCompetitionResults?
+                .Where(r => r.StartDateUtc < matchup.StartDateUtc).ToList();
+
+            // Status masking: a completed target's STATUS_FINAL/"Final" also
+            // leaks that the game is over. Recreate the pre-game information
+            // state for capture/experiment runs; Generate never reaches here
+            // for completed contests, so live behavior is untouched.
+            if (mode != PreviewGenerationMode.Generate && ContestStatusValues.IsCompleted(matchup.Status))
+            {
+                matchup.Status = ContestStatusValues.ScheduledRaw;
+                matchup.StatusDescription = "Scheduled";
+            }
 
             var hasStats = (matchup.AwayStats.RushingYardsPerGame.HasValue &&
                             matchup.HomeStats.RushingYardsPerGame.HasValue);

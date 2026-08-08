@@ -56,6 +56,18 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
                     [new ValidationFailure(nameof(command.JsonContent), "Invalid preview content")]);
             }
 
+            // PromptId is a non-nullable FK — a manual upsert without one
+            // (or with an unknown one) would otherwise die as an opaque
+            // database FK violation at save.
+            if (preview.PromptId == Guid.Empty ||
+                !await _dataContext.Prompts.AsNoTracking().AnyAsync(p => p.Id == preview.PromptId, cancellationToken))
+            {
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(MatchupPreview.PromptId), "Preview JSON must reference an existing Prompt via promptId (see GET /admin/prompts)")]);
+            }
+
             // Wrap in the DbContext execution strategy: EnableRetryOnFailure is configured
             // globally for Npgsql (see Core/DependencyInjection/ServiceRegistration.cs),
             // and raw BeginTransactionAsync under a retry strategy throws at runtime unless

@@ -725,3 +725,43 @@ curl-grade is fine for a single operator); NCAA-specific H2H tuning
 metrics-service question (parked until previews flow — see memory);
 per-row odds provider selection (a different book's preview = a new
 run against that provider's data).
+
+---
+
+## 7. Target architecture: the model predicts, the LLM explains (2026-08-08)
+
+**Goal framing (user, explicit):** this is NOT about beating Vegas.
+The bar is "given enough data, can we produce genuinely interesting,
+honest information for users (and for us)?" Success = CALIBRATION and
+consistency, not edge. The scoring harness (§6) remains fully valuable
+under this framing — as quality control, not alpha-hunting; market
+lines are context to reason against, not a benchmark to promise
+victory over.
+
+**The shape:**
+1. **Stats model predicts** (Python, over the play-by-play metrics
+   corpus): win probability, projected spread, projected total, top
+   factor contributions. Outputs are TINY (~15 numbers) — the corpus
+   never enters the payload, only conclusions do. New `ModelProjection`
+   payload block, same both-or-nothing hygiene as metrics.
+2. **LLM explains** — ONE generation pass, fully conditioned on
+   everything including the projection. No draft-then-revise loop:
+   revision loops reconcile disagreements created by withholding data
+   from the first pass (user's own conclusion), and they double cost
+   while inviting hedge-mush.
+3. **Critic validates** — a cheap second model reads the finished
+   preview against the payload: does the narrative contradict the
+   data? On failure it emits a note into the EXISTING rejection-note →
+   regenerate machinery (#601). The human editor loop generalizes to an
+   automated editor; human review is reserved for taste.
+
+**Dependency (user: "sooner than later"):** the Python track unparks
+(its parking trigger — previews flowing — is met). Two workstreams:
+(a) in-season metrics cadence — weekly FranchiseSeasonMetric refresh
+feeding the with-stats path and future prior-season blocks (needed
+regardless); (b) the projection model itself (new build) — inputs from
+the corpus, outputs = the ModelProjection contract above. The
+CronJob-vs-service decision from the parked note gets made as part of
+(a). RAG/vectors: NOT needed for structured data (SQL payload assembly
+IS exact retrieval); revisit only if unstructured sources (injury
+news, beat coverage) get added to payloads someday.

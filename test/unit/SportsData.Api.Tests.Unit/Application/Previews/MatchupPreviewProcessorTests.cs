@@ -273,7 +273,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Equal(DefaultPromptId, preview.PromptId);
             Assert.Equal(preview.Id, capture.MatchupPreviewId);
             Assert.Equal(PreviewGenerationMode.Generate, capture.Mode);
-            Assert.Equal(preview.PromptVersion, capture.PromptVersion);
+            Assert.Equal(preview.PromptId, capture.PromptId);
             Assert.Equal("test-model", capture.Model);
             Assert.NotNull(capture.RawResponse);
 
@@ -628,7 +628,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                     It.IsAny<CancellationToken>()), Times.Once);
 
             var preview = Assert.Single(DataContext.MatchupPreviews);
-            Assert.Equal("prediction-insights-with-stats-schedule", preview.PromptVersion);
+            Assert.Equal(DefaultPromptId, preview.PromptId);
         }
 
         [Fact]

@@ -55,7 +55,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
-            PromptVersion = "v1.0",
+            PromptId = Guid.NewGuid(),
             Overview = "Test preview content",
             PredictedStraightUpWinner = Guid.NewGuid(),
             PredictedSpreadWinner = Guid.NewGuid(),
@@ -90,7 +90,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
-            PromptVersion = "v1.0",
+            PromptId = Guid.NewGuid(),
             Overview = "First preview",
             PredictedStraightUpWinner = Guid.NewGuid(),
             PredictedSpreadWinner = Guid.NewGuid(),
@@ -103,7 +103,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         {
             Id = Guid.NewGuid(),
             ContestId = contestId,
-            PromptVersion = "v2.0",
+            PromptId = Guid.NewGuid(),
             Overview = "Second preview",
             PredictedStraightUpWinner = Guid.NewGuid(),
             PredictedSpreadWinner = Guid.NewGuid(),
@@ -131,7 +131,7 @@ public class GetMatchupPreviewQueryHandlerTests : ApiTestBase<GetMatchupPreviewQ
         var returnedPreview = json.FromJson<MatchupPreview>();
         returnedPreview.Should().NotBeNull();
         returnedPreview!.Id.Should().Be(preview1.Id);
-        returnedPreview.PromptVersion.Should().Be("v1.0");
+        returnedPreview.PromptId.Should().NotBe(Guid.Empty);
         returnedPreview.Overview.Should().Be("First preview");
         returnedPreview.OverUnderPrediction.Should().Be(OverUnderPrediction.Over);
     }

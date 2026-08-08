@@ -31,16 +31,15 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public string? ValidationErrors { get; set; }
 
-        public string? PromptVersion { get; set; }
-
         /// <summary>
-        /// FK to the Prompt entity that generated this preview. Nullable
-        /// during the transition (historical rows are backfilled by
-        /// operator SQL, then the column goes non-nullable). Once a
+        /// FK to the Prompt entity that generated this preview (transition
+        /// complete 2026-08-08: historical rows backfilled from the old
+        /// PromptVersion string, column non-nullable, PromptVersion
+        /// dropped — the name now lives on the Prompt row). Once a
         /// prompt's Id appears here it is IMMUTABLE — edits are rejected;
         /// create a new version instead.
         /// </summary>
-        public Guid? PromptId { get; set; }
+        public Guid PromptId { get; set; }
 
         public Prompt? Prompt { get; set; }
         public DateTime? ApprovedUtc { get; set; }
@@ -64,7 +63,6 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.Prediction).HasMaxLength(768);
 
                 builder.Property(x => x.Model).HasMaxLength(50);
-                builder.Property(x => x.PromptVersion).HasMaxLength(50);
 
                 builder.Property(x => x.ValidationErrors).HasMaxLength(1024);
                 builder.Property(x => x.RejectionNote).HasMaxLength(512);

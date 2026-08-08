@@ -259,7 +259,6 @@ namespace SportsData.Api.Application.Previews
                 CreatedUtc = _dateTimeProvider.UtcNow(),
                 CreatedBy = command.CorrelationId,
                 PromptId = assembled.PromptId,
-                PromptVersion = assembled.PromptName,
                 IterationsRequired = 1,
                 UsedMetrics = assembled.Matchup.AwayMetrics != null
             };

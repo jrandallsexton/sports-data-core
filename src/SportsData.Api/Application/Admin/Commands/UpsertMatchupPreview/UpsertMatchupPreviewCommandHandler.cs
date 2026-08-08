@@ -38,7 +38,7 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
         if (!validationResult.IsValid)
         {
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.Validation,
                 validationResult.Errors);
         }
@@ -51,9 +51,21 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
             {
                 _logger.LogWarning("Invalid preview content provided");
                 return new Failure<Guid>(
-                    default,
+                    default!,
                     ResultStatus.Validation,
                     [new ValidationFailure(nameof(command.JsonContent), "Invalid preview content")]);
+            }
+
+            // PromptId is a non-nullable FK — a manual upsert without one
+            // (or with an unknown one) would otherwise die as an opaque
+            // database FK violation at save.
+            if (preview.PromptId == Guid.Empty ||
+                !await _dataContext.Prompts.AsNoTracking().AnyAsync(p => p.Id == preview.PromptId, cancellationToken))
+            {
+                return new Failure<Guid>(
+                    default!,
+                    ResultStatus.Validation,
+                    [new ValidationFailure(nameof(MatchupPreview.PromptId), "Preview JSON must reference an existing Prompt via promptId (see GET /admin/prompts)")]);
             }
 
             // Wrap in the DbContext execution strategy: EnableRetryOnFailure is configured
@@ -88,7 +100,7 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
         {
             _logger.LogError(ex, "Error upserting matchup preview");
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.Error,
                 [new ValidationFailure("Error", "An error occurred while upserting the matchup preview")]);
         }

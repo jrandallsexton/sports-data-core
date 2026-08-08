@@ -273,7 +273,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Equal(DefaultPromptId, preview.PromptId);
             Assert.Equal(preview.Id, capture.MatchupPreviewId);
             Assert.Equal(PreviewGenerationMode.Generate, capture.Mode);
-            Assert.Equal(preview.PromptVersion, capture.PromptVersion);
+            Assert.Equal(preview.PromptId, capture.PromptId);
             Assert.Equal("test-model", capture.Model);
             Assert.NotNull(capture.RawResponse);
 
@@ -318,6 +318,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             {
                 Id = Guid.NewGuid(),
                 ContestId = _contestId,
+                PromptId = DefaultPromptId,
                 RejectedUtc = Now.AddDays(-1),
                 RejectionNote = "Too much spread parroting",
                 CreatedUtc = Now.AddDays(-1)
@@ -628,7 +629,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                     It.IsAny<CancellationToken>()), Times.Once);
 
             var preview = Assert.Single(DataContext.MatchupPreviews);
-            Assert.Equal("prediction-insights-with-stats-schedule", preview.PromptVersion);
+            Assert.Equal(DefaultPromptId, preview.PromptId);
         }
 
         [Fact]

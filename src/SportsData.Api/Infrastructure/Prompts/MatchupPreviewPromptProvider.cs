@@ -64,7 +64,7 @@ public class MatchupPreviewPromptProvider : IMatchupPreviewPromptProvider
                 .Select(p => new { p.Id, p.Name, p.Text, p.Type })
                 .FirstOrDefaultAsync(cancellationToken)
                 ?? throw new InvalidOperationException(
-                    $"Prompt {promptId} does not exist. Experiment overrides fail loudly rather than falling back to a default.");
+                    $"Prompt {promptId} does not exist. Explicit prompt overrides fail loudly rather than falling back to a default.");
 
             if (prompt.Type != PromptType.MatchupPreview)
                 throw new InvalidOperationException(

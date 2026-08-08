@@ -290,6 +290,17 @@ namespace SportsData.Api.Application.Previews
                 matchup.HeadToHead = historyResult.Value.HeadToHead;
                 matchup.AwayPriorSeasonGames = historyResult.Value.AwayPriorSeasonGames;
                 matchup.HomePriorSeasonGames = historyResult.Value.HomePriorSeasonGames;
+                matchup.AwayPriorSeason = historyResult.Value.AwayPriorSeason;
+                matchup.HomePriorSeason = historyResult.Value.HomePriorSeason;
+
+                // Same both-or-nothing rule as current-season metrics:
+                // asymmetric analytics would bias the model toward the
+                // covered team. Records keep flowing either way.
+                if (matchup.AwayPriorSeason?.Metrics is null || matchup.HomePriorSeason?.Metrics is null)
+                {
+                    if (matchup.AwayPriorSeason is not null) matchup.AwayPriorSeason.Metrics = null;
+                    if (matchup.HomePriorSeason is not null) matchup.HomePriorSeason.Metrics = null;
+                }
             }
             else
             {
@@ -349,7 +360,7 @@ namespace SportsData.Api.Application.Previews
 
             var promptData = await _promptProvider.GetPreviewInsightPromptAsync(hasStats);
 
-            var jsonInput = JsonSerializer.Serialize(matchup);
+            var jsonInput = SerializePromptPayload(matchup);
 
             var editorNote = rejectionNote != null
                 ? $"\n\nAdditional feedback from the editor:\n\"{rejectionNote}\""
@@ -364,6 +375,52 @@ namespace SportsData.Api.Application.Previews
                 jsonInput,
                 string.IsNullOrEmpty(editorNote) ? null : rejectionNote,
                 fullPrompt);
+        }
+
+        private static readonly JsonSerializerOptions PromptPayloadOptions = new()
+        {
+            // Hygiene projection (design doc §3.5/3e): every value in the
+            // payload should be usable by the model verbatim.
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+            Converters = { new System.Text.Json.Serialization.JsonStringEnumConverter() }
+        };
+
+        /// <summary>
+        /// The purpose-built prompt payload: the wire DTO serialized with
+        /// omit-null + string enums, minus fields the model cannot use —
+        /// ContestId (leaving exactly the two live FranchiseSeasonIds the
+        /// output contract needs) and AwaySpread (spread is ALWAYS
+        /// home-relative; the away value is a derived negation that invites
+        /// sign confusion).
+        /// </summary>
+        private static string SerializePromptPayload(MatchupForPreviewDto matchup)
+        {
+            var node = JsonSerializer.SerializeToNode(matchup, PromptPayloadOptions)!.AsObject();
+            node.Remove("ContestId");
+            node.Remove("AwaySpread");
+
+            // Legacy CompetitionResults rows carry five GUIDs each (contest,
+            // both franchise-seasons, winner, spread-winner) — per-season ids
+            // the model could echo into predictedStraightUpWinner — plus their
+            // own derived AwaySpread. Slugs + scores + HomeSpread remain, from
+            // which winner and cover are trivially derivable. After this walk
+            // the ONLY GUIDs in the payload are the two live Away/Home
+            // FranchiseSeasonIds the output contract requires.
+            foreach (var listName in new[] { "AwayCompetitionResults", "HomeCompetitionResults" })
+            {
+                if (node[listName] is not System.Text.Json.Nodes.JsonArray rows) continue;
+                foreach (var row in rows.OfType<System.Text.Json.Nodes.JsonObject>())
+                {
+                    row.Remove("ContestId");
+                    row.Remove("AwayFranchiseSeasonId");
+                    row.Remove("HomeFranchiseSeasonId");
+                    row.Remove("WinnerFranchiseSeasonId");
+                    row.Remove("SpreadWinnerFranchiseSeasonId");
+                    row.Remove("AwaySpread");
+                }
+            }
+
+            return node.ToJsonString();
         }
 
         private MatchupPreviewPrompt BuildCapture(

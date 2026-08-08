@@ -90,7 +90,25 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                     Winner = "Los Angeles Rams"
                 }
             ],
-            HomePriorSeasonGames = []
+            HomePriorSeasonGames = [],
+            AwayPriorSeason = new PreviewPriorSeasonSummaryDto
+            {
+                SeasonYear = 2025,
+                Wins = 8,
+                Losses = 10,
+                ConferenceWins = 5,
+                ConferenceLosses = 7,
+                Metrics = new FranchiseSeasonMetricsDto { GamesPlayed = 18, Ypp = 5.4m }
+            },
+            HomePriorSeason = new PreviewPriorSeasonSummaryDto
+            {
+                SeasonYear = 2025,
+                Wins = 6,
+                Losses = 11,
+                ConferenceWins = 3,
+                ConferenceLosses = 9,
+                Metrics = new FranchiseSeasonMetricsDto { GamesPlayed = 17, Ypp = 4.9m }
+            }
         };
 
         private void SetupPipeline(MatchupForPreviewDto matchup, Result<ContestPreviewHistoryDto>? history = null)
@@ -170,16 +188,30 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Equal(PromptText, capture.PromptText);
             Assert.Contains("arizona-cardinals", capture.PayloadJson);
 
-            // Historical blocks flow into the payload, names only — the only
-            // GUIDs in the whole payload are the two live FranchiseSeasonIds
-            // (plus ContestId), never per-season ids from historical rows.
+            // Historical blocks flow into the payload, names only. After the
+            // hygiene projection the ONLY GUIDs in the whole payload are the
+            // two live FranchiseSeasonIds the output contract requires.
             Assert.Contains("HeadToHead", capture.PayloadJson);
             Assert.Contains("NFC Wild Card", capture.PayloadJson);
             Assert.Contains("ARI -6.5", capture.PayloadJson);
             var guidCount = System.Text.RegularExpressions.Regex.Matches(
                 capture.PayloadJson,
                 "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").Count;
-            Assert.Equal(3, guidCount);
+            Assert.Equal(2, guidCount);
+
+            // Hygiene projection: string enums, omit-null, no derived
+            // away-relative spread, no ContestId — and the prior-season
+            // summaries ride in.
+            Assert.Contains("\"Sport\":\"FootballNfl\"", capture.PayloadJson);
+            Assert.DoesNotContain("AwayRank", capture.PayloadJson);      // null -> omitted
+            Assert.DoesNotContain("AwaySpread", capture.PayloadJson);
+            Assert.DoesNotContain(_contestId.ToString(), capture.PayloadJson);
+            Assert.Contains("AwayPriorSeason", capture.PayloadJson);
+            Assert.Contains("\"Wins\":8", capture.PayloadJson);
+            Assert.Contains("\"ConferenceWins\":5", capture.PayloadJson);
+            Assert.Contains("\"ConferenceLosses\":7", capture.PayloadJson);
+            Assert.Contains("\"ConferenceWins\":3", capture.PayloadJson);
+            Assert.Contains("\"ConferenceLosses\":9", capture.PayloadJson);
             Assert.Null(capture.EditorNote);
             Assert.True(capture.CharCount > PromptText.Length);
             Assert.Equal(capture.CharCount / 4, capture.EstTokens);
@@ -439,6 +471,45 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
 
             Assert.Equal("STATUS_SCHEDULED", payload.RootElement.GetProperty("Status").GetString());
             Assert.Equal("Scheduled", payload.RootElement.GetProperty("StatusDescription").GetString());
+        }
+
+        [Fact]
+        public async Task Capture_AppliesBothOrNothing_ToPriorSeasonMetrics()
+        {
+            // Arrange — away has prior metrics, home does not: asymmetric
+            // analytics would bias the model, so both must be nulled while
+            // the records keep flowing.
+            var history = BuildHistory();
+            history.HomePriorSeason!.Metrics = null;
+            SetupPipeline(BuildMatchup("STATUS_SCHEDULED"), new Success<ContestPreviewHistoryDto>(history));
+
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl,
+                Mode = PreviewGenerationMode.Capture
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+            using var payload = System.Text.Json.JsonDocument.Parse(capture.PayloadJson);
+
+            var awayPrior = payload.RootElement.GetProperty("AwayPriorSeason");
+            Assert.Equal(8, awayPrior.GetProperty("Wins").GetInt32());
+            Assert.Equal(5, awayPrior.GetProperty("ConferenceWins").GetInt32());
+            Assert.Equal(7, awayPrior.GetProperty("ConferenceLosses").GetInt32());
+            Assert.False(awayPrior.TryGetProperty("Metrics", out _)); // nulled -> omitted
+
+            var homePrior = payload.RootElement.GetProperty("HomePriorSeason");
+            Assert.Equal(6, homePrior.GetProperty("Wins").GetInt32());
+            Assert.Equal(3, homePrior.GetProperty("ConferenceWins").GetInt32());
+            Assert.Equal(9, homePrior.GetProperty("ConferenceLosses").GetInt32());
+            Assert.False(homePrior.TryGetProperty("Metrics", out _));
         }
 
         [Fact]

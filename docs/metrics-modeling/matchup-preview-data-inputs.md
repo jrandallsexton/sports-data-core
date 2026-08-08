@@ -483,9 +483,20 @@ logic is untouched by design.
    provider's data.
 2. ~~One endpoint vs compose~~ — DECIDED: one endpoint (implemented as
    above).
-3. Payload-hygiene projection (3e) first, or accept token growth and do it
-   later (proposed: first — PARTIALLY superseded: new history blocks are
-   born clean; the hygiene work now covers only the legacy fields).
+3. ~~Payload-hygiene projection (3e)~~ — **IMPLEMENTED 2026-08-08**
+   (`SerializePromptPayload` in the processor; the wire DTO is untouched
+   — hygiene is applied at serialization only, so no consumer risk):
+   omit-null (kills the ~28 null stat fields and null market fields on
+   old rows), string enums (`"Sport": "FootballNfl"`, O/U results as
+   words), top-level `AwaySpread` dropped (user: spread is ALWAYS
+   home-relative; the away value is a derived negation), `ContestId`
+   dropped, AND legacy CompetitionResults rows stripped of their five
+   per-row GUIDs (contest, both franchise-seasons, winner,
+   spread-winner) + per-row `AwaySpread` — winner/cover remain derivable
+   from slugs + scores + HomeSpread. Regression test: the entire payload
+   now contains EXACTLY the two live FranchiseSeasonIds and no other
+   GUID. Remaining prompt-side task: drop `AwaySpread` from the example
+   inputs during with-history authoring.
 4. Prompt authoring workflow for with-history-v1. Prompts stay blob-only
    (secret sauce, public repo — decided 2026-08-07); author against local
    gitignored working copies, upload to blob, PromptVersion tracks it.
@@ -503,3 +514,47 @@ logic is untouched by design.
    `sql/pgsql/_debug_preview_history.sql` (query 3), run per sport DB.
 3. Decisions 1–5 above.
 4. Design doc v2 with endpoint/DTO shapes → authorization → build.
+
+---
+
+## 6. Remaining work (consolidated 2026-08-08)
+
+Everything above through §3a/3b/3c/3e is SHIPPED. What's left, in
+recommended order (season opens ~Aug 30; goal is a defensible
+model/prompt choice before real generations start):
+
+1. **§3a prior-season block — IMPLEMENTED with one deferral**: final
+   record + prior-season FranchiseSeasonMetrics now flow (both-or-nothing
+   applied in API assembly; records always flow). DEFERRED: prior-season
+   final poll rank (NFL has no polls; NCAA final AP rank needs a
+   rankings-table join — add during NCAA-season tuning if the model
+   seems to need pedigree signal). GATE STILL OPEN: run the coverage
+   check (query 3 in `sql/pgsql/_debug_preview_history.sql`) per sport
+   DB — if 2025 FranchiseSeasonMetric rows are missing, a one-time
+   backfill is needed; until then the prior-season RECORD still flows —
+   only the null `Metrics` property inside the block is omitted
+   (omit-null) — so the payload degrades honestly.
+2. **with-history prompt blob** (user authors; blob-only per policy).
+   Must teach: the metrics block (un-briefed since forever), HeadToHead
+   + prior-season blocks (incl. "history excludes preseason by
+   construction"), roster-churn discounting (NCAA > NFL), sport-aware
+   voice (no more "college football analyst" for NFL), updated example
+   inputs (no AwaySpread, string Sport, hygiene shape). New blob name =
+   provenance; selection logic gains the with-history variant.
+3. **Backtest harness MVP**: batch experiment enqueue ("every 2025
+   week-N game") + a scoring query joining MatchupPreviewPrompt captures
+   to Contest outcomes — SU accuracy, ATS accuracy, O/U accuracy, score
+   MAE, grouped by PromptVersion × Model. Mostly SQL over existing
+   tables; the lab already persists everything needed.
+4. **Model routing for experiments**: optional model override on
+   GenerateMatchupPreviewsCommand (capture rows already record Model) so
+   the harness compares prompt × model, not just prompts.
+   IProvideAiCommunication is single-bound today; see
+   ai-provider-routing-per-sport.md for prior art.
+
+Deliberately NOT doing now: Preview Lab UX polish (compare/diff views —
+curl-grade is fine for a single operator); NCAA-specific H2H tuning
+(sparse cross-season meetings are honest data); the Python
+metrics-service question (parked until previews flow — see memory);
+per-row odds provider selection (a different book's preview = a new
+run against that provider's data).

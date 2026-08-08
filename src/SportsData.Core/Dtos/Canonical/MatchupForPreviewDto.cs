@@ -68,6 +68,8 @@ namespace SportsData.Core.Dtos.Canonical
         public List<PreviewGameResultDto>? HeadToHead { get; set; }
         public List<PreviewGameResultDto>? AwayPriorSeasonGames { get; set; }
         public List<PreviewGameResultDto>? HomePriorSeasonGames { get; set; }
+        public PreviewPriorSeasonSummaryDto? AwayPriorSeason { get; set; }
+        public PreviewPriorSeasonSummaryDto? HomePriorSeason { get; set; }
 
         public string? Spread { get; set; }             // co."Details"
         public double? AwaySpread { get; set; }

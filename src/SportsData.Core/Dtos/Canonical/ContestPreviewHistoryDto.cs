@@ -18,6 +18,36 @@ namespace SportsData.Core.Dtos.Canonical
         public List<PreviewGameResultDto> AwayPriorSeasonGames { get; set; } = [];
 
         public List<PreviewGameResultDto> HomePriorSeasonGames { get; set; } = [];
+
+        /// <summary>Prior-season summary (record + metrics); null when the franchise has no prior season.</summary>
+        public PreviewPriorSeasonSummaryDto? AwayPriorSeason { get; set; }
+
+        public PreviewPriorSeasonSummaryDto? HomePriorSeason { get; set; }
+    }
+
+    /// <summary>
+    /// A team's PRIOR season in summary: final record and the season-level
+    /// advanced metrics. The early-season statistical signal — current-season
+    /// stats/metrics are empty until several weeks in.
+    /// </summary>
+    public class PreviewPriorSeasonSummaryDto
+    {
+        public int SeasonYear { get; set; }
+
+        public int Wins { get; set; }
+
+        public int Losses { get; set; }
+
+        public int ConferenceWins { get; set; }
+
+        public int ConferenceLosses { get; set; }
+
+        /// <summary>
+        /// Prior-season FranchiseSeasonMetrics; null when not generated for
+        /// that season. The API applies the same both-or-nothing symmetry
+        /// rule as current-season metrics before the model sees them.
+        /// </summary>
+        public FranchiseSeasonMetricsDto? Metrics { get; set; }
     }
 
     /// <summary>

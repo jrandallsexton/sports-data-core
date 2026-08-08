@@ -40,6 +40,8 @@ public class AppDataContext : DbContext
 
     public DbSet<MatchupPreviewPrompt> MatchupPreviewPrompts { get; set; }
 
+    public DbSet<Prompt> Prompts { get; set; }
+
     public DbSet<Article> Articles { get; set; }
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();

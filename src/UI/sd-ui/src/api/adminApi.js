@@ -24,16 +24,35 @@ const AdminApi = {
   // ONLY — never writes a MatchupPreview, so a prior season's real preview
   // can't be shadowed on the picks page. Both allow completed contests and
   // announce completion via SignalR (PreviewPromptCaptured).
-  capturePreviewPrompt: (contestId, sport) =>
+  // promptId (optional): Prompt entity GUID selecting a specific prompt
+  // version from the API database for this run. An unknown id fails the
+  // run loudly rather than silently using the slot default.
+  capturePreviewPrompt: (contestId, sport, promptId) =>
     apiClient.post(
-      `/admin/matchup/preview/${encodeURIComponent(contestId)}/capture${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+      `/admin/matchup/preview/${encodeURIComponent(contestId)}/capture`,
+      null,
+      { params: { ...(sport ? { sport } : {}), ...(promptId ? { promptId } : {}) } }
     ),
-  runPreviewExperiment: (contestId, sport) =>
+  runPreviewExperiment: (contestId, sport, promptId) =>
     apiClient.post(
-      `/admin/matchup/preview/${encodeURIComponent(contestId)}/experiment${sport ? `?sport=${encodeURIComponent(sport)}` : ""}`
+      `/admin/matchup/preview/${encodeURIComponent(contestId)}/experiment`,
+      null,
+      { params: { ...(sport ? { sport } : {}), ...(promptId ? { promptId } : {}) } }
     ),
   getPreviewCaptures: (contestId) =>
     apiClient.get(`/admin/matchup/preview/${encodeURIComponent(contestId)}/captures`),
+
+  // Prompt management (per-sport-league prompt entities; text lives in
+  // the API database). Name and slot (sport, withStats) are immutable —
+  // a different slot means creating a new version.
+  getPrompts: () => apiClient.get('/admin/prompts'),
+  getPrompt: (promptId) => apiClient.get(`/admin/prompts/${encodeURIComponent(promptId)}`),
+  createPrompt: (body) => apiClient.post('/admin/prompts', body),
+  updatePrompt: (promptId, body) =>
+    apiClient.put(`/admin/prompts/${encodeURIComponent(promptId)}`, body),
+  setDefaultPrompt: (promptId) =>
+    apiClient.post(`/admin/prompts/${encodeURIComponent(promptId)}/set-default`),
+  importPromptFromBlob: (body) => apiClient.post('/admin/prompts/import-blob', body),
 
   // Returns one MLB matchup in the same shape as the picks page so the
   // baseball SignalR debug page can render a real <MatchupCard /> for a

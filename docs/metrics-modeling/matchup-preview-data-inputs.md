@@ -534,6 +534,43 @@ model/prompt choice before real generations start):
    backfill is needed; until then the prior-season RECORD still flows —
    only the null `Metrics` property inside the block is omitted
    (omit-null) — so the payload degrades honestly.
+1a. **Prompt provider refactor — IMPLEMENTED 2026-08-08** (the
+   "refactor prompt providers" whiteboard item; revised same day per
+   user decisions: prompts are Guid-identified DB ENTITIES, text
+   included). New `Prompt` table in API's Postgres (private — the
+   secret-sauce policy holds): Id, Name (unique; becomes PromptVersion
+   on captures), Type (MatchupPreview / future GameRecap), Sport
+   (null = any), WithStats, IsDefault, Description, Text. The DB
+   storing text removes Azure blob storage from the preview pipeline
+   entirely — no Azurite for local dev (the exact blocker from the
+   first E2E attempt), and the coming prompt-management UI is plain
+   CRUD. Text formatting in Postgres is a non-issue (proven by
+   MatchupPreviewPrompt.PromptText since #601); CRLF normalized to LF
+   on create for deterministic diffs.
+
+   `IMatchupPreviewPromptProvider` resolution: (1) explicit `PromptId`
+   (Guid) → that row; unknown id or wrong Type fails loudly, never
+   falls back; honored in Capture/Experiment ONLY — Generate always
+   resolves the default, so an experiment override can never leak into
+   production previews. (2) Default for the (Sport, WithStats) slot —
+   sport-specific outranks Sport=null; flipping defaults takes effect
+   next run, no deploy. No caching (scoped indexed read; the blob-era
+   fault-eviction machinery is gone).
+
+   Captures now stamp PromptId (Guid) alongside PromptVersion + text.
+   Admin endpoints: POST /admin/prompts (create; IsDefault flips the
+   slot), POST /admin/prompts/import-blob (ONE-TIME seeding from the
+   legacy container), GET /admin/prompts (+ /{id}). Preview Lab's
+   Prompt ID input takes the Guid.
+
+   **DEPLOY GATE: seed before the next preview cycle** — the provider
+   is DB-only; with no default rows, generation fails with an explicit
+   message. Seed via import-blob: `prediction-insights-v1` (WithStats
+   false, IsDefault true) and `prediction-insights-with-stats-schedule`
+   (WithStats true, IsDefault true), both Sport=null.
+   GameRecapPromptProvider deliberately untouched (still blob) — unify
+   when recap work resumes.
+
 2. **with-history prompt blob** (user authors; blob-only per policy).
    Must teach: the metrics block (un-briefed since forever), HeadToHead
    + prior-season blocks (incl. "history excludes preseason by

@@ -21,5 +21,13 @@ public class GenerateMatchupPreviewsCommand
     /// </summary>
     public PreviewGenerationMode Mode { get; set; } = PreviewGenerationMode.Generate;
 
+    /// <summary>
+    /// Explicit Prompt entity override for Preview Lab runs — honored in
+    /// Capture/Experiment modes only; Generate always uses the resolved
+    /// default so an experiment override can never leak into production
+    /// previews. Null = sport/variant default resolution.
+    /// </summary>
+    public Guid? PromptId { get; set; }
+
     public Guid CorrelationId { get; set; } = Guid.NewGuid();
 }

@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-
 using Moq;
 
 using SportsData.Api.Application.Previews;
@@ -8,7 +6,6 @@ using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Previews;
-using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients.AI;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Franchise;
@@ -22,6 +19,8 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
         private static readonly DateTime Now = new(2026, 8, 7, 12, 0, 0, DateTimeKind.Utc);
 
         private const string PromptText = "PROMPT INSTRUCTIONS";
+
+        private static readonly Guid DefaultPromptId = Guid.NewGuid();
 
         private readonly Guid _contestId = Guid.NewGuid();
         private readonly Guid _homeFranchiseSeasonId = Guid.NewGuid();
@@ -140,18 +139,16 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                 .Setup(x => x.Resolve(It.IsAny<Sport>()))
                 .Returns(franchiseClient.Object);
 
-            // Real prompt provider backed by a mocked blob store — the
-            // provider class is concrete, so we feed it a real DI container.
-            var blobStorage = new Mock<IProvideBlobStorage>();
-            blobStorage
-                .Setup(x => x.GetFileContentsAsync("prompts", It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(PromptText);
-
-            var services = new ServiceCollection()
-                .AddSingleton(blobStorage.Object)
-                .BuildServiceProvider();
-
-            Mocker.Use(new MatchupPreviewPromptProvider(services));
+            // The provider echoes the request so tests can assert both the
+            // default-variant selection and PromptId overrides.
+            Mocker.GetMock<IMatchupPreviewPromptProvider>()
+                .Setup(x => x.GetPromptAsync(It.IsAny<PreviewPromptRequest>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((PreviewPromptRequest r, CancellationToken _) => new PreviewPrompt(
+                    r.PromptId ?? DefaultPromptId,
+                    PromptText,
+                    r.PromptId is not null
+                        ? "override-prompt"
+                        : (r.HasStats ? "prediction-insights-with-stats-schedule" : "prediction-insights-v1")));
 
             Mocker.GetMock<IDateTimeProvider>()
                 .Setup(x => x.UtcNow())
@@ -539,6 +536,96 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             // Assert
             var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
             Assert.DoesNotContain("NFC Wild Card", capture.PayloadJson);
+        }
+
+        [Fact]
+        public async Task Experiment_WithPromptId_UsesOverrideAndRecordsIt()
+        {
+            // Arrange
+            SetupPipeline(BuildMatchup("STATUS_FINAL"));
+
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<string>("not json — irrelevant here"));
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetModelName())
+                .Returns("experiment-model");
+
+            var overridePromptId = Guid.NewGuid();
+
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl,
+                Mode = PreviewGenerationMode.Experiment,
+                PromptId = overridePromptId
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert — the override reached the provider, and the capture
+            // records BOTH the Prompt entity id and its name for provenance.
+            Mocker.GetMock<IMatchupPreviewPromptProvider>()
+                .Verify(x => x.GetPromptAsync(
+                    It.Is<PreviewPromptRequest>(r => r.PromptId == overridePromptId),
+                    It.IsAny<CancellationToken>()), Times.Once);
+
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+            Assert.Equal(overridePromptId, capture.PromptId);
+            Assert.Equal("override-prompt", capture.PromptVersion);
+        }
+
+        [Fact]
+        public async Task Generate_IgnoresPromptId()
+        {
+            // Arrange — an experiment override must never leak into a real
+            // generation; the provider must be asked for the DEFAULT prompt.
+            SetupPipeline(BuildMatchup("STATUS_SCHEDULED"));
+
+            var responseJson = $$"""
+                {
+                  "overview": "o",
+                  "analysis": "a",
+                  "prediction": "p",
+                  "predictedStraightUpWinner": "{{_homeFranchiseSeasonId}}",
+                  "predictedSpreadWinner": null,
+                  "overUnderPrediction": 2,
+                  "awayScore": 17,
+                  "homeScore": 27
+                }
+                """;
+
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<string>(responseJson));
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetModelName())
+                .Returns("test-model");
+
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl,
+                Mode = PreviewGenerationMode.Generate,
+                PromptId = Guid.NewGuid() // rogue override — must be ignored
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert
+            Mocker.GetMock<IMatchupPreviewPromptProvider>()
+                .Verify(x => x.GetPromptAsync(
+                    It.Is<PreviewPromptRequest>(r => r.PromptId == null),
+                    It.IsAny<CancellationToken>()), Times.Once);
+
+            var preview = Assert.Single(DataContext.MatchupPreviews);
+            Assert.Equal("prediction-insights-with-stats-schedule", preview.PromptVersion);
         }
 
         [Fact]

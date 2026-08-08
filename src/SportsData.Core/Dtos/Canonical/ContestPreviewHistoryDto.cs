@@ -55,6 +55,27 @@ namespace SportsData.Core.Dtos.Canonical
         /// <summary>Team that covered; null when no spread data exists (common pre-2012).</summary>
         public string? SpreadWinner { get; set; }
 
+        // Market context for the historical game — same vocabulary as the
+        // live matchup payload so the model reads one shape everywhere.
+        // All null for pre-odds-era games (~pre-2022): result-only context.
+
+        /// <summary>Line details text (e.g. "ARI -6.5") — self-documents the favorite.</summary>
+        public string? Spread { get; set; }
+
+        /// <summary>Closing/current spread, home-relative (negative = home favored).</summary>
+        public double? HomeSpread { get; set; }
+
+        /// <summary>Opening spread, home-relative — with HomeSpread exposes line movement.</summary>
+        public double? HomeSpreadOpen { get; set; }
+
+        public double? OverUnder { get; set; }
+
+        public double? OverUnderOpen { get; set; }
+
+        public double? OverOdds { get; set; }
+
+        public double? UnderOdds { get; set; }
+
         /// <summary>"Over" / "Under"; null when no total was recorded.</summary>
         public string? OverUnderResult { get; set; }
     }

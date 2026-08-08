@@ -25,6 +25,7 @@ namespace SportsData.Core.Common
         // string comparison.
         public const string FinalRaw = "STATUS_FINAL";
         public const string CompletedRaw = "STATUS_COMPLETED";
+        public const string ScheduledRaw = "STATUS_SCHEDULED";
 
         // ── Legacy PascalCase enum-name forms ────────────────────────────────
         // What the wire used to ship pre-dual-field PR (via the

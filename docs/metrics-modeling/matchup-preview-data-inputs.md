@@ -394,13 +394,15 @@ the model the answer; every such result is invalid as an eval signal.
 In-season real generation never hits this (completed-contest skip =
 generation is always pre-game), so this is an EXPERIMENT-MODE problem.
 
-**Required before the eval harness is trusted:** as-of filtering during
-assembly for Experiment mode — exclude from both CompetitionResults
-lists any game with `StartDateUtc >= target.StartDateUtc` (which
-removes the target itself and later games), and mask
-`Status`/`StatusDescription` to a pre-game value. This recreates the
-information state the model would have had before kickoff. Not yet
-implemented.
+**FIXED (2026-08-08, follow-up PR):** assembly now applies the as-of
+rule to both CompetitionResults lists in ALL modes — no game with
+`StartDateUtc >= target.StartDateUtc` reaches the payload (a no-op for
+pre-game generation, so captures stay byte-identical to real sends) —
+and Capture/Experiment runs on completed contests mask
+`Status`/`StatusDescription` to Scheduled, recreating the pre-kickoff
+information state. Eval numbers from the lab are trustworthy from this
+point. (Same PR: history SQL emits `Franchise.DisplayName` so
+historical rows string-match the live team names exactly.)
 
 Other confirmations from the same capture (§3.5 hygiene case, now
 quantified): 28 serialized null stat fields across the two teams,
@@ -469,6 +471,16 @@ logic is untouched by design.
    the payload's only GUIDs remain ContestId + the two live
    FranchiseSeasonIds (regression-tested). 3a (prior-season
    record/metrics block) still pending.
+
+   **Expanded 2026-08-08 (user PoC):** every historical row also carries
+   MARKET CONTEXT — Spread details text, home-relative HomeSpread +
+   HomeSpreadOpen (line movement), OverUnder + OverUnderOpen, Over/Under
+   odds — via the preferred-provider odds lateral, using the live
+   payload's exact vocabulary so one shape reads everywhere. Null for
+   pre-odds-era games (~pre-2022): result-only context degrades
+   honestly. ProviderName deliberately excluded (provenance, not
+   signal); alternate-provider previews are just a new run against that
+   provider's data.
 2. ~~One endpoint vs compose~~ — DECIDED: one endpoint (implemented as
    above).
 3. Payload-hygiene projection (3e) first, or accept token growth and do it

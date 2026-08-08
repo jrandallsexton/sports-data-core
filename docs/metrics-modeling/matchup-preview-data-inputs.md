@@ -178,9 +178,12 @@ test pair):
 - **GUID trap:** historical Contest rows carry per-season
   FranchiseSeasonIds. If serialized, the model can echo one into
   `predictedStraightUpWinner` (the output contract demands a
-  FranchiseSeasonId). Rule: **exactly two GUIDs in the entire payload** —
-  the live Away/Home FranchiseSeasonIds. Every historical block is
-  names/labels only.
+  FranchiseSeasonId). Rule: **historical blocks contribute ZERO GUIDs**
+  (names/labels only — implemented and regression-tested in the
+  preview-history PR). Today's raw payload therefore carries exactly
+  three GUIDs: ContestId plus the two live Away/Home
+  FranchiseSeasonIds. The 3e projection below drops ContestId (the
+  model has no use for it), landing on two.
 
 Draft shape (also implements the 3e hygiene projection — this IS the
 purpose-built prompt payload, not the wire DTO):
@@ -380,8 +383,7 @@ prediction vs `Contest` final score / spread result. The capture table
 deliberately stores everything that run needs; the harness itself is
 not part of this build.
 
-### ⚠️ First prod capture finding (2026-08-08): the answer leaks into
-### completed-game payloads
+### ⚠️ First prod capture finding (2026-08-08): the answer leaks into completed-game payloads
 
 Captured the Hall of Fame Game (completed) via the lab. The payload's
 `Away/HomeCompetitionResults` contain **the target game itself** — same

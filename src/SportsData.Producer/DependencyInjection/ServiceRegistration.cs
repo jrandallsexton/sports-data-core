@@ -373,6 +373,8 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IGetMatchupForPreviewQueryHandler, GetMatchupForPreviewQueryHandler>();
             services.AddScoped<Application.Contests.Queries.Matchups.GetContestPreviewHistory.IGetContestPreviewHistoryQueryHandler,
                 Application.Contests.Queries.Matchups.GetContestPreviewHistory.GetContestPreviewHistoryQueryHandler>();
+            services.AddScoped<IValidator<Application.Contests.Queries.Matchups.GetContestPreviewHistory.GetContestPreviewHistoryQuery>,
+                Application.Contests.Queries.Matchups.GetContestPreviewHistory.GetContestPreviewHistoryQueryValidator>();
             services.AddScoped<IGetMatchupResultQueryHandler, GetMatchupResultQueryHandler>();
             services.AddScoped<IGetContestResultsByContestIdsQueryHandler, GetContestResultsByContestIdsQueryHandler>();
             services.AddScoped<IGetFinalizedContestIdsQueryHandler, GetFinalizedContestIdsQueryHandler>();

@@ -24,8 +24,9 @@ namespace SportsData.Core.Dtos.Canonical
     /// One historical game, expressed entirely in team NAMES — deliberately
     /// no GUIDs. The preview prompt's output contract asks the model to
     /// echo a FranchiseSeasonId for its predicted winner; historical rows
-    /// carry per-season ids that a model could echo by mistake, so the only
-    /// two GUIDs in the entire preview payload are the live Away/Home
+    /// carry per-season ids that a model could echo by mistake. Historical
+    /// blocks therefore contribute ZERO GUIDs to the payload — its only
+    /// GUIDs are the ContestId and the two live Away/Home
     /// FranchiseSeasonIds.
     /// </summary>
     public class PreviewGameResultDto

@@ -1,5 +1,7 @@
 using Dapper;
 
+using FluentValidation;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -20,13 +22,16 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
 {
     private readonly TeamSportDataContext _dbContext;
     private readonly ProducerSqlQueryProvider _sqlProvider;
+    private readonly IValidator<GetContestPreviewHistoryQuery> _validator;
 
     public GetContestPreviewHistoryQueryHandler(
         TeamSportDataContext dbContext,
-        ProducerSqlQueryProvider sqlProvider)
+        ProducerSqlQueryProvider sqlProvider,
+        IValidator<GetContestPreviewHistoryQuery> validator)
     {
         _dbContext = dbContext;
         _sqlProvider = sqlProvider;
+        _validator = validator;
     }
 
     /// <summary>
@@ -42,6 +47,15 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         GetContestPreviewHistoryQuery query,
         CancellationToken cancellationToken = default)
     {
+        var validationResult = await _validator.ValidateAsync(query, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            return new Failure<ContestPreviewHistoryDto>(
+                default!,
+                ResultStatus.Validation,
+                validationResult.Errors);
+        }
+
         var connection = _dbContext.Database.GetDbConnection();
 
         var headToHead = (await connection.QueryAsync<PreviewGameResultDto>(

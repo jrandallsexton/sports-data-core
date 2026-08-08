@@ -17,6 +17,10 @@ public class PromptSummaryDto
     public bool IsDefault { get; set; }
     public string? Description { get; set; }
     public int TextLength { get; set; }
+
+    /// <summary>Real previews generated with this prompt. Non-zero = the prompt is immutable.</summary>
+    public int UsedByPreviewCount { get; set; }
+
     public DateTime CreatedUtc { get; set; }
 }
 
@@ -60,6 +64,7 @@ public class GetPromptsQueryHandler : IGetPromptsQueryHandler
                 IsDefault = p.IsDefault,
                 Description = p.Description,
                 TextLength = p.Text.Length,
+                UsedByPreviewCount = _dataContext.MatchupPreviews.Count(mp => mp.PromptId == p.Id),
                 CreatedUtc = p.CreatedUtc
             })
             .ToListAsync(cancellationToken);
@@ -93,6 +98,7 @@ public class GetPromptByIdQueryHandler : IGetPromptByIdQueryHandler
                 Description = p.Description,
                 TextLength = p.Text.Length,
                 Text = p.Text,
+                UsedByPreviewCount = _dataContext.MatchupPreviews.Count(mp => mp.PromptId == p.Id),
                 CreatedUtc = p.CreatedUtc
             })
             .FirstOrDefaultAsync(cancellationToken);

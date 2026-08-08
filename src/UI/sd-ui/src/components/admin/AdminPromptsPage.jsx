@@ -21,6 +21,7 @@ const EMPTY_FORM = {
   isDefault: false,
   description: '',
   text: '',
+  usedByPreviewCount: 0,
 };
 
 /**
@@ -50,6 +51,8 @@ export default function AdminPromptsPage() {
     isDefault: false,
   });
 
+  const isImmutable = form.usedByPreviewCount > 0;
+
   const loadPrompts = useCallback(async () => {
     setLoading(true);
     try {
@@ -72,20 +75,42 @@ export default function AdminPromptsPage() {
     setForm(prefill);
   };
 
+  const fetchPrompt = async (promptId) => {
+    const res = await apiWrapper.Admin.getPrompt(promptId);
+    const p = res.data;
+    return {
+      name: p.name,
+      sport: p.sport ?? '',
+      withStats: p.withStats,
+      isDefault: p.isDefault,
+      description: p.description ?? '',
+      text: p.text,
+      usedByPreviewCount: p.usedByPreviewCount ?? 0,
+    };
+  };
+
   const handleSelect = async (promptId) => {
     try {
-      const res = await apiWrapper.Admin.getPrompt(promptId);
-      const p = res.data;
       setMode('edit');
       setSelectedId(promptId);
-      setForm({
-        name: p.name,
-        sport: p.sport ?? '',
-        withStats: p.withStats,
-        isDefault: p.isDefault,
-        description: p.description ?? '',
-        text: p.text,
+      setForm(await fetchPrompt(promptId));
+    } catch (err) {
+      toast.error(err?.message ?? 'Failed to load prompt');
+    }
+  };
+
+  // Per-row copy-as-new-version: loads the prompt and drops the editor
+  // straight into create mode with the same slot and text.
+  const handleNewVersionOf = async (promptId) => {
+    try {
+      const loaded = await fetchPrompt(promptId);
+      resetToCreate({
+        ...loaded,
+        name: `${loaded.name}-v`,
+        isDefault: false,
+        usedByPreviewCount: 0,
       });
+      toast('Editing a NEW version — give it a name and save.', { icon: '📝' });
     } catch (err) {
       toast.error(err?.message ?? 'Failed to load prompt');
     }
@@ -281,13 +306,23 @@ export default function AdminPromptsPage() {
                       {p.name}
                     </button>
                     {p.isDefault && <span style={{ color: 'var(--color-success, #27ae60)', fontSize: '0.8rem', fontWeight: 700 }}>DEFAULT</span>}
+                    {p.usedByPreviewCount > 0 && (
+                      <span
+                        style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 700 }}
+                        title={`Generated ${p.usedByPreviewCount} real preview(s) — text is immutable; create a new version to change it`}
+                      >
+                        USED ×{p.usedByPreviewCount}
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 4 }}>
                     <span>{sportLabel(p.sport)}</span>
                     <span>{p.withStats ? 'with stats' : 'no stats'}</span>
                     <span>{p.textLength?.toLocaleString()} chars</span>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                    <button type="button" onClick={() => handleSelect(p.id)}>Open</button>
+                    <button type="button" onClick={() => handleNewVersionOf(p.id)}>New version</button>
                     {!p.isDefault && (
                       <button type="button" disabled={submitting} onClick={() => handleSetDefault(p.id)}>
                         Set default
@@ -304,7 +339,11 @@ export default function AdminPromptsPage() {
           <section>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <strong>{mode === 'edit' ? `Editing: ${form.name}` : 'New prompt'}</strong>
+                <strong>
+                  {mode === 'edit'
+                    ? `${isImmutable ? 'Viewing (immutable)' : 'Editing'}: ${form.name}`
+                    : 'New prompt'}
+                </strong>
                 {mode === 'edit' && (
                   <>
                     <button type="button" onClick={handleNewVersionFrom}>New version from this</button>
@@ -312,6 +351,13 @@ export default function AdminPromptsPage() {
                   </>
                 )}
               </div>
+              {mode === 'edit' && isImmutable && (
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  This prompt has generated {form.usedByPreviewCount} real
+                  preview(s) — its text is part of their provenance and cannot
+                  change. Use “New version from this” to iterate.
+                </div>
+              )}
 
               {mode === 'create' && (
                 <>
@@ -366,6 +412,7 @@ export default function AdminPromptsPage() {
 
               <textarea
                 aria-label="Prompt instruction text"
+                readOnly={mode === 'edit' && isImmutable}
                 value={form.text}
                 onChange={(e) => setForm(f => ({ ...f, text: e.target.value }))}
                 placeholder="prompt instruction text"
@@ -381,7 +428,7 @@ export default function AdminPromptsPage() {
               />
 
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button type="submit" disabled={submitting}>
+                <button type="submit" disabled={submitting || (mode === 'edit' && isImmutable)}>
                   {mode === 'edit' ? 'Save changes' : 'Create prompt'}
                 </button>
                 <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>

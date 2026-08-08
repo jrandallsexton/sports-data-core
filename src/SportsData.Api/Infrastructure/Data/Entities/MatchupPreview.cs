@@ -32,6 +32,17 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         public string? ValidationErrors { get; set; }
 
         public string? PromptVersion { get; set; }
+
+        /// <summary>
+        /// FK to the Prompt entity that generated this preview. Nullable
+        /// during the transition (historical rows are backfilled by
+        /// operator SQL, then the column goes non-nullable). Once a
+        /// prompt's Id appears here it is IMMUTABLE — edits are rejected;
+        /// create a new version instead.
+        /// </summary>
+        public Guid? PromptId { get; set; }
+
+        public Prompt? Prompt { get; set; }
         public DateTime? ApprovedUtc { get; set; }
 
         public DateTime? RejectedUtc { get; set; }
@@ -61,6 +72,15 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(l => l.OverUnderPrediction)
                     .HasConversion<int>()
                     .IsRequired();
+
+                // Restrict: a prompt referenced by real output can never be
+                // deleted — it is part of the provenance record.
+                builder.HasOne(x => x.Prompt)
+                    .WithMany()
+                    .HasForeignKey(x => x.PromptId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                builder.HasIndex(x => x.PromptId);
             }
         }
     }

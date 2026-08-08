@@ -268,6 +268,9 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             var preview = Assert.Single(DataContext.MatchupPreviews);
             var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
 
+            // The preview records WHICH Prompt entity generated it — the FK
+            // that makes used prompts immutable.
+            Assert.Equal(DefaultPromptId, preview.PromptId);
             Assert.Equal(preview.Id, capture.MatchupPreviewId);
             Assert.Equal(PreviewGenerationMode.Generate, capture.Mode);
             Assert.Equal(preview.PromptVersion, capture.PromptVersion);

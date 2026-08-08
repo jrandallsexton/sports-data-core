@@ -571,6 +571,19 @@ model/prompt choice before real generations start):
    GameRecapPromptProvider deliberately untouched (still blob) — unify
    when recap work resumes.
 
+   **Follow-up (2026-08-08, deployed + seeded — 3 blobs imported):
+   used-prompt immutability.** `MatchupPreview.PromptId` (nullable Guid
+   FK → Prompt, Restrict delete; the processor stamps it on every new
+   generation). Transition plan: operator SQL backfills historical rows
+   from PromptVersion, THEN a later migration makes the column
+   non-nullable. Rule (enforced in UpdatePromptCommandHandler + shown in
+   the Prompt Manager as USED badges / read-only editor): **a prompt
+   whose Id appears in MatchupPreview.PromptId is IMMUTABLE — and
+   undeletable via the FK** — its text is provenance for real output;
+   iterate via "New version". Experiments (capture rows) do NOT freeze a
+   prompt — the lab iterates freely. Prompt Manager also gained explicit
+   Open / per-row New version actions.
+
 2. **with-history prompt blob** (user authors; blob-only per policy).
    Must teach: the metrics block (un-briefed since forever), HeadToHead
    + prior-season blocks (incl. "history excludes preseason by

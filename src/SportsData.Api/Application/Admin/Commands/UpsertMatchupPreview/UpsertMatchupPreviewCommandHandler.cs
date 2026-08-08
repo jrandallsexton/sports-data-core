@@ -38,7 +38,7 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
         if (!validationResult.IsValid)
         {
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.Validation,
                 validationResult.Errors);
         }
@@ -51,7 +51,7 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
             {
                 _logger.LogWarning("Invalid preview content provided");
                 return new Failure<Guid>(
-                    default,
+                    default!,
                     ResultStatus.Validation,
                     [new ValidationFailure(nameof(command.JsonContent), "Invalid preview content")]);
             }
@@ -63,7 +63,7 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
                 !await _dataContext.Prompts.AsNoTracking().AnyAsync(p => p.Id == preview.PromptId, cancellationToken))
             {
                 return new Failure<Guid>(
-                    default,
+                    default!,
                     ResultStatus.Validation,
                     [new ValidationFailure(nameof(MatchupPreview.PromptId), "Preview JSON must reference an existing Prompt via promptId (see GET /admin/prompts)")]);
             }
@@ -100,7 +100,7 @@ public class UpsertMatchupPreviewCommandHandler : IUpsertMatchupPreviewCommandHa
         {
             _logger.LogError(ex, "Error upserting matchup preview");
             return new Failure<Guid>(
-                default,
+                default!,
                 ResultStatus.Error,
                 [new ValidationFailure("Error", "An error occurred while upserting the matchup preview")]);
         }

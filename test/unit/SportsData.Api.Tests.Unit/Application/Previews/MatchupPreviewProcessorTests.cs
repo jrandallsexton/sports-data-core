@@ -318,6 +318,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             {
                 Id = Guid.NewGuid(),
                 ContestId = _contestId,
+                PromptId = DefaultPromptId,
                 RejectedUtc = Now.AddDays(-1),
                 RejectionNote = "Too much spread parroting",
                 CreatedUtc = Now.AddDays(-1)

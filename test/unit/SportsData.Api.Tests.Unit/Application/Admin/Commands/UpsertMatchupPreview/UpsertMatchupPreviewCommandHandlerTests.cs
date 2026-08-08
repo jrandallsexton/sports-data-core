@@ -11,6 +11,10 @@ namespace SportsData.Api.Tests.Unit.Application.Admin.Commands.UpsertMatchupPrev
 
 public class UpsertMatchupPreviewCommandHandlerTests : ApiTestBase<UpsertMatchupPreviewCommandHandler>
 {
+    // Fixed test clock per the no-DateTime.UtcNow rule — fixtures stay
+    // deterministic.
+    private static readonly DateTime FixedUtc = new(2026, 8, 8, 12, 0, 0, DateTimeKind.Utc);
+
     public UpsertMatchupPreviewCommandHandlerTests()
     {
         // Register validator
@@ -86,7 +90,7 @@ public class UpsertMatchupPreviewCommandHandlerTests : ApiTestBase<UpsertMatchup
             "predictedStraightUpWinner": "{{Guid.NewGuid()}}",
             "predictedSpreadWinner": "{{Guid.NewGuid()}}",
             "overUnderPrediction": 1,
-            "createdUtc": "{{DateTime.UtcNow:O}}",
+            "createdUtc": "{{FixedUtc:O}}",
             "createdBy": "{{userId}}"
         }
         """;
@@ -124,7 +128,7 @@ public class UpsertMatchupPreviewCommandHandlerTests : ApiTestBase<UpsertMatchup
             ContestId = contestId,
             PromptId = prompt.Id,
             Overview = "Old overview",
-            CreatedUtc = DateTime.UtcNow.AddDays(-1),
+            CreatedUtc = FixedUtc.AddDays(-1),
             CreatedBy = userId
         };
 
@@ -140,7 +144,7 @@ public class UpsertMatchupPreviewCommandHandlerTests : ApiTestBase<UpsertMatchup
             "promptId": "{{newPrompt.Id}}",
             "overview": "New overview",
             "analysis": "New analysis",
-            "createdUtc": "{{DateTime.UtcNow:O}}",
+            "createdUtc": "{{FixedUtc:O}}",
             "createdBy": "{{userId}}"
         }
         """;
@@ -177,7 +181,7 @@ public class UpsertMatchupPreviewCommandHandlerTests : ApiTestBase<UpsertMatchup
             "contestId": "{{Guid.NewGuid()}}",
             "promptId": "{{Guid.NewGuid()}}",
             "overview": "No such prompt",
-            "createdUtc": "{{DateTime.UtcNow:O}}",
+            "createdUtc": "{{FixedUtc:O}}",
             "createdBy": "{{Guid.NewGuid()}}"
         }
         """;
@@ -206,7 +210,7 @@ public class UpsertMatchupPreviewCommandHandlerTests : ApiTestBase<UpsertMatchup
             ContestId = contestId,
             PromptId = prompt.Id,
             Overview = "Test overview",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedUtc,
             CreatedBy = Guid.NewGuid()
         };
 

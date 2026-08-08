@@ -96,6 +96,8 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                 SeasonYear = 2025,
                 Wins = 8,
                 Losses = 10,
+                ConferenceWins = 5,
+                ConferenceLosses = 7,
                 Metrics = new FranchiseSeasonMetricsDto { GamesPlayed = 18, Ypp = 5.4m }
             },
             HomePriorSeason = new PreviewPriorSeasonSummaryDto
@@ -103,6 +105,8 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                 SeasonYear = 2025,
                 Wins = 6,
                 Losses = 11,
+                ConferenceWins = 3,
+                ConferenceLosses = 9,
                 Metrics = new FranchiseSeasonMetricsDto { GamesPlayed = 17, Ypp = 4.9m }
             }
         };
@@ -204,6 +208,10 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.DoesNotContain(_contestId.ToString(), capture.PayloadJson);
             Assert.Contains("AwayPriorSeason", capture.PayloadJson);
             Assert.Contains("\"Wins\":8", capture.PayloadJson);
+            Assert.Contains("\"ConferenceWins\":5", capture.PayloadJson);
+            Assert.Contains("\"ConferenceLosses\":7", capture.PayloadJson);
+            Assert.Contains("\"ConferenceWins\":3", capture.PayloadJson);
+            Assert.Contains("\"ConferenceLosses\":9", capture.PayloadJson);
             Assert.Null(capture.EditorNote);
             Assert.True(capture.CharCount > PromptText.Length);
             Assert.Equal(capture.CharCount / 4, capture.EstTokens);
@@ -493,10 +501,14 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
 
             var awayPrior = payload.RootElement.GetProperty("AwayPriorSeason");
             Assert.Equal(8, awayPrior.GetProperty("Wins").GetInt32());
+            Assert.Equal(5, awayPrior.GetProperty("ConferenceWins").GetInt32());
+            Assert.Equal(7, awayPrior.GetProperty("ConferenceLosses").GetInt32());
             Assert.False(awayPrior.TryGetProperty("Metrics", out _)); // nulled -> omitted
 
             var homePrior = payload.RootElement.GetProperty("HomePriorSeason");
             Assert.Equal(6, homePrior.GetProperty("Wins").GetInt32());
+            Assert.Equal(3, homePrior.GetProperty("ConferenceWins").GetInt32());
+            Assert.Equal(9, homePrior.GetProperty("ConferenceLosses").GetInt32());
             Assert.False(homePrior.TryGetProperty("Metrics", out _));
         }
 

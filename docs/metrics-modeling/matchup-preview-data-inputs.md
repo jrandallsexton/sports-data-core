@@ -531,8 +531,9 @@ model/prompt choice before real generations start):
    seems to need pedigree signal). GATE STILL OPEN: run the coverage
    check (query 3 in `sql/pgsql/_debug_preview_history.sql`) per sport
    DB — if 2025 FranchiseSeasonMetric rows are missing, a one-time
-   backfill is needed; until then the payload simply omits the block
-   (omit-null) and degrades honestly.
+   backfill is needed; until then the prior-season RECORD still flows —
+   only the null `Metrics` property inside the block is omitted
+   (omit-null) — so the payload degrades honestly.
 2. **with-history prompt blob** (user authors; blob-only per policy).
    Must teach: the metrics block (un-briefed since forever), HeadToHead
    + prior-season blocks (incl. "history excludes preseason by

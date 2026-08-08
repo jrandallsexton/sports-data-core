@@ -273,6 +273,102 @@ namespace SportsData.Api.Application.Admin
         }
 
         /// <summary>
+        /// Create an LLM provider row (pairs with a code-side client via
+        /// Kind — credentials live in AppConfig, never the DB).
+        /// </summary>
+        [HttpPost]
+        [Route("model-providers")]
+        public async Task<ActionResult<Guid>> CreateModelProvider(
+            [FromBody] Application.Admin.Models.CreateModelProviderCommand command,
+            [FromServices] Application.Admin.Models.ICreateModelProviderCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet]
+        [Route("model-providers")]
+        public async Task<ActionResult<List<Application.Admin.Models.ModelProviderDto>>> GetModelProviders(
+            [FromServices] Application.Admin.Models.IGetModelProvidersQueryHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Create a model identity record (seed data:
+        /// docs/metrics-modeling/llm-training-dates.md). IsDefault=true
+        /// makes it THE production model.
+        /// </summary>
+        [HttpPost]
+        [Route("models")]
+        public async Task<ActionResult<Guid>> CreateModel(
+            [FromBody] Application.Admin.Models.CreateModelCommand command,
+            [FromServices] Application.Admin.Models.ICreateModelCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet]
+        [Route("models")]
+        public async Task<ActionResult<List<Application.Admin.Models.ModelDto>>> GetModels(
+            [FromServices] Application.Admin.Models.IGetModelsQueryHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet]
+        [Route("models/{modelId}")]
+        public async Task<ActionResult<Application.Admin.Models.ModelDto>> GetModelById(
+            [FromRoute] Guid modelId,
+            [FromServices] Application.Admin.Models.IGetModelByIdQueryHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(modelId, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Edit a model's metadata (cutoff verification, costs, IsActive).
+        /// Identity fields (Name, ApiModelId, provider) are immutable — a
+        /// different API identifier is a different model.
+        /// </summary>
+        [HttpPut]
+        [Route("models/{modelId}")]
+        public async Task<ActionResult<Guid>> UpdateModel(
+            [FromRoute] Guid modelId,
+            [FromBody] Application.Admin.Models.UpdateModelCommand command,
+            [FromServices] Application.Admin.Models.IUpdateModelCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            command.ModelId = modelId;
+            var result = await handler.ExecuteAsync(command, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Make a model THE production default (single global slot).
+        /// Effective next generation run — the pre-season model selection,
+        /// and any in-season swap, is this call.
+        /// </summary>
+        [HttpPost]
+        [Route("models/{modelId}/set-default")]
+        public async Task<ActionResult<Guid>> SetDefaultModel(
+            [FromRoute] Guid modelId,
+            [FromServices] Application.Admin.Models.ISetDefaultModelCommandHandler handler,
+            CancellationToken cancellationToken)
+        {
+            var result = await handler.ExecuteAsync(modelId, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
         /// Persisted prompt captures for a contest, newest first — payload,
         /// metadata, and the full rendered prompt exactly as the model would
         /// receive it (instruction blob + payload + editor note).

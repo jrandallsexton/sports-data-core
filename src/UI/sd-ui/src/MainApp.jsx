@@ -35,6 +35,7 @@ import AdminFootballPage from "./components/admin/AdminFootballPage";
 import AdminBaseballPage from "./components/admin/AdminBaseballPage";
 import AdminPreviewLabPage from "./components/admin/AdminPreviewLabPage";
 import AdminPromptsPage from "./components/admin/AdminPromptsPage";
+import AdminModelsPage from "./components/admin/AdminModelsPage";
 import AdminRoute from "./routes/AdminRoute";
 import SeasonOverview from "./components/season/SeasonOverview";
 
@@ -249,6 +250,14 @@ function MainApp() {
               element={
                 <AdminRoute>
                   <AdminPromptsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/models"
+              element={
+                <AdminRoute>
+                  <AdminModelsPage />
                 </AdminRoute>
               }
             />

@@ -76,6 +76,10 @@ export default function AdminPromptsPage() {
   }, [loadPrompts]);
 
   const resetToCreate = (prefill = EMPTY_FORM) => {
+    // Invalidate any in-flight prompt load — without this, Cancel/New
+    // version during a slow load lets the late response overwrite the
+    // freshly reset editor.
+    promptLoadSeqRef.current += 1;
     setMode('create');
     setSelectedId(null);
     setForm(prefill);

@@ -598,13 +598,17 @@ model/prompt choice before real generations start):
    response, Contest holding ground truth (winner / spread winner / O/U
    result). To build:
    - **Model routing** (design sketched 2026-08-08, user thinking
-     aloud — mirrors the Prompt-entity pattern exactly): new
-     `ModelProvider` (name, credentials/config reference) and `Model`
-     entities in API's DB — provider FK, api model id string, display
-     name, **KnowledgeCutoffUtc** (makes contamination triage a QUERY:
-     the scoring join labels each experiment clean/contaminated by
-     comparing game StartDateUtc vs the model's cutoff — no doc
-     lookups), IsActive, IsDefault, cost metadata. `ModelId` on
+     aloud — mirrors the Prompt-entity pattern): new `ModelProvider`
+     (name, credentials/config reference) and `Model` entities in
+     API's DB. Model rows are IMMUTABLE identity records with a unique
+     (provider, api model id, revision) key: exact API identifier,
+     display name, release date, **KnowledgeCutoffUtc + its evidence
+     source and verification date** — the cutoff is a DECLARED
+     classification input from provider documentation, not proof a
+     game was unseen. The scoring join labels each experiment
+     lower-risk vs contaminated by comparing game StartDateUtc against
+     the declared cutoff — a triage query, not a verdict. IsActive,
+     IsDefault, cost metadata ride along. `ModelId` on
      GenerateMatchupPreviewsCommand routes generation through a
      multi-provider IProvideAiCommunication registration (single-bound
      to DeepSeek today; prior art in ai-provider-routing-per-sport.md).
@@ -612,20 +616,34 @@ model/prompt choice before real generations start):
      only — the UI runs on the default Model row, so the pre-season
      "single-model selection" is literally one IsDefault flag.
      `MatchupPreview` + capture rows gain ModelId FKs with the same
-     transition as PromptId (nullable → backfill from the existing
-     Model string → non-nullable).
+     transition as PromptId — with one rule: **backfill only
+     unambiguous Model-string matches; ambiguous rows stay unmapped
+     and are EXCLUDED from contamination-labeled scoring**, and new
+     experiment captures require the resolved identity before the FK
+     goes non-nullable.
    - **Batch runner**: enqueue experiments for every finalized game in a
      (season, week/league) range × models × prompts. Cost is trivial
      (~2k tokens/run; a 3-model × 2-prompt NFL season ≈ 3.5M tokens).
+     **Idempotent by construction**: each batch gets an ExperimentRunId
+     and rows are unique on (RunId, ContestId, ModelId, PromptId) —
+     reruns and provider retries cannot double-count; intentional
+     repeats are explicit replicate numbers, not duplicates.
    - **Scoring query**: captures → Contest, scoring a) straight-up
      winner, b) ATS winner, c) over/under, plus score MAE, grouped by
-     PromptVersion × Model — **always reported as EDGE OVER BASELINE,
-     never raw accuracy**. Baselines computed alongside: pick-the-
-     favorite SU (~66-67% NFL — a 62% model UNDERPERFORMS chalk),
-     home-ATS, always-Under. 52.4% ATS = break-even vs vig; one NFL
-     season (~285 games) has ~3% standard error, so ATS deltas need
-     both leagues and humility. Score MAE discriminates best at these
-     sample sizes.
+     PromptVersion × Model. **Persist the full tuple per group — raw
+     metric, baseline, edge, valid-sample count, excluded count, and
+     uncertainty** (edge-over-baseline is the headline, but absolutes
+     are retained: beating a weak baseline can still be unusable).
+     Denominators are defined up front: pushes/voids/ties and
+     missing-outcome rows are EXCLUDED and counted, not zeroed;
+     unparseable responses are excluded-and-counted (they already
+     carry ResponseValidationErrors). Baselines computed alongside:
+     pick-the-favorite SU (~66-67% NFL — a 62% model UNDERPERFORMS
+     chalk), home-ATS, always-Under. Break-even ATS is odds-derived
+     per row where odds exist (52.4% is only the standard -110
+     reference); one NFL season (~285 games) has ~3% standard error,
+     so ATS deltas need both leagues and humility. Score MAE
+     discriminates best at these sample sizes.
 
    **⚠️ THE MEMORIZATION GOTCHA (user-flagged, load-bearing):** every
    currently available model was trained through late-2025/2026, so
@@ -660,27 +678,45 @@ model/prompt choice before real generations start):
    prompt-refinement pool; current models join the stability/detector
    check. Example map (Claude fleet, user-supplied 2026-08-08) vs the
    2025 season (games Sep 2025 – Feb 2026):
-   | Model | Cutoff | 2025-season status |
+   | Model | Declared cutoff | 2025-season risk label |
    |---|---|---|
-   | Claude Sonnet 4.6 / Opus 4.6 | Aug 2025 | **CLEAN — entire season unseen; the gold backtest models** |
-   | Claude Haiku 4.5 | Jul 2025 | Clean (cheap floor) |
-   | Sonnet 5 / Fable 5 / Opus 4.8 / 4.7 | Jan 2026 | Sep–Dec contaminated; late playoffs ambiguous |
-   | Claude Opus 5 | May 2026 | Fully contaminated |
-   | Claude Opus 3 | Aug 2023 | Clean but 2 capability generations old — skip |
+   | Claude Sonnet 4.6 / Opus 4.6 | Aug 2025 | **Lower-risk — declared cutoff predates the season; preferred backtest models** |
+   | Claude Haiku 4.5 | Jul 2025 | Lower-risk (cheap floor) |
+   | Sonnet 5 / Fable 5 / Opus 4.8 / 4.7 | Jan 2026 | Higher-risk Sep–Dec; late playoffs ambiguous |
+   | Claude Opus 5 | May 2026 | Higher-risk, full season |
+   | Claude Opus 3 | Aug 2023 | Lower-risk but 2 capability generations old — skip |
 
-   **Sequencing (agreed):** (1) refine prompts on the CLEAN models —
-   full-2025 backtests there are absolutely trustworthy, upgrading the
-   earlier "backtests only rank prompts" rule; (2) transfer caveat:
-   prompt×model interaction is real — run finalists across the
-   contaminated/current models reading only STABILITY (valid,
-   well-calibrated output), not accuracy; (3) memorization detector for
-   contaminated models: EXACT-SCORE MATCH RATE vs actual finals — real
-   forecasters almost never nail exact scores; recall does — high rate
-   discounts that model's backtest; (4) pre-season single-model pick for
-   the UI is PROVISIONAL — clean-model backtests + stability/detector
-   reads decide the starting lineup; weeks 1–3 forward results (scored
-   live) can trigger a swap, since the production model is one default
-   away once routing exists. Rinse & repeat weekly.
+   Labels are RISK TIERS, not certainties: a pre-cutoff declaration
+   lowers direct-training risk but does not exclude provider-side
+   updates, retrieval, or benchmark leakage — and "Opus 3" style
+   family names are not concrete API identifiers. When the Model table
+   is built, each row records the exact API identifier, release date,
+   documented cutoff, evidence source, and verification date; forward
+   validation is required before any backtest result is treated as
+   forecasting evidence.
+
+   **Sequencing (agreed):** (1) refine prompts on the LOWER-RISK
+   models — full-2025 backtests there are the most trustworthy
+   comparisons available pre-season. Do NOT lean on higher-risk models
+   for prompt ranking: contamination is not uniform across prompts
+   (different wording/context can activate different memorized
+   associations, so a contaminated model can rank prompts by leakage
+   rather than forecasting quality); (2) transfer caveat: prompt×model
+   interaction is real — run finalists across the higher-risk/current
+   models reading only STABILITY (valid, well-calibrated output), not
+   accuracy; (3) memorization SCREEN for higher-risk models:
+   EXACT-SCORE MATCH RATE vs actual finals — a screening signal, not a
+   detector: a high rate is strong evidence of recall, but a low rate
+   does NOT prove memorization is absent; predeclare the decision rule
+   (e.g. exact-match rate vs the lower-risk models' own base rate as
+   the null) before discounting any model; (4) pre-season single-model
+   pick for the UI is PROVISIONAL — lower-risk-model backtests +
+   stability/screen reads decide the starting lineup. **Swap rule is
+   predeclared, not vibes**: early-season swaps trigger on
+   validity/stability failures (unparseable output, calibration
+   collapse), NOT on 1–3 weeks of accuracy — that sample is far too
+   noisy for ATS/O-U conclusions; accuracy-driven swaps wait for a
+   predeclared minimum sample. Rinse & repeat weekly.
 4. ~~Model routing~~ — folded into item 3.
 
 Deliberately NOT doing now: Preview Lab UX polish (compare/diff views —

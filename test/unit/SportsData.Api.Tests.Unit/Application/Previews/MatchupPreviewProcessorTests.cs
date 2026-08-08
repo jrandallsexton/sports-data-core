@@ -37,6 +37,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             ContestId = _contestId,
             StartDateUtc = TargetStartUtc,
             Status = status,
+            StatusDescription = status == "STATUS_FINAL" ? "Final" : "Scheduled",
             Venue = "State Farm Stadium",
             VenueCity = "Glendale",
             Home = "Arizona Cardinals",
@@ -427,13 +428,17 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
 
             using var payload = System.Text.Json.JsonDocument.Parse(capture.PayloadJson);
-            var awayResults = payload.RootElement.GetProperty("AwayCompetitionResults");
-            Assert.Equal(1, awayResults.GetArrayLength());
-            Assert.Equal("tampa-bay-buccaneers", awayResults[0].GetProperty("HomeSlug").GetString());
-            Assert.DoesNotContain(_contestId.ToString(), awayResults.GetRawText());
 
-            Assert.DoesNotContain("STATUS_FINAL", capture.PayloadJson);
-            Assert.Contains("STATUS_SCHEDULED", capture.PayloadJson);
+            foreach (var listName in new[] { "AwayCompetitionResults", "HomeCompetitionResults" })
+            {
+                var results = payload.RootElement.GetProperty(listName);
+                Assert.Equal(1, results.GetArrayLength());
+                Assert.Equal("tampa-bay-buccaneers", results[0].GetProperty("HomeSlug").GetString());
+                Assert.DoesNotContain(_contestId.ToString(), results.GetRawText());
+            }
+
+            Assert.Equal("STATUS_SCHEDULED", payload.RootElement.GetProperty("Status").GetString());
+            Assert.Equal("Scheduled", payload.RootElement.GetProperty("StatusDescription").GetString());
         }
 
         [Fact]

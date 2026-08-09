@@ -35,14 +35,23 @@ namespace SportsData.Api.Application.Jobs
             _logger = logger;
         }
 
-        /// <param name="sport">MetricBot's sport vocabulary: "ncaaf" or "nfl".</param>
-        public async Task ExecuteAsync(string sport)
+        /// <param name="sport">Platform Sport enum; mapped to MetricBot's vocabulary.</param>
+        public async Task ExecuteAsync(Sport sport)
         {
+            var metricBotSport = MetricBotSports.FromSport(sport);
+            if (metricBotSport is null)
+            {
+                // Football-only models — a scheduling mistake should say so
+                // plainly rather than round-trip to a 422.
+                throw new InvalidOperationException(
+                    $"MetricBot has no model for {sport}; supported sports are FootballNcaa and FootballNfl.");
+            }
+
             _logger.LogInformation("MetricBotWeeklyJob starting. Sport: {Sport}", sport);
 
             var result = await _metricBot.RunWeekAsync(new MetricBotRunRequest
             {
-                Sport = sport,
+                Sport = metricBotSport,
                 PriorSeasonTail = PriorSeasonTail,
                 // Live run: no explicit week (MetricBot resolves the current
                 // one), publishes by default.

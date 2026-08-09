@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -141,6 +142,10 @@ def _dump(training: pd.DataFrame,
           dtos: list[dict],
           stamp: str) -> None:
     """Write the prototype-equivalent artifacts for debugging."""
+    # Stamp is built from CLI/HTTP inputs — allow only filename-safe
+    # characters so it can never escape DATA_DIR (CodeQL: path injection).
+    stamp = re.sub(r"[^A-Za-z0-9_.-]", "_", stamp)[:120]
+
     DATA_DIR.mkdir(exist_ok=True)
 
     training.to_csv(DATA_DIR / f"training_{stamp}.csv", index=False)

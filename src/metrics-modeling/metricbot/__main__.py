@@ -72,7 +72,9 @@ def main(argv: list[str] | None = None) -> int:
                 legacy_extraction=args.legacy_extraction,
             )
         except Exception as ex:  # noqa: BLE001 — CLI boundary: fail loudly, exit nonzero
-            logging.getLogger("metricbot").error("Pipeline failed: %s", ex)
+            # .exception() so the traceback lands too: this is the only
+            # diagnostic artifact for a scheduled weekly run.
+            logging.getLogger("metricbot").exception("Pipeline failed: %s", ex)
             return 1
 
     return 2

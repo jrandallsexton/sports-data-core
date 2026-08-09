@@ -5,12 +5,16 @@
 # services' pipelines:
 #   docker build -f src/metrics-modeling/Dockerfile -t metricbot:local .
 
-FROM python:3.12-slim-bookworm
+# Pinned to a patch release (not the floating 3.12-slim tag) so a rebuild
+# of the same commit produces the same runtime. Bump deliberately.
+FROM python:3.12.11-slim-bookworm
 
 # psql is the extraction tool (deliberate: no Python DB driver — see
 # metricbot/extract.py). curl is for container-level health checks.
+# postgresql-client-15 pins the Debian bookworm major so security patches
+# still flow while a rebuild cannot silently jump major versions.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends postgresql-client curl \
+    && apt-get install -y --no-install-recommends postgresql-client-15 curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

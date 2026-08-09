@@ -8,10 +8,18 @@ authenticated with the admin token header (AdminApiToken filter).
 from __future__ import annotations
 
 import json
+import logging
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from .config import Config
+
+logger = logging.getLogger("metricbot.api")
+
+# urlopen honours file:/ftp: too — a misconfigured base URL would then
+# silently change the destination instead of failing. Restrict it.
+ALLOWED_SCHEMES = ("https", "http")
 
 
 class PublishError(RuntimeError):
@@ -20,6 +28,20 @@ class PublishError(RuntimeError):
 
 def post_predictions(config: Config, dtos: list[dict], timeout_seconds: int = 60) -> str:
     url = f"{config.api_base_url}/admin/ai-predictions/{config.metricbot_user_id}"
+
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in ALLOWED_SCHEMES:
+        raise PublishError(
+            f"METRICBOT_API_BASE_URL must use https (or http for in-cluster/"
+            f"local targets); got scheme '{parsed.scheme}'.")
+    if parsed.scheme == "http" and parsed.hostname not in ("localhost", "127.0.0.1", "::1"):
+        # In-cluster traffic is http by design (same as every other
+        # service-to-service call); flag it so a mistyped public URL that
+        # would ship the admin token in cleartext is visible in the logs.
+        logger.warning(
+            "Posting predictions over plaintext http to %s — expected for "
+            "in-cluster service DNS, wrong for any public endpoint.",
+            parsed.hostname)
 
     request = urllib.request.Request(
         url,

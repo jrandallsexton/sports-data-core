@@ -45,6 +45,10 @@ FEATURE_COLS = [
 ]
 
 
+class ModelError(RuntimeError):
+    """Training data cannot support a usable model."""
+
+
 @dataclass
 class SuResult:
     predictions: pd.DataFrame  # ContestId, Home/AwayFranchiseSeasonId, PredictedMargin, WinProbability, ...
@@ -59,6 +63,20 @@ def predict_straight_up(training: pd.DataFrame, current_week: pd.DataFrame) -> S
     train = training[training["Winner"].isin(["HOME", "AWAY"])].copy()
     train["Margin"] = train["HomeScore"] - train["AwayScore"]
 
+    # Degenerate inputs would produce confident-looking nonsense: an
+    # underdetermined fit (more features than games) interpolates its
+    # training data exactly, driving residual_std to 0 — and a 0 scale is
+    # not a valid normal distribution, so every probability would come
+    # back as 0 or 1 and clipping would merely disguise it.
+    if len(train) == 0:
+        raise ModelError(
+            "No completed games with a decided winner in the training window — "
+            "nothing to train on. For early-season runs, use --prior-season-tail.")
+    if len(train) <= len(FEATURE_COLS):
+        raise ModelError(
+            f"Training window has {len(train)} decided games for {len(FEATURE_COLS)} "
+            f"features — underdetermined. Widen the window or use --prior-season-tail.")
+
     x_train = train[FEATURE_COLS].fillna(0)
     y_train = train["Margin"]
 
@@ -68,6 +86,11 @@ def predict_straight_up(training: pd.DataFrame, current_week: pd.DataFrame) -> S
     residuals = y_train - model.predict(x_train)
     residual_std = float(np.std(residuals))
     mae = float(np.mean(np.abs(residuals)))
+
+    if not np.isfinite(residual_std) or residual_std <= 0:
+        raise ModelError(
+            f"Residual standard deviation is {residual_std} — the fit is degenerate, "
+            f"so win probabilities would be meaningless.")
 
     predictions = current_week.copy()
     x_predict = predictions[FEATURE_COLS].fillna(0)

@@ -454,12 +454,12 @@ namespace SportsData.Api.DependencyInjection
             // go through POST /admin/metricbot/run-week instead.
             recurringJobManager.AddOrUpdate<MetricBotWeeklyJob>(
                 "MetricBotWeekly-FootballNcaa",
-                job => job.ExecuteAsync("ncaaf"),
+                job => job.ExecuteAsync(Sport.FootballNcaa),
                 "0 3 * * 2");
 
             recurringJobManager.AddOrUpdate<MetricBotWeeklyJob>(
                 "MetricBotWeekly-FootballNfl",
-                job => job.ExecuteAsync("nfl"),
+                job => job.ExecuteAsync(Sport.FootballNfl),
                 "0 3 * * 3");
 
             // Daily primary trigger. Can't be event-driven — matchups must

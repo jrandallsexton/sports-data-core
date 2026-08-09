@@ -23,6 +23,11 @@ from .config import Config
 
 SQL_DIR = Path(__file__).resolve().parent.parent / "sql"
 
+# A blocked connection or runaway query must not pin a service worker
+# forever. Full-corpus training extraction runs in seconds; 10 minutes is
+# generous headroom before we call it stuck.
+PSQL_TIMEOUT_SECONDS = 600
+
 TRAINING_SQL = SQL_DIR / "competition_metrics_training.sql"
 CURRENT_WEEK_SQL = SQL_DIR / "competition_metrics_current_week.sql"
 ASOF_TRAINING_SQL = SQL_DIR / "competition_metrics_asof_training.sql"
@@ -54,13 +59,20 @@ def _run_psql(config: Config, sql_file: Path, variables: dict[str, int] | None =
     for name, value in (variables or {}).items():
         args += ["-v", f"{name}={int(value)}"]  # int() — nothing user-shaped reaches psql
 
-    result = subprocess.run(
-        args,
-        env=env,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-    )
+    try:
+        result = subprocess.run(
+            args,
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=PSQL_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as ex:
+        raise ExtractionError(
+            f"psql exceeded {PSQL_TIMEOUT_SECONDS}s running {sql_file.name} — "
+            f"database unreachable or query stuck.") from ex
 
     if result.returncode != 0:
         raise ExtractionError(

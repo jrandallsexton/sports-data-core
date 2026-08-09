@@ -15,7 +15,7 @@ import pytest
 from metricbot import MODEL_VERSION
 from metricbot.config import Config
 from metricbot.dtos import PICKTYPE_ATS, PICKTYPE_STRAIGHT_UP, build_prediction_dtos
-from metricbot.model import FEATURE_COLS, predict_ats, predict_straight_up
+from metricbot.model import FEATURE_COLS, ModelError, predict_ats, predict_straight_up
 
 
 def _frame(rows: int, completed: bool, seed: int = 42) -> pd.DataFrame:
@@ -117,3 +117,18 @@ def test_env_file_parsing_tolerates_quotes_and_comments(tmp_path, monkeypatch):
     assert values["METRICBOT_PG_HOST"] == "db.example.com"
     assert values["METRICBOT_PG_USER"] == "bob"
     assert values["METRICBOT_PG_PASSWORD"] == "p@ss=word"
+
+
+def test_empty_training_window_is_rejected():
+    # Early-season without a prior-season tail: no decided games at all.
+    empty = _frame(0, completed=True)
+    with pytest.raises(ModelError, match="nothing to train on"):
+        predict_straight_up(empty, _frame(3, completed=False))
+
+
+def test_underdetermined_training_window_is_rejected():
+    # Fewer decided games than features would interpolate exactly,
+    # collapsing residual_std to 0 and making probabilities meaningless.
+    too_few = _frame(len(FEATURE_COLS) - 1, completed=True)
+    with pytest.raises(ModelError, match="underdetermined"):
+        predict_straight_up(too_few, _frame(3, completed=False))

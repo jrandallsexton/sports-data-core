@@ -31,6 +31,13 @@ on:
         required: false
         type: string
 
+# Both this workflow and deploy-services-prod-auto.yml commit and push
+# sports-data-config. Serialize them so concurrent runs cannot race the
+# push or drop a distinct pending image bump.
+concurrency:
+  group: sports-data-config-prod-update
+  cancel-in-progress: false
+
 jobs:
   update-tags:
     runs-on: ubuntu-latest
@@ -144,21 +151,40 @@ jobs:
       - name: Update MetricBot image tag
         if: ${{ inputs.metricbot_tag != '' }}
         working-directory: sports-data-config
+        env:
+          # Via env, never interpolated into the script body: this job
+          # checks out sports-data-config with GH_PAT, so a crafted input
+          # interpolated into shell would run with deploy credentials.
+          METRICBOT_TAG: ${{ inputs.metricbot_tag }}
         run: |
-          TAG='${{ inputs.metricbot_tag }}'
-          if ! [[ "$TAG" =~ ^[0-9]+$ ]]; then
+          set -euo pipefail
+          if ! [[ "$METRICBOT_TAG" =~ ^[0-9]+$ ]]; then
             echo "::error::metricbot_tag must be a numeric build tag"
             exit 1
           fi
-          # Update or add image to metricbot-patch.yaml
-          if grep -q "image:" app/overlays/04_prod/metricbot-patch.yaml; then
-            sed -i "s|image: .*|image: sportdeets.azurecr.io/sportsdatametricbot:${TAG}|g" app/overlays/04_prod/metricbot-patch.yaml
-          else
-            sed -i '/- name: metricbot/a\        image: sportdeets.azurecr.io/sportsdatametricbot:'"$TAG" app/overlays/04_prod/metricbot-patch.yaml
+
+          PATCH=app/overlays/04_prod/metricbot-patch.yaml
+          if [ ! -f "$PATCH" ]; then
+            echo "::error::$PATCH not found"
+            exit 1
           fi
-          echo "Updated MetricBot to tag: $TAG"
+
+          IMAGE="sportdeets.azurecr.io/sportsdatametricbot:${METRICBOT_TAG}"
+          # Anchored to the metricbot container block so the edit cannot
+          # rewrite unrelated image lines.
+          sed -i "s|image: sportdeets.azurecr.io/sportsdatametricbot:.*|image: ${IMAGE}|g" "$PATCH"
+
+          if ! grep -q "image: ${IMAGE}" "$PATCH"; then
+            echo "::error::Failed to set MetricBot image to ${IMAGE} in $PATCH"
+            exit 1
+          fi
+          echo "Updated MetricBot to tag: ${METRICBOT_TAG}"
       - name: Commit and push changes
         working-directory: sports-data-config
+        env:
+          # Passed via env (not interpolated into the script) so a crafted
+          # input cannot execute during commit-message construction.
+          METRICBOT_TAG_SAFE: ${{ inputs.metricbot_tag }}
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
@@ -174,7 +200,7 @@ jobs:
             [ -n "${{ inputs.provider_tag }}" ] && COMMIT_MSG="$COMMIT_MSG Provider=${{ inputs.provider_tag }}"
             [ -n "${{ inputs.jobs_dashboard_tag }}" ] && COMMIT_MSG="$COMMIT_MSG JobsDashboard=${{ inputs.jobs_dashboard_tag }}"
             [ -n "${{ inputs.notification_tag }}" ] && COMMIT_MSG="$COMMIT_MSG Notification=${{ inputs.notification_tag }}"
-            [ -n "${{ inputs.metricbot_tag }}" ] && COMMIT_MSG="$COMMIT_MSG MetricBot=${{ inputs.metricbot_tag }}"
+            [ -n "${METRICBOT_TAG_SAFE:-}" ] && COMMIT_MSG="$COMMIT_MSG MetricBot=${METRICBOT_TAG_SAFE}"
             
             git commit -m "$COMMIT_MSG"
             git push

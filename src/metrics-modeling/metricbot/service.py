@@ -55,7 +55,9 @@ class RunWeekRequest(BaseModel):
 class RunWeekResponse(BaseModel):
     model_version: str
     sport: str
-    season_year: int | None
+    # Always resolved: live runs detect it from the calendar, explicit
+    # runs supply it.
+    season_year: int
     week: int
     prior_season_tail: int
     training_rows: int

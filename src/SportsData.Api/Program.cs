@@ -24,6 +24,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Infrastructure.Clients.AI;
+using SportsData.Core.Infrastructure.Clients.MetricBot;
 using SportsData.Core.Middleware.Health;
 using SportsData.Core.Processing;
 
@@ -227,6 +228,22 @@ namespace SportsData.Api
             });
 
             services.AddScoped<IProvideAiCommunication>(sp => sp.GetRequiredService<DeepSeekClient>());
+
+            // MetricBot (internal Python service; deetsMeter predictions).
+            // Hangfire owns the weekly schedule + manual triggers; this
+            // client is how the API reaches it. Base URL is cluster-internal
+            // DNS in prod, localhost in dev.
+            var metricBotBaseUrl = config["CommonConfig:MetricBot:BaseUrl"];
+            services.AddHttpClient<IProvideMetricBot, MetricBotClient>(client =>
+            {
+                client.BaseAddress = new Uri(
+                    string.IsNullOrWhiteSpace(metricBotBaseUrl)
+                        ? "http://metricbot:8080/"
+                        : metricBotBaseUrl.EndsWith('/') ? metricBotBaseUrl : metricBotBaseUrl + "/");
+                // Runs are seconds, but a cold container + full training
+                // extraction can be slower; keep headroom.
+                client.Timeout = TimeSpan.FromMinutes(10);
+            });
             /* End AI */
 
             // Per-pool sizing. Two distinct pools live on this pod:

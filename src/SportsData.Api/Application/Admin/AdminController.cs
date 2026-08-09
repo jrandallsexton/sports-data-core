@@ -34,6 +34,7 @@ using SportsData.Core.Eventing.Events.Contests.Baseball;
 using SportsData.Core.Eventing.Events.Contests.Football;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Contest;
+using SportsData.Core.Infrastructure.Clients.MetricBot;
 using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Admin
@@ -270,6 +271,38 @@ namespace SportsData.Api.Application.Admin
         {
             var result = await handler.ExecuteAsync(promptId, cancellationToken);
             return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Trigger a MetricBot prediction run (deetsMeter). Omit
+        /// seasonYear/week for a live run of the current week; supply both
+        /// for an experiment/backtest, which never publishes unless
+        /// publish=true. MetricBot is internal-only, so this proxy is the
+        /// on-demand entry point — the weekly schedule is a Hangfire job.
+        ///
+        /// Example: POST /admin/metricbot/run-week
+        /// Body: { "sport": "ncaaf", "seasonYear": 2025, "week": 6,
+        ///         "priorSeasonTail": 5, "includeDtos": true }
+        /// </summary>
+        [HttpPost]
+        [Route("metricbot/run-week")]
+        public async Task<ActionResult<MetricBotRunResponse>> RunMetricBotWeek(
+            [FromBody] MetricBotRunRequest request,
+            [FromServices] IProvideMetricBot metricBot,
+            CancellationToken cancellationToken)
+        {
+            var result = await metricBot.RunWeekAsync(request, cancellationToken);
+            return result.ToActionResult();
+        }
+
+        [HttpGet]
+        [Route("metricbot/health")]
+        public async Task<IActionResult> GetMetricBotHealth(
+            [FromServices] IProvideMetricBot metricBot,
+            CancellationToken cancellationToken)
+        {
+            var healthy = await metricBot.IsHealthyAsync(cancellationToken);
+            return healthy ? Ok(new { status = "healthy" }) : StatusCode(503, new { status = "unreachable" });
         }
 
         /// <summary>

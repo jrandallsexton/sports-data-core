@@ -1,0 +1,2 @@
+# Test-only dependencies (CI + local `pytest` runs).
+pytest==8.4.2

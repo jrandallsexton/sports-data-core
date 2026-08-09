@@ -369,3 +369,41 @@ Production code (existing):
 Sibling design context:
 
 - `ai-provider-cutover-deepseek-to-ollama.md` (this folder) — the AI-side cutover plan, related but independent
+
+## Random
+
+Docker's --env-file takes exactly the KEY=VALUE format your _metricbot.env already is, so you point at it directly:
+
+  cd C:\Projects\sports-data
+  docker build -f src/metrics-modeling/Dockerfile -t sportsdatametricbot:local .
+
+  docker run --rm -p 8080:8080 --env-file "D:\Dropbox\Code\sports-data-provision\_secrets\_metricbot.env" sportsdatametricbot:local
+
+  Then in another terminal:
+
+  curl http://localhost:8080/health
+
+  # a dry-run experiment (no POST, returns the metadata)
+  curl -X POST http://localhost:8080/run-week -H "Content-Type: application/json" -d '{\"sport\":\"ncaaf\",\"season_year\":2026,\"week\":1,\"prior_season_tail\":5}'
+
+  Two gotchas that will bite otherwise:
+
+  1. Docker's --env-file does not strip quotes — unlike my config parser. If you wrote METRICBOT_PG_HOST="somehost", Docker passes the quote characters as part
+  of the value and the connection fails. Unquote the values in that file (the CLI works either way, so unquoted is strictly safer).
+  2. localhost inside a container is the container. If METRICBOT_PG_HOST or METRICBOT_API_BASE_URL point at localhost, override them for the container run —
+  Docker Desktop exposes the host as host.docker.internal:
+
+  docker run --rm -p 8080:8080 `
+    --env-file "D:\Dropbox\Code\sports-data-provision\_secrets\_metricbot.env" `
+    -e METRICBOT_API_BASE_URL=http://host.docker.internal:5262 `
+    sportsdatametricbot:local
+
+  (Flags after --env-file win, so that's the clean way to patch just the host-relative values. Your prod Postgres host is presumably a real hostname already, so
+  it likely needs no override.)
+
+  $body = @{ sport = "ncaaf"; season_year = 2026; week = 1; prior_season_tail = 5 } | ConvertTo-Json
+  Invoke-RestMethod -Uri http://localhost:8080/run-week -Method Post -ContentType "application/json" -Body $body
+
+  curl.exe -X POST http://localhost:8080/run-week -H "Content-Type: application/json" -d '{\"sport\":\"ncaaf\",\"season_year\":2026,\"week\":1,\"prior_season_tail\":5}'
+
+  $body = @{ sport = "ncaaf"; season_year = 2026; week = 1; prior_season_tail = 5 } | ConvertTo-Json Invoke-RestMethod -Uri http://localhost:8080/run-week -Method Post -ContentType "application/json" -Body $body

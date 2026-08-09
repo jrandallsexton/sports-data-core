@@ -341,6 +341,7 @@ namespace SportsData.Api.DependencyInjection
 
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<MatchupPreviewGenerator>();
+            services.AddScoped<MetricBotWeeklyJob>();
             services.AddScoped<MatchupScheduler>();
             // Scoped: resolves prompts from AppDataContext (text lives in the DB).
             services.AddScoped<IMatchupPreviewPromptProvider, MatchupPreviewPromptProvider>();
@@ -443,6 +444,23 @@ namespace SportsData.Api.DependencyInjection
                 nameof(MatchupPreviewGenerator),
                 job => job.ExecuteAsync(),
                 Cron.Weekly);
+
+            // deetsMeter predictions via the MetricBot service. Scheduled
+            // ahead of each league's slate lock: NCAAFB games start
+            // Thursday, NFL on Thursday too but its week rolls later, so
+            // NCAA runs Tuesday 03:00 UTC and NFL Wednesday 03:00 UTC.
+            // Hangfire (not a K8s CronJob) so the dashboard's manual
+            // trigger covers ad-hoc reruns; parameterized experiment runs
+            // go through POST /admin/metricbot/run-week instead.
+            recurringJobManager.AddOrUpdate<MetricBotWeeklyJob>(
+                "MetricBotWeekly-FootballNcaa",
+                job => job.ExecuteAsync("ncaaf"),
+                "0 3 * * 2");
+
+            recurringJobManager.AddOrUpdate<MetricBotWeeklyJob>(
+                "MetricBotWeekly-FootballNfl",
+                job => job.ExecuteAsync("nfl"),
+                "0 3 * * 3");
 
             // Daily primary trigger. Can't be event-driven — matchups must
             // be generated BEFORE games happen. Daily is sufficient since

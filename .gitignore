@@ -449,3 +449,6 @@ docs/metrics-modeling/prompts/
 
 # Preview Lab exports (capture.txt contains full prompt instruction text)
 docs/metrics-modeling/previews/
+
+# MetricBot runtime artifacts contain prod-derived data - never committed
+src/metrics-modeling/data/

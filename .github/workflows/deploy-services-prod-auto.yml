@@ -36,6 +36,17 @@ on:
         required: false
         type: boolean
         default: false
+      deploy_metricbot:
+        description: 'Deploy MetricBot with latest tag'
+        required: false
+        type: boolean
+        default: false
+
+# Shares the group with deploy-services-prod.yml: both workflows commit
+# and push sports-data-config, so their pushes must not race.
+concurrency:
+  group: sports-data-config-prod-update
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -139,6 +150,27 @@ jobs:
           fi
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest Notification tag: $LATEST_TAG"
+
+      - name: Get latest MetricBot tag from ACR
+        if: ${{ inputs.deploy_metricbot }}
+        id: metricbot_tag
+        run: |
+          set -euo pipefail
+          # `|| true`: under pipefail a no-match grep exits 1 and would kill
+          # the step before the explicit check below could report why.
+          LATEST_TAG=$(az acr repository show-tags \
+            --name sportdeets \
+            --repository sportsdatametricbot \
+            --orderby time_desc \
+            --output tsv \
+            | grep -E '^[0-9]+$' \
+            | head -n 1 || true)
+          if [ -z "$LATEST_TAG" ]; then
+            echo "::error::No numeric tags found for sportsdatametricbot"
+            exit 1
+          fi
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest MetricBot tag: $LATEST_TAG"
 
       - name: Checkout sports-data-config repo
         uses: actions/checkout@v5
@@ -249,8 +281,36 @@ jobs:
           fi
           echo "Updated Notification to tag: ${{ steps.notification_tag.outputs.tag }}"
 
+      - name: Update MetricBot image tag
+        if: ${{ inputs.deploy_metricbot && steps.metricbot_tag.outputs.tag != '' }}
+        working-directory: sports-data-config
+        env:
+          # Via env, never interpolated into the script body — this job
+          # holds GH_PAT for the config repo.
+          METRICBOT_TAG: ${{ steps.metricbot_tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          PATCH=app/overlays/04_prod/metricbot-patch.yaml
+          if [ ! -f "$PATCH" ]; then
+            echo "::error::$PATCH not found"
+            exit 1
+          fi
+
+          IMAGE="sportdeets.azurecr.io/sportsdatametricbot:${METRICBOT_TAG}"
+          # Anchored to the metricbot image line so unrelated images in
+          # the patch can never be rewritten.
+          sed -i "s|image: sportdeets.azurecr.io/sportsdatametricbot:.*|image: ${IMAGE}|g" "$PATCH"
+
+          if ! grep -q "image: ${IMAGE}" "$PATCH"; then
+            echo "::error::Failed to set MetricBot image to ${IMAGE} in $PATCH"
+            exit 1
+          fi
+          echo "Updated MetricBot to tag: ${METRICBOT_TAG}"
+
       - name: Commit and push changes
         working-directory: sports-data-config
+        env:
+          METRICBOT_TAG_SAFE: ${{ steps.metricbot_tag.outputs.tag }}
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
@@ -267,6 +327,7 @@ jobs:
             [ "${{ inputs.deploy_ui }}" == "true" ] && COMMIT_MSG="$COMMIT_MSG UI=${{ steps.ui_tag.outputs.tag }}"
             [ "${{ inputs.deploy_jobs_dashboard }}" == "true" ] && [ -n "${{ steps.jobs_dashboard_tag.outputs.tag }}" ] && COMMIT_MSG="$COMMIT_MSG JobsDashboard=${{ steps.jobs_dashboard_tag.outputs.tag }}"
             [ "${{ inputs.deploy_notification }}" == "true" ] && [ -n "${{ steps.notification_tag.outputs.tag }}" ] && COMMIT_MSG="$COMMIT_MSG Notification=${{ steps.notification_tag.outputs.tag }}"
+            [ "${{ inputs.deploy_metricbot }}" == "true" ] && [ -n "${METRICBOT_TAG_SAFE:-}" ] && COMMIT_MSG="$COMMIT_MSG MetricBot=${METRICBOT_TAG_SAFE}"
             
             git commit -m "$COMMIT_MSG"
             git push

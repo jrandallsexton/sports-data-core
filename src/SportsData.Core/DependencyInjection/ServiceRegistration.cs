@@ -41,6 +41,7 @@ using System.Net;
 using System.Net.Http;
 using System.Reflection;
 using System.Threading.Tasks;
+using SportsData.Core.Extensions;
 
 namespace SportsData.Core.DependencyInjection
 {
@@ -151,7 +152,9 @@ namespace SportsData.Core.DependencyInjection
             // it from the Hangfire pool (and, with role, Worker vs Ingest pods).
             connString = ApplyApplicationName(connString, applicationName, role, "Data");
 
-            Console.WriteLine($"PostgreSQL: {connString}");
+            // Redacted: this line ships to Seq, and an unredacted string
+            // would put the production DB password in the logs.
+            Console.WriteLine($"PostgreSQL: {connString.RedactCredentials()}");
 
             services.AddDbContext<T>((serviceProvider, options) =>
             {
@@ -308,7 +311,7 @@ namespace SportsData.Core.DependencyInjection
                 : 20;
 
 #if DEBUG
-            Console.WriteLine($"Hangfire ConnStr: {connString}");
+            Console.WriteLine($"Hangfire ConnStr: {connString.RedactCredentials()}");
 #endif
 
             services.AddHangfire(x =>

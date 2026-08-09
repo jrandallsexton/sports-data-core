@@ -1,0 +1,6 @@
+# HTTP service layer only — the CLI needs none of this.
+# Kept separate so a local venv can run the pipeline without pulling in
+# a web stack (requirements.txt stays the model/data pins).
+fastapi==0.118.0
+uvicorn[standard]==0.37.0
+pydantic==2.11.9

@@ -369,3 +369,71 @@ Production code (existing):
 Sibling design context:
 
 - `ai-provider-cutover-deepseek-to-ollama.md` (this folder) — the AI-side cutover plan, related but independent
+
+## Local container smoke test
+
+Docker's `--env-file` takes the same `KEY=VALUE` format as
+`_metricbot.env`, so it can be pointed at directly.
+
+```powershell
+cd C:\Projects\sports-data
+docker build -f src/metrics-modeling/Dockerfile -t sportsdatametricbot:local .
+
+docker run --rm -p 8080:8080 `
+  --env-file "D:\Dropbox\Code\sports-data-provision\_secrets\_metricbot.env" `
+  sportsdatametricbot:local
+```
+
+Then from another terminal:
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:8080/health
+
+# Dry-run experiment: no POST, returns run metadata only.
+$body = @{
+  sport             = "ncaaf"
+  season_year       = 2026
+  week              = 1
+  prior_season_tail = 5
+  dry_run           = $true
+  publish           = $false
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri http://localhost:8080/run-week `
+  -Method Post -ContentType "application/json" -Body $body
+```
+
+`Invoke-RestMethod` is the reliable form on Windows PowerShell 5.1. The
+`curl` alias resolves to `Invoke-WebRequest` (different parameters), and
+even `curl.exe` needs backslash-escaped inner quotes because PS 5.1
+strips them when handing arguments to native executables:
+
+```powershell
+curl.exe -X POST http://localhost:8080/run-week `
+  -H "Content-Type: application/json" `
+  -d '{\"sport\":\"ncaaf\",\"season_year\":2026,\"week\":1,\"prior_season_tail\":5,\"dry_run\":true}'
+```
+
+### Two gotchas
+
+1. **`--env-file` does not strip quotes** — unlike MetricBot's own config
+   parser. `METRICBOT_PG_HOST="somehost"` reaches the process with the
+   quote characters included and the connection fails. Keep the values
+   unquoted (the CLI accepts either).
+2. **`localhost` inside a container is the container.** If
+   `METRICBOT_PG_HOST` or `METRICBOT_API_BASE_URL` point at `localhost`,
+   override them for the container run — Docker Desktop exposes the host
+   as `host.docker.internal`. Flags after `--env-file` win, so only the
+   host-relative values need patching:
+
+```powershell
+docker run --rm -p 8080:8080 `
+  --env-file "D:\Dropbox\Code\sports-data-provision\_secrets\_metricbot.env" `
+  -e METRICBOT_PG_HOST=host.docker.internal `
+  -e METRICBOT_API_BASE_URL=http://host.docker.internal:5262 `
+  sportsdatametricbot:local
+```
+
+Neither applies in-cluster: the `metricbot-secrets` values are the real
+Postgres host and the internal API service address, both resolvable from
+any pod.

@@ -28,3 +28,10 @@ README.md
 !.git/config
 !.git/packed-refs
 !.git/refs/heads/**
+
+# MetricBot: both builds use the repo root as context, so keep local
+# prod-derived artifacts and the workstation venv out of the daemon.
+src/metrics-modeling/data
+src/metrics-modeling/.venv
+**/__pycache__
+**/*.pyc

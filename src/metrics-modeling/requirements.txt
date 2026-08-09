@@ -1,0 +1,8 @@
+# MetricBot pipeline — pinned to the versions in the working .venv
+# (python -m venv .venv && pip install -r requirements.txt)
+# psql (PostgreSQL client tools) must be on PATH — extraction shells out
+# to it deliberately; no Python DB driver required.
+numpy==2.3.4
+pandas==2.3.3
+scikit-learn==1.7.2
+scipy==1.16.2

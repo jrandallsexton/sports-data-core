@@ -1,0 +1,84 @@
+# MetricBot (deetsMeter prediction service) — Python, so this pipeline
+# does NOT use the .NET templates the other services share.
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/metrics-modeling/*'
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/metrics-modeling/*'
+
+pool:
+  name: Default
+  demands:
+    - Agent.Name -equals Bender
+
+resources:
+  - repo: self
+
+variables:
+  dockerRegistryServiceConnection: '805d6790-3b89-43f4-8551-f1a6b1c8f2f0'
+  imageRepository: 'sportsdatametricbot'
+  containerRegistry: 'sportdeets.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/src/metrics-modeling/Dockerfile'
+  # The Dockerfile COPYs from src/metrics-modeling/... so the build
+  # context must be the repo root, not the Dockerfile's directory.
+  dockerBuildContext: '$(Build.SourcesDirectory)'
+  tag: '$(Build.BuildId)'
+  pythonVersion: '3.12'
+
+stages:
+- stage: BuildAndTest
+  displayName: "Build & Test: MetricBot"
+  jobs:
+    - job: BuildAndTest
+      displayName: BuildAndTest
+      steps:
+        - task: UsePythonVersion@0
+          displayName: 'Use Python $(pythonVersion)'
+          inputs:
+            versionSpec: '$(pythonVersion)'
+            addToPath: true
+
+        - script: |
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt -r requirements-service.txt -r requirements-dev.txt
+          workingDirectory: '$(Build.SourcesDirectory)/src/metrics-modeling'
+          displayName: 'Install dependencies'
+
+        - script: |
+            python -m pytest tests/ -q
+          workingDirectory: '$(Build.SourcesDirectory)/src/metrics-modeling'
+          displayName: 'Run unit tests'
+
+        - script: |
+            python -c "import metricbot.service; print('service imports cleanly')"
+          workingDirectory: '$(Build.SourcesDirectory)/src/metrics-modeling'
+          displayName: 'Verify service module loads'
+
+- stage: BuildImagePushACR
+  displayName: Build Image & Push to ACR
+  dependsOn: BuildAndTest
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - job: BuildImage
+    displayName: 'Build and Push Image'
+    steps:
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        buildContext: $(dockerBuildContext)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        tags: |
+          $(tag)

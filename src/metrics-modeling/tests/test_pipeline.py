@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 
 from metricbot import MODEL_VERSION
-from metricbot.config import Config
+from metricbot.config import Config, normalize_sport
 from metricbot.dtos import PICKTYPE_ATS, PICKTYPE_STRAIGHT_UP, build_prediction_dtos
 from metricbot.model import FEATURE_COLS, ModelError, predict_ats, predict_straight_up
 
@@ -95,6 +95,20 @@ def test_dtos_match_the_ingestion_contract():
 def test_config_rejects_unknown_sport():
     with pytest.raises(SystemExit):
         Config.load("cricket")
+
+
+def test_sport_vocabulary_matches_the_platform_enum():
+    # One vocabulary end to end: MetricBot speaks SportsData.Core.Common
+    # .Sport names, not an invented short form.
+    assert normalize_sport("FootballNcaa") == "FootballNcaa"
+    assert normalize_sport("FootballNfl") == "FootballNfl"
+    # Case-insensitive for CLI ergonomics only.
+    assert normalize_sport("footballnfl") == "FootballNfl"
+    # The old invented short forms are gone, not aliased.
+    with pytest.raises(SystemExit):
+        normalize_sport("ncaaf")
+    with pytest.raises(SystemExit):
+        normalize_sport("nfl")
 
 
 def test_env_file_parsing_tolerates_quotes_and_comments(tmp_path, monkeypatch):

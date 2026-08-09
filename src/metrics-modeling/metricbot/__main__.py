@@ -6,6 +6,7 @@ import argparse
 import logging
 import sys
 
+from .config import normalize_sport
 from .pipeline import run_week
 
 
@@ -20,8 +21,10 @@ def main(argv: list[str] | None = None) -> int:
         "run-week",
         help="Extract current-week slate, train, predict SU + ATS, publish to the API.")
     run.add_argument(
-        "--sport", choices=["ncaaf", "nfl"], default="ncaaf",
-        help="Which football league's database to run against (default: ncaaf).")
+        "--sport", type=normalize_sport, default="FootballNcaa",
+        metavar="{FootballNcaa,FootballNfl}",
+        help="Platform Sport enum name (case-insensitive). "
+             "Default: FootballNcaa.")
     run.add_argument(
         "--dry-run", action="store_true",
         help="Do everything except the POST — inspect DTO counts/logs first.")

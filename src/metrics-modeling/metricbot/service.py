@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import logging
 
+from typing import Literal
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
@@ -33,7 +35,9 @@ app = FastAPI(
 
 
 class RunWeekRequest(BaseModel):
-    sport: str = Field(default="ncaaf", pattern="^(ncaaf|nfl)$")
+    # The platform's Sport enum names — one vocabulary end to end, so
+    # the C# client sends Sport.ToString() with no translation layer.
+    sport: Literal["FootballNcaa", "FootballNfl"] = "FootballNcaa"
 
     # Explicit (season, week) = experiment/backtest; omit both for a live
     # run that auto-resolves the current week.

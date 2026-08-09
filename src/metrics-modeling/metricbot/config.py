@@ -18,13 +18,32 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-# Databases are per-sport (per-sport RabbitMQ/DB split is load-bearing
-# platform-wide); football models cover both leagues with the same
-# feature set.
+# Sport values are the PLATFORM'S Sport enum names (SportsData.Core.
+# Common.Sport) — deliberately NOT a second vocabulary. Databases are
+# per-sport (the per-sport DB split is load-bearing platform-wide);
+# football models cover both leagues with the same feature set.
 SPORT_DATABASES = {
-    "ncaaf": "sdProducer.FootballNcaa",
-    "nfl": "sdProducer.FootballNfl",
+    "FootballNcaa": "sdProducer.FootballNcaa",
+    "FootballNfl": "sdProducer.FootballNfl",
 }
+
+SUPPORTED_SPORTS = tuple(SPORT_DATABASES)
+
+
+def normalize_sport(value: str) -> str:
+    """Resolve a sport argument to its canonical Sport-enum name.
+
+    Case-insensitive purely for CLI ergonomics — `--sport footballnfl`
+    works — but there is only ONE vocabulary, not an alias set.
+    """
+    if value is None:
+        raise SystemExit("A sport is required: " + ", ".join(SUPPORTED_SPORTS))
+    match = next((s for s in SUPPORTED_SPORTS if s.lower() == value.strip().lower()), None)
+    if match is None:
+        raise SystemExit(
+            f"Unknown sport '{value}'. MetricBot has football models only: "
+            + ", ".join(SUPPORTED_SPORTS))
+    return match
 
 # The synthetic MetricBot user the API attributes predictions to
 # (IsSynthetic = true; see design doc, Decision 6).
@@ -71,9 +90,7 @@ class Config:
 
     @staticmethod
     def load(sport: str) -> "Config":
-        if sport not in SPORT_DATABASES:
-            raise SystemExit(
-                f"Unknown sport '{sport}'. Supported: {', '.join(sorted(SPORT_DATABASES))}")
+        sport = normalize_sport(sport)
 
         file_values = _load_env_file()
 

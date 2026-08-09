@@ -47,7 +47,10 @@ namespace SportsData.Core.Infrastructure.Clients.MetricBot
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            // Sport travels as its enum NAME ("FootballNcaa"): MetricBot
+            // speaks the platform's vocabulary, so there is no mapping.
+            Converters = { new JsonStringEnumConverter() }
         };
 
         public MetricBotClient(HttpClient httpClient, ILogger<MetricBotClient> logger)
@@ -66,7 +69,8 @@ namespace SportsData.Core.Infrastructure.Clients.MetricBot
                     default!,
                     ResultStatus.BadRequest,
                     [new ValidationFailure(nameof(request.Sport),
-                        $"Unsupported sport '{request.Sport}'. MetricBot has football models only: 'ncaaf' or 'nfl'.")]);
+                        $"Unsupported sport '{request.Sport}'. MetricBot has football models only: " +
+                        $"{Sport.FootballNcaa} or {Sport.FootballNfl}.")]);
             }
 
             try
@@ -169,24 +173,18 @@ namespace SportsData.Core.Infrastructure.Clients.MetricBot
 
     public static class MetricBotSports
     {
-        public const string Ncaaf = "ncaaf";
-        public const string Nfl = "nfl";
-
-        public static bool IsSupported(string? sport) => sport is Ncaaf or Nfl;
-
-        /// <summary>Maps the platform Sport enum to MetricBot's vocabulary; null when unsupported.</summary>
-        public static string? FromSport(Sport sport) => sport switch
-        {
-            Sport.FootballNcaa => Ncaaf,
-            Sport.FootballNfl => Nfl,
-            _ => null  // MetricBot has football models only
-        };
+        /// <summary>MetricBot has football models only.</summary>
+        public static bool IsSupported(Sport sport) =>
+            sport is Sport.FootballNcaa or Sport.FootballNfl;
     }
 
     public class MetricBotRunRequest
     {
-        /// <summary>"ncaaf" or "nfl" — MetricBot's own sport vocabulary.</summary>
-        public string Sport { get; set; } = MetricBotSports.Ncaaf;
+        /// <summary>
+        /// The platform Sport enum, sent as its name. MetricBot uses the
+        /// same vocabulary, so no translation happens anywhere.
+        /// </summary>
+        public Sport Sport { get; set; } = Sport.FootballNcaa;
 
         /// <summary>Explicit (season, week) = experiment; omit both for a live run.</summary>
         public int? SeasonYear { get; set; }
@@ -207,7 +205,7 @@ namespace SportsData.Core.Infrastructure.Clients.MetricBot
     public class MetricBotRunResponse
     {
         public string ModelVersion { get; set; } = default!;
-        public string Sport { get; set; } = default!;
+        public Sport Sport { get; set; }
 
         /// <summary>Always populated — live runs resolve it from the calendar.</summary>
         public int SeasonYear { get; set; }

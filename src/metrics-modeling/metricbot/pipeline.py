@@ -17,7 +17,7 @@ import pandas as pd
 
 from . import MODEL_VERSION
 from .api import post_predictions
-from .config import Config
+from .config import Config, normalize_sport
 from .dtos import build_prediction_dtos
 from .extract import (detect_current_season_week, extract_asof_training,
                       extract_asof_week, extract_current_week, extract_training)
@@ -52,6 +52,7 @@ def run_week(sport: str,
              legacy_extraction: bool = False,
              return_result: bool = False) -> int | RunResult:
     started = datetime.now(timezone.utc)
+    sport = normalize_sport(sport)
     config = Config.load(sport)
 
     explicit_week = season_year is not None and week is not None

@@ -196,7 +196,7 @@ def test_zero_completed_games_is_all_ungradeable():
     assert "0 graded" in text
 
 
-def _fake_config():
+def _fake_config() -> Config:
     return Config(
         pg_host="db.example.invalid", pg_user="u", pg_password="p",
         pg_database="d", pg_port="5432",
@@ -208,7 +208,7 @@ def test_extract_final_scores_allows_header_only_result(monkeypatch):
     # psql --csv emits the header row even for zero-row results; a week
     # nothing has finished in must come back as an empty frame, not an
     # ExtractionError.
-    def fake_run(*args, **kwargs):
+    def fake_run(*_args: object, **_kwargs: object) -> SimpleNamespace:
         return SimpleNamespace(
             returncode=0, stdout="ContestId,HomeScore,AwayScore\n", stderr="")
 
@@ -223,7 +223,7 @@ def test_extract_final_scores_allows_header_only_result(monkeypatch):
 def test_extract_training_still_rejects_empty_results(monkeypatch):
     # The default (allow_empty=False) behavior is unchanged: an empty
     # training extraction is an error, not a silent no-op.
-    def fake_run(*args, **kwargs):
+    def fake_run(*_args: object, **_kwargs: object) -> SimpleNamespace:
         return SimpleNamespace(returncode=0, stdout="A,B\n", stderr="")
 
     monkeypatch.setattr(subprocess, "run", fake_run)

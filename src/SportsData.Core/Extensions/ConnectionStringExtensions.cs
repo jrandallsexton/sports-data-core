@@ -38,14 +38,21 @@ namespace SportsData.Core.Extensions
             {
                 var builder = new NpgsqlConnectionStringBuilder(connectionString);
 
-                if (string.IsNullOrEmpty(builder.Password))
+                if (string.IsNullOrEmpty(builder.Password) &&
+                    string.IsNullOrEmpty(builder.SslPassword))
                 {
                     // Parsed and provably credential-free: preserve the
                     // original formatting exactly.
                     return connectionString;
                 }
 
-                builder.Password = Mask;
+                if (!string.IsNullOrEmpty(builder.Password))
+                    builder.Password = Mask;
+
+                // Client-certificate key passphrase — a credential too.
+                if (!string.IsNullOrEmpty(builder.SslPassword))
+                    builder.SslPassword = Mask;
+
                 return builder.ConnectionString;
             }
             catch (Exception)

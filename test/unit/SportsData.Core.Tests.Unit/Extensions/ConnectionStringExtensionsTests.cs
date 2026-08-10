@@ -56,6 +56,16 @@ namespace SportsData.Core.Tests.Unit.Extensions
         }
 
         [Fact]
+        public void RedactCredentials_MasksSslPassword()
+        {
+            // The client-certificate key passphrase is a credential too.
+            var redacted = "Host=h;SSL Password=cert-secret;Database=d".RedactCredentials();
+
+            redacted.Should().NotContain("cert-secret");
+            redacted.Should().Contain("Database=d");
+        }
+
+        [Fact]
         public void RedactCredentials_MasksDoubledQuotesInsideQuotedValue()
         {
             var redacted = "Host=h;Password='fragment''tail;x';Database=d".RedactCredentials();

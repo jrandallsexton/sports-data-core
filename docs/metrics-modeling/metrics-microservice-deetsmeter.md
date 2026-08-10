@@ -391,7 +391,7 @@ Invoke-RestMethod -Uri http://localhost:8080/health
 
 # Dry-run experiment: no POST, returns run metadata only.
 $body = @{
-  sport             = "ncaaf"
+  sport             = "FootballNcaa"
   season_year       = 2026
   week              = 1
   prior_season_tail = 5
@@ -411,7 +411,7 @@ strips them when handing arguments to native executables:
 ```powershell
 curl.exe -X POST http://localhost:8080/run-week `
   -H "Content-Type: application/json" `
-  -d '{\"sport\":\"ncaaf\",\"season_year\":2026,\"week\":1,\"prior_season_tail\":5,\"dry_run\":true}'
+  -d '{\"sport\":\"FootballNcaa\",\"season_year\":2026,\"week\":1,\"prior_season_tail\":5,\"dry_run\":true}'
 ```
 
 ### Two gotchas

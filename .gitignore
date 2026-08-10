@@ -452,3 +452,6 @@ docs/metrics-modeling/previews/
 
 # MetricBot runtime artifacts contain prod-derived data - never committed
 src/metrics-modeling/data/
+
+# MetricBot experiment/backtest results saved from Bruno - prod-derived
+docs/metrics-modeling/output/

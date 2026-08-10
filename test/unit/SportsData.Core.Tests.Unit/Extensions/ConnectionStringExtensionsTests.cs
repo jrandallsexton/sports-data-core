@@ -12,12 +12,12 @@ namespace SportsData.Core.Tests.Unit.Extensions
         public void RedactCredentials_MasksPassword_AndKeepsDiagnostics()
         {
             const string connString =
-                "Host=db.example.invalid;Port=5432;Username=example-user;Password=sup3r$ecret!!;" +
+                "Host=db.example.invalid;Port=5432;Username=example-user;Password=fixture-password;" +
                 "Database=ExampleDb;Maximum Pool Size=5;Application Name=Example.Api.Data;";
 
             var redacted = connString.RedactCredentials();
 
-            redacted.Should().NotContain("sup3r$ecret!!");
+            redacted.Should().NotContain("fixture-password");
             redacted.Should().Contain("Password=***");
 
             // Everything an operator actually needs at startup survives.
@@ -34,10 +34,72 @@ namespace SportsData.Core.Tests.Unit.Extensions
         [InlineData("Host=h;password=secret;Database=d")]
         [InlineData("Host=h;PASSWORD=secret;Database=d")]
         [InlineData("Host=h;Pwd=secret;Database=d")]
+        [InlineData("Host=h;PSW=secret;Database=d")]
         [InlineData("Host=h;Password = secret;Database=d")]
         public void RedactCredentials_HandlesKeySpellingsAndCasing(string connString)
         {
             connString.RedactCredentials().Should().NotContain("secret");
+        }
+
+        [Theory]
+        [InlineData("Host=h;Password='first;second';Database=d")]
+        [InlineData("Host=h;Password=\"first;second\";Database=d")]
+        public void RedactCredentials_MasksQuotedValuesContainingSemicolons(string connString)
+        {
+            // Npgsql allows semicolons inside quoted values; a naive
+            // "up to the next semicolon" match would leak the tail.
+            var redacted = connString.RedactCredentials();
+
+            redacted.Should().NotContain("first");
+            redacted.Should().NotContain("second");
+            redacted.Should().Contain("Database=d");
+        }
+
+        [Theory]
+        [InlineData("Host=h;Password=leaked-secret;PWD=;Database=d")]
+        [InlineData("Host=h;Password=leaked-secret;PSW=;Database=d")]
+        [InlineData("Host=h;SSL Password=leaked-secret;SSL Password=;Database=d")]
+        public void RedactCredentials_DuplicateAliasesCannotBlankTheirWayPastTheMask(string connString)
+        {
+            // Npgsql resolves duplicate keys last-wins, so a trailing empty
+            // alias makes the builder's FINAL value empty while the secret
+            // still sits in the original text — key presence, not final
+            // value, must gate the verbatim passthrough.
+            var redacted = connString.RedactCredentials();
+
+            redacted.Should().NotContain("leaked-secret");
+            redacted.Should().Contain("Database=d");
+        }
+
+        [Fact]
+        public void RedactCredentials_MasksSslPassword()
+        {
+            // The client-certificate key passphrase is a credential too.
+            var redacted = "Host=h;SSL Password=cert-secret;Database=d".RedactCredentials();
+
+            redacted.Should().NotContain("cert-secret");
+            redacted.Should().Contain("Database=d");
+        }
+
+        [Fact]
+        public void RedactCredentials_MasksDoubledQuotesInsideQuotedValue()
+        {
+            var redacted = "Host=h;Password='fragment''tail;x';Database=d".RedactCredentials();
+
+            redacted.Should().NotContain("fragment");
+            redacted.Should().NotContain("tail");
+        }
+
+        [Fact]
+        public void RedactCredentials_UnparseableStringExposesNothing()
+        {
+            // Unclosed quote: parsing fails, and we cannot prove which
+            // fragment is the secret — so none of the input comes back.
+            var redacted = "Host=h;Password='fragment;Database=d".RedactCredentials();
+
+            redacted.Should().NotContain("fragment");
+            redacted.Should().NotContain("Host");
+            redacted.Should().Contain("redacted in full");
         }
 
         [Fact]

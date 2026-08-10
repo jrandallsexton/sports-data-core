@@ -17,10 +17,12 @@ import pandas as pd
 
 from . import MODEL_VERSION
 from .api import post_predictions
-from .config import Config
+from .config import Config, normalize_sport
 from .dtos import build_prediction_dtos
 from .extract import (detect_current_season_week, extract_asof_training,
-                      extract_asof_week, extract_current_week, extract_training)
+                      extract_asof_week, extract_current_week,
+                      extract_final_scores, extract_training)
+from .grading import GradeReport, format_report, grade_week
 from .model import predict_ats, predict_straight_up
 
 logger = logging.getLogger("metricbot")
@@ -52,6 +54,7 @@ def run_week(sport: str,
              legacy_extraction: bool = False,
              return_result: bool = False) -> int | RunResult:
     started = datetime.now(timezone.utc)
+    sport = normalize_sport(sport)
     config = Config.load(sport)
 
     explicit_week = season_year is not None and week is not None
@@ -134,6 +137,77 @@ def run_week(sport: str,
             dtos=dtos,
         )
     return 0
+
+
+def run_backtest(sport: str,
+                 season_year: int,
+                 week: int,
+                 prior_tail: int = 0,
+                 dump_intermediate: bool = False) -> "BacktestResult":
+    """Predict a historical week as-of, then grade against final scores.
+
+    Never publishes — a backtest exists to be scored, not to overwrite
+    live deetsMeter data. The prediction path is EXACTLY run_week's
+    as-of mode (same extraction, same model); grading is a second
+    extraction (final scores) plus pure-pandas scoring.
+    """
+    started = datetime.now(timezone.utc)
+    sport = normalize_sport(sport)
+    config = Config.load(sport)
+
+    logger.info("MetricBot %s backtest starting. Sport: %s, %d wk%d (tail=%d)",
+                MODEL_VERSION, sport, season_year, week, prior_tail)
+
+    training = extract_asof_training(config, season_year, week)
+    current_week = extract_asof_week(config, season_year, week, prior_tail)
+    logger.info("Extracted %d training rows; %d contests for week %d",
+                len(training), len(current_week), week)
+
+    su = predict_straight_up(training, current_week)
+    predictions = predict_ats(su)
+
+    scores = extract_final_scores(config, season_year, week)
+    report = grade_week(predictions, scores)
+
+    if dump_intermediate:
+        label = f"{sport}_backtest_{season_year}_wk{week}_tail{prior_tail}"
+        _dump(training, current_week, predictions,
+              build_prediction_dtos(predictions), label)
+
+    elapsed = (datetime.now(timezone.utc) - started).total_seconds()
+    logger.info("Backtest complete in %.1fs. SU %s, ATS %s, model MAE %s vs market %s",
+                elapsed, report.su.get("accuracy"), report.ats.get("accuracy"),
+                report.margin.get("model_mae"), report.margin.get("market_mae"))
+
+    return BacktestResult(
+        sport=sport,
+        season_year=season_year,
+        week=week,
+        prior_season_tail=prior_tail,
+        training_rows=su.training_rows,
+        in_sample_mae=su.mae,
+        residual_std=su.residual_std,
+        report=report,
+        elapsed_seconds=elapsed,
+    )
+
+
+@dataclass
+class BacktestResult:
+    sport: str
+    season_year: int
+    week: int
+    prior_season_tail: int
+    training_rows: int
+    in_sample_mae: float
+    residual_std: float
+    report: GradeReport
+    elapsed_seconds: float
+
+    def format(self) -> str:
+        header = (f"BACKTEST {self.sport} {self.season_year} week {self.week} "
+                  f"(tail={self.prior_season_tail}) — {MODEL_VERSION}")
+        return format_report(self.report, header)
 
 
 def _dump(training: pd.DataFrame,

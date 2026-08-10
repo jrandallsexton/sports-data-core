@@ -295,6 +295,28 @@ namespace SportsData.Api.Application.Admin
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Backtest a historical week: predict it as-of (only information
+        /// available entering the week), then grade against final scores —
+        /// SU accuracy vs baselines, ATS with pushes excluded-and-counted,
+        /// model-vs-market margin MAE, Brier + calibration deciles. Never
+        /// publishes predictions.
+        ///
+        /// Example: POST /admin/metricbot/backtest
+        /// Body: { "sport": "FootballNcaa", "seasonYear": 2025, "week": 6,
+        ///         "priorSeasonTail": 5 }
+        /// </summary>
+        [HttpPost]
+        [Route("metricbot/backtest")]
+        public async Task<ActionResult<MetricBotBacktestResponse>> BacktestMetricBotWeek(
+            [FromBody] MetricBotBacktestRequest request,
+            [FromServices] IProvideMetricBot metricBot,
+            CancellationToken cancellationToken)
+        {
+            var result = await metricBot.BacktestAsync(request, cancellationToken);
+            return result.ToActionResult();
+        }
+
         [HttpGet]
         [Route("metricbot/health")]
         public async Task<IActionResult> GetMetricBotHealth(

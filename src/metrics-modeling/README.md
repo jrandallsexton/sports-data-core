@@ -23,51 +23,75 @@ cd C:\Projects\sports-data\src\metrics-modeling
 # experiments (entering-week features, leak-free training).
 
 # Safest first contact: full pipeline, no POST, artifacts written to .\data
-.venv\Scripts\python.exe -m metricbot run-week --sport ncaaf --dry-run --dump-intermediate
+.venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --dry-run --dump-intermediate
 
 # The real Tuesday-night run: predict the current NCAAFB week and publish.
 # In weeks 1-2 (little/no current-season data) add the tail or the slate
 # will be empty/thin:
-.venv\Scripts\python.exe -m metricbot run-week --sport ncaaf --prior-season-tail 5
+.venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --prior-season-tail 5
 
 # Mid-season, once teams have games, the tail is optional:
-.venv\Scripts\python.exe -m metricbot run-week --sport ncaaf
+.venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa
 
 # Same for the NFL week (its own database, same model)
-.venv\Scripts\python.exe -m metricbot run-week --sport nfl --prior-season-tail 5
+.venv\Scripts\python.exe -m metricbot run-week --sport FootballNfl --prior-season-tail 5
 
 # Something looks off? Re-run with artifacts + debug logging
-.venv\Scripts\python.exe -m metricbot run-week --sport ncaaf --dry-run --dump-intermediate --verbose
+.venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --dry-run --dump-intermediate --verbose
 
 # ── AS-OF MODE (backtests / experiments — NEVER posts without --publish) ─
 
 # Backtest 2025 week 6 exactly as the model would have seen it
-.venv\Scripts\python.exe -m metricbot run-week --sport ncaaf --season-year 2025 --week 6 --dump-intermediate
+.venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --season-year 2025 --week 6 --dump-intermediate
 
 # Early-season experiment: week 2 with prior-season tail on...
-.venv\Scripts\python.exe -m metricbot run-week --sport ncaaf --season-year 2025 --week 2 --prior-season-tail 5 --dump-intermediate
+.venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --season-year 2025 --week 2 --prior-season-tail 5 --dump-intermediate
 
 # ...and the same week with it off, to compare
-.venv\Scripts\python.exe -m metricbot run-week --sport ncaaf --season-year 2025 --week 2 --dump-intermediate
+.venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --season-year 2025 --week 2 --dump-intermediate
 
 # NFL backtest
-.venv\Scripts\python.exe -m metricbot run-week --sport nfl --season-year 2025 --week 10 --dump-intermediate
+.venv\Scripts\python.exe -m metricbot run-week --sport FootballNfl --season-year 2025 --week 10 --dump-intermediate
 
 # Sweep a season's weeks (PowerShell loop; artifacts pile up in .\data)
 4..14 | ForEach-Object {
-  .venv\Scripts\python.exe -m metricbot run-week --sport ncaaf --season-year 2025 --week $_ --dump-intermediate
+  .venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --season-year 2025 --week $_ --dump-intermediate
 }
 
 # Deliberately publish an as-of run's predictions (rare; know why first)
-.venv\Scripts\python.exe -m metricbot run-week --sport ncaaf --season-year 2025 --week 6 --publish
+.venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --season-year 2025 --week 6 --publish
+
+# ── BACKTEST (predict as-of + grade against final scores; never posts) ─
+
+# Grade a single historical week
+.venv\Scripts\python.exe -m metricbot backtest --sport FootballNcaa --season-year 2025 --week 6 --prior-season-tail 5
+
+# The tail experiment, graded: same week with and without
+.venv\Scripts\python.exe -m metricbot backtest --sport FootballNcaa --season-year 2025 --week 2 --prior-season-tail 5
+.venv\Scripts\python.exe -m metricbot backtest --sport FootballNcaa --season-year 2025 --week 2
+
+# Sweep and grade a season
+4..14 | ForEach-Object {
+  .venv\Scripts\python.exe -m metricbot backtest --sport FootballNcaa --season-year 2025 --week $_ --prior-season-tail 5
+}
 ```
+
+The grade report covers: SU accuracy vs always-home and
+favorite-by-spread baselines; ATS accuracy vs the 52.4% break-even
+(pushes excluded and counted); out-of-sample margin MAE/RMSE for the
+model AND for the spread itself on the same games (model vs market —
+the honest head-to-head); Brier scores; calibration deciles
+(predicted 70% should win ~70%). O/U is absent by design — the model
+predicts margin, not totals. In prod, the same report comes from
+`POST /admin/metricbot/backtest` (see Deployment below).
 
 Flag notes:
 
 - `--dry-run` — everything except the POST; inspect logs/DTO counts first.
 - `--dump-intermediate` — writes CSV/JSON artifacts to `.\data`
   (gitignored — contains prod-derived data). As-of artifacts are named
-  `*_ncaaf_asof_2025_wk6_tail5.*`; live ones `*_ncaaf_week_N.*`.
+  `*_FootballNcaa_asof_2025_wk6_tail5.*`; live ones
+  `*_FootballNcaa_live_2026_wk1_tail5.*`.
 - Live mode has no week flag: `sql/detect_current_season_week.sql`
   resolves NOW to (season, week) — the open window, or the next upcoming
   non-preseason week.
@@ -132,8 +156,9 @@ either works. Never committed, repo is public:
 | `METRICBOT_ADMIN_TOKEN` | X-Admin-Token for the ingestion endpoint |
 | `METRICBOT_USER_ID` | optional GUID; defaults to the MetricBot synthetic user (`b210d677-…`) |
 
-The sport flag picks the database (`sdProducer.FootballNcaa` /
-`sdProducer.FootballNfl`).
+The sport flag takes the platform's Sport enum name (case-insensitive)
+and picks the matching database — deliberately ONE vocabulary across
+C# and Python, no translation layer.
 
 ## Layout
 
@@ -151,20 +176,21 @@ The sport flag picks the database (`sdProducer.FootballNcaa` /
 
 ## Verification (first run)
 
-1. `.venv\Scripts\python.exe -m metricbot run-week --sport ncaaf --season-year 2026 --week 1 --prior-season-tail 5 --dump-intermediate`
-   (works TODAY, pre-season: features come from 2025 tails)
+1. `.venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --season-year 2026 --week 1 --prior-season-tail 5 --dump-intermediate`
+   (runs pre-season: with the tail flag, week-1 features come from the
+   prior season's final games, so no current-season data is required)
 2. Parity (mid-season, once 2026 metrics exist): run with and without
    `--legacy-extraction` for the same week and compare predictions —
    entering-week aggregates should match the live FranchiseSeasonMetric
    values; training deltas reflect the leak fixes, documented in the
    design doc.
-3. Live publish when happy: `run-week --sport ncaaf --prior-season-tail 5`.
+3. Live publish when happy: `run-week --sport FootballNcaa --prior-season-tail 5`.
 4. First as-of sanity check: pick a team you know in
-   `data\current_ncaaf_asof_2025_wk6_tail0.csv` — its feature values
+   `data\current_FootballNcaa_asof_2025_wk6_tail0.csv` — its feature values
    should reflect ONLY weeks 1–5 (they should NOT match the live
    `FranchiseSeasonMetric` row, which includes the full season).
 
-   .venv\Scripts\python.exe -m metricbot run-week --sport nfl --season-year 2026 --week 1 --prior-season-tail 5 --dump-intermediate
+   .venv\Scripts\python.exe -m metricbot run-week --sport FootballNfl --season-year 2026 --week 1 --prior-season-tail 5 --dump-intermediate
 
 ## Deployment (Phase B)
 
@@ -214,7 +240,7 @@ curl http://localhost:8080/health
 
 ```
 POST /admin/metricbot/run-week      (X-Admin-Token)
-{ "sport": "ncaaf", "seasonYear": 2025, "week": 6,
+{ "sport": "FootballNcaa", "seasonYear": 2025, "week": 6,
   "priorSeasonTail": 5, "includeDtos": true }
 ```
 

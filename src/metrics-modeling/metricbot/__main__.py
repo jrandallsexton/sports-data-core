@@ -6,7 +6,8 @@ import argparse
 import logging
 import sys
 
-from .pipeline import run_week
+from .config import normalize_sport
+from .pipeline import run_backtest, run_week
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -20,8 +21,10 @@ def main(argv: list[str] | None = None) -> int:
         "run-week",
         help="Extract current-week slate, train, predict SU + ATS, publish to the API.")
     run.add_argument(
-        "--sport", choices=["ncaaf", "nfl"], default="ncaaf",
-        help="Which football league's database to run against (default: ncaaf).")
+        "--sport", type=normalize_sport, default="FootballNcaa",
+        metavar="{FootballNcaa,FootballNfl}",
+        help="Platform Sport enum name (case-insensitive). "
+             "Default: FootballNcaa.")
     run.add_argument(
         "--dry-run", action="store_true",
         help="Do everything except the POST — inspect DTO counts/logs first.")
@@ -52,12 +55,48 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument(
         "--verbose", action="store_true", help="Debug-level logging.")
 
+    backtest = subparsers.add_parser(
+        "backtest",
+        help="Predict a historical week as-of, grade against final scores. "
+             "Never publishes.")
+    backtest.add_argument(
+        "--sport", type=normalize_sport, default="FootballNcaa",
+        metavar="{FootballNcaa,FootballNfl}",
+        help="Platform Sport enum name (case-insensitive).")
+    backtest.add_argument("--season-year", type=int, required=True)
+    backtest.add_argument("--week", type=int, required=True)
+    backtest.add_argument(
+        "--prior-season-tail", type=int, default=0, metavar="N",
+        help="Same top-up semantics as run-week — and an experiment axis: "
+             "grade a week with and without it and compare.")
+    backtest.add_argument(
+        "--dump-intermediate", action="store_true",
+        help="Write the prediction artifacts to ./data alongside the grade.")
+    backtest.add_argument(
+        "--verbose", action="store_true", help="Debug-level logging.")
+
     args = parser.parse_args(argv)
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s %(message)s",
     )
+
+    if args.command == "backtest":
+        try:
+            result = run_backtest(
+                sport=args.sport,
+                season_year=args.season_year,
+                week=args.week,
+                prior_tail=args.prior_season_tail,
+                dump_intermediate=args.dump_intermediate,
+            )
+            print()
+            print(result.format())
+            return 0
+        except Exception as ex:  # noqa: BLE001 — CLI boundary
+            logging.getLogger("metricbot").exception("Backtest failed: %s", ex)
+            return 1
 
     if args.command == "run-week":
         try:

@@ -40,7 +40,10 @@ class ExtractionError(RuntimeError):
     pass
 
 
-def _run_psql(config: Config, sql_file: Path, variables: dict[str, int] | None = None) -> pd.DataFrame:
+def _run_psql(config: Config,
+              sql_file: Path,
+              variables: dict[str, int] | None = None,
+              allow_empty: bool = False) -> pd.DataFrame:
     if not sql_file.is_file():
         raise ExtractionError(f"SQL file not found: {sql_file}")
 
@@ -113,10 +116,13 @@ def extract_asof_week(config: Config, season_year: int, week: int, prior_tail: i
 
 
 def extract_final_scores(config: Config, season_year: int, week: int) -> pd.DataFrame:
-    """Final scores for grading: the (season, week) slate's completed
-    games — ContestId, HomeScore, AwayScore."""
+    """Final scores for grading: the (season, week) slate's FINALIZED
+    games — ContestId, HomeScore, AwayScore. Empty is a legitimate
+    result (backtesting a week nothing has finished in), and grade_week
+    turns it into an all-ungradeable report rather than an error."""
     return _run_psql(config, GRADING_SCORES_SQL,
-                     {"season_year": season_year, "week": week})
+                     {"season_year": season_year, "week": week},
+                     allow_empty=True)
 
 
 def detect_current_season_week(config: Config) -> tuple[int, int]:

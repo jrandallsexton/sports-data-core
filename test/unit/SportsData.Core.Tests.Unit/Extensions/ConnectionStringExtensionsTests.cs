@@ -12,12 +12,12 @@ namespace SportsData.Core.Tests.Unit.Extensions
         public void RedactCredentials_MasksPassword_AndKeepsDiagnostics()
         {
             const string connString =
-                "Host=db.example.invalid;Port=5432;Username=example-user;Password=sup3r$ecret!!;" +
+                "Host=db.example.invalid;Port=5432;Username=example-user;Password=fixture-password;" +
                 "Database=ExampleDb;Maximum Pool Size=5;Application Name=Example.Api.Data;";
 
             var redacted = connString.RedactCredentials();
 
-            redacted.Should().NotContain("sup3r$ecret!!");
+            redacted.Should().NotContain("fixture-password");
             redacted.Should().Contain("Password=***");
 
             // Everything an operator actually needs at startup survives.
@@ -38,6 +38,20 @@ namespace SportsData.Core.Tests.Unit.Extensions
         public void RedactCredentials_HandlesKeySpellingsAndCasing(string connString)
         {
             connString.RedactCredentials().Should().NotContain("secret");
+        }
+
+        [Theory]
+        [InlineData("Host=h;Password='first;second';Database=d")]
+        [InlineData("Host=h;Password=\"first;second\";Database=d")]
+        public void RedactCredentials_MasksQuotedValuesContainingSemicolons(string connString)
+        {
+            // Npgsql allows semicolons inside quoted values; a naive
+            // "up to the next semicolon" match would leak the tail.
+            var redacted = connString.RedactCredentials();
+
+            redacted.Should().NotContain("first");
+            redacted.Should().NotContain("second");
+            redacted.Should().Contain("Database=d");
         }
 
         [Fact]

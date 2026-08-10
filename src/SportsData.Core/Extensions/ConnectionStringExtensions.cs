@@ -5,10 +5,13 @@ namespace SportsData.Core.Extensions
 {
     public static class ConnectionStringExtensions
     {
-        // Npgsql accepts several spellings for the credential keys; match
-        // them all, case-insensitively, up to the next ';' or end of string.
+        // Npgsql accepts several spellings for the credential keys, and
+        // permits quoted values containing semicolons (Password='a;b' or
+        // "a;b") — the value alternation must consume a quoted value
+        // whole before falling back to "up to the next semicolon", or the
+        // tail of the password leaks past the mask.
         private static readonly Regex SecretKeys = new(
-            @"\b(Password|Pwd)\s*=\s*[^;]*",
+            @"\b(Password|Pwd)\s*=\s*('[^']*'|""[^""]*""|[^;]*)",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         /// <summary>

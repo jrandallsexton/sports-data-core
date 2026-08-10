@@ -83,35 +83,49 @@ def grade_week(predictions: pd.DataFrame, scores: pd.DataFrame) -> GradeReport:
     decided = graded[graded["ActualMargin"] != 0].copy()
     ties = len(graded) - len(decided)
 
-    actual_home_win = decided["ActualMargin"] > 0
-    picked_home = decided["WinProbability"] >= 0.5
-    su_correct = int((picked_home == actual_home_win).sum())
+    if len(decided) == 0:
+        # Every graded game tied: means over empty frames are nan, and a
+        # nan Brier in the report reads as a number. Say "no data" instead.
+        report.su = {
+            "decided": 0,
+            "ties_excluded": ties,
+            "correct": 0,
+            "accuracy": None,
+            "baseline_always_home": None,
+            "baseline_favorite": {"games_with_spread": 0, "accuracy": None},
+            "brier": None,
+            "brier_climatology": None,
+        }
+    else:
+        actual_home_win = decided["ActualMargin"] > 0
+        picked_home = decided["WinProbability"] >= 0.5
+        su_correct = int((picked_home == actual_home_win).sum())
 
-    # Favorite-by-spread baseline: spread < 0 = home favored. Pick-em
-    # (0) and missing spreads drop out of this baseline's denominator.
-    with_spread = decided[decided["Spread"].notna() & (decided["Spread"] != 0)]
-    favorite_correct = int(
-        ((with_spread["Spread"] < 0) == (with_spread["ActualMargin"] > 0)).sum())
+        # Favorite-by-spread baseline: spread < 0 = home favored. Pick-em
+        # (0) and missing spreads drop out of this baseline's denominator.
+        with_spread = decided[decided["Spread"].notna() & (decided["Spread"] != 0)]
+        favorite_correct = int(
+            ((with_spread["Spread"] < 0) == (with_spread["ActualMargin"] > 0)).sum())
 
-    su_brier = float(np.mean(
-        (decided["WinProbability"] - actual_home_win.astype(float)) ** 2))
-    home_rate = float(actual_home_win.mean())
-    climatology_brier = float(np.mean(
-        (home_rate - actual_home_win.astype(float)) ** 2))
+        su_brier = float(np.mean(
+            (decided["WinProbability"] - actual_home_win.astype(float)) ** 2))
+        home_rate = float(actual_home_win.mean())
+        climatology_brier = float(np.mean(
+            (home_rate - actual_home_win.astype(float)) ** 2))
 
-    report.su = {
-        "decided": len(decided),
-        "ties_excluded": ties,
-        "correct": su_correct,
-        "accuracy": _ratio(su_correct, len(decided)),
-        "baseline_always_home": round(home_rate, 4) if len(decided) else None,
-        "baseline_favorite": {
-            "games_with_spread": len(with_spread),
-            "accuracy": _ratio(favorite_correct, len(with_spread)),
-        },
-        "brier": round(su_brier, 4),
-        "brier_climatology": round(climatology_brier, 4),
-    }
+        report.su = {
+            "decided": len(decided),
+            "ties_excluded": ties,
+            "correct": su_correct,
+            "accuracy": _ratio(su_correct, len(decided)),
+            "baseline_always_home": round(home_rate, 4),
+            "baseline_favorite": {
+                "games_with_spread": len(with_spread),
+                "accuracy": _ratio(favorite_correct, len(with_spread)),
+            },
+            "brier": round(su_brier, 4),
+            "brier_climatology": round(climatology_brier, 4),
+        }
 
     # ── Against the spread ───────────────────────────────────────────
     spread_games = graded[graded["Spread"].notna()].copy()
@@ -181,26 +195,34 @@ def format_report(report: GradeReport, header: str) -> str:
     if r.su:
         su = r.su
         fav = su["baseline_favorite"]
-        lines += [
-            "",
-            f"  STRAIGHT UP   {su['correct']}/{su['decided']}  "
-            f"({su['accuracy']:.1%})" if su['accuracy'] is not None else "  STRAIGHT UP   n/a",
-            f"    vs always-home {su['baseline_always_home']:.1%}"
-            + (f"  |  vs favorite {fav['accuracy']:.1%} ({fav['games_with_spread']} spread games)"
-               if fav["accuracy"] is not None else ""),
-            f"    Brier {su['brier']:.4f} (climatology {su['brier_climatology']:.4f}; lower is better)"
-            + (f"  |  {su['ties_excluded']} ties excluded" if su["ties_excluded"] else ""),
-        ]
+        if su["accuracy"] is None:
+            lines += [
+                "",
+                f"  STRAIGHT UP   n/a — no decided games"
+                + (f" ({su['ties_excluded']} ties excluded)" if su["ties_excluded"] else ""),
+            ]
+        else:
+            lines += [
+                "",
+                f"  STRAIGHT UP   {su['correct']}/{su['decided']}  ({su['accuracy']:.1%})",
+                f"    vs always-home {su['baseline_always_home']:.1%}"
+                + (f"  |  vs favorite {fav['accuracy']:.1%} ({fav['games_with_spread']} spread games)"
+                   if fav["accuracy"] is not None else ""),
+                f"    Brier {su['brier']:.4f} (climatology {su['brier_climatology']:.4f}; lower is better)"
+                + (f"  |  {su['ties_excluded']} ties excluded" if su["ties_excluded"] else ""),
+            ]
     if r.ats:
         ats = r.ats
-        lines += [
-            "",
-            f"  ATS           {ats['correct']}/{ats['decided']}  "
-            f"({ats['accuracy']:.1%})" if ats['accuracy'] is not None else "  ATS           n/a",
-            f"    break-even {ATS_BREAK_EVEN:.1%}  |  {ats['pushes_excluded']} pushes excluded"
-            + (f"  |  {ats['no_spread_ungraded']} without a spread" if ats["no_spread_ungraded"] else "")
-            + (f"  |  Brier {ats['brier']:.4f}" if ats["brier"] is not None else ""),
-        ]
+        if ats["accuracy"] is None:
+            lines += ["", "  ATS           n/a — no decided spread games"]
+        else:
+            lines += [
+                "",
+                f"  ATS           {ats['correct']}/{ats['decided']}  ({ats['accuracy']:.1%})",
+                f"    break-even {ATS_BREAK_EVEN:.1%}  |  {ats['pushes_excluded']} pushes excluded"
+                + (f"  |  {ats['no_spread_ungraded']} without a spread" if ats["no_spread_ungraded"] else "")
+                + (f"  |  Brier {ats['brier']:.4f}" if ats["brier"] is not None else ""),
+            ]
     if r.margin:
         m = r.margin
         market = (f"  |  market (spread) MAE {m['market_mae']:.2f} on {m['market_games']}"

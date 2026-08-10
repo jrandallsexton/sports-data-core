@@ -147,3 +147,44 @@ def test_format_report_renders_every_section():
     assert "MARGIN" in text
     assert "CALIBRATION" in text
     assert "break-even 52.4%" in text
+
+
+def test_all_ties_reports_no_data_instead_of_nan():
+    predictions = pd.DataFrame([
+        _prediction("t1", 0.60, 0.55, 2.0, -1.0),
+        _prediction("t2", 0.45, 0.40, -1.0, 2.0),
+    ])
+    scores = pd.DataFrame([_score("t1", 17, 17), _score("t2", 20, 20)])
+
+    report = grade_week(predictions, scores)
+
+    assert report.su["decided"] == 0
+    assert report.su["ties_excluded"] == 2
+    assert report.su["accuracy"] is None
+    assert report.su["brier"] is None
+    assert report.su["baseline_always_home"] is None
+
+    text = format_report(report, "BACKTEST all-ties")
+    assert "nan" not in text.lower()
+    assert "no decided games" in text
+
+
+def test_zero_completed_games_is_all_ungradeable():
+    # Backtesting a week nothing has finished in: the scores extraction
+    # legitimately returns an empty frame (allow_empty), and the report
+    # says so instead of erroring.
+    predictions = pd.DataFrame([
+        _prediction("g1", 0.70, 0.55, 7.0, -7.0),
+        _prediction("g2", 0.60, 0.45, 3.0, -3.0),
+    ])
+    scores = pd.DataFrame(columns=["ContestId", "HomeScore", "AwayScore"])
+
+    report = grade_week(predictions, scores)
+
+    assert report.week_contests == 2
+    assert report.graded == 0
+    assert report.ungradeable == 2
+    assert report.su == {} and report.ats == {} and report.margin == {}
+
+    text = format_report(report, "BACKTEST empty")
+    assert "0 graded" in text

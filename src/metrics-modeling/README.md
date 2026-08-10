@@ -177,7 +177,8 @@ C# and Python, no translation layer.
 ## Verification (first run)
 
 1. `.venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --season-year 2026 --week 1 --prior-season-tail 5 --dump-intermediate`
-   (works TODAY, pre-season: features come from 2025 tails)
+   (runs pre-season: with the tail flag, week-1 features come from the
+   prior season's final games, so no current-season data is required)
 2. Parity (mid-season, once 2026 metrics exist): run with and without
    `--legacy-extraction` for the same week and compare predictions —
    entering-week aggregates should match the live FranchiseSeasonMetric

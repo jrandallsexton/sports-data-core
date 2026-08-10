@@ -16,5 +16,9 @@ LEFT JOIN public."SeasonPhase" sp ON sp."Id" = con."SeasonPhaseId"
 WHERE s."Year" = :season_year::int
   AND con."HomeScore" IS NOT NULL
   AND con."AwayScore" IS NOT NULL
+  -- Scores are written DURING live play (CompetitorScoreUpdated); only a
+  -- finalized contest's score is ground truth. Verified 2026-08-10:
+  -- 2023/2024 coverage is 100%, 2025 has a single unfinalized outlier.
+  AND con."FinalizedUtc" IS NOT NULL
   AND con."CancelledUtc" IS NULL
   AND (sp."TypeCode" IS NULL OR sp."TypeCode" <> 1);

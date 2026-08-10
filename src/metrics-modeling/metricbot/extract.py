@@ -83,7 +83,7 @@ def _run_psql(config: Config,
             f"psql failed for {sql_file.name} (exit {result.returncode}):\n{result.stderr.strip()}")
 
     frame = pd.read_csv(io.StringIO(result.stdout))
-    if frame.empty:
+    if frame.empty and not allow_empty:
         raise ExtractionError(
             f"{sql_file.name} returned zero rows — is the season week window open "
             f"and are metrics generated for {config.pg_database}?")

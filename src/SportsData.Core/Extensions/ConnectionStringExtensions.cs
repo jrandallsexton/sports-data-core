@@ -1,18 +1,15 @@
 using System;
-using System.Text.RegularExpressions;
+
+using Npgsql;
 
 namespace SportsData.Core.Extensions
 {
     public static class ConnectionStringExtensions
     {
-        // Npgsql accepts several spellings for the credential keys, and
-        // permits quoted values containing semicolons (Password='a;b' or
-        // "a;b") — the value alternation must consume a quoted value
-        // whole before falling back to "up to the next semicolon", or the
-        // tail of the password leaks past the mask.
-        private static readonly Regex SecretKeys = new(
-            @"\b(Password|Pwd)\s*=\s*('[^']*'|""[^""]*""|[^;]*)",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private const string Mask = "***";
+
+        private const string UnparseableMessage =
+            "(connection string could not be parsed; redacted in full)";
 
         /// <summary>
         /// Masks credentials in a connection string so it can be logged.
@@ -24,17 +21,37 @@ namespace SportsData.Core.Extensions
         /// puts the production database password in front of anyone with
         /// log access (and in any log export or screenshot). Always call
         /// this before writing a connection string anywhere.
+        ///
+        /// Parsing uses NpgsqlConnectionStringBuilder rather than a regex:
+        /// Npgsql accepts multiple password aliases (PWD, PSW) and quoted
+        /// values containing semicolons or doubled quotes — hand-rolled
+        /// matching leaks fragments on exactly those edges. If the string
+        /// cannot be parsed, nothing of it is returned: we cannot prove
+        /// which fragment is the secret.
         /// </remarks>
         public static string RedactCredentials(this string? connectionString)
         {
             if (string.IsNullOrWhiteSpace(connectionString))
                 return string.Empty;
 
-            return SecretKeys.Replace(connectionString, match =>
+            try
             {
-                var key = match.Value[..match.Value.IndexOf('=')].TrimEnd();
-                return $"{key}=***";
-            });
+                var builder = new NpgsqlConnectionStringBuilder(connectionString);
+
+                if (string.IsNullOrEmpty(builder.Password))
+                {
+                    // Parsed and provably credential-free: preserve the
+                    // original formatting exactly.
+                    return connectionString;
+                }
+
+                builder.Password = Mask;
+                return builder.ConnectionString;
+            }
+            catch (Exception)
+            {
+                return UnparseableMessage;
+            }
         }
     }
 }

@@ -189,8 +189,7 @@ def format_report(report: GradeReport, header: str) -> str:
     r = report
     lines = [
         header,
-        f"  Contests: {r.week_contests} predicted, {r.graded} graded, "
-        f"{r.ungradeable} ungradeable",
+        f"  Contests: {r.week_contests} predicted, {r.graded} graded, {r.ungradeable} ungradeable",
     ]
     if r.su:
         su = r.su
@@ -198,7 +197,7 @@ def format_report(report: GradeReport, header: str) -> str:
         if su["accuracy"] is None:
             lines += [
                 "",
-                f"  STRAIGHT UP   n/a — no decided games"
+                "  STRAIGHT UP   n/a — no decided games"
                 + (f" ({su['ties_excluded']} ties excluded)" if su["ties_excluded"] else ""),
             ]
         else:

@@ -34,6 +34,7 @@ namespace SportsData.Core.Tests.Unit.Extensions
         [InlineData("Host=h;password=secret;Database=d")]
         [InlineData("Host=h;PASSWORD=secret;Database=d")]
         [InlineData("Host=h;Pwd=secret;Database=d")]
+        [InlineData("Host=h;PSW=secret;Database=d")]
         [InlineData("Host=h;Password = secret;Database=d")]
         public void RedactCredentials_HandlesKeySpellingsAndCasing(string connString)
         {
@@ -52,6 +53,27 @@ namespace SportsData.Core.Tests.Unit.Extensions
             redacted.Should().NotContain("first");
             redacted.Should().NotContain("second");
             redacted.Should().Contain("Database=d");
+        }
+
+        [Fact]
+        public void RedactCredentials_MasksDoubledQuotesInsideQuotedValue()
+        {
+            var redacted = "Host=h;Password='fragment''tail;x';Database=d".RedactCredentials();
+
+            redacted.Should().NotContain("fragment");
+            redacted.Should().NotContain("tail");
+        }
+
+        [Fact]
+        public void RedactCredentials_UnparseableStringExposesNothing()
+        {
+            // Unclosed quote: parsing fails, and we cannot prove which
+            // fragment is the secret — so none of the input comes back.
+            var redacted = "Host=h;Password='fragment;Database=d".RedactCredentials();
+
+            redacted.Should().NotContain("fragment");
+            redacted.Should().NotContain("Host");
+            redacted.Should().Contain("redacted in full");
         }
 
         [Fact]

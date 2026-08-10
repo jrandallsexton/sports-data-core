@@ -3,8 +3,14 @@ calls out: pushes, ties, missing spreads, missing scores, baselines."""
 
 from __future__ import annotations
 
-import pandas as pd
+import subprocess
+from types import SimpleNamespace
 
+import pandas as pd
+import pytest
+
+from metricbot import extract
+from metricbot.config import Config
 from metricbot.grading import ATS_BREAK_EVEN, format_report, grade_week
 
 
@@ -188,3 +194,39 @@ def test_zero_completed_games_is_all_ungradeable():
 
     text = format_report(report, "BACKTEST empty")
     assert "0 graded" in text
+
+
+def _fake_config():
+    return Config(
+        pg_host="db.example.invalid", pg_user="u", pg_password="p",
+        pg_database="d", pg_port="5432",
+        api_base_url="http://api.example.invalid",
+        admin_token="t", metricbot_user_id="00000000-0000-0000-0000-000000000000")
+
+
+def test_extract_final_scores_allows_header_only_result(monkeypatch):
+    # psql --csv emits the header row even for zero-row results; a week
+    # nothing has finished in must come back as an empty frame, not an
+    # ExtractionError.
+    def fake_run(*args, **kwargs):
+        return SimpleNamespace(
+            returncode=0, stdout="ContestId,HomeScore,AwayScore\n", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    frame = extract.extract_final_scores(_fake_config(), 2026, 1)
+
+    assert frame.empty
+    assert list(frame.columns) == ["ContestId", "HomeScore", "AwayScore"]
+
+
+def test_extract_training_still_rejects_empty_results(monkeypatch):
+    # The default (allow_empty=False) behavior is unchanged: an empty
+    # training extraction is an error, not a silent no-op.
+    def fake_run(*args, **kwargs):
+        return SimpleNamespace(returncode=0, stdout="A,B\n", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    with pytest.raises(extract.ExtractionError, match="zero rows"):
+        extract.extract_training(_fake_config())

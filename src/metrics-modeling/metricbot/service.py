@@ -23,7 +23,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from . import MODEL_VERSION
-from .pipeline import RunResult, run_week
+from .pipeline import BacktestResult, RunResult, run_backtest, run_week
 
 logger = logging.getLogger("metricbot.service")
 
@@ -115,4 +115,57 @@ def post_run_week(request: RunWeekRequest) -> RunWeekResponse:
         published=result.published,
         elapsed_seconds=result.elapsed_seconds,
         dtos=result.dtos if request.include_dtos else None,
+    )
+
+
+class BacktestRequest(BaseModel):
+    sport: Literal["FootballNcaa", "FootballNfl"] = "FootballNcaa"
+    season_year: int = Field(ge=1990, le=2100)
+    week: int = Field(ge=1, le=25)
+    prior_season_tail: int = Field(default=0, ge=0, le=25)
+
+
+class BacktestResponse(BaseModel):
+    model_version: str
+    sport: str
+    season_year: int
+    week: int
+    prior_season_tail: int
+    training_rows: int
+    in_sample_mae: float
+    residual_std: float
+    elapsed_seconds: float
+    # grade_week's report: su / ats / margin / calibration sections.
+    grade: dict
+
+
+@app.post("/backtest", response_model=BacktestResponse)
+def post_backtest(request: BacktestRequest) -> BacktestResponse:
+    """Predict a historical week as-of, grade it against final scores.
+    Never publishes — backtests exist to be scored, not to overwrite
+    live deetsMeter data."""
+    try:
+        result: BacktestResult = run_backtest(
+            sport=request.sport,
+            season_year=request.season_year,
+            week=request.week,
+            prior_tail=request.prior_season_tail,
+        )
+    except SystemExit as ex:
+        raise HTTPException(status_code=400, detail=str(ex)) from ex
+    except Exception as ex:  # noqa: BLE001 — service boundary
+        logger.exception("backtest failed")
+        raise HTTPException(status_code=500, detail=f"{type(ex).__name__}: {ex}") from ex
+
+    return BacktestResponse(
+        model_version=MODEL_VERSION,
+        sport=result.sport,
+        season_year=result.season_year,
+        week=result.week,
+        prior_season_tail=result.prior_season_tail,
+        training_rows=result.training_rows,
+        in_sample_mae=result.in_sample_mae,
+        residual_std=result.residual_std,
+        elapsed_seconds=result.elapsed_seconds,
+        grade=result.report.to_dict(),
     )

@@ -29,6 +29,10 @@ namespace SportsData.Core.Infrastructure.Clients.MetricBot
             MetricBotRunRequest request,
             CancellationToken cancellationToken = default);
 
+        Task<Result<MetricBotBacktestResponse>> BacktestAsync(
+            MetricBotBacktestRequest request,
+            CancellationToken cancellationToken = default);
+
         Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default);
     }
 
@@ -146,6 +150,80 @@ namespace SportsData.Core.Infrastructure.Clients.MetricBot
                 : value[..MaxUpstreamErrorChars] + "... (truncated)";
         }
 
+        public async Task<Result<MetricBotBacktestResponse>> BacktestAsync(
+            MetricBotBacktestRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            if (!MetricBotSports.IsSupported(request.Sport))
+            {
+                return new Failure<MetricBotBacktestResponse>(
+                    default!,
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure(nameof(request.Sport),
+                        $"Unsupported sport '{request.Sport}'. MetricBot has football models only: " +
+                        $"{Sport.FootballNcaa} or {Sport.FootballNfl}.")]);
+            }
+
+            try
+            {
+                using var response = await _httpClient.PostAsJsonAsync(
+                    "backtest", request, JsonOptions, cancellationToken);
+
+                var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var detail = Truncate(body);
+
+                    _logger.LogError(
+                        "MetricBot backtest failed. Status: {StatusCode}, Body: {Body}",
+                        response.StatusCode, detail);
+
+                    var status = response.StatusCode is System.Net.HttpStatusCode.BadRequest
+                                 or System.Net.HttpStatusCode.UnprocessableEntity
+                        ? ResultStatus.BadRequest
+                        : ResultStatus.Error;
+
+                    return new Failure<MetricBotBacktestResponse>(
+                        default!,
+                        status,
+                        [new ValidationFailure("MetricBot", $"MetricBot returned {(int)response.StatusCode}: {detail}")]);
+                }
+
+                var result = JsonSerializer.Deserialize<MetricBotBacktestResponse>(body, JsonOptions);
+
+                if (result is null)
+                {
+                    return new Failure<MetricBotBacktestResponse>(
+                        default!,
+                        ResultStatus.Error,
+                        [new ValidationFailure("MetricBot", "MetricBot returned an unreadable response")]);
+                }
+
+                return new Success<MetricBotBacktestResponse>(result);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "MetricBot backtest timed out");
+                return new Failure<MetricBotBacktestResponse>(
+                    default!,
+                    ResultStatus.Error,
+                    [new ValidationFailure("MetricBot", "MetricBot did not respond before the client timeout elapsed")]);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "MetricBot backtest request failed");
+                return new Failure<MetricBotBacktestResponse>(
+                    default!,
+                    ResultStatus.Error,
+                    [new ValidationFailure("MetricBot", $"MetricBot request failed: {ex.Message}")]);
+            }
+        }
+
         public async Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default)
         {
             // The typed client's 10-minute timeout exists for training runs;
@@ -226,5 +304,33 @@ namespace SportsData.Core.Infrastructure.Clients.MetricBot
         /// shape belongs to the Python side and would drift.
         /// </summary>
         public object[]? Dtos { get; set; }
+    }
+
+    public class MetricBotBacktestRequest
+    {
+        public Sport Sport { get; set; } = Sport.FootballNcaa;
+        public int SeasonYear { get; set; }
+        public int Week { get; set; }
+        public int PriorSeasonTail { get; set; }
+    }
+
+    public class MetricBotBacktestResponse
+    {
+        public string ModelVersion { get; set; } = default!;
+        public Sport Sport { get; set; }
+        public int SeasonYear { get; set; }
+        public int Week { get; set; }
+        public int PriorSeasonTail { get; set; }
+        public int TrainingRows { get; set; }
+        public double InSampleMae { get; set; }
+        public double ResidualStd { get; set; }
+        public double ElapsedSeconds { get; set; }
+
+        /// <summary>
+        /// The grade report (su / ats / margin / calibration sections).
+        /// Deliberately opaque for the same reason as Dtos above — the
+        /// shape belongs to the Python grader.
+        /// </summary>
+        public object Grade { get; set; } = default!;
     }
 }

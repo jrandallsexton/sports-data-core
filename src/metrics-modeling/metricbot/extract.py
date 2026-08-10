@@ -33,6 +33,7 @@ CURRENT_WEEK_SQL = SQL_DIR / "competition_metrics_current_week.sql"
 ASOF_TRAINING_SQL = SQL_DIR / "competition_metrics_asof_training.sql"
 ASOF_WEEK_SQL = SQL_DIR / "competition_metrics_asof_week.sql"
 DETECT_WEEK_SQL = SQL_DIR / "detect_current_season_week.sql"
+GRADING_SCORES_SQL = SQL_DIR / "grading_scores.sql"
 
 
 class ExtractionError(RuntimeError):
@@ -109,6 +110,13 @@ def extract_asof_week(config: Config, season_year: int, week: int, prior_tail: i
     recent prior-season (regular/post) games."""
     return _run_psql(config, ASOF_WEEK_SQL,
                      {"season_year": season_year, "week": week, "prior_tail": prior_tail})
+
+
+def extract_final_scores(config: Config, season_year: int, week: int) -> pd.DataFrame:
+    """Final scores for grading: the (season, week) slate's completed
+    games — ContestId, HomeScore, AwayScore."""
+    return _run_psql(config, GRADING_SCORES_SQL,
+                     {"season_year": season_year, "week": week})
 
 
 def detect_current_season_week(config: Config) -> tuple[int, int]:

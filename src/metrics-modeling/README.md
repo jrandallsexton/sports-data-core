@@ -60,7 +60,30 @@ cd C:\Projects\sports-data\src\metrics-modeling
 
 # Deliberately publish an as-of run's predictions (rare; know why first)
 .venv\Scripts\python.exe -m metricbot run-week --sport FootballNcaa --season-year 2025 --week 6 --publish
+
+# ── BACKTEST (predict as-of + grade against final scores; never posts) ─
+
+# Grade a single historical week
+.venv\Scripts\python.exe -m metricbot backtest --sport FootballNcaa --season-year 2025 --week 6 --prior-season-tail 5
+
+# The tail experiment, graded: same week with and without
+.venv\Scripts\python.exe -m metricbot backtest --sport FootballNcaa --season-year 2025 --week 2 --prior-season-tail 5
+.venv\Scripts\python.exe -m metricbot backtest --sport FootballNcaa --season-year 2025 --week 2
+
+# Sweep and grade a season
+4..14 | ForEach-Object {
+  .venv\Scripts\python.exe -m metricbot backtest --sport FootballNcaa --season-year 2025 --week $_ --prior-season-tail 5
+}
 ```
+
+The grade report covers: SU accuracy vs always-home and
+favorite-by-spread baselines; ATS accuracy vs the 52.4% break-even
+(pushes excluded and counted); out-of-sample margin MAE/RMSE for the
+model AND for the spread itself on the same games (model vs market —
+the honest head-to-head); Brier scores; calibration deciles
+(predicted 70% should win ~70%). O/U is absent by design — the model
+predicts margin, not totals. In prod, the same report comes from
+`POST /admin/metricbot/backtest` (see Deployment below).
 
 Flag notes:
 

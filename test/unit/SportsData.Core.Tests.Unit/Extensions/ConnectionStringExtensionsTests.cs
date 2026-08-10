@@ -55,6 +55,22 @@ namespace SportsData.Core.Tests.Unit.Extensions
             redacted.Should().Contain("Database=d");
         }
 
+        [Theory]
+        [InlineData("Host=h;Password=leaked-secret;PWD=;Database=d")]
+        [InlineData("Host=h;Password=leaked-secret;PSW=;Database=d")]
+        [InlineData("Host=h;SSL Password=leaked-secret;SSL Password=;Database=d")]
+        public void RedactCredentials_DuplicateAliasesCannotBlankTheirWayPastTheMask(string connString)
+        {
+            // Npgsql resolves duplicate keys last-wins, so a trailing empty
+            // alias makes the builder's FINAL value empty while the secret
+            // still sits in the original text — key presence, not final
+            // value, must gate the verbatim passthrough.
+            var redacted = connString.RedactCredentials();
+
+            redacted.Should().NotContain("leaked-secret");
+            redacted.Should().Contain("Database=d");
+        }
+
         [Fact]
         public void RedactCredentials_MasksSslPassword()
         {

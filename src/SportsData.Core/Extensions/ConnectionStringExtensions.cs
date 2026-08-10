@@ -1,4 +1,5 @@
 using System;
+using System.Text.RegularExpressions;
 
 using Npgsql;
 
@@ -11,10 +12,23 @@ namespace SportsData.Core.Extensions
         private const string UnparseableMessage =
             "(connection string could not be parsed; redacted in full)";
 
+        // Key-presence probes against the RAW text. The builder cannot be
+        // the gate: duplicate aliases resolve last-wins and empty values
+        // are dropped from its collection, so "Password=secret;PWD=" looks
+        // credential-free to the builder while the secret still sits in
+        // the original string. These match KEYS only, never values.
+        private static readonly Regex PasswordKeyProbe = new(
+            @"(^|;)\s*(password|pwd|psw)\s*=",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex SslPasswordKeyProbe = new(
+            @"(^|;)\s*ssl\s*password\s*=",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         /// <summary>
         /// Masks credentials in a connection string so it can be logged.
         /// Everything operationally useful — host, port, database, pool
-        /// size, application name — survives; only the secret is replaced.
+        /// size, application name — survives; only secrets are replaced.
         /// </summary>
         /// <remarks>
         /// Startup logs ship to Seq, so an unredacted connection string
@@ -22,35 +36,38 @@ namespace SportsData.Core.Extensions
         /// log access (and in any log export or screenshot). Always call
         /// this before writing a connection string anywhere.
         ///
-        /// Parsing uses NpgsqlConnectionStringBuilder rather than a regex:
-        /// Npgsql accepts multiple password aliases (PWD, PSW) and quoted
-        /// values containing semicolons or doubled quotes — hand-rolled
-        /// matching leaks fragments on exactly those edges. If the string
-        /// cannot be parsed, nothing of it is returned: we cannot prove
-        /// which fragment is the secret.
+        /// Strategy: a raw-text probe decides whether credential keys are
+        /// present at all (verbatim passthrough only when provably none),
+        /// then NpgsqlConnectionStringBuilder re-renders the string with
+        /// the credential properties masked — the rebuild discards every
+        /// original occurrence, including duplicate aliases. A string that
+        /// has credential keys but cannot be parsed returns a fixed
+        /// message: we cannot prove which fragment is the secret.
         /// </remarks>
         public static string RedactCredentials(this string? connectionString)
         {
             if (string.IsNullOrWhiteSpace(connectionString))
                 return string.Empty;
 
+            var hasPasswordKey = PasswordKeyProbe.IsMatch(connectionString);
+            var hasSslPasswordKey = SslPasswordKeyProbe.IsMatch(connectionString);
+
+            if (!hasPasswordKey && !hasSslPasswordKey)
+            {
+                // Provably credential-free: preserve the original
+                // formatting exactly.
+                return connectionString;
+            }
+
             try
             {
                 var builder = new NpgsqlConnectionStringBuilder(connectionString);
 
-                if (string.IsNullOrEmpty(builder.Password) &&
-                    string.IsNullOrEmpty(builder.SslPassword))
-                {
-                    // Parsed and provably credential-free: preserve the
-                    // original formatting exactly.
-                    return connectionString;
-                }
-
-                if (!string.IsNullOrEmpty(builder.Password))
+                if (hasPasswordKey)
                     builder.Password = Mask;
 
                 // Client-certificate key passphrase — a credential too.
-                if (!string.IsNullOrEmpty(builder.SslPassword))
+                if (hasSslPasswordKey)
                     builder.SslPassword = Mask;
 
                 return builder.ConnectionString;

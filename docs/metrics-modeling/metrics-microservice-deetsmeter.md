@@ -376,22 +376,29 @@ Grader: `POST /admin/metricbot/backtest` (shipped #612). Weeks 4, 5, 6,
 8, 10; tail=0 per protocol (tail is an early-weeks-only question).
 1,439 graded games.
 
-| wk | SU | always-home | favorite (spread games) | ATS | model MAE | market MAE |
-|---|---|---|---|---|---|---|
-| 4 | 64.2% | 57.9% | 76.5% (98) | 50.5% | 19.60 | 11.47 |
-| 5 | 65.9% | 54.9% | 78.3% (106) | 44.3% | 17.47 | 10.22 |
-| 6 | 67.3% | 57.0% | 77.9% (95) | 45.3% | 17.53 | 11.22 |
-| 8 | 71.5% | 55.2% | 73.2% (108) | 50.9% | 16.63 | 12.20 |
-| 10 | 77.0% | 54.6% | 73.6% (110) | 45.5% | 15.43 | 12.44 |
+| wk | graded | SU | always-home | favorite (spread games) | ATS | model MAE | market MAE | Brier | climatology |
+|---|---|---|---|---|---|---|---|---|---|
+| 4 | 285 | 64.2% | 57.9% | 76.5% (98) | 50.5% (97) | 19.60 | 11.47 | 0.2378 | 0.2438 |
+| 5 | 264 | 65.9% | 54.9% | 78.3% (106) | 44.3% (106) | 17.47 | 10.22 | 0.2229 | 0.2476 |
+| 6 | 291 | 67.3% | 57.0% | 77.9% (95) | 45.3% (95) | 17.53 | 11.22 | 0.2146 | 0.2450 |
+| 8 | 295 | 71.5% | 55.2% | 73.2% (108) | 50.9% (108) | 16.63 | 12.20 | 0.1939 | 0.2472 |
+| 10 | 304 | 77.0% | 54.6% | 73.6% (110) | 45.5% (110) | 15.43 | 12.44 | 0.1598 | 0.2479 |
 
 Weighted: SU 69.4%, ATS 47.3% (n=516), model MAE 17.30 vs market 11.53.
-Brier beats climatology every week, dramatically by wk10 (0.160 vs
-0.248).
+Denominator note: favorite-baseline games (517) exceed ATS games (516)
+by one — a push, excluded from ATS grading per the harness rules but
+still SU-decided and so counted for the favorite baseline.
 
-**Conclusions:**
-- SU signal is real and GROWS with the season (aggregates stabilize) —
-  64% -> 77% by week 10. deetsMeter SU picks are defensible.
-- ATS: no edge, settled at this sample size. Frame as entertainment.
+**Conclusions (scope: five sampled weeks of one season, 2025 NCAAFB —
+observed results, not a multi-season generalization):**
+- SU accuracy rose monotonically across the sampled weeks — 64% (wk4)
+  -> 77% (wk10) — consistent with season-aggregate features
+  stabilizing as games accumulate. Brier beat climatology in every
+  sampled week (per-week values in the table). On this evidence,
+  deetsMeter SU picks are defensible; repeat over 2024 (and 2026 as it
+  arrives) before treating the trend as a law.
+- ATS: no observed edge — 47.3% weighted, below break-even in 4 of 5
+  weeks and never above 51%. Frame as entertainment.
 - Vegas beats the model by ~6 pts/game on margin, consistently.
   Consistent with the stated goal (calibration, not beating Vegas).
 - In-sample MAE 13.9 vs out-of-sample ~17.3: the honest gap; every
@@ -402,12 +409,16 @@ Two defects: 0.8–0.9 runs ~10pts hot (84.4% -> 74.9%, n=167), and
 0.0–0.1 is broken (5.6% -> 35.0% actual, n=40) while 0.9–1.0 is
 near-perfect (94.5% -> 94.3%).
 
-**Autopsy of the 0.0–0.1 bucket (40 games):** neutral-site theory
-REFUTED (2/40 off home venue, zero event notes). Root cause: **no
-opponent-strength adjustment in the features.** All metrics are raw
+**Autopsy of the 0.0–0.1 bucket (40 games):** the neutral-site theory
+is not supported — 2/40 games were off the home team's venue and none
+carried an event note (caveat: both signals depend on VenueId/EventNote
+completeness, which was not separately audited). Leading explanation,
+consistent with all the evidence: **no opponent-strength adjustment in
+the features.** All metrics are raw
 season averages; schedule-inflated stats are indistinguishable from
 real ones. Smoking guns: the model gave >=90% to LOWER-DIVISION road
-teams that then lost 47-14 (fcs @ fbs) and 35-9 (d2 @ fcs). Extreme
+teams that then lost 47-14 (fcs @ fbs) and 35-9 (d2 @ fcs) — hard to
+explain by any rival theory. Extreme
 away-favorite predictions concentrate the inflation failure because a
 90% road win requires stats overwhelming home field — inflated stats
 are exactly the kind that do. The asymmetry (0.9–1.0 fine) exists
@@ -423,12 +434,21 @@ variance.
    mismatches).
 2. MetricBot-v1.1: opponent-adjusted features (simple SOS — e.g.
    opponent-average-allowed versions of core metrics) and/or division
-   indicators from GroupSeasonMap (available at feature time). Bump
-   MODEL_VERSION; the grader measures whether it worked.
+   indicators from GroupSeasonMap. Bump MODEL_VERSION; the grader
+   measures whether it worked. Point-in-time caveat: GroupSeasonMap is
+   SEASON-scoped (a FranchiseSeason field), which is the right
+   granularity for division indicators — divisions don't change
+   mid-season — but the field is mutable if the hierarchy is ever
+   rebuilt/backfilled, so backtests assume the stored per-season value
+   reflects that season's actual membership. Acceptable for v1.1;
+   revisit if hierarchy rewrites become routine.
 3. Until v1.1: sub-10% home probabilities really mean ~1-in-3.
 4. Experiment results durable store (ExperimentRun tables) once the
-   report shape settles; hand-saved JSON in docs/metrics-modeling/
-   output/ (gitignored) until then.
+   report shape settles. Until then, hand-saved JSON in
+   docs/metrics-modeling/output/ (gitignored) is the interim record —
+   retention owner: the operator's local checkout (acceptable: every
+   backtest is deterministic and reproducible from the same request,
+   so lost artifacts are re-derivable, not lost evidence).
 
 ## Local container smoke test
 

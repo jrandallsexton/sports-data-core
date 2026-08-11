@@ -3,11 +3,17 @@
 Status: **discovery / design — snapshot table not authorized; the core
 insight is now IMPLEMENTED in query form** (2026-08-09): MetricBot's
 as-of extraction (`src/metrics-modeling/sql/competition_metrics_asof_*.sql`)
-computes entering-week aggregates on the fly from `CompetitionMetric`,
-exactly as §"The key insight" describes — formula-parity with
-`ComputeFranchiseSeasonMetric`, no new tables. A materialized
-`FranchiseSeasonWeekMetric` remains future work and this doc remains its
-design basis.
+computes point-in-time aggregates on the fly from `CompetitionMetric`,
+with formula-parity to `ComputeFranchiseSeasonMetric` and no new
+tables. **Cutoff semantics note:** the implementation uses
+ENTERING-week windows (`sw."Number" < :week` — "the state of the world
+before week N kicks off"), because its consumer predicts week N. This
+doc's proposal below uses `week <= N` ("after week N") for the
+materialized rows; the two are off-by-one views of the same derivation
+and the convention decision in "Open decisions" #1 remains open for the
+table. Any future `FranchiseSeasonWeekMetric` must pin ONE convention
+and document the mapping to the as-of queries. A materialized table
+remains future work and this doc remains its design basis.
 Date: 2026-07-29 (status updated 2026-08-11)
 Surfaces: SportsData.Producer (primary), SportsData.Api (preview provenance), football only
 
@@ -81,7 +87,9 @@ Two premises in the original framing don't match the code, and both are good new
 Because `CompetitionMetric` is per-game and persists, and contests map to weeks,
 **"metrics as of week N" is a pure function of data we already have**:
 
-> filter that team's `CompetitionMetric` rows to contests with week ≤ N,
+> filter that team's `CompetitionMetric` rows to contests with week ≤ N
+> (or `< N` for entering-week semantics — see the status note above;
+> MetricBot's shipped as-of queries use `< N`),
 > aggregate exactly as `ComputeFranchiseSeasonMetric` does today.
 
 Nothing needs to be captured going forward that isn't already captured. This
@@ -105,7 +113,19 @@ Same metric columns as `FranchiseSeasonMetric`, plus:
 - `GamesPlayed` (through the cutoff)
 - `ThroughUtc` — the actual cutoff instant used
 - `InputsHash` — hash of the contributing `CompetitionMetric` ids+hashes, so a
-  regression run can verify its inputs are byte-identical to the original
+  regression run can verify its SOURCE INPUTS are byte-identical to the
+  original. Scope limit: this detects source-row drift only; a change to
+  the aggregation formula itself leaves InputsHash unchanged. Pair it
+  with an `AggregationVersion` (bumped whenever
+  `ComputeFranchiseSeasonMetric` changes) for full replayability.
+- Production wrinkle the snapshot must model or disclaim: MetricBot's
+  early-season runs use a prior-season tail (production
+  `MetricBotWeeklyJob` passes PriorSeasonTail=5 — each team's window is
+  topped up with its most recent prior-season regular/post games until
+  it has 5 of its own). Plain week-N snapshot rows cannot reproduce
+  those runs; either model the tail rule (source-season provenance per
+  contributing game) or state that snapshots reproduce tail-less runs
+  only.
 - unique index `(FranchiseSeasonId, SeasonType, WeekNumber)`
 
 **Semantic decision needed:** does the week-N row mean *entering* week N (games
@@ -170,7 +190,9 @@ established chain. Two real roles:
 5. **Metric-formula versioning** — when a formula bug is fixed (e.g. NetPunt
    gets implemented), do historical snapshots get recomputed (corpus changes
    under the model) or frozen (corpus is stable but wrong)? `InputsHash` detects
-   the drift; policy for handling it is a product decision.
+   source-input drift only — formula changes require the
+   `AggregationVersion` field proposed in §1; policy for handling either
+   kind of drift is a product decision.
 6. **Postseason** — SeasonType handling: continuous week numbering or
    type-scoped; bowl/playoff games in season-to-date aggregates or excluded.
 7. **Scope** — football-only (both contexts are `FootballDataContext` today).
@@ -277,6 +299,35 @@ sourced) PBP there, and that season's floor is set by ESPN, not by us.
 `with_week_mapping` gaps → fixable on our side from `StartDateUtc` + the
 season-week calendar. (Table/column names should be sanity-checked against the
 live schema before running — written from the EF configurations, not psql.)
+
+### Coverage-query caveats (2026-08-11 review — apply before sizing)
+
+The recorded query and result tables above are kept as the historical
+record; a rerun for actual backfill sizing must address five
+limitations found in review:
+
+1. **Metrics without plays exist** (visible in the tables: 1999/2000
+   show `with_metrics = contests` with `with_plays = 0`).
+   `CalculateCompetitionMetricsCommandHandler` does not reject an empty
+   play collection, so a metric row is NOT proof of play-derived data.
+   Identify the provenance of pre-2001 metric rows before counting them
+   as regression corpus; until then the "backfills cleanly" reading
+   only holds for seasons where `with_plays ≈ with_metrics`.
+2. **Per-database execution, not a Sport predicate**: the two result
+   tables were produced by running the query separately against
+   `sdProducer.FootballNfl` and `sdProducer.FootballNcaa` (the
+   platform's per-sport database split) — that is why no `Sport` filter
+   appears. A rerun must preserve that execution model.
+3. **Inner join drops contest-only rows**: `contests` counts contests
+   having at least one Competition row (1:1 in practice, but a LEFT
+   JOIN or a renamed column would make the scope explicit).
+4. **No `FinalizedUtc` filter**: current-season rows (2026: 321
+   contests, zero plays/metrics — unplayed games) inflate denominators.
+   Sizing reruns should add `c."FinalizedUtc" IS NOT NULL` or report
+   the in-progress season separately.
+5. **`LIMIT 1` laterals count half-covered games**: one team's metric
+   row marks the competition covered; the entity is two rows per game.
+   Sizing reruns should require both franchise keys.
 
 ## Sizing (rough)
 

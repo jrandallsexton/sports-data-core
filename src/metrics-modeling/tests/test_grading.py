@@ -58,6 +58,10 @@ def test_su_and_ats_grading_with_baselines():
     assert report.su["baseline_always_home"] == round(2 / 3, 4)
     # Favorite: g1 home fav won (hit), g2 away fav won (hit), g3 home fav won (hit).
     assert report.su["baseline_favorite"]["accuracy"] == 1.0
+    # Same-games model accuracy: all three games have spreads, so it
+    # equals overall accuracy here (1/3); no spreadless games.
+    assert report.su["baseline_favorite"]["model_accuracy_same_games"] == round(1 / 3, 4)
+    assert report.su["spreadless"] == {"games": 0, "model_accuracy": None}
     assert report.ats["decided"] == 3
     assert report.ats["correct"] == 3
     assert report.ats["break_even_reference"] == ATS_BREAK_EVEN
@@ -230,3 +234,34 @@ def test_extract_training_still_rejects_empty_results(monkeypatch):
 
     with pytest.raises(extract.ExtractionError, match="zero rows"):
         extract.extract_training(_fake_config())
+
+
+def test_spread_restricted_su_separates_model_from_easy_spreadless_games():
+    predictions = pd.DataFrame([
+        # Two spread games: model splits them (one hit, one miss).
+        _prediction("s1", 0.70, 0.55, 7.0, -7.0),    # home wins: hit
+        _prediction("s2", 0.70, 0.55, 7.0, -7.0),    # away wins: miss
+        # Two spreadless mismatches: model nails both.
+        _prediction("e1", 0.95, 0.5, 30.0, None),    # home blowout: hit
+        _prediction("e2", 0.05, 0.5, -30.0, None),   # away blowout: hit
+    ])
+    scores = pd.DataFrame([
+        _score("s1", 28, 14),
+        _score("s2", 14, 28),
+        _score("e1", 55, 3),
+        _score("e2", 0, 45),
+    ])
+
+    report = grade_week(predictions, scores)
+
+    # Overall 3/4 is flattered by the easy games; the same-games number
+    # tells the honest story: 1/2 on games the market actually priced.
+    assert report.su["accuracy"] == 0.75
+    fav = report.su["baseline_favorite"]
+    assert fav["games_with_spread"] == 2
+    assert fav["model_accuracy_same_games"] == 0.5
+    assert report.su["spreadless"] == {"games": 2, "model_accuracy": 1.0}
+
+    text = format_report(report, "BACKTEST split")
+    assert "model 50.0% vs favorite" in text
+    assert "spreadless games: model 100.0%" in text

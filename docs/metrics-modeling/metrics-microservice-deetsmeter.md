@@ -444,11 +444,15 @@ variance.
    revisit if hierarchy rewrites become routine.
 3. Until v1.1: sub-10% home probabilities really mean ~1-in-3.
 4. Experiment results durable store (ExperimentRun tables) once the
-   report shape settles. Until then, hand-saved JSON in
-   docs/metrics-modeling/output/ (gitignored) is the interim record —
-   retention owner: the operator's local checkout (acceptable: every
-   backtest is deterministic and reproducible from the same request,
-   so lost artifacts are re-derivable, not lost evidence).
+   report shape settles. Until then the interim record is the HTTP
+   RESPONSE the operator saves by hand (e.g. from Bruno) into
+   docs/metrics-modeling/output/ (gitignored) — distinct from the CLI's
+   `--dump-intermediate`, which writes CSV/JSON artifacts to
+   `src/metrics-modeling/data/` (also gitignored; ephemeral when run in
+   the service container). Retention owner: the operator's local
+   checkout (acceptable: every backtest is deterministic and
+   reproducible from the same request, so lost artifacts are
+   re-derivable, not lost evidence).
 
 ## Local container smoke test
 

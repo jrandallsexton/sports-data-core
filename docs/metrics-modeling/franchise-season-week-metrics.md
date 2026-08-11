@@ -112,12 +112,19 @@ Same metric columns as `FranchiseSeasonMetric`, plus:
 - `SeasonYear`, `SeasonType`, `WeekNumber` (and/or `SeasonWeekId`)
 - `GamesPlayed` (through the cutoff)
 - `ThroughUtc` — the actual cutoff instant used
-- `InputsHash` — hash of the contributing `CompetitionMetric` ids+hashes, so a
-  regression run can verify its SOURCE INPUTS are byte-identical to the
-  original. Scope limit: this detects source-row drift only; a change to
-  the aggregation formula itself leaves InputsHash unchanged. Pair it
-  with an `AggregationVersion` (bumped whenever
-  `ComputeFranchiseSeasonMetric` changes) for full replayability.
+- `InputsHash` — hash of the contributing `CompetitionMetric` rows.
+  REALITY CHECK (verified 2026-08-11): `CompetitionMetric.InputsHash`
+  exists as a column but `CalculateCompetitionMetricsCommandHandler`
+  writes it as null at both persist sites — there are no per-row hashes
+  to compose today. Until the handler populates a real hash of its
+  play/drive inputs, a snapshot InputsHash can only be built from
+  contributing row IDS (membership tracking: detects added/removed
+  source games, NOT value changes within them). Byte-identical source
+  verification requires populating CompetitionMetric.InputsHash first —
+  prerequisite Producer work for this design. Scope limit either way:
+  input hashing never detects aggregation-formula changes; pair with an
+  `AggregationVersion` (bumped whenever `ComputeFranchiseSeasonMetric`
+  changes) for full replayability.
 - Production wrinkle the snapshot must model or disclaim: MetricBot's
   early-season runs use a prior-season tail (production
   `MetricBotWeeklyJob` passes PriorSeasonTail=5 — each team's window is

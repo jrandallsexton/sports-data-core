@@ -429,11 +429,15 @@ variance.
 
 **Agreed next steps (in order):**
 1. ~~Grader enhancement: model SU accuracy restricted to the SAME
-   spread games as the favorite baseline~~ DONE (2026-08-11): the SU
-   report now carries `baseline_favorite.model_accuracy_same_games`
-   (the honest head-to-head) and a `spreadless` section (model accuracy
-   on unpriced games — tests the easy-mismatch claim). Re-run the
-   five-week sweep to fill in the real numbers.
+   spread games as the favorite baseline~~ DONE (2026-08-11), sweep
+   re-run same day. **Verdict: on market-priced games the favorite
+   baseline beats the model in every sampled week — weighted 75.8% vs
+   65.6% (n=517).** Per week (model/favorite): wk4 64.3/76.5, wk5
+   57.6/78.3, wk6 69.5/77.9, wk8 65.7/73.2, wk10 70.9/73.6 — the gap
+   narrows late but never closes. Spreadless games: model 71.5%
+   weighted (n=922), rising to 80.4% by wk10 — confirming empirically
+   that the overall 69.4% was propped up by easier unpriced matchups.
+   These results led directly to the v1.1 design below.
 2. MetricBot-v1.1: opponent-adjusted features (simple SOS — e.g.
    opponent-average-allowed versions of core metrics) and/or division
    indicators from GroupSeasonMap. Bump MODEL_VERSION; the grader
@@ -455,6 +459,66 @@ variance.
    checkout (acceptable: every backtest is deterministic and
    reproducible from the same request, so lost artifacts are
    re-derivable, not lost evidence).
+
+## MetricBot-v1.1 design (decided 2026-08-11)
+
+Decisions from the post-sweep review (decision owner: Randall; all
+resolved same day):
+
+**Scope — what deetsMeter covers:**
+- NCAAFB: games with **at least one FBS participant** (payday games
+  included — they appear in real pick'em slates). Filter:
+  `split_part(FranchiseSeason.GroupSeasonMap,'|',3) = 'fbs'` on either
+  side.
+- NFL: **every game.**
+- Matchup previews are UNAFFECTED and remain universal ("data-driven
+  insights for every NCAAFB and NFL matchup") — previews are the LLM
+  pipeline; MetricBot never touches them.
+
+**Architecture — market-prior with a residual model:**
+- The spread becomes an INPUT (decided: yes). For priced games,
+  `predicted_margin = -Spread + correction(features)` where the model
+  is trained to predict the RESIDUAL against the closing line. This
+  admits the market's information (injuries, weather, context —
+  invisible to box-score aggregates) at full strength instead of
+  making 64 noisy features compete with it.
+- Unpriced games (a handful of FBS-participant games per season) fall
+  back to the existing pure-stats model, unchanged.
+- ATS consequence: the cover probability becomes the model's measured
+  DISAGREEMENT with the line. A correction model with nothing to say
+  predicts ~0 residual, yielding ~50% ATS picks at low confidence —
+  the truthful output given measured ATS of 47.3%, replacing today's
+  false confidence.
+- SU consequence: same-games accuracy floors at the favorite baseline
+  (~76%) by construction; real signal in the correction lifts above.
+- Rejected alternatives: raw Spread in FEATURE_COLS (fillna(0) teaches
+  the model that unpriced games are pick'ems, poisoning the mismatches
+  it handles well); two fully separate models (doubles maintenance,
+  splits the corpus).
+
+**Corpus reality (verified against prod 2026-08-11):**
+- Odds exist from 2022 onward only. Residual-model training corpus =
+  FBS-participant + priced + metrics: 849 (2022) + 895 (2023) + 874
+  (2024) + 922 (2025) ≈ **3,540 NCAAFB games**, plus the NFL's own
+  corpus. Adequate for a linear correction; rules out data-hungry
+  approaches. Residual-model backtests are therefore 2022+ only.
+- Priced ≠ FBS: books price hundreds of FCS games (2025: 1,583 priced
+  total vs 932 FBS-participant; 922 of the 932 priced). The residual
+  model trains on priced games; the PRODUCT scope is FBS-participant.
+- GroupSeasonMap: backfilled prod-wide 2026-08-11 (was 2025-only — an
+  earlier run had only reached a local DB; 2026 was fully empty until
+  then and is a pre-season onboarding dependency worth a checklist
+  entry). Division labels: `fbs`, `fcs`, and `yy` (ESPN's abbreviation
+  for BOTH D2 and D3 — treat as one below-FCS bucket).
+
+**Sequencing (one change per version so the grader can attribute):**
+- v1.1: market-prior + scope filter. Bar: close the same-games gap
+  toward the 75.8% favorite baseline; grader unchanged (#614 already
+  measures everything needed).
+- v1.2: SOS-adjusted features + division indicators — matters MOST in
+  v1.1's world (the correction model and unpriced fallback are where
+  schedule-blindness still lives, including the broken 0.0-0.1
+  bucket).
 
 ## Local container smoke test
 

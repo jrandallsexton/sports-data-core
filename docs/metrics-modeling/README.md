@@ -11,8 +11,9 @@ The two halves are deliberately kept in the same folder so design crosstalk (mod
 
 ## Active design
 
+- [franchise-season-week-metrics.md](./franchise-season-week-metrics.md) — discovery + design for per-SeasonWeek franchise metric snapshots, the point-in-time inputs StatBot regression testing requires. Documents the verified current pipeline (plays/drives → `CompetitionMetric` → `FranchiseSeasonMetric`), the retroactive-derivability insight that makes historical backfill possible without ESPN, and the open decisions. No implementation authorized yet.
 - [ai-provider-routing-per-sport.md](./ai-provider-routing-per-sport.md) — design for per-`(sport, division)` AI provider routing. DeepSeek stays for NCAAFB FBS and NFL (paid, audience matters). Ollama on Bender lights up for MLB and NCAAFB Division II (and any lower-tier divisions) where editorial accuracy isn't a release criterion. `OllamaClient` already exists; the work is wiring a sport-and-division-aware factory.
-- [metrics-microservice-deetsmeter.md](./metrics-microservice-deetsmeter.md) — design for promoting the prototype Python scripts into a cluster-hosted FastAPI service. Greenfield work; multiple open decisions before implementation begins.
+- [metrics-microservice-deetsmeter.md](./metrics-microservice-deetsmeter.md) — the MetricBot service: design plus implementation status. MVP Phases A+B are DEPLOYED (internal FastAPI service, Hangfire-scheduled weekly runs, admin-proxied on-demand/backtest runs); the doc also records the first graded 2025 backtests and the calibration autopsy. The full Q4 architecture (Producer metrics API, artifact storage) remains design.
 
 ## Background reference (DeepSeek era)
 

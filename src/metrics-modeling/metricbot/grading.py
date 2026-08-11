@@ -92,20 +92,36 @@ def grade_week(predictions: pd.DataFrame, scores: pd.DataFrame) -> GradeReport:
             "correct": 0,
             "accuracy": None,
             "baseline_always_home": None,
-            "baseline_favorite": {"games_with_spread": 0, "accuracy": None},
+            "baseline_favorite": {
+                "games_with_spread": 0,
+                "accuracy": None,
+                "model_accuracy_same_games": None,
+            },
+            "spreadless": {"games": 0, "model_accuracy": None},
             "brier": None,
             "brier_climatology": None,
         }
     else:
         actual_home_win = decided["ActualMargin"] > 0
         picked_home = decided["WinProbability"] >= 0.5
-        su_correct = int((picked_home == actual_home_win).sum())
+        su_hits = picked_home == actual_home_win
+        su_correct = int(su_hits.sum())
 
         # Favorite-by-spread baseline: spread < 0 = home favored. Pick-em
         # (0) and missing spreads drop out of this baseline's denominator.
-        with_spread = decided[decided["Spread"].notna() & (decided["Spread"] != 0)]
+        has_line = decided["Spread"].notna() & (decided["Spread"] != 0)
+        with_spread = decided[has_line]
         favorite_correct = int(
             ((with_spread["Spread"] < 0) == (with_spread["ActualMargin"] > 0)).sum())
+
+        # The apples-to-apples number: the model graded on the SAME games
+        # the favorite baseline uses. Overall accuracy mixes in spreadless
+        # games (mostly lopsided FCS matchups where blowout-picking is
+        # easy), so model-overall vs favorite-on-spread-games flatters
+        # neither comparison; this does.
+        model_on_spread_correct = int(su_hits[has_line].sum())
+        spreadless = decided[~has_line]
+        model_spreadless_correct = int(su_hits[~has_line].sum())
 
         su_brier = float(np.mean(
             (decided["WinProbability"] - actual_home_win.astype(float)) ** 2))
@@ -122,6 +138,11 @@ def grade_week(predictions: pd.DataFrame, scores: pd.DataFrame) -> GradeReport:
             "baseline_favorite": {
                 "games_with_spread": len(with_spread),
                 "accuracy": _ratio(favorite_correct, len(with_spread)),
+                "model_accuracy_same_games": _ratio(model_on_spread_correct, len(with_spread)),
+            },
+            "spreadless": {
+                "games": len(spreadless),
+                "model_accuracy": _ratio(model_spreadless_correct, len(spreadless)),
             },
             "brier": round(su_brier, 4),
             "brier_climatology": round(climatology_brier, 4),
@@ -204,12 +225,21 @@ def format_report(report: GradeReport, header: str) -> str:
             lines += [
                 "",
                 f"  STRAIGHT UP   {su['correct']}/{su['decided']}  ({su['accuracy']:.1%})",
-                f"    vs always-home {su['baseline_always_home']:.1%}"
-                + (f"  |  vs favorite {fav['accuracy']:.1%} ({fav['games_with_spread']} spread games)"
-                   if fav["accuracy"] is not None else ""),
-                f"    Brier {su['brier']:.4f} (climatology {su['brier_climatology']:.4f}; lower is better)"
-                + (f"  |  {su['ties_excluded']} ties excluded" if su["ties_excluded"] else ""),
+                f"    vs always-home {su['baseline_always_home']:.1%}",
             ]
+            if fav["accuracy"] is not None:
+                # Same-games comparison — the honest model-vs-favorite line.
+                lines.append(
+                    f"    on the {fav['games_with_spread']} spread games: "
+                    f"model {fav['model_accuracy_same_games']:.1%} vs favorite {fav['accuracy']:.1%}")
+            spreadless = su.get("spreadless", {})
+            if spreadless.get("model_accuracy") is not None:
+                lines.append(
+                    f"    on the {spreadless['games']} spreadless games: "
+                    f"model {spreadless['model_accuracy']:.1%}")
+            lines.append(
+                f"    Brier {su['brier']:.4f} (climatology {su['brier_climatology']:.4f}; lower is better)"
+                + (f"  |  {su['ties_excluded']} ties excluded" if su["ties_excluded"] else ""))
     if r.ats:
         ats = r.ats
         if ats["accuracy"] is None:

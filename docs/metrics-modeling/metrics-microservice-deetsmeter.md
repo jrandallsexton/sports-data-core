@@ -428,10 +428,12 @@ this (it would wreck the healthy 0.9–1.0 bucket); this is bias, not
 variance.
 
 **Agreed next steps (in order):**
-1. Grader enhancement: model SU accuracy restricted to the SAME spread
-   games as the favorite baseline — the current 69.4% vs 75.8%
-   comparison is apples-to-oranges (spreadless games are mostly easy
-   mismatches).
+1. ~~Grader enhancement: model SU accuracy restricted to the SAME
+   spread games as the favorite baseline~~ DONE (2026-08-11): the SU
+   report now carries `baseline_favorite.model_accuracy_same_games`
+   (the honest head-to-head) and a `spreadless` section (model accuracy
+   on unpriced games — tests the easy-mismatch claim). Re-run the
+   five-week sweep to fill in the real numbers.
 2. MetricBot-v1.1: opponent-adjusted features (simple SOS — e.g.
    opponent-average-allowed versions of core metrics) and/or division
    indicators from GroupSeasonMap. Bump MODEL_VERSION; the grader

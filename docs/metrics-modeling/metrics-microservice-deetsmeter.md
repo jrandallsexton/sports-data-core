@@ -438,10 +438,10 @@ variance.
    weighted (n=922), rising to 80.4% by wk10 — confirming empirically
    that the overall 69.4% was propped up by easier unpriced matchups.
    These results led directly to the v1.1 design below.
-2. MetricBot-v1.1: opponent-adjusted features (simple SOS — e.g.
-   opponent-average-allowed versions of core metrics) and/or division
-   indicators from GroupSeasonMap. Bump MODEL_VERSION; the grader
-   measures whether it worked. Point-in-time caveat: GroupSeasonMap is
+2. ~~MetricBot-v1.1: opponent-adjusted features~~ SUPERSEDED
+   2026-08-11 by the v1.1 design section below: v1.1 is market-prior +
+   scope; opponent-adjusted features and division indicators moved to
+   v1.2 (one change per version so the grader can attribute). Point-in-time caveat: GroupSeasonMap is
    SEASON-scoped (a FranchiseSeason field), which is the right
    granularity for division indicators — divisions don't change
    mid-season — but the field is mutable if the hierarchy is ever
@@ -469,7 +469,14 @@ resolved same day):
 - NCAAFB: games with **at least one FBS participant** (payday games
   included — they appear in real pick'em slates). Filter:
   `split_part(FranchiseSeason.GroupSeasonMap,'|',3) = 'fbs'` on either
-  side.
+  side. Predicate note: existing consumers
+  (`GetCompletedFbsContestIds.sql`, `MatchupScheduleProcessor`) use
+  substring matching (`LIKE '%fbs%'` / case-insensitive contains);
+  v1.1 adopts segment-3 equality WITHIN MetricBot's SQL only — it is
+  stricter (immune to 'fbs' appearing in another path segment) and the
+  two agree on every current value. Existing consumers are
+  intentionally out of scope; harmonizing them on the segment predicate
+  is a separate cleanup candidate.
 - NFL: **every game.**
 - Matchup previews are UNAFFECTED and remain universal ("data-driven
   insights for every NCAAFB and NFL matchup") — previews are the LLM
@@ -483,14 +490,26 @@ resolved same day):
   invisible to box-score aggregates) at full strength instead of
   making 64 noisy features compete with it.
 - Unpriced games (a handful of FBS-participant games per season) fall
-  back to the existing pure-stats model, unchanged.
+  back to the existing pure-stats model, unchanged. Explicit contract:
+  priced games use the residual path (feature set decided at
+  implementation: the 64 stats columns, with Spread entering through
+  the prior term, not FEATURE_COLS); unpriced games use the 64-column
+  fallback and emit an SU prediction ONLY — no ATS DTO, since there is
+  no line to pick against. (Today's pipeline computes NaN cover
+  probabilities for spreadless rows and still builds ATS DTOs from
+  them — a latent defect v1.1 removes.)
 - ATS consequence: the cover probability becomes the model's measured
   DISAGREEMENT with the line. A correction model with nothing to say
   predicts ~0 residual, yielding ~50% ATS picks at low confidence —
   the truthful output given measured ATS of 47.3%, replacing today's
   false confidence.
-- SU consequence: same-games accuracy floors at the favorite baseline
-  (~76%) by construction; real signal in the correction lifts above.
+- SU consequence: the favorite baseline (~76%) becomes the natural
+  benchmark — a ZERO correction reproduces it exactly, but a trained
+  correction can flip favorite-side picks, so matching or beating the
+  baseline is a grader-verified outcome, not a construction guarantee.
+  The 2022+ backtest sweep is the acceptance test: v1.1 ships only if
+  same-games SU does not regress below the pure-stats v1.0 number and
+  ATS calibration improves.
 - Rejected alternatives: raw Spread in FEATURE_COLS (fillna(0) teaches
   the model that unpriced games are pick'ems, poisoning the mismatches
   it handles well); two fully separate models (doubles maintenance,
@@ -503,8 +522,14 @@ resolved same day):
   corpus. Adequate for a linear correction; rules out data-hungry
   approaches. Residual-model backtests are therefore 2022+ only.
 - Priced ≠ FBS: books price hundreds of FCS games (2025: 1,583 priced
-  total vs 932 FBS-participant; 922 of the 932 priced). The residual
-  model trains on priced games; the PRODUCT scope is FBS-participant.
+  total vs 932 FBS-participant; 922 of the 932 priced). DECIDED
+  training scope: the residual model trains on the INTERSECTION —
+  FBS-participant AND priced AND metrics (the ~3,540-game corpus in
+  the table above) — matching the product scope and keeping the
+  training distribution homogeneous. The ~660 priced-FCS games per
+  season are deliberately excluded: more rows, but they reintroduce
+  the cross-division mixing v1.2 exists to fix. Revisit if 3,540 rows
+  prove too thin (the grader will say so).
 - GroupSeasonMap: backfilled prod-wide 2026-08-11 (was 2025-only — an
   earlier run had only reached a local DB; 2026 was fully empty until
   then and is a pre-season onboarding dependency worth a checklist

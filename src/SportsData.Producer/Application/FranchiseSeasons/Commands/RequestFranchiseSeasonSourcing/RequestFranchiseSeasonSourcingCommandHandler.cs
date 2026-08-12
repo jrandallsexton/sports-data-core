@@ -23,7 +23,7 @@ public interface IRequestFranchiseSeasonSourcingCommandHandler
 /// NFL 2026 schedule). Provider fetches each TeamSeason document from ESPN and
 /// publishes DocumentCreated; TeamSeasonDocumentProcessor takes it from there.
 ///
-/// IncludeLinkedDocumentTypes is DELIBERATELY omitted: null means "spawn
+/// IncludeLinkedDocumentTypes defaults to null: null means "spawn
 /// everything" (see DocumentProcessorBase.ShouldSpawn), so the full document
 /// tree — events/schedule included — cascades from each team season. The
 /// filter also PROPAGATES to children, so narrowing it here (e.g. to Event
@@ -124,7 +124,8 @@ public class RequestFranchiseSeasonSourcingCommandHandler : IRequestFranchiseSea
                         DocumentType: DocumentType.TeamSeason,
                         SourceDataProvider: SourceDataProvider.Espn,
                         CorrelationId: correlationId,
-                        CausationId: CausationId.Producer.FranchiseSeasonService
+                        CausationId: CausationId.Producer.FranchiseSeasonService,
+                        IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes
                     ), cancellationToken);
 
                     requested++;

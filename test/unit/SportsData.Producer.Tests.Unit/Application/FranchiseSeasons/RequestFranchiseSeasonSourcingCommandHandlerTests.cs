@@ -140,6 +140,32 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
             .Verify(x => x.Use(DeliveryMode.Direct), Times.Once);
     }
 
+    [Fact]
+    public async Task NarrowedRequest_ThreadsFilterIntoEveryDocumentRequested()
+    {
+        await SeedFranchiseSeasonAsync("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/1");
+        await SeedFranchiseSeasonAsync("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/2");
+
+        // The records backfill case: narrow the TeamSeason cascade to
+        // FranchiseSeasonRecord child documents only.
+        var result = await CreateHandler().ExecuteAsync(
+            new RequestFranchiseSeasonSourcingCommand(
+                SeasonYear,
+                Sport.FootballNfl,
+                [DocumentType.TeamSeasonRecord]));
+
+        result.IsSuccess.Should().BeTrue();
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(
+                It.Is<DocumentRequested>(e =>
+                    e.DocumentType == DocumentType.TeamSeason &&
+                    e.IncludeLinkedDocumentTypes != null &&
+                    e.IncludeLinkedDocumentTypes.Count == 1 &&
+                    e.IncludeLinkedDocumentTypes.Contains(DocumentType.TeamSeasonRecord)),
+                It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
+    }
+
     private sealed class NoopDisposable : IDisposable
     {
         public void Dispose() { }

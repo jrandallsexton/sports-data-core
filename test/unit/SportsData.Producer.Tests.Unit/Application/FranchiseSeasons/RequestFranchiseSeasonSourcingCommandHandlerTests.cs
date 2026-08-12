@@ -166,6 +166,28 @@ public class RequestFranchiseSeasonSourcingCommandHandlerTests
             Times.Exactly(2));
     }
 
+    [Fact]
+    public async Task SuppliedCorrelationId_IsUsedOnEveryPublishedEvent()
+    {
+        await SeedFranchiseSeasonAsync("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/1");
+        await SeedFranchiseSeasonAsync("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2026/teams/2");
+
+        // The controller mints the id, returns it in the 202, and enqueues
+        // the handler — the operator's Seq handle must match the response.
+        var suppliedId = Guid.NewGuid();
+
+        var result = await CreateHandler().ExecuteAsync(
+            new RequestFranchiseSeasonSourcingCommand(
+                SeasonYear, Sport.FootballNfl, null, suppliedId));
+
+        result.IsSuccess.Should().BeTrue();
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(
+                It.Is<DocumentRequested>(e => e.CorrelationId == suppliedId),
+                It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
+    }
+
     private sealed class NoopDisposable : IDisposable
     {
         public void Dispose() { }

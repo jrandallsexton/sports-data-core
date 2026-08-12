@@ -5,6 +5,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Franchise;
+using SportsData.Core.Processing;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranchiseSeasonSourcing;
@@ -53,22 +54,34 @@ public class FranchiseSeasonController : ControllerBase
     /// those child document types (e.g. [TeamSeasonRecord] to re-source
     /// W/L records across a season without re-cascading everything).
     /// </summary>
+    /// <remarks>
+    /// Returns 202 immediately: the fan-out publishes one broker message
+    /// per franchise (~800 for NCAAFB) and comfortably outlives any HTTP
+    /// timeout, so it runs as a background job. The returned correlation
+    /// id is the Seq handle for the whole batch. Validation failures
+    /// (implausible season year) surface in the job's logs, matching the
+    /// contest finalize/enrich enqueue endpoints.
+    /// </remarks>
     [HttpPost("seasonYear/{seasonYear}/source")]
-    public async Task<ActionResult<Guid>> RequestFranchiseSeasonSourcing(
+    public ActionResult<Guid> RequestFranchiseSeasonSourcing(
         [FromRoute] int seasonYear,
         [FromBody] FranchiseSeasonSourcingRequest request,
-        [FromServices] IRequestFranchiseSeasonSourcingCommandHandler handler,
-        [FromServices] IAppMode appMode,
-        CancellationToken cancellationToken)
+        [FromServices] IProvideBackgroundJobs backgroundJobProvider,
+        [FromServices] IAppMode appMode)
     {
+        var correlationId = Guid.NewGuid();
+
         var command = new RequestFranchiseSeasonSourcingCommand(
             seasonYear,
             appMode.CurrentSport,
-            request.IncludeLinkedDocumentTypes);
+            request.IncludeLinkedDocumentTypes,
+            correlationId);
 
-        var result = await handler.ExecuteAsync(command, cancellationToken);
+        backgroundJobProvider.Enqueue<IRequestFranchiseSeasonSourcingCommandHandler>(
+            h => h.ExecuteAsync(command, CancellationToken.None));
 
-        return result.ToActionResult();
+        return Accepted(correlationId);
+
     }
 
     [HttpPost("seasonYear/{seasonYear}/metrics/generate")]

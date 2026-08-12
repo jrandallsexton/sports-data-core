@@ -4,6 +4,7 @@ using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonEnrichment;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranchiseSeasonSourcing;
@@ -45,20 +46,25 @@ public class FranchiseSeasonController : ControllerBase
 
     /// <summary>
     /// Requests ESPN sourcing for every FranchiseSeason in the season year:
-    /// one DocumentRequested (TeamSeason) per franchise, full cascade — the
-    /// linked-document filter is deliberately omitted so events (the
-    /// schedule), rosters, and the rest of the tree source along with it.
+    /// one DocumentRequested (TeamSeason) per franchise. The body's
+    /// IncludeLinkedDocumentTypes narrows the child cascade — null/empty
+    /// preserves the historical full cascade (events, rosters, the whole
+    /// tree); a populated list makes the TeamSeason processor spawn only
+    /// those child document types (e.g. [TeamSeasonRecord] to re-source
+    /// W/L records across a season without re-cascading everything).
     /// </summary>
     [HttpPost("seasonYear/{seasonYear}/source")]
     public async Task<ActionResult<Guid>> RequestFranchiseSeasonSourcing(
         [FromRoute] int seasonYear,
+        [FromBody] FranchiseSeasonSourcingRequest request,
         [FromServices] IRequestFranchiseSeasonSourcingCommandHandler handler,
         [FromServices] IAppMode appMode,
         CancellationToken cancellationToken)
     {
         var command = new RequestFranchiseSeasonSourcingCommand(
             seasonYear,
-            appMode.CurrentSport);
+            appMode.CurrentSport,
+            request.IncludeLinkedDocumentTypes);
 
         var result = await handler.ExecuteAsync(command, cancellationToken);
 

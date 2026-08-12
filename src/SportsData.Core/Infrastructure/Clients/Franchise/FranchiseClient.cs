@@ -37,6 +37,8 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<Result<TeamRosterDto>> GetTeamRoster(string slug, int seasonYear, CancellationToken cancellationToken = default);
     Task<Result<FranchiseLogosDto>> GetFranchiseLogos(string slug, CancellationToken cancellationToken = default);
     Task<Result<bool>> UpdateLogoDarkBg(Guid logoId, bool isForDarkBg, string logoType, CancellationToken cancellationToken = default);
+    /// <summary>Fan out ESPN sourcing for every FranchiseSeason in the year, optionally narrowed to specific child document types.</summary>
+    Task<Result<bool>> RequestFranchiseSeasonSourcing(int seasonYear, FranchiseSeasonSourcingRequest request, CancellationToken cancellationToken = default);
 }
 
 public class FranchiseClient : ClientBase, IProvideFranchises
@@ -108,6 +110,18 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             new GetFranchiseSeasonByIdResponse(null),
             "FranchiseSeason",
             ResultStatus.NotFound,
+            cancellationToken);
+    }
+
+    public async Task<Result<bool>> RequestFranchiseSeasonSourcing(
+        int seasonYear,
+        FranchiseSeasonSourcingRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return await PostWithResultAsync(
+            $"franchise-seasons/seasonYear/{seasonYear}/source",
+            request,
+            nameof(RequestFranchiseSeasonSourcing),
             cancellationToken);
     }
 

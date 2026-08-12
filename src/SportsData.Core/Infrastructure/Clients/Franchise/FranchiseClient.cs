@@ -154,6 +154,13 @@ public class FranchiseClient : ClientBase, IProvideFranchises
 
             return new Success<Guid>(correlationId, ResultStatus.Accepted);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Caller aborted — propagate rather than reporting a Producer
+            // failure for something the client chose to stop. (Same
+            // contract as MetricBotClient.)
+            throw;
+        }
         catch (Exception ex)
         {
             return new Failure<Guid>(

@@ -20,6 +20,20 @@ namespace SportsData.Producer.Migrations.Baseball
             // (verified in prod: 130 NCAAFB / 27 NFL / 17 MLB groups).
             // Keep the most recently touched row per key; delete the losers'
             // stats first, then the losers.
+            //
+            // PERMANENT DELETION: the loser records and their stats are
+            // gone for good — Down() restores only the old index, never the
+            // deleted rows. Acceptable by design: the duplicates are
+            // defects, and the survivor rule (latest ModifiedUtc/CreatedUtc)
+            // keeps the row the old code would have kept anyway.
+            //
+            // Lock note: plain CREATE INDEX (not CONCURRENTLY) is
+            // deliberate — the table is tiny (~50k rows NCAA, ~4k NFL/MLB;
+            // sub-second build), migrations run during deploy restarts when
+            // writers are down anyway, and keeping dedup + index in ONE
+            // transaction closes the window where a duplicate could re-form
+            // between the two steps. CONCURRENTLY cannot run in a
+            // transaction and would surrender that atomicity.
             migrationBuilder.Sql("""
                 WITH ranked AS (
                     SELECT "Id", ROW_NUMBER() OVER (

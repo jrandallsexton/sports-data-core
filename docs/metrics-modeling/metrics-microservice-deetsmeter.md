@@ -498,6 +498,17 @@ resolved same day):
   no line to pick against. (Today's pipeline computes NaN cover
   probabilities for spreadless rows and still builds ATS DTOs from
   them — a latent defect v1.1 removes.)
+- **Canonical `is_priced` predicate (one definition, used everywhere):**
+  `is_priced := Spread IS NOT NULL`. A pick'em line (`Spread == 0`) IS
+  priced — it is a real market opinion (prior = 0 + correction), the
+  residual path applies, and an ATS pick is decidable (home covers iff
+  it wins). This one predicate gates the residual-vs-fallback split,
+  ATS DTO emission, and ATS grading. The favorite BASELINE's existing
+  `Spread != 0` exclusion is a different question — a pick'em has no
+  favorite to name — and stays as a baseline-only sub-rule, not a
+  pricing rule. (Current code is inconsistent on exactly this:
+  baseline excludes 0, ATS grading includes it, DTO emission ignores
+  the question — v1.1 unifies on the predicate above.)
 - ATS consequence: the cover probability becomes the model's measured
   DISAGREEMENT with the line. A correction model with nothing to say
   predicts ~0 residual, yielding ~50% ATS picks at low confidence —

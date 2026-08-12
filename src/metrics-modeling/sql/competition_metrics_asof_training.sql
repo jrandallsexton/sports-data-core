@@ -115,7 +115,12 @@ SELECT
         WHEN con."AwayScore" > con."HomeScore" THEN 'AWAY'
         ELSE 'TIE'
     END AS "Winner",
-    odds."Spread"
+    odds."Spread",
+
+    -- v1.1: lets python carve the residual-model corpus (FBS∩priced)
+    -- out of the broad fallback corpus without a second extraction.
+    (split_part(fs_h."GroupSeasonMap", '|', 3) = 'fbs'
+     OR split_part(fs_a."GroupSeasonMap", '|', 3) = 'fbs') AS "FbsParticipant"
 
 FROM params p
 JOIN public."Contest" con      ON con."HomeScore" IS NOT NULL AND con."AwayScore" IS NOT NULL
@@ -127,6 +132,8 @@ JOIN public."CompetitionMetric" cm_home
     ON cm_home."CompetitionId" = comp."Id" AND cm_home."FranchiseSeasonId" = con."HomeTeamFranchiseSeasonId"
 JOIN public."CompetitionMetric" cm_away
     ON cm_away."CompetitionId" = comp."Id" AND cm_away."FranchiseSeasonId" = con."AwayTeamFranchiseSeasonId"
+JOIN public."FranchiseSeason" fs_h ON fs_h."Id" = con."HomeTeamFranchiseSeasonId"
+JOIN public."FranchiseSeason" fs_a ON fs_a."Id" = con."AwayTeamFranchiseSeasonId"
 JOIN entering eh ON eh.contest_id = con."Id" AND eh.franchise_season_id = con."HomeTeamFranchiseSeasonId"
 JOIN entering ea ON ea.contest_id = con."Id" AND ea.franchise_season_id = con."AwayTeamFranchiseSeasonId"
 LEFT JOIN LATERAL (

@@ -23,7 +23,7 @@ from .extract import (detect_current_season_week, extract_asof_training,
                       extract_asof_week, extract_current_week,
                       extract_final_scores, extract_training)
 from .grading import GradeReport, format_report, grade_week
-from .model import predict_ats, predict_straight_up
+from .model import predict_market_prior
 
 logger = logging.getLogger("metricbot")
 
@@ -93,18 +93,20 @@ def run_week(sport: str,
     logger.info("Extracted %d training rows; %d contests for week %d",
                 len(training), len(current_week), week_number)
 
-    # ── Model ────────────────────────────────────────────────────────
-    su = predict_straight_up(training, current_week)
-    logger.info("SU model: %d completed games trained, MAE %.2f pts, residual std %.2f pts",
-                su.training_rows, su.mae, su.residual_std)
-
-    predictions = predict_ats(su)
-    logger.info("Predictions computed for %d contests", len(predictions))
+    # ── Model (v1.1: market-prior residual + pure-stats fallback) ────
+    result = predict_market_prior(training, current_week, config.fbs_scope)
+    predictions = result.predictions
+    logger.info(
+        "v1.1 model: %d pure-corpus games (MAE %.2f, std %.2f); residual corpus %d "
+        "(correction std %s); slate paths: %s",
+        result.training_rows, result.mae, result.residual_std, result.residual_rows,
+        f"{result.residual_model_std:.2f}" if result.residual_model_std else "n/a — fallback-only",
+        predictions["ModelPath"].value_counts().to_dict())
 
     # ── DTOs ─────────────────────────────────────────────────────────
     dtos = build_prediction_dtos(predictions)
-    logger.info("Built %d prediction DTOs (%d SU + %d ATS)",
-                len(dtos), len(predictions), len(predictions))
+    logger.info("Built %d prediction DTOs (%d SU + %d ATS — ATS for priced games only)",
+                len(dtos), len(predictions), len(dtos) - len(predictions))
 
     if dump_intermediate:
         label = (f"{sport}_legacy_week_{week_number}" if legacy_extraction
@@ -128,10 +130,10 @@ def run_week(sport: str,
         return RunResult(
             season_year=season_year,
             week=week_number,
-            training_rows=su.training_rows,
+            training_rows=result.training_rows,
             contests=len(predictions),
-            mae=su.mae,
-            residual_std=su.residual_std,
+            mae=result.mae,
+            residual_std=result.residual_std,
             published=not effective_dry_run,
             elapsed_seconds=elapsed,
             dtos=dtos,
@@ -163,8 +165,8 @@ def run_backtest(sport: str,
     logger.info("Extracted %d training rows; %d contests for week %d",
                 len(training), len(current_week), week)
 
-    su = predict_straight_up(training, current_week)
-    predictions = predict_ats(su)
+    result = predict_market_prior(training, current_week, config.fbs_scope)
+    predictions = result.predictions
 
     scores = extract_final_scores(config, season_year, week)
     report = grade_week(predictions, scores)
@@ -184,9 +186,9 @@ def run_backtest(sport: str,
         season_year=season_year,
         week=week,
         prior_season_tail=prior_tail,
-        training_rows=su.training_rows,
-        in_sample_mae=su.mae,
-        residual_std=su.residual_std,
+        training_rows=result.training_rows,
+        in_sample_mae=result.mae,
+        residual_std=result.residual_std,
         report=report,
         elapsed_seconds=elapsed,
     )

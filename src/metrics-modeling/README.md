@@ -99,6 +99,25 @@ Flag notes:
   FranchiseSeasonMetric joins + leaky training) for parity comparison
   only. It cannot run before metrics exist for the season.
 
+## v1.1: market-prior model + product scope (decided 2026-08-11)
+
+Full design: `docs/metrics-modeling/metrics-microservice-deetsmeter.md`
+("MetricBot-v1.1 design"). The short version:
+
+- **Scope**: NCAAFB slates cover games with at least one FBS
+  participant; the NFL covers every game. (Matchup previews are a
+  different pipeline and remain universal.)
+- **Priced games** (`is_priced` := Spread present; pick'em counts):
+  `predicted_margin = -Spread + correction(features)` — the correction
+  model is trained on the residual vs the line (FBS∩priced corpus for
+  NCAAFB, all priced for NFL; odds exist 2022+). The ATS probability is
+  the model's measured disagreement with the line.
+- **Unpriced games**: the v1.0 pure-stats model, SU prediction only —
+  no ATS DTO without a line (v1.0 emitted NaN-probability ATS DTOs for
+  these; fixed).
+- **Thin residual corpus** (early-2022 backtests): the whole slate
+  falls back to pure-stats rather than fitting on scraps.
+
 ## As-of mode semantics (Option B, full as-of — decided 2026-08-09)
 
 Predicts a historical week using ONLY information available entering it:

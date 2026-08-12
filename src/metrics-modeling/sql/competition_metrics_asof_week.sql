@@ -12,7 +12,13 @@
 -- season only; preseason is system-testing data, never signal) up to a
 -- floor of :prior_tail total games where available.
 --
--- psql -v season_year=2025 -v week=6 -v prior_tail=5
+-- :fbs_scope (0/1): 1 restricts the slate to games with at least one
+-- FBS participant (split_part(GroupSeasonMap,'|',3) = 'fbs' — the v1.1
+-- canonical segment predicate; NCAAFB product scope). 0 = every game
+-- (NFL). Aggregation windows are NOT filtered — an FBS team's stats
+-- include its games against anyone.
+--
+-- psql -v season_year=2025 -v week=6 -v prior_tail=5 -v fbs_scope=1
 WITH params AS (
     SELECT :season_year::int AS season_year,
            :week::int        AS week,
@@ -191,6 +197,8 @@ JOIN public."SeasonWeek" sw    ON sw."SeasonId" = s."Id" AND sw."Number" = p.wee
 JOIN public."Contest" con      ON con."SeasonWeekId" = sw."Id"
 JOIN public."Competition" comp ON comp."ContestId" = con."Id"
 LEFT JOIN public."SeasonPhase" sp ON sp."Id" = con."SeasonPhaseId"
+JOIN public."FranchiseSeason" fs_h ON fs_h."Id" = con."HomeTeamFranchiseSeasonId"
+JOIN public."FranchiseSeason" fs_a ON fs_a."Id" = con."AwayTeamFranchiseSeasonId"
 JOIN asof h ON h.franchise_season_id = con."HomeTeamFranchiseSeasonId"
 JOIN asof a ON a.franchise_season_id = con."AwayTeamFranchiseSeasonId"
 LEFT JOIN LATERAL (
@@ -203,4 +211,7 @@ LEFT JOIN LATERAL (
 ) odds ON TRUE
 WHERE con."CancelledUtc" IS NULL
   AND (sp."TypeCode" IS NULL OR sp."TypeCode" <> 1)
+  AND (:fbs_scope::int = 0
+       OR split_part(fs_h."GroupSeasonMap", '|', 3) = 'fbs'
+       OR split_part(fs_a."GroupSeasonMap", '|', 3) = 'fbs')
 ORDER BY con."StartDateUtc";

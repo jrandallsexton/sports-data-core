@@ -42,6 +42,14 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 builder.ToTable(nameof(FranchiseSeasonRecord));
                 builder.HasKey(t => t.Id);
 
+                // Natural key: one row per record type per franchise-season.
+                // Enforced at the DB so concurrent at-least-once deliveries
+                // cannot both insert; the processor recovers from the
+                // loser's unique violation. (The migration dedupes the
+                // historical duplicates the pre-upsert code left behind.)
+                builder.HasIndex(t => new { t.FranchiseSeasonId, t.Name, t.Type })
+                    .IsUnique();
+
                 builder.Property(t => t.Name)
                     .IsRequired()
                     .HasMaxLength(100);

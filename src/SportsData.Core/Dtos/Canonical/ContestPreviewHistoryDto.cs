@@ -38,9 +38,15 @@ namespace SportsData.Core.Dtos.Canonical
 
         public int Losses { get; set; }
 
-        public int ConferenceWins { get; set; }
+        /// <summary>
+        /// Null when no conference record exists for that season (e.g.
+        /// independents, or the vsconf record wasn't published). The
+        /// payload serializer omits nulls, so absence reads as absence —
+        /// never as a 0-0 record.
+        /// </summary>
+        public int? ConferenceWins { get; set; }
 
-        public int ConferenceLosses { get; set; }
+        public int? ConferenceLosses { get; set; }
 
         /// <summary>
         /// Prior-season FranchiseSeasonMetrics; null when not generated for

@@ -285,7 +285,7 @@ namespace SportsData.Api.Application.Admin
         /// </summary>
         [HttpPost]
         [Route("sourcing/franchise-seasons/{sport}/{seasonYear:int}")]
-        public async Task<ActionResult<bool>> RequestFranchiseSeasonSourcing(
+        public async Task<ActionResult<Guid>> RequestFranchiseSeasonSourcing(
             [FromRoute] Sport sport,
             [FromRoute] int seasonYear,
             [FromBody] FranchiseSeasonSourcingRequest request,

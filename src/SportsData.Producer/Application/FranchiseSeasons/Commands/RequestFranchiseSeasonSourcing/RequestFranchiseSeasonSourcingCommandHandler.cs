@@ -79,7 +79,11 @@ public class RequestFranchiseSeasonSourcingCommandHandler : IRequestFranchiseSea
             return new Success<Guid>(Guid.Empty, ResultStatus.NotFound);
         }
 
-        var correlationId = Guid.NewGuid();
+        // The controller enqueues this handler as a background job and
+        // returns 202 with the correlation id BEFORE the fan-out runs — the
+        // id must therefore be minted by the caller and passed in, so the
+        // operator's Seq handle matches what the endpoint returned.
+        var correlationId = command.CorrelationId ?? Guid.NewGuid();
         var requested = 0;
         var skipped = 0;
         var failed = 0;

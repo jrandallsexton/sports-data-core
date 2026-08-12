@@ -11,6 +11,7 @@ using SportsData.Core.Middleware.Health;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,8 +38,8 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<Result<TeamRosterDto>> GetTeamRoster(string slug, int seasonYear, CancellationToken cancellationToken = default);
     Task<Result<FranchiseLogosDto>> GetFranchiseLogos(string slug, CancellationToken cancellationToken = default);
     Task<Result<bool>> UpdateLogoDarkBg(Guid logoId, bool isForDarkBg, string logoType, CancellationToken cancellationToken = default);
-    /// <summary>Fan out ESPN sourcing for every FranchiseSeason in the year, optionally narrowed to specific child document types.</summary>
-    Task<Result<bool>> RequestFranchiseSeasonSourcing(int seasonYear, FranchiseSeasonSourcingRequest request, CancellationToken cancellationToken = default);
+    /// <summary>Fan out ESPN sourcing for every FranchiseSeason in the year, optionally narrowed to specific child document types. Returns the batch correlation id (the Seq handle).</summary>
+    Task<Result<Guid>> RequestFranchiseSeasonSourcing(int seasonYear, FranchiseSeasonSourcingRequest request, CancellationToken cancellationToken = default);
 }
 
 public class FranchiseClient : ClientBase, IProvideFranchises
@@ -113,16 +114,61 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             cancellationToken);
     }
 
-    public async Task<Result<bool>> RequestFranchiseSeasonSourcing(
+    public async Task<Result<Guid>> RequestFranchiseSeasonSourcing(
         int seasonYear,
         FranchiseSeasonSourcingRequest request,
         CancellationToken cancellationToken = default)
     {
-        return await PostWithResultAsync(
-            $"franchise-seasons/seasonYear/{seasonYear}/source",
-            request,
-            nameof(RequestFranchiseSeasonSourcing),
-            cancellationToken);
+        // Producer answers 202 with the batch correlation id — the
+        // operator's Seq handle for the whole fan-out. It must survive the
+        // round-trip, so this parses the body rather than using the
+        // body-discarding PostWithResultAsync helper.
+        try
+        {
+            var content = new StringContent(request.ToJson(), Encoding.UTF8, "application/json");
+            using var response = await HttpClient.PostAsync(
+                $"franchise-seasons/seasonYear/{seasonYear}/source", content, cancellationToken);
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Error,
+                    [new ValidationFailure(nameof(RequestFranchiseSeasonSourcing),
+                        $"Producer returned {(int)response.StatusCode}: {body}")]);
+            }
+
+            // Body is the bare guid as JSON ("\"<guid>\"").
+            if (!Guid.TryParse(body.Trim().Trim('"'), out var correlationId))
+            {
+                // A 2xx without a parseable id means the contract broke —
+                // surface it rather than handing back an empty Seq handle.
+                return new Failure<Guid>(
+                    default,
+                    ResultStatus.Error,
+                    [new ValidationFailure(nameof(RequestFranchiseSeasonSourcing),
+                        $"Producer accepted the request but returned an unparseable correlation id: '{body}'")]);
+            }
+
+            return new Success<Guid>(correlationId, ResultStatus.Accepted);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Caller aborted — propagate rather than reporting a Producer
+            // failure for something the client chose to stop. (Same
+            // contract as MetricBotClient.)
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return new Failure<Guid>(
+                default,
+                ResultStatus.Error,
+                [new ValidationFailure(nameof(RequestFranchiseSeasonSourcing),
+                    $"RequestFranchiseSeasonSourcing failed: {ex.Message}")]);
+        }
     }
 
     public async Task<List<FranchiseSeasonMetricsDto>> GetFranchiseSeasonMetrics(int seasonYear, CancellationToken cancellationToken = default)

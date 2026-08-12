@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 using SportsData.Core.Common;
@@ -10,4 +11,5 @@ namespace SportsData.Producer.Application.FranchiseSeasons.Commands.RequestFranc
 public record RequestFranchiseSeasonSourcingCommand(
     int SeasonYear,
     Sport Sport,
-    List<DocumentType>? IncludeLinkedDocumentTypes = null);
+    List<DocumentType>? IncludeLinkedDocumentTypes = null,
+    Guid? CorrelationId = null);

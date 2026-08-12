@@ -183,9 +183,14 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             await sut.ProcessAsync(command);
             var originalId = (await TeamSportDataContext.FranchiseSeasonRecords.SingleAsync()).Id;
 
-            // Act - the team won another game: summary changes 7-5 -> 8-5.
-            var changedJson = json.Replace("\"summary\": \"7-5\"", "\"summary\": \"8-5\"");
-            changedJson.Should().NotBe(json, "fixture must contain the 7-5 summary this test edits");
+            // Act - the team won another game: summary changes 7-5 -> 8-5,
+            // and a stat value moves too (avgPointsAgainst 18.3 -> 21.7) so
+            // the test also proves STAT replacement, not just scalar fields.
+            var changedJson = json
+                .Replace("\"summary\": \"7-5\"", "\"summary\": \"8-5\"")
+                .Replace("\"displayValue\": \"18.3\"", "\"displayValue\": \"21.7\"");
+            changedJson.Should().NotBe(json, "fixture must contain the values this test edits");
+            changedJson.Should().Contain("21.7");
 
             var changedCommand = Fixture.Build<ProcessDocumentCommand>()
                 .With(x => x.Document, changedJson)
@@ -204,6 +209,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             saved.Id.Should().Be(originalId, "update must preserve identity");
             saved.Summary.Should().Be("8-5");
             saved.Stats.Should().NotBeEmpty("stats are replaced, not dropped");
+            saved.Stats.Should().Contain(st => st.DisplayValue == "21.7",
+                "the changed stat value must be persisted");
+            saved.Stats.Should().NotContain(st => st.DisplayValue == "18.3",
+                "the superseded stat row must be gone");
 
             bus.Verify(
                 x => x.Publish(It.IsAny<FranchiseSeasonRecordCreated>(), It.IsAny<CancellationToken>()),

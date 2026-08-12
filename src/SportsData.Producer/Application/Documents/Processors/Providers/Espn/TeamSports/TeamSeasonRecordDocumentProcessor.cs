@@ -20,14 +20,18 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Te
 public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
+    private readonly IDateTimeProvider _dateTimeProvider;
+
     public TeamSeasonRecordDocumentProcessor(
         ILogger<TeamSeasonRecordDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs)
+        IGenerateResourceRefs refs,
+        IDateTimeProvider dateTimeProvider)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
+        _dateTimeProvider = dateTimeProvider;
     }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
@@ -91,7 +95,29 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
                 command.CorrelationId,
                 command.MessageId));
 
-            await _dataContext.SaveChangesAsync();
+            try
+            {
+                await _dataContext.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                // At-least-once delivery + parallel workers: two deliveries
+                // can both observe no existing row and both insert; the
+                // loser lands here on the (FranchiseSeasonId, Name, Type)
+                // unique index. Recover iff the winner's row exists.
+                var recovered = await TryRecoverFromDuplicateInsertAsync(
+                    () => _dataContext.FranchiseSeasonRecords
+                        .AsNoTracking()
+                        .AnyAsync(r => r.FranchiseSeasonId == franchiseSeasonIdValue
+                                    && r.Name == dto.Name
+                                    && r.Type == dto.Type),
+                    $"TeamSeasonRecord '{dto.Name}' FranchiseSeasonId={franchiseSeasonIdValue}, CorrelationId={command.CorrelationId}");
+
+                if (!recovered)
+                {
+                    throw;
+                }
+            }
 
             _logger.LogInformation(
                 "Created TeamSeasonRecord '{RecordName}' for FranchiseSeason {Id}",
@@ -114,7 +140,7 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
         existing.Summary = dto.Summary;
         existing.DisplayValue = dto.DisplayValue;
         existing.Value = dto.Value;
-        existing.ModifiedUtc = DateTime.UtcNow;
+        existing.ModifiedUtc = _dateTimeProvider.UtcNow();
         existing.ModifiedBy = command.CorrelationId;
 
         // Stats are value children with no external identity: replace the
@@ -175,10 +201,14 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
         if (existing.Stats.Count != dtoStats.Count)
             return false;
 
-        var existingSet = existing.Stats
-            .Select(st => (st.Name, st.Value, st.DisplayValue))
-            .ToHashSet();
+        // Multiset comparison — ESPN can emit duplicate stat tuples, and a
+        // set-based check would treat {A, A, B} as equal to {A, B, B}.
+        var existingCounts = existing.Stats
+            .GroupBy(st => (st.Name, st.Value, st.DisplayValue))
+            .ToDictionary(g => g.Key, g => g.Count());
 
-        return dtoStats.All(st => existingSet.Contains((st.Name, st.Value, st.DisplayValue)));
+        return dtoStats
+            .GroupBy(st => (st.Name, st.Value, st.DisplayValue))
+            .All(g => existingCounts.TryGetValue(g.Key, out var count) && count == g.Count());
     }
 }

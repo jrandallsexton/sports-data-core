@@ -5995,7 +5995,8 @@ namespace SportsData.Producer.Migrations.Football
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FranchiseSeasonId");
+                    b.HasIndex("FranchiseSeasonId", "Name", "Type")
+                        .IsUnique();
 
                     b.ToTable("FranchiseSeasonRecord", (string)null);
                 });

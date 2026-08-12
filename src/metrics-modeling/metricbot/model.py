@@ -49,6 +49,14 @@ class ModelError(RuntimeError):
     """Training data cannot support a usable model."""
 
 
+def is_priced(frame: pd.DataFrame) -> pd.Series:
+    """The canonical pricing predicate (v1.1 design): a game is priced
+    iff it has a spread — and a pick'em line (Spread == 0) IS priced;
+    it is a real market opinion. One definition, used by the
+    residual/fallback split, ATS DTO emission, and grading."""
+    return frame["Spread"].notna()
+
+
 @dataclass
 class SuResult:
     predictions: pd.DataFrame  # ContestId, Home/AwayFranchiseSeasonId, PredictedMargin, WinProbability, ...
@@ -125,3 +133,105 @@ def predict_ats(su: SuResult) -> pd.DataFrame:
     ).astype(int)
 
     return predictions
+
+
+# Fewer decided rows than this and the residual model is skipped in
+# favor of the pure-stats fallback for the whole slate (e.g. early-2022
+# backtests, before odds coverage begins).
+MIN_RESIDUAL_ROWS = 3 * len(FEATURE_COLS)
+
+
+@dataclass
+class V11Result:
+    """v1.1 (market-prior) predictions plus fit diagnostics."""
+    predictions: pd.DataFrame
+    training_rows: int          # pure-model corpus (fallback + guards)
+    residual_rows: int          # residual-model corpus (0 = fallback-only run)
+    mae: float                  # pure-model in-sample MAE (continuity with v1.0 reporting)
+    residual_std: float         # pure-model residual std
+    residual_model_std: float | None  # correction-model residual std (None if skipped)
+
+
+def predict_market_prior(training: pd.DataFrame,
+                         current_week: pd.DataFrame,
+                         fbs_scope: bool) -> V11Result:
+    """v1.1: for priced games, predicted_margin = -Spread + correction,
+    where the correction model is trained to predict the RESIDUAL vs
+    the line. Unpriced games use the v1.0 pure-stats model and emit SU
+    only (the pipeline drops their ATS output downstream).
+
+    fbs_scope=True (NCAAFB) trains the correction on the FBS∩priced
+    intersection per the design; False (NFL) trains on all priced games.
+    """
+    # The pure model always fits: it serves unpriced slate rows and is
+    # the whole-slate fallback when the residual corpus is too thin.
+    su = predict_straight_up(training, current_week)
+    predictions = predict_ats(su)
+    predictions["ModelPath"] = "fallback"
+
+    decided = training[training["Winner"].isin(["HOME", "AWAY"])].copy()
+    residual_corpus = decided[is_priced(decided)]
+    if fbs_scope and "FbsParticipant" in residual_corpus.columns:
+        # psql CSV delivers booleans as 't'/'f' strings.
+        fbs = residual_corpus["FbsParticipant"].astype(str).str.lower().isin(["t", "true", "1"])
+        residual_corpus = residual_corpus[fbs]
+
+    if len(residual_corpus) < MIN_RESIDUAL_ROWS:
+        # Not enough priced history (early-2022 backtests): honest
+        # fallback for everything rather than a fragile fit.
+        return V11Result(
+            predictions=predictions,
+            training_rows=su.training_rows,
+            residual_rows=0,
+            mae=su.mae,
+            residual_std=su.residual_std,
+            residual_model_std=None,
+        )
+
+    residual_corpus = residual_corpus.copy()
+    # r = actual_margin - market_prediction = margin - (-Spread)
+    residual_corpus["Residual"] = (
+        residual_corpus["HomeScore"] - residual_corpus["AwayScore"]
+        + residual_corpus["Spread"])
+
+    x_train = residual_corpus[FEATURE_COLS].fillna(0)
+    correction = LinearRegression()
+    correction.fit(x_train, residual_corpus["Residual"])
+
+    fit_residuals = residual_corpus["Residual"] - correction.predict(x_train)
+    residual_model_std = float(np.std(fit_residuals))
+    if not np.isfinite(residual_model_std) or residual_model_std <= 0:
+        raise ModelError(
+            f"Correction-model residual std is {residual_model_std} — degenerate fit.")
+
+    priced_mask = is_priced(predictions)
+    if priced_mask.any():
+        priced = predictions[priced_mask]
+        corr = correction.predict(priced[FEATURE_COLS].fillna(0))
+
+        # Margin: the market's opinion plus our measured disagreement.
+        margin = -priced["Spread"].to_numpy() + corr
+        predictions.loc[priced_mask, "PredictedMargin"] = margin
+        predictions.loc[priced_mask, "WinProbability"] = norm.sf(
+            0, loc=margin, scale=residual_model_std).clip(0.01, 0.99)
+
+        # Cover: margin + Spread = correction — the cover probability IS
+        # the disagreement. A correction near zero yields ~50% at low
+        # confidence, the truthful ATS output.
+        predictions.loc[priced_mask, "HomeCoverProbability"] = norm.sf(
+            0, loc=corr, scale=residual_model_std).clip(0.01, 0.99)
+        predictions.loc[priced_mask, "AwayCoverProbability"] = norm.sf(
+            0, loc=-corr, scale=residual_model_std).clip(0.01, 0.99)
+        predictions.loc[priced_mask, "AtsPredictedLabel"] = (
+            predictions.loc[priced_mask, "HomeCoverProbability"]
+            > predictions.loc[priced_mask, "AwayCoverProbability"]).astype(int)
+        predictions.loc[priced_mask, "ModelPath"] = "residual"
+
+    return V11Result(
+        predictions=predictions,
+        training_rows=su.training_rows,
+        residual_rows=len(residual_corpus),
+        mae=su.mae,
+        residual_std=su.residual_std,
+        residual_model_std=residual_model_std,
+    )

@@ -22,9 +22,13 @@ from pathlib import Path
 # Common.Sport) — deliberately NOT a second vocabulary. Databases are
 # per-sport (the per-sport DB split is load-bearing platform-wide);
 # football models cover both leagues with the same feature set.
+#
+# fbs_scope (v1.1 design): deetsMeter covers NCAAFB games with at least
+# one FBS participant; NFL covers EVERY game. The flag drives both the
+# slate filter (SQL) and the residual-model training subset (python).
 SPORT_DATABASES = {
-    "FootballNcaa": "sdProducer.FootballNcaa",
-    "FootballNfl": "sdProducer.FootballNfl",
+    "FootballNcaa": {"database": "sdProducer.FootballNcaa", "fbs_scope": True},
+    "FootballNfl": {"database": "sdProducer.FootballNfl", "fbs_scope": False},
 }
 
 SUPPORTED_SPORTS = tuple(SPORT_DATABASES)
@@ -87,6 +91,10 @@ class Config:
     api_base_url: str
     admin_token: str
     metricbot_user_id: str
+    # v1.1: True = slate restricted to FBS-participant games and the
+    # residual model trains on the FBS∩priced subset (NCAAFB); False =
+    # every game (NFL). Defaulted so test fixtures stay terse.
+    fbs_scope: bool = True
 
     @staticmethod
     def load(sport: str) -> "Config":
@@ -106,7 +114,8 @@ class Config:
             pg_host=get("METRICBOT_PG_HOST"),
             pg_user=get("METRICBOT_PG_USER"),
             pg_password=get("METRICBOT_PG_PASSWORD"),
-            pg_database=SPORT_DATABASES[sport],
+            pg_database=SPORT_DATABASES[sport]["database"],
+            fbs_scope=SPORT_DATABASES[sport]["fbs_scope"],
             pg_port=get("METRICBOT_PG_PORT", "5432"),
             api_base_url=get("METRICBOT_API_BASE_URL").rstrip("/"),
             admin_token=get("METRICBOT_ADMIN_TOKEN"),

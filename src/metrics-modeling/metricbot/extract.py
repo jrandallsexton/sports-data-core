@@ -110,9 +110,12 @@ def extract_asof_training(config: Config, season_year: int, week: int) -> pd.Dat
 def extract_asof_week(config: Config, season_year: int, week: int, prior_tail: int) -> pd.DataFrame:
     """The (season, week) slate with features computed entering that week;
     prior_tail > 0 tops up thin early-week windows with the team's most
-    recent prior-season (regular/post) games."""
+    recent prior-season (regular/post) games. The slate honors the
+    sport's product scope (v1.1): FBS-participant games only for
+    NCAAFB, every game for the NFL."""
     return _run_psql(config, ASOF_WEEK_SQL,
-                     {"season_year": season_year, "week": week, "prior_tail": prior_tail})
+                     {"season_year": season_year, "week": week, "prior_tail": prior_tail,
+                      "fbs_scope": 1 if config.fbs_scope else 0})
 
 
 def extract_final_scores(config: Config, season_year: int, week: int) -> pd.DataFrame:

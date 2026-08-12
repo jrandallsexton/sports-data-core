@@ -462,6 +462,16 @@ variance.
 
 ## MetricBot-v1.1 design (decided 2026-08-11)
 
+> **STATUS 2026-08-12: implemented (MODEL_VERSION MetricBot-v1.1.0),
+> awaiting the acceptance sweep.** predict_market_prior in model.py;
+> is_priced predicate; FBS slate filter via psql var (fbs_scope from
+> per-sport config — NFL unfiltered); FbsParticipant column carves the
+> residual corpus in python; ATS DTOs priced-only (NaN defect fixed);
+> MIN_RESIDUAL_ROWS = 3x features guards thin corpora (early-2022
+> backtests fall back whole-slate). Acceptance per this design: 2022+
+> sweep must show no same-games SU regression vs v1.0 and improved ATS
+> calibration.
+
 Decisions from the post-sweep review (decision owner: Randall; all
 resolved same day):
 

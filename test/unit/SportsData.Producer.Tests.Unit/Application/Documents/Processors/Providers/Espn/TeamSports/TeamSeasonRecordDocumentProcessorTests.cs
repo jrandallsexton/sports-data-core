@@ -100,7 +100,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         /// it is deleted and re-created with updated data.
         /// </summary>
         [Fact]
-        public async Task ProcessAsync_ReplacesExistingRecord_WhenRecordAlreadyExists()
+        public async Task ProcessAsync_IsNoOp_WhenReprocessingIdenticalDocument()
         {
             // Arrange
             var franchiseSeason = Fixture.Build<FranchiseSeason>()
@@ -126,38 +126,53 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             // Act - Process once
             await sut.ProcessAsync(command);
-            
-            var firstCount = await TeamSportDataContext.FranchiseSeasonRecords.CountAsync();
-            firstCount.Should().Be(1);
 
-            // Act - Process again (reprocess)
+            var originalId = (await TeamSportDataContext.FranchiseSeasonRecords.SingleAsync()).Id;
+
+            // Act - Reprocess the IDENTICAL document (the backfill case)
             await sut.ProcessAsync(command);
 
-            // Assert - Should still have only 1 record (replaced, not duplicated)
+            // Assert - one record, SAME identity, and no second event of
+            // any kind: identical re-sourcing is a quiet no-op.
             var savedRecords = await TeamSportDataContext.FranchiseSeasonRecords
                 .Include(r => r.Stats)
                 .Where(r => r.FranchiseSeasonId == franchiseSeason.Id)
                 .ToListAsync();
 
-            savedRecords.Should().HaveCount(1, "existing record should be replaced");
+            savedRecords.Should().HaveCount(1);
+            savedRecords[0].Id.Should().Be(originalId, "identity must survive re-sourcing");
 
-            // Verify event was published twice (once for each processing)
             bus.Verify(
                 x => x.Publish(It.IsAny<FranchiseSeasonRecordCreated>(), It.IsAny<CancellationToken>()),
-                Times.Exactly(2));
+                Times.Once);
+            bus.Verify(
+                x => x.Publish(It.IsAny<FranchiseSeasonRecordUpdated>(), It.IsAny<CancellationToken>()),
+                Times.Never);
         }
 
         /// <summary>
-        /// Validates that when the FranchiseSeason does not exist in the database,
-        /// the processor logs an error and does not create any records or publish events.
+        /// A re-sourced document with CHANGED content (the mid-season case:
+        /// records move weekly) updates the row in place — same identity,
+        /// new values, an Updated event (never a second Created).
         /// </summary>
         [Fact]
-        public async Task ProcessAsync_DoesNothing_WhenFranchiseSeasonNotFound()
+        public async Task ProcessAsync_UpdatesInPlace_WhenDocumentContentChanged()
         {
             // Arrange
+            var franchiseSeason = Fixture.Build<FranchiseSeason>()
+                .WithAutoProperties()
+                .With(x => x.SeasonYear, 2025)
+                .With(x => x.Records, new List<FranchiseSeasonRecord>())
+                .Create();
+
+            await TeamSportDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+            await TeamSportDataContext.SaveChangesAsync();
+
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonRecord.json");
+
             var command = Fixture.Build<ProcessDocumentCommand>()
-                .With(x => x.Document, "{}")
-                .With(x => x.ParentId, Guid.NewGuid().ToString())
+                .With(x => x.Document, json)
+                .With(x => x.ParentId, franchiseSeason.Id.ToString())
                 .With(x => x.CorrelationId, Guid.NewGuid())
                 .OmitAutoProperties()
                 .Create();
@@ -165,14 +180,37 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var sut = Mocker.CreateInstance<TeamSeasonRecordDocumentProcessor<TeamSportDataContext>>();
             var bus = Mocker.GetMock<IEventBus>();
 
-            // Act
             await sut.ProcessAsync(command);
+            var originalId = (await TeamSportDataContext.FranchiseSeasonRecords.SingleAsync()).Id;
 
-            // Assert
-            (await TeamSportDataContext.FranchiseSeasonRecords.CountAsync()).Should().Be(0);
+            // Act - the team won another game: summary changes 7-5 -> 8-5.
+            var changedJson = json.Replace("\"summary\": \"7-5\"", "\"summary\": \"8-5\"");
+            changedJson.Should().NotBe(json, "fixture must contain the 7-5 summary this test edits");
+
+            var changedCommand = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.Document, changedJson)
+                .With(x => x.ParentId, franchiseSeason.Id.ToString())
+                .With(x => x.CorrelationId, Guid.NewGuid())
+                .OmitAutoProperties()
+                .Create();
+
+            await sut.ProcessAsync(changedCommand);
+
+            // Assert - same row, same identity, new content, Updated event.
+            var saved = await TeamSportDataContext.FranchiseSeasonRecords
+                .Include(r => r.Stats)
+                .SingleAsync(r => r.FranchiseSeasonId == franchiseSeason.Id);
+
+            saved.Id.Should().Be(originalId, "update must preserve identity");
+            saved.Summary.Should().Be("8-5");
+            saved.Stats.Should().NotBeEmpty("stats are replaced, not dropped");
+
             bus.Verify(
                 x => x.Publish(It.IsAny<FranchiseSeasonRecordCreated>(), It.IsAny<CancellationToken>()),
-                Times.Never);
+                Times.Once);
+            bus.Verify(
+                x => x.Publish(It.IsAny<FranchiseSeasonRecordUpdated>(), It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         /// <summary>

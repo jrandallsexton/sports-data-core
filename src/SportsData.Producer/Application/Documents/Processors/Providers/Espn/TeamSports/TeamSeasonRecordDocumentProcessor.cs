@@ -5,14 +5,12 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
+using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
-
-using SportsData.Core.Infrastructure.Refs;
-using SportsData.Core.Infrastructure.DataSources.Espn;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.TeamSports;
 
@@ -64,30 +62,81 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
             return;
         }
 
-        // Find existing record by FranchiseSeasonId, Name, and Type (natural key)
+        // Upsert by natural key (FranchiseSeasonId, Name, Type). True
+        // in-place update — NOT delete/re-add — so the record keeps its
+        // identity across re-sourcing, the write is a single atomic
+        // SaveChanges, and a backfill over already-sourced seasons is a
+        // quiet no-op wherever nothing actually changed.
         var existing = await _dataContext.FranchiseSeasonRecords
-            .FirstOrDefaultAsync(r => r.FranchiseSeasonId == franchiseSeasonIdValue 
-                                   && r.Name == dto.Name 
+            .Include(r => r.Stats)
+            .FirstOrDefaultAsync(r => r.FranchiseSeasonId == franchiseSeasonIdValue
+                                   && r.Name == dto.Name
                                    && r.Type == dto.Type);
 
-        if (existing is not null)
+        if (existing is null)
         {
-            // delete then re-add to simplify processing logic
-            _dataContext.FranchiseSeasonRecords.Remove(existing);
+            var entity = dto.AsEntity(
+                franchiseSeasonIdValue,
+                franchiseSeason.FranchiseId,
+                franchiseSeason.SeasonYear,
+                command.CorrelationId);
+
+            await _dataContext.FranchiseSeasonRecords.AddAsync(entity);
+
+            await _publishEndpoint.Publish(new FranchiseSeasonRecordCreated(
+                entity.AsCanonical(),
+                null,
+                command.Sport,
+                franchiseSeason.SeasonYear,
+                command.CorrelationId,
+                command.MessageId));
+
             await _dataContext.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Created TeamSeasonRecord '{RecordName}' for FranchiseSeason {Id}",
+                dto.Name, franchiseSeasonIdValue);
+            return;
         }
 
-        var entity = dto.AsEntity(
-            franchiseSeasonIdValue,
-            franchiseSeason.FranchiseId,
-            franchiseSeason.SeasonYear,
-            command.CorrelationId);
+        if (RecordMatchesDto(existing, dto))
+        {
+            _logger.LogDebug(
+                "TeamSeasonRecord '{RecordName}' unchanged for FranchiseSeason {Id} — skipping",
+                dto.Name, franchiseSeasonIdValue);
+            return;
+        }
 
-        await _dataContext.FranchiseSeasonRecords.AddAsync(entity);
+        existing.Abbreviation = dto.Abbreviation;
+        existing.DisplayName = dto.DisplayName;
+        existing.ShortDisplayName = dto.ShortDisplayName;
+        existing.Description = dto.Description;
+        existing.Summary = dto.Summary;
+        existing.DisplayValue = dto.DisplayValue;
+        existing.Value = dto.Value;
+        existing.ModifiedUtc = DateTime.UtcNow;
+        existing.ModifiedBy = command.CorrelationId;
 
-        var canonical = entity.AsCanonical();
-        await _publishEndpoint.Publish(new FranchiseSeasonRecordCreated(
-            canonical,
+        // Stats are value children with no external identity: replace the
+        // collection wholesale under the SAME parent id. Both states are
+        // set EXPLICITLY — RemoveRange for the old rows, AddRange for the
+        // new — because nav-fixup discovery marks client-keyed (set-Guid)
+        // entities as Modified rather than Added, which then fails as an
+        // update of rows that don't exist.
+        var newStats = dto.Stats?.Select(st => st.AsEntity()).ToList() ?? [];
+        foreach (var stat in newStats)
+        {
+            stat.FranchiseSeasonRecordId = existing.Id;
+        }
+
+        _dataContext.Set<Infrastructure.Data.Entities.FranchiseSeasonRecordStat>()
+            .RemoveRange(existing.Stats);
+        await _dataContext.Set<Infrastructure.Data.Entities.FranchiseSeasonRecordStat>()
+            .AddRangeAsync(newStats);
+        existing.Stats = newStats;
+
+        await _publishEndpoint.Publish(new FranchiseSeasonRecordUpdated(
+            existing.AsCanonical(),
             null,
             command.Sport,
             franchiseSeason.SeasonYear,
@@ -96,6 +145,40 @@ public class TeamSeasonRecordDocumentProcessor<TDataContext> : DocumentProcessor
 
         await _dataContext.SaveChangesAsync();
 
-        _logger.LogInformation("Successfully processed TeamSeasonRecord '{RecordName}' for FranchiseSeason {Id}", dto.Name, franchiseSeasonId);
+        _logger.LogInformation(
+            "Updated TeamSeasonRecord '{RecordName}' for FranchiseSeason {Id}",
+            dto.Name, franchiseSeasonIdValue);
+    }
+
+    /// <summary>
+    /// Content equality between the stored record and the sourced DTO —
+    /// the fields we persist, plus the stat set by (Name, Value,
+    /// DisplayValue). Identical re-sourcing (the common backfill case)
+    /// becomes a no-op: no write, no event.
+    /// </summary>
+    private static bool RecordMatchesDto(
+        Infrastructure.Data.Entities.FranchiseSeasonRecord existing,
+        EspnTeamSeasonRecordDto dto)
+    {
+        if (existing.Summary != dto.Summary
+            || existing.DisplayValue != dto.DisplayValue
+            || !existing.Value.Equals(dto.Value)
+            || existing.Abbreviation != dto.Abbreviation
+            || existing.DisplayName != dto.DisplayName
+            || existing.ShortDisplayName != dto.ShortDisplayName
+            || existing.Description != dto.Description)
+        {
+            return false;
+        }
+
+        var dtoStats = dto.Stats ?? [];
+        if (existing.Stats.Count != dtoStats.Count)
+            return false;
+
+        var existingSet = existing.Stats
+            .Select(st => (st.Name, st.Value, st.DisplayValue))
+            .ToHashSet();
+
+        return dtoStats.All(st => existingSet.Contains((st.Name, st.Value, st.DisplayValue)));
     }
 }

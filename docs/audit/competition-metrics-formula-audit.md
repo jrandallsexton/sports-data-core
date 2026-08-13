@@ -210,6 +210,17 @@ ordered computation in the handler; a verification query measuring how
 often numeric and lexicographic order actually disagree in prod data
 (if never, the fix is cheap insurance; if often, it re-ranks severity).
 
+**Implemented** (fix/metrics-h1-h2, CR follow-up): a shared
+`OrderPlays` helper (numeric when parseable, ordinal fallback) is now
+applied ONCE to `competition.Plays` before any calculator runs, and
+PointsPerDrive reuses the same helper — every play-order-sensitive
+computation sees the same temporal order. Fixture: unpadded sequences
+("2", "9", "10") where lexicographic order would halve the red-zone
+TD rate. The possession-time calculator's per-drive first/last-play
+selection also uses the helper. Still open: the EF `Include` ordering
+is lexicographic but is overridden before use, and the prod
+disagreement-frequency query has not been run.
+
 ## Aggregation layer (`CalculateFranchiseSeasonMetricsCommandHandler`)
 
 - Plain unweighted mean of per-game ratios (average-of-ratios).

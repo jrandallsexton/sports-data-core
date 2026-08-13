@@ -537,6 +537,34 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             home.ExplosiveRate.Should().Be(0m);
         }
 
+        /// <summary>
+        /// AUDIT H4 (ordering): SequenceNumber is a STRING — lexicographic
+        /// order puts "10" before "2" and "9". The trip machine must see
+        /// temporal (numeric) order. Numerically: opponent snap ("2"), home
+        /// opens a trip ("9"), same-drive TD ("10") scores it -> 1.0.
+        /// Lexicographically the TD is processed FIRST, the opponent snap
+        /// closes that trip, and "9" opens a second scoreless trip -> 0.5.
+        /// </summary>
+        [Fact]
+        public async Task H4_UnpaddedSequenceNumbers_ProcessedInNumericOrder()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: false, drive: 2, seq: "2", type: PlayType.Rush, down: 1, dist: 10, yds: 3, yte: 75),
+                Play(home: true, drive: 1, seq: "9", type: PlayType.Rush, down: 1, dist: 10, yds: 2, yte: 15),
+                Play(home: true, drive: 1, seq: "10", type: PlayType.RushingTouchdown, down: 2, dist: 8, yds: 13, yte: 13));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rate = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => m.RzTdRate)
+                .SingleAsync();
+
+            rate.Should().Be(1m, "one trip, opened at seq 9 and scored at seq 10 — temporal order, not string order");
+        }
+
         private sealed record PlaySpec(
             bool Home, int Drive, string Seq, PlayType Type,
             int? Down, int? Dist, int Yds, int? Yte, int Period);

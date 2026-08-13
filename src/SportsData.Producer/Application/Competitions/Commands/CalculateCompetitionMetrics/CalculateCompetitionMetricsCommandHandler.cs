@@ -69,7 +69,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         var (awayMetric, homeMetric) = CalculateMetrics(
             competition.Contest.SeasonYear,
             command.CompetitionId,
-            competition.Plays.ToList(),
+            OrderPlays(competition.Plays),
             competition.Drives.ToList(),
             awayFranchiseSeasonId,
             homeFranchiseSeasonId);
@@ -170,7 +170,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
                 .GroupBy(p => p.DriveId)
                 .Sum(drive =>
                 {
-                    var ordered = drive.OrderBy(p => p.SequenceNumber).ToList();
+                    var ordered = OrderPlays(drive);
                     var first = ordered.FirstOrDefault();
                     var last = ordered.LastOrDefault();
 
@@ -395,16 +395,8 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         int ScoreOf(FootballCompetitionPlay p) =>
             franchiseSeasonId == homeFsId ? p.HomeScore : p.AwayScore;
 
-        // SequenceNumber is an ESPN STRING; lexicographic ordering breaks
-        // when digit counts differ ("10" < "9"). Order numerically when
-        // parseable, falling back to the raw string. Both the drive
-        // first/last selection and the baseline lookup use this SAME
-        // ordering, so they cannot disagree.
-        var ordered = plays
-            .Where(p => p.DriveId.HasValue && p.DriveId != Guid.Empty)
-            .OrderBy(p => long.TryParse(p.SequenceNumber, out var n) ? n : long.MaxValue)
-            .ThenBy(p => p.SequenceNumber, StringComparer.Ordinal)
-            .ToList();
+        var ordered = OrderPlays(
+            plays.Where(p => p.DriveId.HasValue && p.DriveId != Guid.Empty));
 
         var drives = ordered
             .Where(p => p.StartFranchiseSeasonId == franchiseSeasonId)
@@ -588,6 +580,17 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     // outcomes; excluding them flattered turnover-prone teams) at an
     // effective yardage of ZERO: never a success, never explosive,
     // never a conversion.
+    // SequenceNumber is an ESPN STRING; lexicographic ordering breaks
+    // when digit counts differ ("10" < "9"). Order numerically when
+    // parseable, falling back to the raw string. Every order-sensitive
+    // consumer (drive baselines, the red-zone trip machine) uses this
+    // SAME ordering, so they cannot disagree.
+    private static List<FootballCompetitionPlay> OrderPlays(IEnumerable<FootballCompetitionPlay> plays)
+        => plays
+            .OrderBy(p => long.TryParse(p.SequenceNumber, out var n) ? n : long.MaxValue)
+            .ThenBy(p => p.SequenceNumber, StringComparer.Ordinal)
+            .ToList();
+
     private static bool IsTurnoverType(PlayType t)
         => t == PlayType.PassInterceptionReturn
            || t == PlayType.InterceptionReturnTouchdown

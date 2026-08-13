@@ -80,8 +80,24 @@ snaps — and a later score in a NEW drive can be credited to the stale
 trip (e.g. trip at end of Q2, team receives the second-half kickoff
 and scores: the first-half trip is marked scored).
 
-**Fix**: also close the trip when THIS offense starts a new drive
-(DriveId change) or on period boundaries.
+**Fix — complete termination contract** (a trip, once open, closes on
+the FIRST of):
+1. The opposing offense takes a standing scrimmage snap (existing rule).
+2. THIS offense starts a NEW drive (DriveId change) — covers turnovers,
+   defensive scores, and kickoff-separated possessions in one rule,
+   since every one of those forces a new drive id.
+3. A half boundary (period 2→3) or end of regulation→OT transition —
+   possessions do not survive the half. (Q1→Q2 and Q3→Q4 do NOT
+   terminate: a drive legitimately spans those.)
+4. End of input (existing EOF close).
+Scoring credited to a trip counts only while that trip is open.
+Duplicate play events (same SequenceNumber) count once; missing events
+degrade to rule 1/2 whichever fires first.
+
+**Fixtures required**: trip → opponent snap; trip → turnover → own new
+drive later scores (stale-trip regression); trip open across Q1→Q2
+(must survive); trip open across the half (must close); trip ended by
+defensive TD; trip at EOF; duplicate-sequence play.
 
 ### H3. PenaltyYardsPerPlay attributes by possession, not by offender
 
@@ -90,34 +106,83 @@ possessing offense — so a defensive-offside against the OPPONENT during
 your drive counts as YOUR penalty yards, and your own defensive
 penalties are never counted. `Math.Abs` also erases direction.
 
-**Fix**: attribute by the penalized team if the data supports it; if
-not, rename/redefine the metric honestly ("penalty yards observed
-during own possessions") or drop it from the feature set.
+**Contract (data limitation verified 2026-08-13)**: ESPN's play
+document carries only the possessing/acting `Team` ref (→
+`StartFranchiseSeasonId`); there is NO structured penalized-team field
+— the offender exists only in free text. Therefore:
+- **DECIDED default (pending Randall veto): REMOVE PenaltyYardsPerPlay
+  from FEATURE_COLS and the preview payload.** A metric that cannot
+  attribute its subject is noise with a name. Text-parsing the offender
+  is rejected (fragile, unverifiable at scale).
+- The column may remain persisted as "penalty yards observed during
+  own possessions" ONLY if renamed to say so; otherwise stop computing
+  it. No `Math.Abs`: if it is ever reintroduced with real attribution,
+  yards are signed by beneficiary.
+- Fixtures on any reintroduction: offensive penalty on own drive,
+  defensive penalty on own drive, declined penalty (no yardage), and
+  NO-PLAY interaction.
 
 ## MEDIUM
 
-- **M1. TurnoverMarginPerDrive**: relies on play-type attribution
-  (`StartFranchiseSeasonId` on interception/fumble plays) that should
-  be verified empirically against box scores; likely misses
-  opponent-fumble-recovery play types. Denominator (own offensive
-  drives) is unusual but internally consistent.
-- **M2. TimePossRatio**: `(4 − period) * 900` goes negative in
-  overtime (period 5+), corrupting OT games' possession seconds; the
-  final play of each drive contributes zero elapsed time.
-- **M3. FgPctShrunk**: no shrinkage despite the name (a raw filtered
-  percentage), and zero attempts returns 0 — scoring a team with no
-  short-FG attempts as a 0% kicker. Should be null (SafeAvg-style) or
-  a shrunk prior.
-- **M4. NetPunt**: hardcoded `0m` TODO — a dead constant feature.
-  Harmless to models (zero variance) but misleading in payloads.
+Each medium finding now carries ONE deterministic target:
+
+- **M1. TurnoverMarginPerDrive — target: verified attribution or
+  exclusion.** Acceptance: a verification query comparing computed
+  turnovers-lost/gained against `CompetitionCompetitorStatistic` box
+  totals for ≥100 sampled 2025 games; ≥95% exact match → keep with the
+  play-type list extended to whatever the mismatches reveal (e.g.
+  opponent-fumble-recovery types); below → remove from FEATURE_COLS
+  until fixed. Fixture: a game with one INT each way + one lost fumble,
+  hand-counted.
+- **M2. TimePossRatio — target: OT contributes zero possession
+  seconds.** `secondsRemaining = Math.Max(0, 4 − period) * 900 + clock`
+  clamps OT periods to clock-only; since CFB/NFL OT possession time is
+  not meaningfully clocked in the data, OT plays contribute 0 elapsed
+  and the ratio is a REGULATION possession ratio (documented as such).
+  Last-play duration remains excluded (accepted approximation).
+  Fixture: an OT game whose ratio equals its regulation-only ratio and
+  is in [0,1].
+- **M3. FgPctShrunk — target: null when no qualifying attempts.**
+  The result is null (SafeAvg-carried, omitted from payloads) when a
+  team has zero ≤45yd attempts — never 0%. The shrinkage prior implied
+  by the name is DEFERRED to a future formula vintage; until then the
+  name stays (renaming is churn) with this doc as the honest record.
+  Fixtures: 0 attempts → null; 2/3 made → 0.6667.
+- **M4. NetPunt — target: removed from FEATURE_COLS and payloads.**
+  A hardcoded 0 is a dead constant to models and a lie in payloads.
+  The column may persist as null until punting stats are implemented
+  (likely from box-score data per franchise-season-week-metrics.md §5).
+  Fixture: payload serialization omits it.
+
+### H4. Lexicographic ordering of an ESPN string SequenceNumber
+(found implementing #624)
+
+`CompetitionPlayBase.SequenceNumber` is a STRING, and the handler
+orders plays with `OrderBy(p => p.SequenceNumber)` — lexicographic,
+where "10" sorts before "9". Every ordered computation (drive
+first/last plays, possession-time endpoints, red-zone trip scanning)
+is exposed if ESPN's values vary in digit count. #624's new
+PointsPerDrive orders numerically-with-fallback; the REST of the
+handler still sorts lexicographically.
+
+**Target**: one shared numeric-aware ordering helper used by every
+ordered computation in the handler; a verification query measuring how
+often numeric and lexicographic order actually disagree in prod data
+(if never, the fix is cheap insurance; if often, it re-ranks severity).
 
 ## Aggregation layer (`CalculateFranchiseSeasonMetricsCommandHandler`)
 
-- Plain unweighted mean of per-game ratios (average-of-ratios). This is
-  a documented, defensible choice — but note small-denominator games
-  (few snaps/drives) get equal weight with full games.
-- `SafeAvg` returns 0 (not null) when every game is null — known quirk,
-  formula-parity-locked into the as-of SQL; revisit deliberately.
+- Plain unweighted mean of per-game ratios (average-of-ratios).
+  **DECIDED: preserved unchanged in the recompute vintage** —
+  changing weighting mid-campaign would confound the formula fixes.
+  Small-denominator games keeping equal weight is accepted and
+  recorded. Fixture: 2-game aggregate equals the hand mean.
+- `SafeAvg` all-null → 0 quirk. **DECIDED: preserved in this vintage**
+  (formula-parity is locked into the as-of SQL; changing it means
+  changing two codebases in lockstep). Revisit with the weighting
+  question in a future vintage, as one deliberate change. Fixture:
+  all-null RZ inputs → 0 (current contract), asserted so any future
+  change is loud.
 - Delete+re-add identity churn on recompute — the same pattern
   #617 removed from the records processor; candidate for the same
   upsert treatment.
@@ -134,15 +199,52 @@ AND slates (v1.0/v1.1 both poisoned), (b) the LLM preview payload's
 stats + prior-season Metrics blocks (the model has been reading
 PPD ≈ 6.16 as fact), (c) any DeetsMeter/metric surface.
 
-## Recommended sequence
+## Recompute contract
 
-1. Fix C1 + C2 (and decide H1–H3) in
-   `CalculateCompetitionMetricsCommandHandler`; add
-   `MetricFormulaVersion` stamping; unit-test each formula against a
-   hand-computed fixture game (real play-by-play JSON, known answers).
-2. Recompute ALL CompetitionMetric + FranchiseSeasonMetric under the
-   fixed code (the audit-job idiom is the backfill mechanism) — one
-   vintage everywhere.
-3. Re-run the MetricBot acceptance sweep — pure model and market-prior
-   both re-graded on honest features. Only then resume model iteration
-   (v1.2: consistent as-of aggregate features on both sides).
+- **Identity**: natural key `(CompetitionId, FranchiseSeasonId)` for
+  CompetitionMetric; `(FranchiseSeasonId, Season)` for
+  FranchiseSeasonMetric. Verified 2026-08-13: NO code references
+  `CompetitionMetricId` as a foreign key — delete/re-add identity churn
+  breaks nothing today, but recompute handlers should still write
+  delete+insert in ONE SaveChanges (the current per-game handler uses
+  TWO — delete saved before insert — a crash between loses the rows;
+  same non-atomicity #617 removed from the records processor).
+- **Idempotency**: recompute of an unchanged competition under the same
+  formula version is a no-op in effect (identical values, new stamp
+  only if absent).
+- **Version stamp — ONE field, one name**: `FormulaVersion` (string,
+  e.g. "2026.08"), persisted on BOTH CompetitionMetric and
+  FranchiseSeasonMetric, bumped when EITHER the per-game formulas or
+  the aggregation change (they ship as one vintage; split fields buy
+  nothing and invite mismatched interpretation). Readers: the
+  verification gates below, the MetricBot harness (reports the vintage
+  it trained on), and any future drift check. The earlier
+  `AggregationVersion`/`MetricFormulaVersion` naming in
+  franchise-season-week-metrics.md is superseded by this single field.
+- **InputsHash**: populated at computation time as SHA-256 over the
+  ordered source-play identity list (EspnId + final scoreboard pair);
+  consumer contract: recompute may SKIP a competition whose stored
+  (InputsHash, FormulaVersion) both match — the cheap-idempotency path.
+  Until populated, recompute treats every row as stale (correct,
+  slower).
+
+## Recommended sequence (with gates)
+
+1. Fix C1 + C2 (#624) and land the H/M decisions above in
+   `CalculateCompetitionMetricsCommandHandler`, with the listed
+   fixtures. Add `FormulaVersion` + `InputsHash` stamping (migration).
+2. **Phase 1 recompute**: CompetitionMetric for every competition with
+   plays, oldest season first. GATE before phase 2: row count = 2 ×
+   competitions-with-plays; 100% stamped with the new FormulaVersion;
+   sanity bounds on FBS season means (PPD in [1.5, 3.5];
+   |mean FieldPosDiff| < 3; SuccessRate in [0.30, 0.55]). Any gate
+   failure halts the campaign — nothing downstream recomputes.
+3. **Phase 2 recompute**: FranchiseSeasonMetric strictly AFTER phase 1
+   passes (the season handler reads persisted CompetitionMetric rows —
+   ordering is load-bearing, not stylistic). GATE: per-season row
+   counts match franchise-seasons-with-metrics; spot parity checks vs
+   hand-aggregated samples; 100% version-stamped.
+4. Only after both gates: re-run the MetricBot acceptance sweep (pure
+   model and market-prior re-graded on honest features), regenerate any
+   payload-facing consumers, and resume model iteration (v1.2:
+   consistent as-of aggregate features on both sides).

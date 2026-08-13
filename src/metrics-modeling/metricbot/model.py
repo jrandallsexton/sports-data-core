@@ -189,17 +189,39 @@ def predict_market_prior(training: pd.DataFrame,
         )
 
     residual_corpus = residual_corpus.copy()
+
+    # The walk-forward error estimate below depends on chronological
+    # order. The extraction SQL orders by (SeasonYear, WeekNumber);
+    # enforce it here too so the contract doesn't rest on SQL ordering
+    # surviving the pandas round-trip. Stable sort preserves within-week
+    # extraction order.
+    if {"SeasonYear", "WeekNumber"}.issubset(residual_corpus.columns):
+        residual_corpus = residual_corpus.sort_values(
+            ["SeasonYear", "WeekNumber"], kind="stable")
+
     # r = actual_margin - market_prediction = margin - (-Spread)
     residual_corpus["Residual"] = (
         residual_corpus["HomeScore"] - residual_corpus["AwayScore"]
         + residual_corpus["Spread"])
 
     x_train = residual_corpus[FEATURE_COLS].fillna(0)
+    y_train = residual_corpus["Residual"]
     correction = LinearRegression()
-    correction.fit(x_train, residual_corpus["Residual"])
+    correction.fit(x_train, y_train)
 
-    fit_residuals = residual_corpus["Residual"] - correction.predict(x_train)
-    residual_model_std = float(np.std(fit_residuals))
+    # v1.1.1: the probability scale must be the HONEST out-of-sample
+    # error, not the in-sample fit std — overfit shrinks the latter well
+    # below reality (observed: ~13 in-sample vs ~16-17 true on the 2025
+    # sweep), which saturates every probability away from 0.5 and made
+    # the v1.1.0 low buckets wildly overconfident (pred 4.5% -> actual
+    # 25.6%) while ATS Brier landed WORSE than always-saying-50%.
+    # WALK-FORWARD, not KFold: unshuffled KFold validates each
+    # chronological block with a model trained partly on FUTURE games —
+    # temporal leakage that biases the estimate optimistic, the same
+    # defect family in miniature. Deployment predicts forward; the error
+    # estimate does too: each block is predicted by a model trained only
+    # on the rows before it. Deterministic.
+    residual_model_std = _walk_forward_residual_std(x_train, y_train)
     if not np.isfinite(residual_model_std) or residual_model_std <= 0:
         raise ModelError(
             f"Correction-model residual std is {residual_model_std} — degenerate fit.")
@@ -235,3 +257,35 @@ def predict_market_prior(training: pd.DataFrame,
         residual_std=su.residual_std,
         residual_model_std=residual_model_std,
     )
+
+
+WALK_FORWARD_FOLDS = 5
+
+
+def _walk_forward_residual_std(x_train: pd.DataFrame, y_train: pd.Series) -> float:
+    """Forward-only out-of-sample residual std: split chronologically into
+    WALK_FORWARD_FOLDS blocks; each block (after the first) is predicted
+    by a model trained on ALL preceding rows. Blocks whose preceding
+    training slice is underdetermined (<= feature count) are skipped —
+    at MIN_RESIDUAL_ROWS the later folds always qualify."""
+    n = len(x_train)
+    fold = n // WALK_FORWARD_FOLDS
+    x_values = x_train.to_numpy()
+    y_values = y_train.to_numpy()
+
+    residuals: list[np.ndarray] = []
+    for i in range(1, WALK_FORWARD_FOLDS):
+        train_end = fold * i
+        test_end = fold * (i + 1) if i < WALK_FORWARD_FOLDS - 1 else n
+        if train_end <= len(FEATURE_COLS):
+            continue
+        model = LinearRegression().fit(x_values[:train_end], y_values[:train_end])
+        residuals.append(
+            y_values[train_end:test_end] - model.predict(x_values[train_end:test_end]))
+
+    if not residuals:
+        raise ModelError(
+            f"Walk-forward validation produced no usable folds from {n} rows — "
+            f"corpus too thin for an honest error estimate.")
+
+    return float(np.std(np.concatenate(residuals)))

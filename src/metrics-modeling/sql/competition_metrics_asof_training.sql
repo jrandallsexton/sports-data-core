@@ -68,6 +68,7 @@ entering AS (
 SELECT
     con."Id" AS "ContestId",
     comp."Id" AS "CompetitionId",
+    s."Year" AS "SeasonYear",
     sw."Number" AS "WeekNumber",
     con."HomeTeamFranchiseSeasonId",
     con."AwayTeamFranchiseSeasonId",

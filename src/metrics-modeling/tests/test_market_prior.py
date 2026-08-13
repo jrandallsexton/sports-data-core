@@ -145,3 +145,37 @@ def test_dtos_emit_ats_only_for_priced_contests():
     assert all(d["ModelVersion"] == MODEL_VERSION for d in dtos)
     # The NaN defect is dead: every probability is a real number.
     assert all(0.01 <= d["WinProbability"] <= 0.99 for d in dtos)
+
+
+def test_probability_scale_is_out_of_sample_not_fit_std():
+    # With more features than signal, in-sample fit std shrinks below the
+    # honest error; the deployed scale must come from out-of-fold
+    # residuals. Train on pure noise and verify the used std is close to
+    # the TRUE noise scale (3.0) rather than the optimistic fit std.
+    rng = np.random.default_rng(7)
+    training = _frame(2000, completed=True, seed=8, spread=True)
+    noise = rng.normal(scale=3.0, size=len(training))
+    training["HomeScore"] = 30.0
+    training["AwayScore"] = 30.0 + training["Spread"] + noise
+    margin = training["HomeScore"] - training["AwayScore"]
+    training["Winner"] = ["HOME" if m > 0 else "AWAY" for m in margin]
+
+    result = predict_market_prior(
+        training, _frame(5, completed=False, seed=9, spread=True), fbs_scope=False)
+
+    # The in-sample fit std — what v1.1.0 wrongly used — computed the
+    # same way the model would: full-corpus fit, residuals against it.
+    from sklearn.linear_model import LinearRegression
+    from metricbot.model import is_priced
+    corpus = training[training["Winner"].isin(["HOME", "AWAY"])]
+    corpus = corpus[is_priced(corpus)]
+    x = corpus[FEATURE_COLS].fillna(0)
+    y = corpus["HomeScore"] - corpus["AwayScore"] + corpus["Spread"]
+    fit = LinearRegression().fit(x, y)
+    fit_std = float(np.std(y - fit.predict(x)))
+
+    # The deployed scale must exceed the optimistic in-sample number and
+    # land at (or slightly above) the TRUE noise scale of 3.0.
+    assert result.residual_model_std is not None
+    assert result.residual_model_std > fit_std
+    assert 2.9 <= result.residual_model_std <= 3.6

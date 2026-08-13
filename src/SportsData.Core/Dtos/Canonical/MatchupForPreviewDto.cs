@@ -15,6 +15,15 @@ namespace SportsData.Core.Dtos.Canonical
 
         public string? HeadLine { get; set; }
         public DateTime StartDateUtc { get; set; }
+
+        /// <summary>
+        /// Season phase name for the TARGET game ("Preseason",
+        /// "Regular Season", "Postseason"). The payload's history rows
+        /// already carry per-game Phase; this closes the asymmetry so the
+        /// model can calibrate tone (preseason = experimental lineups;
+        /// postseason = elimination stakes).
+        /// </summary>
+        public string? SeasonPhase { get; set; }
         /// <summary>
         /// Raw ESPN status type name (e.g. "STATUS_IN_PROGRESS", "STATUS_FINAL")
         /// for programmatic branching. Pair with <see cref="StatusDescription"/>

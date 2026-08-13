@@ -35,6 +35,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             WeekNumber = 2,
             ContestId = _contestId,
             StartDateUtc = TargetStartUtc,
+            SeasonPhase = "Preseason",
             Status = status,
             StatusDescription = status == "STATUS_FINAL" ? "Final" : "Scheduled",
             Venue = "State Farm Stadium",
@@ -200,6 +201,9 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             // away-relative spread, no ContestId — and the prior-season
             // summaries ride in.
             Assert.Contains("\"Sport\":\"FootballNfl\"", capture.PayloadJson);
+            // The target game's phase reaches the model (history rows
+            // already carried per-game Phase; this closes the asymmetry).
+            Assert.Contains("\"SeasonPhase\":\"Preseason\"", capture.PayloadJson);
             Assert.DoesNotContain("AwayRank", capture.PayloadJson);      // null -> omitted
             Assert.DoesNotContain("AwaySpread", capture.PayloadJson);
             Assert.DoesNotContain(_contestId.ToString(), capture.PayloadJson);

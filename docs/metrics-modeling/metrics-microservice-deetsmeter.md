@@ -470,8 +470,25 @@ variance.
 > (~13) where the honest out-of-sample error is ~16-17 — saturating
 > everything away from 0.5 (bucket 0.0-0.1: predicted 4.5%, actual
 > 25.6%; ATS Brier worse than always-50%). v1.1.1 computes the scale
-> from 5-fold out-of-fold residuals instead. Re-run the sweep before
-> acceptance. Known-and-deferred: the pure-stats fallback still uses
+> from forward-only walk-forward residuals instead (CR review: KFold
+> would validate blocks with models trained partly on future games).
+> Re-run the sweep before acceptance — exact protocol:
+>
+> **v1.1.1 acceptance protocol:** five requests via
+> `POST /admin/metricbot/backtest`, body
+> `{"sport":"FootballNcaa","seasonYear":2025,"week":W}` for W in
+> {4,5,6,8,10} (priorSeasonTail omitted = 0). Aggregate weighted by
+> per-week denominators (`baseline_favorite.games_with_spread` for
+> same-games SU; `ats.decided` for ATS). PASS iff ALL of:
+> (a) weighted same-games SU >= 65.6% (the v1.0 floor);
+> (b) weighted ATS Brier < 0.25 (better than always-50%);
+> (c) pooled SU calibration within 10pts in every bucket with n >= 20.
+> FAIL on any -> v1.1 stays off the live weekly job; findings feed
+> v1.2. Result JSONs are hand-saved and gitignored (prod-derived);
+> every run is deterministic and re-derivable from these requests —
+> that determinism is the reproducibility guarantee.
+>
+> Known-and-deferred: the pure-stats fallback still uses
 > its own in-sample std (same defect family, tiny slate share —
 > fold into v1.2); the home-underdog asymmetry is v1.2 SOS material.
 >

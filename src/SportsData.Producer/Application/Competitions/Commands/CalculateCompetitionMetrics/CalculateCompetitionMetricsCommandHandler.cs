@@ -240,8 +240,12 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             .Where(d => d.StartFranchiseSeasonId == teamId && d.StartYardsToEndzone.HasValue)
             .Select(d => 100m - d.StartYardsToEndzone!.Value)
             .ToList();
+        // HasValue guard: for nullable Guid, null != teamId is TRUE — an
+        // unknown-offense drive would silently join the opponent average.
         var oppStarts = drives
-            .Where(d => d.StartFranchiseSeasonId != teamId && d.StartYardsToEndzone.HasValue)
+            .Where(d => d.StartFranchiseSeasonId.HasValue
+                     && d.StartFranchiseSeasonId != teamId
+                     && d.StartYardsToEndzone.HasValue)
             .Select(d => 100m - d.StartYardsToEndzone!.Value)
             .ToList();
 

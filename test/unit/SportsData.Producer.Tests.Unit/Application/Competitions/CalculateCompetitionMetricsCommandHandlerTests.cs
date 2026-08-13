@@ -267,7 +267,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
 
             var home = await FootballDataContext.CompetitionMetrics
-                .SingleAsync(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId);
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => new { m.PointsPerDrive })
+                .SingleAsync();
 
             home.PointsPerDrive.Should().Be(3.5m,
                 "TD drive (7) + kneel drive (0) over 2 drives — not the kneel inheriting the scoreboard");
@@ -288,15 +291,36 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
                 (homeOffense: true,  driveKey: 3, seq: "03", homeScore: 0, awayScore: 0, yte: 70),
                 (homeOffense: false, driveKey: 4, seq: "04", homeScore: 0, awayScore: 0, yte: 80));
 
+            // An unknown-offense drive (data gap) must be excluded from
+            // BOTH sides' averages, not silently counted as "opponent".
+            await FootballDataContext.Drives.AddAsync(new CompetitionDrive
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competitionId,
+                StartFranchiseSeasonId = null,
+                StartYardsToEndzone = 1,
+                Description = "unknown offense",
+                SequenceNumber = "99",
+                Ordinal = 99
+            });
+            await FootballDataContext.SaveChangesAsync();
+
             var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
             await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
 
             var home = await FootballDataContext.CompetitionMetrics
-                .SingleAsync(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId);
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => new { m.FieldPosDiff })
+                .SingleAsync();
             var away = await FootballDataContext.CompetitionMetrics
-                .SingleAsync(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == awayId);
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == awayId)
+                .Select(m => new { m.FieldPosDiff })
+                .SingleAsync();
 
-            home.FieldPosDiff.Should().Be(10m, "home starts at own 30 vs away's own 20");
+            home.FieldPosDiff.Should().Be(10m,
+                "home starts at own 30 vs away's own 20 — and the unknown-offense drive is excluded from both sides");
             away.FieldPosDiff.Should().Be(-10m, "symmetric opposite of home");
         }
 

@@ -462,8 +462,20 @@ variance.
 
 ## MetricBot-v1.1 design (decided 2026-08-11)
 
-> **STATUS 2026-08-12: implemented (MODEL_VERSION MetricBot-v1.1.0),
-> awaiting the acceptance sweep.** predict_market_prior in model.py;
+> **STATUS 2026-08-13: v1.1.0 sweep ran; v1.1.1 patches the finding.**
+> The 2025 five-week sweep passed both formal gates (same-games SU
+> 66.8% vs v1.0's 65.6%; ATS Brier 0.301 vs 0.324) and ATS accuracy
+> reached 53.1% (n=277 — not yet signal). But calibration exposed a
+> defect: probabilities used the correction model's IN-SAMPLE fit std
+> (~13) where the honest out-of-sample error is ~16-17 — saturating
+> everything away from 0.5 (bucket 0.0-0.1: predicted 4.5%, actual
+> 25.6%; ATS Brier worse than always-50%). v1.1.1 computes the scale
+> from 5-fold out-of-fold residuals instead. Re-run the sweep before
+> acceptance. Known-and-deferred: the pure-stats fallback still uses
+> its own in-sample std (same defect family, tiny slate share —
+> fold into v1.2); the home-underdog asymmetry is v1.2 SOS material.
+>
+> Original v1.1.0 note:** predict_market_prior in model.py;
 > is_priced predicate; FBS slate filter via psql var (fbs_scope from
 > per-sport config — NFL unfiltered); FbsParticipant column carves the
 > residual corpus in python; ATS DTOs priced-only (NaN defect fixed);

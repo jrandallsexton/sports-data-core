@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import cross_val_predict
 
 from . import MODEL_VERSION
 
@@ -195,11 +196,21 @@ def predict_market_prior(training: pd.DataFrame,
         + residual_corpus["Spread"])
 
     x_train = residual_corpus[FEATURE_COLS].fillna(0)
+    y_train = residual_corpus["Residual"]
     correction = LinearRegression()
-    correction.fit(x_train, residual_corpus["Residual"])
+    correction.fit(x_train, y_train)
 
-    fit_residuals = residual_corpus["Residual"] - correction.predict(x_train)
-    residual_model_std = float(np.std(fit_residuals))
+    # v1.1.1: the probability scale must be the HONEST out-of-sample
+    # error, not the in-sample fit std — overfit shrinks the latter well
+    # below reality (observed: ~13 in-sample vs ~16-17 true on the 2025
+    # sweep), which saturates every probability away from 0.5 and made
+    # the v1.1.0 low buckets wildly overconfident (pred 4.5% -> actual
+    # 25.6%) while ATS Brier landed WORSE than always-saying-50%.
+    # Out-of-fold predictions estimate the deployed error honestly.
+    # (KFold without shuffle: deterministic, resume-safe.)
+    oof_predictions = cross_val_predict(
+        LinearRegression(), x_train, y_train, cv=5)
+    residual_model_std = float(np.std(y_train - oof_predictions))
     if not np.isfinite(residual_model_std) or residual_model_std <= 0:
         raise ModelError(
             f"Correction-model residual std is {residual_model_std} — degenerate fit.")

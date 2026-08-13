@@ -14,4 +14,4 @@ output parity, not model improvement.
 __version__ = "1.0.0"
 
 # Stamped on every prediction row; bump when the MATH changes, not the plumbing.
-MODEL_VERSION = "MetricBot-v1.1.0"
+MODEL_VERSION = "MetricBot-v1.1.1"

@@ -1,6 +1,7 @@
 SELECT
   c."Sport" AS "Sport",
   sp."Year" AS "SeasonYear",
+  sp."Name" AS "SeasonPhase",
   sw."Number" AS "WeekNumber",
   c."Id" AS "ContestId",
   cn."Headline" AS "Headline",

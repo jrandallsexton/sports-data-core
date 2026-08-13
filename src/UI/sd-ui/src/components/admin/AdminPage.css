@@ -113,3 +113,32 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Admin tool nav: link buttons, matching the admin card idiom
+   (bg-input surface, 8px radius, accent on hover). */
+.admin-nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 8px 0 16px;
+}
+
+.admin-nav-links a {
+  display: inline-block;
+  padding: 8px 16px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-nav-links a:hover,
+.admin-nav-links a:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+}

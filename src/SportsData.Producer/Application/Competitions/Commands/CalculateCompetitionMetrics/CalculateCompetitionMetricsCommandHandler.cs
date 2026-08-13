@@ -100,7 +100,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             SuccessRate = CalculateSuccessRate(awayFranchiseSeasonId, plays),
             ExplosiveRate = CalculateExplosiveRate(awayFranchiseSeasonId, plays),
             ThirdFourthRate = CalculateThirdFourthConversionRate(awayFranchiseSeasonId, plays),
-            PointsPerDrive = CalculatePointsPerDrive(awayFranchiseSeasonId, plays, homeFranchiseSeasonId, awayFranchiseSeasonId),
+            PointsPerDrive = CalculatePointsPerDrive(awayFranchiseSeasonId, plays, homeFranchiseSeasonId),
             RzTdRate = CalculateRedZoneTdRate(awayFranchiseSeasonId, plays),
             RzScoreRate = CalculateRedZoneScoringRate(awayFranchiseSeasonId, plays),
             TimePossRatio = CalculateTimeOfPossessionRatio(awayFranchiseSeasonId, homeFranchiseSeasonId, plays),
@@ -108,7 +108,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             OppYpp = CalculateYpp(homeFranchiseSeasonId, plays),
             OppSuccessRate = CalculateSuccessRate(homeFranchiseSeasonId, plays),
             OppExplosiveRate = CalculateExplosiveRate(homeFranchiseSeasonId, plays),
-            OppPointsPerDrive = CalculatePointsPerDrive(homeFranchiseSeasonId, plays, homeFranchiseSeasonId, awayFranchiseSeasonId),
+            OppPointsPerDrive = CalculatePointsPerDrive(homeFranchiseSeasonId, plays, homeFranchiseSeasonId),
             OppThirdFourthRate = CalculateThirdFourthConversionRate(homeFranchiseSeasonId, plays),
             OppRzTdRate = CalculateRedZoneTdRate(homeFranchiseSeasonId, plays),
             OppScoreTdRate = CalculateRedZoneScoringRate(homeFranchiseSeasonId, plays),
@@ -132,7 +132,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             SuccessRate = CalculateSuccessRate(homeFranchiseSeasonId, plays),
             ExplosiveRate = CalculateExplosiveRate(homeFranchiseSeasonId, plays),
             ThirdFourthRate = CalculateThirdFourthConversionRate(homeFranchiseSeasonId, plays),
-            PointsPerDrive = CalculatePointsPerDrive(homeFranchiseSeasonId, plays, homeFranchiseSeasonId, awayFranchiseSeasonId),
+            PointsPerDrive = CalculatePointsPerDrive(homeFranchiseSeasonId, plays, homeFranchiseSeasonId),
             RzTdRate = CalculateRedZoneTdRate(homeFranchiseSeasonId, plays),
             RzScoreRate = CalculateRedZoneScoringRate(homeFranchiseSeasonId, plays),
             TimePossRatio = CalculateTimeOfPossessionRatio(homeFranchiseSeasonId, awayFranchiseSeasonId, plays),
@@ -140,7 +140,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             OppYpp = CalculateYpp(awayFranchiseSeasonId, plays),
             OppSuccessRate = CalculateSuccessRate(awayFranchiseSeasonId, plays),
             OppExplosiveRate = CalculateExplosiveRate(awayFranchiseSeasonId, plays),
-            OppPointsPerDrive = CalculatePointsPerDrive(awayFranchiseSeasonId, plays, homeFranchiseSeasonId, awayFranchiseSeasonId),
+            OppPointsPerDrive = CalculatePointsPerDrive(awayFranchiseSeasonId, plays, homeFranchiseSeasonId),
             OppThirdFourthRate = CalculateThirdFourthConversionRate(awayFranchiseSeasonId, plays),
             OppRzTdRate = CalculateRedZoneTdRate(awayFranchiseSeasonId, plays),
             OppScoreTdRate = CalculateRedZoneScoringRate(awayFranchiseSeasonId, plays),
@@ -224,20 +224,35 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     }
 
 
+    // AUDIT FIX (C2): the previous implementation differenced raw
+    // StartYardLine values — a STADIUM-oriented coordinate where the
+    // same physical spot reads 30 for one offense and 70 for the other.
+    // The result mostly measured coordinate orientation (systematic
+    // ±37 by venue), silently encoding home-field into per-game
+    // features. StartYardsToEndzone is orientation-free: field position
+    // = 100 − yards-to-endzone (own goal = 0, opponent goal = 100),
+    // comparable across both offenses.
     private static decimal CalculateFieldPositionDiff(
         Guid teamId,
         IReadOnlyCollection<CompetitionDrive> drives)
     {
-        var myDrives = drives.Where(d => d.StartFranchiseSeasonId == teamId && d.StartYardLine.HasValue).ToList();
-        var oppDrives = drives.Where(d => d.StartFranchiseSeasonId != teamId && d.StartYardLine.HasValue).ToList();
+        var myStarts = drives
+            .Where(d => d.StartFranchiseSeasonId == teamId && d.StartYardsToEndzone.HasValue)
+            .Select(d => 100m - d.StartYardsToEndzone!.Value)
+            .ToList();
+        // HasValue guard: for nullable Guid, null != teamId is TRUE — an
+        // unknown-offense drive would silently join the opponent average.
+        var oppStarts = drives
+            .Where(d => d.StartFranchiseSeasonId.HasValue
+                     && d.StartFranchiseSeasonId != teamId
+                     && d.StartYardsToEndzone.HasValue)
+            .Select(d => 100m - d.StartYardsToEndzone!.Value)
+            .ToList();
 
-        if (!myDrives.Any() || !oppDrives.Any())
+        if (myStarts.Count == 0 || oppStarts.Count == 0)
             return 0m;
 
-        var myAvg = (decimal)myDrives.Average(d => d.StartYardLine!.Value);
-        var oppAvg = (decimal)oppDrives.Average(d => d.StartYardLine!.Value);
-
-        return Math.Round(myAvg - oppAvg, 2);
+        return Math.Round(myStarts.Average() - oppStarts.Average(), 2);
     }
 
     private static decimal CalculateTurnoverMarginPerDrive(
@@ -362,19 +377,45 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         return (decimal)conversions / snaps.Count;
     }
 
-    // PPD from plays only (ordered). We infer drives by contiguous offensive scrimmage snaps by the same offense.
-    // homeFsId / awayFsId are used to select the team's score on each play.
-    // PPD from plays only (ordered). We infer drives by contiguous offensive scrimmage snaps
-    // by the same offense. homeFsId/awayFsId are used to read the correct scoreboard.
+    // Points per drive from the cumulative scoreboard on plays.
+    //
+    // AUDIT FIX (C1): drive points = score at the drive's LAST play minus
+    // the score BEFORE the drive's FIRST play (the last play anywhere in
+    // the game preceding it; 0 only at true game start). The previous
+    // implementation used the drive's second-to-last play as the
+    // baseline — and for a ONE-PLAY drive that baseline degenerated to
+    // 0, crediting the drive with the team's entire cumulative score
+    // (a kneel-down while leading 42-7 booked +42), which inflated
+    // season PPD to physically impossible values (~6).
     private decimal CalculatePointsPerDrive(
         Guid franchiseSeasonId,
         List<FootballCompetitionPlay> plays,
-        Guid homeFsId,
-        Guid awayFsId)
+        Guid homeFsId)
     {
-        var drives = plays
-            .Where(p => p.DriveId != Guid.Empty && p.StartFranchiseSeasonId == franchiseSeasonId)
-            .GroupBy(p => p.DriveId)
+        int ScoreOf(FootballCompetitionPlay p) =>
+            franchiseSeasonId == homeFsId ? p.HomeScore : p.AwayScore;
+
+        // SequenceNumber is an ESPN STRING; lexicographic ordering breaks
+        // when digit counts differ ("10" < "9"). Order numerically when
+        // parseable, falling back to the raw string. Both the drive
+        // first/last selection and the baseline lookup use this SAME
+        // ordering, so they cannot disagree.
+        var ordered = plays
+            .Where(p => p.DriveId.HasValue && p.DriveId != Guid.Empty)
+            .OrderBy(p => long.TryParse(p.SequenceNumber, out var n) ? n : long.MaxValue)
+            .ThenBy(p => p.SequenceNumber, StringComparer.Ordinal)
+            .ToList();
+
+        var drives = ordered
+            .Where(p => p.StartFranchiseSeasonId == franchiseSeasonId)
+            .Select((p, _) => p)
+            .GroupBy(p => p.DriveId!.Value)
+            .Select(g => new
+            {
+                FirstIndex = ordered.IndexOf(g.First()),
+                Last = g.Last()
+            })
+            .OrderBy(d => d.FirstIndex)
             .ToList();
 
         if (drives.Count == 0) return 0m;
@@ -383,21 +424,16 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
 
         foreach (var drive in drives)
         {
-            // Use last play of the drive to infer final score for that possession
-            var lastPlay = drive.OrderBy(p => p.SequenceNumber).LastOrDefault();
-            if (lastPlay == null) continue;
+            var baseline = drive.FirstIndex > 0
+                ? ScoreOf(ordered[drive.FirstIndex - 1])
+                : 0;
 
-            var offensePoints = franchiseSeasonId == homeFsId
-                ? lastPlay.HomeScore
-                : lastPlay.AwayScore;
+            var drivePoints = ScoreOf(drive.Last) - baseline;
 
-            var previousPlay = drive.OrderBy(p => p.SequenceNumber).SkipLast(1).LastOrDefault();
-            var previousScore = previousPlay == null
-                ? 0
-                : (franchiseSeasonId == homeFsId ? previousPlay.HomeScore : previousPlay.AwayScore);
-
-            var drivePoints = offensePoints - previousScore;
-            if (drivePoints >= 0) totalPoints += drivePoints;
+            // A single possession is bounded by [0, 8] (TD + 2pt). The
+            // clamp guards scoreboard glitches in the source data rather
+            // than trusting them into the season average.
+            totalPoints += Math.Clamp(drivePoints, 0, 8);
         }
 
         return (decimal)totalPoints / drives.Count;

@@ -244,6 +244,170 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
 
         private static string? _cachedJson; // Cache JSON across test instances
 
+        #region Audit regression fixtures (C1 / C2)
+
+        /// <summary>
+        /// AUDIT C1: a one-play drive must contribute the POINTS SCORED ON
+        /// THAT DRIVE, not the team's cumulative score. Fixture: home
+        /// scores a 2-play TD drive (0 -> 7), later takes a 1-play kneel
+        /// drive still leading 7-0. Correct PPD = (7 + 0) / 2 = 3.5; the
+        /// pre-fix code booked (7 + 7) / 2 = 7 (kneel credited with the
+        /// scoreboard).
+        /// </summary>
+        [Fact]
+        public async Task PointsPerDrive_OnePlayDrive_DoesNotInheritCumulativeScore()
+        {
+            var (competitionId, homeId, _) = await SeedSyntheticAsync(
+                (homeOffense: true,  driveKey: 1, seq: "01", homeScore: 0, awayScore: 0, yte: (int?)null),
+                (homeOffense: true,  driveKey: 1, seq: "02", homeScore: 7, awayScore: 0, yte: null),
+                (homeOffense: false, driveKey: 2, seq: "03", homeScore: 7, awayScore: 0, yte: null),
+                (homeOffense: true,  driveKey: 3, seq: "04", homeScore: 7, awayScore: 0, yte: null));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var home = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => new { m.PointsPerDrive })
+                .SingleAsync();
+
+            home.PointsPerDrive.Should().Be(3.5m,
+                "TD drive (7) + kneel drive (0) over 2 drives — not the kneel inheriting the scoreboard");
+        }
+
+        /// <summary>
+        /// AUDIT C2: FieldPosDiff must be computed from orientation-free
+        /// yards-to-endzone, not raw stadium-oriented yard lines. Fixture:
+        /// home drives start at own 30 (YTE 70), away drives at own 20
+        /// (YTE 80) — home diff = +10, away diff = -10, symmetric.
+        /// </summary>
+        [Fact]
+        public async Task FieldPosDiff_UsesOrientationFreeYardsToEndzone()
+        {
+            var (competitionId, homeId, awayId) = await SeedSyntheticAsync(
+                (homeOffense: true,  driveKey: 1, seq: "01", homeScore: 0, awayScore: 0, yte: (int?)70),
+                (homeOffense: false, driveKey: 2, seq: "02", homeScore: 0, awayScore: 0, yte: 80),
+                (homeOffense: true,  driveKey: 3, seq: "03", homeScore: 0, awayScore: 0, yte: 70),
+                (homeOffense: false, driveKey: 4, seq: "04", homeScore: 0, awayScore: 0, yte: 80));
+
+            // An unknown-offense drive (data gap) must be excluded from
+            // BOTH sides' averages, not silently counted as "opponent".
+            await FootballDataContext.Drives.AddAsync(new CompetitionDrive
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competitionId,
+                StartFranchiseSeasonId = null,
+                StartYardsToEndzone = 1,
+                Description = "unknown offense",
+                SequenceNumber = "99",
+                Ordinal = 99
+            });
+            await FootballDataContext.SaveChangesAsync();
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var home = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => new { m.FieldPosDiff })
+                .SingleAsync();
+            var away = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == awayId)
+                .Select(m => new { m.FieldPosDiff })
+                .SingleAsync();
+
+            home.FieldPosDiff.Should().Be(10m,
+                "home starts at own 30 vs away's own 20 — and the unknown-offense drive is excluded from both sides");
+            away.FieldPosDiff.Should().Be(-10m, "symmetric opposite of home");
+        }
+
+        /// <summary>
+        /// Minimal synthetic competition: one play per tuple, each play in
+        /// its own (or shared) drive. yte, when set, becomes the DRIVE's
+        /// StartYardsToEndzone (C2 input); scores are the cumulative
+        /// scoreboard (C1 input).
+        /// </summary>
+        private async Task<(Guid competitionId, Guid homeId, Guid awayId)> SeedSyntheticAsync(
+            params (bool homeOffense, int driveKey, string seq, int homeScore, int awayScore, int? yte)[] playSpecs)
+        {
+            var competitionId = Guid.NewGuid();
+            var homeId = Guid.NewGuid();
+            var awayId = Guid.NewGuid();
+
+            var homeFs = Fixture.Build<FranchiseSeason>()
+                .With(x => x.Id, homeId).With(x => x.FranchiseId, Guid.NewGuid())
+                .With(x => x.SeasonYear, 2025).Without(x => x.ExternalIds).Create();
+            var awayFs = Fixture.Build<FranchiseSeason>()
+                .With(x => x.Id, awayId).With(x => x.FranchiseId, Guid.NewGuid())
+                .With(x => x.SeasonYear, 2025).Without(x => x.ExternalIds).Create();
+            await FootballDataContext.FranchiseSeasons.AddRangeAsync(homeFs, awayFs);
+
+            var contest = Fixture.Build<FootballContest>()
+                .With(x => x.Id, Guid.NewGuid())
+                .With(x => x.HomeTeamFranchiseSeasonId, homeId)
+                .With(x => x.AwayTeamFranchiseSeasonId, awayId)
+                .With(x => x.HomeTeamFranchiseSeason, homeFs)
+                .With(x => x.AwayTeamFranchiseSeason, awayFs)
+                .Without(x => x.Links).Without(x => x.ExternalIds).Without(x => x.Competitions)
+                .Create();
+            await FootballDataContext.Contests.AddAsync(contest);
+
+            var competition = Fixture.Build<FootballCompetition>()
+                .With(x => x.Id, competitionId)
+                .With(x => x.ContestId, contest.Id)
+                .With(x => x.Contest, contest)
+                .Without(x => x.Plays).Without(x => x.Drives)
+                .Without(x => x.Links).Without(x => x.ExternalIds)
+                .Create();
+            await FootballDataContext.Competitions.AddAsync(competition);
+
+            var driveIds = new Dictionary<int, Guid>();
+            var ordinal = 0;
+            foreach (var spec in playSpecs)
+            {
+                var offenseId = spec.homeOffense ? homeId : awayId;
+
+                if (!driveIds.TryGetValue(spec.driveKey, out var driveId))
+                {
+                    driveId = Guid.NewGuid();
+                    driveIds[spec.driveKey] = driveId;
+                    await FootballDataContext.Drives.AddAsync(new CompetitionDrive
+                    {
+                        Id = driveId,
+                        CompetitionId = competitionId,
+                        StartFranchiseSeasonId = offenseId,
+                        StartYardsToEndzone = spec.yte,
+                        Description = $"drive {spec.driveKey}",
+                        SequenceNumber = spec.driveKey.ToString("00"),
+                        Ordinal = ++ordinal
+                    });
+                }
+
+                await FootballDataContext.CompetitionPlays.AddAsync(new FootballCompetitionPlay
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionId = competitionId,
+                    DriveId = driveId,
+                    EspnId = spec.seq,
+                    SequenceNumber = spec.seq,
+                    TypeId = "5",
+                    Type = PlayType.Rush,
+                    Text = "synthetic",
+                    StartFranchiseSeasonId = offenseId,
+                    HomeScore = spec.homeScore,
+                    AwayScore = spec.awayScore
+                });
+            }
+
+            await FootballDataContext.SaveChangesAsync();
+            return (competitionId, homeId, awayId);
+        }
+
+        #endregion
+
         private async Task<(FootballCompetition competition, Guid homeTeamId, Guid awayTeamId)> SeedCompetitionWithRealGameDataAsync(Guid competitionId)
         {
             // Load JSON once and cache it

@@ -16,7 +16,10 @@ the values are born).
 ## Empirical anchors (prod, 2026-08-13)
 
 - FBS per-game PointsPerDrive by season: 2022 = 1.31, 2023 = 1.81,
-  2024 = 1.43, **2025 = 5.93** (physically impossible; ~2.2–2.6 real).
+  2024 = 1.43, **2025 = 5.93** — more than double the best FBS offense
+  in modern history (elite ≈ 3.5; league reality ≈ 2.2–2.6), i.e. far
+  outside any plausible range, and 3–4× the platform's own prior
+  seasons.
   Live `FranchiseSeasonMetric` 2025 average: 6.16. The 2025 rows came
   from the current code below; the pre-2025 rows from an earlier
   vintage — per scope, only the current behavior is judged.
@@ -36,10 +39,13 @@ leading 42–7 = +42 points on one drive. One-play drives are common
 (long TDs, kneels, end-of-half), and the error grows with the score,
 which is why season averages reach ~6.
 
-**Fix**: the baseline must be the score BEFORE the drive's first play —
-i.e. the score at the last play of the team's game-position predecessor
-(0 only at true game start). Compute per-drive points game-ordered, not
-within-drive-ordered.
+**Fix**: the baseline is the team's cumulative score immediately
+before the drive's first play **in global game order** — the last play
+by EITHER team preceding it (0 only at true game start). A same-team
+predecessor is not sufficient: a defensive score during the opponent's
+possession between two drives must be part of the baseline, or the
+next drive absorbs those points. (#624 implements exactly this: the
+baseline play is `ordered[driveFirstIndex − 1]` over ALL plays.)
 
 ### C2. FieldPosDiff — differences a stadium-oriented coordinate
 
@@ -67,9 +73,20 @@ offensive snaps with catastrophic outcomes; excluding them biases Ypp,
 SuccessRate, ExplosiveRate, and ThirdFourthRate upward for
 turnover-prone teams — the denominators skip exactly the worst plays.
 
-**Fix**: include `PassInterceptionReturn` (and interception-TD),
-`FumbleLost` (when the possessing offense is the team) as snaps with
-their actual yardage outcomes (typically ≤ 0 for the offense).
+**Fix (corrected 2026-08-13 — CR caught an error in the original
+guidance)**: interception play types keep the intercepted OFFENSE in
+`StartFranchiseSeasonId`, but `StatYardage` is the DEFENSIVE RETURN
+yardage — adding these types to the snap filter as-is would credit
+return yards to the offense. The correct contract:
+- Interception and lost-fumble plays join the DENOMINATOR of
+  Ypp/SuccessRate/ExplosiveRate/ThirdFourthRate as offensive snaps.
+- Their NUMERATOR contribution is fixed at 0 yards / not-a-success /
+  not-explosive — never `StatYardage`. (If per-type yardage semantics
+  are later verified to carry usable offense yardage for FumbleLost,
+  that is a separate, evidence-backed change.)
+- Fixtures: an interception play must increase snap count without
+  changing total yards; a 40-yard pick-six must not appear as a
+  40-yard offensive gain.
 
 ### H2. Red-zone trip state survives possession changes it shouldn't
 
@@ -230,7 +247,9 @@ PPD ≈ 6.16 as fact), (c) any DeetsMeter/metric surface.
 
 ## Recommended sequence (with gates)
 
-1. Fix C1 + C2 (#624) and land the H/M decisions above in
+1. Fix C1 + C2 (#624 — landed with hand-computed SYNTHETIC fixtures;
+   a real play-by-play fixture game with independently verified answers
+   remains follow-up coverage) and land the H/M decisions above in
    `CalculateCompetitionMetricsCommandHandler`, with the listed
    fixtures. Add `FormulaVersion` + `InputsHash` stamping (migration).
 2. **Phase 1 recompute**: CompetitionMetric for every competition with

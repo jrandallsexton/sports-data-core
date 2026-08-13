@@ -88,11 +88,15 @@ return yards to the offense. The correct contract:
   changing total yards; a 40-yard pick-six must not appear as a
   40-yard offensive gain.
 
-**Implemented** (fix/metrics-h1-h2): `IsTurnoverType` added; those
-types join `IsOffensiveScrimmageType`; a `Yardage(play)` accessor
-returns 0 for turnover types and feeds every numerator (Ypp,
-success/explosive checks, first-down-by-yardage). Both fixtures above
-are in the test suite.
+**Implemented** (fix/metrics-h1-h2): `IsTurnoverType` added
+(PassInterceptionReturn, InterceptionReturnTouchdown, FumbleLost,
+FumbleReturnTouchdown); those types join `IsOffensiveScrimmageType`;
+a `Yardage(play)` accessor returns 0 for turnover types and feeds
+every numerator (Ypp, success/explosive checks,
+first-down-by-yardage). Fixtures cover the snap-count/zero-yard
+contract, a 95-yard pick-six (InterceptionReturnTouchdown), a 60-yard
+fumble-return TD, and a third-down interception as a failed
+conversion attempt.
 
 ### H2. Red-zone trip state survives possession changes it shouldn't
 
@@ -109,9 +113,9 @@ the FIRST of):
 2. THIS offense starts a NEW drive (DriveId change) — covers turnovers,
    defensive scores, and kickoff-separated possessions in one rule,
    since every one of those forces a new drive id.
-3. A half boundary (period 2→3) or end of regulation→OT transition —
-   possessions do not survive the half. (Q1→Q2 and Q3→Q4 do NOT
-   terminate: a drive legitimately spans those.)
+3. A half boundary (period 2→3), the regulation→OT transition, or any
+   OT→OT break — possessions do not survive those. (Q1→Q2 and Q3→Q4
+   do NOT terminate: a drive legitimately spans those.)
 4. End of input (existing EOF close).
 Scoring credited to a trip counts only while that trip is open.
 Duplicate play events (same SequenceNumber) count once; missing events
@@ -124,12 +128,16 @@ defensive TD; trip at EOF; duplicate-sequence play.
 
 **Implemented** (fix/metrics-h1-h2): both rates now delegate to one
 shared `CountRedZoneTrips` state machine implementing rules 1–4
-verbatim (half bucket: period ≤2 / ≤4 / OT; own-new-DriveId close
-evaluated before a fresh trip can start on the same play; adjacent
-duplicate SequenceNumber skipped). Trip-ended-by-defensive-TD is
-covered by rule 2 (the defensive score forces a new drive id) and by
-rule 1 now catching opponent interception snaps via the widened H1
-type set. Fixture battery is in the test suite.
+verbatim (period buckets: Q1–Q2 = 1, Q3–Q4 = 2, then EVERY overtime
+period is its own bucket; own-new-DriveId close evaluated before a
+fresh trip can start on the same play; adjacent duplicate
+SequenceNumber skipped — the machine is idempotent under adjacent
+replays by construction, so the guard documents the contract rather
+than fixing a reachable defect). Fixtures cover: opponent standing
+snap; stale trip across own new drive; Q1→Q2 survival; half-boundary
+close on a same-DriveId glitch; OT→OT close; red-zone pick-six
+(defensive TD ends the trip scoreless); trip open at EOF counts as
+scoreless; FG-vs-TD predicate split with duplicate events present.
 
 ### H3. PenaltyYardsPerPlay attributes by possession, not by offender
 

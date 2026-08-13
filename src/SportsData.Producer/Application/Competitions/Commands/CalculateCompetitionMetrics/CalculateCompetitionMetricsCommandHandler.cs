@@ -481,8 +481,8 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     ///   2. THIS offense starting a NEW drive (DriveId change) — covers
     ///      turnovers, defensive scores, and kickoff-separated
     ///      possessions in one rule;
-    ///   3. a half boundary (Q2→Q3) or regulation→OT — possessions do
-    ///      not survive those; Q1→Q2 and Q3→Q4 deliberately do NOT
+    ///   3. a half boundary (Q2→Q3), regulation→OT, or any OT→OT break —
+    ///      possessions do not survive those; Q1→Q2 and Q3→Q4 do NOT
     ///      terminate (drives legitimately span them);
     ///   4. end of input.
     /// Scoring counts only while the trip is open. Adjacent duplicate
@@ -509,8 +509,10 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             tripDriveId = null;
         }
 
+        // Q1-Q2 = 1, Q3-Q4 = 2, then EVERY overtime period is its own
+        // bucket: possessions do not span an OT break.
         static int HalfOf(FootballCompetitionPlay p)
-            => p.PeriodNumber <= 2 ? 1 : p.PeriodNumber <= 4 ? 2 : 3;
+            => p.PeriodNumber <= 2 ? 1 : p.PeriodNumber <= 4 ? 2 : p.PeriodNumber;
 
         foreach (var p in plays)
         {
@@ -518,7 +520,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             if (p.SequenceNumber == lastSequence) continue;
             lastSequence = p.SequenceNumber;
 
-            // rule 3: half boundary / regulation→OT
+            // rule 3: half boundary / regulation→OT / OT→OT
             var half = HalfOf(p);
             if (inTrip && lastHalf.HasValue && half != lastHalf.Value)
             {
@@ -589,7 +591,8 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     private static bool IsTurnoverType(PlayType t)
         => t == PlayType.PassInterceptionReturn
            || t == PlayType.InterceptionReturnTouchdown
-           || t == PlayType.FumbleLost;
+           || t == PlayType.FumbleLost
+           || t == PlayType.FumbleReturnTouchdown;
 
     private static int Yardage(FootballCompetitionPlay p)
         => IsTurnoverType(p.Type) ? 0 : p.StatYardage;

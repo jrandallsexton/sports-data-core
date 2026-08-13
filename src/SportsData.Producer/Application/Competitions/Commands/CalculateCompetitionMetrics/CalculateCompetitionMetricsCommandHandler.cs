@@ -69,7 +69,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         var (awayMetric, homeMetric) = CalculateMetrics(
             competition.Contest.SeasonYear,
             command.CompetitionId,
-            competition.Plays.ToList(),
+            OrderPlays(competition.Plays),
             competition.Drives.ToList(),
             awayFranchiseSeasonId,
             homeFranchiseSeasonId);
@@ -170,7 +170,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
                 .GroupBy(p => p.DriveId)
                 .Sum(drive =>
                 {
-                    var ordered = drive.OrderBy(p => p.SequenceNumber).ToList();
+                    var ordered = OrderPlays(drive);
                     var first = ordered.FirstOrDefault();
                     var last = ordered.LastOrDefault();
 
@@ -395,16 +395,8 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         int ScoreOf(FootballCompetitionPlay p) =>
             franchiseSeasonId == homeFsId ? p.HomeScore : p.AwayScore;
 
-        // SequenceNumber is an ESPN STRING; lexicographic ordering breaks
-        // when digit counts differ ("10" < "9"). Order numerically when
-        // parseable, falling back to the raw string. Both the drive
-        // first/last selection and the baseline lookup use this SAME
-        // ordering, so they cannot disagree.
-        var ordered = plays
-            .Where(p => p.DriveId.HasValue && p.DriveId != Guid.Empty)
-            .OrderBy(p => long.TryParse(p.SequenceNumber, out var n) ? n : long.MaxValue)
-            .ThenBy(p => p.SequenceNumber, StringComparer.Ordinal)
-            .ToList();
+        var ordered = OrderPlays(
+            plays.Where(p => p.DriveId.HasValue && p.DriveId != Guid.Empty));
 
         var drives = ordered
             .Where(p => p.StartFranchiseSeasonId == franchiseSeasonId)
@@ -440,78 +432,106 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     }
 
 
+    // AUDIT FIX (H2): both red-zone rates share ONE trip state machine
+    // with the complete termination contract — the previous per-function
+    // copies closed a trip ONLY on an opponent scrimmage snap, so a trip
+    // left open across a possession change or halftime could credit a
+    // LATER drive's score to the stale trip.
+
     // Red Zone TD Rate (null if no trips): TD-trips / trips
     private decimal? CalculateRedZoneTdRate(Guid franchiseSeasonId, List<FootballCompetitionPlay> plays)
     {
-        int trips = 0;
-        int tdTrips = 0;
-
-        bool inTrip = false;
-        bool tripHadTd = false;
-
-        for (int i = 0; i < plays.Count; i++)
-        {
-            var p = plays[i];
-
-            // detect trip start: this offense, scrimmage snap, and at/below the 20
-            if (!inTrip
-                && IsOffensiveScrimmageSnap(p, franchiseSeasonId)
-                && (p.StartYardsToEndzone.HasValue && p.StartYardsToEndzone.Value <= 20))
-            {
-                inTrip = true;
-                tripHadTd = false;
-                trips++;
-            }
-
-            if (!inTrip) continue;
-
-            // inside a trip, watch for THIS offense scoring a TD (rush/pass)
-            if (p.StartFranchiseSeasonId.HasValue
-                && p.StartFranchiseSeasonId.Value == franchiseSeasonId)
-            {
-                if (p.Type == PlayType.RushingTouchdown || p.Type == PlayType.PassingTouchdown)
-                {
-                    tripHadTd = true;
-                }
-            }
-
-            // trip ends when the OTHER offense takes a scrimmage snap that stands
-            if (p.StartFranchiseSeasonId.HasValue
-                && p.StartFranchiseSeasonId.Value != franchiseSeasonId
-                && p.StartDown is >= 1 and <= 4
-                && IsOffensiveScrimmageType(p.Type)
-                && !(!string.IsNullOrEmpty(p.Text) && p.Text.Contains("NO PLAY", StringComparison.OrdinalIgnoreCase)))
-            {
-                if (tripHadTd) tdTrips++;
-                inTrip = false;
-            }
-        }
-
-        // if a trip is still open at EOF, close it
-        if (inTrip && tripHadTd) tdTrips++;
+        var (trips, scoringTrips) = CountRedZoneTrips(
+            franchiseSeasonId,
+            plays,
+            p => p.Type == PlayType.RushingTouchdown || p.Type == PlayType.PassingTouchdown);
 
         if (trips == 0) return null;
-        return (decimal)tdTrips / trips;
+        return (decimal)scoringTrips / trips;
     }
 
     // Red Zone Scoring Rate (null if no trips): scoring-trips / trips
-    // A trip starts on this offense's first scrimmage snap with StartYardsToEndzone <= 20
-    // A scoring trip is one where, before the trip ends, THIS offense records:
-    //   - RushingTouchdown or PassingTouchdown, OR
-    //   - FieldGoalGood
+    // (TD or made field goal)
     private decimal? CalculateRedZoneScoringRate(Guid franchiseSeasonId, List<FootballCompetitionPlay> plays)
     {
-        int trips = 0;
-        int scoringTrips = 0;
+        var (trips, scoringTrips) = CountRedZoneTrips(
+            franchiseSeasonId,
+            plays,
+            p => p.Type == PlayType.RushingTouchdown
+                 || p.Type == PlayType.PassingTouchdown
+                 || p.Type == PlayType.FieldGoalGood);
 
-        bool inTrip = false;
-        bool tripScored = false;
+        if (trips == 0) return null;
+        return (decimal)scoringTrips / trips;
+    }
 
-        for (int i = 0; i < plays.Count; i++)
+    /// <summary>
+    /// The shared red-zone trip state machine. A trip STARTS on this
+    /// offense's first scrimmage snap at/inside the 20. Once open, it
+    /// CLOSES on the FIRST of (audit H2 termination contract):
+    ///   1. the opposing offense taking a standing scrimmage snap;
+    ///   2. THIS offense starting a NEW drive (DriveId change) — covers
+    ///      turnovers, defensive scores, and kickoff-separated
+    ///      possessions in one rule;
+    ///   3. a half boundary (Q2→Q3), regulation→OT, or any OT→OT break —
+    ///      possessions do not survive those; Q1→Q2 and Q3→Q4 do NOT
+    ///      terminate (drives legitimately span them);
+    ///   4. end of input.
+    /// Scoring counts only while the trip is open. Adjacent duplicate
+    /// play events (same SequenceNumber) are processed once.
+    /// </summary>
+    private (int Trips, int ScoringTrips) CountRedZoneTrips(
+        Guid franchiseSeasonId,
+        List<FootballCompetitionPlay> plays,
+        Func<FootballCompetitionPlay, bool> isScore)
+    {
+        var trips = 0;
+        var scoringTrips = 0;
+        var inTrip = false;
+        var tripScored = false;
+        Guid? tripDriveId = null;
+        int? lastHalf = null;
+        string? lastSequence = null;
+
+        void CloseTrip()
         {
-            var p = plays[i];
+            if (tripScored) scoringTrips++;
+            inTrip = false;
+            tripScored = false;
+            tripDriveId = null;
+        }
 
-            // trip starts on first offensive scrimmage snap at/below the 20
+        // Q1-Q2 = 1, Q3-Q4 = 2, then EVERY overtime period is its own
+        // bucket: possessions do not span an OT break.
+        static int HalfOf(FootballCompetitionPlay p)
+            => p.PeriodNumber <= 2 ? 1 : p.PeriodNumber <= 4 ? 2 : p.PeriodNumber;
+
+        foreach (var p in plays)
+        {
+            // duplicate event: same sequence as the previous play
+            if (p.SequenceNumber == lastSequence) continue;
+            lastSequence = p.SequenceNumber;
+
+            // rule 3: half boundary / regulation→OT / OT→OT
+            var half = HalfOf(p);
+            if (inTrip && lastHalf.HasValue && half != lastHalf.Value)
+            {
+                CloseTrip();
+            }
+            lastHalf = half;
+
+            // rule 2: this offense on a NEW drive — close the stale trip
+            // BEFORE evaluating whether this play starts a fresh one
+            if (inTrip
+                && p.StartFranchiseSeasonId == franchiseSeasonId
+                && p.DriveId.HasValue
+                && tripDriveId.HasValue
+                && p.DriveId.Value != tripDriveId.Value)
+            {
+                CloseTrip();
+            }
+
+            // trip start: this offense, scrimmage snap, at/inside the 20
             if (!inTrip
                 && IsOffensiveScrimmageSnap(p, franchiseSeasonId)
                 && p.StartYardsToEndzone.HasValue
@@ -519,44 +539,66 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             {
                 inTrip = true;
                 tripScored = false;
+                tripDriveId = p.DriveId;
                 trips++;
             }
 
             if (!inTrip) continue;
 
-            // scoring for THIS offense during the trip
+            // scoring for THIS offense while the trip is open
             if (p.StartFranchiseSeasonId.HasValue
-                && p.StartFranchiseSeasonId.Value == franchiseSeasonId)
+                && p.StartFranchiseSeasonId.Value == franchiseSeasonId
+                && isScore(p))
             {
-                if (p.Type == PlayType.RushingTouchdown || p.Type == PlayType.PassingTouchdown)
-                    tripScored = true;
-
-                if (p.Type == PlayType.FieldGoalGood)
-                    tripScored = true;
+                tripScored = true;
             }
 
-            // trip ends when the OTHER offense takes a scrimmage snap that stands
+            // rule 1: the OTHER offense takes a standing scrimmage snap
             if (p.StartFranchiseSeasonId.HasValue
                 && p.StartFranchiseSeasonId.Value != franchiseSeasonId
                 && p.StartDown is >= 1 and <= 4
                 && IsOffensiveScrimmageType(p.Type)
                 && !(p.Text?.Contains("NO PLAY", StringComparison.OrdinalIgnoreCase) == true))
             {
-                if (tripScored) scoringTrips++;
-                inTrip = false;
+                CloseTrip();
             }
         }
 
-        // close an open trip at EOF
-        if (inTrip && tripScored) scoringTrips++;
+        // rule 4: end of input
+        if (inTrip) CloseTrip();
 
-        if (trips == 0) return (decimal?)null;
-        return (decimal)scoringTrips / trips;
+        return (trips, scoringTrips);
     }
 
-
     /* ================= HELPERS ================ */
-    private static int Yardage(FootballCompetitionPlay p) => p.StatYardage;
+
+    // AUDIT FIX (H1): interception and lost-fumble plays keep the
+    // intercepted/fumbling OFFENSE in StartFranchiseSeasonId, but their
+    // StatYardage is the DEFENSIVE RETURN — usable for neither offensive
+    // yardage nor first-down math. These plays join the snap
+    // DENOMINATORS (they are offensive snaps with catastrophic
+    // outcomes; excluding them flattered turnover-prone teams) at an
+    // effective yardage of ZERO: never a success, never explosive,
+    // never a conversion.
+    // SequenceNumber is an ESPN STRING; lexicographic ordering breaks
+    // when digit counts differ ("10" < "9"). Order numerically when
+    // parseable, falling back to the raw string. Every order-sensitive
+    // consumer (drive baselines, the red-zone trip machine) uses this
+    // SAME ordering, so they cannot disagree.
+    private static List<FootballCompetitionPlay> OrderPlays(IEnumerable<FootballCompetitionPlay> plays)
+        => plays
+            .OrderBy(p => long.TryParse(p.SequenceNumber, out var n) ? n : long.MaxValue)
+            .ThenBy(p => p.SequenceNumber, StringComparer.Ordinal)
+            .ToList();
+
+    private static bool IsTurnoverType(PlayType t)
+        => t == PlayType.PassInterceptionReturn
+           || t == PlayType.InterceptionReturnTouchdown
+           || t == PlayType.FumbleLost
+           || t == PlayType.FumbleReturnTouchdown;
+
+    private static int Yardage(FootballCompetitionPlay p)
+        => IsTurnoverType(p.Type) ? 0 : p.StatYardage;
 
     // first down purely by distance-to-gain (no FirstDown flag in your data)
     private static bool AchievedFirstDownByYardage(FootballCompetitionPlay p)
@@ -574,13 +616,18 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         // - Rush / Pass (comp & inc) / Sack
         // - TD variants that ESPN sometimes logs as distinct types
         // - Safety (comes from a scrimmage snap)
+        // - AUDIT H1: turnover plays (interception / lost fumble) — they
+        //   ARE scrimmage snaps by the offense; Yardage() zeroes their
+        //   defensive-return StatYardage so denominators grow but
+        //   numerators never see return yards.
         return t == PlayType.Rush
                || t == PlayType.RushingTouchdown
                || t == PlayType.PassReception
                || t == PlayType.PassingTouchdown
                || t == PlayType.PassIncompletion
                || t == PlayType.Sack
-               || t == PlayType.Safety;
+               || t == PlayType.Safety
+               || IsTurnoverType(t);
     }
 
     // full filter for "counts toward offense's snaps"

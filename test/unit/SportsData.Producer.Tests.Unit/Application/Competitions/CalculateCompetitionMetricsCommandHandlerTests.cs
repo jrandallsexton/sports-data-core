@@ -244,6 +244,410 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
 
         private static string? _cachedJson; // Cache JSON across test instances
 
+        #region Audit regression fixtures (H1 / H2)
+
+        /// <summary>
+        /// AUDIT H1: an interception is an offensive SNAP (denominator)
+        /// whose StatYardage is the DEFENSIVE RETURN (never the
+        /// numerator). Fixture: rush 8 (success), rush 2 (fail), INT with
+        /// a 40-yard return -> 3 snaps, 10 yards, no explosive play.
+        /// Pre-fix: 2 snaps, Ypp 5.0, and a 40-yard "gain".
+        /// </summary>
+        [Fact]
+        public async Task H1_InterceptionJoinsDenominator_ReturnYardsNeverCount()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 8),
+                Play(home: true, drive: 1, seq: "02", type: PlayType.Rush, down: 1, dist: 10, yds: 2),
+                Play(home: true, drive: 1, seq: "03", type: PlayType.PassInterceptionReturn, down: 1, dist: 10, yds: 40));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var home = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => new { m.Ypp, m.SuccessRate, m.ExplosiveRate })
+                .SingleAsync();
+
+            home.Ypp.Should().BeApproximately(10m / 3m, 0.0001m, "3 snaps, 10 offensive yards — the return is not a gain");
+            home.SuccessRate.Should().BeApproximately(1m / 3m, 0.0001m, "only the 8-yard rush succeeds; the INT is a failed snap");
+            home.ExplosiveRate.Should().Be(0m, "a 40-yard RETURN is not a 40-yard offensive gain");
+        }
+
+        /// <summary>
+        /// AUDIT H1: a third-down interception is a FAILED conversion
+        /// attempt — pre-fix it vanished from the denominator entirely.
+        /// </summary>
+        [Fact]
+        public async Task H1_ThirdDownInterception_IsAFailedAttempt()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 3, dist: 2, yds: 5),
+                Play(home: true, drive: 1, seq: "02", type: PlayType.PassInterceptionReturn, down: 3, dist: 5, yds: 40));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rate = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => m.ThirdFourthRate)
+                .SingleAsync();
+
+            rate.Should().Be(0.5m, "one conversion in TWO attempts — the 40-yard return does not convert 3rd-and-5");
+        }
+
+        /// <summary>
+        /// AUDIT H2 (the stale-trip regression): a red-zone trip that ends
+        /// without a score must NOT be credited when the same offense
+        /// scores on a LATER drive. Pre-fix, the trip stayed open until an
+        /// opponent snap, absorbing the next drive's touchdown.
+        /// </summary>
+        [Fact]
+        public async Task H2_StaleTrip_NotCreditedAcrossOwnNewDrive()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 2, yte: 15),
+                // new drive, outside the red zone, ends in a TD
+                Play(home: true, drive: 2, seq: "02", type: PlayType.Rush, down: 1, dist: 10, yds: 5, yte: 60),
+                Play(home: true, drive: 2, seq: "03", type: PlayType.PassingTouchdown, down: 1, dist: 10, yds: 55, yte: 55));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rz = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => new { m.RzTdRate, m.RzScoreRate })
+                .SingleAsync();
+
+            rz.RzTdRate.Should().Be(0m, "the red-zone trip ended scoreless when its drive ended");
+            rz.RzScoreRate.Should().Be(0m);
+        }
+
+        /// <summary>
+        /// AUDIT H2: a trip legitimately spans Q1->Q2 (same drive) — the
+        /// quarter boundary must NOT terminate it.
+        /// </summary>
+        [Fact]
+        public async Task H2_TripSurvivesQuarterBoundary_WithinSameHalf()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 3, yte: 18, period: 1),
+                Play(home: true, drive: 1, seq: "02", type: PlayType.RushingTouchdown, down: 2, dist: 7, yds: 15, yte: 15, period: 2));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rate = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => m.RzTdRate)
+                .SingleAsync();
+
+            rate.Should().Be(1m, "the trip crossed Q1->Q2 inside one drive and scored");
+        }
+
+        /// <summary>
+        /// AUDIT H2: a trip does NOT survive halftime — even when the data
+        /// (glitch) keeps the same DriveId across the break, a Q3 score
+        /// cannot credit a Q2 trip.
+        /// </summary>
+        [Fact]
+        public async Task H2_TripClosesAtTheHalf_EvenWithSameDriveId()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 2, yte: 15, period: 2),
+                Play(home: true, drive: 1, seq: "02", type: PlayType.RushingTouchdown, down: 1, dist: 10, yds: 12, yte: 12, period: 3));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rate = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => m.RzTdRate)
+                .SingleAsync();
+
+            // the Q2 trip closed scoreless at the half; the Q3 TD play (yte
+            // 12, scrimmage snap) STARTS a second trip which scores.
+            rate.Should().Be(0.5m, "Q2 trip scoreless; Q3 trip (new, same drive id) scores");
+        }
+
+        /// <summary>
+        /// AUDIT H2: the two rates share one machine but different scoring
+        /// predicates — a made field goal is a scoring trip, not a TD trip.
+        /// Duplicate play events (same sequence) leave every count
+        /// unchanged. (The machine is idempotent under adjacent replays by
+        /// construction — the explicit sequence guard encodes the contract;
+        /// this fixture documents the invariant rather than a reachable
+        /// failure mode.)
+        /// </summary>
+        [Fact]
+        public async Task H2_FieldGoalScoresTheTrip_ForScoreRateOnly()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 2, yte: 18),
+                // duplicate of the trip-opening red-zone snap
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 2, yte: 18),
+                Play(home: true, drive: 1, seq: "02", type: PlayType.FieldGoalGood, down: 4, dist: 8, yds: 33, yte: 16),
+                // duplicate of the scoring play
+                Play(home: true, drive: 1, seq: "02", type: PlayType.FieldGoalGood, down: 4, dist: 8, yds: 33, yte: 16));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rz = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => new { m.RzTdRate, m.RzScoreRate })
+                .SingleAsync();
+
+            rz.RzScoreRate.Should().Be(1m, "the field goal scores the trip");
+            rz.RzTdRate.Should().Be(0m, "a field goal is not a touchdown trip");
+        }
+
+        /// <summary>
+        /// AUDIT H2 rule 1 (pre-existing rule, regression guard): an
+        /// opponent standing scrimmage snap closes the trip — a LATER score
+        /// on the same DriveId must not credit the closed trip.
+        /// </summary>
+        [Fact]
+        public async Task H2_TripClosesOnOpponentStandingSnap()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 2, yte: 15),
+                // opponent takes a standing scrimmage snap -> home trip closes scoreless
+                Play(home: false, drive: 2, seq: "02", type: PlayType.Rush, down: 1, dist: 10, yds: 4, yte: 70),
+                // home scores later on the ORIGINAL DriveId (data glitch):
+                // must not credit the closed trip; yte 40 opens no new trip
+                Play(home: true, drive: 1, seq: "03", type: PlayType.PassingTouchdown, down: 1, dist: 10, yds: 40, yte: 40));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rate = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => m.RzTdRate)
+                .SingleAsync();
+
+            rate.Should().Be(0m, "the trip closed scoreless when the opponent snapped");
+        }
+
+        /// <summary>
+        /// AUDIT H2 rule 4: a trip still open when the input ends closes at
+        /// EOF and counts — the rate is 0, not null.
+        /// </summary>
+        [Fact]
+        public async Task H2_TripOpenAtEndOfInput_CountsScoreless()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 3, yte: 12));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rz = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => new { m.RzTdRate, m.RzScoreRate })
+                .SingleAsync();
+
+            rz.RzTdRate.Should().Be(0m, "the EOF-closed trip counts as a scoreless trip");
+            rz.RzScoreRate.Should().Be(0m);
+        }
+
+        /// <summary>
+        /// AUDIT H1+H2 (defensive TD): a red-zone pick-six ends the trip
+        /// scoreless via the ensuing new drive, contributes a SNAP at zero
+        /// offensive yards, and its 95-yard RETURN is never explosive.
+        /// </summary>
+        [Fact]
+        public async Task H1H2_RedZonePickSix_ScorelessTrip_ZeroYardSnap()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 2, yte: 15),
+                Play(home: true, drive: 1, seq: "02", type: PlayType.InterceptionReturnTouchdown, down: 2, dist: 8, yds: 95, yte: 13),
+                // home's next possession (outside the RZ) closes the stale trip
+                Play(home: true, drive: 2, seq: "03", type: PlayType.Rush, down: 1, dist: 10, yds: 5, yte: 60));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var home = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => new { m.RzTdRate, m.Ypp, m.ExplosiveRate })
+                .SingleAsync();
+
+            home.RzTdRate.Should().Be(0m, "a pick-six is the DEFENSE's touchdown, never the trip's");
+            home.Ypp.Should().BeApproximately(7m / 3m, 0.0001m, "3 snaps, 7 offensive yards — the 95-yard return contributes zero");
+            home.ExplosiveRate.Should().Be(0m);
+        }
+
+        /// <summary>
+        /// AUDIT H2 rule 3: every overtime period is its own possession
+        /// bucket — a trip opened in OT1 must not absorb an OT2 score, even
+        /// on the same DriveId.
+        /// </summary>
+        [Fact]
+        public async Task H2_TripClosesBetweenOvertimePeriods()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 2, yte: 15, period: 5),
+                Play(home: true, drive: 1, seq: "02", type: PlayType.RushingTouchdown, down: 1, dist: 10, yds: 12, yte: 12, period: 6));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rate = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => m.RzTdRate)
+                .SingleAsync();
+
+            // the OT1 trip closed scoreless at the OT break; the OT2 TD play
+            // (yte 12) starts a second trip which scores.
+            rate.Should().Be(0.5m, "OT1 trip scoreless; OT2 trip (new, same drive id) scores");
+        }
+
+        /// <summary>
+        /// AUDIT H1: a lost fumble returned for a defensive touchdown is an
+        /// offensive snap at zero yards — the return yardage never counts.
+        /// </summary>
+        [Fact]
+        public async Task H1_FumbleReturnTouchdown_ZeroYardSnap()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 8),
+                Play(home: true, drive: 1, seq: "02", type: PlayType.FumbleReturnTouchdown, down: 2, dist: 2, yds: 60));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var home = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => new { m.Ypp, m.ExplosiveRate })
+                .SingleAsync();
+
+            home.Ypp.Should().Be(4m, "2 snaps, 8 offensive yards — the 60-yard return contributes zero");
+            home.ExplosiveRate.Should().Be(0m);
+        }
+
+        /// <summary>
+        /// AUDIT H4 (ordering): SequenceNumber is a STRING — lexicographic
+        /// order puts "10" before "2" and "9". The trip machine must see
+        /// temporal (numeric) order. Numerically: opponent snap ("2"), home
+        /// opens a trip ("9"), same-drive TD ("10") scores it -> 1.0.
+        /// Lexicographically the TD is processed FIRST, the opponent snap
+        /// closes that trip, and "9" opens a second scoreless trip -> 0.5.
+        /// </summary>
+        [Fact]
+        public async Task H4_UnpaddedSequenceNumbers_ProcessedInNumericOrder()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: false, drive: 2, seq: "2", type: PlayType.Rush, down: 1, dist: 10, yds: 3, yte: 75),
+                Play(home: true, drive: 1, seq: "9", type: PlayType.Rush, down: 1, dist: 10, yds: 2, yte: 15),
+                Play(home: true, drive: 1, seq: "10", type: PlayType.RushingTouchdown, down: 2, dist: 8, yds: 13, yte: 13));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rate = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => m.RzTdRate)
+                .SingleAsync();
+
+            rate.Should().Be(1m, "one trip, opened at seq 9 and scored at seq 10 — temporal order, not string order");
+        }
+
+        private sealed record PlaySpec(
+            bool Home, int Drive, string Seq, PlayType Type,
+            int? Down, int? Dist, int Yds, int? Yte, int Period);
+
+        private static PlaySpec Play(
+            bool home, int drive, string seq, PlayType type,
+            int? down = null, int? dist = null, int yds = 0, int? yte = null, int period = 1)
+            => new(home, drive, seq, type, down, dist, yds, yte, period);
+
+        /// <summary>
+        /// Play-level synthetic competition for formula fixtures: full
+        /// control of type/down/distance/yardage/yards-to-endzone/period.
+        /// No drive rows are needed by the metrics under test here.
+        /// </summary>
+        private async Task<(Guid competitionId, Guid homeId, Guid awayId)> SeedPlaysAsync(
+            params PlaySpec[] specs)
+        {
+            var competitionId = Guid.NewGuid();
+            var homeId = Guid.NewGuid();
+            var awayId = Guid.NewGuid();
+
+            var homeFs = Fixture.Build<FranchiseSeason>()
+                .With(x => x.Id, homeId).With(x => x.FranchiseId, Guid.NewGuid())
+                .With(x => x.SeasonYear, 2025).Without(x => x.ExternalIds).Create();
+            var awayFs = Fixture.Build<FranchiseSeason>()
+                .With(x => x.Id, awayId).With(x => x.FranchiseId, Guid.NewGuid())
+                .With(x => x.SeasonYear, 2025).Without(x => x.ExternalIds).Create();
+            await FootballDataContext.FranchiseSeasons.AddRangeAsync(homeFs, awayFs);
+
+            var contest = Fixture.Build<FootballContest>()
+                .With(x => x.Id, Guid.NewGuid())
+                .With(x => x.HomeTeamFranchiseSeasonId, homeId)
+                .With(x => x.AwayTeamFranchiseSeasonId, awayId)
+                .With(x => x.HomeTeamFranchiseSeason, homeFs)
+                .With(x => x.AwayTeamFranchiseSeason, awayFs)
+                .Without(x => x.Links).Without(x => x.ExternalIds).Without(x => x.Competitions)
+                .Create();
+            await FootballDataContext.Contests.AddAsync(contest);
+
+            var competition = Fixture.Build<FootballCompetition>()
+                .With(x => x.Id, competitionId)
+                .With(x => x.ContestId, contest.Id)
+                .With(x => x.Contest, contest)
+                .Without(x => x.Plays).Without(x => x.Drives)
+                .Without(x => x.Links).Without(x => x.ExternalIds)
+                .Create();
+            await FootballDataContext.Competitions.AddAsync(competition);
+
+            var driveIds = new Dictionary<int, Guid>();
+            var i = 0;
+            foreach (var spec in specs)
+            {
+                if (!driveIds.TryGetValue(spec.Drive, out var driveId))
+                {
+                    driveId = Guid.NewGuid();
+                    driveIds[spec.Drive] = driveId;
+                }
+
+                await FootballDataContext.CompetitionPlays.AddAsync(new FootballCompetitionPlay
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionId = competitionId,
+                    DriveId = driveId,
+                    EspnId = $"p{++i}-{spec.Seq}",
+                    SequenceNumber = spec.Seq,
+                    TypeId = "0",
+                    Type = spec.Type,
+                    Text = "synthetic",
+                    StartFranchiseSeasonId = spec.Home ? homeId : awayId,
+                    StartDown = spec.Down,
+                    StartDistance = spec.Dist,
+                    StatYardage = spec.Yds,
+                    StartYardsToEndzone = spec.Yte,
+                    PeriodNumber = spec.Period
+                });
+            }
+
+            await FootballDataContext.SaveChangesAsync();
+            return (competitionId, homeId, awayId);
+        }
+
+        #endregion
+
         #region Audit regression fixtures (C1 / C2)
 
         /// <summary>

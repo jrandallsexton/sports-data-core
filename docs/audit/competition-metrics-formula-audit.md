@@ -88,6 +88,12 @@ return yards to the offense. The correct contract:
   changing total yards; a 40-yard pick-six must not appear as a
   40-yard offensive gain.
 
+**Implemented** (fix/metrics-h1-h2): `IsTurnoverType` added; those
+types join `IsOffensiveScrimmageType`; a `Yardage(play)` accessor
+returns 0 for turnover types and feeds every numerator (Ypp,
+success/explosive checks, first-down-by-yardage). Both fixtures above
+are in the test suite.
+
 ### H2. Red-zone trip state survives possession changes it shouldn't
 
 Both RZ calculators end a trip only when the OTHER offense takes a
@@ -115,6 +121,15 @@ degrade to rule 1/2 whichever fires first.
 drive later scores (stale-trip regression); trip open across Q1→Q2
 (must survive); trip open across the half (must close); trip ended by
 defensive TD; trip at EOF; duplicate-sequence play.
+
+**Implemented** (fix/metrics-h1-h2): both rates now delegate to one
+shared `CountRedZoneTrips` state machine implementing rules 1–4
+verbatim (half bucket: period ≤2 / ≤4 / OT; own-new-DriveId close
+evaluated before a fresh trip can start on the same play; adjacent
+duplicate SequenceNumber skipped). Trip-ended-by-defensive-TD is
+covered by rule 2 (the defensive score forces a new drive id) and by
+rule 1 now catching opponent interception snaps via the widened H1
+type set. Fixture battery is in the test suite.
 
 ### H3. PenaltyYardsPerPlay attributes by possession, not by offender
 

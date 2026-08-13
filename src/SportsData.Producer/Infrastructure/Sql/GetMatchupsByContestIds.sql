@@ -1,5 +1,4 @@
 SELECT
-  sp_contest."Name" AS "SeasonPhase",
   c."SeasonWeekId" AS "SeasonWeekId",
   sw_contest."EndDate" AS "SeasonWeekEndDate",
   c."Id" AS "ContestId",
@@ -37,7 +36,6 @@ SELECT
   c."EndDateUtc" AS "CompletedUtc"
 FROM public."Contest" c
 INNER JOIN public."SeasonWeek" sw_contest ON sw_contest."Id" = c."SeasonWeekId"
-LEFT JOIN public."SeasonPhase" sp_contest ON sp_contest."Id" = c."SeasonPhaseId"
 LEFT JOIN public."Venue" v ON v."Id" = c."VenueId"
 INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
 LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'

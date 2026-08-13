@@ -12,13 +12,13 @@ SELECT
   fsAway."Id" AS "AwayFranchiseSeasonId", fAway."DisplayName" AS "Away",
   fAway."Slug" AS "AwaySlug", fsrdAway."Current" AS "AwayRank",
   gsAway."Slug" AS "AwayConferenceSlug", gsAwayParent."Slug" AS "AwayParentConferenceSlug",
-  fsAway."Wins" AS "AwayWins", fsAway."Losses" AS "AwayLosses",
-  fsAway."ConferenceWins" AS "AwayConferenceWins", fsAway."ConferenceLosses" AS "AwayConferenceLosses",
+  COALESCE(enterAway."Wins", 0) AS "AwayWins", COALESCE(enterAway."Losses", 0) AS "AwayLosses",
+  COALESCE(enterAway."ConferenceWins", 0) AS "AwayConferenceWins", COALESCE(enterAway."ConferenceLosses", 0) AS "AwayConferenceLosses",
   fsHome."Id" AS "HomeFranchiseSeasonId", fHome."DisplayName" AS "Home",
   fHome."Slug" AS "HomeSlug", fsrdHome."Current" AS "HomeRank",
   gsHome."Slug" AS "HomeConferenceSlug", gsHomeParent."Slug" AS "HomeParentConferenceSlug",
-  fsHome."Wins" AS "HomeWins", fsHome."Losses" AS "HomeLosses",
-  fsHome."ConferenceWins" AS "HomeConferenceWins", fsHome."ConferenceLosses" AS "HomeConferenceLosses",
+  COALESCE(enterHome."Wins", 0) AS "HomeWins", COALESCE(enterHome."Losses", 0) AS "HomeLosses",
+  COALESCE(enterHome."ConferenceWins", 0) AS "HomeConferenceWins", COALESCE(enterHome."ConferenceLosses", 0) AS "HomeConferenceLosses",
   co."Details" AS "Spread", (co."Spread" * -1) AS "AwaySpread",
   co."Spread" AS "HomeSpread", co."OverUnder", co."OverOdds", co."UnderOdds"
 FROM public."Contest" c
@@ -60,4 +60,77 @@ LEFT JOIN LATERAL (
   ORDER BY rsw."StartDate" DESC LIMIT 1
 ) fsrHome ON TRUE
 LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdHome ON fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+
+-- Entering record for the away team: taken from the most recent
+-- completed game's CompetitionCompetitorRecord (ESPN snapshots each
+-- team's record ON every game document) — point-in-time by
+-- construction, and the CURRENT record for an upcoming contest. The
+-- FranchiseSeason Wins/Losses denorm columns are abandoned (never
+-- populated for NFL, inconsistent for NCAAFB — see #617); same proven
+-- lateral as GetMatchupsByContestIds.
+LEFT JOIN LATERAL (
+  SELECT
+    split_part(tot."Summary", '-', 1)::int  AS "Wins",
+    split_part(tot."Summary", '-', 2)::int  AS "Losses",
+    split_part(conf."Summary", '-', 1)::int AS "ConferenceWins",
+    split_part(conf."Summary", '-', 2)::int AS "ConferenceLosses"
+  FROM public."CompetitionCompetitor" prev_cc
+  INNER JOIN public."Competition" prev_comp ON prev_comp."Id" = prev_cc."CompetitionId"
+  INNER JOIN public."Contest" prev_ct ON prev_ct."Id" = prev_comp."ContestId"
+  INNER JOIN public."CompetitionStatus" prev_cs ON prev_cs."CompetitionId" = prev_comp."Id"
+  LEFT JOIN public."SeasonPhase" prev_sp ON prev_sp."Id" = prev_ct."SeasonPhaseId"
+  INNER JOIN public."CompetitionCompetitorRecord" tot
+    ON tot."CompetitionCompetitorId" = prev_cc."Id" AND tot."Type" = 'total'
+  LEFT JOIN public."CompetitionCompetitorRecord" conf
+    ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
+  WHERE prev_cc."FranchiseSeasonId" = fsAway."Id"
+    AND prev_ct."StartDateUtc" < c."StartDateUtc"
+    -- Preview-safe semantics, same as every other preview query: only
+    -- FINALIZED, non-cancelled games anchor the record...
+    AND prev_cs."StatusTypeName" = 'STATUS_FINAL'
+    AND prev_ct."CancelledUtc" IS NULL
+    -- ...and never a PRESEASON game (policy: preseason is system-testing,
+    -- never signal) — without this, an NFL week-1 preview would anchor on
+    -- the team's last preseason game and show preseason W/L as the
+    -- current record.
+    AND (prev_sp."TypeCode" IS NULL OR prev_sp."TypeCode" <> 1)
+  ORDER BY prev_ct."StartDateUtc" DESC
+  LIMIT 1
+) enterAway ON TRUE
+-- Entering record for the home team: taken from the most recent
+-- completed game's CompetitionCompetitorRecord (ESPN snapshots each
+-- team's record ON every game document) — point-in-time by
+-- construction, and the CURRENT record for an upcoming contest. The
+-- FranchiseSeason Wins/Losses denorm columns are abandoned (never
+-- populated for NFL, inconsistent for NCAAFB — see #617); same proven
+-- lateral as GetMatchupsByContestIds.
+LEFT JOIN LATERAL (
+  SELECT
+    split_part(tot."Summary", '-', 1)::int  AS "Wins",
+    split_part(tot."Summary", '-', 2)::int  AS "Losses",
+    split_part(conf."Summary", '-', 1)::int AS "ConferenceWins",
+    split_part(conf."Summary", '-', 2)::int AS "ConferenceLosses"
+  FROM public."CompetitionCompetitor" prev_cc
+  INNER JOIN public."Competition" prev_comp ON prev_comp."Id" = prev_cc."CompetitionId"
+  INNER JOIN public."Contest" prev_ct ON prev_ct."Id" = prev_comp."ContestId"
+  INNER JOIN public."CompetitionStatus" prev_cs ON prev_cs."CompetitionId" = prev_comp."Id"
+  LEFT JOIN public."SeasonPhase" prev_sp ON prev_sp."Id" = prev_ct."SeasonPhaseId"
+  INNER JOIN public."CompetitionCompetitorRecord" tot
+    ON tot."CompetitionCompetitorId" = prev_cc."Id" AND tot."Type" = 'total'
+  LEFT JOIN public."CompetitionCompetitorRecord" conf
+    ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
+  WHERE prev_cc."FranchiseSeasonId" = fsHome."Id"
+    AND prev_ct."StartDateUtc" < c."StartDateUtc"
+    -- Preview-safe semantics, same as every other preview query: only
+    -- FINALIZED, non-cancelled games anchor the record...
+    AND prev_cs."StatusTypeName" = 'STATUS_FINAL'
+    AND prev_ct."CancelledUtc" IS NULL
+    -- ...and never a PRESEASON game (policy: preseason is system-testing,
+    -- never signal) — without this, an NFL week-1 preview would anchor on
+    -- the team's last preseason game and show preseason W/L as the
+    -- current record.
+    AND (prev_sp."TypeCode" IS NULL OR prev_sp."TypeCode" <> 1)
+  ORDER BY prev_ct."StartDateUtc" DESC
+  LIMIT 1
+) enterHome ON TRUE
 WHERE c."Id" = @ContestId

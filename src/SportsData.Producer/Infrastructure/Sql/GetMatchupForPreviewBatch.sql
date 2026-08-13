@@ -77,12 +77,23 @@ LEFT JOIN LATERAL (
   FROM public."CompetitionCompetitor" prev_cc
   INNER JOIN public."Competition" prev_comp ON prev_comp."Id" = prev_cc."CompetitionId"
   INNER JOIN public."Contest" prev_ct ON prev_ct."Id" = prev_comp."ContestId"
+  INNER JOIN public."CompetitionStatus" prev_cs ON prev_cs."CompetitionId" = prev_comp."Id"
+  LEFT JOIN public."SeasonPhase" prev_sp ON prev_sp."Id" = prev_ct."SeasonPhaseId"
   INNER JOIN public."CompetitionCompetitorRecord" tot
     ON tot."CompetitionCompetitorId" = prev_cc."Id" AND tot."Type" = 'total'
   LEFT JOIN public."CompetitionCompetitorRecord" conf
     ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
   WHERE prev_cc."FranchiseSeasonId" = fsAway."Id"
     AND prev_ct."StartDateUtc" < c."StartDateUtc"
+    -- Preview-safe semantics, same as every other preview query: only
+    -- FINALIZED, non-cancelled games anchor the record...
+    AND prev_cs."StatusTypeName" = 'STATUS_FINAL'
+    AND prev_ct."CancelledUtc" IS NULL
+    -- ...and never a PRESEASON game (policy: preseason is system-testing,
+    -- never signal) — without this, an NFL week-1 preview would anchor on
+    -- the team's last preseason game and show preseason W/L as the
+    -- current record.
+    AND (prev_sp."TypeCode" IS NULL OR prev_sp."TypeCode" <> 1)
   ORDER BY prev_ct."StartDateUtc" DESC
   LIMIT 1
 ) enterAway ON TRUE
@@ -102,12 +113,23 @@ LEFT JOIN LATERAL (
   FROM public."CompetitionCompetitor" prev_cc
   INNER JOIN public."Competition" prev_comp ON prev_comp."Id" = prev_cc."CompetitionId"
   INNER JOIN public."Contest" prev_ct ON prev_ct."Id" = prev_comp."ContestId"
+  INNER JOIN public."CompetitionStatus" prev_cs ON prev_cs."CompetitionId" = prev_comp."Id"
+  LEFT JOIN public."SeasonPhase" prev_sp ON prev_sp."Id" = prev_ct."SeasonPhaseId"
   INNER JOIN public."CompetitionCompetitorRecord" tot
     ON tot."CompetitionCompetitorId" = prev_cc."Id" AND tot."Type" = 'total'
   LEFT JOIN public."CompetitionCompetitorRecord" conf
     ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
   WHERE prev_cc."FranchiseSeasonId" = fsHome."Id"
     AND prev_ct."StartDateUtc" < c."StartDateUtc"
+    -- Preview-safe semantics, same as every other preview query: only
+    -- FINALIZED, non-cancelled games anchor the record...
+    AND prev_cs."StatusTypeName" = 'STATUS_FINAL'
+    AND prev_ct."CancelledUtc" IS NULL
+    -- ...and never a PRESEASON game (policy: preseason is system-testing,
+    -- never signal) — without this, an NFL week-1 preview would anchor on
+    -- the team's last preseason game and show preseason W/L as the
+    -- current record.
+    AND (prev_sp."TypeCode" IS NULL OR prev_sp."TypeCode" <> 1)
   ORDER BY prev_ct."StartDateUtc" DESC
   LIMIT 1
 ) enterHome ON TRUE

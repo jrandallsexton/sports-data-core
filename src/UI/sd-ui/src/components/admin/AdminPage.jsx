@@ -131,14 +131,17 @@ export default function AdminPage() {
     <div className="admin-page">
       <AdminHeader />
 
-      {/* SignalR debug cards moved to /admin/football and /admin/baseball. */}
-      <div style={{ display: 'flex', gap: 16, margin: '8px 0 16px' }}>
-        <Link to="/admin/football">Football debug</Link>
-        <Link to="/admin/baseball">Baseball debug</Link>
-        <Link to="/admin/preview-lab">Preview Lab</Link>
-        <Link to="/admin/prompts">Prompt Manager</Link>
-        <Link to="/admin/models">Model Manager</Link>
-      </div>
+      {/* Admin tool nav. Links must carry the /app prefix — the admin
+          routes nest under /app/*, and absolute /admin/... paths escape
+          the app router entirely (rendered as sportdeets.com/admin/...,
+          which 404s). */}
+      <nav className="admin-nav-links" aria-label="Admin tools">
+        <Link to="/app/admin/football">Football debug</Link>
+        <Link to="/app/admin/baseball">Baseball debug</Link>
+        <Link to="/app/admin/preview-lab">Preview Lab</Link>
+        <Link to="/app/admin/prompts">Prompt Manager</Link>
+        <Link to="/app/admin/models">Model Manager</Link>
+      </nav>
 
       <div className="admin-grid">
         <div className="admin-main">

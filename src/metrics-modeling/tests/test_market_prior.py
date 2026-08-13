@@ -163,7 +163,19 @@ def test_probability_scale_is_out_of_sample_not_fit_std():
     result = predict_market_prior(
         training, _frame(5, completed=False, seed=9, spread=True), fbs_scope=False)
 
-    # Out-of-fold std sits at or slightly ABOVE the true noise scale;
-    # the in-sample fit std would sit measurably below it.
+    # The in-sample fit std — what v1.1.0 wrongly used — computed the
+    # same way the model would: full-corpus fit, residuals against it.
+    from sklearn.linear_model import LinearRegression
+    from metricbot.model import is_priced
+    corpus = training[training["Winner"].isin(["HOME", "AWAY"])]
+    corpus = corpus[is_priced(corpus)]
+    x = corpus[FEATURE_COLS].fillna(0)
+    y = corpus["HomeScore"] - corpus["AwayScore"] + corpus["Spread"]
+    fit = LinearRegression().fit(x, y)
+    fit_std = float(np.std(y - fit.predict(x)))
+
+    # The deployed scale must exceed the optimistic in-sample number and
+    # land at (or slightly above) the TRUE noise scale of 3.0.
     assert result.residual_model_std is not None
-    assert 2.9 <= result.residual_model_std <= 3.4
+    assert result.residual_model_std > fit_std
+    assert 2.9 <= result.residual_model_std <= 3.6

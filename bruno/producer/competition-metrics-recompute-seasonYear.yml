@@ -1,0 +1,23 @@
+info:
+  name: competition-metrics-recompute-seasonYear
+  type: http
+  seq: 20
+
+# PHASE 1 of the metrics recompute campaign
+# (docs/audit/competition-metrics-formula-audit.md, recommended sequence).
+# Enqueues CalculateCompetitionMetrics for every finalized competition in
+# the season whose metric rows are missing OR carry a stale FormulaVersion.
+# Re-POSTing resumes a partially completed campaign (restamped rows skip).
+# Returns counts synchronously; Hangfire drains the queue.
+http:
+  method: POST
+  url: "{{baseUrlProducer}}/api/competitions/metrics/generate/2025"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

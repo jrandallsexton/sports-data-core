@@ -1,0 +1,22 @@
+info:
+  name: franchise-season-metrics-recompute-seasonYear
+  type: http
+  seq: 21
+
+# PHASE 2 of the metrics recompute campaign — run ONLY after phase 1's
+# gates pass (docs/audit/competition-metrics-formula-audit.md): the
+# season aggregation reads persisted CompetitionMetric rows, so ordering
+# is load-bearing. Sport comes from the target Producer's app mode.
+# NOTE: aggregates FBS franchise seasons only (handler filter).
+http:
+  method: POST
+  url: "{{baseUrlProducer}}/api/franchise-seasons/seasonYear/2025/metrics/generate"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

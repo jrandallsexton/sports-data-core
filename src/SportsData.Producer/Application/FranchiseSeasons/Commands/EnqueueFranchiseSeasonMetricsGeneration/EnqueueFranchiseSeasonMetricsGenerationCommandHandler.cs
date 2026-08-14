@@ -52,27 +52,28 @@ public class EnqueueFranchiseSeasonMetricsGenerationCommandHandler : IEnqueueFra
             ? await _groupSeasonsService.GetFbsGroupSeasonIds(command.SeasonYear)
             : null;
 
-        var franchiseSeasons = await _dataContext.FranchiseSeasons
-            .Include(fs => fs.Franchise)
+        // Only the ids are needed; the Sport predicate translates through
+        // the Franchise navigation without an Include.
+        var franchiseSeasonIds = await _dataContext.FranchiseSeasons
             .Where(fs =>
                 fs.SeasonYear == command.SeasonYear &&
                 fs.Franchise.Sport == command.Sport &&
                 (fbsGroupIds == null ||
                  (fs.GroupSeasonId != null && fbsGroupIds.Contains(fs.GroupSeasonId!.Value))))
-            .AsNoTracking()
+            .Select(fs => fs.Id)
             .ToListAsync(cancellationToken);
 
         _logger.LogInformation(
             "Found {Count} franchise seasons to process. SeasonYear={SeasonYear}, Sport={Sport}",
-            franchiseSeasons.Count,
+            franchiseSeasonIds.Count,
             command.SeasonYear,
             command.Sport);
 
         var correlationId = Guid.NewGuid();
 
-        foreach (var fs in franchiseSeasons)
+        foreach (var franchiseSeasonId in franchiseSeasonIds)
         {
-            var calculateCommand = new CalculateFranchiseSeasonMetricsCommand(fs.Id, command.SeasonYear);
+            var calculateCommand = new CalculateFranchiseSeasonMetricsCommand(franchiseSeasonId, command.SeasonYear);
             _backgroundJobProvider.Enqueue<ICalculateFranchiseSeasonMetricsCommandHandler>(
                 x => x.ExecuteAsync(calculateCommand, CancellationToken.None));
         }
@@ -80,7 +81,7 @@ public class EnqueueFranchiseSeasonMetricsGenerationCommandHandler : IEnqueueFra
         _logger.LogInformation(
             "EnqueueFranchiseSeasonMetricsGeneration completed. SeasonYear={SeasonYear}, EnqueuedCount={Count}, CorrelationId={CorrelationId}",
             command.SeasonYear,
-            franchiseSeasons.Count,
+            franchiseSeasonIds.Count,
             correlationId);
 
         return new Success<Guid>(correlationId, ResultStatus.Accepted);

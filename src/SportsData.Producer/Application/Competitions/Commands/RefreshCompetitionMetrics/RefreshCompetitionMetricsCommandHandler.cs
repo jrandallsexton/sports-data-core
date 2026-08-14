@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions.Commands.CalculateCompetitionMetrics;
+using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
 using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Competitions.Commands.RefreshCompetitionMetrics;
@@ -50,7 +51,14 @@ public class RefreshCompetitionMetricsCommandHandler : IRefreshCompetitionMetric
             if (competition is null)
                 continue;
 
-            if (competition.Metrics.Count == ExpectedCompetitionMetricsCount)
+            // Skip only when the rows exist AND carry the current formula
+            // vintage — rows from an older vintage (or with no stamp at
+            // all) are stale and recompute. This makes the endpoint the
+            // recompute-campaign trigger (audit doc: recompute contract)
+            // and makes the campaign resumable: re-POSTing skips
+            // everything already restamped.
+            if (competition.Metrics.Count == ExpectedCompetitionMetricsCount &&
+                competition.Metrics.All(m => m.FormulaVersion == MetricFormula.Version))
                 continue;
 
             var calculateCommand = new CalculateCompetitionMetricsCommand(competition.Id);

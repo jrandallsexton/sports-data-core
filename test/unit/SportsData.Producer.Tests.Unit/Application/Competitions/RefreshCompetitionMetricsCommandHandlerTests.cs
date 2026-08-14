@@ -20,6 +20,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions;
 
 public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<RefreshCompetitionMetricsCommandHandler>
 {
+    // The handler only checks FinalizedUtc for null — a fixed literal keeps
+    // the fixtures deterministic (house rule: no DateTime.UtcNow in tests).
+    private static readonly DateTime FinalizedStamp = new(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc);
+
     [Fact]
     public async Task ExecuteAsync_WithFinalizedContests_EnqueuesMetricCalculationJobs()
     {
@@ -34,7 +38,7 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
         var contest1 = Fixture.Build<FootballContest>()
             .With(x => x.Id, contestId1)
             .With(x => x.SeasonYear, seasonYear)
-            .With(x => x.FinalizedUtc, DateTime.UtcNow)
+            .With(x => x.FinalizedUtc, FinalizedStamp)
             .Without(x => x.Links)
             .Without(x => x.ExternalIds)
             .Without(x => x.Competitions)
@@ -45,7 +49,7 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
         var contest2 = Fixture.Build<FootballContest>()
             .With(x => x.Id, contestId2)
             .With(x => x.SeasonYear, seasonYear)
-            .With(x => x.FinalizedUtc, DateTime.UtcNow)
+            .With(x => x.FinalizedUtc, FinalizedStamp)
             .Without(x => x.Links)
             .Without(x => x.ExternalIds)
             .Without(x => x.Competitions)
@@ -109,7 +113,7 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
         var contest = Fixture.Build<FootballContest>()
             .With(x => x.Id, contestId)
             .With(x => x.SeasonYear, seasonYear)
-            .With(x => x.FinalizedUtc, DateTime.UtcNow)
+            .With(x => x.FinalizedUtc, FinalizedStamp)
             .Without(x => x.Links)
             .Without(x => x.ExternalIds)
             .Without(x => x.Competitions)
@@ -128,14 +132,17 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
             .Without(x => x.Contest)
             .Create();
 
-        // Add 2 metrics (expected count)
+        // Add 2 metrics (expected count) stamped with the CURRENT formula
+        // vintage — only current-vintage rows are skippable
         var metric1 = Fixture.Build<CompetitionMetric>()
             .With(x => x.CompetitionId, competitionId)
+            .With(x => x.FormulaVersion, MetricFormula.Version)
             .Without(x => x.Competition)
             .Create();
 
         var metric2 = Fixture.Build<CompetitionMetric>()
             .With(x => x.CompetitionId, competitionId)
+            .With(x => x.FormulaVersion, MetricFormula.Version)
             .Without(x => x.Competition)
             .Create();
 
@@ -158,6 +165,133 @@ public class RefreshCompetitionMetricsCommandHandlerTests : ProducerTestBase<Ref
         result.Value.EnqueuedJobs.Should().Be(0);
 
         // Verify no enqueueing by checking result shows 0 jobs
+    }
+
+    /// <summary>
+    /// Recompute-campaign semantics: rows that EXIST but carry a stale
+    /// (or absent) FormulaVersion are re-enqueued — this is how the
+    /// vintage recompute is triggered and how a re-POST resumes it.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WithStaleVintageMetrics_Enqueues()
+    {
+        var seasonYear = 2025;
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+
+        var contest = Fixture.Build<FootballContest>()
+            .With(x => x.Id, contestId)
+            .With(x => x.SeasonYear, seasonYear)
+            .With(x => x.FinalizedUtc, FinalizedStamp)
+            .Without(x => x.Links)
+            .Without(x => x.ExternalIds)
+            .Without(x => x.Competitions)
+            .Without(x => x.HomeTeamFranchiseSeason)
+            .Without(x => x.AwayTeamFranchiseSeason)
+            .Create();
+
+        var competition = Fixture.Build<FootballCompetition>()
+            .With(x => x.Id, competitionId)
+            .With(x => x.ContestId, contestId)
+            .Without(x => x.Plays)
+            .Without(x => x.Drives)
+            .Without(x => x.ExternalIds)
+            .Without(x => x.Media)
+            .Without(x => x.Metrics)
+            .Without(x => x.Contest)
+            .Create();
+
+        // Both rows exist but predate stamping (FormulaVersion null)
+        var metric1 = Fixture.Build<CompetitionMetric>()
+            .With(x => x.CompetitionId, competitionId)
+            .Without(x => x.FormulaVersion)
+            .Without(x => x.Competition)
+            .Create();
+
+        var metric2 = Fixture.Build<CompetitionMetric>()
+            .With(x => x.CompetitionId, competitionId)
+            .Without(x => x.FormulaVersion)
+            .Without(x => x.Competition)
+            .Create();
+
+        await FootballDataContext.Contests.AddAsync(contest);
+        await FootballDataContext.Competitions.AddAsync(competition);
+        await FootballDataContext.CompetitionMetrics.AddRangeAsync(metric1, metric2);
+        await FootballDataContext.SaveChangesAsync();
+
+        var backgroundJobProvider = new Mock<IProvideBackgroundJobs>();
+        Mocker.Use(backgroundJobProvider.Object);
+
+        var command = new RefreshCompetitionMetricsCommand(seasonYear);
+        var sut = Mocker.CreateInstance<RefreshCompetitionMetricsCommandHandler>();
+
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        result.Should().BeOfType<Success<RefreshCompetitionMetricsResult>>();
+        result.Value.EnqueuedJobs.Should().Be(1, "existing rows without the current vintage stamp are stale");
+    }
+
+    /// <summary>
+    /// One row current vintage, one row an OLDER non-null vintage — the
+    /// All predicate must treat the pair as stale and enqueue exactly one
+    /// job for the competition.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_WithMixedVintageMetrics_EnqueuesOnce()
+    {
+        var seasonYear = 2025;
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+
+        var contest = Fixture.Build<FootballContest>()
+            .With(x => x.Id, contestId)
+            .With(x => x.SeasonYear, seasonYear)
+            .With(x => x.FinalizedUtc, FinalizedStamp)
+            .Without(x => x.Links)
+            .Without(x => x.ExternalIds)
+            .Without(x => x.Competitions)
+            .Without(x => x.HomeTeamFranchiseSeason)
+            .Without(x => x.AwayTeamFranchiseSeason)
+            .Create();
+
+        var competition = Fixture.Build<FootballCompetition>()
+            .With(x => x.Id, competitionId)
+            .With(x => x.ContestId, contestId)
+            .Without(x => x.Plays)
+            .Without(x => x.Drives)
+            .Without(x => x.ExternalIds)
+            .Without(x => x.Media)
+            .Without(x => x.Metrics)
+            .Without(x => x.Contest)
+            .Create();
+
+        var currentVintage = Fixture.Build<CompetitionMetric>()
+            .With(x => x.CompetitionId, competitionId)
+            .With(x => x.FormulaVersion, MetricFormula.Version)
+            .Without(x => x.Competition)
+            .Create();
+
+        var olderVintage = Fixture.Build<CompetitionMetric>()
+            .With(x => x.CompetitionId, competitionId)
+            .With(x => x.FormulaVersion, "2025.01")
+            .Without(x => x.Competition)
+            .Create();
+
+        await FootballDataContext.Contests.AddAsync(contest);
+        await FootballDataContext.Competitions.AddAsync(competition);
+        await FootballDataContext.CompetitionMetrics.AddRangeAsync(currentVintage, olderVintage);
+        await FootballDataContext.SaveChangesAsync();
+
+        var backgroundJobProvider = new Mock<IProvideBackgroundJobs>();
+        Mocker.Use(backgroundJobProvider.Object);
+
+        var command = new RefreshCompetitionMetricsCommand(seasonYear);
+        var sut = Mocker.CreateInstance<RefreshCompetitionMetricsCommandHandler>();
+
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        result.Should().BeOfType<Success<RefreshCompetitionMetricsResult>>();
+        result.Value.EnqueuedJobs.Should().Be(1, "a competition with ANY non-current row recomputes, once");
     }
 
     [Fact]

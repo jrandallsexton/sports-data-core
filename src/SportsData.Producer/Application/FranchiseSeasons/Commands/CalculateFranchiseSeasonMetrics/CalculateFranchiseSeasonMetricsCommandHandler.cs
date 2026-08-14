@@ -17,13 +17,16 @@ public class CalculateFranchiseSeasonMetricsCommandHandler : ICalculateFranchise
 {
     private readonly ILogger<CalculateFranchiseSeasonMetricsCommandHandler> _logger;
     private readonly FootballDataContext _dataContext;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public CalculateFranchiseSeasonMetricsCommandHandler(
         ILogger<CalculateFranchiseSeasonMetricsCommandHandler> logger,
-        FootballDataContext dataContext)
+        FootballDataContext dataContext,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -59,6 +62,7 @@ public class CalculateFranchiseSeasonMetricsCommandHandler : ICalculateFranchise
         var fsMetric = ComputeFranchiseSeasonMetric(metrics);
         fsMetric.FranchiseSeasonId = command.FranchiseSeasonId;
         fsMetric.Season = command.SeasonYear;
+        fsMetric.ComputedUtc = _dateTimeProvider.UtcNow();
 
         var existingMetric = await _dataContext.FranchiseSeasonMetrics
             .FirstOrDefaultAsync(
@@ -114,13 +118,17 @@ public class CalculateFranchiseSeasonMetricsCommandHandler : ICalculateFranchise
             OppYpp = metrics.Average(m => m.OppYpp),
 
             // ST / Discipline
-            FgPctShrunk = metrics.Average(m => m.FgPctShrunk),
+            // AUDIT M3: only games with qualifying FG attempts aggregate
+            // (SafeAvg-carried; the all-null → 0 quirk is the DECIDED
+            // contract this vintage).
+            FgPctShrunk = SafeAvg(m => m.FgPctShrunk),
             FieldPosDiff = metrics.Average(m => m.FieldPosDiff),
-            NetPunt = metrics.Average(m => m.NetPunt),
-            PenaltyYardsPerPlay = metrics.Average(m => m.PenaltyYardsPerPlay),
+            // AUDIT M4 / H3: not computed — null, never an average of 0s.
+            NetPunt = null,
+            PenaltyYardsPerPlay = null,
             TurnoverMarginPerDrive = metrics.Average(m => m.TurnoverMarginPerDrive),
 
-            ComputedUtc = DateTime.UtcNow
+            FormulaVersion = MetricFormula.Version
         };
     }
 }

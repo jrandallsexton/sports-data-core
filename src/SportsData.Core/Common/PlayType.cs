@@ -23,6 +23,10 @@
         PassIncompletion = 3,
         PassInterceptionReturn = 26,
         InterceptionReturnTouchdown = 36,   // NEW
+        // ESPN type 63: plain interception (no return language in any
+        // sampled 2025 text). 636 such plays in 2025 NCAA alone were
+        // invisible to every play-type filter before this member existed.
+        Interception = 63,
         PassReception = 24,
         PassingTouchdown = 67,
 

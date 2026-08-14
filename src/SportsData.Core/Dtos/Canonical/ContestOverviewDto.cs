@@ -310,11 +310,13 @@ namespace SportsData.Core.Dtos.Canonical
         public decimal? OppScoreTdRate { get; set; }
 
         // Special Teams / Discipline
-        public decimal NetPunt { get; set; }
-        public decimal FgPctShrunk { get; set; }
+        // NetPunt/PenaltyYardsPerPlay no longer computed (audit M4/H3);
+        // FgPctShrunk null with no qualifying attempts (M3).
+        public decimal? NetPunt { get; set; }
+        public decimal? FgPctShrunk { get; set; }
         public decimal FieldPosDiff { get; set; }
         public decimal TurnoverMarginPerDrive { get; set; }
-        public decimal PenaltyYardsPerPlay { get; set; }
+        public decimal? PenaltyYardsPerPlay { get; set; }
     }
 
 }

@@ -35,8 +35,9 @@ function MetricsCard({ title, metrics }) {
         <div className="contest-teamstats-item"><span className="contest-teamstats-stat-name">Time Poss Ratio</span><span className="contest-teamstats-stat-value">{num(metrics.timePossRatio,2)}</span></div>
         <div className="contest-teamstats-item"><span className="contest-teamstats-stat-name">Field Pos Diff</span><span className="contest-teamstats-stat-value">{num(metrics.fieldPosDiff,2)}</span></div>
 
+        {/* Penalty Yards / Play removed: no longer computed (metrics
+            formula audit H3 — no penalized-team attribution) */}
         <div className="contest-teamstats-item"><span className="contest-teamstats-stat-name">Turnover Margin / Drive</span><span className="contest-teamstats-stat-value">{num(metrics.turnoverMarginPerDrive,3)}</span></div>
-        <div className="contest-teamstats-item"><span className="contest-teamstats-stat-name">Penalty Yards / Play</span><span className="contest-teamstats-stat-value">{num(metrics.penaltyYardsPerPlay,2)}</span></div>
       </div>
     </div>
   );

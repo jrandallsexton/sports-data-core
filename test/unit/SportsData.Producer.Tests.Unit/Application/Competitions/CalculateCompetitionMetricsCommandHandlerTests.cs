@@ -567,12 +567,12 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
 
         private sealed record PlaySpec(
             bool Home, int Drive, string Seq, PlayType Type,
-            int? Down, int? Dist, int Yds, int? Yte, int Period);
+            int? Down, int? Dist, int Yds, int? Yte, int Period, double Clock);
 
         private static PlaySpec Play(
             bool home, int drive, string seq, PlayType type,
-            int? down = null, int? dist = null, int yds = 0, int? yte = null, int period = 1)
-            => new(home, drive, seq, type, down, dist, yds, yte, period);
+            int? down = null, int? dist = null, int yds = 0, int? yte = null, int period = 1, double clock = 0)
+            => new(home, drive, seq, type, down, dist, yds, yte, period, clock);
 
         /// <summary>
         /// Play-level synthetic competition for formula fixtures: full
@@ -638,12 +638,169 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
                     StartDistance = spec.Dist,
                     StatYardage = spec.Yds,
                     StartYardsToEndzone = spec.Yte,
-                    PeriodNumber = spec.Period
+                    PeriodNumber = spec.Period,
+                    ClockValue = spec.Clock
+                });
+            }
+
+            // One CompetitionDrive row per drive key (offense/YTE from the
+            // drive's first play) — TurnoverMarginPerDrive and FieldPosDiff
+            // read the drive table, not the plays.
+            var ordinal = 0;
+            foreach (var (key, driveId) in driveIds)
+            {
+                var firstSpec = specs.First(x => x.Drive == key);
+                await FootballDataContext.Drives.AddAsync(new CompetitionDrive
+                {
+                    Id = driveId,
+                    CompetitionId = competitionId,
+                    StartFranchiseSeasonId = firstSpec.Home ? homeId : awayId,
+                    StartYardsToEndzone = firstSpec.Yte,
+                    Description = $"drive {key}",
+                    SequenceNumber = key.ToString("00"),
+                    Ordinal = ++ordinal
                 });
             }
 
             await FootballDataContext.SaveChangesAsync();
             return (competitionId, homeId, awayId);
+        }
+
+        #endregion
+
+        #region Audit regression fixtures (H3 / M-round)
+
+        /// <summary>
+        /// AUDIT M1 (hand-counted): home throws one INT and loses one
+        /// fumble; away throws one INT (ESPN type 63, the plain
+        /// interception the sweep surfaced). Home has 2 offensive drives,
+        /// away has 1. Margin = (gained - lost) / own drives. The away
+        /// side also proves type 63 joins the H1 snap denominators at
+        /// zero effective yards.
+        /// </summary>
+        [Fact]
+        public async Task M1_TurnoverMargin_HandCountedGame()
+        {
+            var (competitionId, homeId, awayId) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.PassInterceptionReturn, down: 1, dist: 10, yds: 12, yte: 70),
+                Play(home: false, drive: 2, seq: "02", type: PlayType.Rush, down: 1, dist: 10, yds: 8, yte: 65),
+                // ESPN type 63 (plain interception, no return) — must count
+                Play(home: false, drive: 2, seq: "03", type: PlayType.Interception, down: 2, dist: 2, yds: 40, yte: 57),
+                Play(home: true, drive: 3, seq: "04", type: PlayType.FumbleLost, down: 2, dist: 6, yds: 0, yte: 55));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rows = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId)
+                .Select(m => new { m.FranchiseSeasonId, m.TurnoverMarginPerDrive, m.Ypp, m.SuccessRate, m.ExplosiveRate })
+                .ToListAsync();
+
+            rows.Single(r => r.FranchiseSeasonId == homeId).TurnoverMarginPerDrive
+                .Should().Be(-0.5m, "home: gained 1, lost 2, over 2 offensive drives");
+
+            var away = rows.Single(r => r.FranchiseSeasonId == awayId);
+            away.TurnoverMarginPerDrive.Should().Be(1m, "away: gained 2, lost 1, over 1 offensive drive");
+            // type-63 denominator contract (H1): the INT is a snap at zero
+            // effective yards — its 40-yard RETURN never counts.
+            away.Ypp.Should().Be(4m, "2 snaps, 8 offensive yards — pre-fix the INT was invisible (8/1)");
+            away.SuccessRate.Should().Be(0.5m, "the 8-yard rush succeeds; the INT is a failed snap");
+            away.ExplosiveRate.Should().Be(0m, "a 40-yard return is not a 40-yard offensive gain");
+        }
+
+        /// <summary>
+        /// AUDIT M2: OT plays are EXCLUDED from possession time — the OT
+        /// clock overlaps Q4's 0-900 range, so a drive spanning Q4 into a
+        /// running-clock OT was credited 930 possessed seconds pre-fix
+        /// (the OT play's unclamped seconds-remaining was negative), and
+        /// a clamp WITHOUT exclusion would zero the whole drive instead.
+        /// The ratio is a regulation possession ratio by construction.
+        /// </summary>
+        [Fact]
+        public async Task M2_OvertimeExcluded_RegulationPossessionRatio()
+        {
+            var (competitionId, homeId, _) = await SeedPlaysAsync(
+                Play(home: false, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 4, yte: 70, period: 1, clock: 900),
+                Play(home: false, drive: 1, seq: "02", type: PlayType.Rush, down: 2, dist: 6, yds: 3, yte: 66, period: 1, clock: 800),
+                Play(home: true, drive: 2, seq: "03", type: PlayType.Rush, down: 1, dist: 10, yds: 5, yte: 60, period: 4, clock: 130),
+                Play(home: true, drive: 2, seq: "04", type: PlayType.Rush, down: 2, dist: 5, yds: 2, yte: 55, period: 4, clock: 100),
+                // NFL-style RUNNING OT clock: exclusion must ignore it
+                Play(home: true, drive: 2, seq: "05", type: PlayType.Rush, down: 3, dist: 3, yds: 1, yte: 54, period: 5, clock: 600));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var ratio = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId && m.FranchiseSeasonId == homeId)
+                .Select(m => m.TimePossRatio)
+                .SingleAsync();
+
+            // away 100s (900->800); home 30s (Q4 130->100; the OT play is
+            // excluded — clamp-only would have made the drive 0s)
+            ratio.Should().Be(Math.Round(30m / 130m, 4), "only regulation plays contribute possession time");
+            ratio.Should().BeInRange(0m, 1m);
+        }
+
+        /// <summary>
+        /// AUDIT M3: FG% is null with zero qualifying attempts — never a
+        /// fake 0% — and the plain make rate otherwise (2 of 3 inside 45).
+        /// </summary>
+        [Fact]
+        public async Task M3_FgPct_NullWithNoAttempts_MadeRateOtherwise()
+        {
+            var (competitionId, homeId, awayId) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.FieldGoalGood, down: 4, dist: 5, yds: 30, yte: 13),
+                Play(home: true, drive: 1, seq: "02", type: PlayType.FieldGoalGood, down: 4, dist: 7, yds: 42, yte: 25),
+                Play(home: true, drive: 1, seq: "03", type: PlayType.FieldGoalMissed, down: 4, dist: 4, yds: 40, yte: 23),
+                Play(home: false, drive: 2, seq: "04", type: PlayType.Rush, down: 1, dist: 10, yds: 5, yte: 70));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rows = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId)
+                .Select(m => new { m.FranchiseSeasonId, m.FgPctShrunk })
+                .ToListAsync();
+
+            rows.Single(r => r.FranchiseSeasonId == homeId).FgPctShrunk
+                .Should().Be(0.6667m, "2 of 3 qualifying attempts");
+            rows.Single(r => r.FranchiseSeasonId == awayId).FgPctShrunk
+                .Should().BeNull("no qualifying attempts is unknown, not 0%");
+        }
+
+        /// <summary>
+        /// AUDIT H3 + M4 + vintage stamping: the un-computable metrics
+        /// persist as null, and every row carries the formula version and
+        /// a shared 64-hex InputsHash over the ordered play identities.
+        /// </summary>
+        [Fact]
+        public async Task H3M4_DeadMetricsNull_And_VintageStamped()
+        {
+            var (competitionId, _, _) = await SeedPlaysAsync(
+                Play(home: true, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 5, yte: 60),
+                Play(home: false, drive: 2, seq: "02", type: PlayType.Rush, down: 1, dist: 10, yds: 4, yte: 70));
+
+            var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
+            await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
+
+            var rows = await FootballDataContext.CompetitionMetrics
+                .AsNoTracking()
+                .Where(m => m.CompetitionId == competitionId)
+                .Select(m => new { m.NetPunt, m.PenaltyYardsPerPlay, m.FormulaVersion, m.InputsHash })
+                .ToListAsync();
+
+            rows.Should().HaveCount(2);
+            rows.Should().AllSatisfy(r =>
+            {
+                r.NetPunt.Should().BeNull("no punting stats are sourced (M4)");
+                r.PenaltyYardsPerPlay.Should().BeNull("no penalized-team attribution exists (H3)");
+                r.FormulaVersion.Should().Be(MetricFormula.Version);
+                r.InputsHash.Should().NotBeNull().And.HaveLength(64);
+            });
+            rows.Select(r => r.InputsHash).Distinct().Should().HaveCount(1, "both rows hash the same play list");
         }
 
         #endregion

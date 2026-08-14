@@ -89,7 +89,8 @@ return yards to the offense. The correct contract:
   40-yard offensive gain.
 
 **Implemented** (fix/metrics-h1-h2): `IsTurnoverType` added
-(PassInterceptionReturn, InterceptionReturnTouchdown, FumbleLost,
+(PassInterceptionReturn, InterceptionReturnTouchdown, Interception —
+ESPN type 63, added by the M1 sweep — FumbleLost,
 FumbleReturnTouchdown); those types join `IsOffensiveScrimmageType`;
 a `Yardage(play)` accessor returns 0 for turnover types and feeds
 every numerator (Ypp, success/explosive checks,
@@ -162,6 +163,12 @@ document carries only the possessing/acting `Team` ref (→
   defensive penalty on own drive, declined penalty (no yardage), and
   NO-PLAY interaction.
 
+**Implemented** (fix/metrics-h3-mround): `CalculatePenaltyYardsPerPlay`
+removed; the column is nullable and persists null at both layers;
+removed from FEATURE_COLS, and the null is omitted from the LLM
+payload by the `WhenWritingNull` serializer option; the web UI columns
+(war-room grid, team comparison, contest overview) were removed.
+
 ## MEDIUM
 
 Each medium finding now carries ONE deterministic target:
@@ -174,6 +181,21 @@ Each medium finding now carries ONE deterministic target:
   opponent-fumble-recovery types); below → remove from FEATURE_COLS
   until fixed. Fixture: a game with one INT each way + one lost fumble,
   hand-counted.
+
+  **VERDICT (2026-08-14, 200 sampled 2025 games / 400 team-games,
+  box truth = passing.interceptions + general.fumblesLost): FAILED the
+  gate — excluded from FEATURE_COLS.** Original type set: 60.5% exact.
+  The sweep surfaced ESPN type 63 (plain interception, unmapped in the
+  enum — 636 plays in 2025 NCAA alone were invisible to every filter);
+  adding it lifts INT-side agreement to 94.8%, and `Interception = 63`
+  is now in PlayType and the turnover set (also improving H1
+  denominators and RZ trip closure). Fumbles-lost remain structurally
+  unverifiable: they hide under rush/sack/punt types where only free
+  text distinguishes lost from recovered (same rejection as H3) —
+  best-achievable exact match 72.5%. The metric still computes as a
+  best-effort DISPLAY value (UI surfaces keep it); it re-enters
+  FEATURE_COLS only via box-score-based margin. The hand-counted
+  fixture is in the test suite, exercising type 63.
 - **M2. TimePossRatio — target: OT contributes zero possession
   seconds.** `secondsRemaining = Math.Max(0, 4 − period) * 900 + clock`
   clamps OT periods to clock-only; since CFB/NFL OT possession time is
@@ -182,17 +204,33 @@ Each medium finding now carries ONE deterministic target:
   Last-play duration remains excluded (accepted approximation).
   Fixture: an OT game whose ratio equals its regulation-only ratio and
   is in [0,1].
+
+  **Implemented** (fix/metrics-h3-mround), by EXCLUSION rather than
+  clamp-only: `GetTeamSeconds` filters out plays with period > 4 (the
+  clamp alone still counted OT clock deltas, and the OT clock overlaps
+  Q4's 0–900 range). The ratio is a regulation possession ratio by
+  construction. Fixture: a drive spanning Q4→OT with a RUNNING OT
+  clock — pre-fix credited 930 possessed seconds; clamp-only would
+  zero the whole drive; exclusion yields the regulation 30s.
 - **M3. FgPctShrunk — target: null when no qualifying attempts.**
   The result is null (SafeAvg-carried, omitted from payloads) when a
   team has zero ≤45yd attempts — never 0%. The shrinkage prior implied
   by the name is DEFERRED to a future formula vintage; until then the
   name stays (renaming is churn) with this doc as the honest record.
   Fixtures: 0 attempts → null; 2/3 made → 0.6667.
+
+  **Implemented** (fix/metrics-h3-mround) with both fixtures, at both
+  layers (per-game null; season SafeAvg skips null games — asserted),
+  and the as-of SQL carries the matching COALESCE for parity.
 - **M4. NetPunt — target: removed from FEATURE_COLS and payloads.**
   A hardcoded 0 is a dead constant to models and a lie in payloads.
   The column may persist as null until punting stats are implemented
   (likely from box-score data per franchise-season-week-metrics.md §5).
   Fixture: payload serialization omits it.
+
+  **Implemented** (fix/metrics-h3-mround): persists null at both
+  layers, removed from FEATURE_COLS and the as-of SQL, omitted from
+  the LLM payload via `WhenWritingNull`, UI columns removed.
 
 ### H4. Lexicographic ordering of an ESPN string SequenceNumber
 (found implementing #624)
@@ -238,10 +276,19 @@ disagreement-frequency query has not been run.
   #617 removed from the records processor; candidate for the same
   upsert treatment.
 - `DateTime.UtcNow` used directly (house rule: `IDateTimeProvider`).
+  **FIXED (fix/metrics-h3-mround): both handlers inject
+  `IDateTimeProvider`; the per-game handler's delete+insert also now
+  commits in ONE SaveChanges (was two — a crash between lost rows).**
 - `InputsHash = null` at both persist sites and **no
   AggregationVersion** — with formulas about to change, every recompute
   MUST stamp a version or cross-vintage drift recurs invisibly
   (see franchise-season-week-metrics.md provenance section).
+  **IMPLEMENTED (fix/metrics-h3-mround): `MetricFormula.Version`
+  ("2026.08") stamped on both tables via the new `FormulaVersion`
+  column; per-game `InputsHash` = SHA-256 over ordered play EspnIds +
+  final scoreboard, shared by both rows (fixture asserts 64-hex,
+  identical across rows). Migration
+  `14AugV1_MetricNullabilityAndFormulaVersion` (both contexts).**
 
 ## Blast radius
 
@@ -273,11 +320,15 @@ PPD ≈ 6.16 as fact), (c) any DeetsMeter/metric surface.
   `AggregationVersion`/`MetricFormulaVersion` naming in
   franchise-season-week-metrics.md is superseded by this single field.
 - **InputsHash**: populated at computation time as SHA-256 over the
-  ordered source-play identity list (EspnId + final scoreboard pair);
-  consumer contract: recompute may SKIP a competition whose stored
-  (InputsHash, FormulaVersion) both match — the cheap-idempotency path.
-  Until populated, recompute treats every row as stale (correct,
-  slower).
+  ordered plays — identity (EspnId) AND the content fields the
+  formulas read (type, yardage, down/distance/YTE, period, clock,
+  scoreboard, offense, drive id) — plus drive inputs (id, offense,
+  start YTE) and the final scoreboard. Identity alone would treat an
+  ESPN stat correction or drive backfill as "unchanged" and leave
+  stale metrics. Consumer contract: recompute may SKIP a competition
+  whose stored (InputsHash, FormulaVersion) both match — the
+  cheap-idempotency path. Until populated, recompute treats every row
+  as stale (correct, slower).
 
 ## Recommended sequence (with gates)
 

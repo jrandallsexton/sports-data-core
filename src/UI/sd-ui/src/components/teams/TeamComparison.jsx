@@ -447,27 +447,15 @@ export default function TeamComparison({
       },
       {
         category: "Special Teams",
+        // netPunt / penaltyYardsPerPlay removed: no longer computed
+        // (metrics formula audit M4/H3)
         metrics: [
-          { 
-            label: "Net Punting", 
-            keyA: "netPunt", 
-            keyB: "netPunt",
-            format: (val) => val?.toFixed(2) || "0.00",
-            higherIsBetter: true
-          },
-          { 
-            label: "Field Goal %", 
-            keyA: "fgPctShrunk", 
+          {
+            label: "Field Goal %",
+            keyA: "fgPctShrunk",
             keyB: "fgPctShrunk",
-            format: (val) => val ? (val * 100).toFixed(1) + "%" : "0.0%",
+            format: (val) => val != null ? (val * 100).toFixed(1) + "%" : "-",
             higherIsBetter: true
-          },
-          { 
-            label: "Penalty Yards Per Play", 
-            keyA: "penaltyYardsPerPlay", 
-            keyB: "penaltyYardsPerPlay",
-            format: (val) => val?.toFixed(2) || "0.00",
-            higherIsBetter: false
           }
         ]
       }
@@ -613,10 +601,9 @@ export default function TeamComparison({
       { key: "timePossRatio", higherIsBetter: true },
       { key: "fieldPosDiff", higherIsBetter: true },
       { key: "turnoverMarginPerDrive", higherIsBetter: true },
-      // Special teams metrics
-      { key: "netPunt", higherIsBetter: true },
-      { key: "fgPctShrunk", higherIsBetter: true },
-      { key: "penaltyYardsPerPlay", higherIsBetter: false }
+      // Special teams metrics (netPunt / penaltyYardsPerPlay removed:
+      // no longer computed — metrics formula audit M4/H3)
+      { key: "fgPctShrunk", higherIsBetter: true }
     ];
 
     metricsToCompare.forEach((metric) => {

@@ -44,15 +44,21 @@ public class EnqueueFranchiseSeasonMetricsGenerationCommandHandler : IEnqueueFra
             command.SeasonYear,
             command.Sport);
 
-        var fbsGroupIds = await _groupSeasonsService.GetFbsGroupSeasonIds(command.SeasonYear);
+        // FBS scoping is an NCAA concept — the NFL hierarchy has no FBS
+        // root, so asking for one 500'd and NFL season metrics never
+        // generated at all. NFL (and any future non-NCAA football) takes
+        // every franchise season for the year.
+        HashSet<Guid>? fbsGroupIds = command.Sport == Sport.FootballNcaa
+            ? await _groupSeasonsService.GetFbsGroupSeasonIds(command.SeasonYear)
+            : null;
 
         var franchiseSeasons = await _dataContext.FranchiseSeasons
             .Include(fs => fs.Franchise)
             .Where(fs =>
-                fs.GroupSeasonId != null &&
                 fs.SeasonYear == command.SeasonYear &&
                 fs.Franchise.Sport == command.Sport &&
-                fbsGroupIds.Contains(fs.GroupSeasonId!.Value))
+                (fbsGroupIds == null ||
+                 (fs.GroupSeasonId != null && fbsGroupIds.Contains(fs.GroupSeasonId!.Value))))
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 

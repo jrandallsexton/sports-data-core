@@ -25,9 +25,13 @@ namespace SportsData.Producer.Application.GroupSeasons
                 .AsNoTracking()
                 .ToListAsync();
 
-            // Get all FBS roots (may be duplicates due to ESPN data)
+            // Get all FBS roots (may be duplicates due to ESPN data).
+            // Slug conventions differ by hierarchy vintage: 2025+ uses
+            // "fbs-i-a"; the backfilled pre-2025 hierarchies use "fbs"
+            // (whose descendants include "fbs-indep", verified in prod).
+            // The multi-root descendant union below dedupes any overlap.
             var fbsRoots = groupSeasons
-                .Where(gs => gs.Slug == "fbs-i-a")
+                .Where(gs => gs.Slug is "fbs-i-a" or "fbs")
                 .ToList();
 
             if (!fbsRoots.Any())

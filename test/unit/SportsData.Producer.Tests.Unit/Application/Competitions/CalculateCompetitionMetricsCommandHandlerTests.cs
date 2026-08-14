@@ -672,17 +672,21 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
 
         /// <summary>
         /// AUDIT M1 (hand-counted): home throws one INT and loses one
-        /// fumble; away throws one INT. Home has 2 offensive drives, away
-        /// has 1. Margin = (gained - lost) / own drives.
+        /// fumble; away throws one INT (ESPN type 63, the plain
+        /// interception the sweep surfaced). Home has 2 offensive drives,
+        /// away has 1. Margin = (gained - lost) / own drives. The away
+        /// side also proves type 63 joins the H1 snap denominators at
+        /// zero effective yards.
         /// </summary>
         [Fact]
         public async Task M1_TurnoverMargin_HandCountedGame()
         {
             var (competitionId, homeId, awayId) = await SeedPlaysAsync(
                 Play(home: true, drive: 1, seq: "01", type: PlayType.PassInterceptionReturn, down: 1, dist: 10, yds: 12, yte: 70),
+                Play(home: false, drive: 2, seq: "02", type: PlayType.Rush, down: 1, dist: 10, yds: 8, yte: 65),
                 // ESPN type 63 (plain interception, no return) — must count
-                Play(home: false, drive: 2, seq: "02", type: PlayType.Interception, down: 1, dist: 10, yds: 5, yte: 60),
-                Play(home: true, drive: 3, seq: "03", type: PlayType.FumbleLost, down: 2, dist: 6, yds: 0, yte: 55));
+                Play(home: false, drive: 2, seq: "03", type: PlayType.Interception, down: 2, dist: 2, yds: 40, yte: 57),
+                Play(home: true, drive: 3, seq: "04", type: PlayType.FumbleLost, down: 2, dist: 6, yds: 0, yte: 55));
 
             var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
             await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
@@ -690,29 +694,39 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
             var rows = await FootballDataContext.CompetitionMetrics
                 .AsNoTracking()
                 .Where(m => m.CompetitionId == competitionId)
-                .Select(m => new { m.FranchiseSeasonId, m.TurnoverMarginPerDrive })
+                .Select(m => new { m.FranchiseSeasonId, m.TurnoverMarginPerDrive, m.Ypp, m.SuccessRate, m.ExplosiveRate })
                 .ToListAsync();
 
             rows.Single(r => r.FranchiseSeasonId == homeId).TurnoverMarginPerDrive
                 .Should().Be(-0.5m, "home: gained 1, lost 2, over 2 offensive drives");
-            rows.Single(r => r.FranchiseSeasonId == awayId).TurnoverMarginPerDrive
-                .Should().Be(1m, "away: gained 2, lost 1, over 1 offensive drive");
+
+            var away = rows.Single(r => r.FranchiseSeasonId == awayId);
+            away.TurnoverMarginPerDrive.Should().Be(1m, "away: gained 2, lost 1, over 1 offensive drive");
+            // type-63 denominator contract (H1): the INT is a snap at zero
+            // effective yards — its 40-yard RETURN never counts.
+            away.Ypp.Should().Be(4m, "2 snaps, 8 offensive yards — pre-fix the INT was invisible (8/1)");
+            away.SuccessRate.Should().Be(0.5m, "the 8-yard rush succeeds; the INT is a failed snap");
+            away.ExplosiveRate.Should().Be(0m, "a 40-yard return is not a 40-yard offensive gain");
         }
 
         /// <summary>
-        /// AUDIT M2: a drive spanning Q4 into OT. Pre-fix the OT play's
-        /// "seconds remaining" was (4-5)*900 = -900, inflating the drive
-        /// to 930 possessed seconds; clamped, OT contributes clock-only
-        /// (0 here) and the ratio is the regulation possession ratio.
+        /// AUDIT M2: OT plays are EXCLUDED from possession time — the OT
+        /// clock overlaps Q4's 0-900 range, so a drive spanning Q4 into a
+        /// running-clock OT was credited 930 possessed seconds pre-fix
+        /// (the OT play's unclamped seconds-remaining was negative), and
+        /// a clamp WITHOUT exclusion would zero the whole drive instead.
+        /// The ratio is a regulation possession ratio by construction.
         /// </summary>
         [Fact]
-        public async Task M2_OvertimeClamped_RegulationPossessionRatio()
+        public async Task M2_OvertimeExcluded_RegulationPossessionRatio()
         {
             var (competitionId, homeId, _) = await SeedPlaysAsync(
                 Play(home: false, drive: 1, seq: "01", type: PlayType.Rush, down: 1, dist: 10, yds: 4, yte: 70, period: 1, clock: 900),
                 Play(home: false, drive: 1, seq: "02", type: PlayType.Rush, down: 2, dist: 6, yds: 3, yte: 66, period: 1, clock: 800),
-                Play(home: true, drive: 2, seq: "03", type: PlayType.Rush, down: 1, dist: 10, yds: 5, yte: 60, period: 4, clock: 30),
-                Play(home: true, drive: 2, seq: "04", type: PlayType.Rush, down: 2, dist: 5, yds: 2, yte: 55, period: 5, clock: 0));
+                Play(home: true, drive: 2, seq: "03", type: PlayType.Rush, down: 1, dist: 10, yds: 5, yte: 60, period: 4, clock: 130),
+                Play(home: true, drive: 2, seq: "04", type: PlayType.Rush, down: 2, dist: 5, yds: 2, yte: 55, period: 4, clock: 100),
+                // NFL-style RUNNING OT clock: exclusion must ignore it
+                Play(home: true, drive: 2, seq: "05", type: PlayType.Rush, down: 3, dist: 3, yds: 1, yte: 54, period: 5, clock: 600));
 
             var sut = Mocker.CreateInstance<CalculateCompetitionMetricsCommandHandler>();
             await sut.ExecuteAsync(new CalculateCompetitionMetricsCommand(competitionId), CancellationToken.None);
@@ -723,8 +737,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
                 .Select(m => m.TimePossRatio)
                 .SingleAsync();
 
-            // away 100s (900->800), home 30s (Q4 clock 30 -> OT contributes 0)
-            ratio.Should().Be(Math.Round(30m / 130m, 4), "OT possession is clamped out; pre-fix this was 930/1030");
+            // away 100s (900->800); home 30s (Q4 130->100; the OT play is
+            // excluded — clamp-only would have made the drive 0s)
+            ratio.Should().Be(Math.Round(30m / 130m, 4), "only regulation plays contribute possession time");
             ratio.Should().BeInRange(0m, 1m);
         }
 

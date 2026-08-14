@@ -40,11 +40,12 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         CancellationToken cancellationToken = default)
     {
         // Mark existing metrics for deletion; the delete and the insert
-        // below commit in ONE SaveChanges (EF orders deletes first), so a
-        // crash mid-recompute cannot leave the competition with no rows
-        // (audit doc: recompute contract, atomicity).
-        var existingMetrics = _dataContext.CompetitionMetrics
-            .Where(m => m.CompetitionId == command.CompetitionId);
+        // below commit in ONE SaveChanges (EF orders same-table deletes
+        // before inserts), so a crash mid-recompute cannot leave the
+        // competition with no rows (audit doc: recompute contract).
+        var existingMetrics = await _dataContext.CompetitionMetrics
+            .Where(m => m.CompetitionId == command.CompetitionId)
+            .ToListAsync(cancellationToken);
 
         _dataContext.CompetitionMetrics.RemoveRange(existingMetrics);
 
@@ -74,12 +75,13 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         var homeFranchiseSeasonId = competition.Contest.HomeTeamFranchiseSeasonId;
 
         var orderedPlays = OrderPlays(competition.Plays);
+        var drives = competition.Drives.ToList();
 
         var (awayMetric, homeMetric) = CalculateMetrics(
             competition.Contest.SeasonYear,
             command.CompetitionId,
             orderedPlays,
-            competition.Drives.ToList(),
+            drives,
             awayFranchiseSeasonId,
             homeFranchiseSeasonId);
 
@@ -87,7 +89,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         // share one hash: recompute may skip a competition whose stored
         // (InputsHash, FormulaVersion) both match.
         var computedUtc = _dateTimeProvider.UtcNow();
-        var inputsHash = ComputeInputsHash(orderedPlays);
+        var inputsHash = ComputeInputsHash(orderedPlays, drives);
         foreach (var metric in new[] { awayMetric, homeMetric })
         {
             metric.ComputedUtc = computedUtc;
@@ -186,8 +188,15 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     {
         double GetTeamSeconds(Guid fsId)
         {
+            // AUDIT M2: OT plays (period 5+) are EXCLUDED — OT possession
+            // is not comparably clocked, and the OT clock overlaps the
+            // Q4 0-900 range, so including it corrupts drive durations
+            // (a Q4->OT drive was credited 930s pre-fix). This is a
+            // REGULATION possession ratio by construction.
             return plays
-                .Where(p => p.DriveId != null && p.StartFranchiseSeasonId == fsId)
+                .Where(p => p.DriveId != null
+                            && p.StartFranchiseSeasonId == fsId
+                            && p.PeriodNumber <= 4)
                 .GroupBy(p => p.DriveId)
                 .Sum(drive =>
                 {
@@ -210,10 +219,9 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             double clock = play.ClockValue;
             int period = play.PeriodNumber;
 
-            // AUDIT M2: Math.Max clamps OT periods (5+) to clock-only —
-            // the unclamped form went NEGATIVE in OT and corrupted drive
-            // durations. OT possession time is not meaningfully clocked
-            // in the data, so this is a REGULATION possession ratio.
+            // Callers only pass periods 1-4 (see the M2 filter above);
+            // Math.Max is defensive against that invariant breaking —
+            // the unclamped form went NEGATIVE for period 5+.
             int secondsRemaining = Math.Max(0, 4 - period) * 900 + (int)Math.Round(clock);
             return secondsRemaining;
         }
@@ -324,12 +332,17 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     // signed-by-beneficiary yards and the fixture list in the audit doc.
 
     /// <summary>
-    /// SHA-256 over the ordered source-play identity list plus the final
-    /// scoreboard pair (audit doc: recompute contract). Recompute may
-    /// skip a competition whose stored (InputsHash, FormulaVersion) both
-    /// match the current values.
+    /// SHA-256 over the ordered plays — identity AND the content fields
+    /// the formulas read — plus drive inputs and the final scoreboard
+    /// (audit doc: recompute contract). Identity alone would treat an
+    /// ESPN stat correction (same play list, revised yardage/down/type)
+    /// or a drive backfill as "unchanged" and leave stale metrics.
+    /// Recompute may skip a competition whose stored
+    /// (InputsHash, FormulaVersion) both match the current values.
     /// </summary>
-    private static string? ComputeInputsHash(List<FootballCompetitionPlay> orderedPlays)
+    private static string? ComputeInputsHash(
+        List<FootballCompetitionPlay> orderedPlays,
+        IReadOnlyCollection<CompetitionDrive> drives)
     {
         if (orderedPlays.Count == 0)
             return null;
@@ -338,7 +351,24 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         var sb = new StringBuilder();
         foreach (var play in orderedPlays)
         {
-            sb.Append(play.EspnId).Append('|');
+            sb.Append(play.EspnId).Append(',')
+              .Append((int)play.Type).Append(',')
+              .Append(play.StatYardage).Append(',')
+              .Append(play.StartDown).Append(',')
+              .Append(play.StartDistance).Append(',')
+              .Append(play.StartYardsToEndzone).Append(',')
+              .Append(play.PeriodNumber).Append(',')
+              .Append(play.ClockValue).Append(',')
+              .Append(play.HomeScore).Append(',')
+              .Append(play.AwayScore).Append(',')
+              .Append(play.StartFranchiseSeasonId).Append(',')
+              .Append(play.DriveId).Append('|');
+        }
+        foreach (var drive in drives.OrderBy(d => d.Ordinal).ThenBy(d => d.Id))
+        {
+            sb.Append(drive.Id).Append(',')
+              .Append(drive.StartFranchiseSeasonId).Append(',')
+              .Append(drive.StartYardsToEndzone).Append('|');
         }
         sb.Append(last.HomeScore).Append(':').Append(last.AwayScore);
 

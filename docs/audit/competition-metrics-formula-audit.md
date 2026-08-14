@@ -89,7 +89,8 @@ return yards to the offense. The correct contract:
   40-yard offensive gain.
 
 **Implemented** (fix/metrics-h1-h2): `IsTurnoverType` added
-(PassInterceptionReturn, InterceptionReturnTouchdown, FumbleLost,
+(PassInterceptionReturn, InterceptionReturnTouchdown, Interception —
+ESPN type 63, added by the M1 sweep — FumbleLost,
 FumbleReturnTouchdown); those types join `IsOffensiveScrimmageType`;
 a `Yardage(play)` accessor returns 0 for turnover types and feeds
 every numerator (Ypp, success/explosive checks,
@@ -204,9 +205,13 @@ Each medium finding now carries ONE deterministic target:
   Fixture: an OT game whose ratio equals its regulation-only ratio and
   is in [0,1].
 
-  **Implemented** (fix/metrics-h3-mround) with the fixture: a drive
-  spanning Q4→OT that pre-fix was credited 930 possessed seconds (the
-  OT play's unclamped value was −900).
+  **Implemented** (fix/metrics-h3-mround), by EXCLUSION rather than
+  clamp-only: `GetTeamSeconds` filters out plays with period > 4 (the
+  clamp alone still counted OT clock deltas, and the OT clock overlaps
+  Q4's 0–900 range). The ratio is a regulation possession ratio by
+  construction. Fixture: a drive spanning Q4→OT with a RUNNING OT
+  clock — pre-fix credited 930 possessed seconds; clamp-only would
+  zero the whole drive; exclusion yields the regulation 30s.
 - **M3. FgPctShrunk — target: null when no qualifying attempts.**
   The result is null (SafeAvg-carried, omitted from payloads) when a
   team has zero ≤45yd attempts — never 0%. The shrinkage prior implied
@@ -315,11 +320,15 @@ PPD ≈ 6.16 as fact), (c) any DeetsMeter/metric surface.
   `AggregationVersion`/`MetricFormulaVersion` naming in
   franchise-season-week-metrics.md is superseded by this single field.
 - **InputsHash**: populated at computation time as SHA-256 over the
-  ordered source-play identity list (EspnId + final scoreboard pair);
-  consumer contract: recompute may SKIP a competition whose stored
-  (InputsHash, FormulaVersion) both match — the cheap-idempotency path.
-  Until populated, recompute treats every row as stale (correct,
-  slower).
+  ordered plays — identity (EspnId) AND the content fields the
+  formulas read (type, yardage, down/distance/YTE, period, clock,
+  scoreboard, offense, drive id) — plus drive inputs (id, offense,
+  start YTE) and the final scoreboard. Identity alone would treat an
+  ESPN stat correction or drive backfill as "unchanged" and leave
+  stale metrics. Consumer contract: recompute may SKIP a competition
+  whose stored (InputsHash, FormulaVersion) both match — the
+  cheap-idempotency path. Until populated, recompute treats every row
+  as stale (correct, slower).
 
 ## Recommended sequence (with gates)
 

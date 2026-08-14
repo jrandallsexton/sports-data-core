@@ -95,11 +95,48 @@ namespace SportsData.Producer.Migrations.Baseball
                 type: "character varying(16)",
                 maxLength: 16,
                 nullable: true);
+
+            // AUDIT M4/H3: these columns were never computable — the stored
+            // zeros are fabricated. Retire them now rather than leaving a
+            // mix of 0 and NULL for downstream readers until the recompute
+            // campaign lands. FgPctShrunk is deliberately excluded: a
+            // stored 0 there can be a legitimate 0-for-N result and needs
+            // a recompute, not a blanket update.
+            migrationBuilder.Sql(
+                """
+                UPDATE "CompetitionMetric"
+                SET "NetPunt" = NULL, "PenaltyYardsPerPlay" = NULL;
+                """);
+
+            migrationBuilder.Sql(
+                """
+                UPDATE "FranchiseSeasonMetric"
+                SET "NetPunt" = NULL, "PenaltyYardsPerPlay" = NULL;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // Rollback guard: rows written after Up carry NULLs in all
+            // three columns; SET NOT NULL would fail. 0 restores the
+            // pre-migration convention.
+            migrationBuilder.Sql(
+                """
+                UPDATE "CompetitionMetric"
+                SET "NetPunt" = COALESCE("NetPunt", 0),
+                    "PenaltyYardsPerPlay" = COALESCE("PenaltyYardsPerPlay", 0),
+                    "FgPctShrunk" = COALESCE("FgPctShrunk", 0);
+                """);
+
+            migrationBuilder.Sql(
+                """
+                UPDATE "FranchiseSeasonMetric"
+                SET "NetPunt" = COALESCE("NetPunt", 0),
+                    "PenaltyYardsPerPlay" = COALESCE("PenaltyYardsPerPlay", 0),
+                    "FgPctShrunk" = COALESCE("FgPctShrunk", 0);
+                """);
+
             migrationBuilder.DropColumn(
                 name: "FormulaVersion",
                 table: "FranchiseSeasonMetric");

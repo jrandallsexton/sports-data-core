@@ -91,7 +91,7 @@ window_games AS (
            "RzTdRate", "RzScoreRate", "TimePossRatio",
            "OppYpp", "OppSuccessRate", "OppExplosiveRate", "OppPointsPerDrive",
            "OppThirdFourthRate", "OppRzTdRate", "OppScoreTdRate",
-           "NetPunt", "FgPctShrunk", "FieldPosDiff", "TurnoverMarginPerDrive", "PenaltyYardsPerPlay"
+           "FgPctShrunk", "FieldPosDiff", "TurnoverMarginPerDrive"
     FROM current_team_games
 
     UNION ALL
@@ -101,7 +101,7 @@ window_games AS (
            ptg."RzTdRate", ptg."RzScoreRate", ptg."TimePossRatio",
            ptg."OppYpp", ptg."OppSuccessRate", ptg."OppExplosiveRate", ptg."OppPointsPerDrive",
            ptg."OppThirdFourthRate", ptg."OppRzTdRate", ptg."OppScoreTdRate",
-           ptg."NetPunt", ptg."FgPctShrunk", ptg."FieldPosDiff", ptg."TurnoverMarginPerDrive", ptg."PenaltyYardsPerPlay"
+           ptg."FgPctShrunk", ptg."FieldPosDiff", ptg."TurnoverMarginPerDrive"
     FROM prior_team_games_ranked ptg
     CROSS JOIN params p
     LEFT JOIN current_counts cc ON cc.franchise_season_id = ptg.franchise_season_id
@@ -127,11 +127,9 @@ asof AS (
         AVG("OppThirdFourthRate")      AS "OppThirdFourthRate",
         COALESCE(AVG("OppRzTdRate"), 0)    AS "OppRzTdRate",    -- SafeAvg quirk
         COALESCE(AVG("OppScoreTdRate"), 0) AS "OppScoreTdRate", -- SafeAvg quirk
-        AVG("NetPunt")                 AS "NetPunt",
-        AVG("FgPctShrunk")             AS "FgPctShrunk",
+        COALESCE(AVG("FgPctShrunk"), 0) AS "FgPctShrunk",  -- SafeAvg quirk (M3: per-game null with no attempts)
         AVG("FieldPosDiff")            AS "FieldPosDiff",
         AVG("TurnoverMarginPerDrive")  AS "TurnoverMarginPerDrive",
-        AVG("PenaltyYardsPerPlay")     AS "PenaltyYardsPerPlay",
         AVG(own_score)                 AS "PtsScoredAvg",
         MIN(own_score)                 AS "PtsScoredMin",
         MAX(own_score)                 AS "PtsScoredMax",
@@ -162,8 +160,8 @@ SELECT
     h."OppYpp" AS "HomeOppYpp", h."OppSuccessRate" AS "HomeOppSuccessRate", h."OppExplosiveRate" AS "HomeOppExplosiveRate",
     h."OppPointsPerDrive" AS "HomeOppPointsPerDrive", h."OppThirdFourthRate" AS "HomeOppThirdFourthRate",
     h."OppRzTdRate" AS "HomeOppRzTdRate", h."OppScoreTdRate" AS "HomeOppScoreTdRate",
-    h."NetPunt" AS "HomeNetPunt", h."FgPctShrunk" AS "HomeFgPctShrunk", h."FieldPosDiff" AS "HomeFieldPosDiff",
-    h."TurnoverMarginPerDrive" AS "HomeTurnoverMarginPerDrive", h."PenaltyYardsPerPlay" AS "HomePenaltyYardsPerPlay",
+    h."FgPctShrunk" AS "HomeFgPctShrunk", h."FieldPosDiff" AS "HomeFieldPosDiff",
+    h."TurnoverMarginPerDrive" AS "HomeTurnoverMarginPerDrive",
     h."PtsScoredAvg" AS "HomePtsScoredAvg", h."PtsScoredMin" AS "HomePtsScoredMin", h."PtsScoredMax" AS "HomePtsScoredMax",
     h."PtsAllowedAvg" AS "HomePtsAllowedAvg", h."PtsAllowedMin" AS "HomePtsAllowedMin", h."PtsAllowedMax" AS "HomePtsAllowedMax",
     h."MarginWinAvg" AS "HomeMarginWinAvg", h."MarginWinMin" AS "HomeMarginWinMin", h."MarginWinMax" AS "HomeMarginWinMax",
@@ -176,8 +174,8 @@ SELECT
     a."OppYpp" AS "AwayOppYpp", a."OppSuccessRate" AS "AwayOppSuccessRate", a."OppExplosiveRate" AS "AwayOppExplosiveRate",
     a."OppPointsPerDrive" AS "AwayOppPointsPerDrive", a."OppThirdFourthRate" AS "AwayOppThirdFourthRate",
     a."OppRzTdRate" AS "AwayOppRzTdRate", a."OppScoreTdRate" AS "AwayOppScoreTdRate",
-    a."NetPunt" AS "AwayNetPunt", a."FgPctShrunk" AS "AwayFgPctShrunk", a."FieldPosDiff" AS "AwayFieldPosDiff",
-    a."TurnoverMarginPerDrive" AS "AwayTurnoverMarginPerDrive", a."PenaltyYardsPerPlay" AS "AwayPenaltyYardsPerPlay",
+    a."FgPctShrunk" AS "AwayFgPctShrunk", a."FieldPosDiff" AS "AwayFieldPosDiff",
+    a."TurnoverMarginPerDrive" AS "AwayTurnoverMarginPerDrive",
     a."PtsScoredAvg" AS "AwayPtsScoredAvg", a."PtsScoredMin" AS "AwayPtsScoredMin", a."PtsScoredMax" AS "AwayPtsScoredMax",
     a."PtsAllowedAvg" AS "AwayPtsAllowedAvg", a."PtsAllowedMin" AS "AwayPtsAllowedMin", a."PtsAllowedMax" AS "AwayPtsAllowedMax",
     a."MarginWinAvg" AS "AwayMarginWinAvg", a."MarginWinMin" AS "AwayMarginWinMin", a."MarginWinMax" AS "AwayMarginWinMax",

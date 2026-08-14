@@ -162,6 +162,12 @@ document carries only the possessing/acting `Team` ref (→
   defensive penalty on own drive, declined penalty (no yardage), and
   NO-PLAY interaction.
 
+**Implemented** (fix/metrics-h3-mround): `CalculatePenaltyYardsPerPlay`
+removed; the column is nullable and persists null at both layers;
+removed from FEATURE_COLS, and the null is omitted from the LLM
+payload by the `WhenWritingNull` serializer option; the web UI columns
+(war-room grid, team comparison, contest overview) were removed.
+
 ## MEDIUM
 
 Each medium finding now carries ONE deterministic target:
@@ -174,6 +180,21 @@ Each medium finding now carries ONE deterministic target:
   opponent-fumble-recovery types); below → remove from FEATURE_COLS
   until fixed. Fixture: a game with one INT each way + one lost fumble,
   hand-counted.
+
+  **VERDICT (2026-08-14, 200 sampled 2025 games / 400 team-games,
+  box truth = passing.interceptions + general.fumblesLost): FAILED the
+  gate — excluded from FEATURE_COLS.** Original type set: 60.5% exact.
+  The sweep surfaced ESPN type 63 (plain interception, unmapped in the
+  enum — 636 plays in 2025 NCAA alone were invisible to every filter);
+  adding it lifts INT-side agreement to 94.8%, and `Interception = 63`
+  is now in PlayType and the turnover set (also improving H1
+  denominators and RZ trip closure). Fumbles-lost remain structurally
+  unverifiable: they hide under rush/sack/punt types where only free
+  text distinguishes lost from recovered (same rejection as H3) —
+  best-achievable exact match 72.5%. The metric still computes as a
+  best-effort DISPLAY value (UI surfaces keep it); it re-enters
+  FEATURE_COLS only via box-score-based margin. The hand-counted
+  fixture is in the test suite, exercising type 63.
 - **M2. TimePossRatio — target: OT contributes zero possession
   seconds.** `secondsRemaining = Math.Max(0, 4 − period) * 900 + clock`
   clamps OT periods to clock-only; since CFB/NFL OT possession time is
@@ -182,17 +203,29 @@ Each medium finding now carries ONE deterministic target:
   Last-play duration remains excluded (accepted approximation).
   Fixture: an OT game whose ratio equals its regulation-only ratio and
   is in [0,1].
+
+  **Implemented** (fix/metrics-h3-mround) with the fixture: a drive
+  spanning Q4→OT that pre-fix was credited 930 possessed seconds (the
+  OT play's unclamped value was −900).
 - **M3. FgPctShrunk — target: null when no qualifying attempts.**
   The result is null (SafeAvg-carried, omitted from payloads) when a
   team has zero ≤45yd attempts — never 0%. The shrinkage prior implied
   by the name is DEFERRED to a future formula vintage; until then the
   name stays (renaming is churn) with this doc as the honest record.
   Fixtures: 0 attempts → null; 2/3 made → 0.6667.
+
+  **Implemented** (fix/metrics-h3-mround) with both fixtures, at both
+  layers (per-game null; season SafeAvg skips null games — asserted),
+  and the as-of SQL carries the matching COALESCE for parity.
 - **M4. NetPunt — target: removed from FEATURE_COLS and payloads.**
   A hardcoded 0 is a dead constant to models and a lie in payloads.
   The column may persist as null until punting stats are implemented
   (likely from box-score data per franchise-season-week-metrics.md §5).
   Fixture: payload serialization omits it.
+
+  **Implemented** (fix/metrics-h3-mround): persists null at both
+  layers, removed from FEATURE_COLS and the as-of SQL, omitted from
+  the LLM payload via `WhenWritingNull`, UI columns removed.
 
 ### H4. Lexicographic ordering of an ESPN string SequenceNumber
 (found implementing #624)
@@ -238,10 +271,19 @@ disagreement-frequency query has not been run.
   #617 removed from the records processor; candidate for the same
   upsert treatment.
 - `DateTime.UtcNow` used directly (house rule: `IDateTimeProvider`).
+  **FIXED (fix/metrics-h3-mround): both handlers inject
+  `IDateTimeProvider`; the per-game handler's delete+insert also now
+  commits in ONE SaveChanges (was two — a crash between lost rows).**
 - `InputsHash = null` at both persist sites and **no
   AggregationVersion** — with formulas about to change, every recompute
   MUST stamp a version or cross-vintage drift recurs invisibly
   (see franchise-season-week-metrics.md provenance section).
+  **IMPLEMENTED (fix/metrics-h3-mround): `MetricFormula.Version`
+  ("2026.08") stamped on both tables via the new `FormulaVersion`
+  column; per-game `InputsHash` = SHA-256 over ordered play EspnIds +
+  final scoreboard, shared by both rows (fixture asserts 64-hex,
+  identical across rows). Migration
+  `14AugV1_MetricNullabilityAndFormulaVersion` (both contexts).**
 
 ## Blast radius
 

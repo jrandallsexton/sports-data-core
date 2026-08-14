@@ -81,10 +81,9 @@ SELECT
     cm_home."OppYpp" AS "HomeOppYpp", cm_home."OppSuccessRate" AS "HomeOppSuccessRate",
     cm_home."OppExplosiveRate" AS "HomeOppExplosiveRate", cm_home."OppPointsPerDrive" AS "HomeOppPointsPerDrive",
     cm_home."OppThirdFourthRate" AS "HomeOppThirdFourthRate", cm_home."OppRzTdRate" AS "HomeOppRzTdRate",
-    cm_home."OppScoreTdRate" AS "HomeOppScoreTdRate", cm_home."NetPunt" AS "HomeNetPunt",
+    cm_home."OppScoreTdRate" AS "HomeOppScoreTdRate",
     cm_home."FgPctShrunk" AS "HomeFgPctShrunk", cm_home."FieldPosDiff" AS "HomeFieldPosDiff",
     cm_home."TurnoverMarginPerDrive" AS "HomeTurnoverMarginPerDrive",
-    cm_home."PenaltyYardsPerPlay" AS "HomePenaltyYardsPerPlay",
 
     eh.pts_scored_avg  AS "HomePtsScoredAvg",  eh.pts_scored_min  AS "HomePtsScoredMin",  eh.pts_scored_max  AS "HomePtsScoredMax",
     eh.pts_allowed_avg AS "HomePtsAllowedAvg", eh.pts_allowed_min AS "HomePtsAllowedMin", eh.pts_allowed_max AS "HomePtsAllowedMax",
@@ -99,10 +98,9 @@ SELECT
     cm_away."OppYpp" AS "AwayOppYpp", cm_away."OppSuccessRate" AS "AwayOppSuccessRate",
     cm_away."OppExplosiveRate" AS "AwayOppExplosiveRate", cm_away."OppPointsPerDrive" AS "AwayOppPointsPerDrive",
     cm_away."OppThirdFourthRate" AS "AwayOppThirdFourthRate", cm_away."OppRzTdRate" AS "AwayOppRzTdRate",
-    cm_away."OppScoreTdRate" AS "AwayOppScoreTdRate", cm_away."NetPunt" AS "AwayNetPunt",
+    cm_away."OppScoreTdRate" AS "AwayOppScoreTdRate",
     cm_away."FgPctShrunk" AS "AwayFgPctShrunk", cm_away."FieldPosDiff" AS "AwayFieldPosDiff",
     cm_away."TurnoverMarginPerDrive" AS "AwayTurnoverMarginPerDrive",
-    cm_away."PenaltyYardsPerPlay" AS "AwayPenaltyYardsPerPlay",
 
     ea.pts_scored_avg  AS "AwayPtsScoredAvg",  ea.pts_scored_min  AS "AwayPtsScoredMin",  ea.pts_scored_max  AS "AwayPtsScoredMax",
     ea.pts_allowed_avg AS "AwayPtsAllowedAvg", ea.pts_allowed_min AS "AwayPtsAllowedMin", ea.pts_allowed_max AS "AwayPtsAllowedMax",

@@ -3,6 +3,9 @@ using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+
+using System.Security.Cryptography;
+using System.Text;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Metrics;
@@ -20,26 +23,30 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
 {
     private readonly ILogger<CalculateCompetitionMetricsCommandHandler> _logger;
     private readonly FootballDataContext _dataContext;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public CalculateCompetitionMetricsCommandHandler(
         ILogger<CalculateCompetitionMetricsCommandHandler> logger,
-        FootballDataContext dataContext)
+        FootballDataContext dataContext,
+        IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
         CalculateCompetitionMetricsCommand command,
         CancellationToken cancellationToken = default)
     {
-        // delete existing metrics for this competition
+        // Mark existing metrics for deletion; the delete and the insert
+        // below commit in ONE SaveChanges (EF orders deletes first), so a
+        // crash mid-recompute cannot leave the competition with no rows
+        // (audit doc: recompute contract, atomicity).
         var existingMetrics = _dataContext.CompetitionMetrics
             .Where(m => m.CompetitionId == command.CompetitionId);
 
         _dataContext.CompetitionMetrics.RemoveRange(existingMetrics);
-
-        await _dataContext.SaveChangesAsync(cancellationToken);
 
         var competition = await _dataContext.Competitions
             .AsNoTracking()
@@ -66,13 +73,27 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         var awayFranchiseSeasonId = competition.Contest.AwayTeamFranchiseSeasonId;
         var homeFranchiseSeasonId = competition.Contest.HomeTeamFranchiseSeasonId;
 
+        var orderedPlays = OrderPlays(competition.Plays);
+
         var (awayMetric, homeMetric) = CalculateMetrics(
             competition.Contest.SeasonYear,
             command.CompetitionId,
-            OrderPlays(competition.Plays),
+            orderedPlays,
             competition.Drives.ToList(),
             awayFranchiseSeasonId,
             homeFranchiseSeasonId);
+
+        // Bookkeeping stamps (audit doc: recompute contract). Both rows
+        // share one hash: recompute may skip a competition whose stored
+        // (InputsHash, FormulaVersion) both match.
+        var computedUtc = _dateTimeProvider.UtcNow();
+        var inputsHash = ComputeInputsHash(orderedPlays);
+        foreach (var metric in new[] { awayMetric, homeMetric })
+        {
+            metric.ComputedUtc = computedUtc;
+            metric.InputsHash = inputsHash;
+            metric.FormulaVersion = MetricFormula.Version;
+        }
 
         await _dataContext.CompetitionMetrics.AddAsync(awayMetric, cancellationToken);
         await _dataContext.CompetitionMetrics.AddAsync(homeMetric, cancellationToken);
@@ -113,14 +134,14 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             OppRzTdRate = CalculateRedZoneTdRate(homeFranchiseSeasonId, plays),
             OppScoreTdRate = CalculateRedZoneScoringRate(homeFranchiseSeasonId, plays),
             // Special teams / Discipline
-            NetPunt = 0m, // TODO
+            // AUDIT M4: no punting stats sourced yet — null, never a fake 0.
+            NetPunt = null,
             FgPctShrunk = CalculateFgPctShrunk(awayFranchiseSeasonId, plays),
             FieldPosDiff = CalculateFieldPositionDiff(awayFranchiseSeasonId, drives),
             TurnoverMarginPerDrive = CalculateTurnoverMarginPerDrive(awayFranchiseSeasonId, plays, drives),
-            PenaltyYardsPerPlay = CalculatePenaltyYardsPerPlay(awayFranchiseSeasonId, plays),
-            // Bookkeeping
-            ComputedUtc = DateTime.UtcNow,
-            InputsHash = null
+            // AUDIT H3: ESPN plays carry no penalized-team field; a metric
+            // that cannot attribute its subject is not computed.
+            PenaltyYardsPerPlay = null
         };
 
         var homeMetric = new CompetitionMetric
@@ -145,14 +166,14 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             OppRzTdRate = CalculateRedZoneTdRate(awayFranchiseSeasonId, plays),
             OppScoreTdRate = CalculateRedZoneScoringRate(awayFranchiseSeasonId, plays),
             // Special teams / Discipline
-            NetPunt = 0m, // TODO
+            // AUDIT M4: no punting stats sourced yet — null, never a fake 0.
+            NetPunt = null,
             FgPctShrunk = CalculateFgPctShrunk(homeFranchiseSeasonId, plays),
             FieldPosDiff = CalculateFieldPositionDiff(homeFranchiseSeasonId, drives),
             TurnoverMarginPerDrive = CalculateTurnoverMarginPerDrive(homeFranchiseSeasonId, plays, drives),
-            PenaltyYardsPerPlay = CalculatePenaltyYardsPerPlay(homeFranchiseSeasonId, plays),
-            // Bookkeeping
-            ComputedUtc = DateTime.UtcNow,
-            InputsHash = null
+            // AUDIT H3: ESPN plays carry no penalized-team field; a metric
+            // that cannot attribute its subject is not computed.
+            PenaltyYardsPerPlay = null
         };
 
         return (awayMetric, homeMetric);
@@ -189,8 +210,11 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             double clock = play.ClockValue;
             int period = play.PeriodNumber;
 
-            // 4 quarters, each 900 seconds → time remaining = total seconds remaining in game
-            int secondsRemaining = (4 - period) * 900 + (int)Math.Round(clock);
+            // AUDIT M2: Math.Max clamps OT periods (5+) to clock-only —
+            // the unclamped form went NEGATIVE in OT and corrupted drive
+            // durations. OT possession time is not meaningfully clocked
+            // in the data, so this is a REGULATION possession ratio.
+            int secondsRemaining = Math.Max(0, 4 - period) * 900 + (int)Math.Round(clock);
             return secondsRemaining;
         }
 
@@ -202,7 +226,10 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         return Math.Round((decimal)(teamSec / total), 4);
     }
 
-    private static decimal CalculateFgPctShrunk(
+    // AUDIT M3: null when a team has zero qualifying attempts — never 0%.
+    // (The shrinkage prior implied by the name is deferred to a future
+    // formula vintage; the audit doc is the honest record.)
+    private static decimal? CalculateFgPctShrunk(
         Guid franchiseSeasonId,
         IReadOnlyCollection<FootballCompetitionPlay> plays,
         int maxDistance = 45)
@@ -216,7 +243,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
             .ToList();
 
         if (fgAttempts.Count == 0)
-            return 0m;
+            return null;
 
         var madeFgs = fgAttempts.Count(p => p.Type == PlayType.FieldGoalGood);
 
@@ -263,19 +290,20 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
         if (!plays.Any() || !drives.Any())
             return 0m;
 
+        // AUDIT M1: one shared turnover type set (now includes
+        // FumbleReturnTouchdown), and turnovers GAINED requires a known
+        // opponent offense — for nullable Guids `null != teamId` is TRUE,
+        // so an unknown-possession play would silently count as gained.
+
         // Plays where *this* team lost possession
         var turnoversLost = plays.Count(p =>
-            p.StartFranchiseSeasonId == teamId &&
-            (p.Type == PlayType.FumbleLost ||
-             p.Type == PlayType.PassInterceptionReturn ||
-             p.Type == PlayType.InterceptionReturnTouchdown));
+            p.StartFranchiseSeasonId == teamId && IsTurnoverType(p.Type));
 
         // Plays where *opponent* lost possession = turnovers gained
         var turnoversGained = plays.Count(p =>
-            p.StartFranchiseSeasonId != teamId &&
-            (p.Type == PlayType.FumbleLost ||
-             p.Type == PlayType.PassInterceptionReturn ||
-             p.Type == PlayType.InterceptionReturnTouchdown));
+            p.StartFranchiseSeasonId.HasValue &&
+            p.StartFranchiseSeasonId.Value != teamId &&
+            IsTurnoverType(p.Type));
 
         // Count of drives *started* by this team
         var offensiveDrives = drives.Count(d => d.StartFranchiseSeasonId == teamId);
@@ -288,23 +316,34 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     }
 
 
-    private decimal CalculatePenaltyYardsPerPlay(Guid franchiseSeasonId, List<FootballCompetitionPlay> plays)
+    // AUDIT H3: CalculatePenaltyYardsPerPlay was REMOVED, not fixed —
+    // ESPN's play document carries only the possessing offense
+    // (StartFranchiseSeasonId), never the penalized team, so the metric
+    // attributed the opponent's defensive penalties to the offense. If
+    // penalty attribution ever becomes available, reintroduce with
+    // signed-by-beneficiary yards and the fixture list in the audit doc.
+
+    /// <summary>
+    /// SHA-256 over the ordered source-play identity list plus the final
+    /// scoreboard pair (audit doc: recompute contract). Recompute may
+    /// skip a competition whose stored (InputsHash, FormulaVersion) both
+    /// match the current values.
+    /// </summary>
+    private static string? ComputeInputsHash(List<FootballCompetitionPlay> orderedPlays)
     {
-        var penalties = plays
-            .Where(p => p.Type == PlayType.Penalty && p.StartFranchiseSeasonId == franchiseSeasonId)
-            .ToList();
+        if (orderedPlays.Count == 0)
+            return null;
 
-        if (penalties.Count == 0) return 0m;
+        var last = orderedPlays[^1];
+        var sb = new StringBuilder();
+        foreach (var play in orderedPlays)
+        {
+            sb.Append(play.EspnId).Append('|');
+        }
+        sb.Append(last.HomeScore).Append(':').Append(last.AwayScore);
 
-        var offensiveSnaps = plays
-            .Where(p => IsOffensiveScrimmageSnap(p, franchiseSeasonId))
-            .Count();
-
-        if (offensiveSnaps == 0) return 0m;
-
-        var totalPenaltyYards = penalties.Sum(p => Math.Abs(p.StatYardage));
-
-        return (decimal)totalPenaltyYards / offensiveSnaps;
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(sb.ToString()));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 
 
@@ -594,6 +633,7 @@ public class CalculateCompetitionMetricsCommandHandler : ICalculateCompetitionMe
     private static bool IsTurnoverType(PlayType t)
         => t == PlayType.PassInterceptionReturn
            || t == PlayType.InterceptionReturnTouchdown
+           || t == PlayType.Interception
            || t == PlayType.FumbleLost
            || t == PlayType.FumbleReturnTouchdown;
 

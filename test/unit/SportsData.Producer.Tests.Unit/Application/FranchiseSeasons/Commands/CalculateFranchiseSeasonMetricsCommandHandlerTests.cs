@@ -61,6 +61,57 @@ public class CalculateFranchiseSeasonMetricsCommandHandlerTests :
         savedMetric.SuccessRate.Should().Be(0.45m);
     }
 
+    /// <summary>
+    /// AUDIT H3 / M3 / M4 at the aggregation layer: FG% averages only
+    /// games WITH qualifying attempts (a null game is skipped, not a 0);
+    /// the un-computable metrics stay null; and the row carries the
+    /// formula vintage stamp.
+    /// </summary>
+    [Fact]
+    public async Task Aggregation_FgPctSkipsNullGames_DeadMetricsNull_VersionStamped()
+    {
+        var sut = Mocker.CreateInstance<CalculateFranchiseSeasonMetricsCommandHandler>();
+
+        var franchiseSeasonId = Guid.NewGuid();
+        var seasonYear = 2025;
+
+        var contest = CreateContest(franchiseSeasonId, seasonYear);
+        await FootballDataContext.Contests.AddAsync(contest);
+
+        foreach (var fgPct in new decimal?[] { null, 0.8m })
+        {
+            var competition = Fixture.Build<FootballCompetition>()
+                .OmitAutoProperties()
+                .With(x => x.Id, Guid.NewGuid())
+                .With(x => x.ContestId, contest.Id)
+                .With(x => x.Contest, contest)
+                .Create();
+            await FootballDataContext.Competitions.AddAsync(competition);
+
+            var metric = CreateCompetitionMetric(competition.Id, franchiseSeasonId, seasonYear);
+            metric.FgPctShrunk = fgPct;
+            metric.NetPunt = null;
+            metric.PenaltyYardsPerPlay = null;
+            await FootballDataContext.CompetitionMetrics.AddAsync(metric);
+        }
+        await FootballDataContext.SaveChangesAsync();
+
+        var result = await sut.ExecuteAsync(
+            new CalculateFranchiseSeasonMetricsCommand(franchiseSeasonId, seasonYear),
+            CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+
+        var saved = await FootballDataContext.FranchiseSeasonMetrics
+            .SingleAsync(x => x.FranchiseSeasonId == franchiseSeasonId);
+
+        saved.GamesPlayed.Should().Be(2);
+        saved.FgPctShrunk.Should().Be(0.8m, "the no-attempt game is skipped, not averaged as 0");
+        saved.NetPunt.Should().BeNull();
+        saved.PenaltyYardsPerPlay.Should().BeNull();
+        saved.FormulaVersion.Should().Be(MetricFormula.Version);
+    }
+
     [Fact]
     public async Task WhenNoCompetitionMetricsExist_ShouldReturnSuccessWithoutCreatingMetric()
     {

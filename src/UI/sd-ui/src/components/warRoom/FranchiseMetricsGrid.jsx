@@ -220,9 +220,8 @@ function FranchiseMetricsGrid() {
               <th onClick={() => handleSort('oppScoreTdRate')} className="sortable">
                 Opp Score{'\n'}TD {getSortIcon('oppScoreTdRate')}
               </th>
-              <th onClick={() => handleSort('netPunt')} className="sortable">
-                Net{'\n'}Punt {getSortIcon('netPunt')}
-              </th>
+              {/* netPunt / penaltyYardsPerPlay columns removed: no longer
+                  computed (metrics formula audit M4/H3) */}
               <th onClick={() => handleSort('fgPctShrunk')} className="sortable">
                 FG% {getSortIcon('fgPctShrunk')}
               </th>
@@ -231,9 +230,6 @@ function FranchiseMetricsGrid() {
               </th>
               <th onClick={() => handleSort('turnoverMarginPerDrive')} className="sortable">
                 TO Margin{'\n'}/Drive {getSortIcon('turnoverMarginPerDrive')}
-              </th>
-              <th onClick={() => handleSort('penaltyYardsPerPlay')} className="sortable">
-                Penalty{'\n'}Y/P {getSortIcon('penaltyYardsPerPlay')}
               </th>
               <th onClick={() => handleSort('ptsScoredMin')} className="sortable">
                 Pts Scored{'\n'}Min {getSortIcon('ptsScoredMin')}
@@ -310,11 +306,9 @@ function FranchiseMetricsGrid() {
                 <td>{formatValue(team.oppThirdFourthRate, 'oppThirdFourthRate')}</td>
                 <td>{formatValue(team.oppRzTdRate, 'oppRzTdRate')}</td>
                 <td>{formatValue(team.oppScoreTdRate, 'oppScoreTdRate')}</td>
-                <td>{formatValue(team.netPunt, 'netPunt')}</td>
                 <td>{formatValue(team.fgPctShrunk, 'fgPctShrunk')}</td>
                 <td>{formatValue(team.fieldPosDiff, 'fieldPosDiff')}</td>
                 <td>{formatValue(team.turnoverMarginPerDrive, 'turnoverMarginPerDrive')}</td>
-                <td>{formatValue(team.penaltyYardsPerPlay, 'penaltyYardsPerPlay')}</td>
                 <td>{formatValue(team.ptsScoredMin, 'ptsScoredMin')}</td>
                 <td>{formatValue(team.ptsScoredMax, 'ptsScoredMax')}</td>
                 <td>{formatValue(team.ptsScoredAvg, 'ptsScoredAvg')}</td>

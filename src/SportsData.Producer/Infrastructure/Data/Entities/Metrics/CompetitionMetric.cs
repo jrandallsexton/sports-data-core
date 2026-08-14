@@ -34,15 +34,20 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Metrics
         public decimal? OppScoreTdRate { get; set; }
 
         // ST / Discipline
-        public decimal NetPunt { get; set; }
-        public decimal FgPctShrunk { get; set; }
+        // NetPunt (M4) and PenaltyYardsPerPlay (H3) are no longer
+        // computed — null until punting stats exist / penalty offender
+        // attribution exists. FgPctShrunk (M3) is null when a team has
+        // zero qualifying attempts. See docs/audit/competition-metrics-formula-audit.md.
+        public decimal? NetPunt { get; set; }
+        public decimal? FgPctShrunk { get; set; }
         public decimal FieldPosDiff { get; set; }
         public decimal TurnoverMarginPerDrive { get; set; }
-        public decimal PenaltyYardsPerPlay { get; set; }
+        public decimal? PenaltyYardsPerPlay { get; set; }
 
         // bookkeeping
         public DateTime ComputedUtc { get; set; }
         public string? InputsHash { get; set; }
+        public string? FormulaVersion { get; set; }
 
         public class EntityConfiguration : IEntityTypeConfiguration<CompetitionMetric>
         {
@@ -81,6 +86,7 @@ namespace SportsData.Producer.Infrastructure.Data.Entities.Metrics
                 b.Property(x => x.PenaltyYardsPerPlay).HasPrecision(5, 2);
 
                 b.Property(x => x.InputsHash).HasMaxLength(64);
+                b.Property(x => x.FormulaVersion).HasMaxLength(16);
 
                 b.HasOne(x => x.Competition)
                     .WithMany(x => x.Metrics)

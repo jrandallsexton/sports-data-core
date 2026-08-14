@@ -19,14 +19,20 @@ from sklearn.linear_model import LinearRegression
 
 from . import MODEL_VERSION
 
-# The 64 features from predict_straightup.py — order preserved.
+# The 58 features (was 64) from predict_straightup.py — order preserved.
+# Removed per the metrics formula audit
+# (docs/audit/competition-metrics-formula-audit.md):
+#   NetPunt (M4): hardcoded 0, a dead constant to the model.
+#   PenaltyYardsPerPlay (H3): attribution by possession, not offender.
+#   TurnoverMarginPerDrive (M1): failed box-score verification — 72.5%
+#   exact match vs the >=95% gate (fumbles-lost hide under rush/sack/
+#   punt play types); excluded until box-score-based margin exists.
 FEATURE_COLS = [
     'HomeYpp', 'HomeSuccessRate', 'HomeExplosiveRate', 'HomePointsPerDrive',
     'HomeThirdFourthRate', 'HomeRzTdRate', 'HomeRzScoreRate', 'HomeTimePossRatio',
     'HomeOppYpp', 'HomeOppSuccessRate', 'HomeOppExplosiveRate', 'HomeOppPointsPerDrive',
     'HomeOppThirdFourthRate', 'HomeOppRzTdRate', 'HomeOppScoreTdRate',
-    'HomeNetPunt', 'HomeFgPctShrunk', 'HomeFieldPosDiff', 'HomeTurnoverMarginPerDrive',
-    'HomePenaltyYardsPerPlay',
+    'HomeFgPctShrunk', 'HomeFieldPosDiff',
     'HomePtsScoredAvg', 'HomePtsScoredMin', 'HomePtsScoredMax',
     'HomePtsAllowedAvg', 'HomePtsAllowedMin', 'HomePtsAllowedMax',
     'HomeMarginWinAvg', 'HomeMarginWinMin', 'HomeMarginWinMax',
@@ -36,8 +42,7 @@ FEATURE_COLS = [
     'AwayThirdFourthRate', 'AwayRzTdRate', 'AwayRzScoreRate', 'AwayTimePossRatio',
     'AwayOppYpp', 'AwayOppSuccessRate', 'AwayOppExplosiveRate', 'AwayOppPointsPerDrive',
     'AwayOppThirdFourthRate', 'AwayOppRzTdRate', 'AwayOppScoreTdRate',
-    'AwayNetPunt', 'AwayFgPctShrunk', 'AwayFieldPosDiff', 'AwayTurnoverMarginPerDrive',
-    'AwayPenaltyYardsPerPlay',
+    'AwayFgPctShrunk', 'AwayFieldPosDiff',
     'AwayPtsScoredAvg', 'AwayPtsScoredMin', 'AwayPtsScoredMax',
     'AwayPtsAllowedAvg', 'AwayPtsAllowedMin', 'AwayPtsAllowedMax',
     'AwayMarginWinAvg', 'AwayMarginWinMin', 'AwayMarginWinMax',

@@ -14,4 +14,6 @@ output parity, not model improvement.
 __version__ = "1.0.0"
 
 # Stamped on every prediction row; bump when the MATH changes, not the plumbing.
-MODEL_VERSION = "MetricBot-v1.1.1"
+# v1.1.2: NetPunt + PenaltyYardsPerPlay + TurnoverMarginPerDrive removed
+# from FEATURE_COLS (metrics formula audit M4/H3/M1) — 58 features, was 64.
+MODEL_VERSION = "MetricBot-v1.1.2"

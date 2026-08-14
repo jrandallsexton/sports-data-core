@@ -6605,13 +6605,17 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasPrecision(5, 4)
                         .HasColumnType("numeric(5,4)");
 
-                    b.Property<decimal>("FgPctShrunk")
+                    b.Property<decimal?>("FgPctShrunk")
                         .HasPrecision(5, 4)
                         .HasColumnType("numeric(5,4)");
 
                     b.Property<decimal>("FieldPosDiff")
                         .HasPrecision(6, 2)
                         .HasColumnType("numeric(6,2)");
+
+                    b.Property<string>("FormulaVersion")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
@@ -6626,7 +6630,7 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("NetPunt")
+                    b.Property<decimal?>("NetPunt")
                         .HasPrecision(6, 2)
                         .HasColumnType("numeric(6,2)");
 
@@ -6658,7 +6662,7 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
 
-                    b.Property<decimal>("PenaltyYardsPerPlay")
+                    b.Property<decimal?>("PenaltyYardsPerPlay")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
 
@@ -6723,13 +6727,17 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasPrecision(5, 4)
                         .HasColumnType("numeric(5,4)");
 
-                    b.Property<decimal>("FgPctShrunk")
+                    b.Property<decimal?>("FgPctShrunk")
                         .HasPrecision(5, 4)
                         .HasColumnType("numeric(5,4)");
 
                     b.Property<decimal>("FieldPosDiff")
                         .HasPrecision(6, 2)
                         .HasColumnType("numeric(6,2)");
+
+                    b.Property<string>("FormulaVersion")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
 
                     b.Property<Guid>("FranchiseSeasonId")
                         .HasColumnType("uuid");
@@ -6743,7 +6751,7 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.Property<DateTime?>("ModifiedUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("NetPunt")
+                    b.Property<decimal?>("NetPunt")
                         .HasPrecision(6, 2)
                         .HasColumnType("numeric(6,2)");
 
@@ -6775,7 +6783,7 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
 
-                    b.Property<decimal>("PenaltyYardsPerPlay")
+                    b.Property<decimal?>("PenaltyYardsPerPlay")
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)");
 

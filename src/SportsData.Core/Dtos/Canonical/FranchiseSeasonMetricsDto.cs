@@ -32,11 +32,15 @@ namespace SportsData.Core.Dtos.Canonical
         public decimal? OppScoreTdRate { get; init; }
 
         // ST / Discipline
-        public decimal NetPunt { get; init; }
-        public decimal FgPctShrunk { get; init; }
+        // NetPunt and PenaltyYardsPerPlay are no longer computed (audit
+        // M4/H3); FgPctShrunk is null with no qualifying attempts (M3).
+        // Null values are omitted from the LLM preview payload by the
+        // WhenWritingNull serializer option.
+        public decimal? NetPunt { get; init; }
+        public decimal? FgPctShrunk { get; init; }
         public decimal FieldPosDiff { get; init; }
         public decimal TurnoverMarginPerDrive { get; init; }
-        public decimal PenaltyYardsPerPlay { get; init; }
+        public decimal? PenaltyYardsPerPlay { get; init; }
 
         // Scoring Summary
         public int? PtsScoredMin { get; init; }
@@ -91,11 +95,12 @@ namespace SportsData.Core.Dtos.Canonical
             new() { Field = "oppScoreTdRate", Label = "Opponent RZ Score Rate", Group = "Defense", Format = "percent", Description = "Score (TD or FG) rate allowed in the red zone." },
 
             // Special Teams & Discipline
-            new() { Field = "netPunt", Label = "Net Punt", Group = "Special Teams", Format = "decimal", Description = "Average net punting distance in yards." },
-            new() { Field = "fgPctShrunk", Label = "FG % (Adjusted)", Group = "Special Teams", Format = "percent", Description = "Field goal percentage, adjusted for distance and angle." },
+            // netPunt and penaltyYardsPerPlay removed: no longer computed
+            // (audit M4/H3 — no punting stats sourced; no penalized-team
+            // attribution in the play data).
+            new() { Field = "fgPctShrunk", Label = "FG %", Group = "Special Teams", Format = "percent", Description = "Field goal percentage on attempts of 45 yards or less." },
             new() { Field = "fieldPosDiff", Label = "Field Position Diff", Group = "Special Teams", Format = "decimal", Description = "Average difference in starting field position per drive." },
             new() { Field = "turnoverMarginPerDrive", Label = "TO Margin per Drive", Group = "Discipline", Format = "decimal", Description = "Net turnovers gained per possession. Positive is favorable." },
-            new() { Field = "penaltyYardsPerPlay", Label = "Penalty Yards per Play", Group = "Discipline", Format = "decimal", Description = "Average penalty yards assessed per play." },
         };
     }
 }

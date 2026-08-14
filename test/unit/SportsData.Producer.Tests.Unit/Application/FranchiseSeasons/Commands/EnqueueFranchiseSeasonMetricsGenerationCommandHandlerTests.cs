@@ -87,6 +87,69 @@ public class EnqueueFranchiseSeasonMetricsGenerationCommandHandlerTests :
             Times.Exactly(3));
     }
 
+    /// <summary>
+    /// FBS scoping is NCAA-only: for NFL the handler must enqueue every
+    /// franchise season for the year WITHOUT consulting the FBS group
+    /// service (whose lookup throws on the NFL hierarchy — the reason NFL
+    /// season metrics never generated).
+    /// </summary>
+    [Fact]
+    public async Task WhenSportIsNfl_EnqueuesAllFranchiseSeasons_WithoutFbsScoping()
+    {
+        var backgroundJobProvider = Mocker.GetMock<IProvideBackgroundJobs>();
+        var groupSeasonsService = Mocker.GetMock<IGroupSeasonsService>();
+        groupSeasonsService
+            .Setup(x => x.GetFbsGroupSeasonIds(It.IsAny<int>()))
+            .ThrowsAsync(new InvalidOperationException("FBS group root(s) not found."));
+
+        var sut = Mocker.CreateInstance<EnqueueFranchiseSeasonMetricsGenerationCommandHandler>();
+
+        for (int i = 0; i < 2; i++)
+        {
+            var franchise = Fixture.Build<Franchise>()
+                .OmitAutoProperties()
+                .With(x => x.Id, Guid.NewGuid())
+                .With(x => x.Sport, Sport.FootballNfl)
+                .With(x => x.Name, $"Team {i}")
+                .With(x => x.Abbreviation, $"T{i}")
+                .With(x => x.Location, $"Location {i}")
+                .With(x => x.DisplayName, $"Location {i} Team {i}")
+                .With(x => x.DisplayNameShort, $"Team {i}")
+                .With(x => x.ColorCodeHex, "#000000")
+                .With(x => x.Slug, $"nfl-team-{i}")
+                .Create();
+            await FootballDataContext.Franchises.AddAsync(franchise);
+
+            var franchiseSeason = Fixture.Build<FranchiseSeason>()
+                .OmitAutoProperties()
+                .With(x => x.Id, Guid.NewGuid())
+                .With(x => x.FranchiseId, franchise.Id)
+                .With(x => x.Franchise, franchise)
+                .With(x => x.SeasonYear, 2024)
+                // No GroupSeasonId: NFL franchise seasons must not be
+                // dropped by the (NCAA-only) group filter
+                .With(x => x.Slug, franchise.Slug)
+                .With(x => x.Location, franchise.Location)
+                .With(x => x.Name, franchise.Name)
+                .With(x => x.Abbreviation, franchise.Abbreviation ?? "TM")
+                .With(x => x.DisplayName, franchise.DisplayName)
+                .With(x => x.DisplayNameShort, franchise.DisplayNameShort)
+                .With(x => x.ColorCodeHex, franchise.ColorCodeHex)
+                .Create();
+            await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+        }
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = new EnqueueFranchiseSeasonMetricsGenerationCommand(2024, Sport.FootballNfl);
+        var result = await sut.ExecuteAsync(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        backgroundJobProvider.Verify(
+            x => x.Enqueue(It.IsAny<Expression<Func<ICalculateFranchiseSeasonMetricsCommandHandler, Task>>>()),
+            Times.Exactly(2));
+        groupSeasonsService.Verify(x => x.GetFbsGroupSeasonIds(It.IsAny<int>()), Times.Never);
+    }
+
     [Fact]
     public async Task WhenNoFranchiseSeasonsExist_ShouldReturnSuccessWithNoEnqueues()
     {

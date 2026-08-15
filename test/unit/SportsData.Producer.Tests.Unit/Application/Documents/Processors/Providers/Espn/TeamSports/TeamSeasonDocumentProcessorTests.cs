@@ -9,6 +9,7 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
@@ -165,5 +166,101 @@ public class TeamSeasonDocumentProcessorTests :
         count.Should().Be(1);
 
         bus.Verify(x => x.Publish(It.IsAny<FranchiseSeasonCreated>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task WhenAthletesLinkAbsent_ShouldSynthesizeRosterIndexRequestFromDocumentRef()
+    {
+        // ESPN renders the athletes $ref only on the current season's
+        // TeamSeason document; historical documents omit it even though the
+        // roster index (/seasons/{y}/teams/{id}/athletes) exists. The
+        // processor must synthesize the index URL from the document's own
+        // ref and carry the franchise season's id as ParentId — the
+        // provenance AthleteSeasonDocumentProcessor's corroborated-binding
+        // guard requires.
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeason.json");
+        var node = System.Text.Json.Nodes.JsonNode.Parse(json)!.AsObject();
+        node.Remove("athletes");
+        json = node.ToJsonString();
+
+        var dto = json.FromJson<EspnTeamSeasonDto>();
+
+        var groupSeasonIdentity = generator.Generate(dto.Groups.Ref);
+        var group = Fixture.Build<GroupSeason>()
+            .OmitAutoProperties()
+            .With(x => x.Id, groupSeasonIdentity.CanonicalId)
+            .With(x => x.Abbreviation, "foo")
+            .With(x => x.Name, "Name")
+            .With(x => x.ShortName, "Name")
+            .With(x => x.Slug, "Name")
+            .With(x => x.ExternalIds, new List<GroupSeasonExternalId>()
+            {
+                new GroupSeasonExternalId()
+                {
+                    Id = Guid.NewGuid(),
+                    Value = groupSeasonIdentity.CanonicalId.ToString(),
+                    SourceUrlHash = groupSeasonIdentity.UrlHash,
+                    SourceUrl = groupSeasonIdentity.CleanUrl,
+                    GroupSeasonId = groupSeasonIdentity.CanonicalId
+                }
+            })
+            .Create();
+        await FootballDataContext.GroupSeasons.AddAsync(group);
+        await FootballDataContext.SaveChangesAsync();
+
+        var franchiseIdentity = generator.Generate(SourceUrl);
+
+        var franchise = Fixture.Build<Franchise>()
+            .WithAutoProperties()
+            .With(x => x.Id, franchiseIdentity.CanonicalId)
+            .With(x => x.Name, "Test Franchise")
+            .With(x => x.ExternalIds, new List<FranchiseExternalId>
+            {
+                Fixture.Build<FranchiseExternalId>()
+                    .WithAutoProperties()
+                    .With(x => x.Provider, SourceDataProvider.Espn)
+                    .With(x => x.SourceUrl, franchiseIdentity.CleanUrl)
+                    .With(x => x.SourceUrlHash, franchiseIdentity.UrlHash)
+                    .With(x => x.Value, franchiseIdentity.UrlHash)
+                    .Create()
+            })
+            .With(x => x.Seasons, new List<FranchiseSeason>())
+            .Create();
+
+        await FootballDataContext.Franchises.AddAsync(franchise);
+        await FootballDataContext.SaveChangesAsync();
+
+        var published = new List<DocumentRequested>();
+        bus.Setup(x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()))
+            .Callback<DocumentRequested, CancellationToken>((evt, _) => published.Add(evt))
+            .Returns(Task.CompletedTask);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.DocumentType, DocumentType.TeamSeason)
+            .With(x => x.Document, json)
+            .With(x => x.UrlHash, _urlHash)
+            .OmitAutoProperties()
+            .Create();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert
+        var fs = await FootballDataContext.FranchiseSeasons.SingleAsync();
+
+        var rosterRequest = published.SingleOrDefault(e => e.DocumentType == DocumentType.AthleteSeason);
+        rosterRequest.Should().NotBeNull("the athletes index must be requested even when ESPN omits the link");
+        rosterRequest!.Uri.AbsolutePath.Should().EndWith("/athletes");
+        rosterRequest.Uri.ToCleanUrl().Should().Be($"{dto.Ref.ToCleanUrl()}/athletes");
+        rosterRequest.ParentId.Should().Be(fs.Id.ToString(),
+            "the fan-out ParentId is what corroborates the roster binding downstream");
     }
 }

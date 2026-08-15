@@ -384,6 +384,45 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
 
         [Theory]
         [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99/athletes")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2020/teams/15?lang=en&region=us",
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2020/teams/15/athletes")]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2005/teams/-2",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2005/teams/-2/athletes")] // negative team ids are valid
+        public void TeamSeasonRefToAthletesIndexRef_Should_Append_Athletes_Without_Query(
+            string teamSeasonRef,
+            string expectedAthletesIndexRef)
+        {
+            var input = new Uri(teamSeasonRef);
+            var result = EspnUriMapper.TeamSeasonRefToAthletesIndexRef(input);
+            result.Should().Be(new Uri(expectedAthletesIndexRef));
+        }
+
+        [Theory]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99")] // no seasons segment
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/abc")] // non-numeric team id
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/teams/99/seasons/2024")] // reordered segments
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/abc/teams/99")] // non-numeric season year
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2/teams/99")] // non-adjacent seasons/teams
+        public void TeamSeasonRefToAthletesIndexRef_Should_Throw_On_Unexpected_Shape(string badRef)
+        {
+            var input = new Uri(badRef);
+            Action act = () => EspnUriMapper.TeamSeasonRefToAthletesIndexRef(input);
+            act.Should().Throw<InvalidOperationException>();
+        }
+
+        [Fact]
+        public void TeamSeasonRefToAthletesIndexRef_Should_Throw_On_Null()
+        {
+            Action act = () => EspnUriMapper.TeamSeasonRefToAthletesIndexRef(null!);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        [Theory]
+        [InlineData(
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395/statistics/0",
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/395")]
         [InlineData(

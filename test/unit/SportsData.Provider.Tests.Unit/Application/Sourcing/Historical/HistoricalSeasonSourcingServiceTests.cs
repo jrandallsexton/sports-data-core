@@ -87,7 +87,7 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SourceSeason_NewSeason_Creates4ResourceIndexRecords()
+    public async Task SourceSeason_NewSeason_Creates3ResourceIndexRecords()
     {
         // Arrange
         var request = new HistoricalSeasonSourcingRequest
@@ -103,11 +103,13 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
         response.CorrelationId.Should().NotBeEmpty();
 
         var resourceIndexes = await _context.ResourceIndexJobs.ToListAsync();
-        resourceIndexes.Should().HaveCount(4);
+        resourceIndexes.Should().HaveCount(3);
         resourceIndexes.Should().Contain(x => x.DocumentType == DocumentType.Season);
         resourceIndexes.Should().Contain(x => x.DocumentType == DocumentType.Venue);
         resourceIndexes.Should().Contain(x => x.DocumentType == DocumentType.TeamSeason);
-        resourceIndexes.Should().Contain(x => x.DocumentType == DocumentType.AthleteSeason);
+        // No AthleteSeason tier: the league-level athletes index is not
+        // season-scoped and fabricated rows (athlete-season remediation).
+        resourceIndexes.Should().NotContain(x => x.DocumentType == DocumentType.AthleteSeason);
 
         // All should be non-recurring, enabled, season-specific
         resourceIndexes.Should().AllSatisfy(x =>
@@ -122,7 +124,7 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SourceSeason_NewSeason_Schedules4HangfireJobs()
+    public async Task SourceSeason_NewSeason_Schedules3HangfireJobs()
     {
         // Arrange
         var request = new HistoricalSeasonSourcingRequest
@@ -137,7 +139,7 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
         // Assert - Verify 4 jobs scheduled with correct delays
         _backgroundJobProviderMock.Verify(
             x => x.Schedule<ResourceIndexJob>(It.IsAny<Expression<Func<ResourceIndexJob, Task>>>(), It.IsAny<TimeSpan>()),
-            Times.Exactly(4));
+            Times.Exactly(3));
     }
 
     [Fact]
@@ -218,10 +220,10 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
         await _service.SourceSeasonAsync(request);
 
         // Assert - Can't easily verify exact delay times without exposing internals,
-        // but we can verify all 4 jobs were scheduled
+        // but we can verify all 3 jobs were scheduled
         _backgroundJobProviderMock.Verify(
             x => x.Schedule<ResourceIndexJob>(It.IsAny<Expression<Func<ResourceIndexJob, Task>>>(), It.IsAny<TimeSpan>()),
-            Times.Exactly(4));
+            Times.Exactly(3));
     }
 
     [Fact]
@@ -264,7 +266,7 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
         // Assert
         response.CorrelationId.Should().NotBeEmpty();
         var resourceIndexes = await _context.ResourceIndexJobs.ToListAsync();
-        resourceIndexes.Should().HaveCount(4);
+        resourceIndexes.Should().HaveCount(3);
     }
 
     public void Dispose()

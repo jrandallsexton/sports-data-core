@@ -44,7 +44,14 @@ public class HistoricalSourcingUriBuilder : IHistoricalSourcingUriBuilder
             DocumentType.Venue => $"{baseUrl}/venues",
 
             DocumentType.TeamSeason => $"{baseUrl}/seasons/{seasonYear}/teams",
-            DocumentType.AthleteSeason => $"{baseUrl}/seasons/{seasonYear}/athletes",
+
+            // DocumentType.AthleteSeason is deliberately ABSENT. ESPN's
+            // league-level /seasons/{year}/athletes index is NOT
+            // season-scoped: it returns the full athlete database under
+            // every season path with each athlete's CURRENT team as
+            // Team.$ref, which fabricated millions of AthleteSeason rows
+            // (docs/audit/athlete-season-fabrication-remediation.md).
+            // Athlete-seasons come from the TeamSeason roster cascade only.
             _ => throw new ArgumentException(
                 $"Document type {documentType} is not supported for historical sourcing")
         };

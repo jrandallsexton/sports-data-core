@@ -7,8 +7,18 @@ using SportsData.Core.Eventing.Events.Documents;
 namespace SportsData.Provider.Application.Sourcing.Historical.Saga;
 
 /// <summary>
-/// Orchestrates historical season sourcing across four tiers: Season → Venue → TeamSeason → AthleteSeason.
+/// Orchestrates historical season sourcing across three tiers:
+/// Season → Venue → TeamSeason.
 /// Uses completion events from Producer to trigger each subsequent tier progressively.
+///
+/// There is deliberately NO AthleteSeason tier. ESPN's league-level
+/// /seasons/{year}/athletes index is NOT season-scoped — it returns the
+/// entire athlete database under every season path, with each athlete's
+/// CURRENT team rendered as Team.$ref. Sourcing it fabricated millions of
+/// AthleteSeason rows binding modern athletes to historical seasons (see
+/// docs/audit/athlete-season-fabrication-remediation.md). Athlete-seasons
+/// are born exclusively from the TeamSeason cascade's per-team roster ref,
+/// which IS season-scoped (and empty for pre-roster-era seasons).
 /// </summary>
 public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSeasonSourcingState>
 {
@@ -23,6 +33,9 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
     public State WaitingForSeasonCompletion { get; private set; } = null!;
     public State WaitingForVenueCompletion { get; private set; } = null!;
     public State WaitingForTeamSeasonCompletion { get; private set; } = null!;
+    // Legacy state: the AthleteSeason tier was removed (see class doc). The
+    // state stays DECLARED so persisted saga instances parked in it still
+    // resolve by name; nothing transitions into it anymore.
     public State WaitingForAthleteSeasonCompletion { get; private set; } = null!;
 
     public Event<SeasonSourcingStarted> SourcingStarted { get; private set; } = null!;
@@ -208,53 +221,8 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                                 new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()),
                                 new KeyValuePair<string, object?>("tier", "TeamSeason"));
 
-                            _logger.LogInformation(
-                                "🎯 TIER3_COMPLETE: TeamSeason tier completed, triggering AthleteSeason tier. " +
-                                "CorrelationId={CorrelationId}, EventsReceived={EventsReceived}, Duration={Duration}s",
-                                context.Saga.CorrelationId,
-                                context.Saga.TeamSeasonCompletionEventsReceived,
-                                (context.Saga.TeamSeasonCompletedUtc.Value - context.Saga.VenueCompletedUtc!.Value).TotalSeconds);
-                        })
-                        .PublishAsync(context => context.Init<TriggerTierSourcing>(new
-                        {
-                            context.Saga.CorrelationId,
-                            context.Saga.Sport,
-                            context.Saga.SeasonYear,
-                            context.Saga.Provider,
-                            Tier = 4,
-                            TierName = "AthleteSeason"
-                        }))
-                        .TransitionTo(WaitingForAthleteSeasonCompletion))
-        );
-
-        // Tier 4: AthleteSeason → Completed
-        During(WaitingForAthleteSeasonCompletion,
-            When(DocumentCompleted, context => context.Message.DocumentType == DocumentType.AthleteSeason)
-                .Then(context =>
-                {
-                    context.Saga.AthleteSeasonCompletionEventsReceived++;
-                    
-                    _logger.LogInformation(
-                        "✅ TIER4_PROGRESS: AthleteSeason completion event received ({Count}/{Threshold}). " +
-                        "CorrelationId={CorrelationId}, DocumentType={DocumentType}",
-                        context.Saga.AthleteSeasonCompletionEventsReceived,
-                        _config.SagaConfig.CompletionThreshold,
-                        context.Saga.CorrelationId,
-                        context.Message.DocumentType);
-                })
-                .If(context => context.Saga.AthleteSeasonCompletionEventsReceived >= _config.SagaConfig.CompletionThreshold,
-                    binder => binder
-                        .Then(context =>
-                        {
                             context.Saga.CompletedUtc = DateTime.UtcNow;
-                            
                             var totalDuration = (context.Saga.CompletedUtc.Value - context.Saga.StartedUtc).TotalSeconds;
-                            
-                            _tierCompletedCounter.Add(1,
-                                new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
-                                new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
-                                new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()),
-                                new KeyValuePair<string, object?>("tier", "AthleteSeason"));
 
                             _sagaCompletedCounter.Add(1,
                                 new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
@@ -267,22 +235,22 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                                 new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()));
 
                             _logger.LogInformation(
-                                "🏁 SAGA_COMPLETE: All tiers completed successfully! " +
+                                "🏁 SAGA_COMPLETE: TeamSeason tier completed — final tier (AthleteSeason " +
+                                "tier removed; athlete-seasons flow from the TeamSeason roster cascade). " +
                                 "CorrelationId={CorrelationId}, Sport={Sport}, Season={Season}, " +
                                 "TotalDuration={TotalDuration}s, " +
-                                "Tier1Events={Tier1Events}, Tier2Events={Tier2Events}, " +
-                                "Tier3Events={Tier3Events}, Tier4Events={Tier4Events}",
+                                "Tier1Events={Tier1Events}, Tier2Events={Tier2Events}, Tier3Events={Tier3Events}",
                                 context.Saga.CorrelationId,
                                 context.Saga.Sport,
                                 context.Saga.SeasonYear,
                                 totalDuration,
                                 context.Saga.SeasonCompletionEventsReceived,
                                 context.Saga.VenueCompletionEventsReceived,
-                                context.Saga.TeamSeasonCompletionEventsReceived,
-                                context.Saga.AthleteSeasonCompletionEventsReceived);
+                                context.Saga.TeamSeasonCompletionEventsReceived);
                         })
                         .Finalize())
         );
+
     }
 }
 

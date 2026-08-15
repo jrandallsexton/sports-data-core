@@ -241,10 +241,12 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                 x.Provider == request.SourceDataProvider &&
                 x.SportId == _sport &&
                 x.SeasonYear == request.SeasonYear &&
+                // AthleteSeason intentionally excluded: legacy tier-4 job
+                // rows from pre-remediation campaigns must never be
+                // rescheduled (they source the poisoned league-level index).
                 (x.DocumentType == DocumentType.Season ||
                  x.DocumentType == DocumentType.Venue ||
-                 x.DocumentType == DocumentType.TeamSeason ||
-                 x.DocumentType == DocumentType.AthleteSeason))
+                 x.DocumentType == DocumentType.TeamSeason))
             .ToListAsync(cancellationToken);
     }
 
@@ -268,7 +270,6 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                     DocumentType.Season => tierDelays.Season,
                     DocumentType.Venue => tierDelays.Venue,
                     DocumentType.TeamSeason => tierDelays.TeamSeason,
-                    DocumentType.AthleteSeason => tierDelays.AthleteSeason,
                     _ => LogUnexpectedDocumentType(job.DocumentType)
                 };
 
@@ -379,12 +380,14 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
     /// </summary>
     private static TierDefinition[] DefineTiers(TierDelays tierDelays)
     {
+        // No AthleteSeason tier: the league-level athletes index is not
+        // season-scoped (see HistoricalSourcingUriBuilder) — athlete-seasons
+        // flow from the TeamSeason cascade's per-team roster ref.
         return
         [
             new TierDefinition(DocumentType.Season, ResourceShape.Leaf, tierDelays.Season),
             new TierDefinition(DocumentType.Venue, ResourceShape.Index, tierDelays.Venue),
-            new TierDefinition(DocumentType.TeamSeason, ResourceShape.Index, tierDelays.TeamSeason),
-            new TierDefinition(DocumentType.AthleteSeason, ResourceShape.Index, tierDelays.AthleteSeason)
+            new TierDefinition(DocumentType.TeamSeason, ResourceShape.Index, tierDelays.TeamSeason)
         ];
     }
 

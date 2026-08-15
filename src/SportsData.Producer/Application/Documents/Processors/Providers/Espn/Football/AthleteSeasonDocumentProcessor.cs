@@ -84,6 +84,31 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
             _logger.LogDebug("No Team.Ref on AthleteSeason {Ref} — placeholder athlete, proceeding without FranchiseSeasonId", dto.Ref);
         }
 
+        // FABRICATION GUARD: ESPN renders an athlete-season doc under ANY
+        // season path, with Team.$ref pointing at the athlete's CURRENT team
+        // re-rendered under that season — so the doc's own Team.Ref is NOT
+        // evidence the athlete belonged to that franchise-season (this
+        // fabricated millions of rows via the league-level athletes index;
+        // see docs/audit/athlete-season-fabrication-remediation.md).
+        // The binding is trusted only when the command DESCENDS from that
+        // franchise-season's own TeamSeason cascade: the roster child request
+        // carries the FranchiseSeason canonical id as ParentId, and Provider
+        // propagates ParentId through index fan-out. Uncorroborated docs
+        // still create/update the row (dependency consumers FK to the row,
+        // not the binding) but never bind — the roster cascade binds later.
+        var bindingCorroborated =
+            franchiseSeasonId is not null &&
+            Guid.TryParse(command.ParentId, out var parentGuid) &&
+            parentGuid == franchiseSeasonId.Value;
+
+        if (franchiseSeasonId is not null && !bindingCorroborated)
+        {
+            _logger.LogInformation(
+                "Uncorroborated Team.Ref on AthleteSeason {Ref} (ParentId={ParentId}) — proceeding UNBOUND; the TeamSeason roster cascade owns the binding",
+                dto.Ref, command.ParentId);
+            franchiseSeasonId = null;
+        }
+
         var positionId = await TryResolvePositionIdAsync(dto, command);
         if (positionId == Guid.Empty)
         {
@@ -162,7 +187,10 @@ public class AthleteSeasonDocumentProcessor<TDataContext> : DocumentProcessorBas
         entity.ExperienceDisplayValue = newEntity.ExperienceDisplayValue;
         entity.ExperienceYears = newEntity.ExperienceYears;
         entity.FirstName = newEntity.FirstName;
-        entity.FranchiseSeasonId = franchiseSeasonId;
+        // Corroborated bindings overwrite (transfers rebind to the new
+        // franchise-season); uncorroborated/placeholder updates arrive with
+        // a null binding and must NOT strip one the roster cascade set.
+        entity.FranchiseSeasonId = franchiseSeasonId ?? entity.FranchiseSeasonId;
         entity.HeightDisplay = newEntity.HeightDisplay;
         entity.HeightDisplay = newEntity.HeightDisplay;
         entity.HeightIn = newEntity.HeightIn;

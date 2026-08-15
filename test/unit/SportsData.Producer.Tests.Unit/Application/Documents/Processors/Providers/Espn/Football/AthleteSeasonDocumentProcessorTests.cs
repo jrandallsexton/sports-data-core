@@ -144,7 +144,10 @@ public class AthleteSeasonDocumentProcessorTests :
             .With(x => x.DocumentType, DocumentType.AthleteSeason)
             .With(x => x.Document, json)
             .With(x => x.UrlHash, dtoIdentity.UrlHash)
-            .Without(x => x.ParentId)
+            // The TeamSeason roster cascade passes the FranchiseSeason
+            // canonical id as ParentId — that provenance is what authorizes
+            // the FranchiseSeasonId binding (fabrication guard).
+            .With(x => x.ParentId, franchiseSeasonId.ToString())
             .Create();
 
         // Act
@@ -909,6 +912,177 @@ public class AthleteSeasonDocumentProcessorTests :
 
         (await FootballDataContext.AthleteSeasons.CountAsync()).Should().Be(1);
     }
+
+    /// <summary>
+    /// FABRICATION GUARD: ESPN renders an athlete-season doc under ANY
+    /// season path with Team.$ref = the athlete's CURRENT team, so a doc
+    /// arriving WITHOUT roster-cascade provenance (ParentId != the resolved
+    /// FranchiseSeason id) must create the row UNBOUND. This is the exact
+    /// vector that fabricated millions of historical roster rows.
+    /// </summary>
+    [Fact]
+    public async Task ProcessAsync_UncorroboratedTeamRef_CreatesUnbound()
+    {
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeason.json");
+        var dto = json.FromJson<EspnAthleteSeasonDto>();
+        var dtoIdentity = generator.Generate(dto!.Ref);
+
+        await SeedGuardDependenciesAsync(generator, dto);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.DocumentType, DocumentType.AthleteSeason)
+            .With(x => x.Document, json)
+            .With(x => x.UrlHash, dtoIdentity.UrlHash)
+            .Without(x => x.ParentId)
+            .Create();
+
+        await sut.ProcessAsync(command);
+
+        var entity = await FootballDataContext.AthleteSeasons.FirstOrDefaultAsync();
+        entity.Should().NotBeNull("dependency consumers FK to the row and must not retry-loop");
+        entity!.FranchiseSeasonId.Should().BeNull(
+            "the doc's own Team.Ref is not evidence of season membership — only the roster cascade binds");
+    }
+
+    /// <summary>
+    /// FABRICATION GUARD: an uncorroborated UPDATE (stats cascade, replayed
+    /// doc) must not strip a binding the roster cascade established.
+    /// </summary>
+    [Fact]
+    public async Task ProcessAsync_UncorroboratedUpdate_PreservesExistingBinding()
+    {
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var sut = Mocker.CreateInstance<AthleteSeasonDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeason.json");
+        var dto = json.FromJson<EspnAthleteSeasonDto>();
+        var dtoIdentity = generator.Generate(dto!.Ref);
+        var franchiseSeasonId = generator.Generate(dto.Team!.Ref!).CanonicalId;
+
+        await SeedGuardDependenciesAsync(generator, dto);
+
+        // Roster cascade creates and binds first
+        var rosterCommand = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.DocumentType, DocumentType.AthleteSeason)
+            .With(x => x.Document, json)
+            .With(x => x.UrlHash, dtoIdentity.UrlHash)
+            .With(x => x.ParentId, franchiseSeasonId.ToString())
+            .Create();
+        await sut.ProcessAsync(rosterCommand);
+
+        // An uncorroborated replay of the same doc updates the row
+        var replayCommand = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.DocumentType, DocumentType.AthleteSeason)
+            .With(x => x.Document, json)
+            .With(x => x.UrlHash, dtoIdentity.UrlHash)
+            .Without(x => x.ParentId)
+            .Create();
+        await sut.ProcessAsync(replayCommand);
+
+        var entity = await FootballDataContext.AthleteSeasons.SingleAsync();
+        entity.FranchiseSeasonId.Should().Be(franchiseSeasonId,
+            "an uncorroborated update must preserve the roster-established binding");
+    }
+
+    /// <summary>
+    /// Shared dependency seeding for the guard tests: franchise season (with
+    /// external id matching the dto's Team.Ref), position, athlete.
+    /// </summary>
+    private async Task SeedGuardDependenciesAsync(
+        ExternalRefIdentityGenerator generator, EspnAthleteSeasonDto dto)
+    {
+        var franchiseSeasonIdentity = generator.Generate(dto.Team!.Ref!);
+        var positionIdentity = generator.Generate(dto.Position!.Ref!);
+        var athleteRef = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/{dto.Id}";
+        var athleteIdentity = generator.Generate(athleteRef);
+
+        var franchiseSeasonId = franchiseSeasonIdentity.CanonicalId;
+        await FootballDataContext.FranchiseSeasons.AddAsync(new FranchiseSeason
+        {
+            Id = franchiseSeasonId,
+            FranchiseId = Guid.NewGuid(),
+            SeasonYear = 2024,
+            Abbreviation = "TEAM",
+            DisplayName = "Team",
+            DisplayNameShort = "T",
+            Location = "Location",
+            Name = "Team",
+            Slug = "team",
+            ColorCodeHex = "#FFFFFF",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds =
+            [
+                new FranchiseSeasonExternalId
+                {
+                    Id = Guid.NewGuid(),
+                    FranchiseSeasonId = franchiseSeasonId,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = franchiseSeasonIdentity.CleanUrl,
+                    SourceUrlHash = franchiseSeasonIdentity.UrlHash,
+                    Value = franchiseSeasonIdentity.UrlHash
+                }
+            ]
+        });
+
+        var positionId = Guid.NewGuid();
+        await FootballDataContext.AthletePositions.AddAsync(new AthletePosition
+        {
+            Id = positionId,
+            Abbreviation = "QB",
+            Name = "Quarterback",
+            DisplayName = "Quarterback",
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds =
+            [
+                new AthletePositionExternalId
+                {
+                    Id = Guid.NewGuid(),
+                    AthletePositionId = positionId,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = positionIdentity.CleanUrl,
+                    SourceUrlHash = positionIdentity.UrlHash,
+                    Value = positionIdentity.UrlHash
+                }
+            ]
+        });
+
+        var athleteId = athleteIdentity.CanonicalId;
+        await FootballDataContext.Athletes.AddAsync(new FootballAthlete
+        {
+            Id = athleteId,
+            LastName = dto.LastName,
+            FirstName = dto.FirstName,
+            DisplayName = $"{dto.FirstName} {dto.LastName}",
+            ShortName = dto.LastName,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        await FootballDataContext.AthleteExternalIds.AddAsync(new AthleteExternalId
+        {
+            Id = Guid.NewGuid(),
+            AthleteId = athleteId,
+            Provider = SourceDataProvider.Espn,
+            SourceUrl = athleteRef,
+            SourceUrlHash = athleteIdentity.UrlHash,
+            Value = dto.Id
+        });
+        await FootballDataContext.SaveChangesAsync();
+    }
+
 }
-
-

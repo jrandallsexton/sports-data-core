@@ -496,6 +496,44 @@ public static class EspnUriMapper
     }
 
     /// <summary>
+    /// Maps a TeamSeason URI to its athletes roster index URI.
+    /// Example: .../seasons/{year}/teams/{teamId} -> .../seasons/{year}/teams/{teamId}/athletes
+    /// </summary>
+    /// <remarks>
+    /// ESPN renders the <c>athletes</c> $ref only on the CURRENT season's
+    /// TeamSeason document; historical documents omit it even though the
+    /// roster index resource exists (honest, season-scoped, empty before
+    /// ~2004). This mapping lets historical roster sourcing cascade without
+    /// depending on the link being present in the payload.
+    /// </remarks>
+    public static Uri TeamSeasonRefToAthletesIndexRef(Uri teamSeasonRef)
+    {
+        if (teamSeasonRef == null)
+            throw new ArgumentNullException(nameof(teamSeasonRef));
+
+        var path = teamSeasonRef.GetLeftPart(UriPartial.Path);
+        var parts = path.Split('/');
+
+        // Expect: ... / seasons / {year} / teams / {teamId}
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var teamsIndex = Array.IndexOf(parts, "teams");
+
+        if (seasonsIndex < 0 || teamsIndex < 0 || teamsIndex + 1 >= parts.Length)
+            throw new InvalidOperationException($"Unexpected ESPN TeamSeason ref format: {teamSeasonRef}");
+
+        var teamIdPart = parts[teamsIndex + 1];
+
+        if (!IsValidEspnId(teamIdPart))
+            throw new InvalidOperationException($"Missing or invalid team id in ref: {teamSeasonRef}");
+
+        // Build path up to teams/{teamId}, then append "athletes"
+        var baseParts = parts.Take(teamsIndex + 2).Append("athletes");
+        var result = string.Join('/', baseParts);
+
+        return new Uri(result, UriKind.Absolute);
+    }
+
+    /// <summary>
     /// Maps a TeamSeason child URI (e.g., statistics, leaders, record) back to the TeamSeason URI.
     /// Common helper for all TeamSeason child resources.
     /// </summary>

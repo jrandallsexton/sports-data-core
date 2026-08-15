@@ -6,6 +6,7 @@ using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events;
 using SportsData.Core.Eventing.Events.Franchise;
 using SportsData.Core.Extensions;
+using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
@@ -215,20 +216,20 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
             // TeamSeason document; historical documents omit it even though
             // the roster index itself (/seasons/{y}/teams/{id}/athletes)
             // exists and is honest back to ~2004 (empty before that).
-            // Synthesize the index URL from the document's own ref so
-            // historical roster sourcing can cascade — the Provider fan-out
-            // carries this entity's id as ParentId, which is what corroborates
-            // the FranchiseSeasonId binding in AthleteSeasonDocumentProcessor.
+            // Infer the index URL from the document's own ref so historical
+            // roster sourcing can cascade — the Provider fan-out carries
+            // this entity's id as ParentId, which is what corroborates the
+            // FranchiseSeasonId binding in AthleteSeasonDocumentProcessor.
             var athletes = dto.Athletes;
             if (athletes?.Ref is null)
             {
                 athletes = new EspnResourceIndexItem
                 {
-                    Ref = new Uri($"{dto.Ref.ToCleanUrl()}/athletes")
+                    Ref = EspnUriMapper.TeamSeasonRefToAthletesIndexRef(dto.Ref)
                 };
 
                 _logger.LogInformation(
-                    "Athletes link absent on TeamSeason document (historical shape); synthesized roster index ref. Ref={Ref}",
+                    "Athletes link absent on TeamSeason document (historical shape); inferred roster index ref. Ref={Ref}",
                     athletes.Ref);
             }
 

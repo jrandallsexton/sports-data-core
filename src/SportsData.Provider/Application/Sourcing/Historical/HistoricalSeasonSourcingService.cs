@@ -648,14 +648,16 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                 "Creating NEW ResourceIndex entities for saga orchestration. Year={Year}",
                 request.SeasonYear);
 
-            // Define all 4 tiers (delays don't matter for saga - saga controls timing)
-            // ResourceShape must match DefineTiers to ensure consistent execution paths
+            // Define the 3 tiers (delays don't matter for saga - saga controls timing)
+            // ResourceShape must match DefineTiers to ensure consistent execution paths.
+            // No AthleteSeason tier — the league-level athletes index is not
+            // season-scoped (see HistoricalSourcingUriBuilder, which now throws
+            // for that type).
             var tiers = new[]
             {
                 (DocumentType.Season, ResourceShape.Leaf),  // Single document, no pagination
                 (DocumentType.Venue, ResourceShape.Index),
-                (DocumentType.TeamSeason, ResourceShape.Index),
-                (DocumentType.AthleteSeason, ResourceShape.Index)
+                (DocumentType.TeamSeason, ResourceShape.Index)
             };
 
             var baseOrdinal = GenerateBaseOrdinal();

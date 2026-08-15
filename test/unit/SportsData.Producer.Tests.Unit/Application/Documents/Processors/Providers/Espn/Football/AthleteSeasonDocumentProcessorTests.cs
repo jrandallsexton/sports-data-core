@@ -949,6 +949,24 @@ public class AthleteSeasonDocumentProcessorTests :
         entity.Should().NotBeNull("dependency consumers FK to the row and must not retry-loop");
         entity!.FranchiseSeasonId.Should().BeNull(
             "the doc's own Team.Ref is not evidence of season membership — only the roster cascade binds");
+
+        // A parseable-but-WRONG ParentId (e.g. a competition id from a play
+        // cascade) is equally uncorroborated: only the resolved
+        // franchise-season's own id authorizes the binding.
+        var wrongParentCommand = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.DocumentType, DocumentType.AthleteSeason)
+            .With(x => x.Document, json)
+            .With(x => x.UrlHash, dtoIdentity.UrlHash)
+            .With(x => x.ParentId, Guid.NewGuid().ToString())
+            .Create();
+        await sut.ProcessAsync(wrongParentCommand);
+
+        var updated = await FootballDataContext.AthleteSeasons.SingleAsync();
+        updated.FranchiseSeasonId.Should().BeNull(
+            "any ParentId other than the resolved franchise-season id must not bind");
     }
 
     /// <summary>
@@ -998,6 +1016,9 @@ public class AthleteSeasonDocumentProcessorTests :
             "an uncorroborated update must preserve the roster-established binding");
     }
 
+    // Deterministic seed timestamp (house rule: no DateTime.UtcNow in tests).
+    private static readonly DateTime SeedStamp = new(2024, 8, 1, 0, 0, 0, DateTimeKind.Utc);
+
     /// <summary>
     /// Shared dependency seeding for the guard tests: franchise season (with
     /// external id matching the dto's Team.Ref), position, athlete.
@@ -1023,7 +1044,7 @@ public class AthleteSeasonDocumentProcessorTests :
             Name = "Team",
             Slug = "team",
             ColorCodeHex = "#FFFFFF",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = SeedStamp,
             CreatedBy = Guid.NewGuid(),
             ExternalIds =
             [
@@ -1046,7 +1067,7 @@ public class AthleteSeasonDocumentProcessorTests :
             Abbreviation = "QB",
             Name = "Quarterback",
             DisplayName = "Quarterback",
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = SeedStamp,
             CreatedBy = Guid.NewGuid(),
             ExternalIds =
             [
@@ -1070,7 +1091,7 @@ public class AthleteSeasonDocumentProcessorTests :
             FirstName = dto.FirstName,
             DisplayName = $"{dto.FirstName} {dto.LastName}",
             ShortName = dto.LastName,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = SeedStamp,
             CreatedBy = Guid.NewGuid()
         });
         await FootballDataContext.AthleteExternalIds.AddAsync(new AthleteExternalId

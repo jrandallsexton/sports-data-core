@@ -274,4 +274,27 @@ public class HistoricalSeasonSourcingServiceTests : IDisposable
         _context.Database.EnsureDeleted();
         _context.Dispose();
     }
+
+    [Fact]
+    public async Task CreateSagaResourceIndexes_CreatesOnlyThreeTiers_NoAthleteSeason()
+    {
+        // The saga-orchestrated path must define the same three tiers as
+        // SourceSeason — an AthleteSeason tuple here would call BuildUri,
+        // which now throws for that type (league-level athletes index is
+        // not season-scoped; athlete-season remediation).
+        var request = new HistoricalSeasonSourcingRequest
+        {
+            SourceDataProvider = SourceDataProvider.Espn,
+            SeasonYear = 2024
+        };
+
+        await _service.CreateSagaResourceIndexesAsync(request);
+
+        var resourceIndexes = await _context.ResourceIndexJobs.ToListAsync();
+        resourceIndexes.Should().HaveCount(3);
+        resourceIndexes.Should().Contain(x => x.DocumentType == DocumentType.Season);
+        resourceIndexes.Should().Contain(x => x.DocumentType == DocumentType.Venue);
+        resourceIndexes.Should().Contain(x => x.DocumentType == DocumentType.TeamSeason);
+        resourceIndexes.Should().NotContain(x => x.DocumentType == DocumentType.AthleteSeason);
+    }
 }

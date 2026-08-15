@@ -251,6 +251,36 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                         .Finalize())
         );
 
+        // LEGACY DRAIN: instances persisted in the removed Tier 4 state.
+        // Nothing schedules AthleteSeason work anymore, but a saga that had
+        // already triggered Tier 4 before this deploy still receives
+        // completion events for the in-flight documents — count them and
+        // finalize at threshold exactly as the old tier did, so those
+        // instances terminate instead of parking forever.
+        During(WaitingForAthleteSeasonCompletion,
+            When(DocumentCompleted, context => context.Message.DocumentType == DocumentType.AthleteSeason)
+                .Then(context =>
+                {
+                    context.Saga.AthleteSeasonCompletionEventsReceived++;
+
+                    _logger.LogInformation(
+                        "LEGACY_TIER4_DRAIN: AthleteSeason completion received ({Count}/{Threshold}) for a pre-remediation saga instance. " +
+                        "CorrelationId={CorrelationId}",
+                        context.Saga.AthleteSeasonCompletionEventsReceived,
+                        _config.SagaConfig.CompletionThreshold,
+                        context.Saga.CorrelationId);
+                })
+                .If(context => context.Saga.AthleteSeasonCompletionEventsReceived >= _config.SagaConfig.CompletionThreshold,
+                    binder => binder
+                        .Then(context =>
+                        {
+                            context.Saga.CompletedUtc = DateTime.UtcNow;
+                            _logger.LogInformation(
+                                "LEGACY_TIER4_DRAIN: pre-remediation saga instance finalized. CorrelationId={CorrelationId}",
+                                context.Saga.CorrelationId);
+                        })
+                        .Finalize())
+        );
     }
 }
 

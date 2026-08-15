@@ -173,3 +173,37 @@ metrics campaign gates).
    `AthleteSeason` rows (+ their `AthleteSeasonExternalId`), then the
    roster rebuild recreates roster-era membership under the
    corroborated-binding contract.
+
+## NFL campaign run 1 (2026-08-15) — purge OK, rebuild no-op; fix shipped
+
+The first NFL execution validated the purge and exposed a gap in the
+rebuild mechanism:
+
+- **Purge**: 461,302 dependent-less rows deleted (52,224 evidence rows
+  kept). Formal gates passed (pairs-over-23-years: 0; orphaned
+  dependents: 0).
+- **Rebuild**: all 27 season POSTs accepted and fanned out (Seq:
+  `Requested=32, Skipped=0, Failed=0` per season), but **zero new bound
+  rows were created for any historical season** — only 2025 (+1,769)
+  and 2026 (+638) gained rows. Per-season `CreatedUtc` proved it: no
+  row for 2000–2024 was created during the run.
+- **Root cause**: ESPN renders the `athletes` $ref **only on the
+  current season's TeamSeason document**. Historical TeamSeason docs
+  (verified live against 2005 and 2020) omit the link entirely — even
+  though the roster index itself
+  (`/seasons/{y}/teams/{id}/athletes`) exists and serves honest data.
+  `TeamSeasonDocumentProcessor` therefore logged
+  `SKIP_CHILD_DOCUMENT: parent DTO link is null` for every historical
+  team and the cascade died at the first hop. (The historical seasons'
+  seemingly-healthy 2004–2018 roster counts in the gate table were
+  surviving evidence rows, not rebuilt rows.)
+- **Fix**: when the athletes link is absent, the processor synthesizes
+  the roster index URL from the TeamSeason document's own ref
+  (`{cleanRef}/athletes`). The synthesized URL classifies as a
+  resource index in the Provider, and the fan-out propagates the
+  franchise season's id as `ParentId` — exactly the provenance the
+  corroborated-binding guard requires. Empty pre-2004 indexes remain
+  no-harm-no-foul.
+- **Re-run**: after the fix deploys, re-POST seasons 2000–2024 (the
+  same script; purge pass is idempotent). 2025/2026 are already
+  rebuilt.

@@ -404,6 +404,9 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
         [Theory]
         [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/franchises/99")] // no seasons segment
         [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/abc")] // non-numeric team id
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/teams/99/seasons/2024")] // reordered segments
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/abc/teams/99")] // non-numeric season year
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/types/2/teams/99")] // non-adjacent seasons/teams
         public void TeamSeasonRefToAthletesIndexRef_Should_Throw_On_Unexpected_Shape(string badRef)
         {
             var input = new Uri(badRef);

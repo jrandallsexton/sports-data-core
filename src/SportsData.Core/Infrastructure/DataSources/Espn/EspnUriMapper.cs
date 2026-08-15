@@ -514,12 +514,19 @@ public static class EspnUriMapper
         var path = teamSeasonRef.GetLeftPart(UriPartial.Path);
         var parts = path.Split('/');
 
-        // Expect: ... / seasons / {year} / teams / {teamId}
+        // Expect: ... / seasons / {year} / teams / {teamId} — strictly in
+        // that order and adjacency; independently-located segments would
+        // accept reordered paths like .../teams/{id}/seasons/{year}.
         var seasonsIndex = Array.IndexOf(parts, "seasons");
         var teamsIndex = Array.IndexOf(parts, "teams");
 
-        if (seasonsIndex < 0 || teamsIndex < 0 || teamsIndex + 1 >= parts.Length)
+        if (seasonsIndex < 0 || teamsIndex != seasonsIndex + 2 || teamsIndex + 1 >= parts.Length)
             throw new InvalidOperationException($"Unexpected ESPN TeamSeason ref format: {teamSeasonRef}");
+
+        var seasonYearPart = parts[seasonsIndex + 1];
+
+        if (!int.TryParse(seasonYearPart, out _))
+            throw new InvalidOperationException($"Missing or invalid season year in ref: {teamSeasonRef}");
 
         var teamIdPart = parts[teamsIndex + 1];
 

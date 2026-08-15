@@ -29,6 +29,20 @@ import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 
 // ─── BoxScore ─────────────────────────────────────────────────────────────────
 
+
+// Prefer the explicit per-scheme variant; fall back to the default
+// `logoUrl` when the backend hasn't supplied one (legacy data or teams
+// without a curated light/dark asset). Shared by TeamScoreRow and
+// LeadersCard so the two cards can't drift onto different variants.
+function selectTeamLogo(
+  team: ContestOverviewDto['header']['homeTeam'],
+  scheme: ReturnType<typeof useColorScheme>,
+): string | null | undefined {
+  return scheme === 'dark'
+    ? team.logoUrlDark ?? team.logoUrl
+    : team.logoUrlLight ?? team.logoUrl;
+}
+
 function TeamScoreRow({
   team,
   total,
@@ -48,13 +62,7 @@ function TeamScoreRow({
 }) {
   const router = useRouter();
   const scheme = useColorScheme();
-  // Prefer the explicit per-scheme variant; fall back to the default
-  // `logoUrl` when the backend hasn't supplied one (legacy data or
-  // teams without a curated light/dark asset).
-  const logoUrl =
-    scheme === 'dark'
-      ? team.logoUrlDark ?? team.logoUrl
-      : team.logoUrlLight ?? team.logoUrl;
+  const logoUrl = selectTeamLogo(team, scheme);
   return (
     <View style={styles.teamScoreRow}>
       {logoUrl ? (
@@ -188,13 +196,8 @@ function LeadersCard({
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
-  // Same per-scheme roundel selection as TeamScoreRow above.
-  const teamLogo = (team: ContestOverviewDto['header']['homeTeam']) =>
-    scheme === 'dark'
-      ? team.logoUrlDark ?? team.logoUrl
-      : team.logoUrlLight ?? team.logoUrl;
-  const awayLogo = teamLogo(awayTeam);
-  const homeLogo = teamLogo(homeTeam);
+  const awayLogo = selectTeamLogo(awayTeam, scheme);
+  const homeLogo = selectTeamLogo(homeTeam, scheme);
 
   if (!categories.length) return null;
 
@@ -215,7 +218,9 @@ function LeadersCard({
                       ContestOverviewLeaders. */}
                   {awayLogo ? (
                     <Image source={{ uri: awayLogo }} style={styles.leaderTeamLogo} resizeMode="contain" />
-                  ) : null}
+                  ) : (
+                    <View style={[styles.leaderTeamLogo, { backgroundColor: theme.separator, borderRadius: 13 }]} />
+                  )}
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.leaderName, { color: theme.text }]} numberOfLines={1}>
                       {l.playerName}
@@ -243,7 +248,9 @@ function LeadersCard({
                 <View key={i} style={[styles.leaderPlayer, { flexDirection: 'row-reverse' }]}>
                   {homeLogo ? (
                     <Image source={{ uri: homeLogo }} style={styles.leaderTeamLogo} resizeMode="contain" />
-                  ) : null}
+                  ) : (
+                    <View style={[styles.leaderTeamLogo, { backgroundColor: theme.separator, borderRadius: 13 }]} />
+                  )}
                   <View style={{ flex: 1, alignItems: 'flex-end' }}>
                     <Text style={[styles.leaderName, { color: theme.text }]} numberOfLines={1}>
                       {l.playerName}

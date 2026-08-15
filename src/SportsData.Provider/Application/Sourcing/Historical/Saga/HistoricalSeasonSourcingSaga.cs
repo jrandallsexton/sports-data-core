@@ -275,9 +275,31 @@ public class HistoricalSeasonSourcingSaga : MassTransitStateMachine<HistoricalSe
                         .Then(context =>
                         {
                             context.Saga.CompletedUtc = DateTime.UtcNow;
+                            var totalDuration = (context.Saga.CompletedUtc.Value - context.Saga.StartedUtc).TotalSeconds;
+
+                            // Same terminal telemetry as the active completion
+                            // path — a drained legacy instance is still a
+                            // completed saga on the dashboards.
+                            _tierCompletedCounter.Add(1,
+                                new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
+                                new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
+                                new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()),
+                                new KeyValuePair<string, object?>("tier", "AthleteSeason"));
+
+                            _sagaCompletedCounter.Add(1,
+                                new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
+                                new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
+                                new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()));
+
+                            _sagaDurationHistogram.Record(totalDuration,
+                                new KeyValuePair<string, object?>("sport", context.Saga.Sport.ToString()),
+                                new KeyValuePair<string, object?>("season", context.Saga.SeasonYear),
+                                new KeyValuePair<string, object?>("provider", context.Saga.Provider.ToString()));
+
                             _logger.LogInformation(
-                                "LEGACY_TIER4_DRAIN: pre-remediation saga instance finalized. CorrelationId={CorrelationId}",
-                                context.Saga.CorrelationId);
+                                "LEGACY_TIER4_DRAIN: pre-remediation saga instance finalized. CorrelationId={CorrelationId}, TotalDuration={TotalDuration}s",
+                                context.Saga.CorrelationId,
+                                totalDuration);
                         })
                         .Finalize())
         );

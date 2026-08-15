@@ -601,7 +601,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
     }
 
     /// <summary>
-    /// Creates ResourceIndex entities for all 4 tiers WITHOUT scheduling them in Hangfire.
+    /// Creates ResourceIndex entities for all tiers WITHOUT scheduling them in Hangfire.
     /// Used by saga-based orchestration where the saga triggers each tier via events.
     /// Idempotent: Returns existing correlationId if ResourceIndex entities already exist for this Sport/Season/Provider.
     /// </summary>
@@ -687,7 +687,8 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             await _dataContext.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "✅ All 4 ResourceIndex entities created for saga. CorrelationId={CorrelationId}",
+                "✅ All {TierCount} ResourceIndex entities created for saga. CorrelationId={CorrelationId}",
+                tiers.Length,
                 correlationId);
 
             return correlationId;

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { teamLink } from '../../utils/sportLinks';
-import { formatToUserTime, getZoneAbbreviation, getStartLabel } from "../../utils/timeUtils";
+import { formatToUserTime, getZoneAbbreviation, getStartLabel, getDefaultGameWeekday } from "../../utils/timeUtils";
 import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 import {
   Paper,
@@ -68,7 +68,7 @@ export default function TeamScheduleMUI({ schedule = [], seasonYear, sport = 'fo
                   }}
                 >
                   <TableCell sx={{ whiteSpace: "nowrap" }}>
-                    {formatToUserTime(game.date, userTz)}
+                    {formatToUserTime(game.date, userTz, getDefaultGameWeekday(`${sport}-${league}`))}
                   </TableCell>
 
                   <TableCell>

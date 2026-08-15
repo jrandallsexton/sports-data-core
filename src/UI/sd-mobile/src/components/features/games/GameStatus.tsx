@@ -4,7 +4,7 @@ import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import type { Matchup, PickType } from '@/src/types/models';
-import { formatToUserTime } from '@/src/utils/timeUtils';
+import { formatToUserTime, getDefaultGameWeekday } from '@/src/utils/timeUtils';
 import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 import { FinalScoreResult } from './FinalScoreResult';
 
@@ -96,7 +96,7 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail, pickType }
     return (
       <View style={styles.statusSection}>
         <Text style={[styles.statusTime, { color: theme.text }]}>
-          {formatToUserTime(matchup.startDateUtc, userTz)}
+          {formatToUserTime(matchup.startDateUtc, userTz, getDefaultGameWeekday(leagueSport))}
         </Text>
         {matchup.broadcasts ? (
           <Text style={[styles.statusMeta, { color: theme.textMuted }]}>
@@ -212,7 +212,7 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail, pickType }
           {(matchup.statusDescription ?? matchup.status).toUpperCase()}
         </Text>
         <Text style={[styles.statusTime, styles.struckThrough, { color: theme.textMuted }]}>
-          {formatToUserTime(matchup.startDateUtc, userTz)}
+          {formatToUserTime(matchup.startDateUtc, userTz, getDefaultGameWeekday(leagueSport))}
         </Text>
         {matchup.venue ? (
           <Text style={[styles.statusMeta, { color: theme.textMuted }]} numberOfLines={1}>

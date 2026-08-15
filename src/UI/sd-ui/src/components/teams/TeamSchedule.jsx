@@ -1,7 +1,7 @@
 // src/components/teams/TeamSchedule.jsx
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
-import { formatToUserTime, getZoneAbbreviation, getStartLabel } from "../../utils/timeUtils";
+import { formatToUserTime, getZoneAbbreviation, getStartLabel, getDefaultGameWeekday } from "../../utils/timeUtils";
 import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 import { teamLink, contestLink } from '../../utils/sportLinks';
 import "./TeamSchedule.css";
@@ -16,7 +16,7 @@ function TeamSchedule({ schedule, seasonYear, sport = 'football', league = 'ncaa
   // Midnight ("TBD") carries no meaningful clock zone, so the abbrev is
   // suppressed there.
   const kickoffLabel = (game) => {
-    const time = formatToUserTime(game.date, userTz);
+    const time = formatToUserTime(game.date, userTz, getDefaultGameWeekday(`${sport}-${league}`));
     if (time.endsWith("TBD")) return time;
     return `${time} ${getZoneAbbreviation(userTz, game.date)}`;
   };

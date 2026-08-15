@@ -531,9 +531,11 @@ resolved same day):
 - Unpriced games (a handful of FBS-participant games per season) fall
   back to the existing pure-stats model, unchanged. Explicit contract:
   priced games use the residual path (feature set decided at
-  implementation: the 64 stats columns, with Spread entering through
-  the prior term, not FEATURE_COLS); unpriced games use the 64-column
-  fallback and emit an SU prediction ONLY — no ATS DTO, since there is
+  implementation: the 64 stats columns — the pre-v1.1.2 baseline;
+  v1.1.2 trims FEATURE_COLS to 58, see the sweep section below — with
+  Spread entering through the prior term, not FEATURE_COLS); unpriced
+  games use the same stats-column fallback and emit an SU prediction
+  ONLY — no ATS DTO, since there is
   no line to pick against. (Today's pipeline computes NaN cover
   probabilities for spreadless rows and still builds ATS DTOs from
   them — a latent defect v1.1 removes.)
@@ -594,6 +596,88 @@ resolved same day):
   v1.1's world (the correction model and unpriced fallback are where
   schedule-blindness still lives, including the broken 0.0-0.1
   bucket).
+
+## MetricBot-v1.1.2 sweep on the recomputed corpus (2026-08-15)
+
+The v1.1.1 acceptance failure was autopsied to formula defects in
+`CompetitionMetric` itself (see
+`docs/audit/competition-metrics-formula-audit.md`). Fixes C1/C2 (#624),
+H1/H2/H4 (#625), H3+M-round with FormulaVersion/InputsHash stamping
+(#626), and the recompute enablers (#627, #629) landed, then a full
+unattended recompute of BOTH sports, all seasons (50 season-runs,
+~11.5h, 2026-08-14→15) rebuilt every CompetitionMetric and
+FranchiseSeasonMetric row at vintage `2026.08`. Execution record —
+scope, window, per-season gate results, and the raw orchestrator
+log — is checked in at
+[docs/audit/metrics-recompute-2026-08.md](../audit/metrics-recompute-2026-08.md).
+NCAAFB per-game FBS PPD by season is now
+1.495 / 1.470 / 1.500 / 1.512 (2022–2025) — the 1.31→5.93
+cross-vintage drift is gone. v1.1.2 also removed NetPunt,
+PenaltyYardsPerPlay, and TurnoverMarginPerDrive from FEATURE_COLS
+(58 features, down from the 64-column baseline above; audit M4/H3/M1 —
+M1 failed box-score verification at 72.5% exact vs the 95% gate).
+Source revision for this feature set: `63438463` (#626 merge).
+
+Sweep: same five requests (weeks 4/5/6/8/10, 2025, tail 0), results
+`output/ncaaf-2025-Wk*-backtest-v5.json` (gitignored; deterministic —
+regenerable from the stamped corpus; denominators reproduced in the
+manifest linked above).
+
+| wk | decided | w/ spread | SU same-games | favorite | ATS n | ATS acc | ATS Brier | model MAE | market MAE |
+|----|---------|-----------|---------------|----------|-------|---------|-----------|-----------|------------|
+| 4  | 62 | 61 | .7705 | .7705 | 61 | .4426 | .2775 | 12.90 | 11.89 |
+| 5  | 53 | 53 | .7736 | .8113 | 53 | .4906 | .2680 | 10.21 |  9.41 |
+| 6  | 51 | 51 | .7647 | .7647 | 51 | .5098 | .2620 | 10.61 | 10.23 |
+| 8  | 60 | 60 | .7333 | .7500 | 60 | .5500 | .2495 | 11.82 | 12.05 |
+| 10 | 52 | 52 | .7115 | .6731 | 52 | .5192 | .2457 | 12.62 | 12.90 |
+
+Weighted by the denominators above: same-games SU = 208/277 =
+**75.1%** (gate ≥65.6% — PASS by 9.5pts); ATS Brier (weighted by
+ATS n) **0.2608** (gate <0.25 — FAIL, from 0.2990); calibration:
+3 violating pooled buckets (FAIL): 0.0–0.1 (n=20, pred .038, actual
+.250), 0.1–0.2 (n=24, pred .147, actual .292), 0.5–0.6 (n=20, pred
+.560, actual .800).
+
+**Verdict: 1 of 3 gates — NOT accepted, but the failure mode changed
+class.** The −5.5pt uniform home bias is eliminated: the calibration
+curve's top half is near-perfect (0.9–1.0 bucket: pred .962 vs actual
+.960), SU Brier 0.184 vs climatology 0.224, and violations are
+scattered small-n noise in both directions, not systematic. Week 10
+beat the favorite baseline outright (.7115 vs .6731) and the model's
+margin MAE beat the MARKET in weeks 8 and 10. ATS Brier improves
+monotonically with season depth (.2775→.2457; weeks 8 and 10
+individually pass the gate) — the residual error is concentrated in
+weeks 4–6 where entering-season as-of aggregates rest on 3–5 games.
+
+**v1.2 therefore targets early-season feature quality** (this was
+already the plan; the sweep confirms it): consistent as-of AGGREGATE
+features on both the training and prediction sides — training builds
+per-game rows joined to that game's own CompetitionMetric
+(`sql/competition_metrics_asof_training.sql` — the entering-window
+CTEs at the score-summary layer only), while prediction averages
+entering-window metric rows (`sql/competition_metrics_asof_week.sql`,
+the `window_games`/`asof` CTEs), both wired in
+`metricbot/pipeline.py` (`extract_asof_training` /
+`extract_asof_week`). Aligning them helps most where aggregates are
+thinnest. Then prior-season tail blending for early weeks, then the
+deferred SOS / division indicators. One change per version still
+applies.
+
+Corpus caveats recorded during the recompute campaign (full detail in
+the [recompute manifest](../audit/metrics-recompute-2026-08.md)):
+ESPN's play feed has a vintage boundary at 2013/2014 in BOTH sports
+(PPD +0.3, SuccessRate −8pts stepping into 2013); pre-2005 data
+degrades below the gate floors — exclude from historical analysis;
+NCAA 2010 has no play data at all. None of these touch the NCAAFB
+2022+ acceptance corpus. Two caveats DO intersect it and are accepted
+as-is: (a) ~1.5–2% of with-plays rows per season are permanent zeros
+(games ESPN never published drive data for, plus legitimate
+shutouts) — these rows ARE in the training corpus, excludable at
+training time if v1.2 experiments warrant; (b) NFL
+FranchiseSeasonMetric rows now exist for the first time (all seasons
+2001+; the FBS-scoping bug #629 had prevented ANY NFL season
+aggregation) — these feed the LLM preview payloads, not FEATURE_COLS,
+so the NCAAFB acceptance numbers are unaffected.
 
 ## Local container smoke test
 

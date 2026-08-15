@@ -14,6 +14,7 @@ import { Colors, getTheme } from '@/constants/Colors';
 import type { Matchup, PreviewResponse } from '@/src/types/models';
 import { formatToUserTime } from '@/src/utils/timeUtils';
 import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
+import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 export function InsightModal({ visible, onClose, matchup, preview, isLoading }: InsightModalProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
+  const topInset = usePageSheetTopInset();
   const userTz = useUserTimeZone();
 
   return (
@@ -50,9 +52,14 @@ export function InsightModal({ visible, onClose, matchup, preview, isLoading }: 
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      // Android: force the modal window edge-to-edge on EVERY API level so
+      // the usePageSheetTopInset padding is always the right amount — without
+      // this, hosts that place the modal below the status bar would get the
+      // status-bar offset AND the padding (double spacing). iOS ignores it.
+      statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.container, { backgroundColor: theme.background, paddingTop: topInset }]}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerLeft} />

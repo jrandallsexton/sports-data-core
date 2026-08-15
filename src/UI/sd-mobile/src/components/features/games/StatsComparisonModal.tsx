@@ -12,6 +12,7 @@ import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import type { Matchup, TeamComparisonData, TeamStatEntry } from '@/src/types/models';
+import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -175,6 +176,7 @@ export function StatsComparisonModal({
 }: StatsComparisonModalProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
+  const topInset = usePageSheetTopInset();
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
@@ -196,9 +198,14 @@ export function StatsComparisonModal({
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      // Android: force the modal window edge-to-edge on EVERY API level so
+      // the usePageSheetTopInset padding is always the right amount — without
+      // this, hosts that place the modal below the status bar would get the
+      // status-bar offset AND the padding (double spacing). iOS ignores it.
+      statusBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.container, { backgroundColor: theme.background, paddingTop: topInset }]}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerLeft} />

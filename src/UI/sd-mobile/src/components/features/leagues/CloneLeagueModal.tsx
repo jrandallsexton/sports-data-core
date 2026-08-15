@@ -12,6 +12,7 @@ import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import type { LeagueSummary } from '@/src/services/api/leaguesApi';
+import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
 
 interface Props {
   visible: boolean;
@@ -29,6 +30,7 @@ interface Props {
 export function CloneLeagueModal({ visible, league, submitting, onClose, onConfirm }: Props) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
+  const topInset = usePageSheetTopInset();
 
   const [name, setName] = useState('');
   const [inviteMembers, setInviteMembers] = useState(false);
@@ -51,9 +53,14 @@ export function CloneLeagueModal({ visible, league, submitting, onClose, onConfi
       visible={visible && !!league}
       animationType="slide"
       presentationStyle="pageSheet"
+      // Android: force the modal window edge-to-edge on EVERY API level so
+      // the usePageSheetTopInset padding is always the right amount — without
+      // this, hosts that place the modal below the status bar would get the
+      // status-bar offset AND the padding (double spacing). iOS ignores it.
+      statusBarTranslucent
       onRequestClose={submitting ? undefined : onClose}
     >
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.container, { backgroundColor: theme.background, paddingTop: topInset }]}>
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>Duplicate league</Text>
           <TouchableOpacity onPress={onClose} disabled={submitting} hitSlop={12}>

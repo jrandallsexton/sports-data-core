@@ -241,10 +241,12 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                 x.Provider == request.SourceDataProvider &&
                 x.SportId == _sport &&
                 x.SeasonYear == request.SeasonYear &&
+                // AthleteSeason intentionally excluded: legacy tier-4 job
+                // rows from pre-remediation campaigns must never be
+                // rescheduled (they source the poisoned league-level index).
                 (x.DocumentType == DocumentType.Season ||
                  x.DocumentType == DocumentType.Venue ||
-                 x.DocumentType == DocumentType.TeamSeason ||
-                 x.DocumentType == DocumentType.AthleteSeason))
+                 x.DocumentType == DocumentType.TeamSeason))
             .ToListAsync(cancellationToken);
     }
 
@@ -268,7 +270,6 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                     DocumentType.Season => tierDelays.Season,
                     DocumentType.Venue => tierDelays.Venue,
                     DocumentType.TeamSeason => tierDelays.TeamSeason,
-                    DocumentType.AthleteSeason => tierDelays.AthleteSeason,
                     _ => LogUnexpectedDocumentType(job.DocumentType)
                 };
 
@@ -379,12 +380,14 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
     /// </summary>
     private static TierDefinition[] DefineTiers(TierDelays tierDelays)
     {
+        // No AthleteSeason tier: the league-level athletes index is not
+        // season-scoped (see HistoricalSourcingUriBuilder) — athlete-seasons
+        // flow from the TeamSeason cascade's per-team roster ref.
         return
         [
             new TierDefinition(DocumentType.Season, ResourceShape.Leaf, tierDelays.Season),
             new TierDefinition(DocumentType.Venue, ResourceShape.Index, tierDelays.Venue),
-            new TierDefinition(DocumentType.TeamSeason, ResourceShape.Index, tierDelays.TeamSeason),
-            new TierDefinition(DocumentType.AthleteSeason, ResourceShape.Index, tierDelays.AthleteSeason)
+            new TierDefinition(DocumentType.TeamSeason, ResourceShape.Index, tierDelays.TeamSeason)
         ];
     }
 
@@ -598,7 +601,7 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
     }
 
     /// <summary>
-    /// Creates ResourceIndex entities for all 4 tiers WITHOUT scheduling them in Hangfire.
+    /// Creates ResourceIndex entities for all tiers WITHOUT scheduling them in Hangfire.
     /// Used by saga-based orchestration where the saga triggers each tier via events.
     /// Idempotent: Returns existing correlationId if ResourceIndex entities already exist for this Sport/Season/Provider.
     /// </summary>
@@ -645,14 +648,16 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
                 "Creating NEW ResourceIndex entities for saga orchestration. Year={Year}",
                 request.SeasonYear);
 
-            // Define all 4 tiers (delays don't matter for saga - saga controls timing)
-            // ResourceShape must match DefineTiers to ensure consistent execution paths
+            // Define the 3 tiers (delays don't matter for saga - saga controls timing)
+            // ResourceShape must match DefineTiers to ensure consistent execution paths.
+            // No AthleteSeason tier — the league-level athletes index is not
+            // season-scoped (see HistoricalSourcingUriBuilder, which now throws
+            // for that type).
             var tiers = new[]
             {
                 (DocumentType.Season, ResourceShape.Leaf),  // Single document, no pagination
                 (DocumentType.Venue, ResourceShape.Index),
-                (DocumentType.TeamSeason, ResourceShape.Index),
-                (DocumentType.AthleteSeason, ResourceShape.Index)
+                (DocumentType.TeamSeason, ResourceShape.Index)
             };
 
             var baseOrdinal = GenerateBaseOrdinal();
@@ -682,7 +687,8 @@ public class HistoricalSeasonSourcingService : IHistoricalSeasonSourcingService
             await _dataContext.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "✅ All 4 ResourceIndex entities created for saga. CorrelationId={CorrelationId}",
+                "✅ All {TierCount} ResourceIndex entities created for saga. CorrelationId={CorrelationId}",
+                tiers.Length,
                 correlationId);
 
             return correlationId;

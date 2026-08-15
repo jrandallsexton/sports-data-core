@@ -213,15 +213,24 @@ public class TeamSeasonDocumentProcessor<TDataContext> : DocumentProcessorBase<T
         if (isNew || ShouldSpawn(DocumentType.AthleteSeason, command))
         {
             // ESPN renders the athletes $ref only on the CURRENT season's
-            // TeamSeason document; historical documents omit it even though
-            // the roster index itself (/seasons/{y}/teams/{id}/athletes)
-            // exists and is honest back to ~2004 (empty before that).
-            // Infer the index URL from the document's own ref so historical
-            // roster sourcing can cascade — the Provider fan-out carries
-            // this entity's id as ParentId, which is what corroborates the
-            // FranchiseSeasonId binding in AthleteSeasonDocumentProcessor.
+            // TeamSeason document; historical documents omit it. Whether the
+            // roster index itself (/seasons/{y}/teams/{id}/athletes) is
+            // honest for historical seasons is PER-LEAGUE (verified by
+            // content 2026-08-15):
+            //   NCAAFB: honest — season-scoped rosters, counts vary by year.
+            //   NFL:    fabricated — the CURRENT roster is rendered under
+            //           every historical season path (Bengals 2015 contains
+            //           Joe Burrow).
+            //   MLB:    fabricated — identical counts across seasons.
+            // Infer the index URL from the document's own ref ONLY for
+            // leagues whose historical index is honest; for the others the
+            // absent link stays absent and historical rosters remain
+            // evidence-derived (athlete-season-fabrication-remediation.md).
+            // The Provider fan-out carries this entity's id as ParentId,
+            // which is what corroborates the FranchiseSeasonId binding in
+            // AthleteSeasonDocumentProcessor.
             var athletes = dto.Athletes;
-            if (athletes?.Ref is null)
+            if (athletes?.Ref is null && command.Sport == Sport.FootballNcaa)
             {
                 athletes = new EspnResourceIndexItem
                 {

@@ -263,4 +263,92 @@ public class TeamSeasonDocumentProcessorTests :
         rosterRequest.ParentId.Should().Be(fs.Id.ToString(),
             "the fan-out ParentId is what corroborates the roster binding downstream");
     }
+
+    [Fact]
+    public async Task WhenAthletesLinkAbsent_ForNfl_ShouldNotInferRosterIndexRequest()
+    {
+        // ESPN's historical NFL roster index is FABRICATED (the current
+        // roster is rendered under every season path — verified by content
+        // 2026-08-15), so the inference is gated to NCAAFB. An absent link
+        // on an NFL TeamSeason document must stay absent: historical NFL
+        // membership is evidence-derived only.
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeason.json");
+        var node = System.Text.Json.Nodes.JsonNode.Parse(json)!.AsObject();
+        node.Remove("athletes");
+        json = node.ToJsonString();
+
+        var dto = json.FromJson<EspnTeamSeasonDto>();
+
+        var groupSeasonIdentity = generator.Generate(dto.Groups.Ref);
+        var group = Fixture.Build<GroupSeason>()
+            .OmitAutoProperties()
+            .With(x => x.Id, groupSeasonIdentity.CanonicalId)
+            .With(x => x.Abbreviation, "foo")
+            .With(x => x.Name, "Name")
+            .With(x => x.ShortName, "Name")
+            .With(x => x.Slug, "Name")
+            .With(x => x.ExternalIds, new List<GroupSeasonExternalId>()
+            {
+                new GroupSeasonExternalId()
+                {
+                    Id = Guid.NewGuid(),
+                    Value = groupSeasonIdentity.CanonicalId.ToString(),
+                    SourceUrlHash = groupSeasonIdentity.UrlHash,
+                    SourceUrl = groupSeasonIdentity.CleanUrl,
+                    GroupSeasonId = groupSeasonIdentity.CanonicalId
+                }
+            })
+            .Create();
+        await FootballDataContext.GroupSeasons.AddAsync(group);
+        await FootballDataContext.SaveChangesAsync();
+
+        var franchiseIdentity = generator.Generate(SourceUrl);
+
+        var franchise = Fixture.Build<Franchise>()
+            .WithAutoProperties()
+            .With(x => x.Id, franchiseIdentity.CanonicalId)
+            .With(x => x.Name, "Test Franchise")
+            .With(x => x.ExternalIds, new List<FranchiseExternalId>
+            {
+                Fixture.Build<FranchiseExternalId>()
+                    .WithAutoProperties()
+                    .With(x => x.Provider, SourceDataProvider.Espn)
+                    .With(x => x.SourceUrl, franchiseIdentity.CleanUrl)
+                    .With(x => x.SourceUrlHash, franchiseIdentity.UrlHash)
+                    .With(x => x.Value, franchiseIdentity.UrlHash)
+                    .Create()
+            })
+            .With(x => x.Seasons, new List<FranchiseSeason>())
+            .Create();
+
+        await FootballDataContext.Franchises.AddAsync(franchise);
+        await FootballDataContext.SaveChangesAsync();
+
+        var published = new List<DocumentRequested>();
+        bus.Setup(x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()))
+            .Callback<DocumentRequested, CancellationToken>((evt, _) => published.Add(evt))
+            .Returns(Task.CompletedTask);
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNfl)
+            .With(x => x.SeasonYear, 2015)
+            .With(x => x.DocumentType, DocumentType.TeamSeason)
+            .With(x => x.Document, json)
+            .With(x => x.UrlHash, _urlHash)
+            .OmitAutoProperties()
+            .Create();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert
+        published.Should().NotContain(e => e.DocumentType == DocumentType.AthleteSeason,
+            "an absent athletes link on a non-NCAAFB TeamSeason must not be inferred");
+    }
 }

@@ -13,15 +13,19 @@ orchestrator log is appended verbatim.
   unattended; one mid-run deploy of PR #629 unblocked phase 2).
 - **Formula vintage stamped**: `2026.08` (`MetricFormula.Version`),
   with content-aware `InputsHash` per competition.
-- **Season-runs**: **50** (NCAAFB 2001–2026 excluding 2010, which has
-  no play data = 25; NFL 2001–2026 = 25). Every run: play→drive
-  linkage repair → per-game recompute (phase 1) → straggler sweep →
-  season aggregation (phase 2) → gates.
+- **Season-runs**: **50** — NCAAFB 2001–2025 excluding 2010 (no play
+  data) = 24; NFL 2001–2026 = 26. NCAAFB 2026 was correctly skipped by
+  season discovery (no finalized games with plays yet — kickoff is
+  Aug 28); NFL 2026 qualified via finalized preseason games. Every
+  run: play→drive linkage repair → per-game recompute (phase 1) →
+  straggler sweep → season aggregation (phase 2) → gates.
 - **Status**: COMPLETE. All seasons finished both phases; season-row
   stamping is 100% in every season (table below).
 - **Code lineage**: formula fixes #624 #625 #626, campaign enablers
-  #627 #629; orchestrator was an operational script (`campaign.sh`)
-  run in-cluster, reproduced in the appendix header of the raw log.
+  #627 #629; the orchestrator was an operational script run
+  in-cluster (metricbot pod, `nohup sh /tmp/campaign.sh`), reproduced
+  verbatim in the [script appendix](#appendix-orchestrator-script)
+  below.
 
 ## Gate results per season
 
@@ -118,6 +122,131 @@ Pooled calibration buckets (n≥20) violating the 10pt gate:
 | 0.0–0.1 | 20 | 0.038 | 0.250 | 21.2pts |
 | 0.1–0.2 | 24 | 0.147 | 0.292 | 14.5pts |
 | 0.5–0.6 | 20 | 0.560 | 0.800 | 24.0pts |
+
+## Appendix: orchestrator script
+
+Deployed to the metricbot pod as `/tmp/campaign.sh` and launched with
+`nohup sh /tmp/campaign.sh >/dev/null 2>&1 &` (no arguments; seasons
+are discovered from the databases at run time).
+
+```sh
+#!/bin/sh
+# Metrics recompute campaign orchestrator — runs detached in the metricbot pod.
+# Per sport, per season (newest first): linkage repair -> heal-wait ->
+# phase 1 -> drain-wait -> straggler sweep -> phase 2 (retry until the
+# NFL/slug fix deploys) -> gates logged. Everything is idempotent and
+# resumable: re-running skips healed linkage and restamped rows.
+LOG=/tmp/campaign.log
+STATE=/tmp/campaign.state
+
+psq() {
+  PGPASSWORD="$METRICBOT_PG_PASSWORD" psql -h "$METRICBOT_PG_HOST" -U "$METRICBOT_PG_USER" -d "$1" -tAc "$2" 2>>$LOG
+}
+
+log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $1" >> $LOG; }
+
+broken_count() { # db year -> count of games with <90% linkage
+  psq "$1" "SELECT COUNT(*) FROM \"Competition\" c JOIN \"Contest\" ct ON ct.\"Id\" = c.\"ContestId\" CROSS JOIN LATERAL (SELECT COUNT(*) AS plays, COUNT(\"DriveId\") AS linked FROM \"CompetitionPlay\" p WHERE p.\"CompetitionId\" = c.\"Id\") pl WHERE ct.\"SeasonYear\" = $2 AND ct.\"FinalizedUtc\" IS NOT NULL AND pl.plays > 0 AND pl.linked::float / pl.plays < 0.9" | tr -d '[:space:]'
+}
+
+run_season() {
+  svc=$1; db=$2; year=$3; fbsfilter=$4
+  log "[$db $year] START"
+
+  # ---- 1. linkage repair
+  psq "$db" "SELECT c.\"Id\" FROM \"Competition\" c JOIN \"Contest\" ct ON ct.\"Id\" = c.\"ContestId\" CROSS JOIN LATERAL (SELECT COUNT(*) AS plays, COUNT(\"DriveId\") AS linked FROM \"CompetitionPlay\" p WHERE p.\"CompetitionId\" = c.\"Id\") pl WHERE ct.\"SeasonYear\" = $year AND ct.\"FinalizedUtc\" IS NOT NULL AND pl.plays > 0 AND pl.linked::float / pl.plays < 0.9" > /tmp/ids.txt
+  rcount=$(grep -c . /tmp/ids.txt || true)
+  log "[$db $year] repair candidates: $rcount"
+  if [ "$rcount" -gt 0 ]; then
+    while read -r id; do
+      [ -z "$id" ] && continue
+      curl -s -o /dev/null -X POST "$svc/api/competitions/$id/drives/refresh"
+      sleep 0.25
+    done < /tmp/ids.txt
+    # ---- 2. heal-wait: stop when count stable across 3 checks (60s apart) or 45 min
+    prev=-1; same=0; tries=0
+    while [ $tries -lt 45 ]; do
+      sleep 60
+      rem=$(broken_count "$db" "$year")
+      if [ "$rem" = "$prev" ]; then same=$((same+1)); else same=0; fi
+      prev=$rem; tries=$((tries+1))
+      [ $same -ge 3 ] && break
+      [ "$rem" = "0" ] && break
+    done
+    log "[$db $year] heal plateau: remaining=$prev after ${tries}m"
+  fi
+
+  # ---- 3. phase 1 (vintage-aware; resumable)
+  p1=$(curl -s -X POST "$svc/api/competitions/metrics/generate/$year")
+  log "[$db $year] phase1: $p1"
+
+  # ---- 4. drain-wait: stamped row count stable across 2 checks
+  prev=-1; same=0; tries=0
+  while [ $tries -lt 30 ]; do
+    sleep 30
+    st=$(psq "$db" "SELECT COUNT(*) FROM \"CompetitionMetric\" cm JOIN \"Competition\" c ON c.\"Id\" = cm.\"CompetitionId\" JOIN \"Contest\" ct ON ct.\"Id\" = c.\"ContestId\" WHERE ct.\"SeasonYear\" = $year AND cm.\"FormulaVersion\" = '2026.08'" | tr -d '[:space:]')
+    if [ "$st" = "$prev" ]; then same=$((same+1)); else same=0; fi
+    prev=$st; tries=$((tries+1))
+    [ $same -ge 2 ] && break
+  done
+  log "[$db $year] phase1 drained: stamped=$prev"
+
+  # ---- 5. straggler sweep: zero-PPD games with healthy linkage
+  psq "$db" "SELECT DISTINCT cm.\"CompetitionId\" FROM \"CompetitionMetric\" cm JOIN \"Competition\" c ON c.\"Id\" = cm.\"CompetitionId\" JOIN \"Contest\" ct ON ct.\"Id\" = c.\"ContestId\" CROSS JOIN LATERAL (SELECT COUNT(*) AS plays, COUNT(\"DriveId\") AS linked FROM \"CompetitionPlay\" p WHERE p.\"CompetitionId\" = cm.\"CompetitionId\") pl WHERE ct.\"SeasonYear\" = $year AND ct.\"FinalizedUtc\" IS NOT NULL AND cm.\"PointsPerDrive\" = 0 AND pl.plays > 0 AND pl.linked::float / pl.plays >= 0.9" > /tmp/str.txt
+  scount=$(grep -c . /tmp/str.txt || true)
+  if [ "$scount" -gt 0 ]; then
+    while read -r id; do
+      [ -z "$id" ] && continue
+      curl -s -o /dev/null -X POST "$svc/api/competitions/$id/metrics/generate"
+      sleep 0.3
+    done < /tmp/str.txt
+    sleep 120
+  fi
+  log "[$db $year] stragglers recomputed: $scount"
+
+  # ---- 6. phase 2 (retry until the fix deploys; 10-min backoff, max 6h)
+  t=0
+  while [ $t -lt 36 ]; do
+    code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$svc/api/franchise-seasons/seasonYear/$year/metrics/generate")
+    if [ "$code" = "202" ] || [ "$code" = "200" ]; then
+      log "[$db $year] phase2 accepted"
+      break
+    fi
+    log "[$db $year] phase2 HTTP $code - retry in 10m"
+    sleep 600
+    t=$((t+1))
+  done
+  sleep 60
+
+  # ---- 7. gates -> log (no halt in unattended mode; review the report)
+  gates=$(psq "$db" "SELECT COUNT(*), ROUND(AVG(cm.\"PointsPerDrive\"),3), ROUND(AVG(cm.\"FieldPosDiff\"),3), ROUND(AVG(cm.\"SuccessRate\"),4), ROUND(AVG(cm.\"TimePossRatio\"),4), COUNT(*) FILTER (WHERE cm.\"PointsPerDrive\" = 0) FROM \"CompetitionMetric\" cm JOIN \"FranchiseSeason\" fs ON fs.\"Id\" = cm.\"FranchiseSeasonId\" JOIN \"Competition\" c ON c.\"Id\" = cm.\"CompetitionId\" JOIN \"Contest\" ct ON ct.\"Id\" = c.\"ContestId\" WHERE ct.\"SeasonYear\" = $year AND cm.\"FormulaVersion\" = '2026.08' AND EXISTS (SELECT 1 FROM \"CompetitionPlay\" p WHERE p.\"CompetitionId\" = cm.\"CompetitionId\") $fbsfilter")
+  fsm=$(psq "$db" "SELECT COUNT(*), COUNT(*) FILTER (WHERE \"FormulaVersion\" = '2026.08') FROM \"FranchiseSeasonMetric\" WHERE \"Season\" = $year")
+  log "[$db $year] GATES rows|ppd|fpd|success|tpr|zeros: $gates ; season rows|stamped: $fsm"
+  echo "$db $year done" >> $STATE
+  log "[$db $year] DONE"
+}
+
+log "===== CAMPAIGN START ====="
+
+# NCAAFB first (backtest blockers lead), then NFL. Seasons discovered,
+# newest first; already-completed seasons re-run cheaply (vintage skip).
+NCAA_DB="sdProducer.FootballNcaa"
+NCAA_SVC="http://producer-svc-football-ncaa"
+NCAA_FBS="AND split_part(fs.\"GroupSeasonMap\", '|', 3) = 'fbs'"
+for year in $(psq "$NCAA_DB" "SELECT DISTINCT ct.\"SeasonYear\" FROM \"Contest\" ct WHERE ct.\"FinalizedUtc\" IS NOT NULL AND EXISTS (SELECT 1 FROM \"Competition\" c JOIN \"CompetitionPlay\" p ON p.\"CompetitionId\" = c.\"Id\" WHERE c.\"ContestId\" = ct.\"Id\") ORDER BY 1 DESC"); do
+  grep -q "^$NCAA_DB $year done$" $STATE 2>/dev/null && { log "[$NCAA_DB $year] already done - skip"; continue; }
+  run_season "$NCAA_SVC" "$NCAA_DB" "$year" "$NCAA_FBS"
+done
+
+NFL_DB="sdProducer.FootballNfl"
+NFL_SVC="http://producer-svc-football-nfl"
+for year in $(psq "$NFL_DB" "SELECT DISTINCT ct.\"SeasonYear\" FROM \"Contest\" ct WHERE ct.\"FinalizedUtc\" IS NOT NULL AND EXISTS (SELECT 1 FROM \"Competition\" c JOIN \"CompetitionPlay\" p ON p.\"CompetitionId\" = c.\"Id\" WHERE c.\"ContestId\" = ct.\"Id\") ORDER BY 1 DESC"); do
+  grep -q "^$NFL_DB $year done$" $STATE 2>/dev/null && { log "[$NFL_DB $year] already done - skip"; continue; }
+  run_season "$NFL_SVC" "$NFL_DB" "$year" ""
+done
+
+log "===== CAMPAIGN COMPLETE ====="
+```
 
 ## Appendix: raw orchestrator log
 

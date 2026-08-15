@@ -12,6 +12,7 @@ import { Text } from '@/src/components/ui/AppText';
 import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
+import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
 
 export interface ImportItemRow {
   contestId: string;
@@ -42,6 +43,7 @@ interface Props {
 export function ImportPicksModal({ visible, sources, importing, onClose, onImport }: Props) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
+  const topInset = usePageSheetTopInset();
 
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(
     sources[0]?.leagueId ?? null,
@@ -105,7 +107,7 @@ export function ImportPicksModal({ visible, sources, importing, onClose, onImpor
       presentationStyle="pageSheet"
       onRequestClose={importing ? undefined : onClose}
     >
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.container, { backgroundColor: theme.background, paddingTop: topInset }]}>
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>Import picks</Text>
           <TouchableOpacity onPress={onClose} disabled={importing} hitSlop={12}>

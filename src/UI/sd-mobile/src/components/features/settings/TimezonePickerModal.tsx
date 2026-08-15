@@ -12,6 +12,7 @@ import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import { DEFAULT_TIMEZONE } from '@/src/utils/timeUtils';
+import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
 
 /**
  * Curated short-list mirrors the web SettingsPage. Order matters: Eastern,
@@ -66,6 +67,7 @@ export function TimezonePickerModal({
 }: TimezonePickerModalProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
+  const topInset = usePageSheetTopInset();
 
   const allZones = useMemo(() => getAllIanaZones(), []);
   const isCurated = CURATED_TIMEZONES.some((z) => z.value === currentTimezone);
@@ -119,7 +121,7 @@ export function TimezonePickerModal({
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.container, { backgroundColor: theme.background, paddingTop: topInset }]}>
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerLeft} />
           <Text style={[styles.headerTitle, { color: theme.text }]}>Timezone</Text>

@@ -1,6 +1,6 @@
 import "./MatchupCard.css";
 import { FaChartLine, FaLock, FaClipboardList } from "react-icons/fa";
-import { formatToUserTime } from "../../utils/timeUtils";
+import { formatToUserTime, getDefaultGameWeekday } from "../../utils/timeUtils";
 import { useUserTimeZone } from "../../hooks/useUserTimeZone";
 import { useState, useEffect } from "react";
 import TeamComparison from "../teams/TeamComparison";
@@ -111,8 +111,11 @@ function MatchupCard({
   const awayIsWinner = isFinalStatus && bothScored && matchup.awayScore > matchup.homeScore;
   const homeIsWinner = isFinalStatus && bothScored && matchup.homeScore > matchup.awayScore;
 
-  // Game details
-  const gameTime = formatToUserTime(matchup.startDateUtc, userTz);
+  // Game details. The (Day) parenthetical shows only when the game falls
+  // off the sport's expected day (NCAAFB: Sat, NFL: Sun, others: always
+  // shown) — a Saturday NFL preseason game reads "Aug 15 (Sat) @ ...".
+  const gameTime = formatToUserTime(
+    matchup.startDateUtc, userTz, getDefaultGameWeekday(leagueSport));
   const venue = matchup.venue ?? "TBD";
   const location = `${matchup.venueCity ?? ""}, ${matchup.venueState ?? ""}`;
 

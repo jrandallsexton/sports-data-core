@@ -6,9 +6,10 @@
  * we don't need Luxon or date-fns-tz.
  *
  * Backend convention: midnight (00:00) in the rendered zone means "time not
- * yet known," and we surface that to the user as "TBD". Saturday formatting
- * deliberately omits the day-of-week pip — Saturday is the default game day
- * for college football and the bare date reads cleaner.
+ * yet known," and we surface that to the user as "TBD". The day-of-week pip
+ * is deliberately omitted when a game falls on its sport's default game day
+ * (NCAAFB: Saturday, NFL: Sunday) — the bare date reads cleaner, and the
+ * pip works as an exception marker. See getDefaultGameWeekday.
  */
 
 export const DEFAULT_TIMEZONE = 'America/New_York';
@@ -88,18 +89,55 @@ function zonedParts(date: Date, timeZone: string): ZonedParts | null {
   }
 }
 
+// Intl short-weekday string -> ISO weekday number (Mon=1 ... Sun=7), the
+// same contract the web util uses (Luxon weekday numbers).
+const WEEKDAY_NUMBERS: Record<string, number> = {
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+  Sun: 7,
+};
+
+/**
+ * The "expected" game day for a sport/league, as an ISO weekday number
+ * (Mon=1 ... Sun=7), or null when the sport has no dominant day. Nullable by
+ * design: null means "always show the day". Mirrors the web util.
+ *
+ * Accepts either the backend Sport enum name ("FootballNcaa",
+ * "FootballNfl") or slug fragments — case-insensitive substring match,
+ * same convention as getStartLabel.
+ */
+export function getDefaultGameWeekday(
+  sportOrLeague: string | null | undefined,
+): number | null {
+  const s = (sportOrLeague ?? '').toLowerCase();
+  if (!s.includes('football')) return null;
+  if (s.includes('ncaa')) return 6; // NCAAFB: Saturday
+  if (s.includes('nfl')) return 7; // NFL: Sunday
+  return null;
+}
+
 /**
  * Format a UTC ISO datetime string as a calendar+time label in the given
  * IANA zone. Returns "MMM d (Day) @ h:mm a" (e.g. "Sep 27 (Thu) @ 1:30 PM");
- * the (Day) is omitted on Saturdays. Midnight in the target zone renders as
- * "TBD" because the backend uses 00:00 to mean "time not yet known."
+ * the (Day) is omitted when the game falls on `defaultWeekday` — the sport's
+ * expected game day (see getDefaultGameWeekday). The parameter defaults to
+ * Saturday (the app's original NCAAFB-only behavior) so legacy callers are
+ * unchanged; pass null to always show the day. Midnight in the target zone
+ * renders as "TBD" because the backend uses 00:00 to mean "time not yet
+ * known."
  *
- * @param dateStr  ISO 8601 datetime string (assumed UTC)
- * @param timezone IANA zone (e.g. "America/Chicago"); defaults to ET
+ * @param dateStr        ISO 8601 datetime string (assumed UTC)
+ * @param timezone       IANA zone (e.g. "America/Chicago"); defaults to ET
+ * @param defaultWeekday ISO weekday (Mon=1...Sun=7) to omit, or null
  */
 export function formatToUserTime(
   dateStr: string | null | undefined,
   timezone: string | null | undefined = DEFAULT_TIMEZONE,
+  defaultWeekday: number | null = 6,
 ): string {
   if (!dateStr) return 'TBD';
   const d = new Date(dateStr);
@@ -113,9 +151,10 @@ export function formatToUserTime(
   if (!parts) return 'TBD';
 
   const monthLabel = MONTHS_SHORT[parts.month - 1] ?? String(parts.month);
-  const isSaturday = parts.weekday === 'Sat';
+  const isDefaultDay =
+    defaultWeekday != null && WEEKDAY_NUMBERS[parts.weekday] === defaultWeekday;
   const dateLabel =
-    `${monthLabel} ${parts.day}` + (isSaturday ? '' : ` (${parts.weekday})`);
+    `${monthLabel} ${parts.day}` + (isDefaultDay ? '' : ` (${parts.weekday})`);
 
   if (parts.hour === 0 && parts.minute === 0) {
     return `${dateLabel} @ TBD`;

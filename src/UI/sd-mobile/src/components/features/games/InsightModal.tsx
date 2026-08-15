@@ -52,6 +52,11 @@ export function InsightModal({ visible, onClose, matchup, preview, isLoading }: 
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
+      // Android: force the modal window edge-to-edge on EVERY API level so
+      // the usePageSheetTopInset padding is always the right amount — without
+      // this, hosts that place the modal below the status bar would get the
+      // status-bar offset AND the padding (double spacing). iOS ignores it.
+      statusBarTranslucent
       onRequestClose={onClose}
     >
       <View style={[styles.container, { backgroundColor: theme.background, paddingTop: topInset }]}>

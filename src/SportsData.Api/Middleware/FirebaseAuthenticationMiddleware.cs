@@ -171,9 +171,13 @@ public class FirebaseAuthenticationMiddleware
                     ?? "unknown@example.com";
                 var name = context.User.FindFirst("name")?.Value;
                 var picture = context.User.FindFirst("picture")?.Value;
-                var provider = context.User.FindFirst("firebase")?.Value 
-                    ?? context.User.FindFirst("sign_in_provider")?.Value 
-                    ?? "unknown";
+
+                // The `firebase` claim's value is the raw JSON of the token's
+                // nested firebase object, NOT the provider name. Reading it
+                // directly used to store that blob in SignInProvider, which
+                // overflowed the column for federated identities and blocked
+                // every new Google user from being provisioned.
+                var provider = FirebaseSignInProviderResolver.Resolve(context.User);
                 var emailVerifiedClaim = context.User.FindFirst("email_verified")?.Value;
                 var emailVerified = emailVerifiedClaim != null && bool.TryParse(emailVerifiedClaim, out var verified) && verified;
                 

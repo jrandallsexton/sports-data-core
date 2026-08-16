@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Api.Middleware;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 
@@ -59,6 +60,15 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
             _logger.LogWarning("Validation failed: {Errors}", string.Join(", ", validationErrors.Select(e => e.PropertyName)));
             return new Failure<Guid>(default, ResultStatus.BadRequest, validationErrors);
         }
+
+        // Defense in depth. SignInProvider originates in an external token
+        // claim, and an oversized value fails the INSERT — which does not
+        // merely lose the provider label, it prevents the USER ROW FROM BEING
+        // CREATED and locks that person out of the API. Callers are expected
+        // to pass a real provider name (see FirebaseSignInProviderResolver);
+        // this clamp guarantees a malformed one can never block provisioning
+        // again.
+        signInProvider = FirebaseSignInProviderResolver.Normalize(signInProvider);
 
         try
         {

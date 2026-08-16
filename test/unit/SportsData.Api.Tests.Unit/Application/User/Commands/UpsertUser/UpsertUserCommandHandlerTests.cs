@@ -42,6 +42,59 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
     }
 
     [Fact]
+    public async Task ExecuteAsync_ClampsOversizedSignInProvider_SoProvisioningCannotBeBlocked()
+    {
+        // Regression: the middleware used to pass the entire `firebase` claim
+        // JSON as the provider. Exceeding the varchar(100) column failed the
+        // INSERT, so the USER WAS NEVER CREATED and every authenticated request
+        // for that person failed. The handler must clamp rather than let a bad
+        // provider value cost us the row.
+        var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
+
+        var googleClaimBlob =
+            """{"identities":{"google.com":["109384756102938475610"],"email":["someone@gmail.com"]},"sign_in_provider":"google.com"}""";
+        googleClaimBlob.Length.Should().BeGreaterThan(100, "this is the payload that overflowed the column");
+
+        var result = await handler.ExecuteAsync(
+            new UpsertUserCommand { Email = "someone@gmail.com" },
+            "firebase-oversized-provider",
+            googleClaimBlob);
+
+        result.IsSuccess.Should().BeTrue("a malformed provider must never block user creation");
+
+        // AsNoTracking + projection: assert on what was PERSISTED, not on the
+        // instance the handler still has tracked in this context.
+        var persistedProvider = await DataContext.Users
+            .AsNoTracking()
+            .Where(u => u.FirebaseUid == "firebase-oversized-provider")
+            .Select(u => u.SignInProvider)
+            .FirstAsync();
+
+        persistedProvider.Length.Should().BeLessThanOrEqualTo(100);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DefaultsBlankSignInProviderToUnknown()
+    {
+        var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
+
+        var result = await handler.ExecuteAsync(
+            new UpsertUserCommand { Email = "blankprovider@example.com" },
+            "firebase-blank-provider",
+            "   ");
+
+        result.IsSuccess.Should().BeTrue();
+
+        var persistedProvider = await DataContext.Users
+            .AsNoTracking()
+            .Where(u => u.FirebaseUid == "firebase-blank-provider")
+            .Select(u => u.SignInProvider)
+            .FirstAsync();
+
+        persistedProvider.Should().Be("unknown");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_MintsNonReservedUsername_WhenEmailSeedIsReserved()
     {
         // "admin@..." seeds the reserved handle "admin"; the mint must skip it.

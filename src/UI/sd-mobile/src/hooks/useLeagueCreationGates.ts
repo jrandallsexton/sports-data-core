@@ -17,26 +17,61 @@ const MONTHS_SHORT = [
 ];
 
 /**
- * The active creation gates as a lookup of backend Sport enum ("FootballNcaa")
- * → the UTC ISO instant it opens. A sport absent is open. Fails open (empty map)
- * on error — the server still enforces the gate, so the worst case is a user
- * seeing a create option the API then rejects.
+ * Sports a non-admin can create a league for. MLB is admin-gated in the create
+ * flow, so it never factors into non-admin visibility decisions.
  */
-export function useLeagueCreationGates(): Record<string, string> {
-  const { data } = useQuery({
+export const NON_ADMIN_CREATABLE_SPORTS = ['FootballNcaa', 'FootballNfl'] as const;
+
+/**
+ * Pending-aware variant of {@link useLeagueCreationGates} for surfaces that
+ * HIDE an affordance while every sport is gated (e.g. the leagues screen's
+ * "+ Create"): without the pending flag those surfaces would flash the
+ * affordance during the initial fetch (empty map = "everything open") and then
+ * yank it. A resolved failure still fails open — the server enforces the gate.
+ */
+export function useLeagueCreationGatesState(): {
+  gates: Record<string, string>;
+  isPending: boolean;
+} {
+  const { data, isPending } = useQuery({
     queryKey: ['leagues', 'creation-availability'],
     queryFn: () => leaguesApi.getCreationAvailability().then((r) => r.data),
     staleTime: 1000 * 60 * 60, // gate dates barely move; refetch hourly at most
     retry: false, // a failed fetch fails open; don't hammer it
   });
 
-  return useMemo(() => {
-    const gates: Record<string, string> = {};
+  const gates = useMemo(() => {
+    const map: Record<string, string> = {};
     for (const g of data?.gates ?? []) {
-      if (g?.sport && g?.opensUtc) gates[g.sport] = g.opensUtc;
+      if (g?.sport && g?.opensUtc) map[g.sport] = g.opensUtc;
     }
-    return gates;
+    return map;
   }, [data]);
+
+  return { gates, isPending };
+}
+
+/**
+ * The active creation gates as a lookup of backend Sport enum ("FootballNcaa")
+ * → the UTC ISO instant it opens. A sport absent is open. Fails open (empty map)
+ * on error — the server still enforces the gate, so the worst case is a user
+ * seeing a create option the API then rejects.
+ */
+export function useLeagueCreationGates(): Record<string, string> {
+  return useLeagueCreationGatesState().gates;
+}
+
+/**
+ * Whether at least one non-admin-creatable sport is open for league creation.
+ * The API only returns FUTURE gates (an elapsed gate is omitted), so "absent"
+ * means open; the elapsed-instant check is defensive in case that contract
+ * ever loosens.
+ */
+export function anySportOpenForCreation(gates: Record<string, string>): boolean {
+  return NON_ADMIN_CREATABLE_SPORTS.some((sport) => {
+    const opensUtc = gates[sport];
+    return !opensUtc || Date.parse(opensUtc) <= Date.now();
+  });
 }
 
 /**

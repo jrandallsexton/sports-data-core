@@ -207,3 +207,46 @@ rebuild mechanism:
 - **Re-run**: after the fix deploys, re-POST seasons 2000–2024 (the
   same script; purge pass is idempotent). 2025/2026 are already
   rebuilt.
+
+## NFL campaign run 2 (2026-08-15) — ESPN's per-team NFL index is FABRICATED
+
+Run 2 (producer:6161, inferred roster refs) mechanically succeeded —
+all 25 season POSTs cascaded, ~70k rows created bound — but the gates
+tripped hard: **pairs-over-23-years = 2,155**, roster averages 144–157
+for 2004–2018 (sane bound: 40–95), and Joe Burrow bound to the Bengals
+for 2000–2024.
+
+**Root cause — a second fabrication layer at ESPN**: the per-team NFL
+roster index (`/seasons/{y}/teams/{id}/athletes`) renders the CURRENT
+~90-man roster under every historical season path. Verified by content:
+Bengals index = count 90 with Burrow present for 2015, 2020, and 2025
+alike. The pre-campaign validation had checked this index by COUNT
+(93 ≈ real roster, not the 104k league DB) but not by content.
+Content honesty is PER-LEAGUE:
+
+| League | Historical per-team index | Evidence |
+|---|---|---|
+| NCAAFB | **Honest** | LSU counts 55 (2005) / 137 (2015) / 160 (2025); DJ Pickett only in 2025 |
+| NFL | **Fabricated** | identical current roster every year; Burrow in 2015 |
+| MLB | **Fabricated (presumed)** | Yankees identical count 285 in 2015 and 2025 |
+
+**Verdict**: ESPN has NO honest historical NFL roster data via any
+endpoint. Historical NFL membership is therefore EVIDENCE-DERIVED ONLY
+(an athlete is on a season's roster iff play/stat evidence ties them to
+it — accepted by Randall 2026-08-15: "If an athlete is not tied to a
+play, were they really on the team?"). The 2019–2024 thinness is an
+athlete-stat sourcing gap, to be closed by the player pick'em
+athlete-stat audit — not by roster sourcing.
+
+**Remediation**:
+1. Code: roster-index inference gated to `Sport.FootballNcaa` (this
+   PR). NFL/MLB current seasons still source via the explicit link on
+   the current TeamSeason document; absent historical links stay
+   absent.
+2. Data: purge run 3 — dependent-less rows bound to seasons ≤ 2024
+   (plus dependent-less unbound rows with 2000–2024 season-scoped
+   URLs). No rebuild.
+3. NCAAFB campaign proceeds — its index is verified honest by content,
+   and every campaign gate now includes a CONTENT-based probe (known
+   current player must not appear in historical rosters), not just
+   counts.

@@ -49,6 +49,24 @@ describe('getMatchupTarget', () => {
     expect(getMatchupTarget({ ...base, week: 'soon' })?.week).toBeUndefined();
   });
 
+  it.each([
+    ['a numeric prefix', '3invalid'],
+    ['a decimal', '3.5'],
+    ['a negative', '-3'],
+    ['whitespace only', '   '],
+    ['an empty string', ''],
+    ['a precision-losing digit string', '999999999999999999999'],
+  ])('rejects %s rather than routing to a wrong week', (_label, week) => {
+    // parseInt would take the valid PREFIX of "3invalid" and "3.5", yielding 3
+    // — a plausible-looking wrong week is worse than no week at all, since
+    // gameRoute treats week as optional and degrades cleanly without it.
+    expect(getMatchupTarget({ ...base, week })?.week).toBeUndefined();
+  });
+
+  it('still accepts a clean integer week', () => {
+    expect(getMatchupTarget({ ...base, week: '12' })?.week).toBe(12);
+  });
+
   it('accepts PickScored, the other matchup-bound kind', () => {
     // Both line-move and pick-scored pushes land on the game page; the
     // server-side twin is MatchupDeepLink's *Kind constants.

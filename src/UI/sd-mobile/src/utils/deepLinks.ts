@@ -71,14 +71,20 @@ export function getMatchupTarget(
   if (!resolved) return null;
 
   // week is a string on the wire; drop it rather than pass NaN downstream.
-  const parsedWeek = typeof data.week === 'string' ? parseInt(data.week, 10) : NaN;
+  // Validate the WHOLE string — parseInt takes a valid prefix, so "3invalid"
+  // and "3.5" would both yield 3 and route to a plausible-looking wrong week
+  // instead of being rejected. Season weeks are positive integers, so
+  // digits-only is the exact contract; isSafeInteger then rejects a digit
+  // string long enough to lose precision.
+  const rawWeek = typeof data.week === 'string' ? data.week.trim() : '';
+  const parsedWeek = /^\d+$/.test(rawWeek) ? Number(rawWeek) : NaN;
 
   return {
     sport: resolved.sport,
     league: resolved.league,
     contestId: data.contestId,
     leagueId: typeof data.leagueId === 'string' ? data.leagueId : undefined,
-    week: Number.isFinite(parsedWeek) ? parsedWeek : undefined,
+    week: Number.isSafeInteger(parsedWeek) ? parsedWeek : undefined,
   };
 }
 

@@ -93,7 +93,7 @@ deterministic across redelivery.
 Notification now calls `services.AddClients(config, mode)`. The contest client
 resolves per sport, falling back to a mode-agnostic slot:
 
-```
+```text
 CommonConfig:ContestClientConfig:FootballNcaa:ApiUrl → http://producer-svc-football-ncaa
 CommonConfig:ContestClientConfig:FootballNfl:ApiUrl  → http://producer-svc-football-nfl
 CommonConfig:ContestClientConfig:ApiUrl              (fallback)

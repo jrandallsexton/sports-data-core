@@ -186,6 +186,16 @@ namespace SportsData.Notification.Application.Consumers
                     "Contest lookup returned no contest for {ContestId}; sending un-enriched line-move copy.",
                     msg.ContestId);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // The consumer itself is being cancelled — stop now rather than
+                // logging a "lookup failure" and walking into the dispatch loop
+                // with a dead token. The `when` guard is load-bearing: an
+                // HttpClient TIMEOUT also surfaces as TaskCanceledException but
+                // on a different token, and that case must still degrade to the
+                // un-enriched copy rather than abandoning the notification.
+                throw;
+            }
             catch (Exception ex)
             {
                 // Includes the unconfigured-client case: the factory always
@@ -213,7 +223,7 @@ namespace SportsData.Notification.Application.Consumers
             var unprojected = await (
                 from p in _dataContext.UserPicks.AsNoTracking()
                 where p.ContestId == contestId
-                    && !_dataContext.PickemGroups.Any(g => g.Id == p.PickemGroupId)
+                    && !_dataContext.PickemGroups.AsNoTracking().Any(g => g.Id == p.PickemGroupId)
                 select p.PickemGroupId)
                 .Distinct()
                 .CountAsync(cancellationToken);

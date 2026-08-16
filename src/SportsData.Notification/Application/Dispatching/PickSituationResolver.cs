@@ -35,6 +35,13 @@ public enum PickSituation
     /// <summary>ATS only: missed the cover by a point or less.</summary>
     NarrowMissAts = 6,
 
+    /// <summary>
+    /// ATS only: the picked side WON the game but failed to cover. The
+    /// scoreboard says victory, the pick says loss — copy must not call this
+    /// a defeat.
+    /// </summary>
+    WonButDidNotCover = 7,
+
     // ─── Wins ─────────────────────────────────────────────────────────────
     GenericWin = 100,
 
@@ -48,7 +55,13 @@ public enum PickSituation
     BlowoutWin = 103,
 
     /// <summary>Won by a field goal or less.</summary>
-    UglyWin = 104
+    UglyWin = 104,
+
+    /// <summary>
+    /// ATS only: the pick cashed even though the picked side LOST the game.
+    /// Copy must not congratulate them on a victory that didn't happen.
+    /// </summary>
+    CoveredInDefeat = 105
 }
 
 /// <summary>
@@ -104,13 +117,22 @@ public static class PickSituationResolver
     {
         // Most-specific first. Humiliation outranks arithmetic: being shut out
         // is the story even if the margin also qualifies as a blowout.
-        if (pickedScore == 0)
+        // Guarded on an actual defeat so a 0-0 tie can't read as a shutout.
+        if (pickedScore == 0 && margin < 0)
             return PickSituation.ShutoutLoss;
 
         // An ATS near-miss is a sharper sting than any margin bucket — the
         // pick was one point from cashing.
         if (line is { } spread && Math.Abs(margin + spread) <= NarrowAtsMiss)
             return PickSituation.NarrowMissAts;
+
+        // SCOREBOARD vs PICK. IsCorrect means the pick COVERED, not that the
+        // picked side won, and in an ATS league those diverge: a -7 favourite
+        // winning by 3 loses the pick while winning the game. Every bucket
+        // below is phrased around defeat, so a positive margin must divert
+        // here or the copy would call a victory a loss.
+        if (margin > 0)
+            return PickSituation.WonButDidNotCover;
 
         if (line is { } dogLine && dogLine >= BigLine)
             return PickSituation.BigDogLoss;
@@ -129,6 +151,12 @@ public static class PickSituationResolver
 
     private static PickSituation ResolveWin(int margin, double? line)
     {
+        // Mirror of the divergence above: a +14 dog losing 24-20 CASHES the
+        // pick while losing the game. Diverted first so no win bucket can
+        // congratulate a team that lost.
+        if (margin <= 0)
+            return PickSituation.CoveredInDefeat;
+
         // Beating a big number is the story regardless of how it looked.
         if (line is { } dogLine && dogLine >= BigLine)
             return PickSituation.DogWin;

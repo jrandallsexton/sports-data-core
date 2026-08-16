@@ -219,6 +219,15 @@ namespace SportsData.Notification.Infrastructure.Data
             // and one is chosen per send.
             modelBuilder.Entity<SmackPhrase>()
                 .HasIndex(p => new { p.Voice, p.Situation, p.IsActive });
+
+            // Weight is the divisor for weighted selection, and rows are
+            // inserted OUT-OF-BAND by SQL — the CLR default never runs on that
+            // path. A zero or negative weight would corrupt selection for every
+            // notification in the affected slot, so the invariant belongs in
+            // the database where the inserts actually happen.
+            modelBuilder.Entity<SmackPhrase>()
+                .ToTable(t => t.HasCheckConstraint(
+                    "CK_SmackPhrases_Weight_Positive", "\"Weight\" >= 1"));
         }
     }
 }

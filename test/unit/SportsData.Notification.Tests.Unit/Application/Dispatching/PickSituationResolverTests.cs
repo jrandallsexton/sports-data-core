@@ -30,8 +30,11 @@ public class PickSituationResolverTests
             Guid.NewGuid(), null, Guid.NewGuid(), Guid.NewGuid(),
             AwayName: null, HomeName: null,
             AwayAbbreviation: "AWY", HomeAbbreviation: "HOM",
-            // pickedIsHome true → picked side is home
-            AwayScore: opponentScore, HomeScore: pickedScore,
+            // Place the scores on whichever side pickedIsHome names, so an
+            // away-side case exercises the real away path rather than
+            // silently feeding the resolver the opponent's score as the pick.
+            AwayScore: pickedIsHome == false ? pickedScore : opponentScore,
+            HomeScore: pickedIsHome == false ? opponentScore : pickedScore,
             IsCorrect: isCorrect,
             PickedIsHome: pickedIsHome,
             PickedSpread: pickedSpread,
@@ -188,5 +191,46 @@ public class PickSituationResolverTests
                 Pick(picked, opp, correct, line));
             act.Should().NotThrow();
         }
+    }
+
+    // ─── Pick outcome vs scoreboard outcome ───────────────────────────────
+
+    [Fact]
+    public void CoveredInDefeat_WhenThePickCashesButTheTeamLost()
+    {
+        // A +14 dog losing 24-20 COVERS: IsCorrect is true while the margin is
+        // negative. Without the divert this resolved to DogWin and the copy
+        // would have congratulated a team that lost.
+        PickSituationResolver.Resolve(Pick(20, 24, isCorrect: true, pickedSpread: 14))
+            .Should().Be(PickSituation.CoveredInDefeat);
+    }
+
+    [Fact]
+    public void WonButDidNotCover_WhenTheTeamWinsAndThePickDoesNot()
+    {
+        // Favoured by 14, wins by only 4 — game won, cover missed. Not a
+        // narrow miss (10 points short), so it must not land in a defeat
+        // bucket that would call a victory a loss.
+        PickSituationResolver.Resolve(Pick(24, 20, isCorrect: false, pickedSpread: -14))
+            .Should().Be(PickSituation.WonButDidNotCover);
+    }
+
+    [Fact]
+    public void AwaySidePick_IsScoredFromTheAwayPerspective()
+    {
+        // Guards the helper fix: with pickedIsHome false the picked score must
+        // land on AwayScore, so this is a 28-point away blowout WIN.
+        PickSituationResolver.Resolve(
+                Pick(35, 7, isCorrect: true, pickedIsHome: false))
+            .Should().Be(PickSituation.BlowoutWin);
+    }
+
+    [Fact]
+    public void ZeroZeroTie_IsNotReportedAsAShutout()
+    {
+        // 0-0 with the pick not covering: the picked side scored nothing, but
+        // calling it a shutout defeat would be wrong — nobody lost.
+        PickSituationResolver.Resolve(Pick(0, 0, isCorrect: false))
+            .Should().NotBe(PickSituation.ShutoutLoss);
     }
 }

@@ -55,6 +55,8 @@ public class SmackPhraseCatalog : ISmackPhraseCatalog
 
         var situation = PickSituationResolver.Resolve(msg);
 
+        // Projected to a DTO in the query rather than materializing entities
+        // (house rule); selection needs only these four fields.
         var candidates = await _dataContext.SmackPhrases
             .AsNoTracking()
             .Where(p => p.Voice == voice
@@ -62,6 +64,7 @@ public class SmackPhraseCatalog : ISmackPhraseCatalog
                         && p.IsActive
                         && (p.Sport == null || p.Sport == msg.Sport)
                         && (allowGamblingContent || !p.RequiresGamblingContent))
+            .Select(p => new PhraseCandidate(p.Id, p.Text, p.Weight, p.Sport))
             .ToListAsync(cancellationToken);
 
         if (candidates.Count == 0)
@@ -92,7 +95,7 @@ public class SmackPhraseCatalog : ISmackPhraseCatalog
     /// across picks and users. Weight is honoured by scaling each row's slice
     /// of the hash space rather than by materializing duplicates.
     /// </summary>
-    internal static SmackPhrase SelectDeterministic(IReadOnlyList<SmackPhrase> pool, Guid pickId)
+    internal static PhraseCandidate SelectDeterministic(IReadOnlyList<PhraseCandidate> pool, Guid pickId)
     {
         // Order defensively: the database gives no ordering guarantee, and an
         // unstable order would make the selection non-deterministic despite
@@ -111,6 +114,12 @@ public class SmackPhraseCatalog : ISmackPhraseCatalog
 
         return ordered[^1]; // unreachable while totalWeight is computed above
     }
+
+    /// <summary>
+    /// The slice of a phrase row selection actually needs. Keeps the read off
+    /// the entity so the query projects rather than materializes.
+    /// </summary>
+    internal record PhraseCandidate(Guid Id, string Text, int Weight, Sport? Sport);
 
     /// <summary>
     /// GetHashCode is randomized per process, which would make selection
@@ -133,20 +142,39 @@ public static class SmackPhraseFormatter
 {
     public static string Format(string text, UserPickScored msg)
     {
-        var pickedIsHome = msg.PickedIsHome ?? false;
+        var builder = new StringBuilder(text);
 
-        var picked = (pickedIsHome ? msg.HomeAbbreviation : msg.AwayAbbreviation) ?? "your team";
-        var opponent = (pickedIsHome ? msg.AwayAbbreviation : msg.HomeAbbreviation) ?? "the other guys";
-        var pickedScore = pickedIsHome ? msg.HomeScore : msg.AwayScore;
-        var opponentScore = pickedIsHome ? msg.AwayScore : msg.HomeScore;
-
-        var builder = new StringBuilder(text)
-            .Replace("{Team}", picked)
-            .Replace("{Opponent}", opponent)
-            .Replace("{Score}", pickedScore.ToString())
-            .Replace("{OpponentScore}", opponentScore.ToString())
-            .Replace("{Margin}", Math.Abs(pickedScore - opponentScore).ToString())
+        // Margin and league are attribution-free — |away - home| reads the
+        // same from either side — so they always resolve.
+        builder
+            .Replace("{Margin}", Math.Abs(msg.HomeScore - msg.AwayScore).ToString())
             .Replace("{League}", msg.LeagueName ?? "your league");
+
+        if (msg.PickedIsHome is { } pickedIsHome)
+        {
+            var picked = (pickedIsHome ? msg.HomeAbbreviation : msg.AwayAbbreviation) ?? "your team";
+            var opponent = (pickedIsHome ? msg.AwayAbbreviation : msg.HomeAbbreviation) ?? "the other guys";
+            var pickedScore = pickedIsHome ? msg.HomeScore : msg.AwayScore;
+            var opponentScore = pickedIsHome ? msg.AwayScore : msg.HomeScore;
+
+            builder
+                .Replace("{Team}", picked)
+                .Replace("{Opponent}", opponent)
+                .Replace("{Score}", pickedScore.ToString())
+                .Replace("{OpponentScore}", opponentScore.ToString());
+        }
+        else
+        {
+            // Unresolved picked side (Over/Under, or an unmatchable pick).
+            // Defaulting to a side would describe the AWAY team as though it
+            // were the user's pick — a confident lie. Name the pick neutrally
+            // and leave the per-side SCORES unresolved, since attributing them
+            // is exactly what we cannot do. Such picks only ever land in the
+            // generic buckets, whose lines must avoid score tokens.
+            builder
+                .Replace("{Team}", "your pick")
+                .Replace("{Opponent}", "the other side");
+        }
 
         // Absolute value: lines read "a 14-point dog" / "favoured by 14", so
         // the sign is carried by the wording, not the number.

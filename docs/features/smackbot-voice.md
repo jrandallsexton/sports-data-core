@@ -73,15 +73,27 @@ lookups. Thresholds live in one place in `PickSituationResolver`.
 | `FavoriteChoked` | picked a favourite of ≥ 10 and lost |
 | `SqueakerLoss` | lost by ≤ 3 |
 | `NarrowMissAts` | ATS: missed the cover by ≤ 1 |
+| `WonButDidNotCover` | ATS: picked side won the game but missed the cover |
 | `GenericLoss` | any other loss |
 | `DogWin` | picked an underdog of ≥ 10 and won |
 | `ChalkWin` | picked a favourite of ≥ 14 and won |
 | `BlowoutWin` | won by ≥ 21 |
 | `UglyWin` | won by ≤ 3 |
+| `CoveredInDefeat` | ATS: the pick cashed although the picked side lost |
 | `GenericWin` | any other win |
 
 Resolution is **most-specific-first**; the generic buckets guarantee every
 scored pick maps to something, so the engine can never fail to produce copy.
+
+### Pick outcome is not scoreboard outcome
+
+`IsCorrect` means the pick **covered**, not that the picked side won, and in an
+ATS league those diverge. A +14 dog losing 24-20 cashes; a -7 favourite winning
+by 3 does not. Every win bucket below is phrased around victory and every loss
+bucket around defeat, so a margin whose sign contradicts the pick outcome is
+diverted to `CoveredInDefeat` or `WonButDidNotCover` before any of them are
+reached. Without that, copy would congratulate a team that lost or console one
+that won.
 
 ### The straight-up spread gap
 
@@ -107,10 +119,12 @@ notification that IS being sent reads.
 
 ## Phrase selection is deterministic
 
-The chosen line is seeded from `PickId`: `hash(PickId) % candidates`. This is
-unit-testable, stable under redelivery, and still varies naturally across
-picks and users — no RNG to inject or mock. Weighting expands the candidate
-list before the modulo.
+The chosen line is seeded from `PickId`. Candidates are ordered by id (the
+database guarantees no ordering), each is assigned a slice of the hash space
+proportional to its `Weight`, and `hash(PickId) % totalWeight` selects the
+slice. No duplicates are materialized and the modulo is over the summed
+weight, not the candidate count. Stable under redelivery, reproducible in
+tests, and still varied across picks and users — no RNG to inject or mock.
 
 ## Gambling-content interaction
 
@@ -120,8 +134,14 @@ opted into spread-based scoring, so referencing the line is fair. A user in a
 receive "Vegas said 14, you said nah."
 
 `RequiresGamblingContent` marks those rows; the catalog filters them out when
-the context doesn't permit them. Every situation therefore needs at least one
-non-spread line so the filter can never empty a bucket — enforced by test.
+the context doesn't permit them.
+
+**Operator content requirement (not enforced in code):** every situation should
+carry at least one non-spread line, otherwise the filter empties that bucket
+for straight-up players and they silently receive standard copy. The catalog
+treats an empty bucket as a supported fallback, so nothing breaks — the cost is
+a missing taunt, not an error. Worth a validation query once the library is
+populated.
 
 ## Safety rails
 

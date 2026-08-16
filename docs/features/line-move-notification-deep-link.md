@@ -97,9 +97,13 @@ and `AppConfiguration` selects `CommonConfig:*` at `{label}.{mode}`) — no
 provisioning was needed:
 
 ```text
-CommonConfig:ContestClientConfig:FootballNcaa:ApiUrl → http://producer-svc-football-ncaa
-CommonConfig:ContestClientConfig:FootballNfl:ApiUrl  → http://producer-svc-football-nfl
-CommonConfig:ContestClientConfig:ApiUrl              (fallback)
+# label Prod.All (per-sport, what the factory resolves first)
+CommonConfig:ContestClientConfig:FootballNcaa:ApiUrl → http://producer-svc-football-ncaa/api/
+CommonConfig:ContestClientConfig:FootballNfl:ApiUrl  → http://producer-svc-football-nfl/api/
+CommonConfig:ContestClientConfig:BaseballMlb:ApiUrl  → http://producer-svc-baseball-mlb/api/
+
+# label Prod (mode-agnostic fallback)
+CommonConfig:ContestClientConfig:ApiUrl              → http://producer-svc-football-ncaa/api/
 ```
 
 Note the trailing `/api/` **with** the trailing slash: `HttpClient` relative

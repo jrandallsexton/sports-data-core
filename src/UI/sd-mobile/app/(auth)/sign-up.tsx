@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   TextInput,
@@ -8,23 +8,14 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import * as AppleAuthentication from 'expo-apple-authentication';
-import { Text } from '@/src/components/ui/AppText';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { router } from 'expo-router';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+
+import { Text } from '@/src/components/ui/AppText';
 import { auth } from '@/src/lib/firebase';
-import {
-  signInWithGoogle,
-  GoogleSignInCancelled,
-} from '@/src/lib/googleSignIn';
-import {
-  signInWithApple,
-  isAppleSignInAvailable,
-  AppleSignInCancelled,
-} from '@/src/lib/appleSignIn';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Button } from '@/src/components/ui/Button';
 import { Wordmark } from '@/src/components/brand/Wordmark';
@@ -33,6 +24,7 @@ import { getTheme } from '@/constants/Colors';
 // ─── Validation schema ────────────────────────────────────────────────────────
 
 const schema = z.object({
+  displayName: z.string().trim().min(2, 'Please enter a display name'),
   email: z.string().email('Please enter a valid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
@@ -41,94 +33,69 @@ type FormData = z.infer<typeof schema>;
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
-export default function SignInScreen() {
+/**
+ * Email/password account creation — parity with the web's /signup
+ * "Sign up with email" (EmailSignupForm.jsx). Federated sign-in (Google/
+ * Apple) creates accounts transparently on the sign-in screen, so this
+ * screen exists for users who want a plain email account (and for
+ * onboarding tests with plus/alias addresses that have no Google
+ * identity behind them).
+ *
+ * Flow mirrors web: createUserWithEmailAndPassword → updateProfile with
+ * the display name → reload so downstream reads see the profile. The
+ * backend user is provisioned server-side on the first authenticated
+ * request (FirebaseAuthenticationMiddleware → GetOrCreateUserAsync) —
+ * the client just lets AuthGuard in the root layout redirect once the
+ * auth state lands.
+ */
+export default function SignUpScreen() {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
-
-  // Apple Sign-In availability is async (checks iOS version + Apple ID
-  // status); resolves to false on Android and on iOS < 13. The button is
-  // suppressed entirely when unavailable.
-  const [appleAvailable, setAppleAvailable] = useState(false);
-  const [thirdPartyBusy, setThirdPartyBusy] = useState(false);
-
-  useEffect(() => {
-    isAppleSignInAvailable().then(setAppleAvailable).catch(() => setAppleAvailable(false));
-  }, []);
 
   const {
     control,
     handleSubmit,
-    getValues,
     formState: { errors, isSubmitting },
     setError,
-    clearErrors,
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { displayName: '', email: '', password: '' },
   });
 
-  const goToForgotPassword = () => {
-    const typed = getValues('email').trim();
-    router.push({
-      pathname: '/(auth)/forgot-password',
-      params: typed ? { email: typed } : {},
-    });
-  };
-
-  const onSubmit = async ({ email, password }: FormData) => {
+  const onSubmit = async ({ displayName, email, password }: FormData) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      // Set the display name before downstream consumers read the profile;
+      // reload so the local user object reflects it immediately.
+      await updateProfile(result.user, { displayName: displayName.trim() });
+      await result.user.reload();
       // AuthGuard in root _layout.tsx handles the redirect.
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code ?? '';
-      if (
-        code === 'auth/user-not-found' ||
-        code === 'auth/wrong-password' ||
-        code === 'auth/invalid-credential'
-      ) {
-        setError('root', { message: 'Invalid email or password.' });
+      if (code === 'auth/email-already-in-use') {
+        setError('root', {
+          message: 'An account with this email already exists. Sign in instead.',
+        });
+      } else if (code === 'auth/invalid-email') {
+        setError('email', { message: 'Please enter a valid email' });
+      } else if (code === 'auth/weak-password') {
+        setError('password', { message: 'Please choose a stronger password.' });
       } else if (code === 'auth/too-many-requests') {
         setError('root', { message: 'Too many attempts. Please try again later.' });
+      } else if (code === 'auth/network-request-failed') {
+        setError('root', { message: 'Network error. Check your connection and try again.' });
       } else {
-        setError('root', { message: 'Sign in failed. Please try again.' });
+        setError('root', { message: 'Sign up failed. Please try again.' });
       }
     }
   };
 
-  const handleThirdPartySignIn = async (
-    provider: 'google' | 'apple',
-  ) => {
-    if (thirdPartyBusy) return;
-    setThirdPartyBusy(true);
-    clearErrors('root');
-    try {
-      if (provider === 'google') {
-        await signInWithGoogle();
-      } else {
-        await signInWithApple();
-      }
-      // AuthGuard handles redirect.
-    } catch (err: unknown) {
-      if (err instanceof GoogleSignInCancelled || err instanceof AppleSignInCancelled) {
-        // User backed out of the picker — no error UI, just unbusy.
-        return;
-      }
-      const code = (err as { code?: string })?.code ?? '';
-      if (code === 'auth/account-exists-with-different-credential') {
-        // The email is already registered with a different provider
-        // (typically email/password). Account-linking auto-flow is
-        // deferred — for now, point the user at their existing method.
-        setError('root', {
-          message: 'An account with this email already exists. Sign in with your password to continue.',
-        });
-      } else {
-        setError('root', {
-          message: err instanceof Error ? err.message : 'Sign in failed. Please try again.',
-        });
-      }
-    } finally {
-      setThirdPartyBusy(false);
+  const backToSignIn = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
     }
+    router.replace('/(auth)/sign-in');
   };
 
   return (
@@ -151,7 +118,7 @@ export default function SignInScreen() {
         <View
           style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
         >
-          <Text style={[styles.cardTitle, { color: theme.text }]}>Sign in</Text>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>Create account</Text>
 
           {/* Root error */}
           {errors.root && (
@@ -162,39 +129,39 @@ export default function SignInScreen() {
             </View>
           )}
 
-          {/* Third-party providers — surfaced above email/password so the
-              path of least friction (federated sign-in) is the first thing
-              users see. Apple button only renders on iOS where the API is
-              available; Google works on both platforms. */}
-          <View style={styles.thirdPartyStack}>
-            <Button
-              title="Continue with Google"
-              onPress={() => handleThirdPartySignIn('google')}
-              loading={thirdPartyBusy}
-              fullWidth
-              size="lg"
-              variant="secondary"
+          {/* Display name */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Display Name</Text>
+            <Controller
+              control={control}
+              name="displayName"
+              render={({ field: { onChange, value, onBlur } }) => (
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.background,
+                      borderColor: errors.displayName ? theme.error : theme.border,
+                      color: theme.text,
+                    },
+                  ]}
+                  placeholder="How you'll appear in leagues"
+                  placeholderTextColor={theme.textMuted}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  value={value}
+                  autoCapitalize="words"
+                  textContentType="name"
+                  autoComplete="name"
+                  returnKeyType="next"
+                />
+              )}
             />
-            {appleAvailable ? (
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={
-                  scheme === 'dark'
-                    ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-                    : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-                }
-                cornerRadius={10}
-                style={styles.appleButton}
-                onPress={() => handleThirdPartySignIn('apple')}
-              />
-            ) : null}
-          </View>
-
-          {/* Divider */}
-          <View style={styles.dividerRow}>
-            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
-            <Text style={[styles.dividerText, { color: theme.textMuted }]}>or</Text>
-            <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            {errors.displayName && (
+              <Text style={[styles.fieldError, { color: theme.error }]}>
+                {errors.displayName.message}
+              </Text>
+            )}
           </View>
 
           {/* Email */}
@@ -249,14 +216,14 @@ export default function SignInScreen() {
                       color: theme.text,
                     },
                   ]}
-                  placeholder="••••••••"
+                  placeholder="At least 6 characters"
                   placeholderTextColor={theme.textMuted}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   value={value}
                   secureTextEntry
-                  textContentType="password"
-                  autoComplete="current-password"
+                  textContentType="newPassword"
+                  autoComplete="new-password"
                   returnKeyType="done"
                   onSubmitEditing={handleSubmit(onSubmit)}
                 />
@@ -270,7 +237,7 @@ export default function SignInScreen() {
           </View>
 
           <Button
-            title="Sign In"
+            title="Create Account"
             onPress={handleSubmit(onSubmit)}
             loading={isSubmitting}
             fullWidth
@@ -278,27 +245,10 @@ export default function SignInScreen() {
             style={{ marginTop: 8 }}
           />
 
-          {/* Carries whatever address is already typed so the user doesn't
-              retype it after a failed sign-in. */}
-          <TouchableOpacity style={styles.forgotLink} onPress={goToForgotPassword}>
-            <Text style={[styles.forgotText, { color: theme.tint }]}>
-              Forgot password?
-            </Text>
-          </TouchableOpacity>
-
-          {/* Email/password account creation — web /signup parity. Google and
-              Apple above create accounts transparently; this path serves users
-              without (or unwilling to link) a federated identity. */}
-          <TouchableOpacity
-            style={styles.signUpLink}
-            onPress={() => router.push('/(auth)/sign-up')}
-            hitSlop={10}
-          >
-            <Text style={[styles.signUpText, { color: theme.textMuted }]}>
-              New to sportDeets?{' '}
-              <Text style={[styles.signUpAccent, { color: theme.tint }]}>
-                Sign up with email
-              </Text>
+          <TouchableOpacity style={styles.signInLink} onPress={backToSignIn} hitSlop={10}>
+            <Text style={[styles.signInText, { color: theme.textMuted }]}>
+              Already have an account?{' '}
+              <Text style={[styles.signInAccent, { color: theme.tint }]}>Sign in</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -340,30 +290,6 @@ const styles = StyleSheet.create({
     borderLeftColor: '#EF4444',
   },
   errorBannerText: { fontSize: 14 },
-  thirdPartyStack: {
-    gap: 10,
-    marginBottom: 18,
-  },
-  appleButton: {
-    width: '100%',
-    height: 48,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 18,
-  },
-  dividerLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-  },
-  dividerText: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
   field: { marginBottom: 16 },
   label: {
     fontSize: 12,
@@ -380,9 +306,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   fieldError: { fontSize: 12, marginTop: 4 },
-  forgotLink: { alignItems: 'center', marginTop: 18 },
-  forgotText: { fontSize: 14, fontWeight: '600' },
-  signUpLink: { alignItems: 'center', marginTop: 14 },
-  signUpText: { fontSize: 14 },
-  signUpAccent: { fontWeight: '700' },
+  signInLink: { alignItems: 'center', marginTop: 18 },
+  signInText: { fontSize: 14 },
+  signInAccent: { fontWeight: '700' },
 });

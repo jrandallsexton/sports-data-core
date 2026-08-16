@@ -16,14 +16,24 @@ WHERE "SignInProvider" LIKE '{%'
 ORDER BY provider_len DESC;
 
 -- 2) Repair: extract sign_in_provider from the stored JSON.
--- Rows whose JSON lacks the key (or won't parse) are left untouched by the
--- WHERE clause below so nothing is silently blanked.
+--
+-- `IS JSON OBJECT` (PostgreSQL 16+; this cluster runs 17) guards the cast so a
+-- value that merely LOOKS like JSON can't abort the statement — the same
+-- malformed-input-must-not-break-things principle the code fix enforces.
+-- The extracted value is trimmed, blank-collapsed to 'unknown', and clamped to
+-- the column width so this repair can never reintroduce the original defect.
+-- Rows whose JSON lacks the key still land on 'unknown' rather than NULL
+-- (the column is NOT NULL).
 BEGIN;
 
 UPDATE "User"
-SET "SignInProvider" = ("SignInProvider"::jsonb ->> 'sign_in_provider')
+SET "SignInProvider" = LEFT(
+        COALESCE(
+            NULLIF(BTRIM("SignInProvider"::jsonb ->> 'sign_in_provider'), ''),
+            'unknown'),
+        100)
 WHERE "SignInProvider" LIKE '{%'
-  AND ("SignInProvider"::jsonb ->> 'sign_in_provider') IS NOT NULL;
+  AND "SignInProvider" IS JSON OBJECT;
 
 COMMIT;
 

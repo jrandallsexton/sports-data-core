@@ -62,8 +62,15 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
 
         result.IsSuccess.Should().BeTrue("a malformed provider must never block user creation");
 
-        var user = await DataContext.Users.FirstAsync(u => u.FirebaseUid == "firebase-oversized-provider");
-        user.SignInProvider.Length.Should().BeLessThanOrEqualTo(100);
+        // AsNoTracking + projection: assert on what was PERSISTED, not on the
+        // instance the handler still has tracked in this context.
+        var persistedProvider = await DataContext.Users
+            .AsNoTracking()
+            .Where(u => u.FirebaseUid == "firebase-oversized-provider")
+            .Select(u => u.SignInProvider)
+            .FirstAsync();
+
+        persistedProvider.Length.Should().BeLessThanOrEqualTo(100);
     }
 
     [Fact]
@@ -77,8 +84,14 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
             "   ");
 
         result.IsSuccess.Should().BeTrue();
-        var user = await DataContext.Users.FirstAsync(u => u.FirebaseUid == "firebase-blank-provider");
-        user.SignInProvider.Should().Be("unknown");
+
+        var persistedProvider = await DataContext.Users
+            .AsNoTracking()
+            .Where(u => u.FirebaseUid == "firebase-blank-provider")
+            .Select(u => u.SignInProvider)
+            .FirstAsync();
+
+        persistedProvider.Should().Be("unknown");
     }
 
     [Fact]

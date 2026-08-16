@@ -74,8 +74,13 @@ deploys: the middleware's create path finally succeeds.
 - A write failure on a **non-essential attribute** took down the
   **essential entity**. Attribute-level defects should degrade
   attribute-level data; the clamp enforces that.
-- The two auth paths had drifted apart — one correct, one not. The shared
-  resolver removes the duplication.
+- The two auth paths had drifted apart — one correct, one not. The fix
+  corrects the JWT-Bearer path only; the manual token-verification path
+  keeps its own inline extraction (it reads `sign_in_provider` out of the
+  decoded token's claim dictionary and was never defective). Folding it
+  onto `FirebaseSignInProviderResolver` would need an overload for the
+  dictionary shape and was deliberately left out of an outage fix —
+  worth doing next time this file is touched.
 - The failure was invisible in aggregate: existing users worked fine, so
   only the Firebase-vs-database count discrepancy exposed it. Worth a
   periodic reconciliation check.

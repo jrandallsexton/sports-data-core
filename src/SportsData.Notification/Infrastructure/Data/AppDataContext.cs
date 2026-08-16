@@ -52,6 +52,8 @@ namespace SportsData.Notification.Infrastructure.Data
 
         public DbSet<NotificationContestStart> NotificationContestStarts => Set<NotificationContestStart>();
 
+        public DbSet<SmackPhrase> SmackPhrases => Set<SmackPhrase>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -189,6 +191,34 @@ namespace SportsData.Notification.Infrastructure.Data
                 .IsUnique();
             modelBuilder.Entity<PickemGroupMatchup>()
                 .HasIndex(m => m.ContestId);
+
+            // SmackBot phrase catalog. Text is operator-authored and lives in
+            // the database because this repo is public — see
+            // docs/features/smackbot-voice.md.
+            modelBuilder.Entity<SmackPhrase>()
+                .Property(p => p.Text)
+                .HasMaxLength(300) // a push body truncates well before this
+                .IsRequired();
+
+            modelBuilder.Entity<SmackPhrase>()
+                .Property(p => p.Description)
+                .HasMaxLength(256);
+
+            // xmin concurrency token — phrases are operator-edited, so a
+            // management UI needs optimistic concurrency.
+            modelBuilder.Entity<SmackPhrase>()
+                .Property(p => p.RowVersion)
+                .HasColumnName("xmin")
+                .HasColumnType("xid")
+                .IsRowVersion();
+
+            // The catalog's only read shape: every active line for a
+            // (voice, situation) slot. Sport precedence is applied in memory
+            // over the handful of rows that returns, so it isn't indexed.
+            // NOT unique — unlike API's Prompt, this slot holds MANY lines
+            // and one is chosen per send.
+            modelBuilder.Entity<SmackPhrase>()
+                .HasIndex(p => new { p.Voice, p.Situation, p.IsActive });
         }
     }
 }

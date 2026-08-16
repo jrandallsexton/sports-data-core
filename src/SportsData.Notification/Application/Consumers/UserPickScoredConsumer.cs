@@ -53,17 +53,20 @@ namespace SportsData.Notification.Application.Consumers
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IPushNotificationSender _pushSender;
+        private readonly ISmackPhraseCatalog _smackPhraseCatalog;
 
         public UserPickScoredConsumer(
             ILogger<UserPickScoredConsumer> logger,
             AppDataContext dataContext,
             IDateTimeProvider dateTimeProvider,
-            IPushNotificationSender pushSender)
+            IPushNotificationSender pushSender,
+            ISmackPhraseCatalog smackPhraseCatalog)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
             _pushSender = pushSender;
+            _smackPhraseCatalog = smackPhraseCatalog;
         }
 
         public async Task Consume(ConsumeContext<UserPickScored> context)
@@ -149,8 +152,26 @@ namespace SportsData.Notification.Application.Consumers
                 .Select(g => g.Name)
                 .FirstOrDefaultAsync();
 
-            var title = msg.IsCorrect == true ? "Nice pick!" : "Tough loss";
-            var body = ComposeBody(msg, leagueName);
+            // Voice selection. Standard (the default for every user) keeps the
+            // neutral scoreline copy; Smack swaps the body for a situation-
+            // matched line from the catalog. A null return — empty catalog,
+            // unfilled slot, or a gambling filter that emptied the bucket —
+            // degrades to standard copy rather than dropping the push.
+            // See docs/features/smackbot-voice.md.
+            var voice = prefs?.PickResultVoice ?? NotificationVoice.Standard;
+
+            // An AgainstTheSpread player opted into spread-based scoring, so
+            // line-referencing copy is fair game. Anyone else has not, so the
+            // catalog filters those rows out.
+            var allowGamblingContent = msg.PickedSpread is not null;
+
+            var smackLine = await _smackPhraseCatalog.TryResolveAsync(
+                msg, voice, allowGamblingContent, context.CancellationToken);
+
+            var title = smackLine is not null
+                ? "SmackBot"
+                : msg.IsCorrect == true ? "Nice pick!" : "Tough loss";
+            var body = smackLine ?? ComposeBody(msg, leagueName);
 
             // Deep link to the scored game. Everything needed rides on the
             // event except the week, which comes from the local matchup

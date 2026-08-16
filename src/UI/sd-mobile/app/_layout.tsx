@@ -31,6 +31,8 @@ import { useAuthInit, useAuth } from '@/src/hooks/useAuth';
 import { useOtaUpdates } from '@/src/hooks/useOtaUpdates';
 import { useRegisterPushDevice } from '@/src/hooks/useRegisterPushDevice';
 import { ThemeProvider, useThemeMode } from '@/src/lib/theme/ThemeContext';
+import { gameRoute } from '@/src/utils/sportLinks';
+import { toPendingDeepLink, type PendingDeepLink } from '@/src/utils/deepLinks';
 import { TextSizeProvider, useTextSize } from '@/src/lib/textSize/TextSizeContext';
 import { SignalRGate } from '@/src/components/signalR/SignalRGate';
 import Toast from 'react-native-toast-message';
@@ -62,19 +64,6 @@ export const unstable_settings = {
 };
 
 SplashScreen.preventAutoHideAsync();
-
-/**
- * Wire contract for a LeagueInvite deep-link: kind === 'LeagueInvite' with a
- * string leagueId. Shared by the expo (Android content.data) and RNFirebase
- * (iOS remoteMessage.data) tap paths so the payload shape lives in one place.
- * Returns the validated leagueId, or null when it's not a LeagueInvite.
- */
-function getLeagueInviteId(data: Record<string, unknown> | null | undefined): string | null {
-  if (!data) return null;
-  return data.kind === 'LeagueInvite' && typeof data.leagueId === 'string'
-    ? data.leagueId
-    : null;
-}
 
 // Notification handler — controls what happens when a push arrives
 // while the app is in the foreground. iOS does not show foreground
@@ -248,7 +237,7 @@ function NativePushDiagnostics() {
   const router = useRouter();
   const segments = useSegments();
   const { user, isInitialized } = useAuth();
-  const [pendingLeagueId, setPendingLeagueId] = useState<string | null>(null);
+  const [pendingDeepLink, setPendingDeepLink] = useState<PendingDeepLink | null>(null);
 
   useEffect(() => {
     // Privacy: log only non-content fields. console.log feeds Sentry
@@ -272,8 +261,8 @@ function NativePushDiagnostics() {
 
       // Deep-link dispatch. Stash the target; the auth-gated effect below
       // navigates once the router/auth tree is ready.
-      const inviteLeagueId = getLeagueInviteId(data);
-      if (inviteLeagueId) setPendingLeagueId(inviteLeagueId);
+      const target = toPendingDeepLink(data);
+      if (target) setPendingDeepLink(target);
     };
 
     if (lastResponse) {
@@ -307,8 +296,8 @@ function NativePushDiagnostics() {
       remoteMessage: FirebaseMessagingTypes.RemoteMessage | null,
     ) => {
       if (!remoteMessage) return;
-      const inviteLeagueId = getLeagueInviteId(remoteMessage.data ?? {});
-      if (inviteLeagueId) setPendingLeagueId(inviteLeagueId);
+      const target = toPendingDeepLink(remoteMessage.data ?? {});
+      if (target) setPendingDeepLink(target);
     };
 
     let cancelled = false;
@@ -346,16 +335,33 @@ function NativePushDiagnostics() {
   // signal AuthGuard keys off, so once it's no longer '(auth)' the redirect
   // has settled. Keep pendingLeagueId cached until then.
   useEffect(() => {
-    if (!pendingLeagueId) return;
+    if (!pendingDeepLink) return;
     if (!isInitialized || !user) return;
     if (segments[0] === '(auth)') return;
-    const leagueId = pendingLeagueId;
-    setPendingLeagueId(null);
-    router.push({
-      pathname: '/league-invite/[leagueId]',
-      params: { leagueId },
-    } as never);
-  }, [pendingLeagueId, isInitialized, user, router, segments]);
+
+    const target = pendingDeepLink;
+    setPendingDeepLink(null);
+
+    if (target.kind === 'invite') {
+      router.push({
+        pathname: '/league-invite/[leagueId]',
+        params: { leagueId: target.leagueId },
+      } as never);
+      return;
+    }
+
+    // Line-move push → the game page, scoped to the picked league when the
+    // payload carried one. gameRoute owns the segment convention.
+    router.push(
+      gameRoute({
+        sport: target.sport,
+        league: target.league,
+        contestId: target.contestId,
+        leagueId: target.leagueId,
+        week: target.week,
+      }) as never,
+    );
+  }, [pendingDeepLink, isInitialized, user, router, segments]);
 
   return null;
 }

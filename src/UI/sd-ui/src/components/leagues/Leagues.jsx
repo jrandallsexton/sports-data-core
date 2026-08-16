@@ -6,6 +6,11 @@ import toast from "react-hot-toast";
 import LeaguesApi from "api/leagues/leaguesApi";
 import LeagueOverviewCard from "./LeagueOverviewCard";
 import CloneLeagueDialog from "./CloneLeagueDialog";
+import { useUserDto } from "../../contexts/UserContext";
+import {
+  anySportOpenForCreation,
+  getLeagueCreationGates,
+} from "../../utils/leagueCreationGates";
 import "./Leagues.css"; // for grid styling
 
 const ALL_LEAGUES = "All";
@@ -37,8 +42,30 @@ function loadPersistedFilters() {
 }
 
 const Leagues = () => {
+  const { userDto } = useUserDto();
+  const isAdmin = userDto?.isAdmin === true;
+
   const [leagues, setLeagues] = useState([]);
   const [cloneTarget, setCloneTarget] = useState(null);
+
+  // League creation is visible only to admins until at least one sport's
+  // creation gate opens (pre-season lockout). The server enforces the gate on
+  // create; this only hides the affordance. null = gates not loaded yet, so
+  // non-admins see no button during the fetch (no flash) — a RESOLVED failure
+  // fails open per getLeagueCreationGates' contract. Mirrors sd-mobile's
+  // leagues screen.
+  const [creationGates, setCreationGates] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    getLeagueCreationGates().then((gates) => {
+      if (!cancelled) setCreationGates(gates);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const canCreate =
+    isAdmin || (creationGates !== null && anySportOpenForCreation(creationGates));
   const [cloning, setCloning] = useState(false);
   const [showPast, setShowPast] = useState(() => loadPersistedFilters().showPast);
   const [leagueFilter, setLeagueFilter] = useState(() => loadPersistedFilters().leagueFilter ?? ALL_LEAGUES);
@@ -149,9 +176,11 @@ const Leagues = () => {
     <div className="page-container">
       <div className="leagues-header">
         <h1>My Leagues</h1>
-        <Link to="/app/league/create" className="create-league-button">
-          + Create League
-        </Link>
+        {canCreate && (
+          <Link to="/app/league/create" className="create-league-button">
+            + Create League
+          </Link>
+        )}
       </div>
 
       {leagues.length > 0 && showFilterBar && (
@@ -226,8 +255,13 @@ const Leagues = () => {
 
       {leagues.length === 0 ? (
         <p>
-          You’re not part of any leagues yet.{" "}
-          <Link to="/app/league/create">Create one</Link>.
+          You’re not part of any leagues yet.
+          {canCreate && (
+            <>
+              {" "}
+              <Link to="/app/league/create">Create one</Link>.
+            </>
+          )}
         </p>
       ) : visibleLeagues.length === 0 ? (
         <p>No leagues match this filter.</p>

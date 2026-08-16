@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Contests;
+using SportsData.Core.Infrastructure.Clients.Contest;
+using SportsData.Core.Infrastructure.Clients.Contest.Queries;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
 using SportsData.Notification.Infrastructure.Notifications;
@@ -39,6 +41,16 @@ namespace SportsData.Notification.Application.Consumers
     /// </para>
     ///
     /// <para>
+    /// Enrichment: after the picker gate (so only line moves that actually
+    /// notify someone cost a call), the contest is fetched from Producer via
+    /// <c>IContestClientFactory</c> to put the matchup in the title
+    /// ("Line moved: KC @ LV") and to carry deep-link context. Stacked
+    /// number-only alerts were indistinguishable from one another. Enrichment
+    /// is strictly additive — any failure, including an unconfigured client
+    /// slot, falls back to the original number-only copy and still sends.
+    /// </para>
+    ///
+    /// <para>
     /// Per-user dispatch mirrors <see cref="UserPickScoredConsumer"/>: atomic
     /// NotificationLog claim on the unique <c>(CorrelationId, UserId, Channel)</c>
     /// index (idempotent across redelivery and across pickers of the same
@@ -53,17 +65,20 @@ namespace SportsData.Notification.Application.Consumers
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IPushNotificationSender _pushSender;
+        private readonly IContestClientFactory _contestClientFactory;
 
         public ContestOddsUpdatedConsumer(
             ILogger<ContestOddsUpdatedConsumer> logger,
             AppDataContext dataContext,
             IDateTimeProvider dateTimeProvider,
-            IPushNotificationSender pushSender)
+            IPushNotificationSender pushSender,
+            IContestClientFactory contestClientFactory)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
             _pushSender = pushSender;
+            _contestClientFactory = contestClientFactory;
         }
 
         public async Task Consume(ConsumeContext<ContestOddsUpdated> context)
@@ -87,41 +102,156 @@ namespace SportsData.Notification.Application.Consumers
                 return;
             }
 
-            // Pickers in leagues whose scoring depends on the moved dimension,
-            // deduped across leagues. The join to PickemGroups applies the
-            // PickType filter (ATS↔spread, OverUnder↔total, StraightUp never)
-            // and drops picks whose league projection hasn't landed yet. One
-            // physical line move → one push per user regardless of how many
-            // qualifying leagues they picked it in.
-            var userIds = await (
+            // Pickers in leagues whose scoring depends on the moved dimension.
+            // The join to PickemGroups applies the PickType filter (ATS↔spread,
+            // OverUnder↔total, StraightUp never) and drops picks whose league
+            // projection hasn't landed yet. One physical line move → one push
+            // per user regardless of how many qualifying leagues they picked
+            // it in.
+            //
+            // The deep-link target league is taken from THIS filtered set, so
+            // it is guaranteed to be a league where the line actually matters.
+            // Resolving it from a separate "user's picks on this contest" query
+            // would be wrong: users routinely pick the same contest in leagues
+            // of mixed types, and the earliest of those is often StraightUp —
+            // a league where the move is irrelevant. Ordered by the league's
+            // CreatedUtc so the choice is deterministic across redelivery.
+            var qualifyingPicks = await (
                 from p in _dataContext.UserPicks.AsNoTracking()
                 join g in _dataContext.PickemGroups.AsNoTracking() on p.PickemGroupId equals g.Id
                 where p.ContestId == msg.ContestId
                     && ((spreadMoved && g.PickType == LeaguePickType.AgainstTheSpread)
                         || (totalMoved && g.PickType == LeaguePickType.OverUnder))
-                select p.UserId)
-                .Distinct()
+                select new { p.UserId, LeagueId = g.Id, g.CreatedUtc })
                 .ToListAsync(context.CancellationToken);
 
-            if (userIds.Count == 0)
+            var targets = qualifyingPicks
+                .GroupBy(x => x.UserId)
+                .Select(grp => new
+                {
+                    UserId = grp.Key,
+                    LeagueId = grp.OrderBy(x => x.CreatedUtc).ThenBy(x => x.LeagueId).First().LeagueId
+                })
+                .ToList();
+
+            if (targets.Count == 0)
             {
                 _logger.LogInformation(
                     "No pickers in odds-sensitive leagues for ContestId {ContestId}; nothing to notify.",
                     msg.ContestId);
+
+                await WarnOnUnprojectedLeaguesAsync(msg.ContestId, context.CancellationToken);
                 return;
             }
 
-            var title = "Line moved";
-            var body = ComposeBody(msg, spreadMoved, totalMoved);
+            // Enrich AFTER the picker gate: only line moves that actually
+            // notify someone are worth a call to Producer. A failure here
+            // costs the matchup name and the deep link, never the push.
+            var contest = await TryGetContestAsync(msg, context.CancellationToken);
+
+            var title = ComposeTitle(contest);
+            var body = ComposeBody(msg, contest, spreadMoved, totalMoved);
 
             _logger.LogInformation(
-                "Dispatching line-move notification to {PickerCount} picker(s). SpreadMoved={SpreadMoved}, TotalMoved={TotalMoved}",
-                userIds.Count, spreadMoved, totalMoved);
+                "Dispatching line-move notification to {PickerCount} picker(s). SpreadMoved={SpreadMoved}, TotalMoved={TotalMoved}, Enriched={Enriched}",
+                targets.Count, spreadMoved, totalMoved, contest is not null);
 
-            foreach (var userId in userIds)
+            foreach (var target in targets)
             {
-                await DispatchToUserAsync(userId, msg, title, body, context.CancellationToken);
+                var data = BuildDeepLinkData(msg, contest, target.LeagueId);
+                await DispatchToUserAsync(target.UserId, msg, title, body, data, context.CancellationToken);
             }
+        }
+
+        /// <summary>
+        /// Fetches the contest from Producer for notification copy + deep-link
+        /// context. Returns null on ANY failure — an unconfigured client slot,
+        /// a transport error, or a non-success result — so the caller falls back
+        /// to the number-only copy this consumer shipped originally. Enrichment
+        /// is strictly additive; it must never cost a notification.
+        /// </summary>
+        private async Task<SeasonContestDto> TryGetContestAsync(
+            ContestOddsUpdated msg,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var client = _contestClientFactory.Resolve(msg.Sport);
+                var result = await client.GetContestById(msg.ContestId, cancellationToken);
+
+                if (result is Success<GetContestByIdResponse> { Value.Contest: not null } success)
+                    return success.Value.Contest;
+
+                _logger.LogWarning(
+                    "Contest lookup returned no contest for {ContestId}; sending un-enriched line-move copy.",
+                    msg.ContestId);
+            }
+            catch (Exception ex)
+            {
+                // Includes the unconfigured-client case: the factory always
+                // returns a client, so a missing base address surfaces here as
+                // an invalid-request-URI exception rather than a null.
+                _logger.LogWarning(ex,
+                    "Contest lookup failed for {ContestId}; sending un-enriched line-move copy.",
+                    msg.ContestId);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Diagnostic for the silent-gap class of bug: picks exist on this
+        /// contest but no league projection backs them, so the inner join above
+        /// drops them and nobody is notified. Fails closed by design, but it
+        /// used to fail closed INVISIBLY — on 2026-08-16 thirteen of sixteen
+        /// AgainstTheSpread leagues were missing from the projection and no
+        /// line-move notification had ever reached them. Remedy is
+        /// <c>POST admin/backfill/pickemgroups</c>.
+        /// </summary>
+        private async Task WarnOnUnprojectedLeaguesAsync(Guid contestId, CancellationToken cancellationToken)
+        {
+            var unprojected = await (
+                from p in _dataContext.UserPicks.AsNoTracking()
+                where p.ContestId == contestId
+                    && !_dataContext.PickemGroups.Any(g => g.Id == p.PickemGroupId)
+                select p.PickemGroupId)
+                .Distinct()
+                .CountAsync(cancellationToken);
+
+            if (unprojected > 0)
+            {
+                _logger.LogWarning(
+                    "Picks exist on ContestId {ContestId} for {UnprojectedLeagueCount} league(s) with no local " +
+                    "PickemGroup projection; those pickers cannot be targeted. Run admin/backfill/pickemgroups.",
+                    contestId, unprojected);
+            }
+        }
+
+        /// <summary>
+        /// Deep-link payload consumed by the mobile tap handlers. Mirrors the
+        /// kind/id contract established by UserInvitedToPickemGroupConsumer.
+        /// Sport travels as the backend enum name; the client maps it to route
+        /// segments via its own resolveSportLeague, so URL conventions stay
+        /// owned by the client.
+        /// </summary>
+        private static Dictionary<string, string> BuildDeepLinkData(
+            ContestOddsUpdated msg,
+            SeasonContestDto contest,
+            Guid leagueId)
+        {
+            var data = new Dictionary<string, string>
+            {
+                ["kind"] = "OddsChanged",
+                ["target"] = "matchup",
+                ["contestId"] = msg.ContestId.ToString(),
+                ["sport"] = msg.Sport.ToString(),
+                ["leagueId"] = leagueId.ToString()
+            };
+
+            if (contest?.Week is { } week)
+                data["week"] = week.ToString();
+
+            return data;
         }
 
         private async Task DispatchToUserAsync(
@@ -129,6 +259,7 @@ namespace SportsData.Notification.Application.Consumers
             ContestOddsUpdated msg,
             string title,
             string body,
+            IReadOnlyDictionary<string, string> data,
             CancellationToken cancellationToken)
         {
             using var _ = _logger.BeginScope(new Dictionary<string, object> { ["UserId"] = userId });
@@ -193,7 +324,7 @@ namespace SportsData.Notification.Application.Consumers
             var successCount = 0;
             foreach (var device in devices)
             {
-                var result = await _pushSender.SendAsync(device.FcmToken, title, body);
+                var result = await _pushSender.SendAsync(device.FcmToken, title, body, data, cancellationToken);
                 if (result is Success<string>)
                     successCount++;
                 else
@@ -216,21 +347,45 @@ namespace SportsData.Notification.Application.Consumers
             await _dataContext.SaveChangesAsync(cancellationToken);
         }
 
-        private static string ComposeBody(ContestOddsUpdated msg, bool spreadMoved, bool totalMoved)
+        /// <summary>
+        /// Title carries the matchup because that's the boldest line in the
+        /// tray — stacked "Line moved" alerts were indistinguishable without
+        /// it. ShortName is already the abbreviated form Producer stores
+        /// ("KC @ LV"), which is what keeps the title inside the notification
+        /// width. Falls back to the original bare title when un-enriched.
+        /// </summary>
+        private static string ComposeTitle(SeasonContestDto contest)
         {
-            // The event carries numbers but no team names, so the copy is
-            // number-only. Provider name is included when present to anchor the
-            // move ("per DraftKings"). MLB never reaches here (all-null deltas
-            // are gated out upstream), so this only formats football lines.
+            return string.IsNullOrWhiteSpace(contest?.ShortName)
+                ? "Line moved"
+                : $"Line moved: {contest.ShortName}";
+        }
+
+        private static string ComposeBody(
+            ContestOddsUpdated msg,
+            SeasonContestDto contest,
+            bool spreadMoved,
+            bool totalMoved)
+        {
+            // Provider name is included when present to anchor the move ("per
+            // DraftKings"). MLB never reaches here (all-null deltas are gated
+            // out upstream), so this only formats football lines.
             var via = string.IsNullOrWhiteSpace(msg.ProviderName) ? "" : $" ({msg.ProviderName})";
 
+            // The full name disambiguates the abbreviation in the title. When
+            // un-enriched we keep the original "a game you picked" phrasing so
+            // the copy still reads as a sentence.
+            var subject = string.IsNullOrWhiteSpace(contest?.Name)
+                ? "a game you picked"
+                : contest.Name;
+
             if (spreadMoved && totalMoved)
-                return $"The line moved on a game you picked: spread {FormatLine(msg.OldSpread)} → {FormatLine(msg.NewSpread)}, total {FormatLine(msg.OldOverUnder)} → {FormatLine(msg.NewOverUnder)}{via}.";
+                return $"{subject}: spread {FormatLine(msg.OldSpread)} → {FormatLine(msg.NewSpread)}, total {FormatLine(msg.OldOverUnder)} → {FormatLine(msg.NewOverUnder)}{via}.";
 
             if (spreadMoved)
-                return $"The spread moved on a game you picked: {FormatLine(msg.OldSpread)} → {FormatLine(msg.NewSpread)}{via}.";
+                return $"{subject}: spread {FormatLine(msg.OldSpread)} → {FormatLine(msg.NewSpread)}{via}.";
 
-            return $"The total moved on a game you picked: {FormatLine(msg.OldOverUnder)} → {FormatLine(msg.NewOverUnder)}{via}.";
+            return $"{subject}: total {FormatLine(msg.OldOverUnder)} → {FormatLine(msg.NewOverUnder)}{via}.";
         }
 
         private static string FormatLine(decimal? value)

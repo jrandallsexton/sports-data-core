@@ -31,6 +31,13 @@ namespace SportsData.Notification
 
             var services = builder.Services;
             services.AddCoreServices(config, mode);
+            // Typed service clients. ContestOddsUpdatedConsumer resolves
+            // IContestClientFactory to enrich line-move pushes with the
+            // matchup (Producer owns canonical contest data). Every client
+            // call there degrades gracefully, so a missing
+            // CommonConfig:ContestClientConfig:* slot costs the enrichment,
+            // not the notification.
+            services.AddClients(config, mode);
             services.AddControllers();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();

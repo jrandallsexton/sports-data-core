@@ -237,4 +237,80 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
 
         (await DataContext.UserDevices.CountAsync(d => d.UserId == userId)).Should().Be(0);
     }
+
+    [Fact]
+    public async Task Consume_SendsMatchupDeepLinkPayload()
+    {
+        // Tapping a result push must land on the scored game, not the app's
+        // last screen. Week comes from the local matchup projection so this
+        // path makes no service call.
+        var userId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        var leagueId = Guid.NewGuid();
+
+        DataContext.PickemGroupMatchups.Add(new PickemGroupMatchup
+        {
+            Id = Guid.NewGuid(),
+            PickemGroupId = leagueId,
+            ContestId = contestId,
+            StartDateUtc = FixedNow,
+            SeasonYear = 2026,
+            SeasonWeek = 7,
+            StatusTypeName = "STATUS_FINAL",
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        await DataContext.SaveChangesAsync();
+        await SeedDeviceAsync(userId);
+
+        IReadOnlyDictionary<string, string> captured = null;
+        _pushSender
+            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, string, string, IReadOnlyDictionary<string, string>, CancellationToken>(
+                (_, _, _, data, _) => captured = data)
+            .ReturnsAsync(new Success<string>("msg-id"));
+
+        var sut = Mocker.CreateInstance<UserPickScoredConsumer>();
+        await sut.Consume(ContextFor(Msg(
+            userId, "BOS", "NYY", awayScore: 3, homeScore: 2,
+            isCorrect: true, pickedIsHome: false, pickedSpread: null,
+            contestId: contestId, leagueId: leagueId)));
+
+        captured.Should().NotBeNull();
+        captured["kind"].Should().Be("PickScored");
+        captured["target"].Should().Be("matchup");
+        captured["contestId"].Should().Be(contestId.ToString());
+        captured["leagueId"].Should().Be(leagueId.ToString());
+        captured["sport"].Should().Be(nameof(Sport.BaseballMlb));
+        captured["week"].Should().Be("7");
+    }
+
+    [Fact]
+    public async Task Consume_NoMatchupProjection_OmitsWeekButStillDeepLinks()
+    {
+        // A missing projection must not cost the deep link — week is optional
+        // on the route.
+        var userId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        await SeedDeviceAsync(userId);
+
+        IReadOnlyDictionary<string, string> captured = null;
+        _pushSender
+            .Setup(x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<IReadOnlyDictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, string, string, IReadOnlyDictionary<string, string>, CancellationToken>(
+                (_, _, _, data, _) => captured = data)
+            .ReturnsAsync(new Success<string>("msg-id"));
+
+        var sut = Mocker.CreateInstance<UserPickScoredConsumer>();
+        await sut.Consume(ContextFor(Msg(
+            userId, "BOS", "NYY", awayScore: 3, homeScore: 2,
+            isCorrect: true, pickedIsHome: false, pickedSpread: null,
+            contestId: contestId)));
+
+        captured.Should().NotBeNull();
+        captured["contestId"].Should().Be(contestId.ToString());
+        captured.ContainsKey("week").Should().BeFalse();
+    }
 }

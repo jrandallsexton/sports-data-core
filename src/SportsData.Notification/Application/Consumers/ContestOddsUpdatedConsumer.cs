@@ -6,6 +6,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Contests;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Contest.Queries;
+using SportsData.Notification.Application.Dispatching;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
 using SportsData.Notification.Infrastructure.Notifications;
@@ -237,32 +238,16 @@ namespace SportsData.Notification.Application.Consumers
             }
         }
 
-        /// <summary>
-        /// Deep-link payload consumed by the mobile tap handlers. Mirrors the
-        /// kind/id contract established by UserInvitedToPickemGroupConsumer.
-        /// Sport travels as the backend enum name; the client maps it to route
-        /// segments via its own resolveSportLeague, so URL conventions stay
-        /// owned by the client.
-        /// </summary>
         private static Dictionary<string, string> BuildDeepLinkData(
             ContestOddsUpdated msg,
             SeasonContestDto contest,
             Guid leagueId)
-        {
-            var data = new Dictionary<string, string>
-            {
-                ["kind"] = "OddsChanged",
-                ["target"] = "matchup",
-                ["contestId"] = msg.ContestId.ToString(),
-                ["sport"] = msg.Sport.ToString(),
-                ["leagueId"] = leagueId.ToString()
-            };
-
-            if (contest?.Week is { } week)
-                data["week"] = week.ToString();
-
-            return data;
-        }
+            => MatchupDeepLink.Build(
+                MatchupDeepLink.OddsChangedKind,
+                msg.ContestId,
+                msg.Sport,
+                leagueId,
+                contest?.Week);
 
         private async Task DispatchToUserAsync(
             Guid userId,

@@ -64,7 +64,7 @@ Payload follows the `kind`/id contract established by
 
 | key | value |
 |---|---|
-| `kind` | `OddsChanged` |
+| `kind` | `OddsChanged` or `PickScored` |
 | `target` | `matchup` |
 | `contestId` | contest guid |
 | `sport` | backend Sport enum name (`FootballNcaa`) |
@@ -88,20 +88,33 @@ line move is irrelevant — roughly 60% of the time. Within the qualifying set,
 ordering is by the league's `CreatedUtc` (then id) so the choice is
 deterministic across redelivery.
 
-## Configuration (required)
+## Configuration (already provisioned)
 
 Notification now calls `services.AddClients(config, mode)`. The contest client
-resolves per sport, falling back to a mode-agnostic slot:
+resolves per sport, falling back to a mode-agnostic slot. **These keys already
+existed** in Azure AppConfig under `Prod.All` (Notification runs `mode=All`,
+and `AppConfiguration` selects `CommonConfig:*` at `{label}.{mode}`) — no
+provisioning was needed:
 
 ```text
-CommonConfig:ContestClientConfig:FootballNcaa:ApiUrl → http://producer-svc-football-ncaa
-CommonConfig:ContestClientConfig:FootballNfl:ApiUrl  → http://producer-svc-football-nfl
-CommonConfig:ContestClientConfig:ApiUrl              (fallback)
+# label Prod.All (per-sport, what the factory resolves first)
+CommonConfig:ContestClientConfig:FootballNcaa:ApiUrl → http://producer-svc-football-ncaa/api/
+CommonConfig:ContestClientConfig:FootballNfl:ApiUrl  → http://producer-svc-football-nfl/api/
+CommonConfig:ContestClientConfig:BaseballMlb:ApiUrl  → http://producer-svc-baseball-mlb/api/
+
+# label Prod (mode-agnostic fallback)
+CommonConfig:ContestClientConfig:ApiUrl              → http://producer-svc-football-ncaa/api/
 ```
 
-Add these under the Notification label in Azure AppConfig. **If they are
-absent the feature degrades silently to the old copy** — the notification
-still sends, so a missed config slot is a quality regression, not an outage.
+Note the trailing `/api/` **with** the trailing slash: `HttpClient` relative
+resolution only appends when the base ends in `/`, otherwise `contests/{id}`
+would replace the last segment and drop the `/api` prefix. Producer's
+`ContestController` has no auth filter, so the per-sport `SecretKey` entries
+alongside these are unused on this path.
+
+If a slot were ever absent the feature degrades silently to the old copy — the
+notification still sends, so a missing key is a quality regression, not an
+outage.
 
 ## Silent-gap diagnostic
 
@@ -112,8 +125,21 @@ picks whose `PickemGroup` projection is missing and logs a warning naming
 their members had never received a line-move notification and nothing was
 logged. The inner join fails closed, which is right — but it should say so.
 
+## Reuse: one contract, many kinds
+
+The payload is built by `Application/Dispatching/MatchupDeepLink`, the
+server-side twin of the client's `src/utils/deepLinks.ts`. Each side names the
+contract once, so a new matchup-bound notification adds a kind constant on the
+server and an entry in the client's `MATCHUP_KINDS` set — nothing else.
+
+Kinds landing on the game page:
+
+| Kind | Source | Notes |
+|---|---|---|
+| `OddsChanged` | `ContestOddsUpdatedConsumer` | week from `SeasonContestDto` (service call) |
+| `PickScored` | `UserPickScoredConsumer` | week from the local `PickemGroupMatchup` projection — **no service call**; ids all ride on the event |
+
 ## Not in scope
 
-`UserPickScoredConsumer` and the contest-start reminders have the same
-"nowhere to tap" gap and could reuse this payload shape. Deliberately deferred
-to keep this change reviewable.
+Contest-start reminders have the same "nowhere to tap" gap and could reuse this
+payload shape. Deferred to keep each change reviewable.

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Picks;
+using SportsData.Notification.Application.Dispatching;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
 using SportsData.Notification.Infrastructure.Notifications;
@@ -151,6 +152,23 @@ namespace SportsData.Notification.Application.Consumers
             var title = msg.IsCorrect == true ? "Nice pick!" : "Tough loss";
             var body = ComposeBody(msg, leagueName);
 
+            // Deep link to the scored game. Everything needed rides on the
+            // event except the week, which comes from the local matchup
+            // projection — no service call on this path. A missing projection
+            // just omits the week; gameRoute treats it as optional.
+            var week = await _dataContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.ContestId == msg.ContestId && m.PickemGroupId == msg.LeagueId)
+                .Select(m => (int?)m.SeasonWeek)
+                .FirstOrDefaultAsync();
+
+            var data = MatchupDeepLink.Build(
+                MatchupDeepLink.PickScoredKind,
+                msg.ContestId,
+                msg.Sport,
+                msg.LeagueId,
+                week);
+
             // Per-device dispatch. Single-token send rather than multicast
             // because v1's IPushNotificationSender surface is one-at-a-time;
             // multicast batching can come later if device counts per user
@@ -163,7 +181,8 @@ namespace SportsData.Notification.Application.Consumers
             var failureReasons = new List<string>();
             foreach (var device in devices)
             {
-                var result = await _pushSender.SendAsync(device.FcmToken, title, body);
+                var result = await _pushSender.SendAsync(
+                    device.FcmToken, title, body, data, context.CancellationToken);
                 if (result is Success<string>)
                 {
                     successCount++;

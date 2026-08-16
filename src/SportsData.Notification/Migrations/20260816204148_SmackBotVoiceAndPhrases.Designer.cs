@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsData.Notification.Infrastructure.Data;
@@ -11,9 +12,11 @@ using SportsData.Notification.Infrastructure.Data;
 namespace SportsData.Notification.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    partial class AppDataContextModelSnapshot : ModelSnapshot
+    [Migration("20260816204148_SmackBotVoiceAndPhrases")]
+    partial class SmackBotVoiceAndPhrases
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -634,10 +637,7 @@ namespace SportsData.Notification.Migrations
 
                     b.HasIndex("Voice", "Situation", "IsActive");
 
-                    b.ToTable("SmackPhrases", t =>
-                        {
-                            t.HasCheckConstraint("CK_SmackPhrases_Weight_Positive", "\"Weight\" >= 1");
-                        });
+                    b.ToTable("SmackPhrases");
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.User", b =>

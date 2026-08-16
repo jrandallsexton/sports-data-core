@@ -124,6 +124,7 @@ namespace SportsData.Notification
             // consumers call after a projection write that could affect its
             // respective scope.
             services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+            services.AddScoped<ISmackPhraseCatalog, SmackPhraseCatalog>();
             services.AddScoped<IPickDeadlineReminderScheduler, PickDeadlineReminderScheduler>();
             services.AddScoped<IContestStartReminderScheduler, ContestStartReminderScheduler>();
 

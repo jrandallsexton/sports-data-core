@@ -19,7 +19,11 @@ import { getTheme } from '@/constants/Colors';
 import { CloneLeagueModal } from '@/src/components/features/leagues/CloneLeagueModal';
 import { LeagueCard } from '@/src/components/features/leagues/LeagueCard';
 import { leaguesApi, leaguesKeys, type LeagueSummary } from '@/src/services/api/leaguesApi';
-import { standingsKeys } from '@/src/hooks/useStandings';
+import { standingsKeys, useCurrentUser } from '@/src/hooks/useStandings';
+import {
+  anySportOpenForCreation,
+  useLeagueCreationGatesState,
+} from '@/src/hooks/useLeagueCreationGates';
 
 // leaguesKeys moved to services/api/leaguesApi.ts — shared cache keys must
 // not live in a route module (see PR #570 review).
@@ -46,6 +50,16 @@ export default function LeaguesScreen() {
   const theme = getTheme(scheme);
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  // League creation is visible only to admins until at least one sport's
+  // creation gate opens (pre-season lockout). The server enforces the gate on
+  // create; this only hides the affordance. While the gates query is pending,
+  // non-admins see no button (fail closed visually) instead of a flash; a
+  // RESOLVED failure fails open per the gates hook's contract.
+  const { data: me } = useCurrentUser();
+  const isAdmin = me?.isAdmin === true;
+  const { gates, isPending: gatesPending } = useLeagueCreationGatesState();
+  const canCreate = isAdmin || (!gatesPending && anySportOpenForCreation(gates));
 
   const [cloneTarget, setCloneTarget] = useState<LeagueSummary | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -153,20 +167,21 @@ export default function LeaguesScreen() {
           // Mirrors sd-ui's Leagues.jsx header (title left, "+ Create League"
           // right). The in-content button below only renders on the empty state,
           // so without this there's no way to create a second league from here.
-          // Left unconditional to match web: the create screen surfaces the
-          // per-sport availability gate, and the API enforces it server-side.
-          headerRight: () => (
-            <TouchableOpacity
-              style={styles.headerCreate}
-              onPress={() => router.push('/create-league' as never)}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="Create league"
-            >
-              <Ionicons name="add" size={18} color={theme.tint} />
-              <Text style={[styles.headerCreateText, { color: theme.tint }]}>Create</Text>
-            </TouchableOpacity>
-          ),
+          // Hidden while every sport's creation gate is closed unless the user
+          // is an admin; the API enforces the same gate server-side.
+          headerRight: () =>
+            canCreate ? (
+              <TouchableOpacity
+                style={styles.headerCreate}
+                onPress={() => router.push('/create-league' as never)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Create league"
+              >
+                <Ionicons name="add" size={18} color={theme.tint} />
+                <Text style={[styles.headerCreateText, { color: theme.tint }]}>Create</Text>
+              </TouchableOpacity>
+            ) : null,
         }}
       />
 
@@ -251,14 +266,16 @@ export default function LeaguesScreen() {
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>
               You&rsquo;re not part of any leagues yet.
             </Text>
-            <TouchableOpacity
-              style={[styles.createButton, { backgroundColor: theme.tint }]}
-              onPress={() => router.push('/create-league' as never)}
-            >
-              <Text style={[styles.createButtonText, { color: theme.textOnAccent }]}>
-                Create League
-              </Text>
-            </TouchableOpacity>
+            {canCreate && (
+              <TouchableOpacity
+                style={[styles.createButton, { backgroundColor: theme.tint }]}
+                onPress={() => router.push('/create-league' as never)}
+              >
+                <Text style={[styles.createButtonText, { color: theme.textOnAccent }]}>
+                  Create League
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : visibleLeagues.length === 0 ? (
           <Text style={[styles.emptyText, { color: theme.textMuted }]}>

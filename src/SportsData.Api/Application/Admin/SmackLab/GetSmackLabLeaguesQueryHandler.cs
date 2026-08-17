@@ -37,7 +37,11 @@ public class GetSmackLabLeaguesQueryHandler : IGetSmackLabLeaguesQueryHandler
 
     public async Task<Result<List<SmackLabLeagueDto>>> ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        var leagues = await _db.UserPicks
+        // Anonymous projection end-to-end on the server: EF cannot translate
+        // an OrderBy over a constructor-projected record's property (nor the
+        // enum ToStrings), so the DTO is shaped in memory AFTER the ordered
+        // rows come back.
+        var rows = await _db.UserPicks
             .AsNoTracking()
             .Where(p => p.IsCorrect != null)
             .GroupBy(p => p.PickemGroupId)
@@ -46,14 +50,21 @@ public class GetSmackLabLeaguesQueryHandler : IGetSmackLabLeaguesQueryHandler
                 _db.PickemGroups.AsNoTracking(),
                 x => x.LeagueId,
                 grp => grp.Id,
-                (x, grp) => new SmackLabLeagueDto(
+                (x, grp) => new
+                {
                     grp.Id,
                     grp.Name,
-                    grp.Sport.ToString(),
-                    grp.PickType.ToString(),
-                    x.ScoredPickCount))
-            .OrderByDescending(l => l.ScoredPickCount)
+                    grp.Sport,
+                    grp.PickType,
+                    x.ScoredPickCount
+                })
+            .OrderByDescending(x => x.ScoredPickCount)
             .ToListAsync(cancellationToken);
+
+        var leagues = rows
+            .Select(x => new SmackLabLeagueDto(
+                x.Id, x.Name, x.Sport.ToString(), x.PickType.ToString(), x.ScoredPickCount))
+            .ToList();
 
         return new Success<List<SmackLabLeagueDto>>(leagues);
     }

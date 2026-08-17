@@ -93,6 +93,19 @@ namespace SportsData.Core.Infrastructure.Clients.Notification.Dtos
         public uint? RowVersion { get; set; }
     }
 
+    /// <summary>
+    /// A stored rating, read back so the Lab can re-hydrate stars on reload.
+    /// RenderedText travels so the client can refuse to show a rating against
+    /// a line that has since changed — the rating graded THAT text.
+    /// </summary>
+    public record SmackRatingDto(
+        Guid PickId,
+        string Voice,
+        string Situation,
+        Guid? PhraseId,
+        string RenderedText,
+        int Stars);
+
     public class SmackRatingRequestDto
     {
         public Guid PickId { get; set; }

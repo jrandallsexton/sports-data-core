@@ -197,6 +197,35 @@ namespace SportsData.Notification.Controllers
         // ─── Ratings ──────────────────────────────────────────────────────
 
         /// <summary>
+        /// Stored ratings for a league, so the Lab re-hydrates stars on
+        /// reload. The client matches on (PickId, Voice) AND RenderedText —
+        /// a rating graded a specific line, and must not display against a
+        /// phrase that has since been edited.
+        /// </summary>
+        [HttpGet("ratings")]
+        public async Task<ActionResult<List<SmackRatingDto>>> GetRatings(
+            [FromQuery] Guid leagueId,
+            CancellationToken cancellationToken)
+        {
+            if (leagueId == Guid.Empty)
+                return BadRequest("leagueId is required.");
+
+            var ratings = await _dataContext.SmackPreviewRatings
+                .AsNoTracking()
+                .Where(r => r.LeagueId == leagueId)
+                .Select(r => new SmackRatingDto(
+                    r.PickId,
+                    r.Voice.ToString(),
+                    r.Situation.ToString(),
+                    r.PhraseId,
+                    r.RenderedText,
+                    r.Stars))
+                .ToListAsync(cancellationToken);
+
+            return Ok(ratings);
+        }
+
+        /// <summary>
         /// Upserts on (PickId, Voice): re-rating after a phrase edit
         /// overwrites rather than duplicates, so the training set holds one
         /// current opinion per previewed pick.

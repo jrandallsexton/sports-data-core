@@ -94,6 +94,17 @@ public class SmackLabController : ControllerBase
         return result.ToActionResult();
     }
 
+    /// <summary>Stored ratings for a league — the Lab re-hydrates stars from these.</summary>
+    [HttpGet("leagues/{leagueId:guid}/ratings")]
+    public async Task<ActionResult<List<SmackRatingDto>>> GetRatings(
+        [FromServices] IProvideNotifications notifications,
+        [FromRoute] Guid leagueId,
+        CancellationToken cancellationToken)
+    {
+        var result = await notifications.GetSmackRatings(leagueId, cancellationToken);
+        return result.ToActionResult();
+    }
+
     [HttpPost("ratings")]
     public async Task<IActionResult> RatePreview(
         [FromServices] IProvideNotifications notifications,

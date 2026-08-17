@@ -190,8 +190,35 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
             Content = new StringContent(request.ToJson(), Encoding.UTF8, "application/json")
         };
 
-        using var response = await HttpClient.SendAsync(message, cancellationToken);
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+        HttpResponseMessage response;
+        string content;
+        try
+        {
+            response = await HttpClient.SendAsync(message, cancellationToken);
+            content = await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Caller-requested cancellation propagates; only TIMEOUTS (the
+            // client's own token) convert to a failure below.
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            return new Failure<TResponse>(
+                defaultResponse,
+                ResultStatus.Error,
+                [new ValidationFailure(entityName, $"{entityName} request failed: {ex.Message}")]);
+        }
+        catch (TaskCanceledException)
+        {
+            return new Failure<TResponse>(
+                defaultResponse,
+                ResultStatus.Error,
+                [new ValidationFailure(entityName, $"{entityName} request timed out")]);
+        }
+
+        using var _ = response;
 
         if (response.IsSuccessStatusCode)
         {
@@ -228,7 +255,12 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
             // Response body is not valid JSON, use defaults
         }
 
-        var status = failure?.Status ?? MapHttpStatusCode(response.StatusCode, defaultFailureStatus);
+        // The HTTP status is AUTHORITATIVE. Server failure bodies are shaped
+        // { errors } (ToActionResult never serializes a Failure<T>), so the
+        // parse above yields a Failure whose Status is the enum DEFAULT —
+        // trusting it turned a 409 into ResultStatus.Accepted and broke the
+        // conflict relay. The body contributes errors only.
+        var status = MapHttpStatusCode(response.StatusCode, defaultFailureStatus);
         var errors = failure?.Errors ?? [new ValidationFailure(entityName, content.Length > 0 && content.Length <= 300 ? content : $"{entityName} request failed")];
 
         return new Failure<TResponse>(defaultResponse, status, errors);

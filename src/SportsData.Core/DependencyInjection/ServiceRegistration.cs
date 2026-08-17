@@ -638,6 +638,17 @@ namespace SportsData.Core.DependencyInjection
                     })
                     .AddPolicyHandlerFromRegistry("HttpRetry");
             }
+            else
+            {
+                // No ApiUrl: consumers (e.g. SmackLabController) still resolve
+                // IProvideNotifications and receive a controlled
+                // misconfiguration Failure per call, rather than the container
+                // failing dependency resolution into a raw 500. A missing
+                // SecretKey (above) is likewise a controlled failure: the
+                // server rejects with 401 and the client maps it to an
+                // Unauthorized envelope.
+                services.AddSingleton<IProvideNotifications, UnconfiguredNotificationClient>();
+            }
 
             var seasonApiUrl = configuration[CommonConfigKeys.GetSeasonProviderUri()];
             if (!string.IsNullOrEmpty(seasonApiUrl))

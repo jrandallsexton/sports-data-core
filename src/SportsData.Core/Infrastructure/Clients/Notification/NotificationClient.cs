@@ -36,6 +36,49 @@ namespace SportsData.Core.Infrastructure.Clients.Notification
 
         Task<Result<bool>> RateSmackPreview(
             SmackRatingRequestDto request, CancellationToken cancellationToken = default);
+
+        Task<Result<List<SmackRatingDto>>> GetSmackRatings(
+            Guid leagueId, CancellationToken cancellationToken = default);
+    }
+
+    /// <summary>
+    /// Registered when <c>CommonConfig:NotificationClientConfig:ApiUrl</c> is
+    /// absent, so consumers of <see cref="IProvideNotifications"/> resolve and
+    /// get a CONTROLLED failure instead of a DI exception surfacing as a raw
+    /// 500. Every method returns the same misconfiguration Failure.
+    /// </summary>
+    public class UnconfiguredNotificationClient : IProvideNotifications
+    {
+        private const string Message =
+            "Notification client is not configured - set CommonConfig:NotificationClientConfig:ApiUrl.";
+
+        private static Failure<T> Fail<T>(T defaultValue) => new(
+            defaultValue,
+            ResultStatus.Error,
+            [new FluentValidation.Results.ValidationFailure("NotificationClient", Message)]);
+
+        public Task<Result<List<SmackPreviewResultDto>>> PreviewSmack(
+            SmackPreviewRequestDto request, CancellationToken cancellationToken = default)
+            => Task.FromResult<Result<List<SmackPreviewResultDto>>>(Fail<List<SmackPreviewResultDto>>([]));
+
+        public Task<Result<List<SmackPhraseDto>>> GetSmackPhrases(CancellationToken cancellationToken = default)
+            => Task.FromResult<Result<List<SmackPhraseDto>>>(Fail<List<SmackPhraseDto>>([]));
+
+        public Task<Result<SmackPhraseDto>> CreateSmackPhrase(
+            SmackPhraseUpsertDto request, CancellationToken cancellationToken = default)
+            => Task.FromResult<Result<SmackPhraseDto>>(Fail<SmackPhraseDto>(default!));
+
+        public Task<Result<SmackPhraseDto>> UpdateSmackPhrase(
+            Guid phraseId, SmackPhraseUpsertDto request, CancellationToken cancellationToken = default)
+            => Task.FromResult<Result<SmackPhraseDto>>(Fail<SmackPhraseDto>(default!));
+
+        public Task<Result<bool>> RateSmackPreview(
+            SmackRatingRequestDto request, CancellationToken cancellationToken = default)
+            => Task.FromResult<Result<bool>>(Fail(false));
+
+        public Task<Result<List<SmackRatingDto>>> GetSmackRatings(
+            Guid leagueId, CancellationToken cancellationToken = default)
+            => Task.FromResult<Result<List<SmackRatingDto>>>(Fail<List<SmackRatingDto>>([]));
     }
 
     public class NotificationClient : ClientBase, IProvideNotifications
@@ -94,6 +137,17 @@ namespace SportsData.Core.Infrastructure.Clients.Notification
                 phrase => phrase,
                 default!,
                 "SmackPhrase",
+                cancellationToken: cancellationToken);
+        }
+
+        public async Task<Result<List<SmackRatingDto>>> GetSmackRatings(
+            Guid leagueId, CancellationToken cancellationToken = default)
+        {
+            return await GetAsync<List<SmackRatingDto>, List<SmackRatingDto>>(
+                $"admin/smack/ratings?leagueId={leagueId}",
+                ratings => ratings,
+                [],
+                "SmackRatings",
                 cancellationToken: cancellationToken);
         }
 

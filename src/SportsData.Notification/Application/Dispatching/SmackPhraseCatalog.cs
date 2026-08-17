@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Security.Cryptography;
 using System.Text;
 
@@ -16,7 +18,7 @@ public interface ISmackPhraseCatalog
     /// Resolves the line for a scored pick, or null when the catalog can't
     /// serve this slot — the caller then uses the standard copy.
     /// </summary>
-    Task<string> TryResolveAsync(
+    Task<string?> TryResolveAsync(
         UserPickScored msg,
         NotificationVoice voice,
         bool allowGamblingContent,
@@ -46,7 +48,7 @@ public interface ISmackPhraseCatalog
 public record SmackResolution(
     PickSituation Situation,
     Guid? PhraseId,
-    string Text,
+    string? Text,
     bool UsedStandardFallback);
 
 /// <summary>
@@ -70,7 +72,7 @@ public class SmackPhraseCatalog : ISmackPhraseCatalog
         _logger = logger;
     }
 
-    public async Task<string> TryResolveAsync(
+    public async Task<string?> TryResolveAsync(
         UserPickScored msg,
         NotificationVoice voice,
         bool allowGamblingContent,

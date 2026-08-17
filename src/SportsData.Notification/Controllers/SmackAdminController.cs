@@ -1,3 +1,5 @@
+#nullable enable
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,8 +62,10 @@ namespace SportsData.Notification.Controllers
                 return BadRequest("At most 500 picks per preview batch.");
 
             // Wire string → enum with the same Standard fallback the
-            // preferences projection applies.
+            // preferences projection applies. IsDefined guards the TryParse
+            // numeric loophole ("999" parses to an undefined value).
             var voice = Enum.TryParse<NotificationVoice>(request.Voice, ignoreCase: false, out var parsed)
+                        && Enum.IsDefined(parsed)
                 ? parsed
                 : NotificationVoice.Standard;
 
@@ -100,7 +104,8 @@ namespace SportsData.Notification.Controllers
                 .Select(p => new SmackPhraseDto(
                     p.Id, p.Voice.ToString(), p.Situation.ToString(),
                     p.Sport.HasValue ? p.Sport.Value.ToString() : null,
-                    p.Text, p.IsActive, p.RequiresGamblingContent, p.Weight, p.Description))
+                    p.Text, p.IsActive, p.RequiresGamblingContent, p.Weight, p.Description,
+                    p.RowVersion))
                 .ToListAsync(cancellationToken);
 
             return Ok(phrases);
@@ -121,7 +126,7 @@ namespace SportsData.Notification.Controllers
                 Voice = voice,
                 Situation = situation,
                 Sport = sport,
-                Text = request.Text.Trim(),
+                Text = request.Text!.Trim(),
                 IsActive = request.IsActive,
                 RequiresGamblingContent = request.RequiresGamblingContent,
                 Weight = request.Weight,
@@ -150,23 +155,38 @@ namespace SportsData.Notification.Controllers
             if (validationError is not null)
                 return BadRequest(validationError);
 
+            if (request.RowVersion is null)
+                return BadRequest("RowVersion is required on update - send back the value from GET.");
+
             var entity = await _dataContext.SmackPhrases
                 .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
             if (entity is null)
                 return NotFound();
 
+            // Optimistic concurrency on xmin: the client echoes the version it
+            // edited from; a stale editor gets 409 instead of silently
+            // clobbering a newer edit.
+            _dataContext.Entry(entity).Property(p => p.RowVersion).OriginalValue = request.RowVersion.Value;
+
             entity.Voice = voice;
             entity.Situation = situation;
             entity.Sport = sport;
-            entity.Text = request.Text.Trim();
+            entity.Text = request.Text!.Trim();
             entity.IsActive = request.IsActive;
             entity.RequiresGamblingContent = request.RequiresGamblingContent;
             entity.Weight = request.Weight;
             entity.Description = request.Description;
             entity.ModifiedUtc = _dateTimeProvider.UtcNow();
 
-            await _dataContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await _dataContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("The phrase was modified by someone else. Reload and re-apply your edit.");
+            }
 
             _logger.LogInformation("SmackPhrase updated. PhraseId={PhraseId}", id);
 
@@ -194,11 +214,18 @@ namespace SportsData.Notification.Controllers
             if (string.IsNullOrWhiteSpace(request.RenderedText))
                 return BadRequest("RenderedText is required — it is the string being rated.");
 
-            var voice = Enum.TryParse<NotificationVoice>(request.Voice, ignoreCase: false, out var parsedVoice)
-                ? parsedVoice
-                : NotificationVoice.Standard;
+            if (request.RenderedText.Length > 400)
+                return BadRequest("RenderedText must be 400 characters or fewer.");
 
-            if (!Enum.TryParse<PickSituation>(request.Situation, ignoreCase: false, out var situation))
+            // Ratings are training rows — a mislabelled voice or situation
+            // poisons the set, so invalid values reject rather than fall back.
+            // IsDefined guards the TryParse numeric loophole.
+            if (!Enum.TryParse<NotificationVoice>(request.Voice, ignoreCase: false, out var voice)
+                || !Enum.IsDefined(voice))
+                return BadRequest($"Unknown voice '{request.Voice}'.");
+
+            if (!Enum.TryParse<PickSituation>(request.Situation, ignoreCase: false, out var situation)
+                || !Enum.IsDefined(situation))
                 return BadRequest($"Unknown situation '{request.Situation}'.");
 
             var now = _dateTimeProvider.UtcNow();
@@ -261,8 +288,8 @@ namespace SportsData.Notification.Controllers
 
         // ─── Helpers ──────────────────────────────────────────────────────
 
-        private static string ValidateUpsert(
-            SmackPhraseUpsertDto request,
+        private static string? ValidateUpsert(
+            SmackPhraseUpsertDto? request,
             out NotificationVoice voice,
             out PickSituation situation,
             out Sport? sport)
@@ -280,18 +307,24 @@ namespace SportsData.Notification.Controllers
             if (request.Text.Length > 300)
                 return "Text must be 300 characters or fewer.";
 
+            if (request.Description is { Length: > 256 })
+                return "Description must be 256 characters or fewer.";
+
             if (request.Weight < 1)
                 return "Weight must be at least 1.";
 
-            if (!Enum.TryParse(request.Voice, ignoreCase: false, out voice))
+            // IsDefined on every parse: TryParse accepts numeric strings like
+            // "999", which would persist undefined enum values.
+            if (!Enum.TryParse(request.Voice, ignoreCase: false, out voice) || !Enum.IsDefined(voice))
                 return $"Unknown voice '{request.Voice}'.";
 
-            if (!Enum.TryParse(request.Situation, ignoreCase: false, out situation))
+            if (!Enum.TryParse(request.Situation, ignoreCase: false, out situation) || !Enum.IsDefined(situation))
                 return $"Unknown situation '{request.Situation}'.";
 
             if (request.Sport is not null)
             {
-                if (!Enum.TryParse<Sport>(request.Sport, ignoreCase: false, out var parsedSport))
+                if (!Enum.TryParse<Sport>(request.Sport, ignoreCase: false, out var parsedSport)
+                    || !Enum.IsDefined(parsedSport))
                     return $"Unknown sport '{request.Sport}'.";
                 sport = parsedSport;
             }
@@ -301,7 +334,8 @@ namespace SportsData.Notification.Controllers
 
         private static SmackPhraseDto ToDto(SmackPhrase p) => new(
             p.Id, p.Voice.ToString(), p.Situation.ToString(), p.Sport?.ToString(),
-            p.Text, p.IsActive, p.RequiresGamblingContent, p.Weight, p.Description);
+            p.Text, p.IsActive, p.RequiresGamblingContent, p.Weight, p.Description,
+            p.RowVersion);
 
         private static bool IsUniqueConstraintViolation(DbUpdateException ex)
             => ex.InnerException is Npgsql.PostgresException pg && pg.SqlState == "23505";
@@ -320,15 +354,15 @@ namespace SportsData.Notification.Controllers
         public Guid ContestId { get; set; }
         public Guid LeagueId { get; set; }
         public Guid UserId { get; set; }
-        public string AwayAbbreviation { get; set; }
-        public string HomeAbbreviation { get; set; }
+        public string? AwayAbbreviation { get; set; }
+        public string? HomeAbbreviation { get; set; }
         public int AwayScore { get; set; }
         public int HomeScore { get; set; }
         public bool? IsCorrect { get; set; }
         public bool? PickedIsHome { get; set; }
         public double? PickedSpread { get; set; }
         public double? MarketSpread { get; set; }
-        public string LeagueName { get; set; }
+        public string? LeagueName { get; set; }
         public Sport Sport { get; set; }
 
         /// <summary>
@@ -349,39 +383,47 @@ namespace SportsData.Notification.Controllers
     public class SmackPreviewRequestDto
     {
         /// <summary>Wire voice name; unknown values preview as Standard.</summary>
-        public string Voice { get; set; }
+        public string? Voice { get; set; }
 
-        public List<SmackPreviewPickDto> Picks { get; set; }
+        public List<SmackPreviewPickDto>? Picks { get; set; }
     }
 
     public record SmackPreviewResultDto(
         Guid PickId,
         string Situation,
         Guid? PhraseId,
-        string Text,
+        string? Text,
         bool UsedStandardFallback);
 
     public record SmackPhraseDto(
         Guid Id,
         string Voice,
         string Situation,
-        string Sport,
+        string? Sport,
         string Text,
         bool IsActive,
         bool RequiresGamblingContent,
         int Weight,
-        string Description);
+        string? Description,
+        uint RowVersion);
 
     public class SmackPhraseUpsertDto
     {
         public string Voice { get; set; } = "Smack";
-        public string Situation { get; set; }
-        public string Sport { get; set; }
-        public string Text { get; set; }
+        public string? Situation { get; set; }
+        public string? Sport { get; set; }
+        public string? Text { get; set; }
         public bool IsActive { get; set; } = true;
         public bool RequiresGamblingContent { get; set; }
         public int Weight { get; set; } = 1;
-        public string Description { get; set; }
+        public string? Description { get; set; }
+
+        /// <summary>
+        /// xmin echo for optimistic concurrency. Ignored on create; REQUIRED
+        /// on update — a stale value earns 409 rather than clobbering a newer
+        /// edit.
+        /// </summary>
+        public uint? RowVersion { get; set; }
     }
 
     public class SmackRatingRequestDto
@@ -391,12 +433,12 @@ namespace SportsData.Notification.Controllers
         public Guid LeagueId { get; set; }
         public Guid PickerUserId { get; set; }
         public string Voice { get; set; } = "Smack";
-        public string Situation { get; set; }
+        public string? Situation { get; set; }
         public Guid? PhraseId { get; set; }
-        public string RenderedText { get; set; }
+        public string? RenderedText { get; set; }
         public int Stars { get; set; }
 
         /// <summary>Training features — serialize the preview pick payload here.</summary>
-        public string FactsJson { get; set; }
+        public string? FactsJson { get; set; }
     }
 }

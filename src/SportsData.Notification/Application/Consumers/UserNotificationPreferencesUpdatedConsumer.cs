@@ -101,8 +101,11 @@ namespace SportsData.Notification.Application.Consumers
             // Voice travels as a wire string; parse to the local enum with a
             // Standard fallback so a null (pre-field event still in flight) or
             // an unknown future voice degrades to today's copy, never throws.
+            // IsDefined guards the TryParse numeric loophole: "999" parses to
+            // an undefined enum value and would otherwise be stored.
             entity.PickResultVoice =
                 Enum.TryParse<NotificationVoice>(msg.PickResultVoice, ignoreCase: false, out var voice)
+                && Enum.IsDefined(voice)
                     ? voice
                     : NotificationVoice.Standard;
         }

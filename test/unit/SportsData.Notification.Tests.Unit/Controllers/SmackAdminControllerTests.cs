@@ -211,7 +211,8 @@ public class SmackAdminControllerTests : NotificationTestBase<SmackAdminControll
         {
             Voice = "Smack",
             Situation = nameof(PickSituation.UglyWin),
-            Text = "won ugly"
+            Text = "won ugly",
+            RowVersion = 0
         }, CancellationToken.None)).Result.Should().BeOfType<NotFoundResult>();
 
         var phrase = await SeedPhraseAsync(PickSituation.UglyWin, "original");
@@ -220,7 +221,8 @@ public class SmackAdminControllerTests : NotificationTestBase<SmackAdminControll
             Voice = "Smack",
             Situation = nameof(PickSituation.UglyWin),
             Text = "revised",
-            IsActive = false
+            IsActive = false,
+            RowVersion = 0 // matches the InMemory store's un-incremented xmin
         }, CancellationToken.None);
 
         var row = await DataContext.SmackPhrases.AsNoTracking().SingleAsync(p => p.Id == phrase.Id);
@@ -293,5 +295,111 @@ public class SmackAdminControllerTests : NotificationTestBase<SmackAdminControll
 
         result.Should().BeOfType<OkResult>();
         (await DataContext.SmackPreviewRatings.SingleAsync()).PhraseId.Should().BeNull();
+    }
+
+    // ─── CR round: concurrency, enum loopholes, length caps ───────────────
+
+    [Fact]
+    public async Task UpdatePhrase_MissingRowVersion_IsRejected()
+    {
+        var phrase = await SeedPhraseAsync(PickSituation.UglyWin, "original");
+
+        var result = await Sut().UpdatePhrase(phrase.Id, new SmackPhraseUpsertDto
+        {
+            Voice = "Smack",
+            Situation = nameof(PickSituation.UglyWin),
+            Text = "revised"
+            // RowVersion deliberately omitted
+        }, CancellationToken.None);
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task UpdatePhrase_StaleRowVersion_Returns409()
+    {
+        // A stale editor must get a conflict, never silently clobber a newer
+        // edit — the entire reason the entity carries xmin.
+        var phrase = await SeedPhraseAsync(PickSituation.UglyWin, "original");
+
+        var result = await Sut().UpdatePhrase(phrase.Id, new SmackPhraseUpsertDto
+        {
+            Voice = "Smack",
+            Situation = nameof(PickSituation.UglyWin),
+            Text = "stale edit",
+            RowVersion = 999 // does not match the stored token
+        }, CancellationToken.None);
+
+        result.Result.Should().BeOfType<ConflictObjectResult>();
+        (await DataContext.SmackPhrases.AsNoTracking().SingleAsync(p => p.Id == phrase.Id))
+            .Text.Should().Be("original", "the stale write must not have landed");
+    }
+
+    [Fact]
+    public async Task CreatePhrase_NumericEnumString_IsRejected()
+    {
+        // Enum.TryParse accepts "999" and would persist an undefined value —
+        // the IsDefined guard closes the loophole.
+        var result = await Sut().CreatePhrase(new SmackPhraseUpsertDto
+        {
+            Voice = "999",
+            Situation = nameof(PickSituation.ShutoutLoss),
+            Text = "line"
+        }, CancellationToken.None);
+
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task Preview_NumericVoiceString_FallsBackToStandard()
+    {
+        await SeedPhraseAsync(PickSituation.BlowoutLoss, "should not surface");
+
+        var result = await Sut().Preview(new SmackPreviewRequestDto
+        {
+            Voice = "999",
+            Picks = [BlowoutLossPick()]
+        }, CancellationToken.None);
+
+        var previews = (result.Result as OkObjectResult)!.Value as List<SmackPreviewResultDto>;
+        previews![0].UsedStandardFallback.Should().BeTrue(
+            "an undefined numeric voice must preview as Standard, not consult the catalog");
+    }
+
+    [Fact]
+    public async Task RatePreview_NumericSituation_IsRejected()
+    {
+        var result = await Sut().RatePreview(new SmackRatingRequestDto
+        {
+            PickId = Guid.NewGuid(),
+            Situation = "999",
+            RenderedText = "line",
+            Stars = 2
+        }, CancellationToken.None);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task LengthCaps_AreEnforcedBeforeTheDatabase()
+    {
+        // Oversized input must 400 at the boundary, not surface as a DB error.
+        var longDescription = new string('d', 257);
+        (await Sut().CreatePhrase(new SmackPhraseUpsertDto
+        {
+            Voice = "Smack",
+            Situation = nameof(PickSituation.GenericLoss),
+            Text = "line",
+            Description = longDescription
+        }, CancellationToken.None)).Result.Should().BeOfType<BadRequestObjectResult>();
+
+        var longRendered = new string('r', 401);
+        (await Sut().RatePreview(new SmackRatingRequestDto
+        {
+            PickId = Guid.NewGuid(),
+            Situation = nameof(PickSituation.GenericLoss),
+            RenderedText = longRendered,
+            Stars = 2
+        }, CancellationToken.None)).Should().BeOfType<BadRequestObjectResult>();
     }
 }

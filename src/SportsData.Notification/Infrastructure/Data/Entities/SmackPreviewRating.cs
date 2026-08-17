@@ -46,5 +46,8 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
 
         /// <summary>The preview's full fact payload — the training features.</summary>
         public string FactsJson { get; set; }
+
+        /// <summary>PostgreSQL xmin concurrency token (house rule for operator-edited rows).</summary>
+        public uint RowVersion { get; set; }
     }
 }

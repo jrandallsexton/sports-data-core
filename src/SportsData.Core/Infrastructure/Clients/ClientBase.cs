@@ -190,7 +190,9 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
             Content = new StringContent(request.ToJson(), Encoding.UTF8, "application/json")
         };
 
-        HttpResponseMessage response;
+        // response outlives the try so the body-read can fault without
+        // leaking it: every catch disposes what SendAsync handed back.
+        HttpResponseMessage? response = null;
         string content;
         try
         {
@@ -201,10 +203,12 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
         {
             // Caller-requested cancellation propagates; only TIMEOUTS (the
             // client's own token) convert to a failure below.
+            response?.Dispose();
             throw;
         }
         catch (HttpRequestException ex)
         {
+            response?.Dispose();
             return new Failure<TResponse>(
                 defaultResponse,
                 ResultStatus.Error,
@@ -212,6 +216,7 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
         }
         catch (TaskCanceledException)
         {
+            response?.Dispose();
             return new Failure<TResponse>(
                 defaultResponse,
                 ResultStatus.Error,

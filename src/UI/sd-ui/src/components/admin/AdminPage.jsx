@@ -141,6 +141,7 @@ export default function AdminPage() {
         <Link to="/app/admin/preview-lab">Preview Lab</Link>
         <Link to="/app/admin/prompts">Prompt Manager</Link>
         <Link to="/app/admin/models">Model Manager</Link>
+        <Link to="/app/admin/smack-lab">SmackBot Lab</Link>
       </nav>
 
       <div className="admin-grid">

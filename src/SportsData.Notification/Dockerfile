@@ -1,7 +1,11 @@
 # See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled-extra AS base
+# 10.0-noble (NOT chiseled) to match every other service in the platform.
+# The chiseled variant ships no shell, which (a) breaks the compose
+# healthcheck's bash /dev/tcp probe and (b) blocks kubectl exec debugging
+# in prod — both bit us in practice (2026-08-17).
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS base
 USER $APP_UID
 WORKDIR /app
 EXPOSE 8080

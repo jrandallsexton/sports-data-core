@@ -108,6 +108,22 @@ const AdminApi = {
       params: { sport, league }
     }),
 
+  // SmackBot Lab (docs/features/smackbot-lab.md). API composes pick facts
+  // and relays preview/phrases/ratings to Notification through its typed
+  // client — the browser never holds Notification's key, only the admin
+  // token this whole surface already requires.
+  getSmackLabLeagues: () => apiClient.get('/admin/smack-lab/leagues'),
+  getSmackLabPicks: (leagueId) =>
+    apiClient.get(`/admin/smack-lab/leagues/${encodeURIComponent(leagueId)}/picks`),
+  smackLabPreview: (body) => apiClient.post('/admin/smack-lab/preview', body),
+  getSmackLabRatings: (leagueId) =>
+    apiClient.get(`/admin/smack-lab/leagues/${encodeURIComponent(leagueId)}/ratings`),
+  getSmackPhrases: () => apiClient.get('/admin/smack-lab/phrases'),
+  createSmackPhrase: (body) => apiClient.post('/admin/smack-lab/phrases', body),
+  updateSmackPhrase: (phraseId, body) =>
+    apiClient.put(`/admin/smack-lab/phrases/${encodeURIComponent(phraseId)}`, body),
+  rateSmackPreview: (body) => apiClient.post('/admin/smack-lab/ratings', body),
+
   // SignalR debug harness — see docs/signalr-debug-harness-plan.md.
   // Each call publishes a synthetic integration event through API's
   // MassTransit + own consumer + SignalR fan-out, exercising the same

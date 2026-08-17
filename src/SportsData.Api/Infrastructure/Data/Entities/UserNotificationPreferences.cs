@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using SportsData.Core.Eventing.Events.Users;
 using SportsData.Core.Infrastructure.Data.Entities;
 
 namespace SportsData.Api.Infrastructure.Data.Entities
@@ -36,6 +37,14 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public bool OddsChangedEnabled { get; set; } = true;
 
+        /// <summary>
+        /// Wire name from <c>NotificationVoices</c> ("Standard"/"Smack").
+        /// Stored as a string — the PickType-on-projection precedent — so the
+        /// canonical side needs no dependency on Notification's enum.
+        /// Standard = today's neutral copy; SmackBot is strictly opt-in.
+        /// </summary>
+        public string PickResultVoice { get; set; } = NotificationVoices.Standard;
+
         public class EntityConfiguration : IEntityTypeConfiguration<UserNotificationPreferences>
         {
             public void Configure(EntityTypeBuilder<UserNotificationPreferences> builder)
@@ -46,6 +55,14 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
                 // One row per user.
                 builder.HasIndex(x => x.UserId).IsUnique();
+
+                builder.Property(x => x.PickResultVoice)
+                    .HasMaxLength(40)
+                    .IsRequired()
+                    // DB-side default, not just the CLR initializer: existing
+                    // rows must backfill to Standard when the column is added,
+                    // and out-of-band inserts must never produce ''.
+                    .HasDefaultValue(NotificationVoices.Standard);
 
                 builder.HasOne(x => x.User)
                     .WithMany()

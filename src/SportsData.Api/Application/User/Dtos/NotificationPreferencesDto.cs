@@ -14,4 +14,7 @@ public class NotificationPreferencesDto
     public bool MatchupPreviewEnabled { get; set; } = true;
     public bool ScheduleChangeEnabled { get; set; } = true;
     public bool OddsChangedEnabled { get; set; } = true;
+
+    /// <summary>Pick-result voice wire name (see <c>NotificationVoices</c>).</summary>
+    public string PickResultVoice { get; set; } = SportsData.Core.Eventing.Events.Users.NotificationVoices.Standard;
 }

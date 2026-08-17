@@ -47,6 +47,13 @@ namespace SportsData.Core.Eventing.Events.Picks
         // away = its negation), the same value scoring ran on. Null for straight-
         // up picks (or ATS with no/zero spread). The consumer formats it.
         double? PickedSpread,
+        // The picked side's market line regardless of league PickType, where
+        // PickedSpread is ATS-only (display semantics). Exists so SmackBot's
+        // situation taxonomy can see "took a 14-point dog STRAIGHT UP" —
+        // PickedSpread stays untouched so existing copy never grows a spread.
+        // Same signing as PickedSpread (negative = favoured). Null when the
+        // matchup carried no line or the side is unresolved.
+        double? MarketSpread,
         Guid LeagueId,
         string LeagueName,
         Sport Sport,

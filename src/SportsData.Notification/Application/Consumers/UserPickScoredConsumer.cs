@@ -162,7 +162,10 @@ namespace SportsData.Notification.Application.Consumers
 
             // An AgainstTheSpread player opted into spread-based scoring, so
             // line-referencing copy is fair game. Anyone else has not, so the
-            // catalog filters those rows out.
+            // catalog filters those rows out. Deliberately keyed on
+            // PickedSpread (ATS-only), NOT MarketSpread — MarketSpread exists
+            // on straight-up picks too, but knowing the line and being allowed
+            // to talk about it are different things.
             var allowGamblingContent = msg.PickedSpread is not null;
 
             var smackLine = await _smackPhraseCatalog.TryResolveAsync(

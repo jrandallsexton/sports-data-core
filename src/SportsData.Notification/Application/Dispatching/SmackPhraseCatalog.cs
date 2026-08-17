@@ -177,8 +177,10 @@ public static class SmackPhraseFormatter
         }
 
         // Absolute value: lines read "a 14-point dog" / "favoured by 14", so
-        // the sign is carried by the wording, not the number.
-        if (msg.PickedSpread is { } spread)
+        // the sign is carried by the wording, not the number. Falls back to
+        // MarketSpread so a (non-gambling-gated) line using the token still
+        // resolves for straight-up picks.
+        if ((msg.PickedSpread ?? msg.MarketSpread) is { } spread)
             builder.Replace("{Line}", Math.Abs(spread).ToString("0.#"));
 
         return builder.ToString();

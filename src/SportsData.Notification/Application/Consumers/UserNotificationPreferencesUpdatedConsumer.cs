@@ -97,6 +97,14 @@ namespace SportsData.Notification.Application.Consumers
             entity.MatchupPreviewEnabled = msg.MatchupPreviewEnabled;
             entity.ScheduleChangeEnabled = msg.ScheduleChangeEnabled;
             entity.OddsChangedEnabled = msg.OddsChangedEnabled;
+
+            // Voice travels as a wire string; parse to the local enum with a
+            // Standard fallback so a null (pre-field event still in flight) or
+            // an unknown future voice degrades to today's copy, never throws.
+            entity.PickResultVoice =
+                Enum.TryParse<NotificationVoice>(msg.PickResultVoice, ignoreCase: false, out var voice)
+                    ? voice
+                    : NotificationVoice.Standard;
         }
 
         private static bool IsUniqueConstraintViolation(DbUpdateException ex)

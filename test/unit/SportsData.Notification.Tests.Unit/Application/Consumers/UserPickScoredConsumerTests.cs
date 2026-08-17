@@ -83,6 +83,7 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
             userId, null, contestId ?? Guid.NewGuid(), pickId ?? Guid.NewGuid(), null, null,
             awayAbbr, homeAbbr, awayScore, homeScore,
             isCorrect, pickedIsHome, pickedSpread,
+            pickedSpread, // MarketSpread mirrors the line in these fixtures
             leagueId ?? Guid.NewGuid(), leagueName, Sport.BaseballMlb, 2026,
             correlationId ?? Guid.NewGuid(), Guid.NewGuid());
 

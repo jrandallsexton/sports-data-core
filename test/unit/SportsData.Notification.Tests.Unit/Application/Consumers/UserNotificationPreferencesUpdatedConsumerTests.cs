@@ -37,7 +37,8 @@ public class UserNotificationPreferencesUpdatedConsumerTests
     private static UserNotificationPreferencesUpdated MessageFor(
         Guid userId,
         bool pickResult = true,
-        bool oddsChanged = true)
+        bool oddsChanged = true,
+        string voice = "Standard")
         => new(
             userId,
             PickResultEnabled: pickResult,
@@ -48,6 +49,7 @@ public class UserNotificationPreferencesUpdatedConsumerTests
             MatchupPreviewEnabled: true,
             ScheduleChangeEnabled: true,
             OddsChangedEnabled: oddsChanged,
+            PickResultVoice: voice,
             CorrelationId: Guid.NewGuid(),
             CausationId: Guid.NewGuid());
 
@@ -109,5 +111,61 @@ public class UserNotificationPreferencesUpdatedConsumerTests
             .Where(p => p.UserId == userId).ToListAsync();
         rows.Should().HaveCount(1);
         rows[0].PickResultEnabled.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("Smack", NotificationVoice.Smack)]
+    [InlineData("Standard", NotificationVoice.Standard)]
+    [InlineData(null, NotificationVoice.Standard)]          // pre-field event in flight
+    [InlineData("SassMaster9000", NotificationVoice.Standard)] // unknown future voice
+    [InlineData("smack", NotificationVoice.Standard)]       // case-sensitive wire contract
+    public async Task Consume_ProjectsVoice_WithStandardFallback(string wireVoice, NotificationVoice expected)
+    {
+        var userId = Guid.NewGuid();
+        var sut = Mocker.CreateInstance<UserNotificationPreferencesUpdatedConsumer>();
+
+        await sut.Consume(ContextFor(MessageFor(userId, voice: wireVoice)));
+
+        var row = await DataContext.UserNotificationPreferences.AsNoTracking()
+            .FirstAsync(p => p.UserId == userId);
+        row.PickResultVoice.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task Consume_PayloadOmittingPickResultVoice_DeserializesAndFallsBackToStandard()
+    {
+        // Contract-compatibility guard: an event serialized BEFORE the
+        // PickResultVoice field existed (in-flight during a rolling deploy)
+        // must deserialize with null in the positional slot and project as
+        // Standard. System.Text.Json is what MassTransit uses on the wire.
+        var userId = Guid.NewGuid();
+        var oldPayload = $$"""
+        {
+            "userId": "{{userId}}",
+            "pickResultEnabled": true,
+            "pickDeadlineReminderEnabled": true,
+            "contestStartReminderEnabled": true,
+            "leagueInviteEnabled": true,
+            "membershipEnabled": true,
+            "matchupPreviewEnabled": true,
+            "scheduleChangeEnabled": true,
+            "oddsChangedEnabled": true,
+            "correlationId": "{{Guid.NewGuid()}}",
+            "causationId": "{{Guid.NewGuid()}}"
+        }
+        """;
+
+        var msg = System.Text.Json.JsonSerializer.Deserialize<UserNotificationPreferencesUpdated>(
+            oldPayload,
+            new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        msg!.PickResultVoice.Should().BeNull("the omitted field must land as null, not throw");
+
+        var sut = Mocker.CreateInstance<UserNotificationPreferencesUpdatedConsumer>();
+        await sut.Consume(ContextFor(msg));
+
+        var row = await DataContext.UserNotificationPreferences.AsNoTracking()
+            .FirstAsync(p => p.UserId == userId);
+        row.PickResultVoice.Should().Be(NotificationVoice.Standard);
     }
 }

@@ -21,7 +21,33 @@ public interface ISmackPhraseCatalog
         NotificationVoice voice,
         bool allowGamblingContent,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The full resolution: situation, chosen phrase, rendered text, and
+    /// whether the send path would fall back to standard copy. This is what
+    /// the SmackBot Lab previews — it MUST stay the same code path as
+    /// <see cref="TryResolveAsync"/> so a rating grades exactly what a user
+    /// would have received. See docs/features/smackbot-lab.md.
+    /// </summary>
+    Task<SmackResolution> ResolveDetailedAsync(
+        UserPickScored msg,
+        NotificationVoice voice,
+        bool allowGamblingContent,
+        CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// Outcome of a catalog resolution. <see cref="Text"/> null (and
+/// <see cref="UsedStandardFallback"/> true) means the dispatch would send
+/// the standard copy — an empty catalog, an unfilled slot, or a gambling
+/// filter that emptied the bucket. Situation is always resolved, even for
+/// the Standard voice, so the Lab can label every pick.
+/// </summary>
+public record SmackResolution(
+    PickSituation Situation,
+    Guid? PhraseId,
+    string Text,
+    bool UsedStandardFallback);
 
 /// <summary>
 /// Picks a phrase for a scored pick. See docs/features/smackbot-voice.md.
@@ -49,11 +75,20 @@ public class SmackPhraseCatalog : ISmackPhraseCatalog
         NotificationVoice voice,
         bool allowGamblingContent,
         CancellationToken cancellationToken = default)
-    {
-        if (voice == NotificationVoice.Standard)
-            return null;
+        => (await ResolveDetailedAsync(msg, voice, allowGamblingContent, cancellationToken)).Text;
 
+    public async Task<SmackResolution> ResolveDetailedAsync(
+        UserPickScored msg,
+        NotificationVoice voice,
+        bool allowGamblingContent,
+        CancellationToken cancellationToken = default)
+    {
+        // Situation resolves for every voice — the Lab labels Standard-voice
+        // previews too — but only a non-Standard voice consults the catalog.
         var situation = PickSituationResolver.Resolve(msg);
+
+        if (voice == NotificationVoice.Standard)
+            return new SmackResolution(situation, null, null, UsedStandardFallback: true);
 
         // Projected to a DTO in the query rather than materializing entities
         // (house rule); selection needs only these four fields.
@@ -75,7 +110,7 @@ public class SmackPhraseCatalog : ISmackPhraseCatalog
             _logger.LogInformation(
                 "No {Voice} phrase for situation {Situation} (Sport={Sport}, GamblingAllowed={GamblingAllowed}); using standard copy.",
                 voice, situation, msg.Sport, allowGamblingContent);
-            return null;
+            return new SmackResolution(situation, null, null, UsedStandardFallback: true);
         }
 
         // Sport precedence, mirroring Prompt: a sport-specific line outranks
@@ -86,7 +121,11 @@ public class SmackPhraseCatalog : ISmackPhraseCatalog
 
         var chosen = SelectDeterministic(pool, msg.PickId);
 
-        return SmackPhraseFormatter.Format(chosen.Text, msg);
+        return new SmackResolution(
+            situation,
+            chosen.Id,
+            SmackPhraseFormatter.Format(chosen.Text, msg),
+            UsedStandardFallback: false);
     }
 
     /// <summary>

@@ -1,5 +1,3 @@
-using System;
-
 namespace SportsData.Core.Eventing.Events.Users
 {
     /// <summary>
@@ -20,7 +18,9 @@ namespace SportsData.Core.Eventing.Events.Users
         /// <summary>Every recognised wire name — the API validator's allow-list.</summary>
         public static readonly string[] All = [Standard, Smack];
 
+        // Ordinal (case-sensitive) by construction — the wire contract is
+        // exact names, and Notification parses the same way.
         public static bool IsKnown(string? value) =>
-            value is not null && Array.Exists(All, v => string.Equals(v, value, StringComparison.Ordinal));
+            value is Standard or Smack;
     }
 }

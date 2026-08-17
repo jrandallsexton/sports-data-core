@@ -149,6 +149,23 @@ public class SmackPhraseCatalogTests : NotificationTestBase<SmackPhraseCatalog>
     }
 
     [Fact]
+    public void Formatter_ResolvesLineFromMarketSpread_WhenPickedSpreadAbsent()
+    {
+        // Straight-up pick: PickedSpread is null but the market line rides on
+        // MarketSpread; a non-gambling line using {Line} must still resolve.
+        var msg = new UserPickScored(
+            Guid.NewGuid(), null, Guid.NewGuid(), Guid.NewGuid(),
+            null, null, "NYY", "BOS", 2, 9,
+            IsCorrect: true, PickedIsHome: true,
+            PickedSpread: null, MarketSpread: -6.5,
+            LeagueId: Guid.NewGuid(), LeagueName: "Sluggers",
+            Sport: Sport.BaseballMlb, SeasonYear: 2026,
+            CorrelationId: Guid.NewGuid(), CausationId: Guid.NewGuid());
+
+        SmackPhraseFormatter.Format("({Line})", msg).Should().Be("(6.5)");
+    }
+
+    [Fact]
     public void Formatter_LeavesUnknownTokensAloneRatherThanThrowing()
     {
         var msg = new UserPickScored(

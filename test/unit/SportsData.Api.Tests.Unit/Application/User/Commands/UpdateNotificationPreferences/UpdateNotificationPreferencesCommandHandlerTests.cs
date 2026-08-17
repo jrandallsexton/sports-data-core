@@ -346,6 +346,29 @@ public class UpdateNotificationPreferencesCommandHandlerTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_VoiceIsCaseSensitive_SmackAcceptedLowercaseRejected()
+    {
+        // Locks the wire contract: Notification parses case-sensitively, so
+        // the API boundary must reject 'smack' — accepting it here would store
+        // a value that silently degrades to Standard at dispatch.
+        var userId = await SeedUserAsync();
+        var handler = Mocker.CreateInstance<UpdateNotificationPreferencesCommandHandler>();
+
+        var accepted = await handler.ExecuteAsync(userId, new UpdateNotificationPreferencesCommand
+        {
+            PickResultVoice = NotificationVoices.Smack
+        });
+        accepted.IsSuccess.Should().BeTrue();
+
+        var rejected = await handler.ExecuteAsync(userId, new UpdateNotificationPreferencesCommand
+        {
+            PickResultVoice = "smack"
+        });
+        rejected.IsSuccess.Should().BeFalse();
+        rejected.Status.Should().Be(ResultStatus.BadRequest);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_DefaultCommand_KeepsStandardVoice()
     {
         // A client that predates the field sends no voice; the default must

@@ -54,6 +54,8 @@ namespace SportsData.Notification.Infrastructure.Data
 
         public DbSet<SmackPhrase> SmackPhrases => Set<SmackPhrase>();
 
+        public DbSet<SmackPreviewRating> SmackPreviewRatings => Set<SmackPreviewRating>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -228,6 +230,27 @@ namespace SportsData.Notification.Infrastructure.Data
             modelBuilder.Entity<SmackPhrase>()
                 .ToTable(t => t.HasCheckConstraint(
                     "CK_SmackPhrases_Weight_Positive", "\"Weight\" >= 1"));
+
+            // SmackBot Lab ratings — training data pairing pick facts with a
+            // star label. See docs/features/smackbot-lab.md.
+            modelBuilder.Entity<SmackPreviewRating>()
+                .Property(r => r.RenderedText)
+                .HasMaxLength(400)
+                .IsRequired();
+
+            modelBuilder.Entity<SmackPreviewRating>()
+                .Property(r => r.FactsJson)
+                .IsRequired();
+
+            // One rating per (pick, voice): the Lab upserts on this key, so a
+            // re-rating after a phrase edit overwrites rather than duplicates.
+            modelBuilder.Entity<SmackPreviewRating>()
+                .HasIndex(r => new { r.PickId, r.Voice })
+                .IsUnique();
+
+            modelBuilder.Entity<SmackPreviewRating>()
+                .ToTable(t => t.HasCheckConstraint(
+                    "CK_SmackPreviewRatings_Stars_Range", "\"Stars\" BETWEEN 0 AND 4"));
         }
     }
 }

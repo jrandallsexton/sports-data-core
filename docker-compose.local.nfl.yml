@@ -150,6 +150,30 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  # ─── Notification (mode All — single service, no sport scoping) ─────────────
+  # Needed locally for the SmackBot Lab relay chain (web admin -> API
+  # admin/smack-lab -> NotificationClient -> here) and for exercising push
+  # consumers. Firebase config is absent from the Local label, so the service
+  # registers NoOpPushNotificationSender — FCM dispatches no-op, which is
+  # exactly right for local work. [ApiKeyAuth] on the admin endpoints resolves
+  # CommonConfig:Notification:AdminApiKey from App Config (keyvault ref) via
+  # the AZURE_* credentials already in the common env.
+  notification:
+    build:
+      context: .
+      dockerfile: src/SportsData.Notification/Dockerfile
+    container_name: notification
+    ports:
+      # 5068 mirrors the Local-label ApiUrl (http://localhost:5068/) so
+      # host-side tools (Bruno, curl) reach it at the same address the
+      # in-container client uses via Docker DNS.
+      - "5068:8080"
+    environment:
+      <<: *common-env
+    healthcheck: *service-healthcheck
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   # ─── API (sport-keyed client URLs route per-sport requests) ─────────────────
   api:
     build:
@@ -178,10 +202,14 @@ services:
       CommonConfig__PlayerClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
       CommonConfig__PlayerClientConfig__FootballNfl__ApiUrl: http://producer-nfl:8080/api/
       CommonConfig__PlayerClientConfig__BaseballMlb__ApiUrl: http://producer-mlb-api:8080/api/
-      CommonConfig__NotificationClientConfig__FootballNcaa__ApiUrl: http://producer-ncaa-api:8080/api/
-      CommonConfig__NotificationClientConfig__FootballNfl__ApiUrl: http://producer-nfl:8080/api/
-      CommonConfig__NotificationClientConfig__BaseballMlb__ApiUrl: http://producer-mlb-api:8080/api/
+      # Notification is mode-agnostic (single service) — one URL, not
+      # per-sport. NO /api/ prefix (admin routes serve at the root) and the
+      # trailing slash is load-bearing for HttpClient relative resolution.
+      # SecretKey comes from the Local App Config label (keyvault ref).
+      CommonConfig__NotificationClientConfig__ApiUrl: http://notification:8080/
     depends_on:
+      notification:
+        condition: service_healthy
       producer-ncaa-api:
         condition: service_healthy
       producer-mlb-api:

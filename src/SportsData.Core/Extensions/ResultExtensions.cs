@@ -46,6 +46,7 @@ namespace SportsData.Core.Extensions
                     ResultStatus.Unauthorized => new UnauthorizedObjectResult(new { failure.Errors }), // 401 Unauthorized
                     ResultStatus.Forbid => new ForbidResult(), // 403 Forbidden
                     ResultStatus.NotFound => new NotFoundObjectResult(new { failure.Errors }), // 404 Not Found
+                    ResultStatus.Conflict => new ConflictObjectResult(new { failure.Errors }), // 409 Conflict
                     _ => new ObjectResult(new { failure.Errors }) { StatusCode = 500 } // 500 Internal Server Error
                 };
             }

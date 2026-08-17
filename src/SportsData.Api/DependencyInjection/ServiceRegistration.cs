@@ -337,6 +337,10 @@ namespace SportsData.Api.DependencyInjection
             // User Queries
             services.AddScoped<IGetMeQueryHandler, GetMeQueryHandler>();
             services.AddScoped<IGetNotificationPreferencesQueryHandler, GetNotificationPreferencesQueryHandler>();
+
+            // SmackBot Lab composition (docs/features/smackbot-lab.md)
+            services.AddScoped<Application.Admin.SmackLab.IGetSmackLabLeaguesQueryHandler, Application.Admin.SmackLab.GetSmackLabLeaguesQueryHandler>();
+            services.AddScoped<Application.Admin.SmackLab.IGetSmackLabPicksQueryHandler, Application.Admin.SmackLab.GetSmackLabPicksQueryHandler>();
             services.AddScoped<IGetUserOptionsQueryHandler, GetUserOptionsQueryHandler>();
 
             services.AddScoped<IUserService, UserService>();

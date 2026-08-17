@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Notification.Application.Dispatching;
+using SportsData.Core.Infrastructure.Clients.Notification.Dtos;
 using SportsData.Notification.Controllers;
 using SportsData.Notification.Infrastructure.Data.Entities;
 

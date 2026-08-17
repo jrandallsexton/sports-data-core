@@ -20,6 +20,8 @@ public class AdminOpsProxyAllowlistTests
     [InlineData("producer", "contests")]
     [InlineData("PRODUCER", "Franchise-Seasons/x")]
     [InlineData("provider", "documents/replay")]
+    [InlineData("provider", "resourceIndex/create")]
+    [InlineData("provider", "resourceindex/00000000-0000-0000-0000-000000000000/process")]
     public void AllowedFamilies_PassPerService(string service, string path)
     {
         AdminOpsProxyController.Allowlist.IsAllowed(service, path).Should().BeTrue();
@@ -27,6 +29,8 @@ public class AdminOpsProxyAllowlistTests
 
     [Theory]
     [InlineData("producer", "documents/replay", "provider-only family on producer")]
+    [InlineData("producer", "resourceIndex/create", "provider-only family on producer")]
+    [InlineData("provider", "resourceIndexes/anything", "no segment boundary after prefix")]
     [InlineData("provider", "franchise-seasons/x", "producer-only family on provider")]
     [InlineData("producer", "hangfire", "ops dashboards are never proxied")]
     [InlineData("producer", "test/outbox", "the deleted test surface stays dead")]

@@ -24,6 +24,10 @@ namespace SportsData.Core.Eventing.Events.Users
         bool MatchupPreviewEnabled,
         bool ScheduleChangeEnabled,
         bool OddsChangedEnabled,
+        // Wire name from NotificationVoices ("Standard"/"Smack"). Nullable so
+        // in-flight messages published before this field existed deserialize
+        // cleanly; consumers treat null/unknown as Standard.
+        string? PickResultVoice,
         Guid CorrelationId,
         Guid CausationId
     ) : EventBase(null, Sport.All, null, CorrelationId, CausationId);

@@ -25,7 +25,8 @@ public class PickSituationResolverTests
         int opponentScore,
         bool isCorrect,
         double? pickedSpread = null,
-        bool? pickedIsHome = true)
+        bool? pickedIsHome = true,
+        double? marketSpread = null)
         => new(
             Guid.NewGuid(), null, Guid.NewGuid(), Guid.NewGuid(),
             AwayName: null, HomeName: null,
@@ -38,6 +39,9 @@ public class PickSituationResolverTests
             IsCorrect: isCorrect,
             PickedIsHome: pickedIsHome,
             PickedSpread: pickedSpread,
+            // ATS events carry the same line in both fields, mirroring the
+            // publisher; straight-up cases pass marketSpread alone.
+            MarketSpread: marketSpread ?? pickedSpread,
             LeagueId: Guid.NewGuid(), LeagueName: "Sluggers",
             Sport: Sport.FootballNcaa, SeasonYear: 2026,
             CorrelationId: Guid.NewGuid(), CausationId: Guid.NewGuid());
@@ -165,15 +169,35 @@ public class PickSituationResolverTests
     }
 
     [Fact]
-    public void StraightUpBigDogLoss_CurrentlyDegradesToAMarginBucket()
+    public void StraightUpBigDogLoss_ResolvesViaMarketSpread()
     {
-        // DOCUMENTS A KNOWN GAP. The flagship case — "took a 14-point dog
-        // straight up and lost" — can't resolve to BigDogLoss today because
-        // PickScoringProcessor only populates PickedSpread for ATS leagues.
-        // It degrades to a margin bucket rather than failing. Adding
-        // MarketSpread to the event closes this, and THIS TEST SHOULD THEN
-        // FLIP to expect BigDogLoss.
-        PickSituationResolver.Resolve(Pick(10, 24, isCorrect: false, pickedSpread: null))
+        // THE FLAGSHIP CASE — "took a 14-point dog straight up and lost".
+        // PickedSpread is null in a StraightUp league (display semantics);
+        // MarketSpread carries the line, and the dog buckets resolve from it.
+        // This test previously documented the gap; MarketSpread closed it.
+        PickSituationResolver.Resolve(
+                Pick(10, 24, isCorrect: false, pickedSpread: null, marketSpread: 14))
+            .Should().Be(PickSituation.BigDogLoss);
+    }
+
+    [Fact]
+    public void StraightUpDogAtExactlyTheLine_IsNotANearMiss()
+    {
+        // Same 14-point margin as the ATS near-miss case, but scored straight
+        // up: there was no cover to miss, so cover-relative situations must
+        // never fire from MarketSpread alone.
+        PickSituationResolver.Resolve(
+                Pick(10, 24, isCorrect: false, pickedSpread: null, marketSpread: 14))
+            .Should().NotBe(PickSituation.NarrowMissAts);
+    }
+
+    [Fact]
+    public void PreMarketSpreadEvent_StillDegradesToAMarginBucket()
+    {
+        // An event published before MarketSpread existed carries null in both
+        // fields and must keep degrading to the margin buckets, not throw.
+        PickSituationResolver.Resolve(
+                Pick(10, 24, isCorrect: false, pickedSpread: null, marketSpread: null))
             .Should().Be(PickSituation.GenericLoss);
     }
 

@@ -66,7 +66,10 @@ public class UpdateNotificationPreferencesCommandHandlerTests
             MembershipEnabled = false,
             MatchupPreviewEnabled = true,
             ScheduleChangeEnabled = false,
-            OddsChangedEnabled = true
+            OddsChangedEnabled = true,
+            // Non-default voice so a dropped mapping (entity or event) trips
+            // an assertion rather than passing on the default.
+            PickResultVoice = NotificationVoices.Smack
         };
 
     // Assert all eight flags on the persisted entity match the command.
@@ -80,6 +83,7 @@ public class UpdateNotificationPreferencesCommandHandlerTests
         prefs.MatchupPreviewEnabled.Should().Be(c.MatchupPreviewEnabled);
         prefs.ScheduleChangeEnabled.Should().Be(c.ScheduleChangeEnabled);
         prefs.OddsChangedEnabled.Should().Be(c.OddsChangedEnabled);
+        prefs.PickResultVoice.Should().Be(c.PickResultVoice);
     }
 
     // All eight flags on the published event match the command (plus UserId).
@@ -93,7 +97,8 @@ public class UpdateNotificationPreferencesCommandHandlerTests
            && e.MembershipEnabled == c.MembershipEnabled
            && e.MatchupPreviewEnabled == c.MatchupPreviewEnabled
            && e.ScheduleChangeEnabled == c.ScheduleChangeEnabled
-           && e.OddsChangedEnabled == c.OddsChangedEnabled;
+           && e.OddsChangedEnabled == c.OddsChangedEnabled
+           && e.PickResultVoice == c.PickResultVoice;
 
     // The event was published exactly once with the full flag set (payload-specific),
     // AND exactly one UserNotificationPreferencesUpdated was published in total. The
@@ -321,5 +326,38 @@ public class UpdateNotificationPreferencesCommandHandlerTests
 
             return await base.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_UnknownVoice_IsRejected()
+    {
+        // An unknown voice stored canonically would silently degrade to
+        // Standard copy at dispatch — reject it loudly at the boundary.
+        var userId = await SeedUserAsync();
+        var handler = Mocker.CreateInstance<UpdateNotificationPreferencesCommandHandler>();
+
+        var result = await handler.ExecuteAsync(userId, new UpdateNotificationPreferencesCommand
+        {
+            PickResultVoice = "SassMaster9000"
+        });
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.BadRequest);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DefaultCommand_KeepsStandardVoice()
+    {
+        // A client that predates the field sends no voice; the default must
+        // be Standard so nobody is opted into SmackBot by omission.
+        var userId = await SeedUserAsync();
+        var handler = Mocker.CreateInstance<UpdateNotificationPreferencesCommandHandler>();
+
+        var result = await handler.ExecuteAsync(userId, new UpdateNotificationPreferencesCommand());
+
+        result.IsSuccess.Should().BeTrue();
+        var prefs = await DataContext.UserNotificationPreferences.AsNoTracking()
+            .FirstAsync(x => x.UserId == userId);
+        prefs.PickResultVoice.Should().Be(NotificationVoices.Standard);
     }
 }

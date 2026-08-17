@@ -75,13 +75,12 @@ public enum PickSituation
 /// </para>
 ///
 /// <para>
-/// SPREAD AVAILABILITY: the spread-dependent situations need the picked
-/// side's line. Today <c>PickedSpread</c> is populated only for
-/// AgainstTheSpread leagues (PickScoringProcessor gates on PickType for
-/// display reasons), so a straight-up pick on a 14-point dog currently falls
-/// through to the generic buckets. A future <c>MarketSpread</c> on the event
-/// closes that gap; this resolver reads whichever is present, so it needs no
-/// change when that lands. Degraded, never broken.
+/// SPREAD AVAILABILITY: <c>PickedSpread</c> is populated only for
+/// AgainstTheSpread leagues (display semantics); <c>MarketSpread</c> carries
+/// the same picked-side-signed line for every league. The resolver reads
+/// whichever is present, so a straight-up pick on a 14-point dog resolves to
+/// the dog buckets. Events published before MarketSpread existed carry null
+/// and degrade to the margin buckets — degraded, never broken.
 /// </para>
 /// </summary>
 public static class PickSituationResolver
@@ -105,15 +104,22 @@ public static class PickSituationResolver
         var margin = pickedScore - opponentScore;
 
         // Negative = favoured, positive = underdog, from the picked side's
-        // perspective. Null when the league is straight-up (see class doc).
-        var line = msg.PickedSpread;
+        // perspective. TWO distinct meanings:
+        //   atsLine (PickedSpread) — non-null iff the pick was SCORED against
+        //     the spread. Cover-relative situations (NarrowMissAts) key on
+        //     this: a straight-up pick has no cover to miss.
+        //   line — the market number for dog/favourite framing, valid in any
+        //     league; MarketSpread supplies it when PickedSpread is null,
+        //     which is what lets "took a 14-point dog STRAIGHT UP" resolve.
+        var atsLine = msg.PickedSpread;
+        var line = atsLine ?? msg.MarketSpread;
 
         return msg.IsCorrect == true
             ? ResolveWin(margin, line)
-            : ResolveLoss(margin, pickedScore, line);
+            : ResolveLoss(margin, pickedScore, line, atsLine);
     }
 
-    private static PickSituation ResolveLoss(int margin, int pickedScore, double? line)
+    private static PickSituation ResolveLoss(int margin, int pickedScore, double? line, double? atsLine)
     {
         // Most-specific first. Humiliation outranks arithmetic: being shut out
         // is the story even if the margin also qualifies as a blowout.
@@ -122,8 +128,10 @@ public static class PickSituationResolver
             return PickSituation.ShutoutLoss;
 
         // An ATS near-miss is a sharper sting than any margin bucket — the
-        // pick was one point from cashing.
-        if (line is { } spread && Math.Abs(margin + spread) <= NarrowAtsMiss)
+        // pick was one point from cashing. Keyed on atsLine, NOT the merged
+        // line: a straight-up 14-point dog losing by exactly 14 has no cover
+        // to miss and must read as BigDogLoss, not a near-miss.
+        if (atsLine is { } spread && Math.Abs(margin + spread) <= NarrowAtsMiss)
             return PickSituation.NarrowMissAts;
 
         // SCOREBOARD vs PICK. IsCorrect means the pick COVERED, not that the

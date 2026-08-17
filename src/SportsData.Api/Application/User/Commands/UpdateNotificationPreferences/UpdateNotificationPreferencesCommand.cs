@@ -15,4 +15,10 @@ public class UpdateNotificationPreferencesCommand
     public bool MatchupPreviewEnabled { get; init; } = true;
     public bool ScheduleChangeEnabled { get; init; } = true;
     public bool OddsChangedEnabled { get; init; } = true;
+
+    /// <summary>
+    /// Pick-result voice wire name (see <c>NotificationVoices</c>). Defaults
+    /// to Standard so clients that predate the field keep today's copy.
+    /// </summary>
+    public string PickResultVoice { get; init; } = SportsData.Core.Eventing.Events.Users.NotificationVoices.Standard;
 }

@@ -46,7 +46,8 @@ public class GetNotificationPreferencesQueryHandler : IGetNotificationPreference
                 MembershipEnabled = p.MembershipEnabled,
                 MatchupPreviewEnabled = p.MatchupPreviewEnabled,
                 ScheduleChangeEnabled = p.ScheduleChangeEnabled,
-                OddsChangedEnabled = p.OddsChangedEnabled
+                OddsChangedEnabled = p.OddsChangedEnabled,
+                PickResultVoice = p.PickResultVoice
             })
             .FirstOrDefaultAsync(cancellationToken);
 

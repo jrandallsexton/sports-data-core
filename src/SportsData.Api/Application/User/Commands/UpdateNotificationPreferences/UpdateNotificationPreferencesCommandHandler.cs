@@ -106,6 +106,7 @@ public class UpdateNotificationPreferencesCommandHandler : IUpdateNotificationPr
                 command.MatchupPreviewEnabled,
                 command.ScheduleChangeEnabled,
                 command.OddsChangedEnabled,
+                command.PickResultVoice,
                 Guid.NewGuid(),
                 Guid.NewGuid()),
             cancellationToken);
@@ -150,5 +151,6 @@ public class UpdateNotificationPreferencesCommandHandler : IUpdateNotificationPr
         prefs.MatchupPreviewEnabled = command.MatchupPreviewEnabled;
         prefs.ScheduleChangeEnabled = command.ScheduleChangeEnabled;
         prefs.OddsChangedEnabled = command.OddsChangedEnabled;
+        prefs.PickResultVoice = command.PickResultVoice;
     }
 }

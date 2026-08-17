@@ -214,6 +214,18 @@ namespace SportsData.Api.Application.Scoring
                         pickedSpread = pickedIsHome.Value ? result.Spread.Value : -result.Spread.Value;
                     }
 
+                    // The market line regardless of PickType, same signing.
+                    // PickedSpread's ATS gate is display semantics; SmackBot's
+                    // situation taxonomy needs the line even for StraightUp
+                    // picks ("took a 14-point dog straight up"), so it travels
+                    // in its own field and existing copy never changes.
+                    double? marketSpread = null;
+                    if (pickedIsHome.HasValue
+                        && result.Spread is not null && result.Spread.Value != 0)
+                    {
+                        marketSpread = pickedIsHome.Value ? result.Spread.Value : -result.Spread.Value;
+                    }
+
                     // Fat-event for the Notification service (design doc §4 /
                     // §5 v1). Publish BEFORE SaveChanges so the bus-outbox
                     // interceptor commits this together with the pick update;
@@ -238,6 +250,7 @@ namespace SportsData.Api.Application.Scoring
                             pick.IsCorrect,
                             pickedIsHome,
                             pickedSpread,
+                            marketSpread,
                             group.Id,
                             group.Name,
                             group.Sport,

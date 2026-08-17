@@ -32,7 +32,7 @@ public class SmackPhraseCatalogTests : NotificationTestBase<SmackPhraseCatalog>
         => new(
             Guid.NewGuid(), null, Guid.NewGuid(), pickId,
             null, null, "NYY", "BOS", 24, 14,
-            IsCorrect: false, PickedIsHome: true, PickedSpread: null,
+            IsCorrect: false, PickedIsHome: true, PickedSpread: null, MarketSpread: null,
             Guid.NewGuid(), "Sluggers", Sport.FootballNcaa, 2026,
             Guid.NewGuid(), Guid.NewGuid());
 
@@ -137,7 +137,7 @@ public class SmackPhraseCatalogTests : NotificationTestBase<SmackPhraseCatalog>
             AwayName: null, HomeName: null,
             AwayAbbreviation: "NYY", HomeAbbreviation: "BOS",
             AwayScore: 2, HomeScore: 9,
-            IsCorrect: true, PickedIsHome: true, PickedSpread: -6.5,
+            IsCorrect: true, PickedIsHome: true, PickedSpread: -6.5, MarketSpread: -6.5,
             LeagueId: Guid.NewGuid(), LeagueName: "Sluggers",
             Sport: Sport.BaseballMlb, SeasonYear: 2026,
             CorrelationId: Guid.NewGuid(), CausationId: Guid.NewGuid());
@@ -154,7 +154,7 @@ public class SmackPhraseCatalogTests : NotificationTestBase<SmackPhraseCatalog>
         var msg = new UserPickScored(
             Guid.NewGuid(), null, Guid.NewGuid(), Guid.NewGuid(),
             null, null, "NYY", "BOS", 2, 9,
-            true, true, null,
+            true, true, null, null,
             Guid.NewGuid(), "Sluggers", Sport.BaseballMlb, 2026,
             Guid.NewGuid(), Guid.NewGuid());
 

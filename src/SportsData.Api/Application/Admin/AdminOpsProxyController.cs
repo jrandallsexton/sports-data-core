@@ -51,7 +51,8 @@ public class AdminOpsProxyController : ControllerBase
 
         private static readonly string[] ProviderPrefixes =
         [
-            "documents"
+            "documents",
+            "resourceIndex"
         ];
 
         public static bool IsAllowed(string service, string path)

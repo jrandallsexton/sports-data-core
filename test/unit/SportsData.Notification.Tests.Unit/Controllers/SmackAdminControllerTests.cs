@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Notification.Application.Dispatching;
+using SportsData.Core.Infrastructure.Clients.Notification.Dtos;
 using SportsData.Notification.Controllers;
 using SportsData.Notification.Infrastructure.Data.Entities;
 
@@ -404,5 +405,41 @@ public class SmackAdminControllerTests : NotificationTestBase<SmackAdminControll
             RenderedText = longRendered,
             Stars = 2
         }, CancellationToken.None)).Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetRatings_ReturnsLeagueRowsOnly_AndRequiresLeagueId()
+    {
+        var leagueId = Guid.NewGuid();
+        var sut = Sut();
+
+        (await sut.GetRatings(Guid.Empty, CancellationToken.None))
+            .Result.Should().BeOfType<BadRequestObjectResult>();
+
+        await sut.RatePreview(new SmackRatingRequestDto
+        {
+            PickId = Guid.NewGuid(),
+            LeagueId = leagueId,
+            Situation = nameof(PickSituation.GenericLoss),
+            RenderedText = "in-league line",
+            Stars = 3
+        }, CancellationToken.None);
+        await sut.RatePreview(new SmackRatingRequestDto
+        {
+            PickId = Guid.NewGuid(),
+            LeagueId = Guid.NewGuid(), // different league — must not return
+            Situation = nameof(PickSituation.GenericLoss),
+            RenderedText = "other league line",
+            Stars = 1
+        }, CancellationToken.None);
+
+        var result = await sut.GetRatings(leagueId, CancellationToken.None);
+        var rows = (result.Result as OkObjectResult)!.Value
+            as List<SportsData.Core.Infrastructure.Clients.Notification.Dtos.SmackRatingDto>;
+
+        rows.Should().HaveCount(1);
+        rows![0].RenderedText.Should().Be("in-league line");
+        rows[0].Stars.Should().Be(3);
+        rows[0].Voice.Should().Be("Smack");
     }
 }

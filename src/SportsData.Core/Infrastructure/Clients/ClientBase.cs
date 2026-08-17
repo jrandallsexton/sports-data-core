@@ -109,6 +109,7 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
             HttpStatusCode.Unauthorized => ResultStatus.Unauthorized,
             HttpStatusCode.Forbidden => ResultStatus.Forbid,
             HttpStatusCode.BadRequest => ResultStatus.BadRequest,
+            HttpStatusCode.Conflict => ResultStatus.Conflict,
             HttpStatusCode.UnprocessableEntity => ResultStatus.BadRequest,
             >= HttpStatusCode.InternalServerError => ResultStatus.Error,
             _ => defaultStatus
@@ -133,6 +134,141 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
             entityName,
             defaultFailureStatus,
             cancellationToken);
+    }
+
+    /// <summary>
+    /// Performs an HTTP POST with a JSON body where the caller needs the
+    /// response BODY as a Result — the body-returning sibling of
+    /// <see cref="PostWithResultAsync{TRequest}(string, TRequest, string, CancellationToken)"/>,
+    /// with the same error mapping as <see cref="GetAsync{TResponse, TDto}"/>.
+    /// </summary>
+    protected Task<Result<TResponse>> PostAsync<TResponse, TDto, TRequest>(
+        string url,
+        TRequest request,
+        Func<TDto, TResponse> mapToResponse,
+        TResponse defaultResponse,
+        string entityName = "Response",
+        ResultStatus defaultFailureStatus = ResultStatus.BadRequest,
+        CancellationToken cancellationToken = default)
+        where TDto : class
+        where TRequest : class
+        => SendWithBodyAsync(HttpMethod.Post, url, request, mapToResponse, defaultResponse, entityName, defaultFailureStatus, cancellationToken);
+
+    /// <summary>
+    /// Performs an HTTP PUT with a JSON body where the caller needs the
+    /// response BODY as a Result. Same error mapping as
+    /// <see cref="GetAsync{TResponse, TDto}"/>; a 409 surfaces via
+    /// <see cref="MapHttpStatusCode"/> so optimistic-concurrency conflicts are
+    /// distinguishable from other failures.
+    /// </summary>
+    protected Task<Result<TResponse>> PutAsync<TResponse, TDto, TRequest>(
+        string url,
+        TRequest request,
+        Func<TDto, TResponse> mapToResponse,
+        TResponse defaultResponse,
+        string entityName = "Response",
+        ResultStatus defaultFailureStatus = ResultStatus.BadRequest,
+        CancellationToken cancellationToken = default)
+        where TDto : class
+        where TRequest : class
+        => SendWithBodyAsync(HttpMethod.Put, url, request, mapToResponse, defaultResponse, entityName, defaultFailureStatus, cancellationToken);
+
+    private async Task<Result<TResponse>> SendWithBodyAsync<TResponse, TDto, TRequest>(
+        HttpMethod method,
+        string url,
+        TRequest request,
+        Func<TDto, TResponse> mapToResponse,
+        TResponse defaultResponse,
+        string entityName,
+        ResultStatus defaultFailureStatus,
+        CancellationToken cancellationToken)
+        where TDto : class
+        where TRequest : class
+    {
+        using var message = new HttpRequestMessage(method, url)
+        {
+            Content = new StringContent(request.ToJson(), Encoding.UTF8, "application/json")
+        };
+
+        // response outlives the try so the body-read can fault without
+        // leaking it: every catch disposes what SendAsync handed back.
+        HttpResponseMessage? response = null;
+        string content;
+        try
+        {
+            response = await HttpClient.SendAsync(message, cancellationToken);
+            content = await response.Content.ReadAsStringAsync(cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Caller-requested cancellation propagates; only TIMEOUTS (the
+            // client's own token) convert to a failure below.
+            response?.Dispose();
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            response?.Dispose();
+            return new Failure<TResponse>(
+                defaultResponse,
+                ResultStatus.Error,
+                [new ValidationFailure(entityName, $"{entityName} request failed: {ex.Message}")]);
+        }
+        catch (TaskCanceledException)
+        {
+            response?.Dispose();
+            return new Failure<TResponse>(
+                defaultResponse,
+                ResultStatus.Error,
+                [new ValidationFailure(entityName, $"{entityName} request timed out")]);
+        }
+
+        using var _ = response;
+
+        if (response.IsSuccessStatusCode)
+        {
+            try
+            {
+                var dto = content.FromJson<TDto>();
+
+                if (dto is null)
+                {
+                    return new Failure<TResponse>(
+                        defaultResponse,
+                        ResultStatus.BadRequest,
+                        [new ValidationFailure(entityName, $"Unable to deserialize {entityName.ToLowerInvariant()} response")]);
+                }
+
+                return new Success<TResponse>(mapToResponse(dto));
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return new Failure<TResponse>(
+                    defaultResponse,
+                    ResultStatus.BadRequest,
+                    [new ValidationFailure(entityName, $"Unable to deserialize {entityName.ToLowerInvariant()} response")]);
+            }
+        }
+
+        Failure<TResponse>? failure = null;
+        try
+        {
+            failure = content.FromJson<Failure<TResponse>>();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // Response body is not valid JSON, use defaults
+        }
+
+        // The HTTP status is AUTHORITATIVE. Server failure bodies are shaped
+        // { errors } (ToActionResult never serializes a Failure<T>), so the
+        // parse above yields a Failure whose Status is the enum DEFAULT —
+        // trusting it turned a 409 into ResultStatus.Accepted and broke the
+        // conflict relay. The body contributes errors only.
+        var status = MapHttpStatusCode(response.StatusCode, defaultFailureStatus);
+        var errors = failure?.Errors ?? [new ValidationFailure(entityName, content.Length > 0 && content.Length <= 300 ? content : $"{entityName} request failed")];
+
+        return new Failure<TResponse>(defaultResponse, status, errors);
     }
 
     /// <summary>

@@ -77,6 +77,12 @@ namespace SportsData.Core.Config
         public static string GetNotificationProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(NotificationClientConfig)}:{mode}:{nameof(NotificationClientConfig.ApiUrl)}";
 
+        public static string GetNotificationProviderUri() =>
+            $"{nameof(CommonConfig)}:{nameof(NotificationClientConfig)}:{nameof(NotificationClientConfig.ApiUrl)}";
+
+        public static string GetNotificationClientSecretKey() =>
+            $"{nameof(CommonConfig)}:{nameof(NotificationClientConfig)}:{nameof(NotificationClientConfig.SecretKey)}";
+
         public static string GetPlayerProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(PlayerClientConfig)}:{mode}:{nameof(PlayerClientConfig.ApiUrl)}";
 

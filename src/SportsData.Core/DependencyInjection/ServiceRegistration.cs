@@ -23,6 +23,7 @@ using SportsData.Core.Http.Policies;
 using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Contest;
+using SportsData.Core.Infrastructure.Clients.Notification;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Season;
@@ -615,6 +616,38 @@ namespace SportsData.Core.DependencyInjection
             {
                 var franchiseClientName = $"{HttpClients.FranchiseClient}";
                 services.AddHttpClient(franchiseClientName, client => client.BaseAddress = new Uri(franchiseApiUrl));
+            }
+
+            // Notification is a single mode-agnostic service (mode=All), so no
+            // per-sport factory — one typed client, registered only when the
+            // slot is configured. The admin key is stamped as a default header
+            // here so call sites (and browsers) never see it.
+            var notificationApiUrl = configuration[CommonConfigKeys.GetNotificationProviderUri()];
+            if (!string.IsNullOrEmpty(notificationApiUrl))
+            {
+                var notificationSecret = configuration[CommonConfigKeys.GetNotificationClientSecretKey()];
+                services
+                    .AddHttpClient<IProvideNotifications, NotificationClient>(HttpClients.NotificationClient, c =>
+                    {
+                        c.BaseAddress = new Uri(notificationApiUrl);
+                        c.Timeout = TimeSpan.FromSeconds(30);
+                        if (!string.IsNullOrEmpty(notificationSecret))
+                        {
+                            c.DefaultRequestHeaders.Add("X-Api-Key", notificationSecret);
+                        }
+                    })
+                    .AddPolicyHandlerFromRegistry("HttpRetry");
+            }
+            else
+            {
+                // No ApiUrl: consumers (e.g. SmackLabController) still resolve
+                // IProvideNotifications and receive a controlled
+                // misconfiguration Failure per call, rather than the container
+                // failing dependency resolution into a raw 500. A missing
+                // SecretKey (above) is likewise a controlled failure: the
+                // server rejects with 401 and the client maps it to an
+                // Unauthorized envelope.
+                services.AddSingleton<IProvideNotifications, UnconfiguredNotificationClient>();
             }
 
             var seasonApiUrl = configuration[CommonConfigKeys.GetSeasonProviderUri()];

@@ -32,6 +32,12 @@ namespace SportsData.Core.Common
         RateLimited,
         Success,
         Unauthorized,
-        Validation
+        Validation,
+
+        // Appended (not alphabetical) deliberately: enum members number by
+        // position, and inserting mid-enum would renumber everything after it
+        // — a silent remap anywhere a ResultStatus is ever serialized
+        // numerically across a rolling deploy.
+        Conflict
     }
 }

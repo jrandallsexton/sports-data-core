@@ -331,8 +331,11 @@ public class SmackAdminControllerTests : NotificationTestBase<SmackAdminControll
         }, CancellationToken.None);
 
         result.Result.Should().BeOfType<ConflictObjectResult>();
-        (await DataContext.SmackPhrases.AsNoTracking().SingleAsync(p => p.Id == phrase.Id))
-            .Text.Should().Be("original", "the stale write must not have landed");
+        var storedText = await DataContext.SmackPhrases.AsNoTracking()
+            .Where(p => p.Id == phrase.Id)
+            .Select(p => p.Text)
+            .SingleAsync();
+        storedText.Should().Be("original", "the stale write must not have landed");
     }
 
     [Fact]

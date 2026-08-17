@@ -242,12 +242,6 @@ namespace SportsData.Notification.Infrastructure.Data
                 .Property(r => r.FactsJson)
                 .IsRequired();
 
-            modelBuilder.Entity<SmackPreviewRating>()
-                .Property(r => r.RowVersion)
-                .HasColumnName("xmin")
-                .HasColumnType("xid")
-                .IsRowVersion();
-
             // One rating per (pick, voice): the Lab upserts on this key, so a
             // re-rating after a phrase edit overwrites rather than duplicates.
             modelBuilder.Entity<SmackPreviewRating>()

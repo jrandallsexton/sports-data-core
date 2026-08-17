@@ -82,7 +82,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("UserId", "ContestId", "FireTimeUtc")
                         .IsUnique();
 
-                    b.ToTable("NotificationContestStarts");
+                    b.ToTable("NotificationContestStarts", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.NotificationLeagueInvitation", b =>
@@ -145,7 +145,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("UserId", "LeagueId", "CorrelationId")
                         .IsUnique();
 
-                    b.ToTable("NotificationLeagueInvitations");
+                    b.ToTable("NotificationLeagueInvitations", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.NotificationLog", b =>
@@ -207,7 +207,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("CorrelationId", "UserId", "Channel")
                         .IsUnique();
 
-                    b.ToTable("NotificationLog");
+                    b.ToTable("NotificationLog", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.NotificationMembership", b =>
@@ -267,7 +267,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("UserId", "LeagueId")
                         .IsUnique();
 
-                    b.ToTable("NotificationMemberships");
+                    b.ToTable("NotificationMemberships", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.NotificationPickDeadline", b =>
@@ -333,7 +333,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("UserId", "LeagueId", "SeasonWeek", "FireTimeUtc")
                         .IsUnique();
 
-                    b.ToTable("NotificationPickDeadlines");
+                    b.ToTable("NotificationPickDeadlines", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.NotificationUserPick", b =>
@@ -399,7 +399,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("UserId", "PickId")
                         .IsUnique();
 
-                    b.ToTable("NotificationUserPicks");
+                    b.ToTable("NotificationUserPicks", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.PendingScheduledJob", b =>
@@ -449,7 +449,7 @@ namespace SportsData.Notification.Migrations
 
                     NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("UserId", "JobKind", "TargetId", "SeasonWeek"), false);
 
-                    b.ToTable("PendingScheduledJobs");
+                    b.ToTable("PendingScheduledJobs", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.PickemGroup", b =>
@@ -488,7 +488,7 @@ namespace SportsData.Notification.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PickemGroups");
+                    b.ToTable("PickemGroups", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.PickemGroupMatchup", b =>
@@ -539,7 +539,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("PickemGroupId", "ContestId")
                         .IsUnique();
 
-                    b.ToTable("PickemGroupMatchups");
+                    b.ToTable("PickemGroupMatchups", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.PickemGroupMember", b =>
@@ -576,7 +576,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("PickemGroupId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("PickemGroupMembers");
+                    b.ToTable("PickemGroupMembers", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.SmackPhrase", b =>
@@ -634,7 +634,7 @@ namespace SportsData.Notification.Migrations
 
                     b.HasIndex("Voice", "Situation", "IsActive");
 
-                    b.ToTable("SmackPhrases", t =>
+                    b.ToTable("SmackPhrases", null, t =>
                         {
                             t.HasCheckConstraint("CK_SmackPhrases_Weight_Positive", "\"Weight\" >= 1");
                         });
@@ -682,12 +682,6 @@ namespace SportsData.Notification.Migrations
                         .HasMaxLength(400)
                         .HasColumnType("character varying(400)");
 
-                    b.Property<uint>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
                     b.Property<int>("Situation")
                         .HasColumnType("integer");
 
@@ -702,7 +696,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("PickId", "Voice")
                         .IsUnique();
 
-                    b.ToTable("SmackPreviewRatings", t =>
+                    b.ToTable("SmackPreviewRatings", null, t =>
                         {
                             t.HasCheckConstraint("CK_SmackPreviewRatings_Stars_Range", "\"Stars\" BETWEEN 0 AND 4");
                         });
@@ -742,7 +736,7 @@ namespace SportsData.Notification.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.UserDevice", b =>
@@ -794,7 +788,7 @@ namespace SportsData.Notification.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserDevices");
+                    b.ToTable("UserDevices", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.UserNotificationPreferences", b =>
@@ -850,7 +844,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserNotificationPreferences");
+                    b.ToTable("UserNotificationPreferences", (string)null);
                 });
 
             modelBuilder.Entity("SportsData.Notification.Infrastructure.Data.Entities.UserPick", b =>
@@ -887,7 +881,7 @@ namespace SportsData.Notification.Migrations
                     b.HasIndex("UserId", "ContestId", "PickemGroupId")
                         .IsUnique();
 
-                    b.ToTable("UserPicks");
+                    b.ToTable("UserPicks", (string)null);
                 });
 #pragma warning restore 612, 618
         }

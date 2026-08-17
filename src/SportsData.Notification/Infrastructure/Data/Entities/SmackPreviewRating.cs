@@ -47,7 +47,10 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
         /// <summary>The preview's full fact payload — the training features.</summary>
         public string FactsJson { get; set; }
 
-        /// <summary>PostgreSQL xmin concurrency token (house rule for operator-edited rows).</summary>
-        public uint RowVersion { get; set; }
+        // Deliberately NO xmin concurrency token. This is a solo-operator
+        // admin surface (operator decision, PR #645): the upsert's
+        // unique-index race fallback is the only concurrency this needs, and
+        // a token here would demand retry handling and integration coverage
+        // for a conflict that cannot occur in practice.
     }
 }

@@ -262,6 +262,7 @@ export interface Standing {
   isSynthetic?: boolean;
   totalPicks: number;
   totalCorrect: number;
+  /** Percentage-scaled by the API (70.59, not 0.7059) — render raw, never * 100. */
   pickAccuracy: number;
   totalPoints: number;
   currentWeekPoints: number;

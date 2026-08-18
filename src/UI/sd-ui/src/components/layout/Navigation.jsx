@@ -10,8 +10,7 @@ import {
   FaBars,
   FaTimes,
   FaRocket,
-  FaMapMarkedAlt,
-  FaListOl
+  FaMapMarkedAlt
 } from "react-icons/fa";
 import Wordmark from '../brand/Wordmark';
 import { useUserDto } from '../../contexts/UserContext';
@@ -55,10 +54,6 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
             <NavLink to="/app/leaderboard" className="nav-link" onClick={handleNavLinkClick}>
               <FaTrophy className="nav-icon" />
               <span>Leaderboard</span>
-            </NavLink>
-            <NavLink to="/app/sport/football/ncaa/rankings" className="nav-link" onClick={handleNavLinkClick}>
-              <FaListOl className="nav-icon" />
-              <span>Rankings</span>
             </NavLink>
             {isAdmin && (
               <NavLink to="/app/map" className="nav-link" onClick={handleNavLinkClick}>
@@ -132,12 +127,6 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
                 <NavLink to="/app/leaderboard" className="nav-link">
                   <FaTrophy className="nav-icon" />
                   <span>Leaderboard</span>
-                </NavLink>
-              </td>
-              <td>
-                <NavLink to="/app/sport/football/ncaa/rankings" className="nav-link">
-                  <FaListOl className="nav-icon" />
-                  <span>Rankings</span>
                 </NavLink>
               </td>
               {isAdmin && (

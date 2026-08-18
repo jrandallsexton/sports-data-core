@@ -40,6 +40,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<SeasonPollWeek> SeasonPollWeeks { get; set; }
 
+        public DbSet<SeasonPollWeekEntry> SeasonPollWeekEntries { get; set; }
+
         public DbSet<SeasonWeek> SeasonWeeks { get; set; }
 
         public DbSet<SeasonExternalId> SeasonExternalIds { get; set; }

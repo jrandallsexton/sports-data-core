@@ -40,7 +40,7 @@ function RankingsWidget({
       try {
         const apiResult = week
           ? await apiWrapper.Rankings.getCurrentRankings(seasonYear, week)
-          : await apiWrapper.Rankings.getSeasonRankings(seasonYear);
+          : await apiWrapper.Rankings.getSeasonRankings(seasonYear, sport, league);
         if (cancelled) return;
         const data = apiResult?.data || apiResult;
         const polls = Array.isArray(data) ? data : [];
@@ -60,7 +60,9 @@ function RankingsWidget({
     return () => {
       cancelled = true;
     };
-  }, [seasonLoading, seasonYear, week]);
+    // sport/league in the deps: a route change between scopes with the
+    // same resolved season must refetch, not retain the prior scope's polls.
+  }, [seasonLoading, seasonYear, week, sport, league]);
 
   const activePoll = pollsData && pollsData.length > activeTabIndex ? pollsData[activeTabIndex] : null;
 

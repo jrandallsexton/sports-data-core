@@ -70,54 +70,16 @@ LEFT JOIN LATERAL (
   inner join public."GroupSeason" gsHomeParent on gsHome."ParentId" = gsHomeParent."Id"
 
   LEFT JOIN LATERAL (
-  -- Rank from the SeasonPoll store (the store the weekly rankings job
-  -- feeds). POLL-FIRST: find THE poll in effect (latest published before kickoff), then this
-  -- team's entry in it — a team that dropped out is honestly unranked,
-  -- instead of retaining its last ranked appearance forever (both this
-  -- query's old form and the old store had that sticky-rank flaw).
-  -- 'cfp' preferred over 'ap' (stand-in for the old store's
-  -- DefaultRanking flag). Keyed on DateUtc, NOT
-  -- SeasonPollWeek.SeasonWeekId — those links are unreliable
-  -- (off-by-one late season, NULL for preseason/final).
-  SELECT spwe."Current"
-  FROM public."SeasonPollWeekEntry" spwe
-  WHERE spwe."SeasonPollWeekId" = (
-      SELECT spw."Id"
-      FROM public."SeasonPollWeek" spw
-      INNER JOIN public."SeasonPoll" sp ON sp."Id" = spw."SeasonPollId"
-      WHERE sp."SeasonYear" = fsAway."SeasonYear"
-        AND spw."Type" IN ('ap', 'cfp')
-        AND spw."DateUtc" < c."StartDateUtc"
-      ORDER BY spw."DateUtc" DESC, CASE WHEN spw."Type" = 'cfp' THEN 0 ELSE 1 END
-      LIMIT 1)
-    AND spwe."FranchiseSeasonId" = fsAway."Id"
-    AND NOT spwe."IsOtherReceivingVotes" AND NOT spwe."IsDroppedOut"
-  LIMIT 1
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect at kickoff,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(fsAway."Id", fsAway."SeasonYear", c."StartDateUtc") AS "Current"
 ) fsrdAway ON TRUE
 
   LEFT JOIN LATERAL (
-  -- Rank from the SeasonPoll store (the store the weekly rankings job
-  -- feeds). POLL-FIRST: find THE poll in effect (latest published before kickoff), then this
-  -- team's entry in it — a team that dropped out is honestly unranked,
-  -- instead of retaining its last ranked appearance forever (both this
-  -- query's old form and the old store had that sticky-rank flaw).
-  -- 'cfp' preferred over 'ap' (stand-in for the old store's
-  -- DefaultRanking flag). Keyed on DateUtc, NOT
-  -- SeasonPollWeek.SeasonWeekId — those links are unreliable
-  -- (off-by-one late season, NULL for preseason/final).
-  SELECT spwe."Current"
-  FROM public."SeasonPollWeekEntry" spwe
-  WHERE spwe."SeasonPollWeekId" = (
-      SELECT spw."Id"
-      FROM public."SeasonPollWeek" spw
-      INNER JOIN public."SeasonPoll" sp ON sp."Id" = spw."SeasonPollId"
-      WHERE sp."SeasonYear" = fsHome."SeasonYear"
-        AND spw."Type" IN ('ap', 'cfp')
-        AND spw."DateUtc" < c."StartDateUtc"
-      ORDER BY spw."DateUtc" DESC, CASE WHEN spw."Type" = 'cfp' THEN 0 ELSE 1 END
-      LIMIT 1)
-    AND spwe."FranchiseSeasonId" = fsHome."Id"
-    AND NOT spwe."IsOtherReceivingVotes" AND NOT spwe."IsDroppedOut"
-  LIMIT 1
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect at kickoff,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(fsHome."Id", fsHome."SeasonYear", c."StartDateUtc") AS "Current"
 ) fsrdHome ON TRUE
 where c."Id" = @ContestId

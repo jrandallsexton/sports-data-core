@@ -18,6 +18,7 @@ WITH target_week AS (
   INNER JOIN public."SeasonPhase" sph ON sph."Id" = sw."SeasonPhaseId"
   WHERE s."Year" = @SeasonYear AND sw."Number" = @WeekNumber
     AND sph."Name" = 'Regular Season'
+  ORDER BY sw."StartDate"
   LIMIT 1
 ),
 poll_week AS (

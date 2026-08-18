@@ -25,7 +25,9 @@ week_info AS (
            SELECT sw."Number"
            FROM public."SeasonWeek" sw
            INNER JOIN public."Season" s ON s."Id" = sw."SeasonId"
+           INNER JOIN public."SeasonPhase" sph ON sph."Id" = sw."SeasonPhaseId"
            WHERE s."Year" = @SeasonYear
+             AND sph."Name" = 'Regular Season'
              AND sw."StartDate" < mr."DateUtc" + INTERVAL '5 days'
            ORDER BY sw."StartDate" DESC
            LIMIT 1

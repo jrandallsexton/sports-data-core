@@ -12,9 +12,10 @@ WITH target_week AS (
   SELECT sw."StartDate"
   FROM public."SeasonWeek" sw
   INNER JOIN public."Season" s ON s."Id" = sw."SeasonId"
-  INNER JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
+  INNER JOIN public."SeasonPhase" sph ON sph."Id" = sw."SeasonPhaseId"
   WHERE s."Year" = @SeasonYear AND sw."Number" = @WeekNumber
-    AND sp."Name" = 'Regular Season'
+    AND sph."Name" = 'Regular Season'
+  ORDER BY sw."StartDate"
   LIMIT 1
 ),
 poll_week AS (

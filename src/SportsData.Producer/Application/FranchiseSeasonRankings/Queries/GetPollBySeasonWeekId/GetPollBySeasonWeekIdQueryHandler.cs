@@ -33,6 +33,14 @@ public class GetPollBySeasonWeekIdQueryHandler : IGetPollBySeasonWeekIdQueryHand
         GetPollBySeasonWeekIdQuery query,
         CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(query.PollSlug))
+        {
+            return new Failure<FranchiseSeasonPollDto>(
+                default!,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(query.PollSlug), "Poll slug is required")]);
+        }
+
         try
         {
             // Read from the SeasonPoll* store — the store the weekly rankings

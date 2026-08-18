@@ -37,6 +37,14 @@ interface CreateLeagueRequestBase {
    *  create form always sends it. */
   joinPolicy: JoinPolicy;
   dropLowWeeksCount: number;
+  /**
+   * Explicit window shape — the BE stores this rather than inferring it.
+   * FullSeason / WeekRange / DateRange; WeekRange carries the selected
+   * weeks' real UTC boundaries in startsOn/endsOn. (Absent, the server
+   * infers DateRange-vs-FullSeason from the dates — but WeekRange can
+   * never be inferred, so mobile always sends it, matching web.)
+   */
+  leagueWindow: 'FullSeason' | 'WeekRange' | 'DateRange';
   startsOn: string | null;
   endsOn: string | null;
 }
@@ -74,7 +82,28 @@ export const leaguesKeys = {
   detail: (id: string) => ['league', id] as const,
   public: ['leagues', 'public'] as const,
   invitations: ['leagues', 'invitations'] as const,
+  seasonWeeks: (sport: string) => ['leagues', 'season-weeks', sport] as const,
 };
+
+/**
+ * A selectable season week for the create-league Week Range window.
+ * Matches LeagueSeasonWeekOptionDto; the endpoint wraps the list in
+ * LeagueSeasonWeeksDto ({ seasonYear, weeks }) — callers get the envelope
+ * and unwrap .weeks (web twin does `data?.weeks ?? []`).
+ */
+export interface SeasonWeekOption {
+  id: string;
+  number: number;
+  label: string;
+  phaseName: string;
+  startDateUtc: string;
+  endDateUtc: string;
+}
+
+export interface LeagueSeasonWeeks {
+  seasonYear: number;
+  weeks: SeasonWeekOption[];
+}
 
 /**
  * A pending league invitation awaiting the user's answer. Matches the BE
@@ -224,7 +253,23 @@ export interface LeagueCreationAvailability {
   gates: LeagueCreationGate[];
 }
 
+// BE Sport enum name → route segments, for endpoints that follow the
+// /ui/leagues/{sport}/{league}/... convention.
+const SPORT_ROUTE: Record<string, string> = {
+  FootballNcaa: 'football/ncaa',
+  FootballNfl: 'football/nfl',
+  BaseballMlb: 'baseball/mlb',
+};
+
 export const leaguesApi = {
+  // GET /ui/leagues/{sport}/{league}/season-weeks — selectable weeks for the
+  // Week Range league window (web twin: LeaguesApi.getSeasonWeeks).
+  getSeasonWeeks: (sport: string) => {
+    const route = SPORT_ROUTE[sport];
+    if (!route) throw new Error(`Unknown sport: ${sport}`);
+    return apiClient.get<LeagueSeasonWeeks>(`/ui/leagues/${route}/season-weeks`);
+  },
+
   // POST /ui/leagues/football/ncaa
   createFootballNcaaLeague: (payload: CreateFootballNcaaLeagueRequest) =>
     apiClient.post<CreateLeagueResponse>('/ui/leagues/football/ncaa', payload),

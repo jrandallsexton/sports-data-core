@@ -212,6 +212,10 @@ export function PrimarySlotOffSeasonCountdown() {
                 }
                 size="md"
                 style={styles.actionButton}
+                // The label wraps to two lines at half-width; without this
+                // the wrapped lines left-align inside the centered block
+                // (same fix the gated variant carries in gatedCtaText).
+                textStyle={styles.ctaText}
               />
             );
           })
@@ -267,6 +271,9 @@ const styles = StyleSheet.create({
   gatedCtaText: {
     fontSize: 13,
     lineHeight: 17,
+    textAlign: 'center',
+  },
+  ctaText: {
     textAlign: 'center',
   },
 });

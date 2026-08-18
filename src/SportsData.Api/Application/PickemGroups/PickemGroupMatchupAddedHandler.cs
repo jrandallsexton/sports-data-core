@@ -1,8 +1,10 @@
 using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 using SportsData.Api.Application.Previews;
+using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Core.Processing;
@@ -14,15 +16,18 @@ namespace SportsData.Api.Application.PickemGroups
         private readonly ILogger<PickemGroupMatchupAddedHandler> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly ApiConfig _config;
 
         public PickemGroupMatchupAddedHandler(
             ILogger<PickemGroupMatchupAddedHandler> logger,
             AppDataContext dataContext,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IOptions<ApiConfig> config)
         {
             _logger = logger;
             _dataContext = dataContext;
             _backgroundJobProvider = backgroundJobProvider;
+            _config = config.Value;
         }
 
         public async Task Consume(ConsumeContext<PickemGroupMatchupAdded> context)
@@ -41,6 +46,17 @@ namespace SportsData.Api.Application.PickemGroups
 
         private async Task ConsumeInternal(PickemGroupMatchupAdded @event)
         {
+            // Same config kill-switch as PickemGroupWeekMatchupsGeneratedHandler —
+            // BOTH preview enqueue paths must honor it or a Local run still
+            // burns model tokens on single-matchup additions.
+            if (!_config.MatchupPreviewGenerationEnabled)
+            {
+                _logger.LogInformation(
+                    "Matchup preview generation disabled by config. Skipping preview enqueue for contest {ContestId}.",
+                    @event.ContestId);
+                return;
+            }
+
             // Check if preview already exists for this contest
             var previewExists = await _dataContext.MatchupPreviews
                 .AnyAsync(p => p.ContestId == @event.ContestId && p.RejectedUtc == null);

@@ -17,6 +17,19 @@ namespace SportsData.Api.Tests.Unit.Application.PickemGroups
 {
     public class PickemGroupWeekMatchupsGeneratedHandlerTests : ApiTestBase<PickemGroupWeekMatchupsGeneratedHandler>
     {
+        public PickemGroupWeekMatchupsGeneratedHandlerTests()
+        {
+            // The handler reads the preview kill-switch from IOptions<ApiConfig>;
+            // AutoMocker's mocked .Value is null, so supply a real instance
+            // (enabled = the default, matching prod behavior under test).
+            Mocker.Use(Microsoft.Extensions.Options.Options.Create(new SportsData.Api.Config.ApiConfig
+            {
+                BaseUrl = "http://localhost",
+                UserIdSystem = Guid.NewGuid(),
+                MatchupPreviewGenerationEnabled = true
+            }));
+        }
+
         [Fact]
         public async Task Should_Enqueue_PreviewJobs_For_Contests_Without_Existing_Previews()
         {

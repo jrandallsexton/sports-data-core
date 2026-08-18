@@ -27,5 +27,15 @@
         /// </para>
         /// </summary>
         public Dictionary<string, string> LeagueCreationOpensUtc { get; set; } = new();
+
+        /// <summary>
+        /// Kill-switch for AI matchup-preview generation. True (the default)
+        /// everywhere real; set false in the Local label so league-creation
+        /// testing against copied prod data doesn't burn model tokens on
+        /// previews nobody will read. Gates the ENQUEUE in
+        /// PickemGroupWeekMatchupsGeneratedHandler — contest refreshes still
+        /// fan out, so matchup metadata stays fresh locally.
+        /// </summary>
+        public bool MatchupPreviewGenerationEnabled { get; set; } = true;
     }
 }

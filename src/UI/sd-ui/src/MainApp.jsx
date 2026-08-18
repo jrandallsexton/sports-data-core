@@ -39,6 +39,7 @@ import AdminModelsPage from "./components/admin/AdminModelsPage";
 import AdminSmackLabPage from "./components/admin/AdminSmackLabPage";
 import AdminRoute from "./routes/AdminRoute";
 import SeasonOverview from "./components/season/SeasonOverview";
+import RankingsPage from "./components/rankings/RankingsPage";
 
 function MainApp() {
   const navigate = useNavigate();
@@ -190,6 +191,22 @@ function MainApp() {
             <Route
               path="/sport/:sport/:league/team/:slug/:seasonYear"
               element={<TeamCard />}
+            />
+            {/* Rankings — sport-scoped like team/venue/contest. Three
+                explicit routes because the literal /week segment can't be
+                made optional inside one pattern: bare (current season,
+                latest polls), season, and season+week. */}
+            <Route
+              path="/sport/:sport/:league/rankings"
+              element={<RankingsPage />}
+            />
+            <Route
+              path="/sport/:sport/:league/rankings/:seasonYear"
+              element={<RankingsPage />}
+            />
+            <Route
+              path="/sport/:sport/:league/rankings/:seasonYear/week/:week"
+              element={<RankingsPage />}
             />
             <Route
               path="/sport/:sport/:league/venue/:slug"

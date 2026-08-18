@@ -45,3 +45,14 @@ export function teamLink(slug, seasonYear, sport = DEFAULT_SPORT, league = DEFAU
 export function contestLink(contestId, sport = DEFAULT_SPORT, league = DEFAULT_LEAGUE) {
   return `/app/sport/${sport}/${league}/contest/${contestId}`;
 }
+
+/**
+ * Rankings surface, sport-scoped like teamLink/contestLink.
+ * No args → current season, latest polls (/app/sport/football/ncaa/rankings).
+ * A week without a seasonYear is meaningless and is ignored.
+ */
+export function rankingsLink(seasonYear, week, sport = DEFAULT_SPORT, league = DEFAULT_LEAGUE) {
+  const seasonSegment = seasonYear ? `/${seasonYear}` : '';
+  const weekSegment = seasonYear && week ? `/week/${week}` : '';
+  return `/app/sport/${sport}/${league}/rankings${seasonSegment}${weekSegment}`;
+}

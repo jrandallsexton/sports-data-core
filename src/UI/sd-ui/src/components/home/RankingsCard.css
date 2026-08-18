@@ -1,0 +1,109 @@
+/* RankingsCard — Tier 2 compact Top 10 from the current poll. Visual
+   family: YourLeaguesCard (eyebrow, full-bleed rows, hairline
+   separators). */
+.rankings-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--accent-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+  padding: 1rem 1.25rem;
+  max-width: 880px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  color: var(--text-primary);
+}
+
+.rankings-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.rankings-card__eyebrow {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.rankings-card__full {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.12s ease;
+}
+
+.rankings-card__full:hover,
+.rankings-card__full:focus-visible {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.rankings-card__full:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.rankings-card__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rankings-card__item + .rankings-card__item {
+  border-top: 1px solid var(--border-primary);
+}
+
+.rankings-card__row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.15rem;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: background-color 0.12s ease;
+}
+
+.rankings-card__row:hover,
+.rankings-card__row:focus-visible {
+  background-color: var(--hover-bg);
+}
+
+.rankings-card__rank {
+  min-width: 1.4rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.rankings-card__logo {
+  min-width: 20px;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.rankings-card__logo img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.rankings-card__name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.rankings-card__record {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  font-size: 0.9em;
+}

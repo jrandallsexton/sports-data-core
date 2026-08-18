@@ -54,7 +54,11 @@ function StandingRow({
           {isMe ? '  (you)' : ''}
         </Text>
         <Text style={[styles.accuracy, { color: isMe ? 'rgba(255,255,255,0.7)' : theme.textMuted }]}>
-          {standing.totalCorrect}/{standing.totalPicks} ({(standing.pickAccuracy * 100).toFixed(0)}%)
+          {/* pickAccuracy arrives ALREADY percentage-scaled to 2 decimals
+              (the API rounds TotalCorrect/TotalPicks * 100) — web renders it
+              raw, and so do we. The old * 100 here double-scaled it: 12/17
+              showed as 7059%. */}
+          {standing.totalCorrect}/{standing.totalPicks} ({standing.pickAccuracy}%)
         </Text>
       </View>
 

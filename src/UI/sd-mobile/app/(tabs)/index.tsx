@@ -12,6 +12,7 @@ import { PlayerPickemTeaserCard } from '@/src/components/features/home/PlayerPic
 import { PendingInvitesCard } from '@/src/components/features/home/PendingInvitesCard';
 import { YourLeaguesCard } from '@/src/components/features/home/YourLeaguesCard';
 import { JoinableLeaguesCard } from '@/src/components/features/home/JoinableLeaguesCard';
+import { RankingsCard } from '@/src/components/features/home/RankingsCard';
 
 /**
  * Post-login landing — mirrors web's HomePage (PR #272 / docs/post-login-landing-design.md).
@@ -113,6 +114,11 @@ export default function HomeScreen() {
           {hasLeagues && <YourLeaguesCard leagues={leagues} />}
         </>
       )}
+
+      {/* Tier 2 — current poll Top 10, linking to the full rankings screen.
+          Self-nulls when no poll exists for the current season, so Home
+          never shows a broken card. Web parity: HomePage's RankingsCard. */}
+      <RankingsCard />
 
       {/* Tier 3 — public-league discovery. Rendered for every user (self-nulls
           when nothing is joinable), so a league-less user lands on actionable

@@ -1,0 +1,27 @@
+# EAS Build archive filter. When this file exists, EAS uses it INSTEAD of
+# .gitignore — so it must carry both the secret hygiene and the monorepo
+# trimming. EAS archives the whole git repo for monorepo support; the mobile
+# app (src/UI/sd-mobile, ~2 MB) is all the build needs, while the .NET
+# solution + web app + docs pushed the archive to 158 MB.
+#
+# Pattern: ignore everything, then re-include only the path to sd-mobile.
+# (gitignore semantics: to un-ignore a nested dir, each parent level must be
+# un-ignored and its siblings re-ignored.)
+
+/*
+!/src
+/src/*
+!/src/UI
+/src/UI/*
+!/src/UI/sd-mobile
+
+# Hygiene within the app tree — mirror of sd-mobile's own ignores plus
+# secrets. NEVER upload env files: EAS builds take environment from
+# eas.json / EAS environment variables, not local .env.
+src/UI/sd-mobile/node_modules/
+src/UI/sd-mobile/.expo/
+src/UI/sd-mobile/dist/
+src/UI/sd-mobile/web-build/
+src/UI/sd-mobile/coverage/
+src/UI/sd-mobile/.env
+src/UI/sd-mobile/.env.*

@@ -15,11 +15,23 @@ WITH most_recent AS (
   LIMIT 1
 ),
 week_info AS (
-  -- SeasonWeekId is nullable on SeasonPollWeek; a missing link renders as
-  -- week 0 rather than dropping the poll.
-  SELECT COALESCE(sw."Number", 0) AS "WeekNumber", mr."SeasonPollWeekId", mr."DateUtc" AS "PollDate", mr."ShortHeadline"
+  -- Display week derived from the poll's PUBLISH DATE, not the
+  -- SeasonPollWeek.SeasonWeekId link — those links are unreliable
+  -- (off-by-one late season, NULL for preseason/final). A poll's week is
+  -- the latest week starting before its date + 5 days: the entering Sunday
+  -- AP poll and the midweek Tuesday CFP poll both resolve to the week they
+  -- serve. 0 when no week qualifies (preseason).
+  SELECT COALESCE((
+           SELECT sw."Number"
+           FROM public."SeasonWeek" sw
+           INNER JOIN public."Season" s ON s."Id" = sw."SeasonId"
+           WHERE s."Year" = @SeasonYear
+             AND sw."StartDate" < mr."DateUtc" + INTERVAL '5 days'
+           ORDER BY sw."StartDate" DESC
+           LIMIT 1
+         ), 0) AS "WeekNumber",
+         mr."SeasonPollWeekId", mr."DateUtc" AS "PollDate", mr."ShortHeadline"
   FROM most_recent mr
-  LEFT JOIN public."SeasonWeek" sw ON sw."Id" = mr."SeasonWeekId"
 )
 SELECT
     wi."WeekNumber",

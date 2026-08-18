@@ -41,9 +41,37 @@ public class GetPollBySeasonWeekIdQueryHandler : IGetPollBySeasonWeekIdQueryHand
             // with a TeamSeasonRank inclusion filter, so it silently went
             // stale between backfills (2025's final AP poll never landed
             // there).
+            //
+            // The week's DESIGNATED poll is resolved by PUBLISH DATE, not by
+            // SeasonPollWeek.SeasonWeekId — those links are unreliable
+            // (off-by-one late season, NULL for preseason/final). A poll
+            // belongs to this week when it is the latest of its type
+            // published before the week's start + 5 days: that window admits
+            // the entering Sunday AP poll and the midweek Tuesday CFP poll
+            // while excluding the NEXT Sunday's AP poll.
+            var seasonWeek = await _dataContext.SeasonWeeks
+                .AsNoTracking()
+                .Where(x => x.Id == query.SeasonWeekId)
+                .Select(x => new { x.StartDate, x.Number, x.Season!.Year })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (seasonWeek is null)
+            {
+                return new Failure<FranchiseSeasonPollDto>(
+                    default!,
+                    ResultStatus.NotFound,
+                    [new ValidationFailure("seasonWeekId", $"Season week {query.SeasonWeekId} not found")]);
+            }
+
+            var pollCutoff = seasonWeek.StartDate.AddDays(5);
+
             var week = await _dataContext.SeasonPollWeeks
                 .AsNoTracking()
-                .Where(x => x.SeasonWeekId == query.SeasonWeekId && x.SeasonPoll.Slug == query.PollSlug)
+                .Where(x => x.SeasonPoll.Slug == query.PollSlug &&
+                            x.SeasonPoll.SeasonYear == seasonWeek.Year &&
+                            x.DateUtc != null &&
+                            x.DateUtc < pollCutoff)
+                .OrderByDescending(x => x.DateUtc)
                 .Select(x => new
                 {
                     x.Id,
@@ -97,19 +125,13 @@ public class GetPollBySeasonWeekIdQueryHandler : IGetPollBySeasonWeekIdQueryHand
                     [new ValidationFailure("pollSlug", $"No rankings found for poll '{query.PollSlug}' in season week {query.SeasonWeekId}")]);
             }
 
-            var seasonWeekNumber = await _dataContext.SeasonWeeks
-                .AsNoTracking()
-                .Where(x => x.Id == query.SeasonWeekId)
-                .Select(x => x.Number)
-                .FirstOrDefaultAsync(cancellationToken);
-
             var dto = new FranchiseSeasonPollDto
             {
                 Entries = pollEntries,
                 PollId = query.PollSlug,
                 PollName = week.ShortHeadline,
                 SeasonYear = week.SeasonYear,
-                Week = seasonWeekNumber,
+                Week = seasonWeek.Number,
                 HasFirstPlaceVotes = pollEntries.Sum(x => x.FirstPlaceVotes) > 0,
                 HasPoints = pollEntries.Sum(x => x.Points) > 0,
                 HasTrends = pollEntries.Any(x => x.Trend != null),

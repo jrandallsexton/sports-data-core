@@ -69,28 +69,54 @@ LEFT JOIN LATERAL (
   inner join public."GroupSeason" gsHomeParent on gsHome."ParentId" = gsHomeParent."Id"
 
   LEFT JOIN LATERAL (
-    SELECT fsr.*
-    FROM public."FranchiseSeasonRanking" fsr
-    INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
-    WHERE fsr."FranchiseSeasonId" = fsAway."Id"
-      AND fsr."DefaultRanking" = true
-      AND fsr."Type" IN ('ap', 'cfp')
-      AND sw."StartDate" < c."StartDateUtc"
-    ORDER BY sw."StartDate" DESC
-    LIMIT 1
-  ) fsrAway ON TRUE
-  left  join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+  -- Rank from the SeasonPoll store (the store the weekly rankings job
+  -- feeds). POLL-FIRST: find THE poll in effect (latest published before kickoff), then this
+  -- team's entry in it — a team that dropped out is honestly unranked,
+  -- instead of retaining its last ranked appearance forever (both this
+  -- query's old form and the old store had that sticky-rank flaw).
+  -- 'cfp' preferred over 'ap' (stand-in for the old store's
+  -- DefaultRanking flag). Keyed on DateUtc, NOT
+  -- SeasonPollWeek.SeasonWeekId — those links are unreliable
+  -- (off-by-one late season, NULL for preseason/final).
+  SELECT spwe."Current"
+  FROM public."SeasonPollWeekEntry" spwe
+  WHERE spwe."SeasonPollWeekId" = (
+      SELECT spw."Id"
+      FROM public."SeasonPollWeek" spw
+      INNER JOIN public."SeasonPoll" sp ON sp."Id" = spw."SeasonPollId"
+      WHERE sp."SeasonYear" = fsAway."SeasonYear"
+        AND spw."Type" IN ('ap', 'cfp')
+        AND spw."DateUtc" < c."StartDateUtc"
+      ORDER BY spw."DateUtc" DESC, CASE WHEN spw."Type" = 'cfp' THEN 0 ELSE 1 END
+      LIMIT 1)
+    AND spwe."FranchiseSeasonId" = fsAway."Id"
+    AND NOT spwe."IsOtherReceivingVotes" AND NOT spwe."IsDroppedOut"
+  LIMIT 1
+) fsrdAway ON TRUE
 
   LEFT JOIN LATERAL (
-    SELECT fsr.*
-    FROM public."FranchiseSeasonRanking" fsr
-    INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
-    WHERE fsr."FranchiseSeasonId" = fsHome."Id"
-      AND fsr."DefaultRanking" = true
-      AND fsr."Type" IN ('ap', 'cfp')
-      AND sw."StartDate" < c."StartDateUtc"
-    ORDER BY sw."StartDate" DESC
-    LIMIT 1
-  ) fsrHome ON TRUE
-  left  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+  -- Rank from the SeasonPoll store (the store the weekly rankings job
+  -- feeds). POLL-FIRST: find THE poll in effect (latest published before kickoff), then this
+  -- team's entry in it — a team that dropped out is honestly unranked,
+  -- instead of retaining its last ranked appearance forever (both this
+  -- query's old form and the old store had that sticky-rank flaw).
+  -- 'cfp' preferred over 'ap' (stand-in for the old store's
+  -- DefaultRanking flag). Keyed on DateUtc, NOT
+  -- SeasonPollWeek.SeasonWeekId — those links are unreliable
+  -- (off-by-one late season, NULL for preseason/final).
+  SELECT spwe."Current"
+  FROM public."SeasonPollWeekEntry" spwe
+  WHERE spwe."SeasonPollWeekId" = (
+      SELECT spw."Id"
+      FROM public."SeasonPollWeek" spw
+      INNER JOIN public."SeasonPoll" sp ON sp."Id" = spw."SeasonPollId"
+      WHERE sp."SeasonYear" = fsHome."SeasonYear"
+        AND spw."Type" IN ('ap', 'cfp')
+        AND spw."DateUtc" < c."StartDateUtc"
+      ORDER BY spw."DateUtc" DESC, CASE WHEN spw."Type" = 'cfp' THEN 0 ELSE 1 END
+      LIMIT 1)
+    AND spwe."FranchiseSeasonId" = fsHome."Id"
+    AND NOT spwe."IsOtherReceivingVotes" AND NOT spwe."IsDroppedOut"
+  LIMIT 1
+) fsrdHome ON TRUE
 where c."Id" = ANY(@ContestIds)

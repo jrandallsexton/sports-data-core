@@ -1,5 +1,32 @@
 -- Poll entries for a specific season/week/poll, read from the SeasonPoll*
 -- store (see GetPollByTypeAndSeason.sql for why not FranchiseSeasonRanking).
+--
+-- The week's DESIGNATED poll is resolved by PUBLISH DATE, not by
+-- SeasonPollWeek.SeasonWeekId — those links are unreliable (off-by-one late
+-- season, NULL for preseason/final). A poll belongs to week N when it is the
+-- latest of its type published before week N's start + 5 days: that window
+-- admits the entering Sunday AP poll and the midweek Tuesday CFP poll while
+-- excluding the NEXT Sunday's AP poll. Week numbers resolve within the
+-- Regular Season phase (phases reuse numbers).
+WITH target_week AS (
+  SELECT sw."StartDate"
+  FROM public."SeasonWeek" sw
+  INNER JOIN public."Season" s ON s."Id" = sw."SeasonId"
+  INNER JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
+  WHERE s."Year" = @SeasonYear AND sw."Number" = @WeekNumber
+    AND sp."Name" = 'Regular Season'
+  LIMIT 1
+),
+poll_week AS (
+  SELECT spw."Id", spw."DateUtc"
+  FROM public."SeasonPollWeek" spw
+  INNER JOIN public."SeasonPoll" sp ON sp."Id" = spw."SeasonPollId"
+  WHERE sp."SeasonYear" = @SeasonYear AND sp."Slug" = @PollType
+    AND spw."DateUtc" IS NOT NULL
+    AND spw."DateUtc" < (SELECT "StartDate" + INTERVAL '5 days' FROM target_week)
+  ORDER BY spw."DateUtc" DESC
+  LIMIT 1
+)
 SELECT
     fs."Id" as "FranchiseSeasonId",
     fsl."Uri" as "FranchiseLogoUrl",
@@ -12,10 +39,9 @@ SELECT
     spwe."Points",
     spwe."FirstPlaceVotes",
     NULLIF(spwe."Trend", '') as "Trend",
-    spw."DateUtc" as "PollDateUtc"
+    pw."DateUtc" as "PollDateUtc"
 FROM public."SeasonPollWeekEntry" spwe
-INNER JOIN public."SeasonPollWeek" spw on spw."Id" = spwe."SeasonPollWeekId"
-INNER JOIN public."SeasonPoll" sp on sp."Id" = spw."SeasonPollId"
+INNER JOIN poll_week pw on pw."Id" = spwe."SeasonPollWeekId"
 INNER JOIN public."FranchiseSeason" fs on fs."Id" = spwe."FranchiseSeasonId"
 -- Logo selection: prefer sportdeets-mark + requested direction, then any
 -- sportdeets-mark, then anything else. Matches the pattern in
@@ -33,10 +59,6 @@ LEFT JOIN LATERAL (
     fsl."Uri"
   LIMIT 1
 ) as fsl on true
-INNER JOIN public."SeasonWeek" sw on sw."Id" = spw."SeasonWeekId"
-WHERE sp."Slug" = @PollType
-  and sp."SeasonYear" = @SeasonYear
-  and sw."Number" = @WeekNumber
-  and NOT spwe."IsOtherReceivingVotes"
+WHERE NOT spwe."IsOtherReceivingVotes"
   and NOT spwe."IsDroppedOut"
 ORDER BY spwe."Current" asc

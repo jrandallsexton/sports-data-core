@@ -4,6 +4,7 @@ import PrimarySlotOffSeasonCountdown from "./PrimarySlotOffSeasonCountdown";
 import PlayerPickemTeaserCard from "./PlayerPickemTeaserCard";
 import PendingInvitesCard from "./PendingInvitesCard";
 import YourLeaguesCard from "./YourLeaguesCard";
+import RankingsCard from "./RankingsCard";
 import JoinableLeaguesCard from "./JoinableLeaguesCard";
 
 /**
@@ -75,6 +76,13 @@ function HomePage() {
           <YourLeaguesCard />
         </section>
       )}
+
+      {/* Tier 2 — current poll Top 10, linking to /app/rankings for the
+          full surface. Self-nulls when no poll exists for the current
+          season (e.g. a sport gap), so Home never shows a broken card. */}
+      <section className="home-tier home-tier--context">
+        <RankingsCard />
+      </section>
 
       {/* Tier 3 — public-league discovery. THE content driver for
           league-less users: actionable joins instead of a bare countdown.

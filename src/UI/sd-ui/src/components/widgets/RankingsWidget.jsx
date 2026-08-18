@@ -3,32 +3,64 @@ import { useTheme } from "../../contexts/ThemeContext";
 import apiWrapper from "../../api/apiWrapper";
 import CFPBracket from "./CFPBracket";
 import { teamLink } from '../../utils/sportLinks';
+import useCurrentSeasonYear from "../../hooks/useCurrentSeasonYear";
 import "./RankingsWidget.css";
 
-function RankingsWidget() {
+function RankingsWidget({
+  sport = "football",
+  league = "ncaa",
+  seasonYear: seasonYearProp,
+  week,
+}) {
   const { theme } = useTheme();
+  // Season comes from the route when given, otherwise /seasons/current —
+  // never a literal. The 2025-era hardcode froze this widget to a
+  // finished season at rollover.
+  const { seasonYear: currentSeasonYear, loading: currentSeasonLoading } =
+    useCurrentSeasonYear(sport, league);
+  const seasonYear = seasonYearProp ?? currentSeasonYear;
+  const seasonLoading = seasonYearProp ? false : currentSeasonLoading;
   const [pollsData, setPollsData] = useState(null);
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (seasonLoading) return;
+    if (seasonYear === null) {
+      setPollsData([]);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
     async function fetchRankings() {
       setLoading(true);
       setError(null);
       try {
-        const apiResult = await apiWrapper.Rankings.getSeasonRankings(2025);
+        const apiResult = week
+          ? await apiWrapper.Rankings.getCurrentRankings(seasonYear, week)
+          : await apiWrapper.Rankings.getSeasonRankings(seasonYear);
+        if (cancelled) return;
         const data = apiResult?.data || apiResult;
-        setPollsData(Array.isArray(data) ? data : []);
+        const polls = Array.isArray(data) ? data : [];
+        // CFP hidden until those rankings publish (operator call,
+        // 2026-08-18) — the bracket needs its own pass first (mock
+        // championship site/date are stale). Remove this filter to
+        // re-enable; the cfp-layout render path below is intact.
+        setPollsData(polls.filter((p) => p.pollId !== "cfp"));
         setActiveTabIndex(0);
       } catch (err) {
-        setError("Failed to load rankings");
+        if (!cancelled) setError("Failed to load rankings");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchRankings();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [seasonLoading, seasonYear, week]);
 
   const activePoll = pollsData && pollsData.length > activeTabIndex ? pollsData[activeTabIndex] : null;
 
@@ -76,7 +108,7 @@ function RankingsWidget() {
   return (
     <div className="rankings-widget">
       <h2>College Football Rankings</h2>
-      {loading ? (
+      {loading || seasonLoading ? (
         <div>Loading rankings...</div>
       ) : error ? (
         <div className="error">{error}</div>
@@ -144,7 +176,7 @@ function RankingsWidget() {
                                 ) : null;
                               })()}
                               <a
-                                href={teamLink(team.franchiseSlug || '', 2025)}
+                                href={teamLink(team.franchiseSlug || '', seasonYear, sport, league)}
                                 className="team-link"
                                 style={{ color: '#61dafb', textDecoration: 'underline', fontWeight: 500 }}
                               >

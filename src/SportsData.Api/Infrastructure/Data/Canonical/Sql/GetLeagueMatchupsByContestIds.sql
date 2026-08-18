@@ -83,17 +83,11 @@ LEFT JOIN LATERAL (
 INNER JOIN public."GroupSeason" gsAway on gsAway."Id" = fsAway."GroupSeasonId"
 
 LEFT JOIN LATERAL (
-  SELECT fsr.*
-  FROM public."FranchiseSeasonRanking" fsr
-  INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
-  WHERE fsr."FranchiseSeasonId" = fsAway."Id"
-    AND fsr."DefaultRanking" = true
-    AND fsr."Type" IN ('ap', 'cfp')
-    AND sw."StartDate" <= c."StartDateUtc"
-  ORDER BY sw."StartDate" DESC
-  LIMIT 1
-) fsrAway ON TRUE
-LEFT join public."FranchiseSeasonRankingDetail" fsrdAway on fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect at kickoff,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(fsAway."Id", fsAway."SeasonYear", c."StartDateUtc") AS "Current"
+) fsrdAway ON TRUE
 
 INNER JOIN public."FranchiseSeason" fsHome on fsHome."Id" = c."HomeTeamFranchiseSeasonId"
 INNER JOIN public."Franchise" fHome on fHome."Id" = fsHome."FranchiseId"
@@ -108,17 +102,11 @@ LEFT JOIN LATERAL (
 
 INNER JOIN public."GroupSeason" gsHome on gsHome."Id" = fsHome."GroupSeasonId"
 LEFT JOIN LATERAL (
-  SELECT fsr.*
-  FROM public."FranchiseSeasonRanking" fsr
-  INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
-  WHERE fsr."FranchiseSeasonId" = fsHome."Id"
-    AND fsr."DefaultRanking" = true
-    AND fsr."Type" IN ('ap', 'cfp')
-    AND sw."StartDate" <= c."StartDateUtc"
-  ORDER BY sw."StartDate" DESC
-  LIMIT 1
-) fsrHome ON TRUE
-LEFT  join public."FranchiseSeasonRankingDetail" fsrdHome on fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect at kickoff,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(fsHome."Id", fsHome."SeasonYear", c."StartDateUtc") AS "Current"
+) fsrdHome ON TRUE
 
 WHERE c."Id" = ANY(@ContestIds)
 

@@ -31,10 +31,12 @@ SELECT DISTINCT ON (F."Id")
 FROM
     PUBLIC."Franchise" F
     INNER JOIN PUBLIC."FranchiseSeason" FS on FS."FranchiseId" = F."Id"
-    LEFT JOIN public."FranchiseSeasonRanking" fsr on fsr."FranchiseSeasonId" = FS."Id" and
-        fsr."DefaultRanking" = true and fsr."Type" in ('ap', 'cfp') and
-        fsr."SeasonWeekId" = (select "SeasonWeekId" from latest_week)
-    LEFT JOIN public."FranchiseSeasonRankingDetail" fsrd on fsrd."FranchiseSeasonRankingId" = fsr."Id"
+    LEFT JOIN LATERAL (
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect right now,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(FS."Id", FS."SeasonYear", @NowUtc) AS "Current"
+) fsrd ON TRUE
     INNER JOIN PUBLIC."GroupSeason" GS ON GS."Id" = FS."GroupSeasonId"
     LEFT JOIN PUBLIC."FranchiseLogo" FL ON FL."FranchiseId" = F."Id"
     LEFT JOIN PUBLIC."Venue" V ON V."Id" = F."VenueId"

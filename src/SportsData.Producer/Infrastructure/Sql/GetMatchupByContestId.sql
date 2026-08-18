@@ -63,12 +63,16 @@ INNER JOIN public."Franchise" fHome ON fHome."Id" = fsHome."FranchiseId"
 INNER JOIN public."GroupSeason" gsHome ON gsHome."Id" = fsHome."GroupSeasonId"
 INNER JOIN public."SeasonWeek" sw ON sw."Id" = c."SeasonWeekId"
 INNER JOIN public."Season" s ON s."Id" = sw."SeasonId"
-LEFT JOIN public."FranchiseSeasonRanking" fsrAway ON fsrAway."FranchiseSeasonId" = fsAway."Id"
-  AND fsrAway."DefaultRanking" = true AND fsrAway."Type" IN ('ap', 'cfp')
-  AND fsrAway."SeasonWeekId" = sw."Id"
-LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdAway ON fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
-LEFT JOIN public."FranchiseSeasonRanking" fsrHome ON fsrHome."FranchiseSeasonId" = fsHome."Id"
-  AND fsrHome."DefaultRanking" = true AND fsrHome."Type" IN ('ap', 'cfp')
-  AND fsrHome."SeasonWeekId" = sw."Id"
-LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdHome ON fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+LEFT JOIN LATERAL (
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect at kickoff,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(fsAway."Id", fsAway."SeasonYear", c."StartDateUtc") AS "Current"
+) fsrdAway ON TRUE
+LEFT JOIN LATERAL (
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect at kickoff,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(fsHome."Id", fsHome."SeasonYear", c."StartDateUtc") AS "Current"
+) fsrdHome ON TRUE
 WHERE c."Id" = @ContestId

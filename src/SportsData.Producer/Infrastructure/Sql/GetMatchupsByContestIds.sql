@@ -97,14 +97,11 @@ LEFT JOIN LATERAL (
 ) fslDarkAway ON TRUE
 INNER JOIN public."GroupSeason" gsAway ON gsAway."Id" = fsAway."GroupSeasonId"
 LEFT JOIN LATERAL (
-  SELECT fsr.* FROM public."FranchiseSeasonRanking" fsr
-  INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
-  WHERE fsr."FranchiseSeasonId" = fsAway."Id"
-    AND fsr."DefaultRanking" = true AND fsr."Type" IN ('ap', 'cfp')
-    AND sw."StartDate" <= c."StartDateUtc"
-  ORDER BY sw."StartDate" DESC LIMIT 1
-) fsrAway ON TRUE
-LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdAway ON fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect at kickoff,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(fsAway."Id", fsAway."SeasonYear", c."StartDateUtc") AS "Current"
+) fsrdAway ON TRUE
 -- Entering record: the record the away team carried INTO this game = its record
 -- THROUGH its most-recent prior competition that has a 'total' record (same
 -- FranchiseSeason, earlier StartDate). Point-in-time, unlike the mutable
@@ -173,14 +170,11 @@ LEFT JOIN LATERAL (
 ) fslDarkHome ON TRUE
 INNER JOIN public."GroupSeason" gsHome ON gsHome."Id" = fsHome."GroupSeasonId"
 LEFT JOIN LATERAL (
-  SELECT fsr.* FROM public."FranchiseSeasonRanking" fsr
-  INNER JOIN public."SeasonWeek" sw ON sw."Id" = fsr."SeasonWeekId"
-  WHERE fsr."FranchiseSeasonId" = fsHome."Id"
-    AND fsr."DefaultRanking" = true AND fsr."Type" IN ('ap', 'cfp')
-    AND sw."StartDate" <= c."StartDateUtc"
-  ORDER BY sw."StartDate" DESC LIMIT 1
-) fsrHome ON TRUE
-LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdHome ON fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect at kickoff,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(fsHome."Id", fsHome."SeasonYear", c."StartDateUtc") AS "Current"
+) fsrdHome ON TRUE
 -- Entering record for the home team — same lag as enterAway above.
 LEFT JOIN LATERAL (
   SELECT

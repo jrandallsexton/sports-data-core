@@ -43,23 +43,17 @@ INNER JOIN public."Franchise" fHome ON fHome."Id" = fsHome."FranchiseId"
 INNER JOIN public."GroupSeason" gsHome ON gsHome."Id" = fsHome."GroupSeasonId"
 LEFT JOIN public."GroupSeason" gsHomeParent ON gsHome."ParentId" = gsHomeParent."Id"
 LEFT JOIN LATERAL (
-  SELECT fsr.* FROM public."FranchiseSeasonRanking" fsr
-  INNER JOIN public."SeasonWeek" rsw ON rsw."Id" = fsr."SeasonWeekId"
-  WHERE fsr."FranchiseSeasonId" = fsAway."Id"
-    AND fsr."DefaultRanking" = true AND fsr."Type" IN ('ap', 'cfp')
-    AND rsw."StartDate" < c."StartDateUtc"
-  ORDER BY rsw."StartDate" DESC LIMIT 1
-) fsrAway ON TRUE
-LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdAway ON fsrdAway."FranchiseSeasonRankingId" = fsrAway."Id"
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect at kickoff,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(fsAway."Id", fsAway."SeasonYear", c."StartDateUtc") AS "Current"
+) fsrdAway ON TRUE
 LEFT JOIN LATERAL (
-  SELECT fsr.* FROM public."FranchiseSeasonRanking" fsr
-  INNER JOIN public."SeasonWeek" rsw ON rsw."Id" = fsr."SeasonWeekId"
-  WHERE fsr."FranchiseSeasonId" = fsHome."Id"
-    AND fsr."DefaultRanking" = true AND fsr."Type" IN ('ap', 'cfp')
-    AND rsw."StartDate" < c."StartDateUtc"
-  ORDER BY rsw."StartDate" DESC LIMIT 1
-) fsrHome ON TRUE
-LEFT JOIN public."FranchiseSeasonRankingDetail" fsrdHome ON fsrdHome."FranchiseSeasonRankingId" = fsrHome."Id"
+  -- Rank via poll_rank_asof — the single poll-rank definition (see the
+  -- PollRankAsofFunction migration): the poll in effect at kickoff,
+  -- this team's entry in it, or NULL = honestly unranked.
+  SELECT public.poll_rank_asof(fsHome."Id", fsHome."SeasonYear", c."StartDateUtc") AS "Current"
+) fsrdHome ON TRUE
 
 -- Entering record for the away team: taken from the most recent
 -- completed game's CompetitionCompetitorRecord (ESPN snapshots each

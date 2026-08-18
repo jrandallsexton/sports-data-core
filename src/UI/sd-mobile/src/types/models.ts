@@ -369,6 +369,13 @@ export interface NotificationPreferences {
   matchupPreviewEnabled: boolean;
   scheduleChangeEnabled: boolean;
   oddsChangedEnabled: boolean;
+  /**
+   * Wire name of the pick-result copy voice — 'Standard' | 'Smack' today
+   * (server-validated allow-list; typed string for forward-compat). MUST be
+   * carried on every PATCH: the endpoint is full-replacement, so omitting it
+   * silently resets an opted-in user to Standard.
+   */
+  pickResultVoice: string;
 }
 
 // ─── Contest Overview ─────────────────────────────────────────────────────────

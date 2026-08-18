@@ -21,7 +21,11 @@ const notificationKeys = {
 
 // Field key → user-facing label + one-line description. Grouped into sections
 // below. Order within a section is deliberate (most-valued first).
-type PrefKey = keyof NotificationPreferences;
+// Boolean keys only — pickResultVoice is a string preference with its own
+// hand-rendered row and toggleVoice handler.
+type PrefKey = {
+  [K in keyof NotificationPreferences]: NotificationPreferences[K] extends boolean ? K : never;
+}[keyof NotificationPreferences];
 
 interface ToggleMeta {
   key: PrefKey;
@@ -101,6 +105,8 @@ const ALL_ENABLED: NotificationPreferences = {
   matchupPreviewEnabled: true,
   scheduleChangeEnabled: true,
   oddsChangedEnabled: true,
+  // Voice is opt-IN, unlike the flags: nobody gets smack who didn't ask.
+  pickResultVoice: 'Standard',
 };
 
 export default function NotificationSettingsScreen() {
@@ -158,6 +164,15 @@ export default function NotificationSettingsScreen() {
     if (!prefs || mutation.isPending) return;
     // Full-replacement PATCH — send the whole set with this one flag flipped.
     mutation.mutate({ ...prefs, [key]: !prefs[key] });
+  };
+
+  // Voice is a string, not a flag — the switch maps Smack <-> Standard.
+  const toggleVoice = () => {
+    if (!prefs || mutation.isPending) return;
+    mutation.mutate({
+      ...prefs,
+      pickResultVoice: prefs.pickResultVoice === 'Smack' ? 'Standard' : 'Smack',
+    });
   };
 
   const effective = prefs ?? ALL_ENABLED;
@@ -268,6 +283,41 @@ export default function NotificationSettingsScreen() {
                       />
                     </View>
                   ))}
+
+                  {/* SmackBot voice — a STRING preference (Standard|Smack), so
+                      it's hand-rendered rather than a SECTIONS flag. Lives
+                      under Pick results because it styles that notification;
+                      interaction disabled (state preserved) while pick
+                      results are off. Opt-in only. */}
+                  {section.title === 'Your picks' && (
+                    <View
+                      style={[
+                        styles.row,
+                        {
+                          borderTopColor: theme.border,
+                          borderTopWidth: StyleSheet.hairlineWidth,
+                        },
+                        !effective.pickResultEnabled && styles.rowDimmed,
+                      ]}
+                    >
+                      <View style={styles.rowText}>
+                        <Text style={[styles.rowLabel, { color: theme.text }]}>
+                          SmackBot voice
+                        </Text>
+                        <Text style={[styles.rowDesc, { color: theme.textMuted }]}>
+                          Pick results with attitude — SmackBot mocks the misses
+                          and grudgingly credits the wins.
+                        </Text>
+                      </View>
+                      <Switch
+                        value={effective.pickResultVoice === 'Smack'}
+                        onValueChange={toggleVoice}
+                        disabled={mutation.isPending || !effective.pickResultEnabled}
+                        trackColor={{ true: theme.tint, false: theme.border }}
+                        accessibilityLabel="SmackBot voice for pick results"
+                      />
+                    </View>
+                  )}
                 </View>
               </View>
             ))}
@@ -348,6 +398,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowText: { flex: 1, gap: 2 },
+  rowDimmed: { opacity: 0.45 },
   rowLabel: { fontSize: 15, fontWeight: '600' },
   rowDesc: { fontSize: 12, lineHeight: 16 },
   registerButton: {

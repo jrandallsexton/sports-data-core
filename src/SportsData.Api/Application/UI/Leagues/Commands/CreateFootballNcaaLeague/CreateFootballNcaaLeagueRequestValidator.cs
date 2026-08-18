@@ -26,9 +26,15 @@ public class CreateFootballNcaaLeagueRequestValidator
         // filter-required rather than an implicit all. 2026-08-18).
         RuleFor(x => x)
             .Must(x => !string.IsNullOrWhiteSpace(x.RankingFilter)
-                       || x.ConferenceSlugs is { Count: > 0 })
+                       || x.ConferenceSlugs?.Any(s => !string.IsNullOrWhiteSpace(s)) == true)
             .WithName(nameof(CreateFootballNcaaLeagueRequest.ConferenceSlugs))
             .WithMessage("Choose a ranking filter or at least one conference — a league with neither would have no games.");
+
+        // Individual slugs must be non-blank — a whitespace slug can never
+        // match a conference and would count toward the rule above.
+        RuleFor(x => x.ConferenceSlugs)
+            .Must(slugs => slugs is null || slugs.All(s => !string.IsNullOrWhiteSpace(s)))
+            .WithMessage("ConferenceSlugs contains a blank entry.");
 
         // When the caller provides conference entries they must be unique.
         // Duplicates almost always indicate a buggy client — the franchise

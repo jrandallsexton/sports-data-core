@@ -740,10 +740,14 @@ export default function CreateLeagueScreen() {
   const { data: seasonWeeks = [] } = useQuery({
     // The endpoint returns an envelope ({ seasonYear, weeks }) — unwrap to
     // the list here so everything downstream works with a plain array
-    // (web twin: `data?.weeks ?? []`).
+    // (web twin: `data?.weeks ?? []`). Completed weeks are excluded — a new
+    // league can't start in a week that has already ended (the web picker
+    // disables them via the same endDateUtc test).
     queryKey: leaguesKeys.seasonWeeks(sport),
     queryFn: async () => (await leaguesApi.getSeasonWeeks(sport)).data?.weeks ?? [],
     enabled: durationMode === DURATION_WEEKS,
+    select: (weeks) =>
+      weeks.filter((w) => new Date(w.endDateUtc).getTime() > Date.now()),
   });
   const startWeekIndex = seasonWeeks.findIndex((w) => w.id === startWeekId);
   const endWeekIndex = seasonWeeks.findIndex((w) => w.id === endWeekId);
@@ -759,6 +763,23 @@ export default function CreateLeagueScreen() {
       setValue('endWeekId', startWeekId, { shouldDirty: true, shouldValidate: true });
     }
   }, [durationMode, startWeekId, endWeekId, startWeekIndex, endWeekIndex, setValue]);
+
+  // Drop Low Weeks can't equal or exceed the playable weeks — a one-week
+  // Week Range dropping 1 week would drop everything (web applies the same
+  // weekCount-1 cap). Only computable in weeks mode; other modes keep the
+  // static 0-3 options.
+  const selectedWeekCount =
+    durationMode === DURATION_WEEKS && startWeekIndex >= 0 && endWeekIndex >= 0
+      ? endWeekIndex - startWeekIndex + 1
+      : null;
+  const dropMax =
+    selectedWeekCount !== null ? Math.max(0, Math.min(3, selectedWeekCount - 1)) : 3;
+  const dropLowWeeksCount = watch('dropLowWeeksCount');
+  useEffect(() => {
+    if (dropLowWeeksCount > dropMax) {
+      setValue('dropLowWeeksCount', dropMax, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [dropLowWeeksCount, dropMax, setValue]);
 
   // Suggested description window: weeks ("Week 3" / "Week 3 – Week 8"),
   // dates (single day or range), or null (full season).
@@ -1256,7 +1277,7 @@ export default function CreateLeagueScreen() {
               render={({ field: { onChange, value } }) => (
                 <SegmentedControl
                   value={String(value)}
-                  options={DROP_LOW_WEEKS_OPTIONS}
+                  options={DROP_LOW_WEEKS_OPTIONS.filter((o) => Number(o.value) <= dropMax)}
                   onChange={(v) => onChange(Number(v))}
                   accessibilityLabel="Drop Low Weeks"
                 />

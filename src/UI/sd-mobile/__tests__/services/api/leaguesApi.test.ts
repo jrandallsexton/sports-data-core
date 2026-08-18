@@ -31,6 +31,7 @@ const basePayload = {
   isPublic: false,
   joinPolicy: 'Open' as const,
   dropLowWeeksCount: 0,
+  leagueWindow: 'FullSeason' as const,
   startsOn: null,
   endsOn: null,
 };

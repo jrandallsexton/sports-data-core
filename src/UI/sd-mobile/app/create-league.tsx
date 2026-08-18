@@ -21,20 +21,23 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter, Stack, useLocalSearchParams } from 'expo-router';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { getTheme, type ColorScheme } from '@/constants/Colors';
 import { Button } from '@/src/components/ui/Button';
 import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 import {
   leaguesApi,
+  leaguesKeys,
   type CreateBaseballMlbLeagueRequest,
   type CreateFootballNcaaLeagueRequest,
   type CreateFootballNflLeagueRequest,
   type NcaaRankingFilter,
   type PickType,
+  type SeasonWeekOption,
   type TiebreakerType,
 } from '@/src/services/api/leaguesApi';
+import { conferencesApi, conferencesKeys, type ConferenceOption } from '@/src/services/api/conferencesApi';
 import { standingsKeys } from '@/src/hooks/useStandings';
 import { useCurrentUser } from '@/src/hooks/useStandings';
 import {
@@ -140,6 +143,7 @@ const chunkInto = <T,>(arr: T[], size: number): T[][] => {
 // cleanly); reversing this is purely additive if the posture changes. See
 // docs/mobile/web-parity-join-discovery.md.
 const DURATION_FULL = 'full';
+const DURATION_WEEKS = 'weeks';
 const DURATION_DATES = 'dates';
 
 // Suggested-description building blocks — mirrors sd-ui's LeagueCreatePage. A
@@ -197,7 +201,13 @@ const schema = z
     isPublic: z.boolean(),
     rankingFilter: z.enum(['', 'AP_TOP_25', 'AP_TOP_20', 'AP_TOP_15', 'AP_TOP_10', 'AP_TOP_5']),
     divisionSlugs: z.array(z.string()),
-    durationMode: z.enum([DURATION_FULL, DURATION_DATES]),
+    // NCAA-only: FBS conference slugs UNIONED with the ranking filter by the
+    // matchup processor (a game survives on a rank hit OR a conference hit).
+    conferenceSlugs: z.array(z.string()),
+    durationMode: z.enum([DURATION_FULL, DURATION_WEEKS, DURATION_DATES]),
+    // SeasonWeek ids for the Week Range window; empty string = unselected.
+    startWeekId: z.string(),
+    endWeekId: z.string(),
     joinPolicy: z.enum(['Open', 'CloseAtFirstGame']),
     // YYYY-MM-DD or empty string. Stored as a plain date string (no TZ) so the
     // submit-time conversion to ISO can anchor at local midnight / end-of-day
@@ -207,6 +217,15 @@ const schema = z
     dropLowWeeksCount: z.number().int().min(0).max(3),
   })
   .superRefine((data, ctx) => {
+    if (data.durationMode === DURATION_WEEKS) {
+      if (!data.startWeekId) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['startWeekId'], message: 'Start week is required' });
+      }
+      if (!data.endWeekId) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['endWeekId'], message: 'End week is required' });
+      }
+      return;
+    }
     if (data.durationMode !== DURATION_DATES) return;
     if (!data.startsOn) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['startsOn'], message: 'Start date is required' });
@@ -233,9 +252,15 @@ const PICK_TYPE_OPTIONS: { value: FormData['pickType']; label: string }[] = [
   { value: 'AgainstTheSpread', label: 'Against Spread' },
 ];
 
+// No "All"/"None" option on mobile (operator ruling 2026-08-18): the matchup
+// slate is built from rank hits and conference hits only, and mobile has no
+// conference picker yet — a rankings-free league here would have no games.
+// Web offers "None" because its conference table satisfies the
+// at-least-one-filter rule the server validator enforces.
 const RANKING_OPTIONS: { value: FormData['rankingFilter']; label: string }[] = [
-  { value: '', label: 'All' },
   { value: 'AP_TOP_25', label: 'Top 25' },
+  { value: 'AP_TOP_20', label: 'Top 20' },
+  { value: 'AP_TOP_15', label: 'Top 15' },
   { value: 'AP_TOP_10', label: 'Top 10' },
   { value: 'AP_TOP_5', label: 'Top 5' },
 ];
@@ -245,8 +270,9 @@ const VISIBILITY_OPTIONS: { value: 'private' | 'public'; label: string }[] = [
   { value: 'public', label: 'Public' },
 ];
 
-const WINDOW_OPTIONS: { value: 'full' | 'dates'; label: string }[] = [
+const WINDOW_OPTIONS: { value: 'full' | 'weeks' | 'dates'; label: string }[] = [
   { value: DURATION_FULL, label: 'Full Season' },
+  { value: DURATION_WEEKS, label: 'Week Range' },
   { value: DURATION_DATES, label: 'Date Range' },
 ];
 
@@ -502,6 +528,122 @@ function DateField({
   );
 }
 
+// Formats a week's UTC boundary for picker rows without local-TZ drift — a
+// Sep 6 00:00Z start must not render as Sep 5 in western timezones.
+function fmtWeekDateUtc(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+const weekOptionLabel = (w: SeasonWeekOption) =>
+  `${w.label}: ${fmtWeekDateUtc(w.startDateUtc)}–${fmtWeekDateUtc(w.endDateUtc)}`;
+
+interface WeekFieldProps {
+  value: string;
+  onChange: (id: string) => void;
+  options: SeasonWeekOption[];
+  placeholder: string;
+  accessibilityLabel: string;
+  theme: ReturnType<typeof getTheme>;
+  error?: string;
+}
+
+/**
+ * Season-week selector for the Week Range window. A field-styled button
+ * opening a bottom-sheet list — one cross-platform Modal (unlike DateField
+ * there's no native picker involved, so no platform split is needed).
+ */
+function WeekField({
+  value,
+  onChange,
+  options,
+  placeholder,
+  accessibilityLabel,
+  theme,
+  error,
+}: WeekFieldProps) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((w) => w.id === value) ?? null;
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.card,
+            borderColor: error ? theme.error : theme.border,
+            justifyContent: 'center',
+          },
+        ]}
+        onPress={() => setOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+      >
+        <Text style={{ color: selected ? theme.text : theme.textMuted, fontSize: 16 }}>
+          {selected ? weekOptionLabel(selected) : placeholder}
+        </Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={open}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setOpen(false)}
+      >
+        <TouchableOpacity
+          style={styles.pickerBackdrop}
+          activeOpacity={1}
+          onPress={() => setOpen(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss week picker"
+        />
+        <View style={[styles.pickerSheet, { backgroundColor: theme.card, borderTopColor: theme.border }]}>
+          <View style={[styles.pickerBar, { borderBottomColor: theme.border }]}>
+            <TouchableOpacity onPress={() => setOpen(false)} hitSlop={12}>
+              <Text style={[styles.pickerBarAction, { color: theme.textMuted }]}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={[styles.pickerBarTitle, { color: theme.text }]}>{accessibilityLabel}</Text>
+            <View style={styles.pickerBarSpacer} />
+          </View>
+          <ScrollView style={styles.weekList}>
+            {options.map((w) => {
+              const active = w.id === value;
+              return (
+                <TouchableOpacity
+                  key={w.id}
+                  onPress={() => {
+                    onChange(w.id);
+                    setOpen(false);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={weekOptionLabel(w)}
+                  style={[styles.weekRow, { borderBottomColor: theme.border }]}
+                >
+                  <Text
+                    style={{
+                      color: active ? theme.tint : theme.text,
+                      fontSize: 16,
+                      fontWeight: active ? '700' : '400',
+                    }}
+                  >
+                    {weekOptionLabel(w)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {error ? <Text style={{ color: theme.error, fontSize: 12 }}>{error}</Text> : null}
+    </>
+  );
+}
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function CreateLeagueScreen() {
@@ -547,7 +689,9 @@ export default function CreateLeagueScreen() {
       tiebreakerType: 'TotalPoints',
       useConfidencePoints: false,
       isPublic: false,
-      rankingFilter: '',
+      // NCAA requires a ranking filter on mobile (no conference picker yet);
+      // '' is only valid for sports where the filter doesn't apply.
+      rankingFilter: initialSport === 'FootballNcaa' ? 'AP_TOP_25' : '',
       // NFL/MLB: preselect all divisions so "include everyone" is one click.
       // NCAA: empty (no conference picker UI yet).
       divisionSlugs:
@@ -560,6 +704,9 @@ export default function CreateLeagueScreen() {
       joinPolicy: 'Open',
       startsOn: '',
       endsOn: '',
+      startWeekId: '',
+      endWeekId: '',
+      conferenceSlugs: [],
       dropLowWeeksCount: 0,
     },
   });
@@ -585,8 +732,43 @@ export default function CreateLeagueScreen() {
     }
   }, [durationMode, startsOn, endsOn, setValue]);
 
-  // Suggested description window: single day, a date range, or null (full season).
+  // Season weeks for the Week Range window. Fetched lazily — only once the
+  // user actually selects that mode — and keyed by sport so switching sports
+  // serves the right season's weeks.
+  const startWeekId = watch('startWeekId');
+  const endWeekId = watch('endWeekId');
+  const { data: seasonWeeks = [] } = useQuery({
+    // The endpoint returns an envelope ({ seasonYear, weeks }) — unwrap to
+    // the list here so everything downstream works with a plain array
+    // (web twin: `data?.weeks ?? []`).
+    queryKey: leaguesKeys.seasonWeeks(sport),
+    queryFn: async () => (await leaguesApi.getSeasonWeeks(sport)).data?.weeks ?? [],
+    enabled: durationMode === DURATION_WEEKS,
+  });
+  const startWeekIndex = seasonWeeks.findIndex((w) => w.id === startWeekId);
+  const endWeekIndex = seasonWeeks.findIndex((w) => w.id === endWeekId);
+  const startWeekObj = startWeekIndex >= 0 ? seasonWeeks[startWeekIndex] : null;
+  const endWeekObj = endWeekIndex >= 0 ? seasonWeeks[endWeekIndex] : null;
+
+  // Mirror of web: picking a start week after the current end week clamps
+  // the end forward so the window can't invert.
+  useEffect(() => {
+    if (durationMode !== DURATION_WEEKS) return;
+    if (!startWeekId) return;
+    if (!endWeekId || (endWeekIndex >= 0 && startWeekIndex > endWeekIndex)) {
+      setValue('endWeekId', startWeekId, { shouldDirty: true, shouldValidate: true });
+    }
+  }, [durationMode, startWeekId, endWeekId, startWeekIndex, endWeekIndex, setValue]);
+
+  // Suggested description window: weeks ("Week 3" / "Week 3 – Week 8"),
+  // dates (single day or range), or null (full season).
   const descriptionWindowLabel = (() => {
+    if (durationMode === DURATION_WEEKS) {
+      if (!startWeekObj || !endWeekObj) return null;
+      return startWeekObj.id === endWeekObj.id
+        ? startWeekObj.label
+        : `${startWeekObj.label} – ${endWeekObj.label}`;
+    }
     if (durationMode !== DURATION_DATES) return null;
     const s = formatDateShort(startsOn);
     const e = formatDateShort(endsOn);
@@ -647,9 +829,15 @@ export default function CreateLeagueScreen() {
     } else {
       setValue('divisionSlugs', []);
     }
-    if (sport !== 'FootballNcaa') {
-      setValue('rankingFilter', '');
-    }
+    // NCAA always carries a ranking filter on mobile (no "None" — see
+    // RANKING_OPTIONS); other sports don't use one. Conference picks are
+    // NCAA-only and don't survive a sport switch.
+    setValue('rankingFilter', sport === 'FootballNcaa' ? 'AP_TOP_25' : '');
+    setValue('conferenceSlugs', []);
+    // Week ids are per-sport (each sport has its own season weeks) — a
+    // sport switch invalidates any prior selection.
+    setValue('startWeekId', '');
+    setValue('endWeekId', '');
   }, [sport, setValue]);
 
   // Cold-launch admin deep-link: /user/me may still be loading when the form
@@ -722,11 +910,41 @@ export default function CreateLeagueScreen() {
     setValue('divisionSlugs', next, { shouldDirty: true });
   };
 
+  // FBS conferences for the NCAA picker. The endpoint returns EVERY
+  // classification; mobile shows FBS only (operator ruling 2026-08-18 —
+  // FCS/D2/D3 conference selection stays a web-only surface). Optional
+  // additions: the matchup processor UNIONS these with the ranking filter.
+  const conferenceSlugs = watch('conferenceSlugs');
+  const { data: fbsConferences = [] } = useQuery({
+    queryKey: conferencesKeys.all,
+    queryFn: async () => (await conferencesApi.getConferenceNamesAndSlugs()).data,
+    enabled: isNcaa,
+    select: (all) =>
+      all
+        .filter((c) => c.division === 'FBS')
+        .sort((a, b) => a.shortName.localeCompare(b.shortName)),
+  });
+
+  const toggleConference = (slug: string) => {
+    const next = conferenceSlugs.includes(slug)
+      ? conferenceSlugs.filter((s) => s !== slug)
+      : [...conferenceSlugs, slug];
+    setValue('conferenceSlugs', next, { shouldDirty: true });
+  };
+
   const createMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      // Week Range carries the selected weeks' real UTC boundaries — raw ISO
+      // pass-through, NOT the date-input local-midnight conversion (web
+      // parity: buildWindow in createLeagueRequests.js).
       const window =
         data.durationMode === DURATION_DATES
           ? { startsOn: toStartOfDayIso(data.startsOn), endsOn: toEndOfDayIso(data.endsOn) }
+          : data.durationMode === DURATION_WEEKS
+          ? {
+              startsOn: seasonWeeks.find((w) => w.id === data.startWeekId)?.startDateUtc ?? null,
+              endsOn: seasonWeeks.find((w) => w.id === data.endWeekId)?.endDateUtc ?? null,
+            }
           : { startsOn: null, endsOn: null };
 
       const base = {
@@ -739,6 +957,14 @@ export default function CreateLeagueScreen() {
         isPublic: data.isPublic,
         joinPolicy: data.joinPolicy,
         dropLowWeeksCount: data.dropLowWeeksCount,
+        // Explicit window shape — WeekRange can never be inferred from the
+        // dates server-side, so it must always be sent (web parity).
+        leagueWindow:
+          data.durationMode === DURATION_DATES
+            ? ('DateRange' as const)
+            : data.durationMode === DURATION_WEEKS
+            ? ('WeekRange' as const)
+            : ('FullSeason' as const),
         ...window,
       };
 
@@ -747,7 +973,7 @@ export default function CreateLeagueScreen() {
           ...base,
           rankingFilter:
             data.rankingFilter === '' ? null : (data.rankingFilter as NcaaRankingFilter),
-          conferenceSlugs: [],
+          conferenceSlugs: data.conferenceSlugs,
         };
         return leaguesApi.createFootballNcaaLeague(payload).then((r) => r.data);
       }
@@ -920,40 +1146,6 @@ export default function CreateLeagueScreen() {
             />
           </View>
 
-          {/* Drop Low Weeks */}
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: theme.textMuted }]}>Drop Low Weeks</Text>
-            <Controller
-              control={control}
-              name="dropLowWeeksCount"
-              render={({ field: { onChange, value } }) => (
-                <SegmentedControl
-                  value={String(value)}
-                  options={DROP_LOW_WEEKS_OPTIONS}
-                  onChange={(v) => onChange(Number(v))}
-                  accessibilityLabel="Drop Low Weeks"
-                />
-              )}
-            />
-          </View>
-
-          {/* Join Policy — who can join, and until when */}
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: theme.textMuted }]}>Who can join</Text>
-            <Controller
-              control={control}
-              name="joinPolicy"
-              render={({ field: { onChange, value } }) => (
-                <SegmentedControl
-                  value={value}
-                  options={JOIN_POLICY_OPTIONS}
-                  onChange={(v) => onChange(v as 'Open' | 'CloseAtFirstGame')}
-                  accessibilityLabel="Who can join"
-                />
-              )}
-            />
-          </View>
-
           {/* League Window */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: theme.textMuted }]}>League Window</Text>
@@ -964,11 +1156,52 @@ export default function CreateLeagueScreen() {
                 <SegmentedControl
                   value={value}
                   options={WINDOW_OPTIONS}
-                  onChange={(v) => onChange(v as 'full' | 'dates')}
+                  onChange={(v) => onChange(v as 'full' | 'weeks' | 'dates')}
                   accessibilityLabel="League Window"
                 />
               )}
             />
+
+            {durationMode === DURATION_WEEKS && (
+              <View style={styles.dateRow}>
+                <View style={styles.dateCol}>
+                  <Text style={[styles.label, { color: theme.textMuted }]}>Start Week</Text>
+                  <Controller
+                    control={control}
+                    name="startWeekId"
+                    render={({ field: { onChange, value } }) => (
+                      <WeekField
+                        value={value}
+                        onChange={onChange}
+                        options={seasonWeeks}
+                        placeholder="Select week"
+                        accessibilityLabel="Start Week"
+                        theme={theme}
+                        error={errors.startWeekId?.message}
+                      />
+                    )}
+                  />
+                </View>
+                <View style={styles.dateCol}>
+                  <Text style={[styles.label, { color: theme.textMuted }]}>End Week</Text>
+                  <Controller
+                    control={control}
+                    name="endWeekId"
+                    render={({ field: { onChange, value } }) => (
+                      <WeekField
+                        value={value}
+                        onChange={onChange}
+                        options={seasonWeeks}
+                        placeholder="Select week"
+                        accessibilityLabel="End Week"
+                        theme={theme}
+                        error={errors.endWeekId?.message}
+                      />
+                    )}
+                  />
+                </View>
+              </View>
+            )}
 
             {durationMode === DURATION_DATES && (
               <View style={styles.dateRow}>
@@ -1014,6 +1247,23 @@ export default function CreateLeagueScreen() {
             )}
           </View>
 
+          {/* Drop Low Weeks */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Drop Low Weeks</Text>
+            <Controller
+              control={control}
+              name="dropLowWeeksCount"
+              render={({ field: { onChange, value } }) => (
+                <SegmentedControl
+                  value={String(value)}
+                  options={DROP_LOW_WEEKS_OPTIONS}
+                  onChange={(v) => onChange(Number(v))}
+                  accessibilityLabel="Drop Low Weeks"
+                />
+              )}
+            />
+          </View>
+
           {/* Ranking filter — NCAA only */}
           {isNcaa && (
             <View style={styles.field}>
@@ -1030,6 +1280,48 @@ export default function CreateLeagueScreen() {
                   />
                 )}
               />
+            </View>
+          )}
+
+          {/* FBS conferences — NCAA only, optional additions to the ranking
+              filter (the matchup processor unions rank hits and conference
+              hits). FBS only on mobile; the full every-classification table
+              is a web surface. */}
+          {isNcaa && fbsConferences.length > 0 && (
+            <View style={styles.field}>
+              <Text style={[styles.label, { color: theme.textMuted }]}>
+                🏈 Conferences (optional)
+              </Text>
+              <View style={styles.divisionGrid}>
+                {fbsConferences.map((conf) => {
+                  const selected = conferenceSlugs.includes(conf.slug);
+                  return (
+                    <TouchableOpacity
+                      key={conf.slug}
+                      style={[
+                        styles.divisionChip,
+                        {
+                          backgroundColor: selected ? theme.tint : theme.card,
+                          borderColor: selected ? theme.tint : theme.border,
+                        },
+                      ]}
+                      onPress={() => toggleConference(conf.slug)}
+                      activeOpacity={0.75}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: selected }}
+                    >
+                      <Text
+                        style={[
+                          styles.divisionChipText,
+                          { color: selected ? theme.textOnAccent : theme.text },
+                        ]}
+                      >
+                        {conf.shortName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           )}
 
@@ -1122,23 +1414,6 @@ export default function CreateLeagueScreen() {
             </View>
           )}
 
-          {/* Visibility */}
-          <View style={styles.field}>
-            <Text style={[styles.label, { color: theme.textMuted }]}>Visibility</Text>
-            <Controller
-              control={control}
-              name="isPublic"
-              render={({ field: { onChange, value } }) => (
-                <SegmentedControl
-                  value={value ? 'public' : 'private'}
-                  options={VISIBILITY_OPTIONS}
-                  onChange={(v) => onChange(v === 'public')}
-                  accessibilityLabel="Visibility"
-                />
-              )}
-            />
-          </View>
-
           {/* Confidence points */}
           <Controller
             control={control}
@@ -1160,6 +1435,40 @@ export default function CreateLeagueScreen() {
               </View>
             )}
           />
+
+          {/* Visibility */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Visibility</Text>
+            <Controller
+              control={control}
+              name="isPublic"
+              render={({ field: { onChange, value } }) => (
+                <SegmentedControl
+                  value={value ? 'public' : 'private'}
+                  options={VISIBILITY_OPTIONS}
+                  onChange={(v) => onChange(v === 'public')}
+                  accessibilityLabel="Visibility"
+                />
+              )}
+            />
+          </View>
+
+          {/* Join Policy — who can join, and until when */}
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: theme.textMuted }]}>Who can join</Text>
+            <Controller
+              control={control}
+              name="joinPolicy"
+              render={({ field: { onChange, value } }) => (
+                <SegmentedControl
+                  value={value}
+                  options={JOIN_POLICY_OPTIONS}
+                  onChange={(v) => onChange(v as 'Open' | 'CloseAtFirstGame')}
+                  accessibilityLabel="Who can join"
+                />
+              )}
+            />
+          </View>
 
           {/* Description last: optional flavor, and its suggested tag derives
               from the parameters chosen above — so by the time the user reaches
@@ -1249,7 +1558,7 @@ export default function CreateLeagueScreen() {
               </Text>
             </View>
             <ScrollView contentContainerStyle={styles.confirmBody}>
-              {buildConfirmRows(pendingData).map(({ label, value }) => (
+              {buildConfirmRows(pendingData, seasonWeeks, fbsConferences).map(({ label, value }) => (
                 <View
                   key={label}
                   style={[styles.confirmRow, { borderBottomColor: theme.border }]}
@@ -1292,7 +1601,11 @@ export default function CreateLeagueScreen() {
 // Mirrors the field list of web's "Confirm League Settings" dialog, derived
 // from the validated form snapshot. Kept outside the component so it stays a
 // pure FormData -> rows mapping.
-function buildConfirmRows(data: FormData): { label: string; value: string }[] {
+function buildConfirmRows(
+  data: FormData,
+  seasonWeeks: SeasonWeekOption[],
+  conferences: ConferenceOption[],
+): { label: string; value: string }[] {
   const copy = SPORT_COPY[data.sport];
 
   const divisionNames =
@@ -1310,11 +1623,19 @@ function buildConfirmRows(data: FormData): { label: string; value: string }[] {
   const tiebreakerLabel =
     data.tiebreakerType === 'TotalPoints' ? copy.tiebreakerTotalLabel : 'Earliest Pick';
 
+  const startWeek = seasonWeeks.find((w) => w.id === data.startWeekId);
+  const endWeek = seasonWeeks.find((w) => w.id === data.endWeekId);
   const windowLabel =
     data.durationMode === DURATION_DATES
       ? `${data.startsOn ? formatDateOnlyDisplay(data.startsOn) : '—'} to ${
           data.endsOn ? formatDateOnlyDisplay(data.endsOn) : '—'
         }`
+      : data.durationMode === DURATION_WEEKS
+      ? startWeek && endWeek
+        ? startWeek.id === endWeek.id
+          ? startWeek.label
+          : `${startWeek.label} to ${endWeek.label}`
+        : '—'
       : 'Full Season';
 
   const rows: { label: string; value: string }[] = [
@@ -1328,8 +1649,16 @@ function buildConfirmRows(data: FormData): { label: string; value: string }[] {
     rows.push({
       label: 'Ranking Filter',
       value:
-        RANKING_OPTIONS.find((o) => o.value === data.rankingFilter)?.label ?? 'All',
+        RANKING_OPTIONS.find((o) => o.value === data.rankingFilter)?.label ?? data.rankingFilter,
     });
+    if (data.conferenceSlugs.length > 0) {
+      rows.push({
+        label: 'Conferences',
+        value: data.conferenceSlugs
+          .map((slug) => conferences.find((c) => c.slug === slug)?.shortName ?? slug)
+          .join(', '),
+      });
+    }
   }
   rows.push(
     { label: 'Pick Type', value: pickTypeLabel },
@@ -1376,6 +1705,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
+  },
+  pickerBarSpacer: {
+    // Balances the Cancel action so the sheet title stays centered.
+    width: 52,
+  },
+  weekList: {
+    maxHeight: 380,
+  },
+  weekRow: {
+    paddingVertical: 13,
+    paddingHorizontal: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   multiline: {
     minHeight: 80,

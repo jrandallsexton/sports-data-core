@@ -459,6 +459,15 @@ const LeagueCreatePage = () => {
       return;
     }
 
+    // The matchup slate is built from rank hits and conference hits only —
+    // Rankings "None" with no conferences would create a league with no
+    // games. Server validator enforces the same rule; this guard just gives
+    // a clear message before the confirm dialog.
+    if (sport === SPORT_NCAA && !rankingFilter && teamFilter.length === 0) {
+      toast.error("Choose a ranking filter or at least one conference.");
+      return;
+    }
+
     setShowConfirmDialog(true);
   };
 

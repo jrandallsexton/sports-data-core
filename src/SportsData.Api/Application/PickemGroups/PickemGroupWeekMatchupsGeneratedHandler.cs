@@ -1,8 +1,10 @@
 ﻿using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 using SportsData.Api.Application.Previews;
+using SportsData.Api.Config;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Contests;
@@ -18,19 +20,22 @@ namespace SportsData.Api.Application.PickemGroups
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IEventBus _eventBus;
         private readonly IMessageDeliveryScope _deliveryScope;
+        private readonly ApiConfig _config;
 
         public PickemGroupWeekMatchupsGeneratedHandler(
             ILogger<PickemGroupWeekMatchupsGeneratedHandler> logger,
             AppDataContext dataContext,
             IProvideBackgroundJobs backgroundJobProvider,
             IEventBus eventBus,
-            IMessageDeliveryScope deliveryScope)
+            IMessageDeliveryScope deliveryScope,
+            IOptions<ApiConfig> config)
         {
             _logger = logger;
             _dataContext = dataContext;
             _backgroundJobProvider = backgroundJobProvider;
             _eventBus = eventBus;
             _deliveryScope = deliveryScope;
+            _config = config.Value;
         }
 
         public async Task Consume(ConsumeContext<PickemGroupWeekMatchupsGenerated> context)
@@ -90,6 +95,18 @@ namespace SportsData.Api.Application.PickemGroups
                         Guid.NewGuid()),
                         ct);
                 }
+            }
+
+            // Config kill-switch (Local label sets this false): skip the model
+            // spend entirely while still having fanned out the contest
+            // refreshes above — local league-creation testing needs matchup
+            // metadata, not previews.
+            if (!_config.MatchupPreviewGenerationEnabled)
+            {
+                _logger.LogInformation(
+                    "Matchup preview generation disabled by config. Skipping preview enqueue for {Count} contests.",
+                    groupWeekMatchupsContestIds.Count);
+                return;
             }
 
             var existingPreviews = await _dataContext.MatchupPreviews

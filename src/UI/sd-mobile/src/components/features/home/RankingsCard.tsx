@@ -72,10 +72,8 @@ export function RankingsCard() {
 
       <View>
         {topEntries.map((team, i) => {
-          const logoSrc =
-            scheme === 'dark'
-              ? team.franchiseLogoUrlDark ?? team.franchiseLogoUrlLight ?? team.franchiseLogoUrl
-              : team.franchiseLogoUrlLight ?? team.franchiseLogoUrlDark ?? team.franchiseLogoUrl;
+          // The wire carries one logo URL — no theme variants (see rankingsApi).
+          const logoSrc = team.franchiseLogoUrl;
           return (
             <TouchableOpacity
               key={team.franchiseSeasonId || team.rank}

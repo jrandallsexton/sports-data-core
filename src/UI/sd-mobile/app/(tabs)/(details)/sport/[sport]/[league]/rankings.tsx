@@ -41,9 +41,11 @@ export default function RankingsScreen() {
     league ?? 'ncaa'
   );
 
+  // week parses independently of season: ?week=1 alone means "week 1 of the
+  // CURRENT season" (the resolved seasonYear below feeds the week fetch).
   const parsedSeason = /^\d{4}$/.test(seasonParam ?? '') ? Number(seasonParam) : undefined;
   const parsedWeek =
-    parsedSeason && /^\d{1,2}$/.test(weekParam ?? '') && Number(weekParam) > 0
+    /^\d{1,2}$/.test(weekParam ?? '') && Number(weekParam) > 0
       ? Number(weekParam)
       : undefined;
   const seasonYear = parsedSeason ?? currentSeasonYear;
@@ -124,14 +126,9 @@ export default function RankingsScreen() {
                 style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}
               >
                 {activePoll.entries.map((team, i) => {
-                  const logoSrc =
-                    scheme === 'dark'
-                      ? team.franchiseLogoUrlDark ??
-                        team.franchiseLogoUrlLight ??
-                        team.franchiseLogoUrl
-                      : team.franchiseLogoUrlLight ??
-                        team.franchiseLogoUrlDark ??
-                        team.franchiseLogoUrl;
+                  // The wire carries one logo URL — no theme variants
+                  // (see rankingsApi).
+                  const logoSrc = team.franchiseLogoUrl;
                   return (
                     <TouchableOpacity
                       key={team.franchiseSeasonId || team.rank}
@@ -159,10 +156,12 @@ export default function RankingsScreen() {
                         </Text>
                         <Text style={[styles.record, { color: theme.textSecondary }]}>
                           {team.wins}-{team.losses}
-                          {activePoll.hasPoints && team.points
-                            ? ` · ${team.points} pts`
-                            : ''}
-                          {activePoll.hasFirstPlaceVotes && team.firstPlaceVotes
+                          {activePoll.hasPoints ? ` · ${team.points} pts` : ''}
+                          {/* Zero first-place votes deliberately suppressed —
+                              web parity (sd-ui renders FPV only when > 0). */}
+                          {activePoll.hasFirstPlaceVotes &&
+                          team.firstPlaceVotes != null &&
+                          team.firstPlaceVotes > 0
                             ? ` · ${team.firstPlaceVotes} first-place`
                             : ''}
                         </Text>

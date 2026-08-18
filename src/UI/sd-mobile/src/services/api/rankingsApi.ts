@@ -2,20 +2,22 @@ import { apiClient } from './client';
 
 // Matches SportsData.Core.Dtos.Canonical.RankingsByPollIdByWeekDto — the
 // shape /ui/rankings serves (see sd-ui's RankingsWidget for the web twin).
+// NOTE: theme-specific logo variants (dark/light) exist on an inner Producer
+// DTO but are dropped by the ToRankingsByPollDto mapping — the wire carries
+// only FranchiseLogoUrl.
 export interface RankingsEntry {
   rank: number;
   franchiseName: string;
   franchiseSlug: string;
   franchiseSeasonId: string;
-  franchiseLogoUrl?: string;
-  franchiseLogoUrlDark?: string;
-  franchiseLogoUrlLight?: string;
+  franchiseLogoUrl: string;
   wins: number;
   losses: number;
-  points?: number;
-  firstPlaceVotes?: number;
-  previousRank?: number;
+  points: number;
+  firstPlaceVotes?: number | null;
+  previousRank?: number | null;
   trend?: string | null;
+  pollDateUtc?: string | null;
 }
 
 export interface RankingsPoll {

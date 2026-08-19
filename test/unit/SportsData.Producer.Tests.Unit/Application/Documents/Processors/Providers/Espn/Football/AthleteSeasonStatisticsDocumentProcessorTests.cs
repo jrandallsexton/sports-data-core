@@ -554,6 +554,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         var rowStatistics = await FootballDataContext.AthleteSeasonStatistics
             .AsNoTracking()
             .Where(x => x.AthleteSeasonId == spawningRow.Id)
+            .Select(x => new { x.Id, x.SplitName })
             .ToListAsync();
 
         rowStatistics.Should().HaveCount(1, "2023 data must not be filed under the athlete's 2026 row");

@@ -701,6 +701,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
         statsData.teamB.logoUri !== homeLogoUri
       ) {
         setStatsData({
+          ...statsData,
           teamA: { ...statsData.teamA, logoUri: awayLogoUri },
           teamB: { ...statsData.teamB, logoUri: homeLogoUri },
         });
@@ -710,15 +711,26 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
 
     setStatsLoading(true);
     try {
+      // History resolves independently — a failure (or an unresolvable
+      // sport/league) must not take the stats down with it.
+      const historyPromise = sportLeague
+        ? matchupsApi
+            .getContestHistory(sportLeague.sport, sportLeague.league, matchup.contestId)
+            .then((res) => res.data)
+            .catch(() => null)
+        : Promise.resolve(null);
+
       const [awayStats, homeStats, awayMetrics, homeMetrics] = await Promise.all([
         teamCardApi.getStatistics(matchup.awaySlug, year, matchup.awayFranchiseSeasonId),
         teamCardApi.getStatistics(matchup.homeSlug, year, matchup.homeFranchiseSeasonId),
         teamCardApi.getMetrics(matchup.awaySlug, year, matchup.awayFranchiseSeasonId),
         teamCardApi.getMetrics(matchup.homeSlug, year, matchup.homeFranchiseSeasonId),
       ]);
+      const history = await historyPromise;
       setStatsData({
         teamA: { name: matchup.away, logoUri: awayLogoUri, stats: awayStats, metrics: awayMetrics },
         teamB: { name: matchup.home, logoUri: homeLogoUri, stats: homeStats, metrics: homeMetrics },
+        history,
       });
     } catch (err) {
       console.warn('[MatchupCard] stats fetch error', err);
@@ -943,6 +955,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
       matchup={matchup}
       comparison={statsData}
       isLoading={statsLoading}
+      showGambling={showGambling}
     />
     <InsightModal
       visible={showPreview}

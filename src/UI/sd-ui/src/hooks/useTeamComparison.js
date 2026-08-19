@@ -26,7 +26,8 @@ export const useTeamComparison = (matchup, seasonYear, leagueSport) => {
     if (!seasonYear || !sportLeague) {
       setComparisonData({
         teamA: { name: matchup.away, logoUri: matchup.awayLogoUri, stats: null, metrics: null },
-        teamB: { name: matchup.home, logoUri: matchup.homeLogoUri, stats: null, metrics: null }
+        teamB: { name: matchup.home, logoUri: matchup.homeLogoUri, stats: null, metrics: null },
+        history: null
       });
       setComparisonLoading(false);
       return;
@@ -41,11 +42,12 @@ export const useTeamComparison = (matchup, seasonYear, leagueSport) => {
         apiWrapper.TeamCard.getStatistics(sport, league, matchup.awaySlug, seasonYear, matchup.awayFranchiseSeasonId),
         apiWrapper.TeamCard.getStatistics(sport, league, matchup.homeSlug, seasonYear, matchup.homeFranchiseSeasonId),
         apiWrapper.TeamCard.getMetrics(sport, league, matchup.awaySlug, seasonYear, matchup.awayFranchiseSeasonId),
-        apiWrapper.TeamCard.getMetrics(sport, league, matchup.homeSlug, seasonYear, matchup.homeFranchiseSeasonId)
+        apiWrapper.TeamCard.getMetrics(sport, league, matchup.homeSlug, seasonYear, matchup.homeFranchiseSeasonId),
+        apiWrapper.Contest.getHistory(sport, league, matchup.contestId)
       ]);
 
       const valueOrNull = (r) => (r.status === 'fulfilled' ? (r.value?.data ?? null) : null);
-      const [awayStats, homeStats, awayMetrics, homeMetrics] = results.map(valueOrNull);
+      const [awayStats, homeStats, awayMetrics, homeMetrics, history] = results.map(valueOrNull);
 
       setComparisonData({
         teamA: {
@@ -59,7 +61,8 @@ export const useTeamComparison = (matchup, seasonYear, leagueSport) => {
           logoUri: matchup.homeLogoUri,
           stats: homeStats,
           metrics: homeMetrics
-        }
+        },
+        history
       });
     } catch (e) {
       setComparisonData(null);

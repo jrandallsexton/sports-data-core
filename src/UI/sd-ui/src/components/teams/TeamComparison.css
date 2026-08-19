@@ -207,20 +207,14 @@
 }
 
 .team-comparison-content {
-   padding: 2rem 2.5rem 0 2.5rem;
+   /* Bottom padding matters since the footer CTA was removed — without it
+      the last rows of every tab end exactly on the dialog's edge. */
+   padding: 2rem 2.5rem 2rem 2.5rem;
    flex: 1;
    overflow-y: auto;
    display: flex;
    flex-direction: column;
    gap: 1.5rem;
-}
-
-.team-comparison-footer {
-   padding: 1rem 2.5rem 1.5rem 2.5rem;
-   border-top: 1px solid var(--badge-bg);
-   background: var(--bg-input);
-   border-radius: 0 0 14px 14px;
-   flex-shrink: 0;
 }
 
 @media (max-width: 600px) {
@@ -231,11 +225,7 @@
   }
 
   .team-comparison-content {
-    padding: 1rem 0.5rem 0 0.5rem;
-  }
-
-  .team-comparison-footer {
-    padding: 0.75rem 0.5rem 1rem 0.5rem;
+    padding: 1rem 0.5rem 1rem 0.5rem;
   }
 
   .team-comparison-table {
@@ -403,24 +393,23 @@
   }
 }
 
-.close-btn {
-  display: block;
-  width: 100%;
-  max-width: 200px;
-  margin: 0 auto;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+/* Close affordance — same X as InsightDialog (top-right, no footer CTA) */
+.close-x-button {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: none;
   border: none;
-  background: var(--accent);
-  color: var(--text-on-accent);
-  font-weight: bold;
-  font-size: 1rem;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: color 0.2s ease;
+  z-index: 2;
 }
-.close-btn:hover {
-  background: var(--accent-hover);
-  color: var(--text-primary);
+
+.close-x-button:hover {
+  color: var(--accent);
 }
 
 /* Metrics tab styles - reuses stat-row styles above */
@@ -437,3 +426,183 @@
   min-width: 100%;
 }
 
+
+/* ─── History tab ─────────────────────────────────────────────────────── */
+.history-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.history-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.history-section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--badge-bg);
+  padding-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+/* Head-to-head rows */
+.h2h-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: var(--hover-bg);
+}
+
+.h2h-meta {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.h2h-phase,
+.h2h-note {
+  font-style: italic;
+}
+
+.h2h-line {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.h2h-at {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.h2h-winner {
+  font-weight: 700;
+}
+
+.h2h-market {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Prior-season two-column grid */
+.history-teams-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.history-team-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.history-team-col-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-bottom: 0.25rem;
+}
+
+.history-team-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.history-season-record {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.history-game-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  background: var(--hover-bg);
+  min-width: 0;
+}
+
+.history-result-badge {
+  flex: 0 0 auto;
+  width: 1.35rem;
+  text-align: center;
+  font-weight: 700;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  line-height: 1.35rem;
+}
+
+.history-result-badge.win {
+  background: rgba(46, 160, 67, 0.25);
+  color: #3fb950;
+}
+
+.history-result-badge.loss {
+  background: rgba(248, 81, 73, 0.2);
+  color: #f85149;
+}
+
+.history-result-badge.tie {
+  background: var(--badge-bg);
+  color: var(--text-secondary);
+}
+
+.history-game-score {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.history-game-detail {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-game-line .history-game-date {
+  flex: 0 0 auto;
+}
+
+.history-game-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.history-empty-note {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Phone degradation: columns stack, H2H line wraps */
+@media (max-width: 600px) {
+  .history-teams-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .h2h-line {
+    flex-wrap: wrap;
+  }
+}

@@ -321,6 +321,49 @@ export type TeamStatistics = Record<string, TeamStatEntry[]>;
 /** Shape of metrics?.data from team card API */
 export type TeamMetrics = Record<string, unknown>;
 
+/**
+ * One historical game from GET /api/{sport}/{league}/contests/{id}/history.
+ * Team fields are Franchise.DisplayName strings — the same source as
+ * Matchup.away/home, so exact string matching identifies "our" side.
+ */
+export interface ContestHistoryGame {
+  gameDate: string;
+  seasonYear: number;
+  phase?: string | null;
+  note?: string | null;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore?: number | null;
+  awayScore?: number | null;
+  winner?: string | null;
+  spreadWinner?: string | null;
+  spread?: string | null;
+  overUnder?: number | null;
+  overUnderResult?: string | null;
+}
+
+/** A team's prior season in summary (record; conference record when published). */
+export interface ContestPriorSeasonSummary {
+  seasonYear: number;
+  wins: number;
+  losses: number;
+  conferenceWins?: number | null;
+  conferenceLosses?: number | null;
+}
+
+/**
+ * Historical context for a matchup: recent head-to-head meetings plus each
+ * team's late-prior-season form — the same blocks the preview/insight models
+ * consume. Away/Home here refer to the LIVE matchup's sides.
+ */
+export interface ContestHistory {
+  headToHead: ContestHistoryGame[];
+  awayPriorSeasonGames: ContestHistoryGame[];
+  homePriorSeasonGames: ContestHistoryGame[];
+  awayPriorSeason?: ContestPriorSeasonSummary | null;
+  homePriorSeason?: ContestPriorSeasonSummary | null;
+}
+
 /** Assembled comparison object used by StatsComparisonModal */
 export interface TeamComparisonData {
   teamA: {
@@ -335,6 +378,8 @@ export interface TeamComparisonData {
     stats?: { data?: { statistics?: TeamStatistics } } | null;
     metrics?: { data?: TeamMetrics } | null;
   };
+  /** Matchup history; null when the fetch failed or nothing exists. */
+  history?: ContestHistory | null;
 }
 
 // ─── User ────────────────────────────────────────────────────────────────────

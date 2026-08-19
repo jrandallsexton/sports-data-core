@@ -19,9 +19,26 @@ export default function TeamComparison({
   teamB,
   teamAColor = "#61dafb",
   teamBColor = "#61dafb",
+  history = null,
+  showGambling = false,
 }) {
-  // Main tab state
-  const [activeTab, setActiveTab] = useState("statistics");
+  // Historical blocks (head-to-head + prior-season form). Present whenever
+  // the franchises have played before — including week 1, when it's the only
+  // populated tab.
+  const headToHead = history?.headToHead ?? [];
+  const teamAPriorGames = history?.awayPriorSeasonGames ?? [];
+  const teamBPriorGames = history?.homePriorSeasonGames ?? [];
+  const teamAPriorSeason = history?.awayPriorSeason ?? null;
+  const teamBPriorSeason = history?.homePriorSeason ?? null;
+  const hasHistoryData =
+    headToHead.length > 0 || teamAPriorGames.length > 0 || teamBPriorGames.length > 0;
+
+  // Main tab state. History is the overview and opens first; Statistics and
+  // Metrics are the detail tabs. Statistics only leads when there is no
+  // history to show.
+  const [activeTab, setActiveTab] = useState(
+    hasHistoryData ? "history" : "statistics"
+  );
 
   // Helper: choose light or dark text based on background color
   const getContrastTextColor = (bgColor) => {
@@ -524,6 +541,155 @@ export default function TeamComparison({
     );
   };
 
+  // ─── History tab ─────────────────────────────────────────────────────────
+  // Historical team names come from Franchise.DisplayName — the same source
+  // as teamA.name / teamB.name (matchup Away/Home) — so exact string matching
+  // identifies "our" side of a historical row.
+
+  const formatGameDate = (iso) =>
+    new Date(iso).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+
+  // W/L/T + score + opponent from one team's perspective; null when the team
+  // name matches neither side (defensive — shouldn't happen).
+  const gameResultForTeam = (game, teamName) => {
+    const isHome = game.homeTeam === teamName;
+    const isAway = game.awayTeam === teamName;
+    if (!isHome && !isAway) return null;
+    const ourScore = isHome ? game.homeScore : game.awayScore;
+    const theirScore = isHome ? game.awayScore : game.homeScore;
+    const outcome =
+      game.winner == null ? "T" : game.winner === teamName ? "W" : "L";
+    return {
+      outcome,
+      ourScore,
+      theirScore,
+      opponent: isHome ? game.awayTeam : game.homeTeam,
+      venue: isHome ? "vs" : "@",
+    };
+  };
+
+  const renderPriorSeasonColumn = (teamName, games, summary) => (
+    <div className="history-team-col">
+      <div className="history-team-col-header">
+        <span className="history-team-name">{teamName}</span>
+        {summary && (
+          <span className="history-season-record">
+            {summary.seasonYear}: {summary.wins}-{summary.losses}
+            {summary.conferenceWins != null && summary.conferenceLosses != null
+              ? ` (${summary.conferenceWins}-${summary.conferenceLosses} conf)`
+              : ""}
+          </span>
+        )}
+      </div>
+      {games.length === 0 ? (
+        <div className="history-empty-note">No prior-season games on record.</div>
+      ) : (
+        games.map((game, idx) => {
+          const r = gameResultForTeam(game, teamName);
+          if (!r) {
+            return (
+              <div className="history-game-line" key={idx}>
+                <span className="history-game-date">{formatGameDate(game.gameDate)}</span>
+                <span className="history-game-detail">
+                  {game.awayTeam} {game.awayScore ?? "—"} @ {game.homeTeam} {game.homeScore ?? "—"}
+                </span>
+              </div>
+            );
+          }
+          return (
+            <div className="history-game-line" key={idx}>
+              <span className={`history-result-badge ${r.outcome === "W" ? "win" : r.outcome === "L" ? "loss" : "tie"}`}>
+                {r.outcome}
+              </span>
+              <span className="history-game-score">
+                {r.ourScore ?? "—"}-{r.theirScore ?? "—"}
+              </span>
+              <span className="history-game-detail">
+                {r.venue} {r.opponent}
+              </span>
+              <span className="history-game-date">{formatGameDate(game.gameDate)}</span>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+
+  const renderHistoryTab = () => {
+    if (!hasHistoryData) {
+      return (
+        <div className="metrics-placeholder">
+          <p style={{ textAlign: "center", color: "var(--text-secondary)", fontSize: "1.1rem", padding: "2rem" }}>
+            No matchup history is available for these teams.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="history-content">
+        {headToHead.length > 0 && (
+          <div className="history-section">
+            <div className="history-section-title">
+              Head-to-Head — Last {headToHead.length} Meeting{headToHead.length === 1 ? "" : "s"}
+            </div>
+            {headToHead.map((game, idx) => {
+              return (
+                <div className="h2h-row" key={idx}>
+                  <div className="h2h-meta">
+                    <span className="history-game-date">{formatGameDate(game.gameDate)}</span>
+                    {game.phase && game.phase !== "Regular Season" && (
+                      <span className="h2h-phase">{game.phase}</span>
+                    )}
+                    {game.note && <span className="h2h-note">{game.note}</span>}
+                  </div>
+                  {/* Winner is marked by weight alone — team-color text is
+                      illegible whenever a team's color sits near the card
+                      background (e.g. LSU purple on dark). */}
+                  <div className="h2h-line">
+                    <span className={`h2h-team${game.winner === game.awayTeam ? " h2h-winner" : ""}`}>
+                      {game.awayTeam} {game.awayScore ?? "—"}
+                    </span>
+                    <span className="h2h-at">@</span>
+                    <span className={`h2h-team${game.winner === game.homeTeam ? " h2h-winner" : ""}`}>
+                      {game.homeTeam} {game.homeScore ?? "—"}
+                    </span>
+                  </div>
+                  {showGambling && (game.spread || game.spreadWinner || game.overUnderResult) && (
+                    <div className="h2h-market">
+                      {game.spread && <span>{game.spread}</span>}
+                      {game.spreadWinner && <span>ATS: {game.spreadWinner}</span>}
+                      {game.overUnderResult && (
+                        <span>
+                          {game.overUnderResult}
+                          {game.overUnder != null ? ` ${game.overUnder}` : ""}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="history-section">
+          <div className="history-section-title">
+            Last Season — Final {Math.max(teamAPriorGames.length, teamBPriorGames.length)} Games
+          </div>
+          <div className="history-teams-grid">
+            {renderPriorSeasonColumn(teamA.name, teamAPriorGames, teamAPriorSeason)}
+            {renderPriorSeasonColumn(teamB.name, teamBPriorGames, teamBPriorSeason)}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!open) return null;
 
   // Helper to determine which team is favored (higher value wins by default)
@@ -627,6 +793,10 @@ export default function TeamComparison({
   const { totalFavoredA, totalFavoredB } = calculateOverallFavorability();
   const { metricsFavoredA, metricsFavoredB } = calculateMetricsFavorability();
 
+  // Head-to-head wins among the displayed meetings (ties count for neither).
+  const h2hWinsA = headToHead.filter((g) => g.winner === teamA.name).length;
+  const h2hWinsB = headToHead.filter((g) => g.winner === teamB.name).length;
+
   // Get main tab styling based on overall favorability
   const getMainTabStyling = (tabType, isActive) => {
     if (!isActive) return {}; // Only apply styling to active tabs
@@ -656,6 +826,22 @@ export default function TeamComparison({
           color: getContrastTextColor(normAColor),
         };
       } else if (metricsFavoredB > metricsFavoredA) {
+        return {
+          background: /^#|rgb/.test(normBColor)
+            ? normBColor
+            : getMutedColor(normBColor),
+          color: getContrastTextColor(normBColor),
+        };
+      }
+    } else if (tabType === "history") {
+      if (h2hWinsA > h2hWinsB) {
+        return {
+          background: /^#|rgb/.test(normAColor)
+            ? normAColor
+            : getMutedColor(normAColor),
+          color: getContrastTextColor(normAColor),
+        };
+      } else if (h2hWinsB > h2hWinsA) {
         return {
           background: /^#|rgb/.test(normBColor)
             ? normBColor
@@ -715,6 +901,10 @@ export default function TeamComparison({
         className="team-comparison-dialog"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Same close affordance as InsightDialog — X top-right, no footer CTA */}
+        <button className="close-x-button" onClick={onClose} aria-label="Close">
+          &times;
+        </button>
         <div className="team-comparison-content">
           <div className="team-comparison-header">
             <div className="team-col">
@@ -728,8 +918,38 @@ export default function TeamComparison({
             </div>
           </div>
 
-          {/* Main tabs */}
+          {/* Main tabs — History is the overview and leads; Statistics and
+              Metrics carry the detail. */}
           <div className="main-tabs">
+            {hasHistoryData && (
+              <button
+                className={`main-tab ${activeTab === "history" ? "active" : ""}`}
+                onClick={() => setActiveTab("history")}
+                style={getMainTabStyling("history", activeTab === "history")}
+              >
+                <div className="main-tab-content">
+                  <div className="tab-text">History ({h2hWinsA}:{h2hWinsB})</div>
+                  {(h2hWinsA > 0 || h2hWinsB > 0) && (
+                    <div className="tab-gradient-bar">
+                      <div
+                        className="gradient-segment team-a"
+                        style={{
+                          width: `${(h2hWinsA / (h2hWinsA + h2hWinsB)) * 100}%`,
+                          backgroundColor: normAColor
+                        }}
+                      ></div>
+                      <div
+                        className="gradient-segment team-b"
+                        style={{
+                          width: `${(h2hWinsB / (h2hWinsA + h2hWinsB)) * 100}%`,
+                          backgroundColor: normBColor
+                        }}
+                      ></div>
+                    </div>
+                  )}
+                </div>
+              </button>
+            )}
             <button
               className={`main-tab ${
                 activeTab === "statistics" ? "active" : ""
@@ -779,14 +999,14 @@ export default function TeamComparison({
                 <div className="tab-text">Metrics ({metricsFavoredA}:{metricsFavoredB})</div>
                 {(metricsFavoredA > 0 || metricsFavoredB > 0) && (
                   <div className="tab-gradient-bar">
-                    <div 
+                    <div
                       className="gradient-segment team-a"
                       style={{
                         width: `${(metricsFavoredA / (metricsFavoredA + metricsFavoredB)) * 100}%`,
                         backgroundColor: normAColor
                       }}
                     ></div>
-                    <div 
+                    <div
                       className="gradient-segment team-b"
                       style={{
                         width: `${(metricsFavoredB / (metricsFavoredA + metricsFavoredB)) * 100}%`,
@@ -803,14 +1023,10 @@ export default function TeamComparison({
           <div className="tab-content">
             {activeTab === "statistics" && renderStatisticsTab()}
             {activeTab === "metrics" && renderMetricsTab()}
+            {activeTab === "history" && renderHistoryTab()}
           </div>
         </div>
 
-        <div className="team-comparison-footer">
-          <button className="close-btn" onClick={onClose}>
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );

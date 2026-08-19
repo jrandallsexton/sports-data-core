@@ -28,6 +28,7 @@ using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasons;
 using SportsData.Api.Application.Franchises.Seasons.Queries.GetFranchiseSeasonById;
 using SportsData.Api.Application.Franchises.Seasons.Contests;
 using SportsData.Api.Application.Contests.Queries.GetContestById;
+using SportsData.Api.Application.Contests.Queries.GetContestHistory;
 using SportsData.Api.Application.Venues.Queries.GetVenues;
 using SportsData.Api.Application.Venues.Queries.GetVenueById;
 using SportsData.Api.Application.UI.Conferences.Queries.GetConferenceNamesAndSlugs;
@@ -249,6 +250,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetFranchiseSeasonByIdQueryHandler, GetFranchiseSeasonByIdQueryHandler>();
             services.AddScoped<IGetSeasonContestsQueryHandler, GetSeasonContestsQueryHandler>();
             services.AddScoped<IGetContestByIdQueryHandler, GetContestByIdQueryHandler>();
+            services.AddScoped<IGetContestHistoryQueryHandler, GetContestHistoryQueryHandler>();
 
             // Venues Queries
             services.AddScoped<IGetVenuesQueryHandler, GetVenuesQueryHandler>();

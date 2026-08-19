@@ -34,6 +34,8 @@ public class ContestsController : ControllerBase
     /// </summary>
     [HttpGet("{contestId:guid}/history")]
     [ProducesResponseType(typeof(ContestPreviewHistoryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ContestPreviewHistoryDto>> GetContestHistory(
         [FromServices] IGetContestHistoryQueryHandler handler,
         [FromRoute] string sport,

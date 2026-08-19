@@ -408,7 +408,10 @@ function MatchupCard({
       // value in week 1.
       const h = comparisonData.history;
       const hasHistory = Boolean(
-        h && (h.headToHead?.length || h.awayPriorSeasonGames?.length || h.homePriorSeasonGames?.length)
+        h && (
+          h.headToHead?.length || h.awayPriorSeasonGames?.length || h.homePriorSeasonGames?.length ||
+          h.awayPriorSeason != null || h.homePriorSeason != null
+        )
       );
       const hasAnyData =
         comparisonData.teamA?.stats || comparisonData.teamB?.stats ||

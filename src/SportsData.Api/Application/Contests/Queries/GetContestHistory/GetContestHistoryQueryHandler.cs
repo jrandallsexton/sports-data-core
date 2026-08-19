@@ -3,6 +3,7 @@ using FluentValidation.Results;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.Contests.Queries.GetContestHistory;
@@ -40,7 +41,7 @@ public class GetContestHistoryQueryHandler : IGetContestHistoryQueryHandler
         {
             _logger.LogWarning(ex,
                 "Unsupported sport/league combination. Sport={Sport}, League={League}",
-                query.Sport, query.League);
+                query.Sport.Sanitize(), query.League.Sanitize());
             return new Failure<ContestPreviewHistoryDto>(
                 default!,
                 ResultStatus.BadRequest,

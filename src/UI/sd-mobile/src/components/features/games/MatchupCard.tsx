@@ -711,8 +711,9 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
 
     setStatsLoading(true);
     try {
-      // History resolves independently — a failure (or an unresolvable
-      // sport/league) must not take the stats down with it.
+      // Every request soft-fails independently: week 1 the stats endpoints
+      // 404 (no current-season data) while history is the whole point of the
+      // modal — one slot rejecting must never discard the others.
       const historyPromise = sportLeague
         ? matchupsApi
             .getContestHistory(sportLeague.sport, sportLeague.league, matchup.contestId)
@@ -720,13 +721,13 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
             .catch(() => null)
         : Promise.resolve(null);
 
-      const [awayStats, homeStats, awayMetrics, homeMetrics] = await Promise.all([
-        teamCardApi.getStatistics(matchup.awaySlug, year, matchup.awayFranchiseSeasonId),
-        teamCardApi.getStatistics(matchup.homeSlug, year, matchup.homeFranchiseSeasonId),
-        teamCardApi.getMetrics(matchup.awaySlug, year, matchup.awayFranchiseSeasonId),
-        teamCardApi.getMetrics(matchup.homeSlug, year, matchup.homeFranchiseSeasonId),
+      const [history, awayStats, homeStats, awayMetrics, homeMetrics] = await Promise.all([
+        historyPromise,
+        teamCardApi.getStatistics(matchup.awaySlug, year, matchup.awayFranchiseSeasonId).catch(() => null),
+        teamCardApi.getStatistics(matchup.homeSlug, year, matchup.homeFranchiseSeasonId).catch(() => null),
+        teamCardApi.getMetrics(matchup.awaySlug, year, matchup.awayFranchiseSeasonId).catch(() => null),
+        teamCardApi.getMetrics(matchup.homeSlug, year, matchup.homeFranchiseSeasonId).catch(() => null),
       ]);
-      const history = await historyPromise;
       setStatsData({
         teamA: { name: matchup.away, logoUri: awayLogoUri, stats: awayStats, metrics: awayMetrics },
         teamB: { name: matchup.home, logoUri: homeLogoUri, stats: homeStats, metrics: homeMetrics },

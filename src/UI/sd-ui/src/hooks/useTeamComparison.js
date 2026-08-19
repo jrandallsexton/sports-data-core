@@ -20,10 +20,9 @@ export const useTeamComparison = (matchup, seasonYear, leagueSport) => {
     setShowComparison(true);
 
     const sportLeague = resolveSportLeague(leagueSport);
-    // Without a seasonYear OR a resolvable sport/league we can't build season-
-    // specific stats/metrics URLs. Show the dialog's empty-state card rather
-    // than issuing requests with an undefined year segment or a wrong sport.
-    if (!seasonYear || !sportLeague) {
+    // Without a resolvable sport/league we can't build ANY URL — show the
+    // dialog's empty-state card rather than issuing wrong-sport requests.
+    if (!sportLeague) {
       setComparisonData({
         teamA: { name: matchup.away, logoUri: matchup.awayLogoUri, stats: null, metrics: null },
         teamB: { name: matchup.home, logoUri: matchup.homeLogoUri, stats: null, metrics: null },
@@ -36,13 +35,22 @@ export const useTeamComparison = (matchup, seasonYear, leagueSport) => {
     try {
       const { sport, league } = sportLeague;
 
+      // Stats/metrics URLs are season-specific; history only needs the
+      // contest. A missing seasonYear therefore skips the four season slots
+      // but still fetches history.
+      const seasonRequests = seasonYear
+        ? [
+            apiWrapper.TeamCard.getStatistics(sport, league, matchup.awaySlug, seasonYear, matchup.awayFranchiseSeasonId),
+            apiWrapper.TeamCard.getStatistics(sport, league, matchup.homeSlug, seasonYear, matchup.homeFranchiseSeasonId),
+            apiWrapper.TeamCard.getMetrics(sport, league, matchup.awaySlug, seasonYear, matchup.awayFranchiseSeasonId),
+            apiWrapper.TeamCard.getMetrics(sport, league, matchup.homeSlug, seasonYear, matchup.homeFranchiseSeasonId)
+          ]
+        : [Promise.resolve(null), Promise.resolve(null), Promise.resolve(null), Promise.resolve(null)];
+
       // allSettled so a missing/failed stat block for one team doesn't kill the
       // dialog — each slot independently resolves to its data or null.
       const results = await Promise.allSettled([
-        apiWrapper.TeamCard.getStatistics(sport, league, matchup.awaySlug, seasonYear, matchup.awayFranchiseSeasonId),
-        apiWrapper.TeamCard.getStatistics(sport, league, matchup.homeSlug, seasonYear, matchup.homeFranchiseSeasonId),
-        apiWrapper.TeamCard.getMetrics(sport, league, matchup.awaySlug, seasonYear, matchup.awayFranchiseSeasonId),
-        apiWrapper.TeamCard.getMetrics(sport, league, matchup.homeSlug, seasonYear, matchup.homeFranchiseSeasonId),
+        ...seasonRequests,
         apiWrapper.Contest.getHistory(sport, league, matchup.contestId)
       ]);
 

@@ -31,7 +31,11 @@ export default function TeamComparison({
   const teamAPriorSeason = history?.awayPriorSeason ?? null;
   const teamBPriorSeason = history?.homePriorSeason ?? null;
   const hasHistoryData =
-    headToHead.length > 0 || teamAPriorGames.length > 0 || teamBPriorGames.length > 0;
+    headToHead.length > 0 ||
+    teamAPriorGames.length > 0 ||
+    teamBPriorGames.length > 0 ||
+    teamAPriorSeason != null ||
+    teamBPriorSeason != null;
 
   // Main tab state. History is the overview and opens first; Statistics and
   // Metrics are the detail tabs. Statistics only leads when there is no

@@ -279,7 +279,11 @@ export function StatsComparisonModal({
   const awayPriorGames = history?.awayPriorSeasonGames ?? [];
   const homePriorGames = history?.homePriorSeasonGames ?? [];
   const hasHistory =
-    headToHead.length > 0 || awayPriorGames.length > 0 || homePriorGames.length > 0;
+    headToHead.length > 0 ||
+    awayPriorGames.length > 0 ||
+    homePriorGames.length > 0 ||
+    history?.awayPriorSeason != null ||
+    history?.homePriorSeason != null;
 
   // Head-to-head wins among the displayed meetings (ties count for neither).
   const h2hWinsAway = headToHead.filter((g) => g.winner === matchup.away).length;

@@ -5,9 +5,18 @@ using Google.Apis.Auth.OAuth2;
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
+using SportsData.Notification.Application.Backfill.Commands.RequestPickemGroupMatchupsBackfill;
+using SportsData.Notification.Application.Backfill.Commands.RequestPickemGroupsBackfill;
+using SportsData.Notification.Application.Backfill.Commands.RequestUsersBackfill;
 using SportsData.Notification.Application.Consumers;
 using SportsData.Notification.Application.Dispatching;
 using SportsData.Notification.Application.Scheduling;
+using SportsData.Notification.Application.Smack.Commands.CreateSmackPhrase;
+using SportsData.Notification.Application.Smack.Commands.RateSmackPreview;
+using SportsData.Notification.Application.Smack.Commands.UpdateSmackPhrase;
+using SportsData.Notification.Application.Smack.Queries.GetSmackPhrases;
+using SportsData.Notification.Application.Smack.Queries.GetSmackRatings;
+using SportsData.Notification.Application.Smack.Queries.PreviewSmack;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Notifications;
 
@@ -127,6 +136,18 @@ namespace SportsData.Notification
             services.AddScoped<ISmackPhraseCatalog, SmackPhraseCatalog>();
             services.AddScoped<IPickDeadlineReminderScheduler, PickDeadlineReminderScheduler>();
             services.AddScoped<IContestStartReminderScheduler, ContestStartReminderScheduler>();
+
+            // Vertical-slice handlers (Application/{Feature}/{Queries|Commands}),
+            // resolved per-action via [FromServices] — no MediatR by design.
+            services.AddScoped<IPreviewSmackQueryHandler, PreviewSmackQueryHandler>();
+            services.AddScoped<IGetSmackPhrasesQueryHandler, GetSmackPhrasesQueryHandler>();
+            services.AddScoped<IGetSmackRatingsQueryHandler, GetSmackRatingsQueryHandler>();
+            services.AddScoped<ICreateSmackPhraseCommandHandler, CreateSmackPhraseCommandHandler>();
+            services.AddScoped<IUpdateSmackPhraseCommandHandler, UpdateSmackPhraseCommandHandler>();
+            services.AddScoped<IRateSmackPreviewCommandHandler, RateSmackPreviewCommandHandler>();
+            services.AddScoped<IRequestUsersBackfillCommandHandler, RequestUsersBackfillCommandHandler>();
+            services.AddScoped<IRequestPickemGroupsBackfillCommandHandler, RequestPickemGroupsBackfillCommandHandler>();
+            services.AddScoped<IRequestPickemGroupMatchupsBackfillCommandHandler, RequestPickemGroupMatchupsBackfillCommandHandler>();
 
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, mode);

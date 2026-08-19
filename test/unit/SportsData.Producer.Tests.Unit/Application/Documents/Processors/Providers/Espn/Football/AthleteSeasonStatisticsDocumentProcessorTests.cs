@@ -448,6 +448,8 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
             .OmitAutoProperties()
             .Create();
 
+    private static readonly DateTime SeedCreatedUtc = new(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc);
+
     // OmitAutoProperties: auto-populated Athlete/Position navs would let EF
     // nav-fixup overwrite the deliberately shared AthleteId.
     private FootballAthleteSeason SeedAthleteSeason(Guid athleteId, Guid franchiseSeasonId) =>
@@ -455,7 +457,7 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
             .With(x => x.Id, Guid.NewGuid())
             .With(x => x.AthleteId, athleteId)
             .With(x => x.FranchiseSeasonId, franchiseSeasonId)
-            .With(x => x.CreatedUtc, DateTime.UtcNow)
+            .With(x => x.CreatedUtc, SeedCreatedUtc)
             .With(x => x.Statistics, new List<AthleteSeasonStatistic>())
             .OmitAutoProperties()
             .Create();
@@ -510,12 +512,29 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
 
         var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeasonStatistics.json");
+        var dto = json.FromJson<EspnAthleteSeasonStatisticsDto>();
 
         var fs2026 = SeedFranchiseSeason(2026);
         var spawningRow = SeedAthleteSeason(Guid.NewGuid(), fs2026.Id);
 
+        // Seed the exact record the replace path would delete (same canonical
+        // id as the incoming doc) — the skip must fire BEFORE delete-and-replace,
+        // leaving this record untouched.
+        var dtoIdentity = generator.Generate(dto!.Ref);
+        var preexisting = new AthleteSeasonStatistic
+        {
+            Id = dtoIdentity.CanonicalId,
+            AthleteSeasonId = spawningRow.Id,
+            SplitId = "0",
+            SplitName = "Preexisting Split",
+            SplitAbbreviation = "PRE",
+            SplitType = "season",
+            CreatedUtc = SeedCreatedUtc
+        };
+
         await FootballDataContext.FranchiseSeasons.AddAsync(fs2026);
         await FootballDataContext.AthleteSeasons.AddAsync(spawningRow);
+        await FootballDataContext.AthleteSeasonStatistics.AddAsync(preexisting);
         await FootballDataContext.SaveChangesAsync();
 
         var command = Fixture.Build<ProcessDocumentCommand>()
@@ -530,10 +549,17 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         // Act
         await sut.ProcessAsync(command);
 
-        // Assert — mislabeling is worse than missing; nothing persisted
-        (await FootballDataContext.AthleteSeasonStatistics
-            .Where(x => x.AthleteSeasonId == spawningRow.Id).CountAsync())
-            .Should().Be(0, "2023 data must not be filed under the athlete's 2026 row");
+        // Assert — mislabeling is worse than missing; nothing new persisted,
+        // and the preexisting record survived the skip untouched
+        var rowStatistics = await FootballDataContext.AthleteSeasonStatistics
+            .AsNoTracking()
+            .Where(x => x.AthleteSeasonId == spawningRow.Id)
+            .ToListAsync();
+
+        rowStatistics.Should().HaveCount(1, "2023 data must not be filed under the athlete's 2026 row");
+        rowStatistics[0].Id.Should().Be(dtoIdentity.CanonicalId);
+        rowStatistics[0].SplitName.Should().Be("Preexisting Split",
+            "the skip must fire before delete-and-replace so existing data is never destroyed");
     }
 
     [Fact]

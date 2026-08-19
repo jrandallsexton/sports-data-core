@@ -428,4 +428,173 @@ public class AthleteSeasonStatisticsDocumentProcessorTests :
         rushingYardsStat!.PerGameValue.Should().Be(17.0m, "JSON has perGameValue of 17");
         rushingYardsStat.PerGameDisplayValue.Should().Be("17", "JSON has perGameDisplayValue of '17'");
     }
+
+    // ─── Season guard ─────────────────────────────────────────────────────
+    // ESPN hands out the PRIOR season's statistics ref on a new season's
+    // athlete document (a seasons/2026 athlete doc links seasons/2025
+    // statistics), so the spawning ParentId row can be the wrong season for
+    // the data. The test JSON's ref is season 2023.
+
+    private FranchiseSeason SeedFranchiseSeason(int seasonYear) =>
+        Fixture.Build<FranchiseSeason>()
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.SeasonYear, seasonYear)
+            .With(x => x.Abbreviation, "AB")
+            .With(x => x.ColorCodeHex, "#FFFFFF")
+            .With(x => x.DisplayName, "Team")
+            .With(x => x.DisplayNameShort, "T")
+            .With(x => x.Location, "Loc")
+            .With(x => x.Slug, $"team-{Guid.NewGuid():N}")
+            .OmitAutoProperties()
+            .Create();
+
+    private static readonly DateTime SeedCreatedUtc = new(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc);
+
+    // OmitAutoProperties: auto-populated Athlete/Position navs would let EF
+    // nav-fixup overwrite the deliberately shared AthleteId.
+    private FootballAthleteSeason SeedAthleteSeason(Guid athleteId, Guid franchiseSeasonId) =>
+        Fixture.Build<FootballAthleteSeason>()
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.AthleteId, athleteId)
+            .With(x => x.FranchiseSeasonId, franchiseSeasonId)
+            .With(x => x.CreatedUtc, SeedCreatedUtc)
+            .With(x => x.Statistics, new List<AthleteSeasonStatistic>())
+            .OmitAutoProperties()
+            .Create();
+
+    [Fact]
+    public async Task ProcessAsync_RedirectsToRefSeasonRow_WhenSpawningRowSeasonDiffers()
+    {
+        // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeasonStatistics.json");
+
+        var athleteId = Guid.NewGuid();
+        var fs2026 = SeedFranchiseSeason(2026);
+        var fs2023 = SeedFranchiseSeason(2023);
+        var spawningRow = SeedAthleteSeason(athleteId, fs2026.Id); // wrong season for the data
+        var refSeasonRow = SeedAthleteSeason(athleteId, fs2023.Id); // matches the ref's season
+
+        await FootballDataContext.FranchiseSeasons.AddRangeAsync(fs2026, fs2023);
+        await FootballDataContext.AthleteSeasons.AddRangeAsync(spawningRow, refSeasonRow);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2026)
+            .With(x => x.DocumentType, DocumentType.AthleteSeasonStatistics)
+            .With(x => x.Document, json)
+            .With(x => x.ParentId, spawningRow.Id.ToString())
+            .Create();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert — data landed on the ref-season row, not the spawning row
+        (await FootballDataContext.AthleteSeasonStatistics
+            .Where(x => x.AthleteSeasonId == refSeasonRow.Id).CountAsync())
+            .Should().Be(1, "the doc's ref says season 2023, so its data belongs on the 2023 row");
+        (await FootballDataContext.AthleteSeasonStatistics
+            .Where(x => x.AthleteSeasonId == spawningRow.Id).CountAsync())
+            .Should().Be(0, "the spawning 2026 row must not receive 2023 data");
+    }
+
+    [Fact]
+    public async Task ProcessAsync_Skips_WhenRefSeasonDiffers_AndAthleteHasNoRowForThatSeason()
+    {
+        // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeasonStatistics.json");
+        var dto = json.FromJson<EspnAthleteSeasonStatisticsDto>();
+
+        var fs2026 = SeedFranchiseSeason(2026);
+        var spawningRow = SeedAthleteSeason(Guid.NewGuid(), fs2026.Id);
+
+        // Seed the exact record the replace path would delete (same canonical
+        // id as the incoming doc) — the skip must fire BEFORE delete-and-replace,
+        // leaving this record untouched.
+        var dtoIdentity = generator.Generate(dto!.Ref);
+        var preexisting = new AthleteSeasonStatistic
+        {
+            Id = dtoIdentity.CanonicalId,
+            AthleteSeasonId = spawningRow.Id,
+            SplitId = "0",
+            SplitName = "Preexisting Split",
+            SplitAbbreviation = "PRE",
+            SplitType = "season",
+            CreatedUtc = SeedCreatedUtc
+        };
+
+        await FootballDataContext.FranchiseSeasons.AddAsync(fs2026);
+        await FootballDataContext.AthleteSeasons.AddAsync(spawningRow);
+        await FootballDataContext.AthleteSeasonStatistics.AddAsync(preexisting);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2026)
+            .With(x => x.DocumentType, DocumentType.AthleteSeasonStatistics)
+            .With(x => x.Document, json)
+            .With(x => x.ParentId, spawningRow.Id.ToString())
+            .Create();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert — mislabeling is worse than missing; nothing new persisted,
+        // and the preexisting record survived the skip untouched
+        var rowStatistics = await FootballDataContext.AthleteSeasonStatistics
+            .AsNoTracking()
+            .Where(x => x.AthleteSeasonId == spawningRow.Id)
+            .Select(x => new { x.Id, x.SplitName })
+            .ToListAsync();
+
+        rowStatistics.Should().HaveCount(1, "2023 data must not be filed under the athlete's 2026 row");
+        rowStatistics[0].Id.Should().Be(dtoIdentity.CanonicalId);
+        rowStatistics[0].SplitName.Should().Be("Preexisting Split",
+            "the skip must fire before delete-and-replace so existing data is never destroyed");
+    }
+
+    [Fact]
+    public async Task ProcessAsync_AttachesToSpawningRow_WhenItsSeasonMatchesTheRef()
+    {
+        // Arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var sut = Mocker.CreateInstance<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaAthleteSeasonStatistics.json");
+
+        var fs2023 = SeedFranchiseSeason(2023);
+        var spawningRow = SeedAthleteSeason(Guid.NewGuid(), fs2023.Id);
+
+        await FootballDataContext.FranchiseSeasons.AddAsync(fs2023);
+        await FootballDataContext.AthleteSeasons.AddAsync(spawningRow);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, 2023)
+            .With(x => x.DocumentType, DocumentType.AthleteSeasonStatistics)
+            .With(x => x.Document, json)
+            .With(x => x.ParentId, spawningRow.Id.ToString())
+            .Create();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert
+        (await FootballDataContext.AthleteSeasonStatistics
+            .Where(x => x.AthleteSeasonId == spawningRow.Id).CountAsync())
+            .Should().Be(1, "matching seasons attach normally");
+    }
 }

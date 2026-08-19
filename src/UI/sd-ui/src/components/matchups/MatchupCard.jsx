@@ -403,10 +403,21 @@ function MatchupCard({
       // Stats takes a different path (handler still returns Failure(NotFound) for
       // null), so a truthy check on `?.stats` is sufficient there.
       const hasMeaningfulMetrics = (m) => Boolean(m && m.gamesPlayed && m.gamesPlayed > 0);
+      // History (head-to-head + prior-season form) counts as data: early in a
+      // season it's the ONLY populated block, and it's the dialog's whole
+      // value in week 1.
+      const h = comparisonData.history;
+      const hasHistory = Boolean(
+        h && (
+          h.headToHead?.length || h.awayPriorSeasonGames?.length || h.homePriorSeasonGames?.length ||
+          h.awayPriorSeason != null || h.homePriorSeason != null
+        )
+      );
       const hasAnyData =
         comparisonData.teamA?.stats || comparisonData.teamB?.stats ||
         hasMeaningfulMetrics(comparisonData.teamA?.metrics) ||
-        hasMeaningfulMetrics(comparisonData.teamB?.metrics);
+        hasMeaningfulMetrics(comparisonData.teamB?.metrics) ||
+        hasHistory;
 
       if (!hasAnyData) {
         return (
@@ -439,6 +450,8 @@ function MatchupCard({
           teamB={comparisonData.teamB}
           teamAColor={matchup.awayColor}
           teamBColor={matchup.homeColor}
+          history={comparisonData.history}
+          showGambling={showGambling}
         />
       );
     })()}

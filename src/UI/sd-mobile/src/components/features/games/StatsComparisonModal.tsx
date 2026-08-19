@@ -11,7 +11,13 @@ import {
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
-import type { Matchup, TeamComparisonData, TeamStatEntry } from '@/src/types/models';
+import type {
+  ContestHistoryGame,
+  ContestPriorSeasonSummary,
+  Matchup,
+  TeamComparisonData,
+  TeamStatEntry,
+} from '@/src/types/models';
 import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -22,6 +28,8 @@ interface StatsComparisonModalProps {
   matchup: Matchup;
   comparison: TeamComparisonData | null;
   isLoading: boolean;
+  /** Gambling-content gate (spread / ATS / O-U lines in history rows). */
+  showGambling: boolean;
 }
 
 // ─── Team header ──────────────────────────────────────────────────────────────
@@ -165,6 +173,76 @@ function StatRow({
   );
 }
 
+// ─── History pieces ───────────────────────────────────────────────────────────
+
+function formatGameDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+/**
+ * One game of a team's prior-season tail, from that team's perspective.
+ * Historical team names come from Franchise.DisplayName — the same source as
+ * Matchup.away/home — so exact string matching identifies "our" side.
+ */
+function PriorSeasonGameRow({ game, teamName }: { game: ContestHistoryGame; teamName: string }) {
+  const scheme = useColorScheme();
+  const theme = getTheme(scheme);
+
+  const isHome = game.homeTeam === teamName;
+  const isAway = game.awayTeam === teamName;
+  if (!isHome && !isAway) {
+    // Defensive: name matched neither side — render the neutral line.
+    return (
+      <View style={[styles.historyGameRow, { borderBottomColor: theme.border }]}>
+        <Text style={[styles.historyGameDetail, { color: theme.text }]} numberOfLines={1}>
+          {game.awayTeam} {game.awayScore ?? '—'} @ {game.homeTeam} {game.homeScore ?? '—'}
+        </Text>
+        <Text style={[styles.historyGameDate, { color: theme.textMuted }]}>
+          {formatGameDate(game.gameDate)}
+        </Text>
+      </View>
+    );
+  }
+
+  const ourScore = isHome ? game.homeScore : game.awayScore;
+  const theirScore = isHome ? game.awayScore : game.homeScore;
+  const outcome = game.winner == null ? 'T' : game.winner === teamName ? 'W' : 'L';
+  const badgeColors =
+    outcome === 'W'
+      ? { color: theme.successText, backgroundColor: theme.successBg }
+      : outcome === 'L'
+        ? { color: theme.errorText, backgroundColor: theme.errorBg }
+        : { color: theme.textMuted, backgroundColor: 'transparent' };
+
+  return (
+    <View style={[styles.historyGameRow, { borderBottomColor: theme.border }]}>
+      <Text style={[styles.historyResultBadge, badgeColors]}>{outcome}</Text>
+      <Text style={[styles.historyGameScore, { color: theme.text }]}>
+        {ourScore ?? '—'}-{theirScore ?? '—'}
+      </Text>
+      <Text style={[styles.historyGameDetail, { color: theme.text }]} numberOfLines={1}>
+        {isHome ? 'vs' : '@'} {isHome ? game.awayTeam : game.homeTeam}
+      </Text>
+      <Text style={[styles.historyGameDate, { color: theme.textMuted }]}>
+        {formatGameDate(game.gameDate)}
+      </Text>
+    </View>
+  );
+}
+
+function priorSeasonRecordLabel(summary: ContestPriorSeasonSummary | null | undefined): string | null {
+  if (!summary) return null;
+  const conf =
+    summary.conferenceWins != null && summary.conferenceLosses != null
+      ? ` (${summary.conferenceWins}-${summary.conferenceLosses} conf)`
+      : '';
+  return `${summary.seasonYear}: ${summary.wins}-${summary.losses}${conf}`;
+}
+
 // ─── StatsComparisonModal ─────────────────────────────────────────────────────
 
 export function StatsComparisonModal({
@@ -173,6 +251,7 @@ export function StatsComparisonModal({
   matchup,
   comparison,
   isLoading,
+  showGambling,
 }: StatsComparisonModalProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -192,6 +271,29 @@ export function StatsComparisonModal({
   const awayRows: TeamStatEntry[] = currentCategory ? (awayStats[currentCategory] ?? []) : [];
   const homeRows: TeamStatEntry[] = currentCategory ? (homeStats[currentCategory] ?? []) : [];
   const rowCount = Math.max(awayRows.length, homeRows.length);
+
+  // Historical blocks (head-to-head + prior-season form) — present whenever
+  // the franchises have played before, including week 1 when stats are empty.
+  const history = comparison?.history ?? null;
+  const headToHead = history?.headToHead ?? [];
+  const awayPriorGames = history?.awayPriorSeasonGames ?? [];
+  const homePriorGames = history?.homePriorSeasonGames ?? [];
+  const hasHistory =
+    headToHead.length > 0 ||
+    awayPriorGames.length > 0 ||
+    homePriorGames.length > 0 ||
+    history?.awayPriorSeason != null ||
+    history?.homePriorSeason != null;
+
+  // Head-to-head wins among the displayed meetings (ties count for neither).
+  const h2hWinsAway = headToHead.filter((g) => g.winner === matchup.away).length;
+  const h2hWinsHome = headToHead.filter((g) => g.winner === matchup.home).length;
+
+  // History is the overview and leads (matches the web dialog); Stats is the
+  // detail tab. Null until the user picks, so the default can settle after
+  // the data arrives.
+  const [mainTabChoice, setMainTabChoice] = useState<'history' | 'stats' | null>(null);
+  const mainTab = mainTabChoice ?? (hasHistory ? 'history' : 'stats');
 
   return (
     <Modal
@@ -222,7 +324,7 @@ export function StatsComparisonModal({
               Loading stats…
             </Text>
           </View>
-        ) : comparison == null || categories.length === 0 ? (
+        ) : comparison == null || (categories.length === 0 && !hasHistory) ? (
           <View style={styles.loadingContainer}>
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>
               Stats not available.
@@ -246,54 +348,195 @@ export function StatsComparisonModal({
               />
             </View>
 
-            {/* Category tabs */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={[styles.tabScroll, { borderBottomColor: theme.border }]}
-              contentContainerStyle={styles.tabScrollContent}
-            >
-              {categories.map((cat) => (
+            {/* Main tabs — History is the overview and leads; Stats carries
+                the category detail. Only shown when history exists. */}
+            {hasHistory && (
+              <View style={[styles.mainTabsRow, { borderBottomColor: theme.border }]}>
                 <CategoryTab
-                  key={cat}
-                  label={cat}
-                  active={currentCategory === cat}
-                  onPress={() => setActiveCategory(cat)}
+                  label={`History (${h2hWinsAway}:${h2hWinsHome})`}
+                  active={mainTab === 'history'}
+                  onPress={() => setMainTabChoice('history')}
                 />
-              ))}
-            </ScrollView>
+                <CategoryTab
+                  label="Stats"
+                  active={mainTab === 'stats'}
+                  onPress={() => setMainTabChoice('stats')}
+                />
+              </View>
+            )}
 
-            {/* Stat rows */}
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {rowCount === 0 ? (
-                <Text style={[styles.emptyText, { color: theme.textMuted, padding: 24 }]}>
-                  No {currentCategory} stats available.
+            {mainTab === 'history' && hasHistory ? (
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.historyContent}
+              >
+                {headToHead.length > 0 && (
+                  <>
+                    <Text style={[styles.historySectionTitle, { color: theme.text }]}>
+                      Head-to-Head — Last {headToHead.length} Meeting{headToHead.length === 1 ? '' : 's'}
+                    </Text>
+                    {headToHead.map((g, i) => (
+                      <View key={i} style={[styles.h2hRow, { borderBottomColor: theme.border }]}>
+                        <View style={styles.h2hMeta}>
+                          <Text style={[styles.historyGameDate, { color: theme.textMuted }]}>
+                            {formatGameDate(g.gameDate)}
+                          </Text>
+                          {g.phase && g.phase !== 'Regular Season' && (
+                            <Text style={[styles.h2hPhase, { color: theme.textMuted }]}>{g.phase}</Text>
+                          )}
+                          {!!g.note && (
+                            <Text style={[styles.h2hPhase, { color: theme.textMuted }]} numberOfLines={1}>
+                              {g.note}
+                            </Text>
+                          )}
+                        </View>
+                        {/* Winner is marked by weight alone — team-color text
+                            is illegible when a team's color sits near the
+                            background (matches the web dialog). */}
+                        <View style={styles.h2hLine}>
+                          <Text
+                            style={[
+                              styles.h2hTeam,
+                              { color: theme.text },
+                              g.winner === g.awayTeam && styles.h2hWinner,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {g.awayTeam} {g.awayScore ?? '—'}
+                          </Text>
+                          <Text style={[styles.h2hAt, { color: theme.textMuted }]}>@</Text>
+                          <Text
+                            style={[
+                              styles.h2hTeam,
+                              { color: theme.text },
+                              g.winner === g.homeTeam && styles.h2hWinner,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {g.homeTeam} {g.homeScore ?? '—'}
+                          </Text>
+                        </View>
+                        {showGambling && (g.spread || g.spreadWinner || g.overUnderResult) && (
+                          <View style={styles.h2hMeta}>
+                            {!!g.spread && (
+                              <Text style={[styles.h2hMarket, { color: theme.textMuted }]}>{g.spread}</Text>
+                            )}
+                            {!!g.spreadWinner && (
+                              <Text style={[styles.h2hMarket, { color: theme.textMuted }]}>
+                                ATS: {g.spreadWinner}
+                              </Text>
+                            )}
+                            {!!g.overUnderResult && (
+                              <Text style={[styles.h2hMarket, { color: theme.textMuted }]}>
+                                {g.overUnderResult}
+                                {g.overUnder != null ? ` ${g.overUnder}` : ''}
+                              </Text>
+                            )}
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                  </>
+                )}
+
+                <Text style={[styles.historySectionTitle, { color: theme.text }]}>
+                  Last Season — Final {Math.max(awayPriorGames.length, homePriorGames.length)} Games
                 </Text>
-              ) : (
-                Array.from({ length: rowCount }, (_, i) => {
-                  const away = awayRows[i];
-                  const home = homeRows[i];
-                  // Use label from entry if available, else stat index
-                  const label =
-                    (away as any)?.label ??
-                    (away as any)?.name ??
-                    (home as any)?.label ??
-                    (home as any)?.name ??
-                    `Stat ${i + 1}`;
 
-                  if (!away && !home) return null;
+                <View style={styles.historyTeamHeader}>
+                  <Text style={[styles.historyTeamName, { color: theme.text }]}>{matchup.away}</Text>
+                  {priorSeasonRecordLabel(history?.awayPriorSeason) && (
+                    <Text style={[styles.historySeasonRecord, { color: theme.textMuted }]}>
+                      {priorSeasonRecordLabel(history?.awayPriorSeason)}
+                    </Text>
+                  )}
+                </View>
+                {awayPriorGames.length === 0 ? (
+                  <Text style={[styles.historyEmptyNote, { color: theme.textMuted }]}>
+                    No prior-season games on record.
+                  </Text>
+                ) : (
+                  awayPriorGames.map((g, i) => (
+                    <PriorSeasonGameRow key={i} game={g} teamName={matchup.away} />
+                  ))
+                )}
 
-                  return (
-                    <StatRow
-                      key={i}
-                      label={label}
-                      awayEntry={away ?? { displayValue: '—' }}
-                      homeEntry={home ?? { displayValue: '—' }}
+                <View style={styles.historyTeamHeader}>
+                  <Text style={[styles.historyTeamName, { color: theme.text }]}>{matchup.home}</Text>
+                  {priorSeasonRecordLabel(history?.homePriorSeason) && (
+                    <Text style={[styles.historySeasonRecord, { color: theme.textMuted }]}>
+                      {priorSeasonRecordLabel(history?.homePriorSeason)}
+                    </Text>
+                  )}
+                </View>
+                {homePriorGames.length === 0 ? (
+                  <Text style={[styles.historyEmptyNote, { color: theme.textMuted }]}>
+                    No prior-season games on record.
+                  </Text>
+                ) : (
+                  homePriorGames.map((g, i) => (
+                    <PriorSeasonGameRow key={i} game={g} teamName={matchup.home} />
+                  ))
+                )}
+              </ScrollView>
+            ) : categories.length === 0 ? (
+              <View style={styles.loadingContainer}>
+                <Text style={[styles.emptyText, { color: theme.textMuted }]}>
+                  Stats not available.
+                </Text>
+              </View>
+            ) : (
+              <>
+                {/* Category tabs */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={[styles.tabScroll, { borderBottomColor: theme.border }]}
+                  contentContainerStyle={styles.tabScrollContent}
+                >
+                  {categories.map((cat) => (
+                    <CategoryTab
+                      key={cat}
+                      label={cat}
+                      active={currentCategory === cat}
+                      onPress={() => setActiveCategory(cat)}
                     />
-                  );
-                })
-              )}
-            </ScrollView>
+                  ))}
+                </ScrollView>
+
+                {/* Stat rows */}
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {rowCount === 0 ? (
+                    <Text style={[styles.emptyText, { color: theme.textMuted, padding: 24 }]}>
+                      No {currentCategory} stats available.
+                    </Text>
+                  ) : (
+                    Array.from({ length: rowCount }, (_, i) => {
+                      const away = awayRows[i];
+                      const home = homeRows[i];
+                      // Use label from entry if available, else stat index
+                      const label =
+                        (away as any)?.label ??
+                        (away as any)?.name ??
+                        (home as any)?.label ??
+                        (home as any)?.name ??
+                        `Stat ${i + 1}`;
+
+                      if (!away && !home) return null;
+
+                      return (
+                        <StatRow
+                          key={i}
+                          label={label}
+                          awayEntry={away ?? { displayValue: '—' }}
+                          homeEntry={home ?? { displayValue: '—' }}
+                        />
+                      );
+                    })
+                  )}
+                </ScrollView>
+              </>
+            )}
           </View>
         )}
       </View>
@@ -444,6 +687,105 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 14,
   },
+  // Main tabs (History | Stats)
+  mainTabsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+
+  // History tab
+  historyContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
+    gap: 4,
+  },
+  historySectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  h2hRow: {
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 2,
+  },
+  h2hMeta: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'baseline',
+  },
+  h2hPhase: {
+    fontSize: 11,
+    fontStyle: 'italic',
+  },
+  h2hLine: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
+  h2hTeam: {
+    fontSize: 14,
+    flexShrink: 1,
+  },
+  h2hWinner: {
+    fontWeight: '700',
+  },
+  h2hAt: {
+    fontSize: 12,
+  },
+  h2hMarket: {
+    fontSize: 11,
+  },
+  historyTeamHeader: {
+    marginTop: 10,
+    marginBottom: 4,
+    gap: 1,
+  },
+  historyTeamName: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  historySeasonRecord: {
+    fontSize: 12,
+  },
+  historyGameRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    paddingVertical: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  historyResultBadge: {
+    width: 20,
+    textAlign: 'center',
+    fontSize: 12,
+    fontWeight: '700',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  historyGameScore: {
+    fontSize: 13,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
+  },
+  historyGameDetail: {
+    flex: 1,
+    fontSize: 13,
+  },
+  historyGameDate: {
+    fontSize: 11,
+  },
+  historyEmptyNote: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    paddingVertical: 4,
+  },
+
   barTrack: {
     width: '100%',
     height: 4,

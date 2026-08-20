@@ -410,7 +410,9 @@ function MatchupCard({
       const hasHistory = Boolean(
         h && (
           h.headToHead?.length || h.awayPriorSeasonGames?.length || h.homePriorSeasonGames?.length ||
-          h.awayPriorSeason != null || h.homePriorSeason != null || h.spreadContext != null
+          h.awayPriorSeason != null || h.homePriorSeason != null ||
+          // Gambling-gated: spread context only counts when it can render.
+          (showGambling && h.spreadContext != null)
         )
       );
       const hasAnyData =

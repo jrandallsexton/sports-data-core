@@ -36,7 +36,9 @@ export default function TeamComparison({
     teamBPriorGames.length > 0 ||
     teamAPriorSeason != null ||
     teamBPriorSeason != null ||
-    history?.spreadContext != null;
+    // Spread context only counts when it can actually render — it is
+    // gambling-gated, and a hidden-only history would open an empty tab.
+    (showGambling && history?.spreadContext != null);
 
   // Main tab state. History is the overview and opens first; Statistics and
   // Metrics are the detail tabs. Statistics only leads when there is no

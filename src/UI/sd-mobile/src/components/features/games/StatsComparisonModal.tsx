@@ -353,7 +353,9 @@ export function StatsComparisonModal({
     homePriorGames.length > 0 ||
     history?.awayPriorSeason != null ||
     history?.homePriorSeason != null ||
-    history?.spreadContext != null;
+    // Spread context only counts when it can actually render — it is
+    // gambling-gated, and a hidden-only history would open an empty tab.
+    (showGambling && history?.spreadContext != null);
 
   // Head-to-head wins among the displayed meetings (ties count for neither).
   const h2hWinsAway = headToHead.filter((g) => g.winner === matchup.away).length;

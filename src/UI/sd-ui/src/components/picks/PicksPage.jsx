@@ -685,6 +685,9 @@ function PicksPage() {
     }
   }
 
+  // Both admin-review handlers return success so the dialog can close
+  // itself only when the action actually landed — a failure keeps it open
+  // (with the rejection note intact) for a retry.
   async function handleRejectPreview({ PreviewId, ContestId, RejectionNote }) {
     try {
       console.log("Reject Preview Payload:", {
@@ -701,9 +704,11 @@ function PicksPage() {
         Sport: leagueSport,
       });
       toast.success("Preview rejection sent.");
+      return true;
     } catch (error) {
       console.error("Error rejecting preview:", error);
       toast.error("Failed to reject preview.");
+      return false;
     }
   }
 
@@ -711,9 +716,11 @@ function PicksPage() {
     try {
       await apiWrapper.Previews.approvePreviewByContestId(previewId);
       toast.success("Preview approved.");
+      return true;
     } catch (error) {
       console.error("Error approving preview:", error);
       toast.error("Failed to approve preview.");
+      return false;
     }
   }
 

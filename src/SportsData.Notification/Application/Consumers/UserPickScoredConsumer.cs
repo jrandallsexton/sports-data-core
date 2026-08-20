@@ -174,7 +174,13 @@ namespace SportsData.Notification.Application.Consumers
             var title = smackLine is not null
                 ? "SmackBot"
                 : msg.IsCorrect == true ? "Nice pick!" : "Tough loss";
-            var body = smackLine ?? ComposeBody(msg, leagueName);
+            // The smack line is the headline, but alone it loses the game —
+            // "Vegas told you so" arrives with ZERO indication of which pick
+            // earned it. The standard context line (league, scoreline, pick
+            // mark) rides underneath so the recipient always knows the game.
+            var body = smackLine is not null
+                ? $"{smackLine}\n{ComposeBody(msg, leagueName)}"
+                : ComposeBody(msg, leagueName);
 
             // Deep link to the scored game. Everything needed rides on the
             // event except the week, which comes from the local matchup

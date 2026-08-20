@@ -219,22 +219,87 @@ namespace SportsData.Api.Application.Previews
                 return;
             }
 
-            // Run semantic validation
-            var validation = MatchupPreviewValidator.Validate(
-                contestId: command.ContestId,
-                homeScore: parsed.HomeScore,
-                awayScore: parsed.AwayScore,
-                homeSpread: assembled.Matchup.HomeSpread ?? 0,
-                predictedStraightUpWinner: parsed.PredictedStraightUpWinner,
-                predictedSpreadWinner: parsed.PredictedSpreadWinner,
-                homeFranchiseSeasonId: assembled.Matchup.HomeFranchiseSeasonId,
-                awayFranchiseSeasonId: assembled.Matchup.AwayFranchiseSeasonId
-            );
+            MatchupPreviewValidator.ValidationResult Validate(MatchupPreviewResponse p) =>
+                MatchupPreviewValidator.Validate(
+                    contestId: command.ContestId,
+                    homeScore: p.HomeScore,
+                    awayScore: p.AwayScore,
+                    homeSpread: assembled.Matchup.HomeSpread ?? 0,
+                    predictedStraightUpWinner: p.PredictedStraightUpWinner,
+                    predictedSpreadWinner: p.PredictedSpreadWinner,
+                    homeFranchiseSeasonId: assembled.Matchup.HomeFranchiseSeasonId,
+                    awayFranchiseSeasonId: assembled.Matchup.AwayFranchiseSeasonId);
+
+            var validation = Validate(parsed);
+            var iterations = 1;
 
             if (!validation.IsValid)
             {
-                _logger.LogError("Validation failed. Errors: {Errors}", validation.Errors);
-                return;
+                // One bounded retry with the violations fed back — the
+                // automated twin of the human editor-rejection loop. Without
+                // it, a failed validation silently costs the game its preview
+                // until the next scheduled run rolls fresh dice. First-attempt
+                // errors stay on the capture either way, so the Lab shows the
+                // recovery, and IterationsRequired records the extra call.
+                _logger.LogWarning(
+                    "Preview validation failed for {ContestId} (attempt 1); retrying with feedback. Errors: {Errors}",
+                    command.ContestId, validation.Errors);
+                var attempt1Errors = string.Join("; ", validation.Errors);
+                capture.ResponseValidationErrors =
+                    MatchupPreviewValidator.ComposeErrorSections(attempt1Errors, null);
+
+                var retryPrompt =
+                    $"{assembled.FullPrompt}\n\nYour previous response:\n{rawResponse}\n\n" +
+                    $"It failed validation for these reasons:\n- {string.Join("\n- ", validation.Errors)}\n\n" +
+                    "Generate a corrected response that resolves every issue and keeps all fields consistent with each other.";
+
+                var retryResponse = await _aiCommunication.GetResponseAsync(retryPrompt, CancellationToken.None);
+                rawResponse = retryResponse.Value;
+                iterations = 2;
+
+                parsed = !retryResponse.IsSuccess || string.IsNullOrWhiteSpace(rawResponse)
+                    ? null
+                    : TryParseResponse(rawResponse);
+
+                if (parsed is null)
+                {
+                    // Persist the capture so the failure is auditable in the
+                    // Lab instead of vanishing with the log line — including
+                    // WHY the retry produced nothing (request failure vs blank
+                    // vs unparsable), alongside the attempt-1 errors. The
+                    // compose helper guarantees the retry section survives
+                    // truncation even when attempt-1 filled the column.
+                    var retryDiagnostic = !retryResponse.IsSuccess
+                        ? retryResponse is Failure<string> retryFailure
+                            ? $"AI request failed - {string.Join(", ", retryFailure.Errors.Select(x => x.ErrorMessage))}"
+                            : "AI request failed"
+                        : string.IsNullOrWhiteSpace(rawResponse)
+                            ? "AI returned no content"
+                            : "response could not be parsed by either deserialization strategy";
+                    capture.ResponseValidationErrors =
+                        MatchupPreviewValidator.ComposeErrorSections(attempt1Errors, retryDiagnostic);
+                    capture.Model = _aiCommunication.GetModelName();
+                    capture.RawResponse = string.IsNullOrWhiteSpace(rawResponse) ? null : rawResponse;
+                    await _dataContext.SaveChangesAsync();
+                    _logger.LogError(
+                        "Preview retry response unusable for {ContestId}; no preview written.",
+                        command.ContestId);
+                    return;
+                }
+
+                validation = Validate(parsed);
+                if (!validation.IsValid)
+                {
+                    capture.ResponseValidationErrors = MatchupPreviewValidator.ComposeErrorSections(
+                        attempt1Errors, string.Join("; ", validation.Errors));
+                    capture.Model = _aiCommunication.GetModelName();
+                    capture.RawResponse = rawResponse;
+                    await _dataContext.SaveChangesAsync();
+                    _logger.LogError(
+                        "Preview validation failed after retry for {ContestId}; no preview written. Errors: {Errors}",
+                        command.ContestId, validation.Errors);
+                    return;
+                }
             }
 
             // We have a valid response (parsed + valid)
@@ -259,7 +324,7 @@ namespace SportsData.Api.Application.Previews
                 CreatedUtc = _dateTimeProvider.UtcNow(),
                 CreatedBy = command.CorrelationId,
                 PromptId = assembled.PromptId,
-                IterationsRequired = 1,
+                IterationsRequired = iterations,
                 UsedMetrics = assembled.Matchup.AwayMetrics != null
             };
 
@@ -304,6 +369,13 @@ namespace SportsData.Api.Application.Previews
                 matchup.HomePriorSeasonGames = historyResult.Value.HomePriorSeasonGames;
                 matchup.AwayPriorSeason = historyResult.Value.AwayPriorSeason;
                 matchup.HomePriorSeason = historyResult.Value.HomePriorSeason;
+
+                // Spread-conditioned facts ("The Line"): pre-verified numbers
+                // the narrative can cite — the model reads facts, never
+                // computes them. GUID-free by construction, and as-of-capped
+                // in Producer so capture/experiment runs on completed games
+                // stay leak-free.
+                matchup.SpreadContext = historyResult.Value.SpreadContext;
 
                 // Same both-or-nothing rule as current-season metrics:
                 // asymmetric analytics would bias the model toward the

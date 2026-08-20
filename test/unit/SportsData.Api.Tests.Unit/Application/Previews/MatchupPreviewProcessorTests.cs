@@ -108,6 +108,53 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                 ConferenceWins = 3,
                 ConferenceLosses = 9,
                 Metrics = new FranchiseSeasonMetricsDto { GamesPlayed = 17, Ypp = 4.9m }
+            },
+            SpreadContext = new PreviewSpreadContextDto
+            {
+                FavoriteTeam = "Arizona Cardinals",
+                UnderdogTeam = "Carolina Panthers",
+                Magnitude = 6.5,
+                SpreadDetails = "ARI -6.5",
+                FavoriteWonByMargin = new PreviewMarginFactDto
+                {
+                    LastGame = new PreviewGameResultDto
+                    {
+                        GameDate = new DateTime(2025, 11, 2, 18, 0, 0, DateTimeKind.Utc),
+                        SeasonYear = 2025,
+                        Phase = "Regular Season",
+                        HomeTeam = "Arizona Cardinals",
+                        AwayTeam = "Tennessee Titans",
+                        HomeScore = 31,
+                        AwayScore = 17,
+                        Winner = "Arizona Cardinals"
+                    },
+                    OpponentSeasonRecord = "3-14",
+                    OpponentPriorSeasonRecord = "5-12",
+                    CountLastFiveSeasons = 9,
+                    SearchFloorSeason = 2002
+                },
+                UnderdogLostByMargin = new PreviewMarginFactDto
+                {
+                    // The headline "never" case: no qualifying game, count 0,
+                    // floor intact.
+                    LastGame = null,
+                    CountLastFiveSeasons = 0,
+                    SearchFloorSeason = 2002
+                },
+                FavoriteAtsAsBigFavorite = new PreviewAtsBucketFactDto
+                {
+                    Threshold = 3,
+                    Games = 12,
+                    Covers = 7,
+                    DataFloorSeason = 2022
+                },
+                UnderdogAtsAsBigUnderdog = new PreviewAtsBucketFactDto
+                {
+                    Threshold = 3,
+                    Games = 15,
+                    Covers = 9,
+                    DataFloorSeason = 2022
+                }
             }
         };
 
@@ -213,6 +260,20 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Contains("\"ConferenceLosses\":7", capture.PayloadJson);
             Assert.Contains("\"ConferenceWins\":3", capture.PayloadJson);
             Assert.Contains("\"ConferenceLosses\":9", capture.PayloadJson);
+
+            // Spread-conditioned facts ("The Line") ride in — pre-verified
+            // numbers the narrative can cite. The GUID count assertion above
+            // already proves the block contributes zero ids; the never-case
+            // fact serializes without a LastGame (omit-null) but keeps its
+            // count and search floor.
+            Assert.Contains("\"SpreadContext\"", capture.PayloadJson);
+            Assert.Contains("\"Magnitude\":6.5", capture.PayloadJson);
+            Assert.Contains("\"OpponentSeasonRecord\":\"3-14\"", capture.PayloadJson);
+            Assert.Contains("\"CountLastFiveSeasons\":9", capture.PayloadJson);
+            Assert.Contains("\"CountLastFiveSeasons\":0", capture.PayloadJson);
+            Assert.Contains("\"SearchFloorSeason\":2002", capture.PayloadJson);
+            Assert.Contains("\"Covers\":7", capture.PayloadJson);
+            Assert.Contains("\"DataFloorSeason\":2022", capture.PayloadJson);
             Assert.Null(capture.EditorNote);
             Assert.True(capture.CharCount > PromptText.Length);
             Assert.Equal(capture.CharCount / 4, capture.EstTokens);
@@ -286,6 +347,107 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                 .Verify(x => x.GetResponseAsync(
                     $"{PromptText}\n\n{capture.PayloadJson}",
                     It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        // A response whose predictedSpreadWinner contradicts its own predicted
+        // scores against a -38.5 home spread (59-25 = margin 34: home does NOT
+        // cover; naming home is the contradiction the validator flags).
+        private string SpreadResponse(Guid spreadWinner) => $$"""
+            {
+              "overview": "o",
+              "analysis": "a",
+              "prediction": "p",
+              "predictedStraightUpWinner": "{{_homeFranchiseSeasonId}}",
+              "predictedSpreadWinner": "{{spreadWinner}}",
+              "overUnderPrediction": 1,
+              "awayScore": 25,
+              "homeScore": 59
+            }
+            """;
+
+        [Fact]
+        public async Task RealGeneration_RetriesWithFeedback_WhenValidationFails()
+        {
+            // Arrange — big home spread so the first response can contradict
+            // itself; the retry names the correct ATS side and must succeed.
+            var matchup = BuildMatchup("STATUS_SCHEDULED");
+            matchup.HomeSpread = -38.5;
+            matchup.Spread = "ARI -38.5";
+            SetupPipeline(matchup);
+
+            Mocker.GetMock<IProvideAiCommunication>()
+                .SetupSequence(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<string>(SpreadResponse(_homeFranchiseSeasonId))) // contradiction
+                .ReturnsAsync(new Success<string>(SpreadResponse(_awayFranchiseSeasonId))); // corrected
+
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert — the retry produced a valid preview and the recovery is
+            // fully auditable: attempt-1 errors on the capture, iteration
+            // count on the preview.
+            var preview = Assert.Single(DataContext.MatchupPreviews);
+            Assert.Equal(2, preview.IterationsRequired);
+            Assert.Equal(_awayFranchiseSeasonId, preview.PredictedSpreadWinner);
+
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+            Assert.Equal(preview.Id, capture.MatchupPreviewId);
+            Assert.Contains("inconsistent", capture.ResponseValidationErrors);
+
+            // The second call carried the violation feedback and the original
+            // (bad) response back to the model.
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Verify(x => x.GetResponseAsync(
+                    It.Is<string>(p => p.Contains("It failed validation") && p.Contains("Your previous response")),
+                    It.IsAny<CancellationToken>()), Times.Once);
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Verify(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        }
+
+        [Fact]
+        public async Task RealGeneration_PersistsAuditableCapture_WhenRetryAlsoFails()
+        {
+            // Arrange — both attempts contradict themselves: no preview may be
+            // written, but the capture must persist with both rounds of errors
+            // (previously a validation failure discarded the capture entirely).
+            var matchup = BuildMatchup("STATUS_SCHEDULED");
+            matchup.HomeSpread = -38.5;
+            matchup.Spread = "ARI -38.5";
+            SetupPipeline(matchup);
+
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<string>(SpreadResponse(_homeFranchiseSeasonId)));
+
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert
+            Assert.Empty(DataContext.MatchupPreviews);
+
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+            Assert.Null(capture.MatchupPreviewId);
+            Assert.NotNull(capture.RawResponse);
+            Assert.Contains("Retry:", capture.ResponseValidationErrors);
+
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Verify(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [Fact]

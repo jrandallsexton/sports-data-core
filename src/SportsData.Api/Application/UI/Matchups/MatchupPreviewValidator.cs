@@ -4,6 +4,44 @@ public class MatchupPreviewValidator
 {
     public record ValidationResult(bool IsValid, List<string> Errors);
 
+    /// <summary>Matches MatchupPreviewPrompt.ResponseValidationErrors' column cap.</summary>
+    public const int MaxErrorTextLength = 1024;
+
+    /// <summary>
+    /// Compose attempt-1 and retry diagnostics into one capture-column value
+    /// under the 1024-char cap, guaranteeing the RETRY section always
+    /// survives truncation: the retry gets first claim on up to half the
+    /// budget (more when attempt-1 is short), and each section is truncated
+    /// only within its own share. Retry null = attempt-1 only.
+    /// </summary>
+    public static string ComposeErrorSections(string attempt1, string? retry)
+    {
+        var attemptSection = $"Attempt 1: {attempt1}";
+
+        if (retry is null)
+        {
+            return attemptSection.Length <= MaxErrorTextLength
+                ? attemptSection
+                : attemptSection[..MaxErrorTextLength];
+        }
+
+        const string separator = " | ";
+        var retrySection = $"Retry: {retry}";
+
+        if (attemptSection.Length + separator.Length + retrySection.Length <= MaxErrorTextLength)
+            return attemptSection + separator + retrySection;
+
+        var retryBudget = Math.Min(
+            retrySection.Length,
+            Math.Max(MaxErrorTextLength / 2, MaxErrorTextLength - separator.Length - attemptSection.Length));
+        var attemptBudget = MaxErrorTextLength - separator.Length - retryBudget;
+
+        if (attemptSection.Length > attemptBudget) attemptSection = attemptSection[..attemptBudget];
+        if (retrySection.Length > retryBudget) retrySection = retrySection[..retryBudget];
+
+        return attemptSection + separator + retrySection;
+    }
+
     public static ValidationResult Validate(
         Guid contestId,
         int homeScore,

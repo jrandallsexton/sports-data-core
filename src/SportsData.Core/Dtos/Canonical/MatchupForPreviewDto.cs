@@ -80,6 +80,16 @@ namespace SportsData.Core.Dtos.Canonical
         public PreviewPriorSeasonSummaryDto? AwayPriorSeason { get; set; }
         public PreviewPriorSeasonSummaryDto? HomePriorSeason { get; set; }
 
+        /// <summary>
+        /// Spread-conditioned facts for the live line (last time each side
+        /// won/lost by the spread's magnitude with opponent-quality context,
+        /// ATS records at the key-number bucket). Names-and-numbers only —
+        /// zero GUIDs, same rule as the other historical blocks. Computed
+        /// preview-safe (as-of the target's start) in Producer; null when
+        /// the contest has no line or the history fetch fails.
+        /// </summary>
+        public PreviewSpreadContextDto? SpreadContext { get; set; }
+
         public string? Spread { get; set; }             // co."Details"
         public double? AwaySpread { get; set; }
         public double? HomeSpread { get; set; }

@@ -86,14 +86,27 @@ sentences composed client-side from the structured facts:
 The entire section is **gated by `shouldShowGambling`** on both platforms
 — the framing is spread-derived.
 
-## Future (not in v1)
+## Model-payload injection (v1.1)
 
-- Inject the fact chain into the preview/insight model payload
-  (`MatchupPreviewProcessor`) so the LLM narrative can cite it —
-  "model predicts, LLM explains" with pre-verified facts.
+`MatchupForPreviewDto.SpreadContext` carries the same block into the
+preview/insight prompt payload (`MatchupPreviewProcessor` copies it from
+the history fetch; the payload serializer's omit-null and GUID-hygiene
+rules apply — the block is names-and-numbers only, zero GUIDs). Because
+the facts are as-of-capped in Producer, capture/experiment runs on
+completed games stay leak-free.
+
+**Operator note:** the payload provides the facts; the PROMPT (blob-
+stored, never in this repo) decides what the model does with them.
+To activate the narrative angle, update the preview prompt in the
+Prompt Lab to instruct the model to cite `SpreadContext` facts verbatim
+when discussing the line — the model reads facts, never computes them.
+
+## Future
+
+- League-wide base rate ("35+ favorites cover X% overall") as the
+  anchor each team's number stands against.
 - More family members: cover streaks vs. opponent class, totals-based
-  facts ("teams hitting this O/U"), favorite-cover-rate league-wide at
-  this bucket as the base rate.
+  facts ("teams hitting this O/U").
 
 See memory `project_spread_contextualized_history` for the full product
 rationale and origin (2026-08-19, immediately post-#658).

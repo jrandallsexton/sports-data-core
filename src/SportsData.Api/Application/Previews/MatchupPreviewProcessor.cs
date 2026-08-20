@@ -230,13 +230,6 @@ namespace SportsData.Api.Application.Previews
                     homeFranchiseSeasonId: assembled.Matchup.HomeFranchiseSeasonId,
                     awayFranchiseSeasonId: assembled.Matchup.AwayFranchiseSeasonId);
 
-            // Truncate to the capture column's 1024-char cap.
-            static string ErrorText(List<string> errors)
-            {
-                var joined = string.Join("; ", errors);
-                return joined.Length <= 1024 ? joined : joined[..1024];
-            }
-
             var validation = Validate(parsed);
             var iterations = 1;
 
@@ -251,7 +244,9 @@ namespace SportsData.Api.Application.Previews
                 _logger.LogWarning(
                     "Preview validation failed for {ContestId} (attempt 1); retrying with feedback. Errors: {Errors}",
                     command.ContestId, validation.Errors);
-                capture.ResponseValidationErrors = ErrorText(validation.Errors);
+                var attempt1Errors = string.Join("; ", validation.Errors);
+                capture.ResponseValidationErrors =
+                    MatchupPreviewValidator.ComposeErrorSections(attempt1Errors, null);
 
                 var retryPrompt =
                     $"{assembled.FullPrompt}\n\nYour previous response:\n{rawResponse}\n\n" +
@@ -271,16 +266,18 @@ namespace SportsData.Api.Application.Previews
                     // Persist the capture so the failure is auditable in the
                     // Lab instead of vanishing with the log line — including
                     // WHY the retry produced nothing (request failure vs blank
-                    // vs unparsable), alongside the attempt-1 errors.
+                    // vs unparsable), alongside the attempt-1 errors. The
+                    // compose helper guarantees the retry section survives
+                    // truncation even when attempt-1 filled the column.
                     var retryDiagnostic = !retryResponse.IsSuccess
                         ? retryResponse is Failure<string> retryFailure
-                            ? $"Retry: AI request failed - {string.Join(", ", retryFailure.Errors.Select(x => x.ErrorMessage))}"
-                            : "Retry: AI request failed"
+                            ? $"AI request failed - {string.Join(", ", retryFailure.Errors.Select(x => x.ErrorMessage))}"
+                            : "AI request failed"
                         : string.IsNullOrWhiteSpace(rawResponse)
-                            ? "Retry: AI returned no content"
-                            : "Retry: response could not be parsed by either deserialization strategy";
-                    capture.ResponseValidationErrors = ErrorText(
-                        [capture.ResponseValidationErrors!, retryDiagnostic]);
+                            ? "AI returned no content"
+                            : "response could not be parsed by either deserialization strategy";
+                    capture.ResponseValidationErrors =
+                        MatchupPreviewValidator.ComposeErrorSections(attempt1Errors, retryDiagnostic);
                     capture.Model = _aiCommunication.GetModelName();
                     capture.RawResponse = string.IsNullOrWhiteSpace(rawResponse) ? null : rawResponse;
                     await _dataContext.SaveChangesAsync();
@@ -293,9 +290,8 @@ namespace SportsData.Api.Application.Previews
                 validation = Validate(parsed);
                 if (!validation.IsValid)
                 {
-                    // Attempt-1 errors were recorded above; append the retry's.
-                    capture.ResponseValidationErrors = ErrorText(
-                        [capture.ResponseValidationErrors!, .. validation.Errors.Select(e => $"Retry: {e}")]);
+                    capture.ResponseValidationErrors = MatchupPreviewValidator.ComposeErrorSections(
+                        attempt1Errors, string.Join("; ", validation.Errors));
                     capture.Model = _aiCommunication.GetModelName();
                     capture.RawResponse = rawResponse;
                     await _dataContext.SaveChangesAsync();

@@ -136,4 +136,57 @@ public class MatchupPreviewValidatorTests
         result.Errors.Should().Contain(e => e.Contains("Straight-up winner is incorrect"));
         result.Errors.Should().Contain(e => e.Contains("Spread winner is inconsistent"));
     }
+
+    // ─── ComposeErrorSections ─────────────────────────────────────────────
+    // Capture-column diagnostics: the retry section must ALWAYS survive
+    // truncation, no matter how large the attempt-1 section is.
+
+    [Fact]
+    public void ComposeErrorSections_ShortSections_KeepsBothInFull()
+    {
+        var result = MatchupPreviewValidator.ComposeErrorSections("bad spread", "still bad");
+
+        result.Should().Be("Attempt 1: bad spread | Retry: still bad");
+    }
+
+    [Fact]
+    public void ComposeErrorSections_OversizedAttempt1_NeverTruncatesRetryAway()
+    {
+        var attempt1 = new string('a', 2000); // alone would overflow the cap
+        var retry = "AI returned no content";
+
+        var result = MatchupPreviewValidator.ComposeErrorSections(attempt1, retry);
+
+        result.Length.Should().BeLessThanOrEqualTo(MatchupPreviewValidator.MaxErrorTextLength);
+        result.Should().StartWith("Attempt 1: ");
+        result.Should().EndWith($"Retry: {retry}", "a short retry section must survive in full");
+    }
+
+    [Fact]
+    public void ComposeErrorSections_BothOversized_SplitsTheBudget()
+    {
+        var attempt1 = new string('a', 2000);
+        var retry = new string('r', 2000);
+
+        var result = MatchupPreviewValidator.ComposeErrorSections(attempt1, retry);
+
+        result.Length.Should().BeLessThanOrEqualTo(MatchupPreviewValidator.MaxErrorTextLength);
+        result.Should().Contain("Attempt 1: ");
+        result.Should().Contain("Retry: ");
+        // The retry section holds its reserved half of the budget.
+        result.IndexOf("Retry: ", StringComparison.Ordinal).Should().BeLessThan(
+            MatchupPreviewValidator.MaxErrorTextLength / 2 + 1);
+    }
+
+    [Fact]
+    public void ComposeErrorSections_NullRetry_TruncatesAttempt1ToCap()
+    {
+        var attempt1 = new string('a', 2000);
+
+        var result = MatchupPreviewValidator.ComposeErrorSections(attempt1, null);
+
+        result.Length.Should().Be(MatchupPreviewValidator.MaxErrorTextLength);
+        result.Should().StartWith("Attempt 1: ");
+        result.Should().NotContain("Retry:");
+    }
 }

@@ -128,6 +128,12 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
 
         _capturedTitle.Should().Be("SmackBot");
         body.Should().Be("Vegas told you so\nSluggers: BOS 2, NYY 3 — you picked BOS ✗");
+
+        // The audit row must record the SAME composed body that was sent —
+        // the Lab's rating flow and support questions read from it.
+        var row = await DataContext.NotificationUserPicks.SingleAsync();
+        row.Title.Should().Be("SmackBot");
+        row.Body.Should().Be("Vegas told you so\nSluggers: BOS 2, NYY 3 — you picked BOS ✗");
     }
 
     [Fact]

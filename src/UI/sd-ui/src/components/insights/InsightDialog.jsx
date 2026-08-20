@@ -59,6 +59,9 @@ function InsightDialog({
 
   // Local state for rejection note
   const [rejectionNote, setRejectionNote] = useState("");
+  // In-flight guard: both moderation buttons disable while a request runs,
+  // so a double-click can't double-approve or race approve-vs-reject.
+  const [isModerationPending, setIsModerationPending] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -224,30 +227,41 @@ function InsightDialog({
                 <div className="insight-admin__actions">
                   <button
                     onClick={async () => {
-                      const ok = await onApprovePreview?.(matchup.contestId, matchup.id);
-                      if (ok) {
-                        setRejectionNote("");
-                        onClose();
+                      setIsModerationPending(true);
+                      try {
+                        const ok = await onApprovePreview?.(matchup.contestId, matchup.id);
+                        if (ok) {
+                          setRejectionNote("");
+                          onClose();
+                        }
+                      } finally {
+                        setIsModerationPending(false);
                       }
                     }}
                     className="admin-approve-button"
+                    disabled={isModerationPending}
                   >
                     Approve Preview
                   </button>
                   <button
                     onClick={async () => {
-                      const ok = await onRejectPreview?.({
-                        PreviewId: matchup.id,
-                        ContestId: matchup.contestId,
-                        RejectionNote: rejectionNote.trim(),
-                      });
-                      if (ok) {
-                        setRejectionNote("");
-                        onClose();
+                      setIsModerationPending(true);
+                      try {
+                        const ok = await onRejectPreview?.({
+                          PreviewId: matchup.id,
+                          ContestId: matchup.contestId,
+                          RejectionNote: rejectionNote.trim(),
+                        });
+                        if (ok) {
+                          setRejectionNote("");
+                          onClose();
+                        }
+                      } finally {
+                        setIsModerationPending(false);
                       }
                     }}
                     className="admin-reset-button"
-                    disabled={!rejectionNote.trim()}
+                    disabled={isModerationPending || !rejectionNote.trim()}
                   >
                     Reject Preview
                   </button>

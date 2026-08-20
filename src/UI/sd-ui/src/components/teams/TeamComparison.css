@@ -606,3 +606,21 @@
     flex-wrap: wrap;
   }
 }
+
+/* "The Line" — spread-context facts */
+.line-fact {
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  background: var(--hover-bg);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.line-fact-head {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.line-fact-detail {
+  color: var(--text-primary);
+}

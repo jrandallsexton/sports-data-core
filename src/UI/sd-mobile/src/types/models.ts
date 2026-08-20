@@ -352,6 +352,42 @@ export interface ContestPriorSeasonSummary {
 }
 
 /**
+ * "When is the last time this team won/lost by ≥ X?" — score-margin tier.
+ * A null lastGame means it has not happened within the searched window
+ * (searchFloorSeason onward), which is itself the headline fact.
+ */
+export interface ContestMarginFact {
+  lastGame?: ContestHistoryGame | null;
+  opponentSeasonRecord?: string | null;
+  opponentPriorSeasonRecord?: string | null;
+  countLastFiveSeasons: number;
+  searchFloorSeason: number;
+}
+
+/** ATS record conditioned on spread size ("as a 35+ underdog") — market tier (~2022+). */
+export interface ContestAtsBucketFact {
+  threshold: number;
+  games: number;
+  covers: number;
+  dataFloorSeason: number;
+}
+
+/**
+ * Facts conditioned on the target contest's CURRENT spread. Spread-derived —
+ * display must be gated behind the gambling-content preference.
+ */
+export interface ContestSpreadContext {
+  favoriteTeam: string;
+  underdogTeam: string;
+  magnitude: number;
+  spreadDetails?: string | null;
+  favoriteWonByMargin: ContestMarginFact;
+  underdogLostByMargin: ContestMarginFact;
+  favoriteAtsAsBigFavorite?: ContestAtsBucketFact | null;
+  underdogAtsAsBigUnderdog?: ContestAtsBucketFact | null;
+}
+
+/**
  * Historical context for a matchup: recent head-to-head meetings plus each
  * team's late-prior-season form — the same blocks the preview/insight models
  * consume. Away/Home here refer to the LIVE matchup's sides.
@@ -362,6 +398,8 @@ export interface ContestHistory {
   homePriorSeasonGames: ContestHistoryGame[];
   awayPriorSeason?: ContestPriorSeasonSummary | null;
   homePriorSeason?: ContestPriorSeasonSummary | null;
+  /** Null when the contest has no line from the preferred providers. */
+  spreadContext?: ContestSpreadContext | null;
 }
 
 /** Assembled comparison object used by StatsComparisonModal */

@@ -352,7 +352,8 @@ export function StatsComparisonModal({
     awayPriorGames.length > 0 ||
     homePriorGames.length > 0 ||
     history?.awayPriorSeason != null ||
-    history?.homePriorSeason != null;
+    history?.homePriorSeason != null ||
+    history?.spreadContext != null;
 
   // Head-to-head wins among the displayed meetings (ties count for neither).
   const h2hWinsAway = headToHead.filter((g) => g.winner === matchup.away).length;

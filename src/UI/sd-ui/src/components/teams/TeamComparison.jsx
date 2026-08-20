@@ -35,7 +35,8 @@ export default function TeamComparison({
     teamAPriorGames.length > 0 ||
     teamBPriorGames.length > 0 ||
     teamAPriorSeason != null ||
-    teamBPriorSeason != null;
+    teamBPriorSeason != null ||
+    history?.spreadContext != null;
 
   // Main tab state. History is the overview and opens first; Statistics and
   // Metrics are the detail tabs. Statistics only leads when there is no

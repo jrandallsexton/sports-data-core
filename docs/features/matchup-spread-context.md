@@ -26,7 +26,9 @@ mobile, and (future) the preview/insight model payload.
 
 `SpreadContext` is **null when the target contest has no line** from the
 preferred/fallback odds providers (EspnBet 58 → DraftKings 100 — same
-lateral as the matchup payload, so both surfaces quote the same number).
+lateral as the matchup payload, so both surfaces quote the same number),
+**and also when the selected line is zero** (a pick'em has no favorite to
+condition on).
 
 ## Fact family and data tiers
 

@@ -228,7 +228,10 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                     FranchiseId = franchiseId,
                     Margin = margin,
                     AsOf = asOf,
-                    WindowStartSeason = targetSeasonYear - 5,
+                    // "Last 5 seasons" = the target's (partial, as-of-capped)
+                    // season plus the four before it — exactly five season
+                    // labels. A blowout three weeks ago belongs in the count.
+                    WindowStartSeason = targetSeasonYear - 4,
                     Won = won
                 },
                 cancellationToken: cancellationToken));
@@ -317,9 +320,14 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         if (stats is null)
             return null;
 
-        var wins = (int)(stats.FirstOrDefault(st => st.Name == StatWins)?.Value ?? 0);
-        var losses = (int)(stats.FirstOrDefault(st => st.Name == StatLosses)?.Value ?? 0);
-        return $"{wins}-{losses}";
+        // Both stats or nothing: defaulting a missing side to 0 fabricates a
+        // record ("0-12"), and absent-stays-null is this feature's honesty rule.
+        var wins = stats.FirstOrDefault(st => st.Name == StatWins)?.Value;
+        var losses = stats.FirstOrDefault(st => st.Name == StatLosses)?.Value;
+        if (wins is null || losses is null)
+            return null;
+
+        return $"{(int)wins}-{(int)losses}";
     }
 
     /// <summary>Overall W-L string for the season BEFORE the given FranchiseSeason (cross-season identity via Franchise).</summary>

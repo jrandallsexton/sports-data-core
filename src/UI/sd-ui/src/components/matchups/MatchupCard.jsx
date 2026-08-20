@@ -410,7 +410,7 @@ function MatchupCard({
       const hasHistory = Boolean(
         h && (
           h.headToHead?.length || h.awayPriorSeasonGames?.length || h.homePriorSeasonGames?.length ||
-          h.awayPriorSeason != null || h.homePriorSeason != null
+          h.awayPriorSeason != null || h.homePriorSeason != null || h.spreadContext != null
         )
       );
       const hasAnyData =

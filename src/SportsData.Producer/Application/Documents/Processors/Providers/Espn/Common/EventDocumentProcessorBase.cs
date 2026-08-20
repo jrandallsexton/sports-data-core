@@ -452,6 +452,50 @@ public abstract class EventDocumentProcessorBase<TDataContext> : DocumentProcess
             }
         }
 
+        // Home/away designations can change after creation — e.g. a
+        // neutral-site re-designation (2026 Wisconsin/Notre Dame at Lambeau:
+        // Wisconsin was originally the "home" team; ESPN later flipped the
+        // event to Notre Dame). The odds pipeline keeps updating the
+        // HOME-RELATIVE spread against ESPN's CURRENT designation, so a stale
+        // pair silently inverts every spread-derived surface. Re-resolve the
+        // pair from the document on every update.
+        var previousHomeId = contest.HomeTeamFranchiseSeasonId;
+        var previousAwayId = contest.AwayTeamFranchiseSeasonId;
+
+        var teamsResolved = await AddTeams(command, dto, contest);
+        if (teamsResolved &&
+            (contest.HomeTeamFranchiseSeasonId != previousHomeId ||
+             contest.AwayTeamFranchiseSeasonId != previousAwayId))
+        {
+            if (contest.FinalizedUtc is not null)
+            {
+                // Scores, winner, and ATS denorms were computed under the old
+                // sides; an automated swap would corrupt them. Revert and flag
+                // — this state needs an operator, not automation.
+                contest.HomeTeamFranchiseSeasonId = previousHomeId;
+                contest.AwayTeamFranchiseSeasonId = previousAwayId;
+                _logger.LogError(
+                    "ESPN home/away changed on a FINALIZED contest; refusing to swap. ContestId={ContestId}",
+                    contest.Id);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Contest home/away changed; applying swap. ContestId={ContestId}, " +
+                    "OldHome={OldHome}, NewHome={NewHome}, OldAway={OldAway}, NewAway={NewAway}",
+                    contest.Id,
+                    previousHomeId, contest.HomeTeamFranchiseSeasonId,
+                    previousAwayId, contest.AwayTeamFranchiseSeasonId);
+
+                // The names carry the sides ("X at Y") — refresh from the
+                // document, which is already flipped ESPN-side.
+                if (!string.IsNullOrWhiteSpace(dto.Name))
+                    contest.Name = dto.Name;
+                if (!string.IsNullOrWhiteSpace(dto.ShortName))
+                    contest.ShortName = dto.ShortName;
+            }
+        }
+
         _logger.LogInformation(
             "Re-sourcing {Count} competitions for updated Contest. ContestId={ContestId}",
             dto.Competitions.Count(),

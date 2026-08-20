@@ -253,6 +253,39 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
             entity.Id,
             dto.HomeAway);
 
+        // Sync the mutable designations: a neutral-site home/away flip (2026
+        // Wisconsin/Notre Dame at Lambeau), order, and winner must track
+        // ESPN. Previously HomeAway was logged above but never WRITTEN,
+        // leaving competitor rows frozen at first ingestion.
+        var designationChanges = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(dto.HomeAway) &&
+            !string.Equals(entity.HomeAway, dto.HomeAway, StringComparison.OrdinalIgnoreCase))
+        {
+            designationChanges.Add($"HomeAway: {entity.HomeAway} -> {dto.HomeAway}");
+            entity.HomeAway = dto.HomeAway;
+        }
+
+        if (entity.Order != dto.Order)
+        {
+            designationChanges.Add($"Order: {entity.Order} -> {dto.Order}");
+            entity.Order = dto.Order;
+        }
+
+        if (entity.Winner != dto.Winner)
+        {
+            designationChanges.Add($"Winner: {entity.Winner} -> {dto.Winner}");
+            entity.Winner = dto.Winner;
+        }
+
+        if (designationChanges.Count > 0)
+        {
+            _logger.LogWarning(
+                "CompetitionCompetitor designations changed. CompetitorId={CompetitorId}, Changes={Changes}",
+                entity.Id,
+                string.Join(", ", designationChanges));
+        }
+
         // Sport-specific inline-data ingestion runs on update too — the
         // payload's mutable extras (e.g. Probables) may have changed
         // since the last fetch.

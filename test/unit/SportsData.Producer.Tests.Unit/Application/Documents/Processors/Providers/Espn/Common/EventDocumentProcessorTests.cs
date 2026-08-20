@@ -517,8 +517,11 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
         var team = dto.Competitions.First().Competitors
             .First(c => c.HomeAway.Equals(homeAway, StringComparison.OrdinalIgnoreCase)).Team;
         var hash = generator.Generate(team.Ref).UrlHash;
-        return (await FootballDataContext.FranchiseSeasons
-            .FirstAsync(fs => fs.ExternalIds.Any(e => e.SourceUrlHash == hash))).Id;
+        return await FootballDataContext.FranchiseSeasons
+            .AsNoTracking()
+            .Where(fs => fs.ExternalIds.Any(e => e.SourceUrlHash == hash))
+            .Select(fs => fs.Id)
+            .FirstAsync();
     }
 
     private FootballContest BuildExistingContest(Guid homeFsId, Guid awayFsId, string urlHash) => new()
@@ -528,10 +531,10 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
         ShortName = "STALE @ OLD",
         SeasonYear = 2024,
         Sport = Sport.FootballNcaa,
-        StartDateUtc = DateTime.UtcNow,
+        StartDateUtc = FixedTestNow,
         HomeTeamFranchiseSeasonId = homeFsId,
         AwayTeamFranchiseSeasonId = awayFsId,
-        CreatedUtc = DateTime.UtcNow,
+        CreatedUtc = FixedTestNow,
         CreatedBy = Guid.NewGuid(),
         ExternalIds = new List<ContestExternalId>
         {
@@ -586,7 +589,11 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
         await sut.ProcessAsync(command);
 
         // assert — sides corrected to the document's designation, names refreshed
-        var saved = await FootballDataContext.Contests.FirstAsync(c => c.Id == contest.Id);
+        var saved = await FootballDataContext.Contests
+            .AsNoTracking()
+            .Where(c => c.Id == contest.Id)
+            .Select(c => new { c.HomeTeamFranchiseSeasonId, c.AwayTeamFranchiseSeasonId, c.Name, c.ShortName })
+            .FirstAsync();
         saved.HomeTeamFranchiseSeasonId.Should().Be(resolvedHomeId);
         saved.AwayTeamFranchiseSeasonId.Should().Be(resolvedAwayId);
         saved.Name.Should().Be(dto!.Name, "the name carries the sides and must track the document");
@@ -614,7 +621,7 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
 
         var eventUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en";
         var contest = BuildExistingContest(resolvedAwayId, resolvedHomeId, eventUrl.UrlHash());
-        contest.FinalizedUtc = DateTime.UtcNow;
+        contest.FinalizedUtc = FixedTestNow;
         await FootballDataContext.Contests.AddAsync(contest);
         await FootballDataContext.SaveChangesAsync();
 
@@ -631,11 +638,66 @@ public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballData
         // act
         await sut.ProcessAsync(command);
 
-        // assert — untouched: still swapped, name still stale
-        var saved = await FootballDataContext.Contests.FirstAsync(c => c.Id == contest.Id);
+        // assert — untouched: still swapped, names still stale
+        var saved = await FootballDataContext.Contests
+            .AsNoTracking()
+            .Where(c => c.Id == contest.Id)
+            .Select(c => new { c.HomeTeamFranchiseSeasonId, c.AwayTeamFranchiseSeasonId, c.Name, c.ShortName })
+            .FirstAsync();
         saved.HomeTeamFranchiseSeasonId.Should().Be(resolvedAwayId);
         saved.AwayTeamFranchiseSeasonId.Should().Be(resolvedHomeId);
         saved.Name.Should().Be("Stale Name At Old Home");
+        saved.ShortName.Should().Be("STALE @ OLD");
+    }
+
+    [Fact]
+    public async Task WhenFinalizedWithEmptyShortName_AndHomeAwayFlipped_ShouldNotBackfillShortName()
+    {
+        // AddTeams backfills an empty ShortName from the (new) sides BEFORE
+        // the finality gate runs — the finalized branch must restore it so a
+        // finalized contest is never mutated by a refused swap.
+
+        // arrange
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var sut = Mocker.CreateInstance<FootballEventDocumentProcessor<FootballDataContext>>();
+
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEvent.json");
+        var dto = json.FromJson<EspnEventDto>();
+
+        await SetupFranchiseSeasonsAsync(generator, dto!);
+        var resolvedHomeId = await GetSeededFranchiseSeasonIdAsync(generator, dto!, "home");
+        var resolvedAwayId = await GetSeededFranchiseSeasonIdAsync(generator, dto!, "away");
+
+        var eventUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334?lang=en";
+        var contest = BuildExistingContest(resolvedAwayId, resolvedHomeId, eventUrl.UrlHash());
+        contest.ShortName = string.Empty;
+        contest.FinalizedUtc = FixedTestNow;
+        await FootballDataContext.Contests.AddAsync(contest);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.Document, json)
+            .With(x => x.DocumentType, DocumentType.Event)
+            .With(x => x.SeasonYear, 2024)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.UrlHash, contest.ExternalIds.First().SourceUrlHash)
+            .OmitAutoProperties()
+            .Create();
+
+        // act
+        await sut.ProcessAsync(command);
+
+        // assert — entirely untouched, including the empty ShortName
+        var saved = await FootballDataContext.Contests
+            .AsNoTracking()
+            .Where(c => c.Id == contest.Id)
+            .Select(c => new { c.HomeTeamFranchiseSeasonId, c.AwayTeamFranchiseSeasonId, c.ShortName })
+            .FirstAsync();
+        saved.HomeTeamFranchiseSeasonId.Should().Be(resolvedAwayId);
+        saved.AwayTeamFranchiseSeasonId.Should().Be(resolvedHomeId);
+        saved.ShortName.Should().BeEmpty();
     }
 
     [Fact]

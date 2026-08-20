@@ -461,6 +461,7 @@ public abstract class EventDocumentProcessorBase<TDataContext> : DocumentProcess
         // pair from the document on every update.
         var previousHomeId = contest.HomeTeamFranchiseSeasonId;
         var previousAwayId = contest.AwayTeamFranchiseSeasonId;
+        var previousShortName = contest.ShortName;
 
         var teamsResolved = await AddTeams(command, dto, contest);
         if (teamsResolved &&
@@ -471,9 +472,11 @@ public abstract class EventDocumentProcessorBase<TDataContext> : DocumentProcess
             {
                 // Scores, winner, and ATS denorms were computed under the old
                 // sides; an automated swap would corrupt them. Revert and flag
-                // — this state needs an operator, not automation.
+                // — this state needs an operator, not automation. ShortName
+                // too: AddTeams backfills an empty one from the (new) sides.
                 contest.HomeTeamFranchiseSeasonId = previousHomeId;
                 contest.AwayTeamFranchiseSeasonId = previousAwayId;
+                contest.ShortName = previousShortName;
                 _logger.LogError(
                     "ESPN home/away changed on a FINALIZED contest; refusing to swap. ContestId={ContestId}",
                     contest.Id);

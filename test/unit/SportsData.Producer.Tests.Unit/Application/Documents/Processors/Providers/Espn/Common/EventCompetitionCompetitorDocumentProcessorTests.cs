@@ -22,6 +22,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
     public class EventCompetitionCompetitorDocumentProcessorTests
         : ProducerTestBase<FootballEventCompetitionCompetitorDocumentProcessor<FootballDataContext>>
     {
+        private static readonly DateTime FixedTestNow = new(2026, 5, 4, 12, 0, 0, DateTimeKind.Utc);
+
         [Fact]
         public async Task WhenJsonIsValid_DtoDeserializes()
         {
@@ -62,8 +64,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             {
                 Id = competitionId,
                 ContestId = Guid.NewGuid(),
-                Date = DateTime.UtcNow,
-                CreatedUtc = DateTime.UtcNow,
+                Date = FixedTestNow,
+                CreatedUtc = FixedTestNow,
                 CreatedBy = Guid.NewGuid()
             });
 
@@ -82,7 +84,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 IsActive = true,
                 SeasonYear = 2024,
                 FranchiseId = Guid.NewGuid(),
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = FixedTestNow,
                 CreatedBy = Guid.NewGuid(),
                 ExternalIds =
                 [
@@ -106,7 +108,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 HomeAway = "away",
                 Order = 5,
                 Winner = true,
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = FixedTestNow,
                 CreatedBy = Guid.NewGuid(),
                 ExternalIds =
                 [
@@ -138,7 +140,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             // assert — designations now track the document
             var saved = await FootballDataContext.CompetitionCompetitors
-                .FirstAsync(x => x.Id == competitorIdentity.CanonicalId);
+                .AsNoTracking()
+                .Where(x => x.Id == competitorIdentity.CanonicalId)
+                .Select(x => new { x.HomeAway, x.Order, x.Winner })
+                .FirstAsync();
             saved.HomeAway.Should().Be("home");
             saved.Order.Should().Be(0);
             saved.Winner.Should().BeFalse();

@@ -269,7 +269,18 @@ namespace SportsData.Api.Application.Previews
                 if (parsed is null)
                 {
                     // Persist the capture so the failure is auditable in the
-                    // Lab instead of vanishing with the log line.
+                    // Lab instead of vanishing with the log line — including
+                    // WHY the retry produced nothing (request failure vs blank
+                    // vs unparsable), alongside the attempt-1 errors.
+                    var retryDiagnostic = !retryResponse.IsSuccess
+                        ? retryResponse is Failure<string> retryFailure
+                            ? $"Retry: AI request failed - {string.Join(", ", retryFailure.Errors.Select(x => x.ErrorMessage))}"
+                            : "Retry: AI request failed"
+                        : string.IsNullOrWhiteSpace(rawResponse)
+                            ? "Retry: AI returned no content"
+                            : "Retry: response could not be parsed by either deserialization strategy";
+                    capture.ResponseValidationErrors = ErrorText(
+                        [capture.ResponseValidationErrors!, retryDiagnostic]);
                     capture.Model = _aiCommunication.GetModelName();
                     capture.RawResponse = string.IsNullOrWhiteSpace(rawResponse) ? null : rawResponse;
                     await _dataContext.SaveChangesAsync();

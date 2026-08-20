@@ -35,7 +35,10 @@ export default function TeamComparison({
     teamAPriorGames.length > 0 ||
     teamBPriorGames.length > 0 ||
     teamAPriorSeason != null ||
-    teamBPriorSeason != null;
+    teamBPriorSeason != null ||
+    // Spread context only counts when it can actually render — it is
+    // gambling-gated, and a hidden-only history would open an empty tab.
+    (showGambling && history?.spreadContext != null);
 
   // Main tab state. History is the overview and opens first; Statistics and
   // Metrics are the detail tabs. Statistics only leads when there is no
@@ -623,6 +626,85 @@ export default function TeamComparison({
     </div>
   );
 
+  // ─── Spread-context facts ("The Line") ───────────────────────────────────
+  // Deterministic sentences composed from server-computed facts — every
+  // number comes from a query, never from prose. The whole block is
+  // spread-derived, so it renders only when showGambling allows.
+
+  const spreadContext = history?.spreadContext ?? null;
+
+  const fmtLine = (n) => String(n);
+
+  const marginFactSentence = (teamName, fact, magnitude, won) => {
+    if (!fact) return null;
+    if (!fact.lastGame) {
+      return {
+        head: `${teamName} ${won ? "has never won" : "has never lost"} a game by ${fmtLine(magnitude)}+`,
+        detail: `in our records (back to ${fact.searchFloorSeason}).`,
+      };
+    }
+    const g = fact.lastGame;
+    const isHome = g.homeTeam === teamName;
+    const ourScore = isHome ? g.homeScore : g.awayScore;
+    const theirScore = isHome ? g.awayScore : g.homeScore;
+    const opponent = isHome ? g.awayTeam : g.homeTeam;
+    const when = new Date(g.gameDate).toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    const quality =
+      fact.opponentSeasonRecord || fact.opponentPriorSeasonRecord
+        ? ` (they went ${fact.opponentSeasonRecord ?? "?"}${
+            fact.opponentPriorSeasonRecord ? `; ${fact.opponentPriorSeasonRecord} the season before` : ""
+          })`
+        : "";
+    const times = fact.countLastFiveSeasons;
+    return {
+      head: `Last time ${teamName} ${won ? "won" : "lost"} by ${fmtLine(magnitude)}+:`,
+      detail: `${when} — ${won ? "beat" : "lost to"} ${opponent} ${ourScore}-${theirScore}${quality}. ${times} such ${won ? "win" : "loss"}${times === 1 ? "" : won ? "s" : "es"} in the last 5 seasons.`,
+    };
+  };
+
+  const atsFactSentence = (teamName, fact, asFavorite) => {
+    if (!fact) return null;
+    const role = `${fmtLine(fact.threshold)}+ ${asFavorite ? "favorite" : "underdog"}`;
+    if (fact.games === 0) {
+      return {
+        head: `${teamName} as a ${role}:`,
+        detail: `no games with a line that large since ${fact.dataFloorSeason}.`,
+      };
+    }
+    return {
+      head: `${teamName} as a ${role}:`,
+      detail: `covered ${fact.covers} of ${fact.games} (since ${fact.dataFloorSeason}).`,
+    };
+  };
+
+  const renderSpreadContext = () => {
+    if (!showGambling || !spreadContext) return null;
+    const facts = [
+      marginFactSentence(spreadContext.favoriteTeam, spreadContext.favoriteWonByMargin, spreadContext.magnitude, true),
+      marginFactSentence(spreadContext.underdogTeam, spreadContext.underdogLostByMargin, spreadContext.magnitude, false),
+      atsFactSentence(spreadContext.favoriteTeam, spreadContext.favoriteAtsAsBigFavorite, true),
+      atsFactSentence(spreadContext.underdogTeam, spreadContext.underdogAtsAsBigUnderdog, false),
+    ].filter(Boolean);
+    if (facts.length === 0) return null;
+    return (
+      <div className="history-section">
+        <div className="history-section-title">
+          The Line{spreadContext.spreadDetails ? ` — ${spreadContext.spreadDetails}` : ""}
+        </div>
+        {facts.map((f, i) => (
+          <div className="line-fact" key={i}>
+            <span className="line-fact-head">{f.head}</span>{" "}
+            <span className="line-fact-detail">{f.detail}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   const renderHistoryTab = () => {
     if (!hasHistoryData) {
       return (
@@ -636,6 +718,7 @@ export default function TeamComparison({
 
     return (
       <div className="history-content">
+        {renderSpreadContext()}
         {headToHead.length > 0 && (
           <div className="history-section">
             <div className="history-section-title">

@@ -12,8 +12,11 @@ import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import type {
+  ContestAtsBucketFact,
   ContestHistoryGame,
+  ContestMarginFact,
   ContestPriorSeasonSummary,
+  ContestSpreadContext,
   Matchup,
   TeamComparisonData,
   TeamStatEntry,
@@ -243,6 +246,72 @@ function priorSeasonRecordLabel(summary: ContestPriorSeasonSummary | null | unde
   return `${summary.seasonYear}: ${summary.wins}-${summary.losses}${conf}`;
 }
 
+// ─── "The Line" — spread-context fact sentences ───────────────────────────────
+// Deterministic sentences composed from server-computed facts — every number
+// comes from a query, never from prose. Mirrors the web dialog's wording.
+
+type LineFact = { head: string; detail: string };
+
+function marginFactSentence(
+  teamName: string,
+  fact: ContestMarginFact | null | undefined,
+  magnitude: number,
+  won: boolean,
+): LineFact | null {
+  if (!fact) return null;
+  if (!fact.lastGame) {
+    return {
+      head: `${teamName} ${won ? 'has never won' : 'has never lost'} a game by ${magnitude}+`,
+      detail: `in our records (back to ${fact.searchFloorSeason}).`,
+    };
+  }
+  const g = fact.lastGame;
+  const isHome = g.homeTeam === teamName;
+  const ourScore = isHome ? g.homeScore : g.awayScore;
+  const theirScore = isHome ? g.awayScore : g.homeScore;
+  const opponent = isHome ? g.awayTeam : g.homeTeam;
+  const when = formatGameDate(g.gameDate);
+  const quality =
+    fact.opponentSeasonRecord || fact.opponentPriorSeasonRecord
+      ? ` (they went ${fact.opponentSeasonRecord ?? '?'}${
+          fact.opponentPriorSeasonRecord ? `; ${fact.opponentPriorSeasonRecord} the season before` : ''
+        })`
+      : '';
+  const times = fact.countLastFiveSeasons;
+  return {
+    head: `Last time ${teamName} ${won ? 'won' : 'lost'} by ${magnitude}+:`,
+    detail: `${when} — ${won ? 'beat' : 'lost to'} ${opponent} ${ourScore ?? '—'}-${theirScore ?? '—'}${quality}. ${times} such ${won ? 'win' : 'loss'}${times === 1 ? '' : won ? 's' : 'es'} in the last 5 seasons.`,
+  };
+}
+
+function atsFactSentence(
+  teamName: string,
+  fact: ContestAtsBucketFact | null | undefined,
+  asFavorite: boolean,
+): LineFact | null {
+  if (!fact) return null;
+  const role = `${fact.threshold}+ ${asFavorite ? 'favorite' : 'underdog'}`;
+  if (fact.games === 0) {
+    return {
+      head: `${teamName} as a ${role}:`,
+      detail: `no games with a line that large since ${fact.dataFloorSeason}.`,
+    };
+  }
+  return {
+    head: `${teamName} as a ${role}:`,
+    detail: `covered ${fact.covers} of ${fact.games} (since ${fact.dataFloorSeason}).`,
+  };
+}
+
+function spreadContextFacts(ctx: ContestSpreadContext): LineFact[] {
+  return [
+    marginFactSentence(ctx.favoriteTeam, ctx.favoriteWonByMargin, ctx.magnitude, true),
+    marginFactSentence(ctx.underdogTeam, ctx.underdogLostByMargin, ctx.magnitude, false),
+    atsFactSentence(ctx.favoriteTeam, ctx.favoriteAtsAsBigFavorite, true),
+    atsFactSentence(ctx.underdogTeam, ctx.underdogAtsAsBigUnderdog, false),
+  ].filter((f): f is LineFact => f != null);
+}
+
 // ─── StatsComparisonModal ─────────────────────────────────────────────────────
 
 export function StatsComparisonModal({
@@ -283,7 +352,10 @@ export function StatsComparisonModal({
     awayPriorGames.length > 0 ||
     homePriorGames.length > 0 ||
     history?.awayPriorSeason != null ||
-    history?.homePriorSeason != null;
+    history?.homePriorSeason != null ||
+    // Spread context only counts when it can actually render — it is
+    // gambling-gated, and a hidden-only history would open an empty tab.
+    (showGambling && history?.spreadContext != null);
 
   // Head-to-head wins among the displayed meetings (ties count for neither).
   const h2hWinsAway = headToHead.filter((g) => g.winner === matchup.away).length;
@@ -370,6 +442,21 @@ export function StatsComparisonModal({
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.historyContent}
               >
+                {showGambling && history?.spreadContext && (
+                  <>
+                    <Text style={[styles.historySectionTitle, { color: theme.text }]}>
+                      The Line
+                      {history.spreadContext.spreadDetails ? ` — ${history.spreadContext.spreadDetails}` : ''}
+                    </Text>
+                    {spreadContextFacts(history.spreadContext).map((f, i) => (
+                      <View key={i} style={[styles.lineFact, { borderBottomColor: theme.border }]}>
+                        <Text style={[styles.lineFactText, { color: theme.text }]}>
+                          <Text style={styles.lineFactHead}>{f.head}</Text> {f.detail}
+                        </Text>
+                      </View>
+                    ))}
+                  </>
+                )}
                 {headToHead.length > 0 && (
                   <>
                     <Text style={[styles.historySectionTitle, { color: theme.text }]}>
@@ -784,6 +871,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: 'italic',
     paddingVertical: 4,
+  },
+  lineFact: {
+    paddingVertical: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  lineFactText: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  lineFactHead: {
+    fontWeight: '700',
   },
 
   barTrack: {

@@ -20,6 +20,9 @@ public class ProducerSqlQueryProvider
         "GetRankingsByPollByWeek.sql",
         "GetContestHeadToHeadResults.sql",
         "GetContestPriorSeasonResults.sql",
+        "GetContestSpreadTarget.sql",
+        "GetFranchiseMarginFact.sql",
+        "GetFranchiseAtsBucket.sql",
         "GetFranchiseSeasonCompetitionResults.sql",
         "GetFranchiseSeasonPreviewStats.sql",
         "GetFranchiseSeasonStatistics.sql",
@@ -104,6 +107,12 @@ public class ProducerSqlQueryProvider
     public string GetContestHeadToHeadResults() => Get("GetContestHeadToHeadResults.sql");
 
     public string GetContestPriorSeasonResults() => Get("GetContestPriorSeasonResults.sql");
+
+    public string GetContestSpreadTarget() => Get("GetContestSpreadTarget.sql");
+
+    public string GetFranchiseMarginFact() => Get("GetFranchiseMarginFact.sql");
+
+    public string GetFranchiseAtsBucket() => Get("GetFranchiseAtsBucket.sql");
 
     public string GetFranchiseSeasonCompetitionResults() => Get("GetFranchiseSeasonCompetitionResults.sql");
 

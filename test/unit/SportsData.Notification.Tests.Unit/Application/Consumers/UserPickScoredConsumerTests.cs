@@ -9,6 +9,7 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Core.Eventing.Events.Picks;
 using SportsData.Notification.Application.Consumers;
+using SportsData.Notification.Application.Dispatching;
 using SportsData.Notification.Infrastructure.Data.Entities;
 using SportsData.Notification.Infrastructure.Notifications;
 
@@ -105,6 +106,28 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
 
         body.Should().Be("Sluggers: BOS 3, NYY 2 — you picked BOS ✓");
         _capturedTitle.Should().Be("Nice pick!");
+    }
+
+    [Fact]
+    public async Task Consume_SmackVoice_AppendsGameContextUnderTheSmackLine()
+    {
+        // A smack line alone loses the game — "Vegas told you so" arrives
+        // with zero indication of which pick earned it. The standard context
+        // line must ride underneath.
+        Mocker.GetMock<ISmackPhraseCatalog>()
+            .Setup(x => x.TryResolveAsync(
+                It.IsAny<UserPickScored>(),
+                It.IsAny<NotificationVoice>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Vegas told you so");
+
+        var body = await RunAndCaptureBodyAsync(
+            Msg(Guid.NewGuid(), "BOS", "NYY", awayScore: 2, homeScore: 3,
+                isCorrect: false, pickedIsHome: false, pickedSpread: null));
+
+        _capturedTitle.Should().Be("SmackBot");
+        body.Should().Be("Vegas told you so\nSluggers: BOS 2, NYY 3 — you picked BOS ✗");
     }
 
     [Fact]

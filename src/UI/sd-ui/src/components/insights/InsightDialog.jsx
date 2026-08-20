@@ -218,23 +218,34 @@ function InsightDialog({
                   onChange={(e) => setRejectionNote(e.target.value)}
                   rows={3}
                 />
+                {/* Close on success: the handlers resolve true only when the
+                    action landed (toast confirms it); a failure keeps the
+                    dialog open with the rejection note intact for a retry. */}
                 <div className="insight-admin__actions">
                   <button
-                    onClick={() =>
-                      onApprovePreview?.(matchup.contestId, matchup.id)
-                    }
+                    onClick={async () => {
+                      const ok = await onApprovePreview?.(matchup.contestId, matchup.id);
+                      if (ok) {
+                        setRejectionNote("");
+                        onClose();
+                      }
+                    }}
                     className="admin-approve-button"
                   >
                     Approve Preview
                   </button>
                   <button
-                    onClick={() =>
-                      onRejectPreview?.({
+                    onClick={async () => {
+                      const ok = await onRejectPreview?.({
                         PreviewId: matchup.id,
                         ContestId: matchup.contestId,
                         RejectionNote: rejectionNote.trim(),
-                      })
-                    }
+                      });
+                      if (ok) {
+                        setRejectionNote("");
+                        onClose();
+                      }
+                    }}
                     className="admin-reset-button"
                     disabled={!rejectionNote.trim()}
                   >

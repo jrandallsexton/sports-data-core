@@ -3,6 +3,7 @@ using Hangfire;
 using FluentValidation;
 
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
+using SportsData.Api.Application.Athletes.Queries.GetAthleteDetails;
 using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
@@ -315,6 +316,9 @@ namespace SportsData.Api.DependencyInjection
             
             // HATEOAS Ref Generator (external API)
             services.AddSingleton<IGenerateApiResourceRefs, ApiResourceRefGenerator>();
+
+            // Athlete Queries
+            services.AddScoped<IGetAthleteDetailsQueryHandler, GetAthleteDetailsQueryHandler>();
 
             // TeamCard Queries
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();

@@ -42,6 +42,14 @@ export function teamLink(slug, seasonYear, sport = DEFAULT_SPORT, league = DEFAU
   return `/app/sport/${sport}/${league}/team/${slug}${seasonYear ? `/${seasonYear}` : ''}`;
 }
 
+/**
+ * Athlete detail page. Keyed by athlete GUID, not slug — athlete slugs
+ * collide (~15% of the corpus), unlike team slugs.
+ */
+export function athleteLink(athleteId, sport = DEFAULT_SPORT, league = DEFAULT_LEAGUE) {
+  return `/app/sport/${sport}/${league}/athlete/${athleteId}`;
+}
+
 export function contestLink(contestId, sport = DEFAULT_SPORT, league = DEFAULT_LEAGUE) {
   return `/app/sport/${sport}/${league}/contest/${contestId}`;
 }

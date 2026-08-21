@@ -19,6 +19,7 @@ import SettingsPage from "./components/settings/SettingsPage.jsx";
 import GameMap from "./components/map/GameMap.jsx";
 import WelcomeDialog from "./components/welcome/WelcomeDialog";
 import TeamCard from "./components/teams/TeamCard";
+import AthleteCard from "./components/athletes/AthleteCard";
 import ConfirmationDialog from "./components/common/ConfirmationDialog";
 import VenuePage from "components/venues/VenuePage";
 import VenuesPage from "components/venues/VenuesPage";
@@ -191,6 +192,12 @@ function MainApp() {
             <Route
               path="/sport/:sport/:league/team/:slug/:seasonYear"
               element={<TeamCard />}
+            />
+            {/* GUID route — athlete slugs are not unique (~15% collide),
+                so athletes key on id where teams key on slug. */}
+            <Route
+              path="/sport/:sport/:league/athlete/:athleteId"
+              element={<AthleteCard />}
             />
             {/* Rankings — sport-scoped like team/venue/contest. Three
                 explicit routes because the literal /week segment can't be

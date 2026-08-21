@@ -38,6 +38,17 @@ public class GetAthleteDetailsQueryHandler : IGetAthleteDetailsQueryHandler
         GetAthleteDetailsQuery query,
         CancellationToken cancellationToken = default)
     {
+        if (query.AthleteId == Guid.Empty)
+        {
+            // The :guid route constraint admits Guid.Empty. It can never
+            // identify a record, so it is a malformed request (400), not a
+            // miss (404).
+            return new Failure<AthleteDetailDto>(
+                default!,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(query.AthleteId), "AthleteId is required")]);
+        }
+
         Sport mode;
         try
         {
@@ -59,6 +70,12 @@ public class GetAthleteDetailsQueryHandler : IGetAthleteDetailsQueryHandler
         {
             var client = _franchiseClientFactory.Resolve(mode);
             return await client.GetAthleteDetails(query.AthleteId, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The caller went away — that is not a server error. Without this
+            // the generic catch below would log it and return Error.
+            throw;
         }
         catch (Exception ex)
         {

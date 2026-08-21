@@ -28,13 +28,20 @@ function AthleteCard() {
   const isAdmin = userDto?.isAdmin === true;
 
   useEffect(() => {
+    // Navigating between athletes can leave an in-flight request that
+    // resolves AFTER the newer one; without this guard the stale response
+    // would overwrite the current athlete.
+    let ignore = false;
+
     const fetchAthlete = async () => {
       setLoading(true);
       setError(null);
       try {
         const response = await apiWrapper.Athletes.getDetails(sport, league, athleteId);
+        if (ignore) return;
         setAthlete(response.data?.value ?? response.data ?? null);
       } catch (err) {
+        if (ignore) return;
         console.error("Failed to fetch athlete details:", err);
         setError(
           err?.response?.status === 404
@@ -42,7 +49,7 @@ function AthleteCard() {
             : "Failed to load athlete details."
         );
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     };
 
@@ -51,6 +58,10 @@ function AthleteCard() {
     } else {
       setLoading(false);
     }
+
+    return () => {
+      ignore = true;
+    };
   }, [sport, league, athleteId]);
 
   if (loading) return <div className="athlete-card">Loading athlete...</div>;
@@ -59,7 +70,11 @@ function AthleteCard() {
 
   const currentSeason = athlete.seasons?.[0];
 
-  const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : "-");
+  // A birth date is a calendar date, but the API serializes it as a UTC
+  // timestamp — formatting in local time would show the previous day for
+  // anyone west of UTC. Read the UTC components.
+  const formatDate = (value) =>
+    value ? new Date(value).toLocaleDateString(undefined, { timeZone: "UTC" }) : "-";
   const formatUtc = (value) => (value ? new Date(value).toISOString().replace("T", " ").slice(0, 19) + "Z" : "-");
 
   // Admins see every sourced doc; users see the newest per split (the API

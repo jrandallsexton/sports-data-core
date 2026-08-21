@@ -77,6 +77,42 @@ public class GetAthleteDetailsQueryHandlerTests : UnitTestBase<GetAthleteDetails
     }
 
     [Fact]
+    public async Task ExecuteAsync_EmptyAthleteId_Returns400Validation()
+    {
+        var handler = Mocker.CreateInstance<GetAthleteDetailsQueryHandler>();
+
+        // The :guid route constraint admits Guid.Empty; it can never identify
+        // a record, so it is malformed input, not a miss.
+        var result = await handler.ExecuteAsync(
+            new GetAthleteDetailsQuery("football", "ncaa", Guid.Empty));
+
+        result.Status.Should().Be(ResultStatus.Validation);
+        _franchiseClientMock.Verify(
+            x => x.GetAthleteDetails(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CallerCancels_PropagatesCancellation()
+    {
+        var athleteId = Guid.NewGuid();
+        using var cts = new CancellationTokenSource();
+
+        _franchiseClientMock
+            .Setup(x => x.GetAthleteDetails(athleteId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OperationCanceledException(cts.Token));
+
+        var handler = Mocker.CreateInstance<GetAthleteDetailsQueryHandler>();
+        await cts.CancelAsync();
+
+        // A cancelled request must not be reported as a server error.
+        var act = async () => await handler.ExecuteAsync(
+            new GetAthleteDetailsQuery("football", "ncaa", athleteId), cts.Token);
+
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ClientThrows_ReturnsErrorNotException()
     {
         var athleteId = Guid.NewGuid();

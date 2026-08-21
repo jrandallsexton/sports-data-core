@@ -827,4 +827,33 @@ public static class EspnUriMapper
 
         return int.TryParse(yearPart, out year) && year > 1900 && year < 2200;
     }
+
+    /// <summary>
+    /// Extracts the season TYPE code from a <c>/types/{n}/</c> segment
+    /// (ESPN vocabulary: 1 = preseason, 2 = regular season, 3 = postseason —
+    /// on season-scoped statistics/leaders resources, 3 means cumulative
+    /// THROUGH the postseason). Returns <see langword="false"/> when the URL
+    /// carries no types segment.
+    /// </summary>
+    public static bool TryExtractSeasonType(Uri uri, out int seasonType)
+    {
+        seasonType = 0;
+
+        if (uri is null)
+            return false;
+
+        var parts = uri.GetLeftPart(UriPartial.Path).Split('/');
+        var typesIndex = Array.IndexOf(parts, "types");
+
+        if (typesIndex < 0 || typesIndex + 1 >= parts.Length)
+            return false;
+
+        var typePart = parts[typesIndex + 1];
+
+        var q = typePart.IndexOf('?');
+        if (q >= 0)
+            typePart = typePart[..q];
+
+        return int.TryParse(typePart, out seasonType) && seasonType is > 0 and < 10;
+    }
 }

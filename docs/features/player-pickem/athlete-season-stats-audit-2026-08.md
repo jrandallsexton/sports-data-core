@@ -193,8 +193,10 @@ Sourcing shipped as a new vertical:
   (SeasonYear, SeasonTypeCode); athlete refs resolve to AthleteSeason in
   batch and team refs to FranchiseSeason when available (an unresolved
   team persists the leader with `FranchiseSeasonId = null`); unresolvable
-  ATHLETES are skipped with logged count (ranks preserved from document
-  order, not renumbered)
+  ATHLETES are skipped — the logged unresolved count covers only rows
+  whose athlete ref is present but fails external-id resolution; rows
+  with no athlete ref at all are filtered earlier and not counted (in
+  both cases ranks stay in document order, not renumbered)
 - `SeasonTypeLeadersDocumentProcessor` registered for FootballNcaa /
   FootballNfl / BaseballMlb
 - `EspnUriMapper.TryExtractSeasonType` parses the `/types/{n}/` segment

@@ -783,6 +783,7 @@ public static class EspnUriMapper
         var athletesIndex = Array.IndexOf(parts, "athletes");
 
         if (seasonsIndex < 0 || seasonsIndex + 1 >= parts.Length ||
+            !int.TryParse(parts[seasonsIndex + 1], out _) ||
             athletesIndex != seasonsIndex + 2 || athletesIndex + 1 >= parts.Length ||
             !int.TryParse(parts[athletesIndex + 1], out _))
             throw new InvalidOperationException($"Unexpected ESPN AthleteSeason ref format: {athleteSeasonRef}");

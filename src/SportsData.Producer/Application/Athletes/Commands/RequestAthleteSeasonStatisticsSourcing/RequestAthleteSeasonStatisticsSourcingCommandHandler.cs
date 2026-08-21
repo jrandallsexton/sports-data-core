@@ -110,15 +110,20 @@ public class RequestAthleteSeasonStatisticsSourcingCommandHandler : IRequestAthl
         {
             foreach (var target in targets)
             {
-                Uri statisticsRef;
+                ExternalRefIdentity identity;
                 try
                 {
                     if (string.IsNullOrWhiteSpace(target.SourceUrl) ||
                         !Uri.TryCreate(target.SourceUrl, UriKind.Absolute, out var athleteSeasonRef))
                         throw new InvalidOperationException("No usable ESPN SourceUrl");
 
-                    statisticsRef = EspnUriMapper.AthleteSeasonRefToSeasonTypeStatisticsRef(
+                    var statisticsRef = EspnUriMapper.AthleteSeasonRefToSeasonTypeStatisticsRef(
                         athleteSeasonRef, command.SeasonType);
+
+                    // Inside the same boundary as the URL synthesis: an
+                    // identity failure for one athlete's ref is that athlete's
+                    // problem, not the batch's.
+                    identity = _externalRefIdentityGenerator.Generate(statisticsRef);
                 }
                 catch (Exception ex)
                 {
@@ -130,8 +135,6 @@ public class RequestAthleteSeasonStatisticsSourcingCommandHandler : IRequestAthl
                     skipped++;
                     continue;
                 }
-
-                var identity = _externalRefIdentityGenerator.Generate(statisticsRef);
 
                 try
                 {

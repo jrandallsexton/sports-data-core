@@ -1031,6 +1031,7 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
         [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/athletes/4870906")]
         [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/")]
         [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/abc")]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/not-a-year/athletes/4870906")]
         public void AthleteSeasonRefToSeasonTypeStatisticsRef_Should_Throw_For_Unexpected_Format(string url)
         {
             var input = new Uri(url);

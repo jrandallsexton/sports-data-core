@@ -232,6 +232,36 @@ public class RequestAthleteSeasonStatisticsSourcingCommandHandlerTests
     }
 
     [Fact]
+    public async Task IdentityGenerationFailure_ForOneAthlete_DoesNotAbandonTheBatch()
+    {
+        await SeedAthleteSeasonAsync(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/1");
+        await SeedAthleteSeasonAsync(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/2");
+
+        var handler = CreateHandler();
+
+        // One athlete's ref blows up identity generation; the other must
+        // still publish (logged skip, not an abandoned batch).
+        Mocker.GetMock<IGenerateExternalRefIdentities>()
+            .Setup(x => x.Generate(It.Is<Uri>(u => u.ToString().Contains("/athletes/1/"))))
+            .Throws(new InvalidOperationException("identity boom"));
+
+        var result = await handler.ExecuteAsync(
+            new RequestAthleteSeasonStatisticsSourcingCommand(SeasonYear, Sport.FootballNcaa));
+
+        result.IsSuccess.Should().BeTrue();
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(
+                It.Is<DocumentRequested>(e => e.Uri.ToString().Contains("/athletes/2/")),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task NoActiveAthleteSeasons_ReturnsNotFound_PublishesNothing()
     {
         var result = await CreateHandler().ExecuteAsync(

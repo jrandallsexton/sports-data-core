@@ -44,6 +44,7 @@ public class AdminOpsProxyController : ControllerBase
         // segment (base/api + api/... = /api/api/...) and 404 upstream.
         private static readonly string[] ProducerPrefixes =
         [
+            "athletes",
             "franchise-seasons",
             "competitions",
             "contests"

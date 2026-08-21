@@ -212,6 +212,48 @@ URI must carry `?limit=200`:
   `.../seasons/2026/types/2/leaders?lang=en&region=us&limit=200`
   (add the `types/3` row once postseason begins)
 
+## Follow-up (2026-08-21): purge + backfill built (recommendations #2 and #4)
+
+Root cause re-verified on a second specimen: Arch Manning's 2026 athlete
+document points its statistics ref at `seasons/2025/types/3/...`, while
+his 2024 document correctly points at `seasons/2024/types/3/...`. ESPN
+will presumably flip the 2026 ref once the season has data. (External
+observation, 2026-08-21: `GET .../college-football/seasons/2026/types/3/
+athletes/4870906/statistics` returned HTTP 404 — expected to change once
+2026 games exist.)
+
+Remediation shipped:
+
+- **Backfill endpoint** — `POST
+  api/athletes/seasonYear/{seasonYear}/statistics/source` (Producer,
+  ops-proxy family `athletes`): fans out one DocumentRequested per ACTIVE
+  AthleteSeason for the year, targeting a SYNTHESIZED
+  `seasons/{year}/types/{seasonType}/athletes/{id}/statistics` URL
+  (`EspnUriMapper.AthleteSeasonRefToSeasonTypeStatisticsRef`) — never the
+  athlete document's own (prior-season) ref. The #657 season guard then
+  attaches each doc to the roster row matching the season parsed from the
+  ref, so the fan-out is idempotent and safe to re-run. Precision note:
+  the guard engages only when the ref's season PARSES — always true for
+  these synthesized URLs, but an unparseable ref would fall through to
+  the spawning-row attach, which is why any nonzero step-4 result in the
+  purge script's post-backfill verification must be treated as a FAILED
+  backfill and investigated, not shrugged off. ~24.6k active 2025 rows
+  ≈ 7h at the 1s ESPN delay. Bruno: `athletes-source-statistics`.
+- **Purge script** —
+  `sql/pgsql/athleteSeasonStatistics_2026_purge.sql`: deletes ALL stat
+  docs attached to 2026 roster rows (~15.3k roster rows' worth; the
+  script reports athletes and roster rows separately since transfers can
+  split one athlete across two rows in a season). Scope is provably safe
+  while zero 2026 games have finalized — the guard runs INSIDE the purge
+  transaction and raises an exception if that ever fails, aborting the
+  transaction (nothing is deleted). Statistic writers are not stopped
+  during the run: post-#657 they no longer write to 2026 rows, and a
+  racing insert is caught by step 4 — nonzero after the purge means
+  re-run the (idempotent) script before backfilling. Run order: deploy →
+  purge → step 4 reads zero → backfill → **re-run steps 4-5 after the
+  batch completes** (step 4 still zero; 2025 coverage should approach
+  the active-roster count).
+
 ## Open questions
 
 - Whether ESPN's `types/3` statistics ref flips to `types/2` early in a

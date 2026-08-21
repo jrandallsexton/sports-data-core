@@ -997,5 +997,55 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
         }
 
         #endregion
+
+        #region AthleteSeasonRefToSeasonTypeStatisticsRef
+
+        // Happy path: the /types/{n}/ scope is INSERTED between the season
+        // and athlete segments, query string stripped, scheme preserved.
+        // Covers negative ESPN athlete ids (valid) and both season types.
+        [Theory]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/4870906?lang=en&region=us",
+            3,
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/athletes/4870906/statistics")]
+        [InlineData(
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/-6952?lang=en&region=us",
+            2,
+            "https://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/2/athletes/-6952/statistics")]
+        public void AthleteSeasonRefToSeasonTypeStatisticsRef_Should_Insert_Type_Scope_And_Append_Statistics(
+            string athleteSeasonRef,
+            int seasonType,
+            string expectedStatisticsRef)
+        {
+            var input = new Uri(athleteSeasonRef);
+            var result = EspnUriMapper.AthleteSeasonRefToSeasonTypeStatisticsRef(input, seasonType);
+            result.Should().Be(new Uri(expectedStatisticsRef));
+        }
+
+        // Non-athlete-season shapes must throw rather than synthesize a
+        // garbage URL: no seasons segment, no athletes segment, athletes not
+        // directly under seasons/{year}, missing id, non-numeric id.
+        [Theory]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/4870906")]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/61")]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/athletes/4870906")]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/")]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/abc")]
+        [InlineData("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/not-a-year/athletes/4870906")]
+        public void AthleteSeasonRefToSeasonTypeStatisticsRef_Should_Throw_For_Unexpected_Format(string url)
+        {
+            var input = new Uri(url);
+            var act = () => EspnUriMapper.AthleteSeasonRefToSeasonTypeStatisticsRef(input, 3);
+            act.Should().Throw<InvalidOperationException>();
+        }
+
+        [Fact]
+        public void AthleteSeasonRefToSeasonTypeStatisticsRef_Should_Throw_For_Null()
+        {
+            var act = () => EspnUriMapper.AthleteSeasonRefToSeasonTypeStatisticsRef(null!, 3);
+            act.Should().Throw<ArgumentNullException>();
+        }
+
+        #endregion
     }
 }

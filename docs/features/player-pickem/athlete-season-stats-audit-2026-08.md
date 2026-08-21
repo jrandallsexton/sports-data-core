@@ -190,17 +190,25 @@ Sourcing shipped as a new vertical:
 - `DocumentType.SeasonTypeLeaders` (71) + `EspnSeasonTypeLeadersDto`
 - `SeasonTypeLeader` table (common; Football + Baseball migrations
   `21AugV1_SeasonTypeLeaders`) — wholesale replace per
-  (SeasonYear, SeasonTypeCode); leaders resolve to
-  AthleteSeason/FranchiseSeason in batch; unresolvable athletes skipped
-  with logged count (ranks preserved from document order, not renumbered)
+  (SeasonYear, SeasonTypeCode); athlete refs resolve to AthleteSeason in
+  batch and team refs to FranchiseSeason when available (an unresolved
+  team persists the leader with `FranchiseSeasonId = null`); unresolvable
+  ATHLETES are skipped with logged count (ranks preserved from document
+  order, not renumbered)
 - `SeasonTypeLeadersDocumentProcessor` registered for FootballNcaa /
   FootballNfl / BaseballMlb
 - `EspnUriMapper.TryExtractSeasonType` parses the `/types/{n}/` segment
 
-Operator registration (ResourceIndex via ops proxy, `?limit=200`, no
-seeder per policy): one-shot rows per frozen season
-(`seasons/{2022..2025}/types/{2,3}/leaders`) + a recurring weekly row for
-the current season's `types/2` (and `types/3` once postseason begins).
+Operator registration (ResourceIndex via ops proxy, no seeder per
+policy). The default is 25 leaders per category, so **every** registered
+URI must carry `?limit=200`:
+
+- One-shot rows per frozen season:
+  `.../seasons/{2022..2025}/types/{2}/leaders?lang=en&region=us&limit=200`
+  and the same for `types/{3}`
+- Recurring weekly row for the current season:
+  `.../seasons/2026/types/2/leaders?lang=en&region=us&limit=200`
+  (add the `types/3` row once postseason begins)
 
 ## Open questions
 

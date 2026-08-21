@@ -7814,6 +7814,8 @@ namespace SportsData.Producer.Migrations.Football
 
                     b.HasIndex("AthleteSeasonId");
 
+                    b.HasIndex("FranchiseSeasonId");
+
                     b.HasIndex("SeasonYear", "SeasonTypeCode", "CategoryName");
 
                     b.ToTable("SeasonTypeLeader", (string)null);
@@ -9777,6 +9779,24 @@ namespace SportsData.Producer.Migrations.Football
                         .IsRequired();
 
                     b.Navigation("Week");
+                });
+
+            modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonTypeLeader", b =>
+                {
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.AthleteSeason", "AthleteSeason")
+                        .WithMany()
+                        .HasForeignKey("AthleteSeasonId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportsData.Producer.Infrastructure.Data.Entities.FranchiseSeason", "FranchiseSeason")
+                        .WithMany()
+                        .HasForeignKey("FranchiseSeasonId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AthleteSeason");
+
+                    b.Navigation("FranchiseSeason");
                 });
 
             modelBuilder.Entity("SportsData.Producer.Infrastructure.Data.Entities.SeasonWeek", b =>

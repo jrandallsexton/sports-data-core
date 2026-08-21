@@ -40,9 +40,11 @@ public class SeasonTypeLeader : CanonicalEntityBase<Guid>
     public string? DisplayValue { get; set; }
 
     public Guid AthleteSeasonId { get; set; }
+    public AthleteSeason AthleteSeason { get; set; } = null!;
 
     /// <summary>Null when the leader's team ref did not resolve (athlete still ranked).</summary>
     public Guid? FranchiseSeasonId { get; set; }
+    public FranchiseSeason? FranchiseSeason { get; set; }
 
     public class EntityConfiguration : IEntityTypeConfiguration<SeasonTypeLeader>
     {
@@ -55,6 +57,16 @@ public class SeasonTypeLeader : CanonicalEntityBase<Guid>
             builder.Property(x => x.CategoryDisplayName).HasMaxLength(128);
             builder.Property(x => x.DisplayValue).HasMaxLength(32);
             builder.Property(x => x.Value).HasPrecision(12, 4);
+
+            builder.HasOne(x => x.AthleteSeason)
+                .WithMany()
+                .HasForeignKey(x => x.AthleteSeasonId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(x => x.FranchiseSeason)
+                .WithMany()
+                .HasForeignKey(x => x.FranchiseSeasonId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // The replace-scope + the read shapes: "leaders for a season/type"
             // and "is this athlete a leader anywhere".

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace SportsData.Producer.Migrations.Football
+namespace SportsData.Producer.Migrations.Baseball
 {
     /// <inheritdoc />
     public partial class _21AugV1_SeasonTypeLeaders : Migration
@@ -33,12 +33,29 @@ namespace SportsData.Producer.Migrations.Football
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SeasonTypeLeader", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SeasonTypeLeader_AthleteSeason_AthleteSeasonId",
+                        column: x => x.AthleteSeasonId,
+                        principalTable: "AthleteSeason",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_SeasonTypeLeader_FranchiseSeason_FranchiseSeasonId",
+                        column: x => x.FranchiseSeasonId,
+                        principalTable: "FranchiseSeason",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_SeasonTypeLeader_AthleteSeasonId",
                 table: "SeasonTypeLeader",
                 column: "AthleteSeasonId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SeasonTypeLeader_FranchiseSeasonId",
+                table: "SeasonTypeLeader",
+                column: "FranchiseSeasonId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_SeasonTypeLeader_SeasonYear_SeasonTypeCode_CategoryName",

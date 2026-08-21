@@ -37,6 +37,7 @@ namespace SportsData.Core.Common
             public static Guid FranchiseSeasonCreated = new Guid("10000000-0000-0000-0000-000000000012");
             public static Guid FranchiseSeasonEnrichmentProcessor = new Guid("10000001-0000-0000-0000-00000000001F");
             public static Guid FranchiseSeasonService = new Guid("10000A00-0000-0000-0000-000000000007");
+            public static Guid AthleteSeasonStatisticsSourcing = new Guid("10000A00-0000-0000-0000-000000000008");
             public static Guid GroupSeasonDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000013");
             public static Guid ImageRequestedProcessor = new Guid("10000000-0000-0000-0000-000000000014");
             public static Guid PositionDocumentProcessor = new Guid("10000000-0000-0000-0000-000000000015");

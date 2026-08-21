@@ -762,6 +762,37 @@ public static class EspnUriMapper
         return new Uri(result, UriKind.Absolute);
     }
 
+    /// <summary>
+    /// Builds the season-type-scoped statistics ref from a season-scoped
+    /// athlete ref: .../seasons/{year}/athletes/{id} becomes
+    /// .../seasons/{year}/types/{seasonType}/athletes/{id}/statistics.
+    /// The explicit /types/{n}/ scope is the whole point — ESPN's athlete
+    /// document hands out the PRIOR season's statistics ref until the new
+    /// season has data, so backfills must synthesize the URL themselves
+    /// rather than follow the document.
+    /// </summary>
+    public static Uri AthleteSeasonRefToSeasonTypeStatisticsRef(Uri athleteSeasonRef, int seasonType)
+    {
+        if (athleteSeasonRef == null) throw new ArgumentNullException(nameof(athleteSeasonRef));
+
+        var path = athleteSeasonRef.GetLeftPart(UriPartial.Path);
+        var parts = path.Split('/');
+
+        // Expect: ... / seasons / {year} / athletes / {athleteId}
+        var seasonsIndex = Array.IndexOf(parts, "seasons");
+        var athletesIndex = Array.IndexOf(parts, "athletes");
+
+        if (seasonsIndex < 0 || seasonsIndex + 1 >= parts.Length ||
+            athletesIndex != seasonsIndex + 2 || athletesIndex + 1 >= parts.Length ||
+            !int.TryParse(parts[athletesIndex + 1], out _))
+            throw new InvalidOperationException($"Unexpected ESPN AthleteSeason ref format: {athleteSeasonRef}");
+
+        var prefix = string.Join('/', parts.Take(seasonsIndex + 2)); // .../seasons/{year}
+        var athleteId = parts[athletesIndex + 1];
+
+        return new Uri($"{prefix}/types/{seasonType}/athletes/{athleteId}/statistics", UriKind.Absolute);
+    }
+
     public static Uri CoachSeasonRecordRefToCoachSeasonRef(Uri recordRef)
         => TrimRecordSegment(recordRef, nameof(recordRef));
 

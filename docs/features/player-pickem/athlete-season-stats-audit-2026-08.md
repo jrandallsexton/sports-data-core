@@ -212,6 +212,32 @@ URI must carry `?limit=200`:
   `.../seasons/2026/types/2/leaders?lang=en&region=us&limit=200`
   (add the `types/3` row once postseason begins)
 
+## Follow-up (2026-08-21): purge + backfill built (recommendations #2 and #4)
+
+Root cause re-verified on a second specimen: Arch Manning's 2026 athlete
+document points its statistics ref at `seasons/2025/types/3/...`, while
+his 2024 document correctly points at `seasons/2024/types/3/...`. ESPN
+will presumably flip the 2026 ref once the season has data (the 2026
+statistics URL currently 404s).
+
+Remediation shipped:
+
+- **Backfill endpoint** — `POST
+  api/athletes/seasonYear/{seasonYear}/statistics/source` (Producer,
+  ops-proxy family `athletes`): fans out one DocumentRequested per ACTIVE
+  AthleteSeason for the year, targeting a SYNTHESIZED
+  `seasons/{year}/types/{seasonType}/athletes/{id}/statistics` URL
+  (`EspnUriMapper.AthleteSeasonRefToSeasonTypeStatisticsRef`) — never the
+  athlete document's own (prior-season) ref. The #657 season guard then
+  attaches each doc to the roster row matching the ref's season, so the
+  fan-out is idempotent and safe to re-run. ~24.6k active 2025 rows ≈ 7h
+  at the 1s ESPN delay. Bruno: `athletes-source-statistics`.
+- **Purge script** —
+  `sql/pgsql/athleteSeasonStatistics_2026_purge.sql`: deletes the
+  ~15,263 athletes' worth of mislabeled stat docs attached to 2026 rows
+  (child-first, single transaction, pre/post counts + Manning spot
+  check). Run order: deploy → purge → backfill.
+
 ## Open questions
 
 - Whether ESPN's `types/3` statistics ref flips to `types/2` early in a

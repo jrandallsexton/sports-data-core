@@ -10,32 +10,34 @@
 --
 -- WHY the purge scope is "everything on a 2026 row" rather than an
 -- identity-matched subset: no 2026 games have been played, so a 2026
--- roster row cannot legitimately carry ANY season statistics. Step 0
--- asserts that invariant before anything is deleted — once real 2026
--- games finalize, this script is no longer safe to run as-is and step 0
--- will say so.
+-- roster row cannot legitimately carry ANY season statistics. Step 2's
+-- guard ENFORCES that invariant inside the purge transaction — it raises
+-- an exception (aborting the transaction) if any finalized 2026 contest
+-- exists. Once real 2026 games finalize, this script refuses to run and
+-- an identity-scoped variant is needed instead.
 --
--- Run order: deploy the backfill PR -> step 0-3 (this purge) -> trigger
--- the backfill (Bruno: athletes-source-statistics) -> AFTER the batch
--- completes, re-run steps 4-5 as the post-backfill verification.
+-- Concurrency: this script does not stop Producer's statistic writers.
+-- That is deliberate — post-#657 a statistics document whose ref parses
+-- to a prior season attaches to THAT season's roster row, so organic
+-- processing no longer writes to 2026 rows. If a writer nonetheless
+-- races the purge (insert lands after _purge_stat_docs is materialized),
+-- step 4 catches it: a nonzero result means RE-RUN this script (it is
+-- idempotent) before triggering the backfill.
+--
+-- Run order: deploy the backfill PR -> steps 1-3 (this purge) -> step 4
+-- must be zero (nonzero => re-run the purge) -> trigger the backfill
+-- (Bruno: athletes-source-statistics) -> AFTER the batch completes,
+-- re-run steps 4-5 as the post-backfill verification.
 --
 -- The FK chain AthleteSeasonStatistic -> Category -> Stat is ON DELETE
 -- CASCADE, but the deletes below are explicit child-first anyway so each
 -- level reports its own row count.
 -- =============================================================================
 
--- 0) PRE-FLIGHT GUARD: the purge is only valid while no 2026 game has been
---    finalized. Expect zero — if this returns ANY rows, STOP: the blanket
---    2026 purge is no longer provably safe and needs an identity-scoped
---    variant instead.
-select count(*) as finalized_2026_contests_MUST_BE_ZERO
-from public."Contest"
-where "SeasonYear" = 2026
-  and "FinalizedUtc" is not null;
-
 -- 1) Pre-counts: what will be deleted. Athletes and roster rows counted
 --    separately (mid-season transfers can give one athlete two roster rows
---    in a single season, so the two metrics legitimately differ).
+--    in a single season, so the two metrics legitimately differ). Also the
+--    2025 baseline for comparison after the backfill (expect ~1.9k).
 select count(distinct aths."AthleteId")       as athletes_2026_with_stats,
        count(distinct ass."AthleteSeasonId")  as roster_rows_2026_with_stats,
        count(distinct ass."Id")               as statistic_docs
@@ -44,7 +46,6 @@ join public."AthleteSeason" aths on aths."Id" = ass."AthleteSeasonId"
 join public."FranchiseSeason" fs on fs."Id" = aths."FranchiseSeasonId"
 where fs."SeasonYear" = 2026;
 
--- 2) Baseline: 2025 coverage BEFORE backfill (expect ~1.9k athletes).
 select count(distinct aths."AthleteId")      as athletes_2025_with_stats,
        count(distinct ass."AthleteSeasonId") as roster_rows_2025_with_stats
 from public."AthleteSeasonStatistic" ass
@@ -52,8 +53,25 @@ join public."AthleteSeason" aths on aths."Id" = ass."AthleteSeasonId"
 join public."FranchiseSeason" fs on fs."Id" = aths."FranchiseSeasonId"
 where fs."SeasonYear" = 2025;
 
--- 3) The purge (single transaction, child-first)
+-- 2+3) The purge: guard + delete in ONE transaction. The guard RAISES if
+--      any finalized 2026 contest exists, which aborts the transaction —
+--      the deletes below then refuse to run and the COMMIT rolls back.
 begin;
+
+do $$
+declare finalized_2026 int;
+begin
+    select count(*) into finalized_2026
+    from public."Contest"
+    where "SeasonYear" = 2026
+      and "FinalizedUtc" is not null;
+
+    if finalized_2026 > 0 then
+        raise exception
+            'PURGE ABORTED: % finalized 2026 contest(s) exist. A 2026 roster row can now legitimately carry stats — the blanket purge is unsafe. Use an identity-scoped variant instead.',
+            finalized_2026;
+    end if;
+end $$;
 
 create temp table _purge_stat_docs on commit drop as
 select ass."Id"
@@ -78,14 +96,17 @@ where ass."Id" = p."Id";
 commit;
 
 -- =============================================================================
--- POST-BACKFILL VERIFICATION — run steps 4-5 twice: once immediately after
--- the purge (4 should be zero; 5's 2025 row still sparse), and AGAIN after
--- the backfill batch completes in Seq (5's 2025 coverage should approach
--- the active-2025 roster count; 2026 stays zero until real 2026 games).
+-- VERIFICATION — run steps 4-5 twice:
+--   (a) immediately after the purge: step 4 MUST be zero. Nonzero means a
+--       concurrent writer raced the purge — re-run the script (idempotent)
+--       and do NOT trigger the backfill until step 4 reads zero.
+--   (b) again after the backfill batch completes in Seq: step 4 must STILL
+--       be zero (the season guard must not attach anything to 2026 rows —
+--       nonzero here = failed backfill, investigate before proceeding);
+--       step 5's 2025 coverage should approach the active-roster count.
 -- =============================================================================
 
--- 4) Expect zero after the purge, and STILL zero after the backfill (the
---    season guard must not attach anything to 2026 rows).
+-- 4) Remaining 2026-row stat docs — must be zero at both checkpoints.
 select count(*) as remaining_2026_stat_docs
 from public."AthleteSeasonStatistic" ass
 join public."AthleteSeason" aths on aths."Id" = ass."AthleteSeasonId"

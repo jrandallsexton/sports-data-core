@@ -262,6 +262,36 @@ public class RequestAthleteSeasonStatisticsSourcingCommandHandlerTests
     }
 
     [Fact]
+    public async Task PublishFailure_ForOneAthlete_DoesNotAbandonTheBatch()
+    {
+        await SeedAthleteSeasonAsync(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/1");
+        await SeedAthleteSeasonAsync(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/athletes/2");
+
+        var handler = CreateHandler();
+
+        // The broker hiccups on athlete 1's publish; athlete 2 must still go
+        // out (logged failure, not an abandoned batch — under at-least-once
+        // a re-run republishes the same idempotent request for the failure).
+        Mocker.GetMock<IEventBus>()
+            .Setup(x => x.Publish(
+                It.Is<DocumentRequested>(e => e.Uri.ToString().Contains("/athletes/1/")),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("broker boom"));
+
+        var result = await handler.ExecuteAsync(
+            new RequestAthleteSeasonStatisticsSourcingCommand(SeasonYear, Sport.FootballNcaa));
+
+        result.IsSuccess.Should().BeTrue();
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(
+                It.Is<DocumentRequested>(e => e.Uri.ToString().Contains("/athletes/2/")),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task NoActiveAthleteSeasons_ReturnsNotFound_PublishesNothing()
     {
         var result = await CreateHandler().ExecuteAsync(

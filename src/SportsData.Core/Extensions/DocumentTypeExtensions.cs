@@ -46,6 +46,7 @@ public static class DocumentTypeExtensions
             DocumentType.SeasonFuture => "season-future",
             DocumentType.SeasonType => "season-type",
             DocumentType.SeasonTypeWeek => "season-type-week",
+            DocumentType.SeasonTypeLeaders => "season-type-leaders",
             DocumentType.SeasonTypeWeekRankings => "season-type-week-rankings",
             DocumentType.Seasons => "seasons",
             DocumentType.Standings => "standings",

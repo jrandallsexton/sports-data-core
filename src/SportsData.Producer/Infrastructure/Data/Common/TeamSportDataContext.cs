@@ -157,6 +157,8 @@ namespace SportsData.Producer.Infrastructure.Data.Common
 
         public DbSet<SeasonFutureExternalId> SeasonFutureExternalIds { get; set; }
 
+        public DbSet<SeasonTypeLeader> SeasonTypeLeaders { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -261,6 +263,7 @@ namespace SportsData.Producer.Infrastructure.Data.Common
             modelBuilder.ApplyConfiguration(new FranchiseSeasonProjection.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRanking.EntityConfiguration());
+            modelBuilder.ApplyConfiguration(new SeasonTypeLeader.EntityConfiguration());
 
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecord.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new FranchiseSeasonRecordAts.EntityConfiguration());

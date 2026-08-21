@@ -178,11 +178,46 @@ statistics values under `types/3` match ESPN's displayed full-season 2025
 totals (i.e., cumulative through postseason), which is exactly what the
 picker wants for "last season."
 
+## Follow-up (2026-08-20): `types/2` vs `types/3` RESOLVED; leaders sourcing built
+
+Compared both leaders endpoints for 2025 directly: **distinct datasets.**
+`types/2` = regular season only; `types/3` = cumulative through the
+postseason — different totals (top passer 4,129 vs 4,379) and different
+LEADERS in several categories (postseason production reshuffles order).
+Both are legitimate leaderboards; both get sourced.
+
+Sourcing shipped as a new vertical:
+- `DocumentType.SeasonTypeLeaders` (71) + `EspnSeasonTypeLeadersDto`
+- `SeasonTypeLeader` table (common; Football + Baseball migrations
+  `21AugV1_SeasonTypeLeaders`) — wholesale replace per
+  (SeasonYear, SeasonTypeCode); athlete refs resolve to AthleteSeason in
+  batch and team refs to FranchiseSeason when available (an unresolved
+  team persists the leader with `FranchiseSeasonId = null`); unresolvable
+  ATHLETES are skipped — the logged unresolved count covers only rows
+  whose athlete ref is present but fails external-id resolution; rows
+  with no athlete ref at all are filtered earlier and not counted (in
+  both cases ranks stay in document order, not renumbered)
+- `SeasonTypeLeadersDocumentProcessor` registered for FootballNcaa /
+  FootballNfl / BaseballMlb
+- `EspnUriMapper.TryExtractSeasonType` parses the `/types/{n}/` segment
+
+Operator registration (ResourceIndex via ops proxy, no seeder per
+policy). The default is 25 leaders per category, so **every** registered
+URI must carry `?limit=200`:
+
+- One-shot rows per frozen season:
+  `.../seasons/{2022..2025}/types/{2}/leaders?lang=en&region=us&limit=200`
+  and the same for `types/{3}`
+- Recurring weekly row for the current season:
+  `.../seasons/2026/types/2/leaders?lang=en&region=us&limit=200`
+  (add the `types/3` row once postseason begins)
+
 ## Open questions
 
 - Whether ESPN's `types/3` statistics ref flips to `types/2` early in a
   season (regular-season-only totals) before postseason exists — affects
-  in-season re-source behavior.
+  in-season re-source behavior. (The season-stats side; the LEADERS side
+  is now answered — source both types explicitly.)
 - Whether the Provider (Mongo) cached the 2026-row statistics docs under
   hashes that will collide or diverge when ESPN flips the ref — affects
   replay behavior.

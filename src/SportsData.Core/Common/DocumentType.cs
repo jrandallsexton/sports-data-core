@@ -71,6 +71,14 @@
         CoachSeasonRecord = 66,
         Draft = 69,
         DraftRounds = 70,
+
+        /// <summary>
+        /// League-wide season stat leaders for one season TYPE (2 = regular
+        /// season only, 3 = cumulative through postseason — VERIFIED distinct
+        /// datasets with different totals and leaders). Drives ESPN's Season
+        /// Leaders UI. e.g. .../seasons/2025/types/3/leaders
+        /// </summary>
+        SeasonTypeLeaders = 71,
         OutboxTest = 99, // Test document type for validating outbox pattern with BaseDataContext
         OutboxTestTeamSport = 98, // Test document type for validating outbox pattern with TeamSportDataContext
         Unknown = 9999

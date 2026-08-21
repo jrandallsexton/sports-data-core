@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import apiWrapper from "../../api/apiWrapper";
+import { athleteLink } from "../../utils/sportLinks";
 import "./TeamRoster.css";
 
 function TeamRoster({ slug, seasonYear, sport, league }) {
@@ -52,7 +54,19 @@ function TeamRoster({ slug, seasonYear, sport, league }) {
           {roster.map((player) => (
             <tr key={player.athleteSeasonId}>
               <td>{player.jersey ?? "-"}</td>
-              <td>{player.displayName ?? player.shortName ?? "-"}</td>
+              <td>
+                {player.athleteId ? (
+                  <Link
+                    className="roster-athlete-link"
+                    to={athleteLink(player.athleteId, sport, league)}
+                    aria-label={`View ${player.displayName ?? player.shortName ?? "athlete"} details`}
+                  >
+                    {player.displayName ?? player.shortName ?? "-"}
+                  </Link>
+                ) : (
+                  player.displayName ?? player.shortName ?? "-"
+                )}
+              </td>
               <td title={player.position}>{player.positionAbbreviation ?? player.position ?? "-"}</td>
               <td>{player.heightDisplay ?? "-"}</td>
               <td>{player.weightDisplay ?? "-"}</td>

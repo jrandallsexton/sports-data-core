@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Athletes.Commands.RequestAthleteSeasonStatisticsSourcing;
+using SportsData.Producer.Application.Athletes.Queries.GetAthleteById;
 
 namespace SportsData.Producer.Application.Athletes;
 
@@ -20,6 +23,21 @@ public class AthleteSeasonStatisticsSourcingRequest
 [ApiController]
 public class AthleteController : ControllerBase
 {
+    /// <summary>
+    /// Full athlete drill-down: athlete record + every season + statistic
+    /// documents. GUID-keyed — athlete slugs are not unique (~15% collide),
+    /// so slug routing is not an option here.
+    /// </summary>
+    [HttpGet("{athleteId:guid}")]
+    public async Task<ActionResult<AthleteDetailDto>> GetAthleteById(
+        [FromRoute] Guid athleteId,
+        [FromServices] IGetAthleteByIdQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(new GetAthleteByIdQuery(athleteId), cancellationToken);
+        return result.ToActionResult();
+    }
+
     /// <summary>
     /// Fans out season-type-scoped statistics DocumentRequests for every
     /// ACTIVE athlete rostered in the season year (immediate driver: the

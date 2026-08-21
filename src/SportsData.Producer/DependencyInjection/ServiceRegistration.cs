@@ -7,6 +7,7 @@ using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Athletes.Commands.RequestAthleteSeasonStatisticsSourcing;
+using SportsData.Producer.Application.Athletes.Queries.GetAthleteById;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Competitions.Reconcile;
 using SportsData.Producer.Application.Consumers;
@@ -278,6 +279,9 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IRefreshCompetitionMediaCommandHandler, RefreshCompetitionMediaCommandHandler>();
             services.AddScoped<IEnqueueCompetitionMediaRefreshCommandHandler, EnqueueCompetitionMediaRefreshCommandHandler>();
             services.AddScoped<IRefreshAllCompetitionMediaCommandHandler, RefreshAllCompetitionMediaCommandHandler>();
+
+            // Athlete Queries
+            services.AddScoped<IGetAthleteByIdQueryHandler, GetAthleteByIdQueryHandler>();
 
             // Athlete Commands
             services.AddScoped<IRequestAthleteSeasonStatisticsSourcingCommandHandler, RequestAthleteSeasonStatisticsSourcingCommandHandler>();

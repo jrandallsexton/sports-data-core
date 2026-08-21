@@ -36,6 +36,8 @@ public interface IProvideFranchises : IProvideHealthChecks
     Task<Dictionary<Guid, string>> GetConferenceIdsBySlugs(int seasonYear, List<string> slugs, CancellationToken cancellationToken = default);
     Task<RankingsByPollIdByWeekDto> GetRankingsByPollByWeek(string poll, int seasonYear, int weekNumber, MarkDirection direction, CancellationToken cancellationToken = default);
     Task<Result<TeamRosterDto>> GetTeamRoster(string slug, int seasonYear, CancellationToken cancellationToken = default);
+    /// <summary>Full athlete drill-down (athlete record + every season + statistics). Keyed by GUID — athlete slugs are not unique (~15% collide).</summary>
+    Task<Result<AthleteDetailDto>> GetAthleteDetails(Guid athleteId, CancellationToken cancellationToken = default);
     Task<Result<FranchiseLogosDto>> GetFranchiseLogos(string slug, CancellationToken cancellationToken = default);
     Task<Result<bool>> UpdateLogoDarkBg(Guid logoId, bool isForDarkBg, string logoType, CancellationToken cancellationToken = default);
     /// <summary>Fan out ESPN sourcing for every FranchiseSeason in the year, optionally narrowed to specific child document types. Returns the batch correlation id (the Seq handle).</summary>
@@ -336,6 +338,15 @@ public class FranchiseClient : ClientBase, IProvideFranchises
             new TeamRosterDto(),
             cancellationToken);
         return new Success<TeamRosterDto>(result);
+    }
+
+    public async Task<Result<AthleteDetailDto>> GetAthleteDetails(Guid athleteId, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync(
+            $"athletes/{athleteId}",
+            new AthleteDetailDto(),
+            entityName: "AthleteDetail",
+            cancellationToken: cancellationToken);
     }
 
     public async Task<Result<FranchiseLogosDto>> GetFranchiseLogos(string slug, CancellationToken cancellationToken = default)

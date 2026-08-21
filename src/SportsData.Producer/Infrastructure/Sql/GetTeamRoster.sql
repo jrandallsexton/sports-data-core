@@ -1,5 +1,6 @@
 SELECT
     asl."Id" AS "AthleteSeasonId",
+    asl."AthleteId",
     asl."DisplayName",
     asl."ShortName",
     asl."Slug",

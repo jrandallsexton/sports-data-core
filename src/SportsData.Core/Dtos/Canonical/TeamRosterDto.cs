@@ -11,6 +11,9 @@ public class TeamRosterDto
 public class TeamRosterEntryDto
 {
     public Guid AthleteSeasonId { get; set; }
+
+    /// <summary>The athlete's canonical id — the athlete detail page's route key.</summary>
+    public Guid AthleteId { get; set; }
     public string? DisplayName { get; set; }
     public string? ShortName { get; set; }
     public string? Slug { get; set; }

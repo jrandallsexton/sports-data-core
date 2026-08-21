@@ -1,0 +1,235 @@
+.athlete-card {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  color: var(--text-primary);
+}
+
+.athlete-card.error {
+  color: var(--error-text);
+}
+
+/* ---- header ---- */
+
+.athlete-header {
+  margin-bottom: 1.5rem;
+}
+
+.athlete-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.athlete-title h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.athlete-subtitle {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* ---- sections ---- */
+
+.athlete-section {
+  margin-bottom: 2rem;
+}
+
+.athlete-section h2 {
+  font-size: 1.05rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.9rem;
+}
+
+.athlete-empty {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* ---- fact grid ---- */
+
+.athlete-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.6rem 1.5rem;
+  margin: 0;
+}
+
+.athlete-facts > div {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.athlete-facts dt {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+
+.athlete-facts dd {
+  margin: 0;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.athlete-facts.compact {
+  margin-bottom: 0.9rem;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+}
+
+/* ---- season blocks ---- */
+
+.season-block {
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  background: var(--bg-card);
+  margin-bottom: 0.75rem;
+}
+
+.season-block > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.season-block > summary::-webkit-details-marker {
+  display: none;
+}
+
+.season-block[open] > summary {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.season-year {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.season-team {
+  font-weight: 600;
+}
+
+.season-meta {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.season-doc-count {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.season-body {
+  padding: 0.9rem 1rem 1rem;
+}
+
+/* ---- statistic documents ---- */
+
+.stat-doc {
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 0.75rem;
+}
+
+.stat-doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-doc-split {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.stat-doc-provenance {
+  color: var(--text-secondary);
+}
+
+.stat-category h4 {
+  margin: 0.7rem 0 0.35rem;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+}
+
+.stat-summary {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.stat-table-wrap {
+  overflow-x: auto;
+}
+
+.stat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.stat-table thead th {
+  text-align: left;
+  padding: 0.35rem 0.6rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.stat-table tbody td {
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.stat-table .stat-value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- status badge (matches TeamRoster) ---- */
+
+.athlete-card .status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.athlete-card .status-badge.active {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+}
+
+.athlete-card .status-badge.inactive {
+  background-color: var(--error-bg);
+  color: var(--error-text);
+}

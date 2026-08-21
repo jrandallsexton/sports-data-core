@@ -1,3 +1,4 @@
+import Athletes from "./athleteApi";
 import Matchups from "./matchupsApi";
 import Leaderboard from "./leaderboardApi";
 import Auth from "./authApi";
@@ -18,6 +19,7 @@ import LogoAdmin from "./logoAdminApi";
 import Imports from "./importsApi";
 
 const apiWrapper = {
+  Athletes,
   Matchups,
   Leaderboard,
   Auth,

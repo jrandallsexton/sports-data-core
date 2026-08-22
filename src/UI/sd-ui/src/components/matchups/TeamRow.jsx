@@ -27,6 +27,11 @@ import TeamLogo from "../common/TeamLogo";
  *   TeamRow scoreBox.
  * @param {boolean} [props.isWinner] - True when the game is FINAL and this
  *   team scored strictly more; accents the score.
+ * @param {boolean} [props.hasPossession] - This team has the ball (football)
+ *   or is batting (baseball). Renders beside the score during live games
+ *   only — the placement every sports app uses. Mobile parity:
+ *   MatchupCard.tsx's TeamRow.
+ * @param {string} [props.possessionGlyph] - Sport-appropriate glyph.
  */
 function TeamRow({
   teamName,
@@ -49,7 +54,9 @@ function TeamRow({
   probablePitcher,
   asOfDate,
   score,
-  isWinner
+  isWinner,
+  hasPossession = false,
+  possessionGlyph = '🏈'
 }) {
   // resolveSportLeague returns null for unknown/missing enums so unsupported
   // sports don't silently render as an NCAA football route. Fall back to a
@@ -116,9 +123,22 @@ function TeamRow({
             )}
           </div>
         </div>
-        {score != null && (
-          <div className={`team-score${isWinner ? " team-score--winner" : ""}`}>
-            {score}
+        {(hasPossession || score != null) && (
+          <div className="team-score-box">
+            {hasPossession && (
+              <span
+                className="possession-indicator"
+                aria-label={`${teamName} has possession`}
+                title={`${teamName} has possession`}
+              >
+                {possessionGlyph}
+              </span>
+            )}
+            {score != null && (
+              <div className={`team-score${isWinner ? " team-score--winner" : ""}`}>
+                {score}
+              </div>
+            )}
           </div>
         )}
       </div>

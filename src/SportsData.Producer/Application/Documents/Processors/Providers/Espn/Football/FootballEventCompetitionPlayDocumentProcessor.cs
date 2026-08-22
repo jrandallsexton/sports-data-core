@@ -211,6 +211,8 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
             IsScoringPlay: footballPlay.ScoringPlay,
             ScoringPlayType: footballPlay.ScoringTypeName,
             BallOnYardLine: footballPlay.EndYardLine ?? footballPlay.StartYardLine,
+            Down: footballPlay.EndDown ?? footballPlay.StartDown,
+            Distance: footballPlay.EndDistance ?? footballPlay.StartDistance,
             Ref: null,
             Sport: command.Sport,
             SeasonYear: command.SeasonYear,

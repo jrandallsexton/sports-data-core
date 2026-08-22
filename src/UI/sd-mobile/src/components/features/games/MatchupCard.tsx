@@ -13,6 +13,7 @@ import { useUserOptions } from '@/src/hooks/useUserOptions';
 import { shouldShowGambling } from '@/src/lib/gamblingContent';
 import { useTeamFinalizedGames } from '@/src/hooks/useTeamFinalizedGames';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
+import { getPossessionGlyph, getPossessionSide } from '@/src/utils/liveSituation';
 import { InsightModal } from './InsightModal';
 import { StatsComparisonModal } from './StatsComparisonModal';
 import { GameStatus } from './GameStatus';
@@ -84,22 +85,23 @@ function TeamRow({
   matchup,
   side,
   isWinning,
-  isPicked,
-  isPickCorrect,
   isFinal,
   isScheduleOpen,
   onToggleSchedule,
   canShowSchedule,
+  hasPossession,
+  possessionGlyph,
 }: {
   matchup: Matchup;
   side: 'home' | 'away';
   isWinning: boolean;
-  isPicked: boolean;
-  isPickCorrect: boolean | null;
   isFinal: boolean;
   isScheduleOpen: boolean;
   onToggleSchedule: () => void;
   canShowSchedule: boolean;
+  /** This side has the ball (football) / is batting (baseball). */
+  hasPossession: boolean;
+  possessionGlyph: string;
 }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -138,16 +140,11 @@ function TeamRow({
   const isActive = !isFinal || isWinning || isTie;
   const record = formatRecord(wins, losses, confWins, confLosses);
 
-  // Pick indicator styling — uses the same theme.pickCorrect /
-  // theme.pickIncorrect tokens as PickButton and the card border, so all
-  // three result cues stay in lockstep across themes and match web's
-  // --pick-correct / --pick-incorrect palette.
-  let pickIndicatorColor: string | null = null;
-  if (isPicked && isFinal) {
-    pickIndicatorColor = isPickCorrect ? theme.pickCorrect : theme.pickIncorrect;
-  } else if (isPicked) {
-    pickIndicatorColor = theme.tint;
-  }
+  // NOTE: there is deliberately no pick indicator on the team row. A
+  // marker here (previously a blue ▶) sits exactly where every sports app
+  // puts possession, so during a live game it read as "this team has the
+  // ball". The pick is already stated unambiguously by the pick buttons
+  // at the foot of the card, and the result by the card border.
 
   return (
     // Background lives at the call site so the team row gets theme.card,
@@ -230,15 +227,18 @@ function TeamRow({
         ) : null}
       </View>
 
-      {/* Score + pick indicator — only render when there's content to show.
-          Pre-game with no pick, the empty box was reserving minWidth + the
-          parent row's gap, which squeezed the team name in the compact
-          layout and forced truncation ("Cleveland Guar..."). */}
-      {(pickIndicatorColor || score != null) && (
+      {/* Score + possession — only render when there's content to show.
+          Pre-game with nothing to show, the empty box was reserving
+          minWidth + the parent row's gap, which squeezed the team name in
+          the compact layout and forced truncation ("Cleveland Guar..."). */}
+      {(hasPossession || score != null) && (
         <View style={styles.scoreBox}>
-          {pickIndicatorColor && (
-            <Text style={[styles.pickIndicator, { color: pickIndicatorColor }]}>
-              {isPicked && isFinal ? (isPickCorrect ? '✓' : '✗') : '▶'}
+          {hasPossession && (
+            <Text
+              style={styles.possessionIndicator}
+              accessibilityLabel={`${name} has possession`}
+            >
+              {possessionGlyph}
             </Text>
           )}
           {score != null && (
@@ -583,6 +583,8 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
         ? live.scoringPlayType
         : matchup.scoringPlayType,
       ballOnYardLine: live.ballOnYardLine ?? matchup.ballOnYardLine,
+      down: live.down ?? matchup.down,
+      distance: live.distance ?? matchup.distance,
       // Baseball live fields
       inning: live.inning ?? matchup.inning,
       halfInning: live.halfInning ?? matchup.halfInning,
@@ -624,9 +626,13 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
   // lowercased and compared against bare 'final' / 'completed', which
   // never matched the wire's STATUS_FINAL shape — so isFinal was always
   // false and the entire scored-card visual pipeline (PickButton
-  // green/red, team-row indicator ✓/✗, card border tint, winning-team
-  // score color) silently no-op'd.
+  // green/red, card border tint, winning-team score color) silently
+  // no-op'd.
   const isFinal = enrichedMatchup.status === 'STATUS_FINAL';
+
+  // Computed from the ENRICHED matchup: possession arrives over SignalR,
+  // not in the REST payload, so the pre-merge matchup would never have it.
+  const possessionSide = getPossessionSide(enrichedMatchup, leagueSport);
 
   // Optimistic local pick — shows selection instantly before server confirms
   const [optimisticFranchiseId, setOptimisticFranchiseId] = useState<string | null>(null);
@@ -650,6 +656,7 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
 
   const year = seasonYear ?? new Date(matchup.startDateUtc).getFullYear();
   const sportLeague = resolveSportLeague(leagueSport);
+  const possessionGlyph = getPossessionGlyph(leagueSport);
 
   // Point-in-time anchor for the MiniSchedule — THIS game's kickoff, not the
   // week's end. The endpoint filters FinalizedUtc <= asOfDate, and a game's
@@ -851,12 +858,12 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
             matchup={enrichedMatchup}
             side="away"
             isWinning={awayIsWinning}
-            isPicked={pickedAway}
-            isPickCorrect={isPickCorrect}
             isFinal={isFinal}
             isScheduleOpen={showAwaySchedule}
             onToggleSchedule={() => setShowAwaySchedule((v) => !v)}
             canShowSchedule={!!sportLeague}
+            hasPossession={possessionSide === 'away'}
+            possessionGlyph={possessionGlyph}
           />
         </TouchableOpacity>
         {showAwaySchedule && (
@@ -882,12 +889,12 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
             matchup={enrichedMatchup}
             side="home"
             isWinning={homeIsWinning}
-            isPicked={pickedHome}
-            isPickCorrect={isPickCorrect}
             isFinal={isFinal}
             isScheduleOpen={showHomeSchedule}
             onToggleSchedule={() => setShowHomeSchedule((v) => !v)}
             canShowSchedule={!!sportLeague}
+            hasPossession={possessionSide === 'home'}
+            possessionGlyph={possessionGlyph}
           />
         </TouchableOpacity>
         {showHomeSchedule && (
@@ -1092,9 +1099,8 @@ const styles = StyleSheet.create({
   scoreWinner: {
     fontSize: 22,
   },
-  pickIndicator: {
-    fontSize: 14,
-    fontWeight: '800',
+  possessionIndicator: {
+    fontSize: 13,
   },
 
   // Status styles live in GameStatus.tsx

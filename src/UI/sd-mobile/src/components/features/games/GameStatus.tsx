@@ -7,6 +7,7 @@ import type { Matchup, PickType } from '@/src/types/models';
 import { formatToUserTime, getDefaultGameWeekday } from '@/src/utils/timeUtils';
 import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 import { FinalScoreResult } from './FinalScoreResult';
+import { formatFootballSituation } from '@/src/utils/liveSituation';
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -297,14 +298,10 @@ function FootballInProgress({
   const delayLabel = (
     matchup.statusDescription ?? matchup.status ?? 'PAUSED'
   ).toUpperCase();
-  const awayScore = matchup.awayScore ?? 0;
-  const homeScore = matchup.homeScore ?? 0;
-  const awayHasPossession =
-    !!matchup.possessionFranchiseSeasonId &&
-    matchup.possessionFranchiseSeasonId === matchup.awayFranchiseSeasonId;
-  const homeHasPossession =
-    !!matchup.possessionFranchiseSeasonId &&
-    matchup.possessionFranchiseSeasonId === matchup.homeFranchiseSeasonId;
+  // Possession now renders on the team row (see MatchupCard.TeamRow) — the
+  // scoreline that used to carry it here duplicated the scores already
+  // shown against each team, so this slot became the situation line.
+  const situation = formatFootballSituation(matchup);
   const hasLastPlay =
     typeof matchup.lastPlayDescription === 'string' &&
     matchup.lastPlayDescription.length > 0;
@@ -346,13 +343,13 @@ function FootballInProgress({
         ) : null}
       </View>
 
-      <View style={[styles.scoreRow, matchup.isScoringPlay ? styles.scoreRowFlash : null]}>
-        {awayHasPossession ? <Text style={styles.possessionIcon}>🏈</Text> : null}
-        <Text style={[styles.scoreText, { color: theme.text }]}>
-          {matchup.awayShort} {awayScore} – {homeScore} {matchup.homeShort}
-        </Text>
-        {homeHasPossession ? <Text style={styles.possessionIcon}>🏈</Text> : null}
-      </View>
+      {situation ? (
+        <View style={[styles.situationRow, matchup.isScoringPlay ? styles.scoreRowFlash : null]}>
+          <Text style={[styles.situationText, { color: theme.text }]}>
+            {situation}
+          </Text>
+        </View>
+      ) : null}
 
       {matchup.isScoringPlay ? (
         <Text style={styles.scoringPlayText}>
@@ -391,13 +388,10 @@ function BaseballInProgress({
   const delayLabel = (
     matchup.statusDescription ?? matchup.status ?? 'PAUSED'
   ).toUpperCase();
-  const awayScore = matchup.awayScore ?? 0;
-  const homeScore = matchup.homeScore ?? 0;
-  // halfInning "Top" → away batting (gets the ⚾); "Bottom" → home batting.
-  const half = (matchup.halfInning ?? '').toLowerCase();
-  const awayIsBatting = half === 'top';
-  const homeIsBatting = half === 'bottom';
-
+  // The batting indicator moved to the team row alongside football's
+  // possession glyph (see MatchupCard.TeamRow); the scoreline it rode on
+  // duplicated the per-team scores and has been dropped. Baseball's
+  // situation already renders below as inning · count · outs.
   const hasInningRow =
     (typeof matchup.inning === 'number' && matchup.inning > 0) ||
     (typeof matchup.halfInning === 'string' && matchup.halfInning.length > 0);
@@ -428,14 +422,6 @@ function BaseballInProgress({
             <Text style={styles.liveText}>LIVE</Text>
           </>
         )}
-      </View>
-
-      <View style={[styles.scoreRow, matchup.isScoringPlay ? styles.scoreRowFlash : null]}>
-        {awayIsBatting ? <Text style={styles.possessionIcon}>⚾</Text> : null}
-        <Text style={[styles.scoreText, { color: theme.text }]}>
-          {matchup.awayShort} {awayScore} – {homeScore} {matchup.homeShort}
-        </Text>
-        {homeIsBatting ? <Text style={styles.possessionIcon}>⚾</Text> : null}
       </View>
 
       {hasAtBatRow ? (
@@ -478,13 +464,18 @@ function BaseballInProgress({
       ) : null}
 
       {hasInningRow ? (
-        <Text style={[styles.baseballSummary, { color: theme.textMuted }]}>
-          {formattedHalfInning}
-          {' · '}
-          {matchup.balls ?? 0}-{matchup.strikes ?? 0}
-          {' · '}
-          {matchup.outs ?? 0} {outsLabel}
-        </Text>
+        // Baseball's situation line, and — since the scoreline that used to
+        // carry it is gone — the scoring-play flash target, mirroring
+        // football's situationRow.
+        <View style={[styles.situationRow, matchup.isScoringPlay ? styles.scoreRowFlash : null]}>
+          <Text style={[styles.baseballSummary, { color: theme.textMuted }]}>
+            {formattedHalfInning}
+            {' · '}
+            {matchup.balls ?? 0}-{matchup.strikes ?? 0}
+            {' · '}
+            {matchup.outs ?? 0} {outsLabel}
+          </Text>
+        </View>
       ) : null}
 
       {hasRunnersRow ? (
@@ -577,8 +568,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  // Score
-  scoreRow: {
+  // Live situation line ("2nd & 7 · JAX 27"). Occupies the slot the
+  // duplicated scoreline used to hold.
+  situationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -587,9 +579,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 6,
   },
-  // Brief yellow highlight on the score row when isScoringPlay is true.
-  // The store auto-clears the flag after 2s (see contestUpdatesStore),
-  // so this style toggles off automatically without an Animated value.
+  situationText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  // Brief yellow highlight on the situation row when isScoringPlay is
+  // true. The store auto-clears the flag after 2s (see
+  // contestUpdatesStore), so this style toggles off automatically
+  // without an Animated value.
   scoreRowFlash: {
     backgroundColor: 'rgba(250, 204, 21, 0.25)',
   },
@@ -609,9 +606,6 @@ const styles = StyleSheet.create({
   suCheck: {
     fontSize: 15,
     fontWeight: '800',
-  },
-  possessionIcon: {
-    fontSize: 14,
   },
   scoringPlayText: {
     fontSize: 13,

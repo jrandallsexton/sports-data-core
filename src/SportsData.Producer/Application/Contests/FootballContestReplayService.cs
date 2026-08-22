@@ -170,6 +170,8 @@ namespace SportsData.Producer.Application.Contests
                         IsScoringPlay: play.ScoringPlay,
                         ScoringPlayType: play.ScoringTypeName,
                         BallOnYardLine: play.EndYardLine ?? play.StartYardLine,
+                        Down: play.EndDown ?? play.StartDown,
+                        Distance: play.EndDistance ?? play.StartDistance,
                         Ref: null,
                         Sport: contest.Sport,
                         SeasonYear: contest.SeasonYear,

@@ -31,6 +31,10 @@ export interface ContestLiveRecord {
    *  to fetched data; explicit null means "no published type" and clears. */
   scoringPlayType?: string | null;
   ballOnYardLine?: number | null;
+  /** Down / yards-to-go for the situation line; same merge semantics as
+   *  scoringPlayType (omitted = fall back, explicit null = clear). */
+  down?: number | null;
+  distance?: number | null;
 
   // Baseball fields
   inning?: number;
@@ -171,6 +175,8 @@ export const useContestUpdatesStore = create<ContestUpdatesState>((set) => ({
           // to fetched data), explicit null clears a stale type.
           scoringPlayType: data.scoringPlayType,
           ballOnYardLine: data.ballOnYardLine,
+          down: data.down,
+          distance: data.distance,
           lastPlayId: data.playId,
           lastPlayDescription: data.playDescription,
           lastPlayAt: now,

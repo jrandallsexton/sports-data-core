@@ -37,10 +37,19 @@ export interface FootballPlayCompletedPayload {
    *  the type wasn't captured; absent entirely on pre-upgrade messages. */
   scoringPlayType?: string | null;
   /**
-   * 0–100 yards from the away (visitor) goal line. Null at pre-snap,
-   * halftime, or post-game — match ESPN's YardLine convention.
+   * Absolute field coordinate, 0–100 measured from the HOME goal line
+   * (home goal = 0, away goal = 100) — ESPN's YardLine convention. Home
+   * yard numbers read directly, away numbers invert. Null at pre-snap,
+   * halftime, or post-game.
    */
   ballOnYardLine: number | null;
+  /**
+   * Down and yards-to-go for the next snap, driving the live card's
+   * situation line ("2nd & 7"). Null/0 means no snap state (kickoff,
+   * extra point, end of period); absent entirely on pre-upgrade messages.
+   */
+  down?: number | null;
+  distance?: number | null;
 }
 
 /**

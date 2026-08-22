@@ -101,6 +101,10 @@ export const ContestUpdatesProvider = ({ children }) => {
         // and must CLEAR any stale value (label falls back to SCORE!).
         scoringPlayType: data.scoringPlayType,
         ballOnYardLine: data.ballOnYardLine,
+        // Down / yards-to-go for the situation line; same merge semantics
+        // as scoringPlayType (omitted = fall back, explicit null = clear).
+        down: data.down,
+        distance: data.distance,
         lastPlayId: data.playId,
         lastPlayDescription: data.playDescription,
         lastPlayAt: Date.now(),

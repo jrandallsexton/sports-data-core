@@ -95,8 +95,14 @@ export interface Matchup {
   /** Canonical scoring-type NAME slug ('touchdown', 'field-goal', 'safety',
    *  'defensive-two-point-conversion') or null - NOT a display name. */
   scoringPlayType?: string | null;
-  /** 0–100 yards from the away (visitor) goal line. Null pre-snap / halftime / post-game. */
+  /** Absolute field coordinate, 0–100 from the HOME goal line (home goal
+   *  = 0, away goal = 100), so home yard numbers read directly and away
+   *  numbers invert. Null pre-snap / halftime / post-game. */
   ballOnYardLine?: number | null;
+  /** Down and yards-to-go for the next snap ("2nd & 7"). Null/0 means no
+   *  snap state — kickoff, extra point, end of period. */
+  down?: number | null;
+  distance?: number | null;
 
   // Live game state — baseball (populated by BaseballPlayCompleted via contestUpdatesStore)
   inning?: number | null;

@@ -41,7 +41,11 @@ public record DebugFootballPlayRequest(
     // null exercises the clients' neutral "SCORE!" fallback. Optional so
     // existing debug tooling keeps working unchanged.
     string? ScoringPlayType,
-    int? BallOnYardLine);
+    int? BallOnYardLine,
+    // Down and yards-to-go for the situation line ("2nd & 7"). Optional so
+    // existing debug tooling keeps working unchanged.
+    int? Down = null,
+    int? Distance = null);
 
 /// <summary>
 /// Request body for POST /admin/signalr-debug/baseball-play. Drives a

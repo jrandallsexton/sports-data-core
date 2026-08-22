@@ -1,12 +1,18 @@
 import { Link } from "react-router-dom";
 import { contestLink } from '../../utils/sportLinks';
+import { formatFootballSituation } from '../../utils/liveSituation';
 
 /**
- * Football per-play live block. Renders LIVE label, period+clock, score
- * with 🏈 next to the team in possession, scoring flash + a typed
+ * Football per-play live block. Renders LIVE label, period+clock, the
+ * situation line ("2nd & 7 · LV 25"), scoring flash + a typed
  * celebration label (🎉 TOUCHDOWN! / FIELD GOAL! / SAFETY! / neutral
  * SCORE! when the type is unknown - issue #45), and a last-play
  * description row (mirrors baseball).
+ *
+ * Possession renders on the TEAM ROW, not here: a marker beside the team
+ * name is where every sports app puts it, and the scoreline that used to
+ * carry it duplicated the scores already shown against each team. That
+ * slot is now the situation line.
  *
  * Class names are intentionally kept (`.game-result`, `.final-score`,
  * `.score-display`, etc.) — the broader status-neutral rename is a
@@ -15,13 +21,12 @@ import { contestLink } from '../../utils/sportLinks';
 function FootballGameStatusInProgress({
   awayShort,
   homeShort,
-  awayScore,
-  homeScore,
   period,
   clock,
-  awayFranchiseSeasonId,
-  homeFranchiseSeasonId,
-  possessionFranchiseSeasonId,
+  // Down / yards-to-go and ball spot for the situation line.
+  down,
+  distance,
+  ballOnYardLine,
   isScoringPlay,
   // Nullable canonical scoring-type NAME slug ('touchdown', 'field-goal',
   // 'safety', 'defensive-two-point-conversion') - NOT a display name. The
@@ -38,16 +43,13 @@ function FootballGameStatusInProgress({
   league,
 }) {
   const delayLabel = (statusDescription || status || 'PAUSED').toUpperCase();
-  // Guard against null/undefined possession — without the != null check,
-  // a missing possessionFranchiseSeasonId could match a missing
-  // awayFranchiseSeasonId / homeFranchiseSeasonId via `===` and falsely
-  // mark a team as having possession.
-  const awayHasPossession =
-    possessionFranchiseSeasonId != null
-    && possessionFranchiseSeasonId === awayFranchiseSeasonId;
-  const homeHasPossession =
-    possessionFranchiseSeasonId != null
-    && possessionFranchiseSeasonId === homeFranchiseSeasonId;
+  const situation = formatFootballSituation({
+    down,
+    distance,
+    ballOnYardLine,
+    awayShort,
+    homeShort,
+  });
 
   const hasLastPlayRow =
     typeof lastPlayDescription === 'string' && lastPlayDescription.length > 0;
@@ -86,11 +88,11 @@ function FootballGameStatusInProgress({
       {period && clock && (
         <span className="game-clock">{period} - {clock}</span>
       )}
-      <span className={`score-display ${isScoringPlay ? 'score-flash' : ''}`}>
-        {awayHasPossession && <span className="possession-indicator">🏈</span>}
-        {awayShort} {awayScore} - {homeScore} {homeShort}
-        {homeHasPossession && <span className="possession-indicator">🏈</span>}
-      </span>
+      {situation && (
+        <span className={`situation-display ${isScoringPlay ? 'score-flash' : ''}`}>
+          {situation}
+        </span>
+      )}
       {isScoringPlay && (
         <span className="touchdown-indicator">
           {scoring.emoji ? '🎉 ' : ''}

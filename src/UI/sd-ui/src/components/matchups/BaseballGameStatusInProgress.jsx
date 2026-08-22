@@ -23,10 +23,6 @@ import { contestLink } from '../../utils/sportLinks';
  * markup is deferred to a follow-up effort per docs/matchup-card.md.
  */
 function BaseballGameStatusInProgress({
-  awayShort,
-  homeShort,
-  awayScore,
-  homeScore,
   inning,
   halfInning,
   balls,
@@ -57,11 +53,8 @@ function BaseballGameStatusInProgress({
   league,
 }) {
   const delayLabel = (statusDescription || status || 'PAUSED').toUpperCase();
-  // Top of the inning → away team is batting; Bottom → home batting.
-  // Empty/unknown halfInning produces no indicator (graceful degrade).
-  const half = (halfInning ?? '').toLowerCase();
-  const awayIsBatting = half === 'top';
-  const homeIsBatting = half === 'bottom';
+  // Which side is batting is derived in utils/liveSituation and rendered
+  // on the team row now, so this block no longer needs it.
 
   // Suppress rows whose source fields are absent. Inning is the only
   // truthiness check that needs care because PeriodNumber=0 isn't a
@@ -94,12 +87,10 @@ function BaseballGameStatusInProgress({
       ) : (
         <span className="status-label live-indicator">LIVE</span>
       )}
-      <span className={`score-display ${isScoringPlay ? 'score-flash' : ''}`}>
-        {awayIsBatting && <span className="possession-indicator" aria-label="batting">⚾</span>}
-        {awayShort} {awayScore} - {homeScore} {homeShort}
-        {homeIsBatting && <span className="possession-indicator" aria-label="batting">⚾</span>}
-      </span>
-
+      {/* The batting indicator moved to the team row alongside football's
+          possession glyph, and the scoreline it rode on duplicated the
+          per-team scores. Baseball's situation already renders below as
+          inning · count · outs. */}
       {hasAtBatRow && (
         <span className="live-state-atbat">
           {atBatShortName && (
@@ -138,7 +129,10 @@ function BaseballGameStatusInProgress({
       )}
 
       {hasInningRow && (
-        <span className="live-state-summary">
+        // Baseball's situation line, and — since the scoreline that used
+        // to carry it is gone — the scoring-play flash target, mirroring
+        // football's situation-display.
+        <span className={`live-state-summary ${isScoringPlay ? 'score-flash' : ''}`}>
           {formattedHalfInning}
           {' · '}
           {balls ?? 0}-{strikes ?? 0}

@@ -16,6 +16,7 @@ import { useTheme } from "../../contexts/ThemeContext";
 import PickButton from "./PickButton";
 import { SpreadAndOverUnderDisplay } from "./BettingDisplays";
 import { shouldShowGambling } from "../../utils/gamblingContent";
+import { getPossessionGlyph, getPossessionSide } from "../../utils/liveSituation";
 import DeetsMeter from "./DeetsMeter";
 import ConfidencePicker from "./ConfidencePicker";
 
@@ -110,6 +111,12 @@ function MatchupCard({
   const bothScored = matchup.awayScore != null && matchup.homeScore != null;
   const awayIsWinner = isFinalStatus && bothScored && matchup.awayScore > matchup.homeScore;
   const homeIsWinner = isFinalStatus && bothScored && matchup.homeScore > matchup.awayScore;
+
+  // Possession renders on the team rows (mobile parity). Live-only — the
+  // helper returns null once the game is FINAL, so the last play's
+  // possession can't linger on a finished card.
+  const possessionSide = getPossessionSide(matchup, leagueSport);
+  const possessionGlyph = getPossessionGlyph(leagueSport);
 
   // Game details. The (Day) parenthetical shows only when the game falls
   // off the sport's expected day (NCAAFB: Sat, NFL: Sun, others: always
@@ -215,6 +222,8 @@ function MatchupCard({
           asOfDate={scheduleAsOfDate}
           score={matchup.awayScore}
           isWinner={awayIsWinner}
+          hasPossession={possessionSide === 'away'}
+          possessionGlyph={possessionGlyph}
         />
 
         {/* Home Team Row */}
@@ -240,6 +249,8 @@ function MatchupCard({
           asOfDate={scheduleAsOfDate}
           score={matchup.homeScore}
           isWinner={homeIsWinner}
+          hasPossession={possessionSide === 'home'}
+          possessionGlyph={possessionGlyph}
         />
 
         {/* Spread and Over/Under — gated: see utils/gamblingContent.js */}
@@ -270,7 +281,9 @@ function MatchupCard({
           clock={matchup.clock}
           awayFranchiseSeasonId={matchup.awayFranchiseSeasonId}
           homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
-          possessionFranchiseSeasonId={matchup.possessionFranchiseSeasonId}
+          down={matchup.down}
+          distance={matchup.distance}
+          ballOnYardLine={matchup.ballOnYardLine}
           isScoringPlay={matchup.isScoringPlay}
           scoringPlayType={matchup.scoringPlayType}
           // Baseball-shaped live fields (populated by ContestUpdatesContext

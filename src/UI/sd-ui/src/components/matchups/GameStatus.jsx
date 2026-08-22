@@ -60,7 +60,12 @@ function GameStatus({
   clock,
   awayFranchiseSeasonId,
   homeFranchiseSeasonId,
-  possessionFranchiseSeasonId,
+  // Football live snap state. possessionFranchiseSeasonId is consumed by
+  // the TEAM ROWS (MatchupCard) rather than here — the status block now
+  // carries the situation line built from down / distance / ball spot.
+  down,
+  distance,
+  ballOnYardLine,
   isScoringPlay,
   scoringPlayType,
   // Baseball-specific live fields (populated by ContestUpdatesContext
@@ -195,13 +200,11 @@ function GameStatus({
       <FootballGameStatusInProgress
         awayShort={awayShort}
         homeShort={homeShort}
-        awayScore={awayScore}
-        homeScore={homeScore}
         period={period}
         clock={clock}
-        awayFranchiseSeasonId={awayFranchiseSeasonId}
-        homeFranchiseSeasonId={homeFranchiseSeasonId}
-        possessionFranchiseSeasonId={possessionFranchiseSeasonId}
+        down={down}
+        distance={distance}
+        ballOnYardLine={ballOnYardLine}
         isScoringPlay={isScoringPlay}
         scoringPlayType={scoringPlayType}
         isDelayed={isDelayed}

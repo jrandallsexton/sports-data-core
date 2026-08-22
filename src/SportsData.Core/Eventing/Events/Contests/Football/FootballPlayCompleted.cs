@@ -34,10 +34,23 @@ namespace SportsData.Core.Eventing.Events.Contests.Football
         // Nullable keeps old in-flight messages deserializable, so deploy
         // order doesn't matter.
         string? ScoringPlayType,
-        // Ball position on the field, expressed as 0–100 yards from the
-        // away (visitor) goal line. Matches ESPN's YardLine convention.
+        // Ball position as an ABSOLUTE field coordinate, 0–100 measured
+        // from the HOME team's goal line (home goal = 0, away goal = 100).
+        // Matches ESPN's YardLine convention. So the home team's own yard
+        // numbers read directly (HOME 35 → 35) and the away team's invert
+        // (AWAY 25 → 75) — verified against stored play text across
+        // several games and both home/away orientations. A drive by the
+        // home team increases this value; an away drive decreases it.
         // Null means unknown (e.g. pre-snap, halftime, post-game).
         int? BallOnYardLine,
+        // Down and yards-to-go for the NEXT snap (the play's End* state,
+        // falling back to Start*). Drives the live card's situation line
+        // ("2nd & 7"). Nullable for the same reason as ScoringPlayType:
+        // pre-capture rows and old in-flight messages must stay
+        // deserializable, so deploy order doesn't matter. Down 0 / null
+        // means no snap state (kickoff, extra point, end of period).
+        int? Down,
+        int? Distance,
         Uri? Ref,
         Sport Sport,
         int? SeasonYear,

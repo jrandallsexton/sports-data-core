@@ -123,8 +123,11 @@ describe('MatchupCard — live updates', () => {
     // Last-play description.
     expect(screen.getByText(/homers to deep center/)).toBeTruthy();
 
-    // Score line includes both teams' new scores.
-    expect(screen.getByText(/NYY 4 – 2 BOS/)).toBeTruthy();
+    // The duplicated "NYY 4 – 2 BOS" line is gone — scores live on the
+    // team rows. The batting indicator moved there with it: "Top" means
+    // the away side bats, so exactly one baseball renders.
+    expect(screen.queryByText(/NYY 4 – 2 BOS/)).toBeNull();
+    expect(screen.getAllByText('⚾')).toHaveLength(1);
   });
 
   it('renders football InProgress UI after a FootballPlayCompleted event arrives', () => {
@@ -146,13 +149,23 @@ describe('MatchupCard — live updates', () => {
         possessionFranchiseSeasonId: '00000000-0000-0000-0000-0000000000b1', // away
         isScoringPlay: false,
         ballOnYardLine: 22,
+        down: 2,
+        distance: 7,
       });
     });
 
-    // LIVE + period/clock + new score.
+    // LIVE + period/clock. The scores render on the team rows; the status
+    // block's old "KC 14 – 17 BUF" line duplicated them and now carries
+    // the situation instead.
     expect(screen.getByText('LIVE')).toBeTruthy();
     expect(screen.getByText(/Q3\s*–\s*4:21/)).toBeTruthy();
-    expect(screen.getByText(/KC 14 – 17 BUF/)).toBeTruthy();
+    // ballOnYardLine is absolute from the HOME goal line, so 22 sits in
+    // home (BUF) territory and reads directly.
+    expect(screen.getByText('2nd & 7 · BUF 22')).toBeTruthy();
+    // Possession moved to the team row: exactly one football, and no
+    // leftover pick arrow anywhere on the card.
+    expect(screen.getAllByText('🏈')).toHaveLength(1);
+    expect(screen.queryByText('▶')).toBeNull();
   });
 
   it('renders batter team logo + headshot when the BaseballPlayCompleted carries them', () => {

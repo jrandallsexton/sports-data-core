@@ -127,6 +127,16 @@
   gap: 1rem;
 }
 
+/* Score + possession glyph at the row's far right. The glyph sits to the
+   LEFT of the score — ESPN's placement, and where the eye already goes
+   during a live game. */
+.matchup-card .team-score-box {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
 /* Per-team score at the row's far right (mobile parity). Neutral while the
    game is live; the winner's score takes the accent once FINAL. */
 .matchup-card .team-score {
@@ -380,6 +390,17 @@
   gap: 8px;
 }
 
+/* Live football situation ("2nd & 7 · LV 25"), in the slot the duplicated
+   scoreline used to occupy. */
+.situation-display {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* SU quick-scan indicator: a checkmark hugging the winning team's
    short directly in the score line. .score-display-team groups the
    team short + (optional) check so flex gap stays between team groups
@@ -452,7 +473,9 @@
   }
 }
 
-.score-display.score-flash {
+.score-display.score-flash,
+.situation-display.score-flash,
+.live-state-summary.score-flash {
   animation: flash-score 2s ease-in-out;
   font-weight: 700;
 }

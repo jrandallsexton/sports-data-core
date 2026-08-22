@@ -988,6 +988,8 @@ namespace SportsData.Api.Application.Admin
                     IsScoringPlay: request.IsScoringPlay,
                     ScoringPlayType: request.ScoringPlayType,
                     BallOnYardLine: request.BallOnYardLine,
+                    Down: request.Down,
+                    Distance: request.Distance,
                     Ref: null,
                     Sport: sport,
                     SeasonYear: null,

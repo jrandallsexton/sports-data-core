@@ -64,10 +64,13 @@ LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
 -- Ordered by the ESPN play ordinal NUMERICALLY. SequenceNumber is stored
 -- as text and is variable width (1 to 9 digits in the corpus), so a plain
 -- text sort puts "9" above "100000" and would pick an early play as the
--- latest. Only entirely-numeric values are orderable — the SAME rule the
--- C# stitch applies, so the two paths can never select different plays —
--- and anything else sorts last instead of throwing the query. CreatedUtc
--- breaks ties.
+-- latest. Only entirely-numeric values of AT MOST 18 digits are orderable —
+-- the SAME rule the C# stitch applies, so the two paths can never select
+-- different plays — and anything else sorts last instead of throwing.
+-- The 18-digit bound matters: ::bigint on a longer all-digits value raises
+-- "value out of range" and would fail the whole query (and with it the
+-- matchups endpoint), whereas 18 nines always fits. Leading zeroes cast
+-- fine and match long.Parse. CreatedUtc breaks ties.
 --
 -- Id, Text and StartFranchiseSeasonId all live on the shared
 -- CompetitionPlay base, so this lateral is sport-neutral. The possession
@@ -82,7 +85,7 @@ LEFT JOIN LATERAL (
   FROM public."CompetitionPlay" lp
   WHERE lp."CompetitionId" = comp."Id"
   ORDER BY
-    (CASE WHEN lp."SequenceNumber" ~ '^[0-9]+$' THEN lp."SequenceNumber"::bigint END) DESC NULLS LAST,
+    (CASE WHEN lp."SequenceNumber" ~ '^[0-9]{1,18}$' THEN lp."SequenceNumber"::bigint END) DESC NULLS LAST,
     lp."CreatedUtc" DESC
   LIMIT 1
 ) live ON TRUE

@@ -390,6 +390,54 @@ public class GetMatchupsByContestIdsQueryHandlerTests
     }
 
     [Fact]
+    public async Task GetLiveSituations_OversizedNumericSequence_SortsLastNotFirst()
+    {
+        // arrange — an all-digits ordinal too large for a 64-bit integer.
+        // The SQL lateral bounds the cast at 18 digits because ::bigint on
+        // anything longer raises "value out of range" and would fail the
+        // whole query; this side must apply the identical bound or the two
+        // paths would select different plays.
+        var ctx = NewFootballContext();
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        SeedFootballContestWithCompetition(ctx, contestId, competitionId);
+        SeedFootballPlay(ctx, competitionId, sequence: "900", down: 2, distance: 5, yardLine: 45);
+        SeedFootballPlay(
+            ctx, competitionId, sequence: "99999999999999999999999",
+            down: 4, distance: 1, yardLine: 12);
+        await ctx.SaveChangesAsync();
+
+        // act
+        var result = await NewFootballSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        // assert — the in-range ordinal wins despite being numerically and
+        // lexicographically smaller.
+        result[contestId].Down.Should().Be(2);
+        result[contestId].BallOnYardLine.Should().Be(45);
+    }
+
+    [Fact]
+    public async Task GetLiveSituations_LeadingZeroSequence_OrdersByItsNumericValue()
+    {
+        // Leading zeroes cast cleanly on both sides ("000123" -> 123), so
+        // the padded ordinal must lose to the larger unpadded one.
+        var ctx = NewFootballContext();
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        SeedFootballContestWithCompetition(ctx, contestId, competitionId);
+        SeedFootballPlay(ctx, competitionId, sequence: "000123", down: 1, distance: 10, yardLine: 20);
+        SeedFootballPlay(ctx, competitionId, sequence: "900", down: 3, distance: 2, yardLine: 61);
+        await ctx.SaveChangesAsync();
+
+        var result = await NewFootballSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        result[contestId].Down.Should().Be(3);
+        result[contestId].BallOnYardLine.Should().Be(61);
+    }
+
+    [Fact]
     public async Task GetLiveSituations_PossessionComesFromTheEndOfPlayTeam()
     {
         // arrange — a punt: the start team kicked it away, the end team

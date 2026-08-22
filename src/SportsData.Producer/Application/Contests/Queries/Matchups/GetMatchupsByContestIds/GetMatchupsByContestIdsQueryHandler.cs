@@ -205,13 +205,22 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
     }
 
     /// <summary>
-    /// Accepts an ESPN play ordinal only when it is entirely digits — the
-    /// same rule as the SQL lateral's ordering, so the two paths can never
-    /// disagree about which play is latest. Null means "not orderable".
+    /// Accepts an ESPN play ordinal only when it is entirely digits and at
+    /// most 18 of them — the same rule as the SQL lateral's ordering, so
+    /// the two paths can never disagree about which play is latest. Null
+    /// means "not orderable" and sorts last.
+    ///
+    /// The 18-digit bound comes from the SQL side, where ::bigint on a
+    /// longer all-digits value raises "value out of range" and would fail
+    /// the whole query; 18 nines always fits. Matching it here keeps the
+    /// two rules identical rather than merely similar.
     /// </summary>
+    private const int MaxOrderableSequenceDigits = 18;
+
     private static long? ParseSequenceNumber(string? sequenceNumber)
     {
         if (string.IsNullOrEmpty(sequenceNumber)) return null;
+        if (sequenceNumber.Length > MaxOrderableSequenceDigits) return null;
 
         foreach (var c in sequenceNumber)
         {

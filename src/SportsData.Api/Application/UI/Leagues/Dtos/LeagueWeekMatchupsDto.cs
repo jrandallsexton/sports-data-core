@@ -115,6 +115,42 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
             public bool IsPreviewAvailable { get; set; }
             public bool IsPreviewReviewed { get; set; }
 
+            // Live game state at rest. Mirrors the fields the per-play
+            // SignalR events carry, so a client arriving mid-game — or one
+            // sitting through a gap in the stream (commercial break,
+            // halftime) — renders a complete live card rather than waiting
+            // for the next play. SignalR remains the real-time path and
+            // overwrites these on arrival.
+
+            /// <summary>Football period, pre-formatted as SignalR sends it ("Q3"). Null for baseball.</summary>
+            public string? Period { get; set; }
+
+            /// <summary>Baseball inning number. Null for football.</summary>
+            public int? Inning { get; set; }
+
+            public string? Clock { get; set; }
+
+            /// <summary>Team with the ball (football) or batting (baseball), from the last play.</summary>
+            public Guid? PossessionFranchiseSeasonId { get; set; }
+
+            public Guid? LastPlayId { get; set; }
+            public string? LastPlayDescription { get; set; }
+
+            // Football snap state.
+            public int? Down { get; set; }
+            public int? Distance { get; set; }
+
+            /// <summary>Absolute field position, 0–100 from the HOME goal line.</summary>
+            public int? BallOnYardLine { get; set; }
+
+            // Baseball situation state.
+            public int? Balls { get; set; }
+            public int? Strikes { get; set; }
+            public int? Outs { get; set; }
+            public bool? RunnerOnFirst { get; set; }
+            public bool? RunnerOnSecond { get; set; }
+            public bool? RunnerOnThird { get; set; }
+
             // Result
             public bool IsComplete { get; set; }
             public int? AwayScore { get; set; }

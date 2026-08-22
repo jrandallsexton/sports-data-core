@@ -257,6 +257,173 @@ public class GetMatchupsByContestIdsQueryHandlerTests
         result[contestId].Home!.HeadshotUrl.Should().Be("https://cdn/earlier.png");
     }
 
+    // ─── Live situation stitch (cold-start state) ────────────────────────
+    // CompetitionSituation is table-per-hierarchy and each sport's subtype
+    // columns exist only in that sport's database, so the stitch dispatches
+    // on the concrete DbContext instead of living in the shared SQL.
+
+    [Fact]
+    public async Task GetLiveSituations_Football_ReturnsSnapState()
+    {
+        // arrange
+        var ctx = new FootballDataContext(
+            new DbContextOptionsBuilder<FootballDataContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()[..8])
+                .Options);
+
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        SeedFootballContestWithCompetition(ctx, contestId, competitionId);
+        ctx.Set<FootballCompetitionSituation>().Add(new FootballCompetitionSituation
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            Down = 2,
+            Distance = 7,
+            YardLine = 75,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        await ctx.SaveChangesAsync();
+
+        var handler = new GetMatchupsByContestIdsQueryHandler(
+            NullLogger<GetMatchupsByContestIdsQueryHandler>.Instance,
+            ctx,
+            new ProducerSqlQueryProvider());
+
+        // act
+        var result = await handler.GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        // assert
+        result.Should().ContainKey(contestId);
+        result[contestId].Down.Should().Be(2);
+        result[contestId].Distance.Should().Be(7);
+        result[contestId].BallOnYardLine.Should().Be(75);
+        // Baseball fields stay null on a football context.
+        result[contestId].Outs.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetLiveSituations_Football_DownZero_SurfacesAsNull()
+    {
+        // arrange — ESPN reports down 0 at kickoffs, extra points and end of
+        // period. Publishing that verbatim would render "0th & 0".
+        var ctx = new FootballDataContext(
+            new DbContextOptionsBuilder<FootballDataContext>()
+                .UseInMemoryDatabase(Guid.NewGuid().ToString()[..8])
+                .Options);
+
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        SeedFootballContestWithCompetition(ctx, contestId, competitionId);
+        ctx.Set<FootballCompetitionSituation>().Add(new FootballCompetitionSituation
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            Down = 0,
+            Distance = 0,
+            YardLine = 35,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        await ctx.SaveChangesAsync();
+
+        var handler = new GetMatchupsByContestIdsQueryHandler(
+            NullLogger<GetMatchupsByContestIdsQueryHandler>.Instance,
+            ctx,
+            new ProducerSqlQueryProvider());
+
+        // act
+        var result = await handler.GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        // assert — no snap state, but the ball spot is still known.
+        result[contestId].Down.Should().BeNull();
+        result[contestId].Distance.Should().BeNull();
+        result[contestId].BallOnYardLine.Should().Be(35);
+    }
+
+    [Fact]
+    public async Task GetLiveSituations_Baseball_ReturnsCountOutsAndRunners()
+    {
+        // arrange
+        var ctx = NewBaseballContext();
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        SeedContestWithCompetition(ctx, contestId, competitionId);
+        ctx.Set<BaseballCompetitionSituation>().Add(new BaseballCompetitionSituation
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            Balls = 3,
+            Strikes = 2,
+            Outs = 1,
+            OnFirstAthleteSeasonId = Guid.NewGuid(),
+            OnThirdAthleteSeasonId = Guid.NewGuid(),
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        await ctx.SaveChangesAsync();
+
+        var handler = NewSut(ctx);
+
+        // act
+        var result = await handler.GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        // assert — runners are presence flags, not ids, on the wire.
+        result.Should().ContainKey(contestId);
+        result[contestId].Balls.Should().Be(3);
+        result[contestId].Strikes.Should().Be(2);
+        result[contestId].Outs.Should().Be(1);
+        result[contestId].RunnerOnFirst.Should().BeTrue();
+        result[contestId].RunnerOnSecond.Should().BeFalse();
+        result[contestId].RunnerOnThird.Should().BeTrue();
+        // Football fields stay null on a baseball context.
+        result[contestId].Down.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetLiveSituations_NoSituationRow_ReturnsEmpty()
+    {
+        var ctx = NewBaseballContext();
+        var contestId = Guid.NewGuid();
+        SeedContestWithCompetition(ctx, contestId, Guid.NewGuid());
+        await ctx.SaveChangesAsync();
+
+        var result = await NewSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        result.Should().BeEmpty();
+    }
+
+    private static void SeedFootballContestWithCompetition(
+        FootballDataContext ctx,
+        Guid contestId,
+        Guid competitionId)
+    {
+        ctx.Contests.Add(new FootballContest
+        {
+            Id = contestId,
+            Name = "Test",
+            ShortName = "TST",
+            SeasonYear = 2026,
+            Sport = SportsData.Core.Common.Sport.FootballNfl,
+            StartDateUtc = FixedNow,
+            HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+            AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+
+        ctx.Competitions.Add(new FootballCompetition
+        {
+            Id = competitionId,
+            ContestId = contestId,
+            Date = FixedNow,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+    }
+
     private static BaseballDataContext NewBaseballContext() =>
         new(new DbContextOptionsBuilder<BaseballDataContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()[..8])

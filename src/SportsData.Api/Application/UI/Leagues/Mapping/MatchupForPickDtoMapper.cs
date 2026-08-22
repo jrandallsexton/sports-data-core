@@ -23,7 +23,8 @@ public static class MatchupForPickDtoMapper
     /// </summary>
     public static void ApplyCanonical(
         LeagueWeekMatchupsDto.MatchupForPickDto matchup,
-        LeagueMatchupDto canonical)
+        LeagueMatchupDto canonical,
+        Sport sport = Sport.FootballNcaa)
     {
         // Pass both wire-shape status fields through verbatim — no
         // transformation, no enum parse. Same dual-field shape the rest of
@@ -32,6 +33,34 @@ public static class MatchupForPickDtoMapper
         matchup.Status = canonical.Status;
         matchup.StatusDescription = canonical.StatusDescription;
         matchup.Broadcasts = canonical.Broadcasts;
+
+        // Live game state at rest, so a client arriving mid-game — or
+        // sitting through a gap in the SignalR stream (commercial break,
+        // halftime) — renders a complete live card instead of waiting for
+        // the next play. Per-play SignalR events still drive real time and
+        // overwrite these on arrival.
+        // Period is stored as a bare number but the clients render the
+        // football string SignalR already sends ("Q3"), while baseball
+        // reads the inning as a number. Format to match each wire shape so
+        // a REST-populated card is indistinguishable from a SignalR one.
+        var isBaseball = sport == Sport.BaseballMlb;
+        matchup.Period = !isBaseball && canonical.Period is > 0
+            ? $"Q{canonical.Period}"
+            : null;
+        matchup.Inning = isBaseball ? canonical.Period : null;
+        matchup.Clock = canonical.Clock;
+        matchup.PossessionFranchiseSeasonId = canonical.PossessionFranchiseSeasonId;
+        matchup.LastPlayId = canonical.LastPlayId;
+        matchup.LastPlayDescription = canonical.LastPlayDescription;
+        matchup.Down = canonical.Down;
+        matchup.Distance = canonical.Distance;
+        matchup.BallOnYardLine = canonical.BallOnYardLine;
+        matchup.Balls = canonical.Balls;
+        matchup.Strikes = canonical.Strikes;
+        matchup.Outs = canonical.Outs;
+        matchup.RunnerOnFirst = canonical.RunnerOnFirst;
+        matchup.RunnerOnSecond = canonical.RunnerOnSecond;
+        matchup.RunnerOnThird = canonical.RunnerOnThird;
 
         // Away team
         matchup.Away = canonical.Away ?? matchup.Away;

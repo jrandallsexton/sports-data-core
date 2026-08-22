@@ -6,6 +6,17 @@ SELECT
   cn."Headline" AS "Headline",
   cs."StatusTypeName" AS "Status",
   cs."StatusDescription" AS "StatusDescription",
+  -- Live game state at rest. Without these the card has nothing to show
+  -- between SignalR ticks: a cold start mid-game, or any gap (commercial
+  -- break, halftime), left the clock, possession and last play blank
+  -- until the next play arrived. Sport-NEUTRAL fields only — the
+  -- CompetitionSituation subtype columns differ per sport database, so
+  -- down/distance and balls/strikes are enriched per-sport in the handler.
+  cs."Period" AS "Period",
+  cs."DisplayClock" AS "Clock",
+  live."LastPlayId" AS "LastPlayId",
+  live."LastPlayDescription" AS "LastPlayDescription",
+  live."PossessionFranchiseSeasonId" AS "PossessionFranchiseSeasonId",
   STRING_AGG(cb."MediaName", ' | ') AS "Broadcasts",
   v."Name" AS "Venue", v."City" AS "VenueCity", v."State" AS "VenueState",
   fAway."DisplayName" AS "Away", fAway."Abbreviation" AS "AwayShort",
@@ -41,6 +52,20 @@ INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
 LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'
 LEFT JOIN public."CompetitionBroadcast" cb ON cb."CompetitionId" = comp."Id"
 LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
+-- Possession and the last play, resolved through the situation row's
+-- LastPlayId. Both columns live on the shared CompetitionPlay base, so
+-- this lateral is sport-neutral. For baseball the "possession" team is
+-- the batting side (the team credited with the last play).
+LEFT JOIN LATERAL (
+  SELECT
+    sit."LastPlayId",
+    lp."Text" AS "LastPlayDescription",
+    lp."StartFranchiseSeasonId" AS "PossessionFranchiseSeasonId"
+  FROM public."CompetitionSituation" sit
+  LEFT JOIN public."CompetitionPlay" lp ON lp."Id" = sit."LastPlayId"
+  WHERE sit."CompetitionId" = comp."Id"
+  LIMIT 1
+) live ON TRUE
 LEFT JOIN LATERAL (
   SELECT * FROM public."CompetitionOdds"
   WHERE "CompetitionId" = comp."Id" AND "ProviderId" IN ('{PreferredOddsProviderId}', '{FallbackOddsProviderId}')
@@ -197,6 +222,8 @@ LEFT JOIN LATERAL (
 WHERE c."Id" = ANY(@ContestIds)
 GROUP BY
   c."SeasonWeekId", sw_contest."EndDate", c."Id", c."StartDateUtc", cn."Headline", cs."StatusTypeName", cs."StatusDescription",
+  cs."Period", cs."DisplayClock",
+  live."LastPlayId", live."LastPlayDescription", live."PossessionFranchiseSeasonId",
   v."Name", v."City", v."State",
   fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id",
   flAway."Uri", fslAway."Uri", flDarkAway."Uri", fslDarkAway."Uri", fAway."Slug",

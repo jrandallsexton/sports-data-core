@@ -39,7 +39,10 @@ export function getPossessionSide(
     const half = (matchup.halfInning ?? '').toLowerCase();
     if (half === 'top') return 'away';
     if (half === 'bottom') return 'home';
-    return null;
+    // halfInning rides on the SignalR play event and is NOT stored, so a
+    // cold start has none. The REST payload does carry the last play's
+    // team, which for baseball IS the batting side — fall through to the
+    // shared possession check rather than showing nothing.
   }
 
   const possessionId = matchup.possessionFranchiseSeasonId;

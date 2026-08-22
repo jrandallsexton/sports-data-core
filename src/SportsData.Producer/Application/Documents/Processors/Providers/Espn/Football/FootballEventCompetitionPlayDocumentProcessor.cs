@@ -198,6 +198,14 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
     {
         var footballPlay = (FootballCompetitionPlay)play;
 
+        // Down and distance travel as a PAIR: pairing an end-state distance
+        // with a start-state down would describe a snap that never existed.
+        // The END state is what the next snap will be; fall back to the
+        // start pair only when the end down is absent entirely.
+        var hasEndSnapState = footballPlay.EndDown is not null;
+        var down = hasEndSnapState ? footballPlay.EndDown : footballPlay.StartDown;
+        var distance = hasEndSnapState ? footballPlay.EndDistance : footballPlay.StartDistance;
+
         return _publishEndpoint.Publish(new FootballPlayCompleted(
             ContestId: competition.ContestId,
             CompetitionId: competition.Id,
@@ -211,8 +219,8 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
             IsScoringPlay: footballPlay.ScoringPlay,
             ScoringPlayType: footballPlay.ScoringTypeName,
             BallOnYardLine: footballPlay.EndYardLine ?? footballPlay.StartYardLine,
-            Down: footballPlay.EndDown ?? footballPlay.StartDown,
-            Distance: footballPlay.EndDistance ?? footballPlay.StartDistance,
+            Down: down,
+            Distance: distance,
             Ref: null,
             Sport: command.Sport,
             SeasonYear: command.SeasonYear,

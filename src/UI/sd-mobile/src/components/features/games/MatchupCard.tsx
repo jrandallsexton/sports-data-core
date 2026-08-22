@@ -236,7 +236,13 @@ function TeamRow({
           {hasPossession && (
             <Text
               style={styles.possessionIndicator}
-              accessibilityLabel={`${name} has possession`}
+              // The ⚾ means the team is batting, not that it "has
+              // possession" — announce what the glyph actually signifies.
+              accessibilityLabel={
+                possessionGlyph === '⚾'
+                  ? `${name} is batting`
+                  : `${name} has possession`
+              }
             >
               {possessionGlyph}
             </Text>
@@ -583,8 +589,11 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
         ? live.scoringPlayType
         : matchup.scoringPlayType,
       ballOnYardLine: live.ballOnYardLine ?? matchup.ballOnYardLine,
-      down: live.down ?? matchup.down,
-      distance: live.distance ?? matchup.distance,
+      // Omitted (older messages) falls back to fetched data; an explicit
+      // null CLEARS the snap state (?? would resurrect a stale down at
+      // kickoff / period breaks). Same contract as scoringPlayType above.
+      down: live.down !== undefined ? live.down : matchup.down,
+      distance: live.distance !== undefined ? live.distance : matchup.distance,
       // Baseball live fields
       inning: live.inning ?? matchup.inning,
       halfInning: live.halfInning ?? matchup.halfInning,

@@ -257,8 +257,12 @@ function PicksPage() {
           clock: liveUpdate.clock ?? matchup.clock,
           possessionFranchiseSeasonId: liveUpdate.possessionFranchiseSeasonId ?? matchup.possessionFranchiseSeasonId,
           ballOnYardLine: liveUpdate.ballOnYardLine ?? matchup.ballOnYardLine,
-          down: liveUpdate.down ?? matchup.down,
-          distance: liveUpdate.distance ?? matchup.distance,
+          // Omitted (older messages) falls back to fetched data; an
+          // explicit null CLEARS the snap state (?? would resurrect a
+          // stale down at kickoff / period breaks). Same contract as
+          // scoringPlayType above.
+          down: liveUpdate.down !== undefined ? liveUpdate.down : matchup.down,
+          distance: liveUpdate.distance !== undefined ? liveUpdate.distance : matchup.distance,
           isScoringPlay: liveUpdate.isScoringPlay ?? matchup.isScoringPlay,
           // Omitted (older messages) falls back to fetched data; an
           // explicit null CLEARS a stale type (?? would resurrect it).

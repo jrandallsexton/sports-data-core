@@ -155,6 +155,12 @@ namespace SportsData.Producer.Application.Contests
                 var emittedCount = 0;
                 foreach (var play in plays)
                 {
+                    // Down and distance travel as a PAIR — see the same
+                    // guard in FootballEventCompetitionPlayDocumentProcessor.
+                    var hasEndSnapState = play.EndDown is not null;
+                    var down = hasEndSnapState ? play.EndDown : play.StartDown;
+                    var distance = hasEndSnapState ? play.EndDistance : play.StartDistance;
+
                     // Merged per-play event — play description + scoreboard
                     // tick in one message so the UI doesn't reassemble.
                     await _eventBus.Publish(new FootballPlayCompleted(
@@ -170,8 +176,8 @@ namespace SportsData.Producer.Application.Contests
                         IsScoringPlay: play.ScoringPlay,
                         ScoringPlayType: play.ScoringTypeName,
                         BallOnYardLine: play.EndYardLine ?? play.StartYardLine,
-                        Down: play.EndDown ?? play.StartDown,
-                        Distance: play.EndDistance ?? play.StartDistance,
+                        Down: down,
+                        Distance: distance,
                         Ref: null,
                         Sport: contest.Sport,
                         SeasonYear: contest.SeasonYear,

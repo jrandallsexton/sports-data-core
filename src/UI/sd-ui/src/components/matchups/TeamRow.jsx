@@ -62,6 +62,11 @@ function TeamRow({
   // sports don't silently render as an NCAA football route. Fall back to a
   // non-linked team name in that case.
   const sportLeague = resolveSportLeague(leagueSport);
+  // The ⚾ means the team is batting, not that it "has possession" —
+  // announce what the glyph actually signifies for each sport.
+  const possessionLabel = leagueSport === 'BaseballMlb'
+    ? `${teamName} is batting`
+    : `${teamName} has possession`;
   return (
     <>
       <div className="team-row">
@@ -128,8 +133,8 @@ function TeamRow({
             {hasPossession && (
               <span
                 className="possession-indicator"
-                aria-label={`${teamName} has possession`}
-                title={`${teamName} has possession`}
+                aria-label={possessionLabel}
+                title={possessionLabel}
               >
                 {possessionGlyph}
               </span>

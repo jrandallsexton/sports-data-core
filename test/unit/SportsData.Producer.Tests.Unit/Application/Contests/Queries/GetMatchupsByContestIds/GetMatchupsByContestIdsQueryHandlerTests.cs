@@ -438,6 +438,43 @@ public class GetMatchupsByContestIdsQueryHandlerTests
     }
 
     [Fact]
+    public async Task GetLiveSituations_MultipleCompetitionsPerContest_TakesTheHighestSequenceAcrossThem()
+    {
+        // arrange — one Contest hosting TWO Competitions (a stale reschedule
+        // artifact; the probables stitch documents the same shape). The
+        // latest play must be resolved across the whole contest, matching
+        // the SQL lateral's contest correlation — a per-competition pick
+        // would depend on which competition happened to be visited first.
+        var ctx = NewFootballContext();
+        var contestId = Guid.NewGuid();
+        var firstCompetition = Guid.NewGuid();
+        var secondCompetition = Guid.NewGuid();
+        SeedFootballContestWithCompetition(ctx, contestId, firstCompetition);
+        ctx.Competitions.Add(new FootballCompetition
+        {
+            Id = secondCompetition,
+            ContestId = contestId,
+            Date = FixedNow,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+
+        SeedFootballPlay(ctx, firstCompetition, sequence: "4000", down: 1, distance: 10, yardLine: 30);
+        SeedFootballPlay(ctx, secondCompetition, sequence: "9500", down: 3, distance: 2, yardLine: 71);
+        await ctx.SaveChangesAsync();
+
+        // act
+        var result = await NewFootballSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        // assert — one entry for the contest, carrying the higher ordinal.
+        result.Should().ContainSingle();
+        result[contestId].Down.Should().Be(3);
+        result[contestId].Distance.Should().Be(2);
+        result[contestId].BallOnYardLine.Should().Be(71);
+    }
+
+    [Fact]
     public async Task GetLiveSituations_PossessionComesFromTheEndOfPlayTeam()
     {
         // arrange — a punt: the start team kicked it away, the end team

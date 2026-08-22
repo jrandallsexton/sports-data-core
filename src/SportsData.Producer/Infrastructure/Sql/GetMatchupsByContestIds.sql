@@ -56,6 +56,15 @@ LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
 -- same source the per-play SignalR events publish from, so REST and
 -- real-time agree by construction.
 --
+-- Correlated to the CONTEST, not to `comp`. A Contest can host more than
+-- one Competition (a stale reschedule artifact), and the outer query joins
+-- every one of them; a per-competition lateral would therefore give each
+-- row a different last play, defeat the GROUP BY collapse, and emit the
+-- same contest twice — which the API turns into a hard failure, since it
+-- keys the result with ToDictionary(ContestId). Resolving per contest also
+-- matches the C# stitch, which groups by ContestId, and the probables /
+-- series stitches above.
+--
 -- NOT from CompetitionSituation: that row is written once per competition
 -- and never updated (its processor skips when the row already exists), so
 -- it is frozen at the game's first snap. Reading it here served "1st & 10"
@@ -83,7 +92,8 @@ LEFT JOIN LATERAL (
     lp."Text" AS "LastPlayDescription",
     lp."StartFranchiseSeasonId" AS "PossessionFranchiseSeasonId"
   FROM public."CompetitionPlay" lp
-  WHERE lp."CompetitionId" = comp."Id"
+  INNER JOIN public."Competition" comp_all ON comp_all."Id" = lp."CompetitionId"
+  WHERE comp_all."ContestId" = c."Id"
   ORDER BY
     (CASE WHEN lp."SequenceNumber" ~ '^[0-9]{1,18}$' THEN lp."SequenceNumber"::bigint END) DESC NULLS LAST,
     lp."CreatedUtc" DESC

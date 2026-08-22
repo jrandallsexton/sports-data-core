@@ -103,6 +103,17 @@ describe('getPossessionSide', () => {
     ).toBe('away');
   });
 
+  it('falls back to the last play team when baseball has no half inning', () => {
+    // halfInning is SignalR-only, so a cold start has none; the REST
+    // payload's possession (the last play's team) IS the batting side.
+    expect(
+      getPossessionSide(
+        withLive({ halfInning: null, possessionFranchiseSeasonId: 'home-fs' }),
+        'BaseballMlb'
+      )
+    ).toBe('home');
+  });
+
   it('resolves baseball batting from the half inning', () => {
     expect(getPossessionSide(withLive({ halfInning: 'Top' }), 'BaseballMlb')).toBe('away');
     expect(getPossessionSide(withLive({ halfInning: 'Bottom' }), 'BaseballMlb')).toBe('home');

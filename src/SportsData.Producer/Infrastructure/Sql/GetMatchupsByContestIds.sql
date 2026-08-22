@@ -6,6 +6,17 @@ SELECT
   cn."Headline" AS "Headline",
   cs."StatusTypeName" AS "Status",
   cs."StatusDescription" AS "StatusDescription",
+  -- Live game state at rest. Without these the card has nothing to show
+  -- between SignalR ticks: a cold start mid-game, or any gap (commercial
+  -- break, halftime), left the clock, possession and last play blank
+  -- until the next play arrived. Sport-NEUTRAL fields only — the
+  -- CompetitionSituation subtype columns differ per sport database, so
+  -- down/distance and balls/strikes are enriched per-sport in the handler.
+  cs."Period" AS "Period",
+  cs."DisplayClock" AS "Clock",
+  live."LastPlayId" AS "LastPlayId",
+  live."LastPlayDescription" AS "LastPlayDescription",
+  live."PossessionFranchiseSeasonId" AS "PossessionFranchiseSeasonId",
   STRING_AGG(cb."MediaName", ' | ') AS "Broadcasts",
   v."Name" AS "Venue", v."City" AS "VenueCity", v."State" AS "VenueState",
   fAway."DisplayName" AS "Away", fAway."Abbreviation" AS "AwayShort",
@@ -41,6 +52,53 @@ INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
 LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'
 LEFT JOIN public."CompetitionBroadcast" cb ON cb."CompetitionId" = comp."Id"
 LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
+-- Possession and the last play, taken from the MOST RECENT PLAY — the
+-- same source the per-play SignalR events publish from, so REST and
+-- real-time agree by construction.
+--
+-- Correlated to the CONTEST, not to `comp`. A Contest can host more than
+-- one Competition (a stale reschedule artifact), and the outer query joins
+-- every one of them; a per-competition lateral would therefore give each
+-- row a different last play, defeat the GROUP BY collapse, and emit the
+-- same contest twice — which the API turns into a hard failure, since it
+-- keys the result with ToDictionary(ContestId). Resolving per contest also
+-- matches the C# stitch, which groups by ContestId, and the probables /
+-- series stitches above.
+--
+-- NOT from CompetitionSituation: that row is written once per competition
+-- and never updated (its processor skips when the row already exists), so
+-- it is frozen at the game's first snap. Reading it here served "1st & 10"
+-- and the opening kickoff for the entire game.
+--
+-- Ordered by the ESPN play ordinal NUMERICALLY. SequenceNumber is stored
+-- as text and is variable width (1 to 9 digits in the corpus), so a plain
+-- text sort puts "9" above "100000" and would pick an early play as the
+-- latest. Only entirely-numeric values of AT MOST 18 digits are orderable —
+-- the SAME rule the C# stitch applies, so the two paths can never select
+-- different plays — and anything else sorts last instead of throwing.
+-- The 18-digit bound matters: ::bigint on a longer all-digits value raises
+-- "value out of range" and would fail the whole query (and with it the
+-- matchups endpoint), whereas 18 nines always fits. Leading zeroes cast
+-- fine and match long.Parse. CreatedUtc breaks ties.
+--
+-- Id, Text and StartFranchiseSeasonId all live on the shared
+-- CompetitionPlay base, so this lateral is sport-neutral. The possession
+-- here is the START-of-play team, which is correct for baseball (the team
+-- credited with the last play is the batting side); the football stitch
+-- overrides it with the end-of-play team, who lines up for the next snap.
+LEFT JOIN LATERAL (
+  SELECT
+    lp."Id" AS "LastPlayId",
+    lp."Text" AS "LastPlayDescription",
+    lp."StartFranchiseSeasonId" AS "PossessionFranchiseSeasonId"
+  FROM public."CompetitionPlay" lp
+  INNER JOIN public."Competition" comp_all ON comp_all."Id" = lp."CompetitionId"
+  WHERE comp_all."ContestId" = c."Id"
+  ORDER BY
+    (CASE WHEN lp."SequenceNumber" ~ '^[0-9]{1,18}$' THEN lp."SequenceNumber"::bigint END) DESC NULLS LAST,
+    lp."CreatedUtc" DESC
+  LIMIT 1
+) live ON TRUE
 LEFT JOIN LATERAL (
   SELECT * FROM public."CompetitionOdds"
   WHERE "CompetitionId" = comp."Id" AND "ProviderId" IN ('{PreferredOddsProviderId}', '{FallbackOddsProviderId}')
@@ -197,6 +255,8 @@ LEFT JOIN LATERAL (
 WHERE c."Id" = ANY(@ContestIds)
 GROUP BY
   c."SeasonWeekId", sw_contest."EndDate", c."Id", c."StartDateUtc", cn."Headline", cs."StatusTypeName", cs."StatusDescription",
+  cs."Period", cs."DisplayClock",
+  live."LastPlayId", live."LastPlayDescription", live."PossessionFranchiseSeasonId",
   v."Name", v."City", v."State",
   fAway."DisplayName", fAway."DisplayNameShort", fsAway."Id",
   flAway."Uri", fslAway."Uri", flDarkAway."Uri", fslDarkAway."Uri", fAway."Slug",

@@ -229,7 +229,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     // the admin debug endpoint can reuse the same shape without
                     // a league context. League-context fields (HeadLine,
                     // Predictions, AiWinner, IsPreview*) stay below.
-                    MatchupForPickDtoMapper.ApplyCanonical(matchup, canonical);
+                    MatchupForPickDtoMapper.ApplyCanonical(matchup, canonical, league.Sport);
 
                     // Headline priority: live CompetitionNote.Headline (marquee
                     // tag — bowl/conf championship/postseason designation) wins,

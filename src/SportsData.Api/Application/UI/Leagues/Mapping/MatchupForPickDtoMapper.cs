@@ -21,9 +21,15 @@ public static class MatchupForPickDtoMapper
     /// fields. Used by the league/week query handler which already has
     /// a partially-populated DTO from the league's PickemGroupMatchup row.
     /// </summary>
+    /// <param name="sport">
+    /// Required, with no default: the live-state mapping is sport-shaped
+    /// (football gets "Q3", baseball an inning number), so a defaulted
+    /// sport would silently give an MLB caller football-shaped periods.
+    /// </param>
     public static void ApplyCanonical(
         LeagueWeekMatchupsDto.MatchupForPickDto matchup,
-        LeagueMatchupDto canonical)
+        LeagueMatchupDto canonical,
+        Sport sport)
     {
         // Pass both wire-shape status fields through verbatim — no
         // transformation, no enum parse. Same dual-field shape the rest of
@@ -32,6 +38,28 @@ public static class MatchupForPickDtoMapper
         matchup.Status = canonical.Status;
         matchup.StatusDescription = canonical.StatusDescription;
         matchup.Broadcasts = canonical.Broadcasts;
+
+        // Live game state at rest, so a client arriving mid-game — or
+        // sitting through a gap in the SignalR stream (commercial break,
+        // halftime) — renders a complete live card instead of waiting for
+        // the next play. Per-play SignalR events still drive real time and
+        // overwrite these on arrival.
+        // Period is stored as a bare number but the clients render the
+        // football string SignalR already sends ("Q3"), while baseball
+        // reads the inning as a number. Format to match each wire shape so
+        // a REST-populated card is indistinguishable from a SignalR one.
+        var isBaseball = sport == Sport.BaseballMlb;
+        matchup.Period = !isBaseball && canonical.Period is > 0
+            ? $"Q{canonical.Period}"
+            : null;
+        matchup.Inning = isBaseball ? canonical.Period : null;
+        matchup.Clock = canonical.Clock;
+        matchup.PossessionFranchiseSeasonId = canonical.PossessionFranchiseSeasonId;
+        matchup.LastPlayId = canonical.LastPlayId;
+        matchup.LastPlayDescription = canonical.LastPlayDescription;
+        matchup.Down = canonical.Down;
+        matchup.Distance = canonical.Distance;
+        matchup.BallOnYardLine = canonical.BallOnYardLine;
 
         // Away team
         matchup.Away = canonical.Away ?? matchup.Away;
@@ -108,14 +136,19 @@ public static class MatchupForPickDtoMapper
     /// populated from canonical fields only. Used by the admin debug
     /// endpoint where there's no league context to merge with.
     /// </summary>
-    public static LeagueWeekMatchupsDto.MatchupForPickDto FromCanonical(LeagueMatchupDto canonical)
+    /// <param name="sport">Required for the same reason as on
+    /// <see cref="ApplyCanonical"/> — the live-state mapping is
+    /// sport-shaped.</param>
+    public static LeagueWeekMatchupsDto.MatchupForPickDto FromCanonical(
+        LeagueMatchupDto canonical,
+        Sport sport)
     {
         var matchup = new LeagueWeekMatchupsDto.MatchupForPickDto
         {
             ContestId = canonical.ContestId,
             StartDateUtc = canonical.StartDateUtc,
         };
-        ApplyCanonical(matchup, canonical);
+        ApplyCanonical(matchup, canonical, sport);
         return matchup;
     }
 }

@@ -64,11 +64,16 @@ LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
 -- Ordered by the ESPN play ordinal NUMERICALLY. SequenceNumber is stored
 -- as text and is variable width (1 to 9 digits in the corpus), so a plain
 -- text sort puts "9" above "100000" and would pick an early play as the
--- latest. The digit-strip guards a non-numeric value from throwing the
--- whole query; CreatedUtc breaks ties. Id, Text and StartFranchiseSeasonId
--- all live on the shared CompetitionPlay base, so this lateral is
--- sport-neutral; for baseball the team credited with the last play IS the
--- batting side.
+-- latest. Only entirely-numeric values are orderable — the SAME rule the
+-- C# stitch applies, so the two paths can never select different plays —
+-- and anything else sorts last instead of throwing the query. CreatedUtc
+-- breaks ties.
+--
+-- Id, Text and StartFranchiseSeasonId all live on the shared
+-- CompetitionPlay base, so this lateral is sport-neutral. The possession
+-- here is the START-of-play team, which is correct for baseball (the team
+-- credited with the last play is the batting side); the football stitch
+-- overrides it with the end-of-play team, who lines up for the next snap.
 LEFT JOIN LATERAL (
   SELECT
     lp."Id" AS "LastPlayId",
@@ -77,7 +82,7 @@ LEFT JOIN LATERAL (
   FROM public."CompetitionPlay" lp
   WHERE lp."CompetitionId" = comp."Id"
   ORDER BY
-    NULLIF(regexp_replace(lp."SequenceNumber", '\D', '', 'g'), '')::bigint DESC NULLS LAST,
+    (CASE WHEN lp."SequenceNumber" ~ '^[0-9]+$' THEN lp."SequenceNumber"::bigint END) DESC NULLS LAST,
     lp."CreatedUtc" DESC
   LIMIT 1
 ) live ON TRUE

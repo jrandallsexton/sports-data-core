@@ -172,7 +172,10 @@ namespace SportsData.Producer.Application.Contests
                         Clock: play.ClockDisplayValue ?? "UNK",
                         AwayScore: play.AwayScore,
                         HomeScore: play.HomeScore,
-                        PossessionFranchiseSeasonId: play.StartFranchiseSeasonId,
+                        // END-of-play team — see the same note in
+                        // FootballEventCompetitionPlayDocumentProcessor.
+                        PossessionFranchiseSeasonId:
+                            play.EndFranchiseSeasonId ?? play.StartFranchiseSeasonId,
                         IsScoringPlay: play.ScoringPlay,
                         ScoringPlayType: play.ScoringTypeName,
                         BallOnYardLine: play.EndYardLine ?? play.StartYardLine,

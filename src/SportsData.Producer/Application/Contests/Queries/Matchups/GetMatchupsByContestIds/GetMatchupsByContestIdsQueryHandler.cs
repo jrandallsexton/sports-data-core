@@ -88,6 +88,16 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
                 matchup.Down = situation.Down;
                 matchup.Distance = situation.Distance;
                 matchup.BallOnYardLine = situation.BallOnYardLine;
+
+                // Overrides the shared SQL's start-of-play possession for
+                // FOOTBALL only: the end-of-play team is who lines up next.
+                // Baseball keeps the SQL value — the team credited with the
+                // last play is the batting side, and baseball plays carry no
+                // end-team column.
+                if (situation.PossessionFranchiseSeasonId is not null)
+                {
+                    matchup.PossessionFranchiseSeasonId = situation.PossessionFranchiseSeasonId;
+                }
             }
         }
 
@@ -140,7 +150,9 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
                 p.EndDown,
                 p.EndDistance,
                 p.EndYardLine,
-                p.StartYardLine
+                p.StartYardLine,
+                p.StartFranchiseSeasonId,
+                p.EndFranchiseSeasonId
             })
             .ToListAsync(cancellationToken);
 
@@ -152,20 +164,24 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
                 {
                     // SequenceNumber is stored as TEXT and is variable width
                     // (1–9 digits), so a string sort would put "9" above
-                    // "100000" and pick an early play as the latest. Parse
-                    // it; an unparseable value sorts last rather than
-                    // hijacking the pick.
+                    // "100000" and pick an early play as the latest. Parsed
+                    // with the SAME all-digits rule the SQL lateral uses, so
+                    // both paths select the same play; anything else sorts
+                    // last rather than hijacking the pick.
                     var latest = g
-                        .OrderByDescending(r =>
-                            long.TryParse(r.SequenceNumber, out var seq) ? seq : long.MinValue)
+                        .OrderByDescending(r => ParseSequenceNumber(r.SequenceNumber) ?? long.MinValue)
                         .ThenByDescending(r => r.CreatedUtc)
                         .First();
 
-                    // Down and distance travel as a PAIR — mixing an
-                    // end-state distance with a start-state down would
-                    // describe a snap that never existed. Mirrors the same
-                    // guard in the play processor / replay publishers.
-                    var hasEndSnapState = latest.EndDown is not null;
+                    // Down and distance travel as a PAIR: the END pair is
+                    // used only when BOTH halves are present, otherwise the
+                    // complete START pair wins. A half-populated end state
+                    // ("2nd" with no distance) would otherwise beat a
+                    // complete "3rd & 4" and describe a snap that never
+                    // existed. Down 0 with distance 0 is a legitimate
+                    // complete pair — ESPN's no-snap state — and is
+                    // preserved by this rule, then nulled below.
+                    var hasEndSnapState = latest.EndDown is not null && latest.EndDistance is not null;
                     var down = hasEndSnapState ? latest.EndDown : latest.StartDown;
                     var distance = hasEndSnapState ? latest.EndDistance : latest.StartDistance;
 
@@ -177,9 +193,32 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
                         // than "0th & 0".
                         Down = down > 0 ? down : null,
                         Distance = down > 0 ? distance : null,
-                        BallOnYardLine = latest.EndYardLine ?? latest.StartYardLine
+                        BallOnYardLine = latest.EndYardLine ?? latest.StartYardLine,
+                        // Who has the ball for the NEXT snap. End differs
+                        // from Start on 1 in 6 plays — every punt, turnover
+                        // and change of possession — so reading Start would
+                        // credit the punting team with the ball.
+                        PossessionFranchiseSeasonId =
+                            latest.EndFranchiseSeasonId ?? latest.StartFranchiseSeasonId
                     };
                 });
+    }
+
+    /// <summary>
+    /// Accepts an ESPN play ordinal only when it is entirely digits — the
+    /// same rule as the SQL lateral's ordering, so the two paths can never
+    /// disagree about which play is latest. Null means "not orderable".
+    /// </summary>
+    private static long? ParseSequenceNumber(string? sequenceNumber)
+    {
+        if (string.IsNullOrEmpty(sequenceNumber)) return null;
+
+        foreach (var c in sequenceNumber)
+        {
+            if (!char.IsAsciiDigit(c)) return null;
+        }
+
+        return long.TryParse(sequenceNumber, out var value) ? value : null;
     }
 
     /// <summary>Carrier for the football snap-state stitch.</summary>
@@ -188,6 +227,7 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
         public int? Down { get; init; }
         public int? Distance { get; init; }
         public int? BallOnYardLine { get; init; }
+        public Guid? PossessionFranchiseSeasonId { get; init; }
     }
 
     /// <summary>

@@ -340,6 +340,104 @@ public class GetMatchupsByContestIdsQueryHandlerTests
     }
 
     [Fact]
+    public async Task GetLiveSituations_PartialEndPair_PrefersTheCompleteStartPair()
+    {
+        // arrange — an end DOWN with no end DISTANCE is half a snap state.
+        // Taking it would render "2nd" with no distance while a complete
+        // "3rd & 4" was available.
+        var ctx = NewFootballContext();
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        SeedFootballContestWithCompetition(ctx, contestId, competitionId);
+        SeedFootballPlay(
+            ctx, competitionId, sequence: "10",
+            down: 2, distance: null, yardLine: 40,
+            startDown: 3, startDistance: 4, startYardLine: 22);
+        await ctx.SaveChangesAsync();
+
+        // act
+        var result = await NewFootballSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        // assert — the complete pair wins; the end yard line still stands.
+        result[contestId].Down.Should().Be(3);
+        result[contestId].Distance.Should().Be(4);
+        result[contestId].BallOnYardLine.Should().Be(40);
+    }
+
+    [Fact]
+    public async Task GetLiveSituations_MalformedSequence_NeverOutranksANumericOne()
+    {
+        // arrange — the SQL lateral orders only entirely-numeric ordinals
+        // and sorts the rest last. The C# stitch must apply the identical
+        // rule or the two paths could select different plays.
+        var ctx = NewFootballContext();
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        SeedFootballContestWithCompetition(ctx, contestId, competitionId);
+        SeedFootballPlay(ctx, competitionId, sequence: "900", down: 2, distance: 5, yardLine: 45);
+        SeedFootballPlay(ctx, competitionId, sequence: "99999x", down: 4, distance: 1, yardLine: 12);
+        await ctx.SaveChangesAsync();
+
+        // act
+        var result = await NewFootballSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        // assert — the numeric ordinal wins despite the malformed one being
+        // lexicographically larger.
+        result[contestId].Down.Should().Be(2);
+        result[contestId].BallOnYardLine.Should().Be(45);
+    }
+
+    [Fact]
+    public async Task GetLiveSituations_PossessionComesFromTheEndOfPlayTeam()
+    {
+        // arrange — a punt: the start team kicked it away, the end team
+        // lines up next. Reading Start would credit the punting team with
+        // the ball, which is wrong on 1 in 6 plays.
+        var ctx = NewFootballContext();
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        var punting = Guid.NewGuid();
+        var receiving = Guid.NewGuid();
+        SeedFootballContestWithCompetition(ctx, contestId, competitionId);
+        SeedFootballPlay(
+            ctx, competitionId, sequence: "42",
+            down: 1, distance: 10, yardLine: 25,
+            startFranchiseSeasonId: punting,
+            endFranchiseSeasonId: receiving);
+        await ctx.SaveChangesAsync();
+
+        // act
+        var result = await NewFootballSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        // assert
+        result[contestId].PossessionFranchiseSeasonId.Should().Be(receiving);
+    }
+
+    [Fact]
+    public async Task GetLiveSituations_MissingEndTeam_FallsBackToTheStartTeam()
+    {
+        var ctx = NewFootballContext();
+        var contestId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        var offense = Guid.NewGuid();
+        SeedFootballContestWithCompetition(ctx, contestId, competitionId);
+        SeedFootballPlay(
+            ctx, competitionId, sequence: "7",
+            down: 2, distance: 6, yardLine: 55,
+            startFranchiseSeasonId: offense,
+            endFranchiseSeasonId: null);
+        await ctx.SaveChangesAsync();
+
+        var result = await NewFootballSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+
+        result[contestId].PossessionFranchiseSeasonId.Should().Be(offense);
+    }
+
+    [Fact]
     public async Task GetLiveSituations_NonFootballContext_ReturnsEmpty()
     {
         // Baseball plays carry no per-play count/runner state, so MLB gets
@@ -412,7 +510,9 @@ public class GetMatchupsByContestIdsQueryHandlerTests
         int? yardLine,
         int? startDown = null,
         int? startDistance = null,
-        int? startYardLine = null)
+        int? startYardLine = null,
+        Guid? startFranchiseSeasonId = null,
+        Guid? endFranchiseSeasonId = null)
     {
         ctx.CompetitionPlays.Add(new FootballCompetitionPlay
         {
@@ -428,6 +528,8 @@ public class GetMatchupsByContestIdsQueryHandlerTests
             StartDown = startDown,
             StartDistance = startDistance,
             StartYardLine = startYardLine,
+            StartFranchiseSeasonId = startFranchiseSeasonId,
+            EndFranchiseSeasonId = endFranchiseSeasonId,
             CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         });

@@ -54,9 +54,11 @@ public class LeagueMatchupDto
     public Guid? LastPlayId { get; set; }
     public string? LastPlayDescription { get; set; }
 
-    // Football-only snap state. Enriched per-sport in the handler, NOT in
-    // the shared SQL: the CompetitionSituation subtype columns exist only
-    // in their own sport's database.
+    // Football-only snap state, read from the latest play and enriched in
+    // the handler rather than the shared SQL: the play's snap columns are
+    // table-per-hierarchy and exist only in the football database.
+    // Baseball has no per-play equivalent (its plays carry only Outs), so
+    // MLB gets the sport-neutral fields above and nothing here.
     public int? Down { get; set; }
     public int? Distance { get; set; }
 
@@ -65,14 +67,6 @@ public class LeagueMatchupDto
     /// = 0, away goal = 100) — ESPN's YardLine convention.
     /// </summary>
     public int? BallOnYardLine { get; set; }
-
-    // Baseball-only situation state, enriched per-sport for the same reason.
-    public int? Balls { get; set; }
-    public int? Strikes { get; set; }
-    public int? Outs { get; set; }
-    public bool? RunnerOnFirst { get; set; }
-    public bool? RunnerOnSecond { get; set; }
-    public bool? RunnerOnThird { get; set; }
 
     public string? Broadcasts { get; set; }
 

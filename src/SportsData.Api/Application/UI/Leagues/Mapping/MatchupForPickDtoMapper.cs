@@ -21,10 +21,15 @@ public static class MatchupForPickDtoMapper
     /// fields. Used by the league/week query handler which already has
     /// a partially-populated DTO from the league's PickemGroupMatchup row.
     /// </summary>
+    /// <param name="sport">
+    /// Required, with no default: the live-state mapping is sport-shaped
+    /// (football gets "Q3", baseball an inning number), so a defaulted
+    /// sport would silently give an MLB caller football-shaped periods.
+    /// </param>
     public static void ApplyCanonical(
         LeagueWeekMatchupsDto.MatchupForPickDto matchup,
         LeagueMatchupDto canonical,
-        Sport sport = Sport.FootballNcaa)
+        Sport sport)
     {
         // Pass both wire-shape status fields through verbatim — no
         // transformation, no enum parse. Same dual-field shape the rest of
@@ -55,12 +60,6 @@ public static class MatchupForPickDtoMapper
         matchup.Down = canonical.Down;
         matchup.Distance = canonical.Distance;
         matchup.BallOnYardLine = canonical.BallOnYardLine;
-        matchup.Balls = canonical.Balls;
-        matchup.Strikes = canonical.Strikes;
-        matchup.Outs = canonical.Outs;
-        matchup.RunnerOnFirst = canonical.RunnerOnFirst;
-        matchup.RunnerOnSecond = canonical.RunnerOnSecond;
-        matchup.RunnerOnThird = canonical.RunnerOnThird;
 
         // Away team
         matchup.Away = canonical.Away ?? matchup.Away;
@@ -137,14 +136,19 @@ public static class MatchupForPickDtoMapper
     /// populated from canonical fields only. Used by the admin debug
     /// endpoint where there's no league context to merge with.
     /// </summary>
-    public static LeagueWeekMatchupsDto.MatchupForPickDto FromCanonical(LeagueMatchupDto canonical)
+    /// <param name="sport">Required for the same reason as on
+    /// <see cref="ApplyCanonical"/> — the live-state mapping is
+    /// sport-shaped.</param>
+    public static LeagueWeekMatchupsDto.MatchupForPickDto FromCanonical(
+        LeagueMatchupDto canonical,
+        Sport sport)
     {
         var matchup = new LeagueWeekMatchupsDto.MatchupForPickDto
         {
             ContestId = canonical.ContestId,
             StartDateUtc = canonical.StartDateUtc,
         };
-        ApplyCanonical(matchup, canonical);
+        ApplyCanonical(matchup, canonical, sport);
         return matchup;
     }
 }

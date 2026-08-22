@@ -88,12 +88,6 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
                 matchup.Down = situation.Down;
                 matchup.Distance = situation.Distance;
                 matchup.BallOnYardLine = situation.BallOnYardLine;
-                matchup.Balls = situation.Balls;
-                matchup.Strikes = situation.Strikes;
-                matchup.Outs = situation.Outs;
-                matchup.RunnerOnFirst = situation.RunnerOnFirst;
-                matchup.RunnerOnSecond = situation.RunnerOnSecond;
-                matchup.RunnerOnThird = situation.RunnerOnThird;
             }
         }
 
@@ -101,102 +95,99 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
     }
 
     /// <summary>
-    /// Sport-specific live situation state, stitched onto the matchup result
-    /// so a cold start mid-game renders a complete live card instead of
-    /// waiting for the next SignalR play.
+    /// Football snap state (down, distance, ball spot) for the live card,
+    /// read from the MOST RECENT PLAY — the same source the per-play
+    /// SignalR events publish from, so a REST-populated card and a
+    /// SignalR-populated one agree by construction.
     ///
-    /// This CANNOT live in the shared SQL: CompetitionSituation is a
-    /// table-per-hierarchy table whose subtype columns are created by each
-    /// sport's own migrations, so the football database has
-    /// Down/Distance/YardLine and the baseball database has
-    /// Balls/Strikes/Outs/runners — referencing either from the shared
-    /// query would fail on the other sport's database. Dispatching on the
-    /// concrete DbContext keeps each query against columns that exist.
+    /// Deliberately NOT from CompetitionSituation. That row is created once
+    /// per competition and never updated (its processor returns early when
+    /// the row already exists), so it is frozen at the game's first snap —
+    /// every situation row in the corpus has a null ModifiedUtc, and live
+    /// games show "1st & 10" with the opening kickoff for the full sixty
+    /// minutes.
+    ///
+    /// Football-gated because the snap columns are table-per-hierarchy:
+    /// EndDown / EndDistance / EndYardLine are created by the football
+    /// migrations and do not exist in the baseball database, so this cannot
+    /// live in the shared SQL. Baseball has no equivalent per-play count
+    /// state (its plays carry only Outs), so MLB gets the sport-neutral
+    /// fields — period, clock, last play, batting side — and nothing here.
     /// </summary>
     internal async Task<Dictionary<Guid, LiveSituation>> GetLiveSituationsAsync(
         Guid[] contestIds,
         CancellationToken cancellationToken)
     {
-        // A Contest can host multiple Competitions (doubleheaders); the live
-        // situation is per-Competition, so first match wins per ContestId —
-        // the same convention as the probables / series stitches above.
-        if (_dbContext is FootballDataContext footballCtx)
+        if (_dbContext is not FootballDataContext footballCtx)
         {
-            var rows = await footballCtx.Set<FootballCompetitionSituation>()
-                .AsNoTracking()
-                .Where(s => contestIds.Contains(s.Competition.ContestId))
-                .Select(s => new
-                {
-                    s.Competition.ContestId,
-                    s.Down,
-                    s.Distance,
-                    s.YardLine
-                })
-                .ToListAsync(cancellationToken);
+            return new Dictionary<Guid, LiveSituation>();
+        }
 
-            return rows
-                .GroupBy(r => r.ContestId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => new LiveSituation
+        // Latest play per CONTEST. A Contest can host multiple Competitions
+        // (doubleheaders / reschedule artifacts); ordering by SequenceNumber
+        // then CreatedUtc makes the pick deterministic rather than relying
+        // on whatever order Postgres returns.
+        var rows = await footballCtx.Set<FootballCompetitionPlay>()
+            .AsNoTracking()
+            .Where(p => contestIds.Contains(p.Competition.ContestId))
+            .Select(p => new
+            {
+                p.Competition.ContestId,
+                p.SequenceNumber,
+                p.CreatedUtc,
+                p.StartDown,
+                p.StartDistance,
+                p.EndDown,
+                p.EndDistance,
+                p.EndYardLine,
+                p.StartYardLine
+            })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(r => r.ContestId)
+            .ToDictionary(
+                g => g.Key,
+                g =>
+                {
+                    // SequenceNumber is stored as TEXT and is variable width
+                    // (1–9 digits), so a string sort would put "9" above
+                    // "100000" and pick an early play as the latest. Parse
+                    // it; an unparseable value sorts last rather than
+                    // hijacking the pick.
+                    var latest = g
+                        .OrderByDescending(r =>
+                            long.TryParse(r.SequenceNumber, out var seq) ? seq : long.MinValue)
+                        .ThenByDescending(r => r.CreatedUtc)
+                        .First();
+
+                    // Down and distance travel as a PAIR — mixing an
+                    // end-state distance with a start-state down would
+                    // describe a snap that never existed. Mirrors the same
+                    // guard in the play processor / replay publishers.
+                    var hasEndSnapState = latest.EndDown is not null;
+                    var down = hasEndSnapState ? latest.EndDown : latest.StartDown;
+                    var distance = hasEndSnapState ? latest.EndDistance : latest.StartDistance;
+
+                    return new LiveSituation
                     {
                         // Down 0 is ESPN's no-snap-state value (kickoff,
                         // extra point, end of period) — surface it as null
                         // so the client renders no down-and-distance rather
                         // than "0th & 0".
-                        Down = g.First().Down > 0 ? g.First().Down : null,
-                        Distance = g.First().Down > 0 ? g.First().Distance : null,
-                        BallOnYardLine = g.First().YardLine
-                    });
-        }
-
-        if (_dbContext is BaseballDataContext baseballCtx)
-        {
-            var rows = await baseballCtx.Set<BaseballCompetitionSituation>()
-                .AsNoTracking()
-                .Where(s => contestIds.Contains(s.Competition.ContestId))
-                .Select(s => new
-                {
-                    s.Competition.ContestId,
-                    s.Balls,
-                    s.Strikes,
-                    s.Outs,
-                    s.OnFirstAthleteSeasonId,
-                    s.OnSecondAthleteSeasonId,
-                    s.OnThirdAthleteSeasonId
-                })
-                .ToListAsync(cancellationToken);
-
-            return rows
-                .GroupBy(r => r.ContestId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => new LiveSituation
-                    {
-                        Balls = g.First().Balls,
-                        Strikes = g.First().Strikes,
-                        Outs = g.First().Outs,
-                        RunnerOnFirst = g.First().OnFirstAthleteSeasonId != null,
-                        RunnerOnSecond = g.First().OnSecondAthleteSeasonId != null,
-                        RunnerOnThird = g.First().OnThirdAthleteSeasonId != null
-                    });
-        }
-
-        return new Dictionary<Guid, LiveSituation>();
+                        Down = down > 0 ? down : null,
+                        Distance = down > 0 ? distance : null,
+                        BallOnYardLine = latest.EndYardLine ?? latest.StartYardLine
+                    };
+                });
     }
 
-    /// <summary>Sport-agnostic carrier for the per-sport situation stitch.</summary>
+    /// <summary>Carrier for the football snap-state stitch.</summary>
     internal sealed class LiveSituation
     {
         public int? Down { get; init; }
         public int? Distance { get; init; }
         public int? BallOnYardLine { get; init; }
-        public int? Balls { get; init; }
-        public int? Strikes { get; init; }
-        public int? Outs { get; init; }
-        public bool? RunnerOnFirst { get; init; }
-        public bool? RunnerOnSecond { get; init; }
-        public bool? RunnerOnThird { get; init; }
     }
 
     /// <summary>

@@ -52,18 +52,33 @@ INNER JOIN public."Competition" comp ON comp."ContestId" = c."Id"
 LEFT JOIN public."CompetitionNote" cn ON cn."CompetitionId" = comp."Id" AND cn."Type" = 'event'
 LEFT JOIN public."CompetitionBroadcast" cb ON cb."CompetitionId" = comp."Id"
 LEFT JOIN public."CompetitionStatus" cs ON cs."CompetitionId" = comp."Id"
--- Possession and the last play, resolved through the situation row's
--- LastPlayId. Both columns live on the shared CompetitionPlay base, so
--- this lateral is sport-neutral. For baseball the "possession" team is
--- the batting side (the team credited with the last play).
+-- Possession and the last play, taken from the MOST RECENT PLAY — the
+-- same source the per-play SignalR events publish from, so REST and
+-- real-time agree by construction.
+--
+-- NOT from CompetitionSituation: that row is written once per competition
+-- and never updated (its processor skips when the row already exists), so
+-- it is frozen at the game's first snap. Reading it here served "1st & 10"
+-- and the opening kickoff for the entire game.
+--
+-- Ordered by the ESPN play ordinal NUMERICALLY. SequenceNumber is stored
+-- as text and is variable width (1 to 9 digits in the corpus), so a plain
+-- text sort puts "9" above "100000" and would pick an early play as the
+-- latest. The digit-strip guards a non-numeric value from throwing the
+-- whole query; CreatedUtc breaks ties. Id, Text and StartFranchiseSeasonId
+-- all live on the shared CompetitionPlay base, so this lateral is
+-- sport-neutral; for baseball the team credited with the last play IS the
+-- batting side.
 LEFT JOIN LATERAL (
   SELECT
-    sit."LastPlayId",
+    lp."Id" AS "LastPlayId",
     lp."Text" AS "LastPlayDescription",
     lp."StartFranchiseSeasonId" AS "PossessionFranchiseSeasonId"
-  FROM public."CompetitionSituation" sit
-  LEFT JOIN public."CompetitionPlay" lp ON lp."Id" = sit."LastPlayId"
-  WHERE sit."CompetitionId" = comp."Id"
+  FROM public."CompetitionPlay" lp
+  WHERE lp."CompetitionId" = comp."Id"
+  ORDER BY
+    NULLIF(regexp_replace(lp."SequenceNumber", '\D', '', 'g'), '')::bigint DESC NULLS LAST,
+    lp."CreatedUtc" DESC
   LIMIT 1
 ) live ON TRUE
 LEFT JOIN LATERAL (

@@ -136,20 +136,14 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
             public Guid? LastPlayId { get; set; }
             public string? LastPlayDescription { get; set; }
 
-            // Football snap state.
+            // Football snap state, from the latest play. Baseball has no
+            // per-play count/runner equivalent, so MLB carries only the
+            // sport-neutral fields above.
             public int? Down { get; set; }
             public int? Distance { get; set; }
 
             /// <summary>Absolute field position, 0–100 from the HOME goal line.</summary>
             public int? BallOnYardLine { get; set; }
-
-            // Baseball situation state.
-            public int? Balls { get; set; }
-            public int? Strikes { get; set; }
-            public int? Outs { get; set; }
-            public bool? RunnerOnFirst { get; set; }
-            public bool? RunnerOnSecond { get; set; }
-            public bool? RunnerOnThird { get; set; }
 
             // Result
             public bool IsComplete { get; set; }

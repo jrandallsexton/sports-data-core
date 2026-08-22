@@ -257,143 +257,122 @@ public class GetMatchupsByContestIdsQueryHandlerTests
         result[contestId].Home!.HeadshotUrl.Should().Be("https://cdn/earlier.png");
     }
 
-    // ─── Live situation stitch (cold-start state) ────────────────────────
-    // CompetitionSituation is table-per-hierarchy and each sport's subtype
-    // columns exist only in that sport's database, so the stitch dispatches
-    // on the concrete DbContext instead of living in the shared SQL.
+    // ─── Live snap state (cold-start) ────────────────────────────────────
+    // Sourced from the LATEST PLAY, not CompetitionSituation: that row is
+    // created once per competition and never updated, so it is frozen at
+    // the game's first snap.
 
     [Fact]
-    public async Task GetLiveSituations_Football_ReturnsSnapState()
+    public async Task GetLiveSituations_UsesLatestPlay_NotTheFirst()
     {
-        // arrange
-        var ctx = new FootballDataContext(
-            new DbContextOptionsBuilder<FootballDataContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString()[..8])
-                .Options);
-
+        // arrange — three plays; only the highest SequenceNumber describes
+        // the current snap. A non-deterministic pick would surface the
+        // opening kickoff for the whole game.
+        var ctx = NewFootballContext();
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
         SeedFootballContestWithCompetition(ctx, contestId, competitionId);
-        ctx.Set<FootballCompetitionSituation>().Add(new FootballCompetitionSituation
-        {
-            Id = Guid.NewGuid(),
-            CompetitionId = competitionId,
-            Down = 2,
-            Distance = 7,
-            YardLine = 75,
-            CreatedUtc = FixedNow,
-            CreatedBy = Guid.NewGuid()
-        });
+
+        // SequenceNumber is TEXT: a lexicographic sort would rank "97300"
+        // below "500" only if widths matched, and would rank "9" above
+        // "100000" outright — so the widths here deliberately differ.
+        SeedFootballPlay(ctx, competitionId, sequence: "100", down: 1, distance: 10, yardLine: 35);
+        SeedFootballPlay(ctx, competitionId, sequence: "97300", down: 2, distance: 5, yardLine: 45);
+        SeedFootballPlay(ctx, competitionId, sequence: "500", down: 3, distance: 8, yardLine: 60);
         await ctx.SaveChangesAsync();
 
-        var handler = new GetMatchupsByContestIdsQueryHandler(
-            NullLogger<GetMatchupsByContestIdsQueryHandler>.Instance,
-            ctx,
-            new ProducerSqlQueryProvider());
-
         // act
-        var result = await handler.GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+        var result = await NewFootballSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
 
         // assert
         result.Should().ContainKey(contestId);
         result[contestId].Down.Should().Be(2);
-        result[contestId].Distance.Should().Be(7);
-        result[contestId].BallOnYardLine.Should().Be(75);
-        // Baseball fields stay null on a football context.
-        result[contestId].Outs.Should().BeNull();
+        result[contestId].Distance.Should().Be(5);
+        result[contestId].BallOnYardLine.Should().Be(45);
     }
 
     [Fact]
-    public async Task GetLiveSituations_Football_DownZero_SurfacesAsNull()
+    public async Task GetLiveSituations_DownZero_SurfacesAsNullButKeepsTheSpot()
     {
         // arrange — ESPN reports down 0 at kickoffs, extra points and end of
-        // period. Publishing that verbatim would render "0th & 0".
-        var ctx = new FootballDataContext(
-            new DbContextOptionsBuilder<FootballDataContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString()[..8])
-                .Options);
-
+        // period. Publishing it verbatim would render "0th & 0".
+        var ctx = NewFootballContext();
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
         SeedFootballContestWithCompetition(ctx, contestId, competitionId);
-        ctx.Set<FootballCompetitionSituation>().Add(new FootballCompetitionSituation
-        {
-            Id = Guid.NewGuid(),
-            CompetitionId = competitionId,
-            Down = 0,
-            Distance = 0,
-            YardLine = 35,
-            CreatedUtc = FixedNow,
-            CreatedBy = Guid.NewGuid()
-        });
+        SeedFootballPlay(ctx, competitionId, sequence: "1", down: 0, distance: 0, yardLine: 35);
         await ctx.SaveChangesAsync();
 
-        var handler = new GetMatchupsByContestIdsQueryHandler(
-            NullLogger<GetMatchupsByContestIdsQueryHandler>.Instance,
-            ctx,
-            new ProducerSqlQueryProvider());
-
         // act
-        var result = await handler.GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+        var result = await NewFootballSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
 
-        // assert — no snap state, but the ball spot is still known.
+        // assert
         result[contestId].Down.Should().BeNull();
         result[contestId].Distance.Should().BeNull();
         result[contestId].BallOnYardLine.Should().Be(35);
     }
 
     [Fact]
-    public async Task GetLiveSituations_Baseball_ReturnsCountOutsAndRunners()
+    public async Task GetLiveSituations_MissingEndState_FallsBackToTheStartPair()
     {
-        // arrange
-        var ctx = NewBaseballContext();
+        // arrange — down and distance travel together; an end distance
+        // paired with a start down would describe a snap that never existed.
+        var ctx = NewFootballContext();
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
-        SeedContestWithCompetition(ctx, contestId, competitionId);
-        ctx.Set<BaseballCompetitionSituation>().Add(new BaseballCompetitionSituation
-        {
-            Id = Guid.NewGuid(),
-            CompetitionId = competitionId,
-            Balls = 3,
-            Strikes = 2,
-            Outs = 1,
-            OnFirstAthleteSeasonId = Guid.NewGuid(),
-            OnThirdAthleteSeasonId = Guid.NewGuid(),
-            CreatedUtc = FixedNow,
-            CreatedBy = Guid.NewGuid()
-        });
+        SeedFootballContestWithCompetition(ctx, contestId, competitionId);
+        SeedFootballPlay(
+            ctx, competitionId, sequence: "10",
+            down: null, distance: null, yardLine: null,
+            startDown: 3, startDistance: 4, startYardLine: 22);
         await ctx.SaveChangesAsync();
 
-        var handler = NewSut(ctx);
-
         // act
-        var result = await handler.GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
+        var result = await NewFootballSut(ctx)
+            .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
 
-        // assert — runners are presence flags, not ids, on the wire.
-        result.Should().ContainKey(contestId);
-        result[contestId].Balls.Should().Be(3);
-        result[contestId].Strikes.Should().Be(2);
-        result[contestId].Outs.Should().Be(1);
-        result[contestId].RunnerOnFirst.Should().BeTrue();
-        result[contestId].RunnerOnSecond.Should().BeFalse();
-        result[contestId].RunnerOnThird.Should().BeTrue();
-        // Football fields stay null on a baseball context.
-        result[contestId].Down.Should().BeNull();
+        // assert
+        result[contestId].Down.Should().Be(3);
+        result[contestId].Distance.Should().Be(4);
+        result[contestId].BallOnYardLine.Should().Be(22);
     }
 
     [Fact]
-    public async Task GetLiveSituations_NoSituationRow_ReturnsEmpty()
+    public async Task GetLiveSituations_NonFootballContext_ReturnsEmpty()
     {
-        var ctx = NewBaseballContext();
+        // Baseball plays carry no per-play count/runner state, so MLB gets
+        // the sport-neutral SQL fields and nothing from this stitch.
+        var result = await NewSut(NewBaseballContext())
+            .GetLiveSituationsAsync(new[] { Guid.NewGuid() }, CancellationToken.None);
+
+        result.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetLiveSituations_NoPlaysYet_ReturnsEmpty()
+    {
+        var ctx = NewFootballContext();
         var contestId = Guid.NewGuid();
-        SeedContestWithCompetition(ctx, contestId, Guid.NewGuid());
+        SeedFootballContestWithCompetition(ctx, contestId, Guid.NewGuid());
         await ctx.SaveChangesAsync();
 
-        var result = await NewSut(ctx)
+        var result = await NewFootballSut(ctx)
             .GetLiveSituationsAsync(new[] { contestId }, CancellationToken.None);
 
         result.Should().BeEmpty();
     }
+
+    private static FootballDataContext NewFootballContext() =>
+        new(new DbContextOptionsBuilder<FootballDataContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString()[..8])
+            .Options);
+
+    private static GetMatchupsByContestIdsQueryHandler NewFootballSut(FootballDataContext ctx) =>
+        new(NullLogger<GetMatchupsByContestIdsQueryHandler>.Instance,
+            ctx,
+            new ProducerSqlQueryProvider());
 
     private static void SeedFootballContestWithCompetition(
         FootballDataContext ctx,
@@ -419,6 +398,36 @@ public class GetMatchupsByContestIdsQueryHandlerTests
             Id = competitionId,
             ContestId = contestId,
             Date = FixedNow,
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+    }
+
+    private static void SeedFootballPlay(
+        FootballDataContext ctx,
+        Guid competitionId,
+        string sequence,
+        int? down,
+        int? distance,
+        int? yardLine,
+        int? startDown = null,
+        int? startDistance = null,
+        int? startYardLine = null)
+    {
+        ctx.CompetitionPlays.Add(new FootballCompetitionPlay
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            EspnId = Guid.NewGuid().ToString("N"),
+            TypeId = "5",
+            SequenceNumber = sequence,
+            Text = $"Play {sequence}",
+            EndDown = down,
+            EndDistance = distance,
+            EndYardLine = yardLine,
+            StartDown = startDown,
+            StartDistance = startDistance,
+            StartYardLine = startYardLine,
             CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         });

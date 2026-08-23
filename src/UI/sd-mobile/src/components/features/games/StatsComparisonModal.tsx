@@ -22,6 +22,8 @@ import type {
   TeamStatEntry,
 } from '@/src/types/models';
 import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
+import { useSectionCollapse } from '@/src/hooks/useSectionCollapse';
+import { Ionicons } from '@expo/vector-icons';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -178,6 +180,44 @@ function StatRow({
 
 // ─── History pieces ───────────────────────────────────────────────────────────
 
+/**
+ * Section title that doubles as a collapse toggle. Sections stay EXPANDED by
+ * default — the card exists to surface context without being asked — so this
+ * is an escape valve for readers who find a section noisy, not a gate in
+ * front of the content.
+ */
+function CollapsibleSectionHeader({
+  title,
+  collapsed,
+  onToggle,
+  color,
+  mutedColor,
+}: {
+  title: string;
+  collapsed: boolean;
+  onToggle: () => void;
+  color: string;
+  mutedColor: string;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onToggle}
+      style={styles.collapsibleHeader}
+      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+      accessibilityRole="button"
+      accessibilityState={{ expanded: !collapsed }}
+      accessibilityLabel={`${title}, ${collapsed ? 'collapsed' : 'expanded'}`}
+    >
+      <Text style={[styles.historySectionTitle, { color }]}>{title}</Text>
+      <Ionicons
+        name={collapsed ? 'chevron-down' : 'chevron-up'}
+        size={18}
+        color={mutedColor}
+      />
+    </TouchableOpacity>
+  );
+}
+
 function formatGameDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
     year: 'numeric',
@@ -328,6 +368,12 @@ export function StatsComparisonModal({
 
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
+  // Collapse state is per device and survives reopening the card — a toggle
+  // that reset every time would have to be redone on every matchup.
+  const { collapsed: h2hCollapsed, toggle: toggleH2h } = useSectionCollapse('history.headToHead');
+  const { collapsed: lastSeasonCollapsed, toggle: toggleLastSeason } =
+    useSectionCollapse('history.lastSeason');
+
   // Collect all category names from teamA stats
   const awayStats = comparison?.teamA?.stats?.data?.statistics ?? {};
   const homeStats = comparison?.teamB?.stats?.data?.statistics ?? {};
@@ -444,7 +490,7 @@ export function StatsComparisonModal({
               >
                 {showGambling && history?.spreadContext && (
                   <>
-                    <Text style={[styles.historySectionTitle, { color: theme.text }]}>
+                    <Text style={[styles.historySectionTitle, { color: theme.tint }]}>
                       The Line
                       {history.spreadContext.spreadDetails ? ` — ${history.spreadContext.spreadDetails}` : ''}
                     </Text>
@@ -459,10 +505,14 @@ export function StatsComparisonModal({
                 )}
                 {headToHead.length > 0 && (
                   <>
-                    <Text style={[styles.historySectionTitle, { color: theme.text }]}>
-                      Head-to-Head — Last {headToHead.length} Meeting{headToHead.length === 1 ? '' : 's'}
-                    </Text>
-                    {headToHead.map((g, i) => (
+                    <CollapsibleSectionHeader
+                      title={`Head-to-Head — Last ${headToHead.length} Meeting${headToHead.length === 1 ? '' : 's'}`}
+                      collapsed={h2hCollapsed}
+                      onToggle={toggleH2h}
+                      color={theme.tint}
+                      mutedColor={theme.tint}
+                    />
+                    {!h2hCollapsed && headToHead.map((g, i) => (
                       <View key={i} style={[styles.h2hRow, { borderBottomColor: theme.border }]}>
                         <View style={styles.h2hMeta}>
                           <Text style={[styles.historyGameDate, { color: theme.textMuted }]}>
@@ -526,10 +576,16 @@ export function StatsComparisonModal({
                   </>
                 )}
 
-                <Text style={[styles.historySectionTitle, { color: theme.text }]}>
-                  Last Season — Final {Math.max(awayPriorGames.length, homePriorGames.length)} Games
-                </Text>
+                <CollapsibleSectionHeader
+                  title={`Last Season — Final ${Math.max(awayPriorGames.length, homePriorGames.length)} Games`}
+                  collapsed={lastSeasonCollapsed}
+                  onToggle={toggleLastSeason}
+                  color={theme.tint}
+                  mutedColor={theme.tint}
+                />
 
+                {!lastSeasonCollapsed && (
+                <>
                 <View style={styles.historyTeamHeader}>
                   <Text style={[styles.historyTeamName, { color: theme.text }]}>{matchup.away}</Text>
                   {priorSeasonRecordLabel(history?.awayPriorSeason) && (
@@ -564,6 +620,8 @@ export function StatsComparisonModal({
                   homePriorGames.map((g, i) => (
                     <PriorSeasonGameRow key={i} game={g} teamName={matchup.home} />
                   ))
+                )}
+                </>
                 )}
               </ScrollView>
             ) : categories.length === 0 ? (
@@ -795,6 +853,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginTop: 12,
     marginBottom: 6,
+  },
+  collapsibleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   h2hRow: {
     paddingVertical: 8,

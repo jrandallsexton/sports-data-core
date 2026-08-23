@@ -182,9 +182,11 @@ public class PickScoringJobTests : ApiTestBase<PickScoringJob>
     [Fact]
     public async Task Execute_SkipsContests_StillInsideThePlayableWindow()
     {
-        // Arrange — kicked off an hour ago. The game is very likely still in
-        // progress, so scoring it is premature; the event-driven
-        // ContestCompleted path handles the real finish.
+        // Arrange — kicked off three hours ago, so inside the four-hour
+        // window: an NFL game of that age may still be running. Scoring it is
+        // premature; the event-driven ContestCompleted path handles the real
+        // finish. Paired with the test below, this pins the window rather
+        // than merely passing for any generous value.
         var inProgressContestId = Guid.NewGuid();
 
         DataContext.UserPicks.Add(
@@ -192,7 +194,7 @@ public class PickScoringJobTests : ApiTestBase<PickScoringJob>
                 .With(x => x.ContestId, inProgressContestId)
                 .With(x => x.ScoredAt, (DateTime?)null).Create());
 
-        SeedMatchup(inProgressContestId, Now.AddHours(-1));
+        SeedMatchup(inProgressContestId, Now.AddHours(-3));
 
         await DataContext.SaveChangesAsync();
 
@@ -204,5 +206,38 @@ public class PickScoringJobTests : ApiTestBase<PickScoringJob>
         // Assert
         background.Verify(x => x.Enqueue<IScorePicks>(
             It.IsAny<Expression<Func<IScorePicks, Task>>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_ScoresContests_JustPastThePlayableWindow()
+    {
+        // Arrange — kicked off five hours ago: past four, so even an
+        // overtime game is done and the contest is worth an attempt.
+        var finishedContestId = Guid.NewGuid();
+
+        DataContext.UserPicks.Add(
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, finishedContestId)
+                .With(x => x.ScoredAt, (DateTime?)null).Create());
+
+        SeedMatchup(finishedContestId, Now.AddHours(-5));
+
+        await DataContext.SaveChangesAsync();
+
+        var enqueuedCommands = new List<ScorePicksCommand>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IScorePicks>(It.IsAny<Expression<Func<IScorePicks, Task>>>()))
+            .Callback<Expression<Func<IScorePicks, Task>>>(expr =>
+            {
+                var cmd = ScorePicksCommandFromExpression(expr);
+                if (cmd != null) enqueuedCommands.Add(cmd);
+            });
+
+        // Act
+        await CreateSut().ExecuteAsync();
+
+        // Assert
+        Assert.Single(enqueuedCommands);
+        Assert.Equal(finishedContestId, enqueuedCommands[0].ContestId);
     }
 }

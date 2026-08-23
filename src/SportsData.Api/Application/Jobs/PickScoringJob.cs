@@ -28,11 +28,14 @@ namespace SportsData.Api.Application.Jobs
     {
         /// <summary>
         /// Hours after kickoff before a contest is considered playable-out and
-        /// worth a scoring attempt. Comfortably longer than any game plus
-        /// overtime or a weather delay — being late costs one job interval,
-        /// being early costs a pointless round trip on every run.
+        /// worth a scoring attempt. An NFL game runs about three hours, and
+        /// still comfortably under four with overtime, so four clears a
+        /// finished game without waiting on one. Erring short is cheap: an
+        /// early attempt short-circuits cleanly on the NotFound relay and is
+        /// retried next pass, whereas erring long delays scoring for every
+        /// game that the event-driven ContestCompleted path happened to miss.
         /// </summary>
-        private const int PlayableWindowHours = 6;
+        private const int PlayableWindowHours = 4;
 
         private readonly ILogger<PickScoringJob> _logger;
         private readonly AppDataContext _dataContext;

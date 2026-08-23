@@ -47,6 +47,44 @@ public class ContestClientTests
     }
 
     [Fact]
+    public async Task GetMatchupResult_With404_ReturnsNotFound_NotTheEnumDefault()
+    {
+        // Arrange — the EXACT production shape. ResultExtensions.ToActionResult
+        // serializes a NotFound failure as `new { failure.Errors }`, so the
+        // body carries no status at all. Deserializing it into Failure<T>
+        // therefore left Status at default(ResultStatus), which is Accepted
+        // because it is declared first and numbers zero. Trusting that made
+        // every 404 arrive as Accepted and silently defeated every caller
+        // branching on NotFound — PickScoringProcessor logged an Error and
+        // threw instead of skipping an unplayed game.
+        _handler.SetResponse(
+            HttpStatusCode.NotFound,
+            new { Errors = new[] { new { PropertyName = "contestId", ErrorMessage = "No matchup result found" } } }.ToJson());
+
+        // Act
+        var result = await _sut.GetMatchupResult(Guid.NewGuid());
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.NotFound);
+        result.Status.Should().NotBe(ResultStatus.Accepted, "Accepted is the enum default and means the status never bound");
+    }
+
+    [Fact]
+    public async Task GetMatchupResult_WithServerError_ReportsErrorNotTheEnumDefault()
+    {
+        // A 500 body is shaped the same way, so it hit the same trap.
+        _handler.SetResponse(
+            HttpStatusCode.InternalServerError,
+            new { Errors = new[] { new { PropertyName = "contest", ErrorMessage = "boom" } } }.ToJson());
+
+        var result = await _sut.GetMatchupResult(Guid.NewGuid());
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.Error);
+    }
+
+    [Fact]
     public async Task GetSeasonContests_With404_ReturnsNotFound()
     {
         // Arrange

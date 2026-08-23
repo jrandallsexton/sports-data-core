@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Core.Common;
 using SportsData.Core.Common.Jobs;
 using SportsData.Core.Processing;
 
@@ -25,19 +26,30 @@ namespace SportsData.Api.Application.Jobs
     /// </summary>
     public class PickScoringJob : IAmARecurringJob
     {
+        /// <summary>
+        /// Hours after kickoff before a contest is considered playable-out and
+        /// worth a scoring attempt. Comfortably longer than any game plus
+        /// overtime or a weather delay — being late costs one job interval,
+        /// being early costs a pointless round trip on every run.
+        /// </summary>
+        private const int PlayableWindowHours = 6;
+
         private readonly ILogger<PickScoringJob> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly IDateTimeProvider _dateTimeProvider;
         private readonly Guid _correlationId = Guid.NewGuid();
 
         public PickScoringJob(
             ILogger<PickScoringJob> logger,
             AppDataContext dataContext,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IDateTimeProvider dateTimeProvider)
         {
             _logger = logger;
             _dataContext = dataContext;
             _backgroundJobProvider = backgroundJobProvider;
+            _dateTimeProvider = dateTimeProvider;
         }
 
         public async Task ExecuteAsync()
@@ -49,15 +61,38 @@ namespace SportsData.Api.Application.Jobs
             {
                 _logger.LogInformation("{MethodName} Began", nameof(PickScoringJob));
 
+                // Only contests whose game can plausibly be OVER. Without this
+                // the pass enqueued every contest anyone had picked, including
+                // games days away — during a season that is most of the slate,
+                // and each one round-trips to Producer to be told there is no
+                // result yet. The processor short-circuits on that, so this is
+                // wasted work rather than incorrect work, but the volume is
+                // real: it repeats on every run until the game is played.
+                //
+                // A generous lower bound (kickoff + this window) rather than a
+                // finalization check, which only Producer can answer. Games run
+                // long — overtime, weather delays — so the window errs late; a
+                // contest that finished sooner simply gets scored on the next
+                // pass, and the event-driven path (ContestCompleted) has
+                // already handled the common case anyway.
+                var startedBefore = _dateTimeProvider.UtcNow().AddHours(-PlayableWindowHours);
+
                 var unscoredContestIds = await _dataContext.UserPicks
                     .Where(p => p.ScoredAt == null)
-                    .Select(p => p.ContestId)
+                    .Join(
+                        _dataContext.PickemGroupMatchups,
+                        pick => pick.ContestId,
+                        matchup => matchup.ContestId,
+                        (pick, matchup) => new { pick.ContestId, matchup.StartDateUtc })
+                    .Where(x => x.StartDateUtc <= startedBefore)
+                    .Select(x => x.ContestId)
                     .Distinct()
                     .ToListAsync();
 
                 _logger.LogInformation(
-                    "Found {Count} distinct contests with unscored picks. Enqueuing scoring for each.",
-                    unscoredContestIds.Count);
+                    "Found {Count} distinct contests with unscored picks whose game started before {StartedBefore}. Enqueuing scoring for each.",
+                    unscoredContestIds.Count,
+                    startedBefore);
 
                 foreach (var contestId in unscoredContestIds)
                 {

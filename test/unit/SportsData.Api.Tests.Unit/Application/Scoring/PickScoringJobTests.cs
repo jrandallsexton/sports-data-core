@@ -5,6 +5,7 @@ using Moq;
 using SportsData.Api.Application.Jobs;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Common;
 using SportsData.Core.Processing;
 
 using System.Linq.Expressions;
@@ -15,6 +16,31 @@ namespace SportsData.Api.Tests.Unit.Application.Scoring;
 
 public class PickScoringJobTests : ApiTestBase<PickScoringJob>
 {
+    // Fixed clock so the playable-window boundary is exact rather than
+    // relative to wall time.
+    private static readonly DateTime Now = new(2026, 8, 23, 12, 0, 0, DateTimeKind.Utc);
+
+    /// <summary>Pins the clock and returns the SUT.</summary>
+    private PickScoringJob CreateSut()
+    {
+        Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(Now);
+        return Mocker.CreateInstance<PickScoringJob>();
+    }
+
+    /// <summary>
+    /// A contest's matchup row supplies the kickoff the job filters on.
+    /// Without one the pick is invisible to the job — the join is what stops
+    /// unplayed games being enqueued.
+    /// </summary>
+    private void SeedMatchup(Guid contestId, DateTime startDateUtc)
+    {
+        DataContext.PickemGroupMatchups.Add(
+            Fixture.Build<PickemGroupMatchup>()
+                .With(x => x.ContestId, contestId)
+                .With(x => x.StartDateUtc, startDateUtc)
+                .Create());
+    }
+
     [Fact]
     public async Task Execute_EnqueuesScoreContestCommand_ForEachDistinctUnscoredContest()
     {
@@ -40,6 +66,11 @@ public class PickScoringJobTests : ApiTestBase<PickScoringJob>
                 .Create()
         );
 
+        // All three kicked off long enough ago to be scoreable.
+        SeedMatchup(contestId1, Now.AddHours(-24));
+        SeedMatchup(contestId2, Now.AddHours(-24));
+        SeedMatchup(contestId3, Now.AddHours(-24));
+
         await DataContext.SaveChangesAsync();
 
         // Capture every enqueued ScoreContestCommand so we can verify the exact
@@ -56,7 +87,7 @@ public class PickScoringJobTests : ApiTestBase<PickScoringJob>
                 if (cmd != null) enqueuedCommands.Add(cmd);
             });
 
-        var sut = Mocker.CreateInstance<PickScoringJob>();
+        var sut = CreateSut();
 
         // Act
         await sut.ExecuteAsync();
@@ -99,10 +130,76 @@ public class PickScoringJobTests : ApiTestBase<PickScoringJob>
 
         var background = Mocker.GetMock<IProvideBackgroundJobs>();
 
-        var sut = Mocker.CreateInstance<PickScoringJob>();
+        var sut = CreateSut();
 
         // Act
         await sut.ExecuteAsync();
+
+        // Assert
+        background.Verify(x => x.Enqueue<IScorePicks>(
+            It.IsAny<Expression<Func<IScorePicks, Task>>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_SkipsContests_WhoseGameHasNotBeenPlayedYet()
+    {
+        // Arrange — the production symptom: a pick on a game days away. The
+        // job used to enqueue it on every run, and each attempt round-tripped
+        // to Producer only to be told there is no result yet.
+        var futureContestId = Guid.NewGuid();
+        var playedContestId = Guid.NewGuid();
+
+        DataContext.UserPicks.AddRange(
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, futureContestId)
+                .With(x => x.ScoredAt, (DateTime?)null).Create(),
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, playedContestId)
+                .With(x => x.ScoredAt, (DateTime?)null).Create());
+
+        SeedMatchup(futureContestId, Now.AddDays(4));
+        SeedMatchup(playedContestId, Now.AddHours(-24));
+
+        await DataContext.SaveChangesAsync();
+
+        var enqueuedCommands = new List<ScorePicksCommand>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IScorePicks>(It.IsAny<Expression<Func<IScorePicks, Task>>>()))
+            .Callback<Expression<Func<IScorePicks, Task>>>(expr =>
+            {
+                var cmd = ScorePicksCommandFromExpression(expr);
+                if (cmd != null) enqueuedCommands.Add(cmd);
+            });
+
+        // Act
+        await CreateSut().ExecuteAsync();
+
+        // Assert — only the game that has actually been played.
+        Assert.Single(enqueuedCommands);
+        Assert.Equal(playedContestId, enqueuedCommands[0].ContestId);
+    }
+
+    [Fact]
+    public async Task Execute_SkipsContests_StillInsideThePlayableWindow()
+    {
+        // Arrange — kicked off an hour ago. The game is very likely still in
+        // progress, so scoring it is premature; the event-driven
+        // ContestCompleted path handles the real finish.
+        var inProgressContestId = Guid.NewGuid();
+
+        DataContext.UserPicks.Add(
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, inProgressContestId)
+                .With(x => x.ScoredAt, (DateTime?)null).Create());
+
+        SeedMatchup(inProgressContestId, Now.AddHours(-1));
+
+        await DataContext.SaveChangesAsync();
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+
+        // Act
+        await CreateSut().ExecuteAsync();
 
         // Assert
         background.Verify(x => x.Enqueue<IScorePicks>(

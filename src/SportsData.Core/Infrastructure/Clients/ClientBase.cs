@@ -1,4 +1,4 @@
-﻿using FluentValidation.Results;
+using FluentValidation.Results;
 
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
@@ -95,7 +95,16 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
             // Response body is not valid JSON, use defaults
         }
 
-        var status = failure?.Status ?? MapHttpStatusCode(response.StatusCode, defaultFailureStatus);
+        // The HTTP status is AUTHORITATIVE — same rule as PostAsync below.
+        // Server failure bodies are shaped { errors } (ToActionResult never
+        // serializes a Failure<T>), so the parse above yields a Failure whose
+        // Status is the enum DEFAULT: Accepted, because it is declared first
+        // and therefore zero. Trusting it made every 404 arrive as Accepted,
+        // which silently defeated all three callers that branch on NotFound —
+        // the contest-overview relay and both pick-scoring processors, whose
+        // "not finalized yet, skip" short-circuit became an Error and a
+        // throw. The body contributes errors only.
+        var status = MapHttpStatusCode(response.StatusCode, defaultFailureStatus);
         var errors = failure?.Errors ?? [new ValidationFailure(entityName, $"Unable to retrieve {entityName.ToLowerInvariant()}")];
 
         return new Failure<TResponse>(defaultResponse, status, errors);
@@ -396,7 +405,10 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
                 // Response body is not valid JSON, use defaults
             }
 
-            var status = failure?.Status ?? MapHttpStatusCode(response.StatusCode, ResultStatus.Error);
+            // HTTP status is authoritative; the { errors }-shaped failure body
+            // has no status to bind, so trusting it yields Accepted (enum 0).
+            // See the note in GetAsync.
+            var status = MapHttpStatusCode(response.StatusCode, ResultStatus.Error);
             var errors = failure?.Errors ?? [new ValidationFailure(operationName, $"{operationName} failed with status {response.StatusCode}")];
 
             return new Failure<bool>(false, status, errors);
@@ -458,7 +470,10 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
                 // Response body is not valid JSON, use defaults
             }
 
-            var status = failure?.Status ?? MapHttpStatusCode(response.StatusCode, ResultStatus.Error);
+            // HTTP status is authoritative; the { errors }-shaped failure body
+            // has no status to bind, so trusting it yields Accepted (enum 0).
+            // See the note in GetAsync.
+            var status = MapHttpStatusCode(response.StatusCode, ResultStatus.Error);
             var errors = failure?.Errors ?? [new ValidationFailure(operationName, $"{operationName} failed with status {response.StatusCode}")];
 
             return new Failure<bool>(false, status, errors);
@@ -513,7 +528,10 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
             {
             }
 
-            var status = failure?.Status ?? MapHttpStatusCode(response.StatusCode, ResultStatus.Error);
+            // HTTP status is authoritative; the { errors }-shaped failure body
+            // has no status to bind, so trusting it yields Accepted (enum 0).
+            // See the note in GetAsync.
+            var status = MapHttpStatusCode(response.StatusCode, ResultStatus.Error);
             var errors = failure?.Errors ?? [new ValidationFailure(operationName, $"{operationName} failed with status {response.StatusCode}")];
 
             return new Failure<bool>(false, status, errors);

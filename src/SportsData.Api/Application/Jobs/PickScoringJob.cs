@@ -97,6 +97,17 @@ namespace SportsData.Api.Application.Jobs
                     .Distinct()
                     .ToListAsync();
 
+                // Deliberately enqueued per CONTEST, not per group, even
+                // though eligibility was evaluated per group above. Kickoff is
+                // a property of the game, so two groups' rows for one contest
+                // should agree; if they disagree one is stale, and either way
+                // this cannot score a game early — PickScoringProcessor
+                // refuses to score unless the matchup result carries
+                // FinalizedUtc (see the 2026-06-16 incident noted there).
+                // Scoring per group would multiply Producer round trips by the
+                // number of leagues sharing a contest to guard something the
+                // processor already guarantees.
+
                 _logger.LogInformation(
                     "Found {Count} distinct contests with unscored picks whose game started before {StartedBefore}. Enqueuing scoring for each.",
                     unscoredContestIds.Count,

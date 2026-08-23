@@ -71,6 +71,33 @@ public class ContestClientTests
     }
 
     [Fact]
+    public async Task GetMatchupResult_WithRateLimit_ReportsRateLimited_NotNotFound()
+    {
+        // A 429 previously fell through to the caller's defaultFailureStatus,
+        // which GetMatchupResult passes as NotFound — so a rate-limited call
+        // read as "this game has no result" and pick scoring skipped it for
+        // good. Named explicitly so it can never be mistaken for absence.
+        _handler.SetResponse(HttpStatusCode.TooManyRequests, string.Empty);
+
+        var result = await _sut.GetMatchupResult(Guid.NewGuid());
+
+        result.Status.Should().Be(ResultStatus.RateLimited);
+        result.Status.Should().NotBe(ResultStatus.NotFound);
+    }
+
+    [Fact]
+    public async Task GetMatchupResult_WithMethodNotAllowed_ReportsError_NotNotFound()
+    {
+        // A mis-routed call (bad deploy) is a real failure, not a missing
+        // resource — it must not take a caller's not-found branch.
+        _handler.SetResponse(HttpStatusCode.MethodNotAllowed, string.Empty);
+
+        var result = await _sut.GetMatchupResult(Guid.NewGuid());
+
+        result.Status.Should().Be(ResultStatus.Error);
+    }
+
+    [Fact]
     public async Task GetMatchupResult_WithServerError_ReportsErrorNotTheEnumDefault()
     {
         // A 500 body is shaped the same way, so it hit the same trap.

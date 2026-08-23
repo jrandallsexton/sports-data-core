@@ -120,6 +120,14 @@ public abstract class ClientBase(HttpClient httpClient) : IProvideHealthChecks
             HttpStatusCode.BadRequest => ResultStatus.BadRequest,
             HttpStatusCode.Conflict => ResultStatus.Conflict,
             HttpStatusCode.UnprocessableEntity => ResultStatus.BadRequest,
+            // Named explicitly so they can never fall through to the caller's
+            // optimistic default. Several callers pass NotFound, which for
+            // these would be a silent lie: a rate-limited or mis-routed call
+            // would read as "the resource doesn't exist" and take a
+            // missing-resource branch — e.g. pick scoring skipping a game that
+            // genuinely needs scoring, forever.
+            HttpStatusCode.TooManyRequests => ResultStatus.RateLimited,
+            HttpStatusCode.MethodNotAllowed => ResultStatus.Error,
             >= HttpStatusCode.InternalServerError => ResultStatus.Error,
             _ => defaultStatus
         };

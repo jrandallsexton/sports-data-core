@@ -80,15 +80,20 @@ namespace SportsData.Api.Application.Jobs
                 // already handled the common case anyway.
                 var startedBefore = _dateTimeProvider.UtcNow().AddHours(-PlayableWindowHours);
 
+                // Joined on GROUP AND CONTEST, not contest alone. The matchup
+                // row is per-group, so a contest picked in ten leagues has ten
+                // rows: a contest-only join fans each pick out across all of
+                // them, and lets one group's row (which could carry a stale
+                // StartDateUtc after a reschedule) admit another group's pick.
+                // Keying on the pick's own group keeps it 1:1 and correct.
                 var unscoredContestIds = await _dataContext.UserPicks
-                    .Where(p => p.ScoredAt == null)
-                    .Join(
-                        _dataContext.PickemGroupMatchups,
-                        pick => pick.ContestId,
-                        matchup => matchup.ContestId,
-                        (pick, matchup) => new { pick.ContestId, matchup.StartDateUtc })
-                    .Where(x => x.StartDateUtc <= startedBefore)
-                    .Select(x => x.ContestId)
+                    .AsNoTracking()
+                    .Where(p => p.ScoredAt == null
+                        && _dataContext.PickemGroupMatchups.Any(m =>
+                            m.GroupId == p.PickemGroupId
+                            && m.ContestId == p.ContestId
+                            && m.StartDateUtc <= startedBefore))
+                    .Select(p => p.ContestId)
                     .Distinct()
                     .ToListAsync();
 

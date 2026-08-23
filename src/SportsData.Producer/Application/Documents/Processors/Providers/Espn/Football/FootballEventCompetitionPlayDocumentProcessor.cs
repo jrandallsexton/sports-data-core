@@ -215,7 +215,12 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
             Clock: footballPlay.ClockDisplayValue ?? string.Empty,
             AwayScore: footballPlay.AwayScore,
             HomeScore: footballPlay.HomeScore,
-            PossessionFranchiseSeasonId: footballPlay.StartFranchiseSeasonId,
+            // END-of-play team: who lines up for the NEXT snap, matching the
+            // down/distance below (also end-state). Start differs from end on
+            // 1 in 6 plays — every punt, turnover and change of possession —
+            // so publishing Start credited the punting team with the ball.
+            PossessionFranchiseSeasonId:
+                footballPlay.EndFranchiseSeasonId ?? footballPlay.StartFranchiseSeasonId,
             IsScoringPlay: footballPlay.ScoringPlay,
             ScoringPlayType: footballPlay.ScoringTypeName,
             BallOnYardLine: footballPlay.EndYardLine ?? footballPlay.StartYardLine,

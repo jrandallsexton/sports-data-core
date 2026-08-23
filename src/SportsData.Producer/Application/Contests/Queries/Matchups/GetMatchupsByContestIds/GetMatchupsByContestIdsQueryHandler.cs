@@ -6,7 +6,10 @@ using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data.Baseball;
+using SportsData.Producer.Infrastructure.Data.Baseball.Entities;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Football;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 using SportsData.Producer.Infrastructure.Sql;
 
 using System;
@@ -67,6 +70,7 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
         var streamTimes = await GetActiveStreamTimesAsync(query.ContestIds, cancellationToken);
         var probables = await GetProbablePitchersAsync(query.ContestIds, cancellationToken);
         var seriesSummaries = await GetCurrentSeriesSummariesAsync(query.ContestIds, cancellationToken);
+        var situations = await GetLiveSituationsAsync(query.ContestIds, cancellationToken);
         foreach (var matchup in matchups)
         {
             matchup.StreamScheduledTimeUtc = streamTimes.GetValueOrDefault(matchup.ContestId);
@@ -78,9 +82,161 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
             }
 
             matchup.CurrentSeriesSummary = seriesSummaries.GetValueOrDefault(matchup.ContestId);
+
+            if (situations.TryGetValue(matchup.ContestId, out var situation))
+            {
+                matchup.Down = situation.Down;
+                matchup.Distance = situation.Distance;
+                matchup.BallOnYardLine = situation.BallOnYardLine;
+
+                // Overrides the shared SQL's start-of-play possession for
+                // FOOTBALL only: the end-of-play team is who lines up next.
+                // Baseball keeps the SQL value — the team credited with the
+                // last play is the batting side, and baseball plays carry no
+                // end-team column.
+                if (situation.PossessionFranchiseSeasonId is not null)
+                {
+                    matchup.PossessionFranchiseSeasonId = situation.PossessionFranchiseSeasonId;
+                }
+            }
         }
 
         return new Success<List<LeagueMatchupDto>>(matchups);
+    }
+
+    /// <summary>
+    /// Football snap state (down, distance, ball spot) for the live card,
+    /// read from the MOST RECENT PLAY — the same source the per-play
+    /// SignalR events publish from, so a REST-populated card and a
+    /// SignalR-populated one agree by construction.
+    ///
+    /// Deliberately NOT from CompetitionSituation. That row is created once
+    /// per competition and never updated (its processor returns early when
+    /// the row already exists), so it is frozen at the game's first snap —
+    /// every situation row in the corpus has a null ModifiedUtc, and live
+    /// games show "1st & 10" with the opening kickoff for the full sixty
+    /// minutes.
+    ///
+    /// Football-gated because the snap columns are table-per-hierarchy:
+    /// EndDown / EndDistance / EndYardLine are created by the football
+    /// migrations and do not exist in the baseball database, so this cannot
+    /// live in the shared SQL. Baseball has no equivalent per-play count
+    /// state (its plays carry only Outs), so MLB gets the sport-neutral
+    /// fields — period, clock, last play, batting side — and nothing here.
+    /// </summary>
+    internal async Task<Dictionary<Guid, LiveSituation>> GetLiveSituationsAsync(
+        Guid[] contestIds,
+        CancellationToken cancellationToken)
+    {
+        if (_dbContext is not FootballDataContext footballCtx)
+        {
+            return new Dictionary<Guid, LiveSituation>();
+        }
+
+        // Latest play per CONTEST. A Contest can host multiple Competitions
+        // (doubleheaders / reschedule artifacts); ordering by SequenceNumber
+        // then CreatedUtc makes the pick deterministic rather than relying
+        // on whatever order Postgres returns.
+        var rows = await footballCtx.Set<FootballCompetitionPlay>()
+            .AsNoTracking()
+            .Where(p => contestIds.Contains(p.Competition.ContestId))
+            .Select(p => new
+            {
+                p.Competition.ContestId,
+                p.SequenceNumber,
+                p.CreatedUtc,
+                p.StartDown,
+                p.StartDistance,
+                p.EndDown,
+                p.EndDistance,
+                p.EndYardLine,
+                p.StartYardLine,
+                p.StartFranchiseSeasonId,
+                p.EndFranchiseSeasonId
+            })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(r => r.ContestId)
+            .ToDictionary(
+                g => g.Key,
+                g =>
+                {
+                    // SequenceNumber is stored as TEXT and is variable width
+                    // (1–9 digits), so a string sort would put "9" above
+                    // "100000" and pick an early play as the latest. Parsed
+                    // with the SAME all-digits rule the SQL lateral uses, so
+                    // both paths select the same play; anything else sorts
+                    // last rather than hijacking the pick.
+                    var latest = g
+                        .OrderByDescending(r => ParseSequenceNumber(r.SequenceNumber) ?? long.MinValue)
+                        .ThenByDescending(r => r.CreatedUtc)
+                        .First();
+
+                    // Down and distance travel as a PAIR: the END pair is
+                    // used only when BOTH halves are present, otherwise the
+                    // complete START pair wins. A half-populated end state
+                    // ("2nd" with no distance) would otherwise beat a
+                    // complete "3rd & 4" and describe a snap that never
+                    // existed. Down 0 with distance 0 is a legitimate
+                    // complete pair — ESPN's no-snap state — and is
+                    // preserved by this rule, then nulled below.
+                    var hasEndSnapState = latest.EndDown is not null && latest.EndDistance is not null;
+                    var down = hasEndSnapState ? latest.EndDown : latest.StartDown;
+                    var distance = hasEndSnapState ? latest.EndDistance : latest.StartDistance;
+
+                    return new LiveSituation
+                    {
+                        // Down 0 is ESPN's no-snap-state value (kickoff,
+                        // extra point, end of period) — surface it as null
+                        // so the client renders no down-and-distance rather
+                        // than "0th & 0".
+                        Down = down > 0 ? down : null,
+                        Distance = down > 0 ? distance : null,
+                        BallOnYardLine = latest.EndYardLine ?? latest.StartYardLine,
+                        // Who has the ball for the NEXT snap. End differs
+                        // from Start on 1 in 6 plays — every punt, turnover
+                        // and change of possession — so reading Start would
+                        // credit the punting team with the ball.
+                        PossessionFranchiseSeasonId =
+                            latest.EndFranchiseSeasonId ?? latest.StartFranchiseSeasonId
+                    };
+                });
+    }
+
+    /// <summary>
+    /// Accepts an ESPN play ordinal only when it is entirely digits and at
+    /// most 18 of them — the same rule as the SQL lateral's ordering, so
+    /// the two paths can never disagree about which play is latest. Null
+    /// means "not orderable" and sorts last.
+    ///
+    /// The 18-digit bound comes from the SQL side, where ::bigint on a
+    /// longer all-digits value raises "value out of range" and would fail
+    /// the whole query; 18 nines always fits. Matching it here keeps the
+    /// two rules identical rather than merely similar.
+    /// </summary>
+    private const int MaxOrderableSequenceDigits = 18;
+
+    private static long? ParseSequenceNumber(string? sequenceNumber)
+    {
+        if (string.IsNullOrEmpty(sequenceNumber)) return null;
+        if (sequenceNumber.Length > MaxOrderableSequenceDigits) return null;
+
+        foreach (var c in sequenceNumber)
+        {
+            if (!char.IsAsciiDigit(c)) return null;
+        }
+
+        return long.TryParse(sequenceNumber, out var value) ? value : null;
+    }
+
+    /// <summary>Carrier for the football snap-state stitch.</summary>
+    internal sealed class LiveSituation
+    {
+        public int? Down { get; init; }
+        public int? Distance { get; init; }
+        public int? BallOnYardLine { get; init; }
+        public Guid? PossessionFranchiseSeasonId { get; init; }
     }
 
     /// <summary>

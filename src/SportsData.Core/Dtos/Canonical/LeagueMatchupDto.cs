@@ -33,6 +33,41 @@ public class LeagueMatchupDto
     /// </summary>
     public string? StatusDescription { get; set; }
 
+    // ─── Live game state ────────────────────────────────────────────────
+    // Persisted state, so a client that arrives mid-game (cold start) or
+    // sits through a gap in the SignalR stream (commercial break,
+    // halftime) still renders a live card. Per-play SignalR events remain
+    // the real-time path; these are the same fields at rest.
+
+    /// <summary>Period / quarter / inning number, from CompetitionStatus.</summary>
+    public int? Period { get; set; }
+
+    /// <summary>Display clock (e.g. "8:48"), from CompetitionStatus.</summary>
+    public string? Clock { get; set; }
+
+    /// <summary>
+    /// The team with the ball (football) or batting (baseball) — resolved
+    /// from the last play credited to a team. Null before the first play.
+    /// </summary>
+    public Guid? PossessionFranchiseSeasonId { get; set; }
+
+    public Guid? LastPlayId { get; set; }
+    public string? LastPlayDescription { get; set; }
+
+    // Football-only snap state, read from the latest play and enriched in
+    // the handler rather than the shared SQL: the play's snap columns are
+    // table-per-hierarchy and exist only in the football database.
+    // Baseball has no per-play equivalent (its plays carry only Outs), so
+    // MLB gets the sport-neutral fields above and nothing here.
+    public int? Down { get; set; }
+    public int? Distance { get; set; }
+
+    /// <summary>
+    /// Absolute field position, 0–100 from the HOME goal line (home goal
+    /// = 0, away goal = 100) — ESPN's YardLine convention.
+    /// </summary>
+    public int? BallOnYardLine { get; set; }
+
     public string? Broadcasts { get; set; }
 
     /// <summary>

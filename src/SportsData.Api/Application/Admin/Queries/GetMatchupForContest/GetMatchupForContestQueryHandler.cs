@@ -57,6 +57,6 @@ public class GetMatchupForContestQueryHandler : IGetMatchupForContestQueryHandle
         }
 
         return new Success<LeagueWeekMatchupsDto.MatchupForPickDto>(
-            MatchupForPickDtoMapper.FromCanonical(canonical));
+            MatchupForPickDtoMapper.FromCanonical(canonical, query.Sport));
     }
 }

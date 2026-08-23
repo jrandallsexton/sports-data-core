@@ -39,11 +39,13 @@ describe("useSectionCollapse", () => {
   it("keys sections separately so collapsing one leaves the other alone", () => {
     window.localStorage.setItem("section-collapsed:history.lastSeason", "true");
 
-    const h2h = renderHook(() => useSectionCollapse("history.headToHead"));
-    const lastSeason = renderHook(() => useSectionCollapse("history.lastSeason"));
+    const { result: h2hResult } = renderHook(() =>
+      useSectionCollapse("history.headToHead"));
+    const { result: lastSeasonResult } = renderHook(() =>
+      useSectionCollapse("history.lastSeason"));
 
-    expect(lastSeason.result.current.collapsed).toBe(true);
-    expect(h2h.result.current.collapsed).toBe(false);
+    expect(lastSeasonResult.current.collapsed).toBe(true);
+    expect(h2hResult.current.collapsed).toBe(false);
   });
 
   it("falls back to expanded when storage is unavailable", () => {

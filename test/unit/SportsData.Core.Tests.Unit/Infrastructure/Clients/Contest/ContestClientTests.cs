@@ -47,6 +47,71 @@ public class ContestClientTests
     }
 
     [Fact]
+    public async Task GetMatchupResult_With404_ReturnsNotFound_NotTheEnumDefault()
+    {
+        // Arrange — the EXACT production shape. ResultExtensions.ToActionResult
+        // serializes a NotFound failure as `new { failure.Errors }`, so the
+        // body carries no status at all. Deserializing it into Failure<T>
+        // therefore left Status at default(ResultStatus), which is Accepted
+        // because it is declared first and numbers zero. Trusting that made
+        // every 404 arrive as Accepted and silently defeated every caller
+        // branching on NotFound — PickScoringProcessor logged an Error and
+        // threw instead of skipping an unplayed game.
+        _handler.SetResponse(
+            HttpStatusCode.NotFound,
+            new { Errors = new[] { new { PropertyName = "contestId", ErrorMessage = "No matchup result found" } } }.ToJson());
+
+        // Act
+        var result = await _sut.GetMatchupResult(Guid.NewGuid());
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.NotFound);
+        result.Status.Should().NotBe(ResultStatus.Accepted, "Accepted is the enum default and means the status never bound");
+    }
+
+    [Fact]
+    public async Task GetMatchupResult_WithRateLimit_ReportsRateLimited_NotNotFound()
+    {
+        // A 429 previously fell through to the caller's defaultFailureStatus,
+        // which GetMatchupResult passes as NotFound — so a rate-limited call
+        // read as "this game has no result" and pick scoring skipped it for
+        // good. Named explicitly so it can never be mistaken for absence.
+        _handler.SetResponse(HttpStatusCode.TooManyRequests, string.Empty);
+
+        var result = await _sut.GetMatchupResult(Guid.NewGuid());
+
+        result.Status.Should().Be(ResultStatus.RateLimited);
+        result.Status.Should().NotBe(ResultStatus.NotFound);
+    }
+
+    [Fact]
+    public async Task GetMatchupResult_WithMethodNotAllowed_ReportsError_NotNotFound()
+    {
+        // A mis-routed call (bad deploy) is a real failure, not a missing
+        // resource — it must not take a caller's not-found branch.
+        _handler.SetResponse(HttpStatusCode.MethodNotAllowed, string.Empty);
+
+        var result = await _sut.GetMatchupResult(Guid.NewGuid());
+
+        result.Status.Should().Be(ResultStatus.Error);
+    }
+
+    [Fact]
+    public async Task GetMatchupResult_WithServerError_ReportsErrorNotTheEnumDefault()
+    {
+        // A 500 body is shaped the same way, so it hit the same trap.
+        _handler.SetResponse(
+            HttpStatusCode.InternalServerError,
+            new { Errors = new[] { new { PropertyName = "contest", ErrorMessage = "boom" } } }.ToJson());
+
+        var result = await _sut.GetMatchupResult(Guid.NewGuid());
+
+        result.IsSuccess.Should().BeFalse();
+        result.Status.Should().Be(ResultStatus.Error);
+    }
+
+    [Fact]
     public async Task GetSeasonContests_With404_ReturnsNotFound()
     {
         // Arrange

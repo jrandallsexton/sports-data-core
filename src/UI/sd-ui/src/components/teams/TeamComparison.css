@@ -446,10 +446,45 @@
 .history-section-title {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--text-primary);
+  /* Accent, not text-primary: these headings separate the History tab into
+     distinct blocks, and on touch there is no hover to lean on — the colour
+     has to carry the affordance on its own. Mobile parity:
+     StatsComparisonModal passes theme.tint for the same reason. */
+  color: var(--accent);
   border-bottom: 1px solid var(--badge-bg);
   padding-bottom: 0.35rem;
   margin-bottom: 0.25rem;
+}
+
+/* Collapse toggle: the section title itself is the control. Sections are
+   expanded by default — this is an escape valve for readers who find a
+   section noisy, not a gate in front of the content. Resets the button
+   element's own styling so it reads as the heading it replaced. */
+.history-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--badge-bg);
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* The title is already accent, so hover needs a different cue than colour. */
+.history-section-toggle:hover .history-section-chevron {
+  opacity: 1;
+}
+
+.history-section-chevron {
+  font-size: 0.85em;
+  color: var(--accent);
+  opacity: 0.75;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
 }
 
 /* Head-to-head rows */

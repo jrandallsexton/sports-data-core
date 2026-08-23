@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useSectionCollapse } from "../../hooks/useSectionCollapse";
 import "./TeamComparison.css";
 import "./TeamComparisonTabs.css";
 
@@ -46,6 +47,13 @@ export default function TeamComparison({
   const [activeTab, setActiveTab] = useState(
     hasHistoryData ? "history" : "statistics"
   );
+
+  // Collapse state is per device and survives reopening the dialog — a toggle
+  // that reset every time would have to be redone on every matchup.
+  const { collapsed: h2hCollapsed, toggle: toggleH2h } =
+    useSectionCollapse("history.headToHead");
+  const { collapsed: lastSeasonCollapsed, toggle: toggleLastSeason } =
+    useSectionCollapse("history.lastSeason");
 
   // Helper: choose light or dark text based on background color
   const getContrastTextColor = (bgColor) => {
@@ -721,10 +729,20 @@ export default function TeamComparison({
         {renderSpreadContext()}
         {headToHead.length > 0 && (
           <div className="history-section">
-            <div className="history-section-title">
-              Head-to-Head — Last {headToHead.length} Meeting{headToHead.length === 1 ? "" : "s"}
-            </div>
-            {headToHead.map((game, idx) => {
+            <button
+              type="button"
+              className="history-section-title history-section-toggle"
+              onClick={toggleH2h}
+              aria-expanded={!h2hCollapsed}
+            >
+              <span>
+                Head-to-Head — Last {headToHead.length} Meeting{headToHead.length === 1 ? "" : "s"}
+              </span>
+              <span className="history-section-chevron" aria-hidden="true">
+                {h2hCollapsed ? "▾" : "▴"}
+              </span>
+            </button>
+            {!h2hCollapsed && headToHead.map((game, idx) => {
               return (
                 <div className="h2h-row" key={idx}>
                   <div className="h2h-meta">
@@ -765,13 +783,25 @@ export default function TeamComparison({
         )}
 
         <div className="history-section">
-          <div className="history-section-title">
-            Last Season — Final {Math.max(teamAPriorGames.length, teamBPriorGames.length)} Games
-          </div>
-          <div className="history-teams-grid">
-            {renderPriorSeasonColumn(teamA.name, teamAPriorGames, teamAPriorSeason)}
-            {renderPriorSeasonColumn(teamB.name, teamBPriorGames, teamBPriorSeason)}
-          </div>
+          <button
+            type="button"
+            className="history-section-title history-section-toggle"
+            onClick={toggleLastSeason}
+            aria-expanded={!lastSeasonCollapsed}
+          >
+            <span>
+              Last Season — Final {Math.max(teamAPriorGames.length, teamBPriorGames.length)} Games
+            </span>
+            <span className="history-section-chevron" aria-hidden="true">
+              {lastSeasonCollapsed ? "▾" : "▴"}
+            </span>
+          </button>
+          {!lastSeasonCollapsed && (
+            <div className="history-teams-grid">
+              {renderPriorSeasonColumn(teamA.name, teamAPriorGames, teamAPriorSeason)}
+              {renderPriorSeasonColumn(teamB.name, teamBPriorGames, teamBPriorSeason)}
+            </div>
+          )}
         </div>
       </div>
     );

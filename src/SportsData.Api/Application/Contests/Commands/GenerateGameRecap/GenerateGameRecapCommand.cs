@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
+namespace SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 
 /// <summary>
 /// Command for testing game recap generation with large JSON data

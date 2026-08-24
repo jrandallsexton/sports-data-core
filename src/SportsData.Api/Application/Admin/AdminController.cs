@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
-using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.ReenrichContest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
@@ -18,6 +17,7 @@ using SportsData.Api.Application.Admin.Queries.GetMatchupForContest;
 using SportsData.Api.Application.Admin.Queries.GetMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.GetMatchupPreviewCaptures;
 using SportsData.Api.Application.Admin.SignalRDebug;
+using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;

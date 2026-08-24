@@ -53,6 +53,9 @@ join public."AthleteSeason" aths on aths."Id" = ass."AthleteSeasonId"
 join public."FranchiseSeason" fs on fs."Id" = aths."FranchiseSeasonId"
 where fs."SeasonYear" = 2025;
 
+-- athletes_2025_with_stats	roster_rows_2025_with_stats
+-- 2330	2330
+
 -- 2+3) The purge: guard + delete in ONE transaction. The guard RAISES if
 --      any finalized 2026 contest exists, which aborts the transaction —
 --      the deletes below then refuse to run and the COMMIT rolls back.
@@ -120,9 +123,17 @@ select fs."SeasonYear",
 from public."AthleteSeasonStatistic" ass
 join public."AthleteSeason" aths on aths."Id" = ass."AthleteSeasonId"
 join public."FranchiseSeason" fs on fs."Id" = aths."FranchiseSeasonId"
-where fs."SeasonYear" in (2024, 2025, 2026)
+where fs."SeasonYear" in (2011, 2022, 2023, 2024, 2025, 2026)
 group by fs."SeasonYear"
 order by fs."SeasonYear" desc;
+
+-- @ 1555
+-- SeasonYear	athletes_with_stats
+-- 2025	12675
+-- 2024	15909
+-- 2023	16369
+-- 2022	16493
+-- 2011	10006
 
 select fs."SeasonYear", count(ass."Id") as stat_docs
 from public."AthleteSeason" aths
@@ -131,3 +142,9 @@ left join public."AthleteSeasonStatistic" ass on ass."AthleteSeasonId" = aths."I
 where aths."AthleteId" = 'ea6ec41d-31a1-623e-1a68-d21910f17bb8'
 group by fs."SeasonYear"
 order by fs."SeasonYear" desc;
+
+-- SeasonYear	stat_docs
+-- 2026	0
+-- 2025	0
+-- 2024	2
+-- 2023	2

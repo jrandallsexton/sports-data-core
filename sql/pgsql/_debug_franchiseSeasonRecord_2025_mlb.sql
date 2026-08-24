@@ -1,11 +1,15 @@
 
-select * from public."Franchise" where "Slug" = 'lsu-tigers';
+select * from public."Franchise" where "Slug" = 'miami-marlins';
 
-select * from public."FranchiseSeason" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7' order by "SeasonYear" desc; -- c13b7c74-6892-3efa-2492-36ebf5220464 2025
+select * from public."FranchiseSeason" where "FranchiseId" = 'dec5cbce-245b-d68d-9b3d-bd6237b1564f' order by "SeasonYear" desc; -- a31a1ee4-afca-4635-b031-c6d343a17afd 2025
 
-select * from public."FranchiseSeasonRecord" where "FranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464'; -- LSU 2025
+select count(*) from public."FranchiseSeason"
 
-select * from public."FranchiseSeasonRecord" where "FranchiseId" = 'd2ca25ce-337e-1913-b405-69a16329efe7';
+select * from public."FranchiseSeasonRecord" where "FranchiseSeasonId" = 'a31a1ee4-afca-4635-b031-c6d343a17afd'; -- Miami Marlins 2025
+
+select * from public."FranchiseSeasonRecord" where "FranchiseId" = 'dec5cbce-245b-d68d-9b3d-bd6237b1564f' order by "SeasonYear" desc;
+
+select count(*) from public."FranchiseSeasonRecord" -- 5,825
 
 select * from public."Contest" where "SeasonYear" = 2025 and "HomeTeamFranchiseSeasonId" = 'c13b7c74-6892-3efa-2492-36ebf5220464' order by "StartDateUtc"; -- LSU 2025
 

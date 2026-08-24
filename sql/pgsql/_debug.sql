@@ -131,6 +131,58 @@ inner join public."Competition" comp on comp."ContestId" = con."Id"
 where con."Id" = '93401ef8-139a-00aa-76bb-320c1918aac9'
 select * from public."CompetitionPlay" cp where cp."CompetitionId" = 'b710d758-8425-8997-219f-f819a8708925'
 
+select * from public."CompetitionPlay" limit 10;
+select distinct "ScoringTypeName" from public."CompetitionPlay" where "ScoringTypeName" is not null
+
+select "Type", count(*), min("Text") as sample
+  from public."CompetitionPlay"
+  where "ScoringPlay" = true and "ScoringTypeName" is null
+  group by "Type"
+  order by count(*) desc;
+
+--   Type	count	sample
+-- 61	54782	
+-- 68	50660	(00:20) Shotgun #18 L.Ramper rush right for 2 yards gain to the COL00 TOUCHDOWN, clock 00:19
+-- 59	49823	
+-- 67	49044	(05:36) Shotgun #11 C.Beck pass complete short left to #22 G.Pringle Jr. caught at VT 00, for 16 yards to the VT 00 TOUCHDOWN, clock 05:32, 1ST DOWN #38 C.Davis kick attempt good (H: #94 D.Joyce, LS: #46 A.Booker)
+-- 5	32920	
+-- 4	29389	
+-- 9999	11560	109 yard field goal by Alex Trlica (TTU) is good.
+-- 36	2940	  0 Yd Interception Return (Alex Schmoke Kick)
+-- 51	1928	Aaron Opelt, fumbled at the Toled 26, recovered by Doug Williams, returned by Doug Williams for 26 yards for a TOUCHDOWN.
+-- 20	1699	(13:40) No Huddle-Shotgun Smith,Austin pass incomplete short right QB hurried by Walker,Corey. Western Mich. SAFETY, clock 13:34 PENALTY EMU Holding (Dooley,Brian) 7 yards from EMU07 to EMU20. NO PLAY. for a SAFETY
+-- 6	1648	Aaron Cantu pass intercepted by Blair Wishom at the NoArz 48, returned for 52 yards for a TOUCHDOWN, SOUTHERN UTAH penalty 0 yard personal foul accepted.
+-- 52	1380	#34 M.Peery punt 0 yards to the NSU14 blocked by #14 A.Anderson recovered by DSU #14 A.Anderson at NSU00, End Of Play TOUCHDOWN, clock 05:53
+-- 32	956	- 37 kickoff for 61 yds , Deion Hair-Griffin return for 96 yds for a TD, (Ethan Mooney KICK)
+-- 56	916	DeNarius McGhee rush for 1 yard to the MU0, TOUCHDOWN, clock 12:35, Tanner Roderick rush attempt GOOD.
+-- 39	911	(00:11) No Huddle-Shotgun #10 M.Reed sacked for loss of 10 yards to the TAMU17 (#6 D.Stewart), fumble by #10 M.Reed recovered by USC #93 N.Barrett at TAMU17 TOUCHDOWN, clock 00:00 #45 W.Joyce kick attempt good (H: #24 M.Love, LS: #46 C.Rasmussen)
+-- 53	818	#13 kickoff for 57 yards returned by Lee Marks for 92 yards for a TOUCHDOWN.
+-- 29	497	Aaron Grubb run for a loss of 4 yards Aaron Grubb fumbled, recovered by Ariz Jamar Allah  , return for 22 yds for a TD (Casey Skowron KICK)
+-- 7	442	Aaron Murray sacked by Jadeveon Clowney, fumbled, recovered by SCaro Melvin Ingram at the Geo 5, Melvin Ingram for 5 yards, to the Geo 0 for a TOUCHDOWN.
+-- 34	323	#35 B.Young punt 45 yards to the SFA26 #9 B.Mortimer return 74 yards to the HCU00, End Of Play TOUCHDOWN, clock 12:48 PENALTY HCU Offside  2 yards from HCU03 to HCU01. NO PLAY #86 G.Edimo pass attempt Successful
+-- 17	317	Aaron Cuevas punt blocked by Joseph McWilliams blocked by Joseph McWilliams  Kyle Davis return for 6 yds for a TD, (Marc Orozco KICK)
+-- 37	250	Aggies punt blocked, recovered by Bobby Williamson (CLEM), advanced for a touchdown.
+-- 15	174	2 point pass from Aaron Karas (BU) to Marques Roberts (BU) is good.
+-- 57	155	Adam Bock Defensive PAT Conversion
+-- 2	122	End of 1st Quarter
+-- 38	105	Adonis Alexander 75 Yd Return of Blocked Field Goal (Joey Slye Kick)
+-- 62	83	
+-- 16	76	2 point rush left side by Alec Greco (FSU) is good.
+-- 24	62	Andrew McNulty pass complete to Jeffrey Wilson for 29 yds for a TD, (Trevor Moore KICK)
+-- 9	48	Aggies fumble by Everett Smith (TA&M), recovered by Brian Gamble (TA&M), advanced for a 18 yard touchdown.
+-- 60	26	Aaron Sassaman 47 yard field goal BLOCKED, Nate Pollard for 58 yards, to the Liber 0 for a TOUCHDOWN.
+-- 12	21	Alex Kessman kickoff for 51 yds for a SAFETY , Johnathan Lloyd return for no gain Johnathan Lloyd fumbled, recovered by Duke for a SAFETY
+-- 3	16	Adam Sandin pass incomplete, hurried by Corey Lockett, BERRY penalty 4 yard intentional grounding on Adam Sandin accepted. SAFETY.
+-- 18	12	Alec Chadwick 54 yd FG BLOCKED blocked by George Odum  Tyler Williams return for 54 yds for a TD, (Matt Cummins KICK)
+-- 41	10	Aleem Sunanon 53 yd FG MISSED , Brandon McDowell return for 100 yds for a TD, (Lumi Kaba KICK)
+-- 26	7	Austin Appleby pass intercepted for a TD Darien Harris return for 15 yds for a TD, (Michael Geiger KICK)
+-- 21	6	Chris Relf rush for 5 yards for a TOUCHDOWN. Sean Brauchle extra point GOOD.
+-- 63	6	Blaise Bentsen pass intercepted for a TD, (Ben Raybon KICK)
+-- 8	5	(02:00) No Huddle-Shotgun #14 A.Damante pass intercepted by #2 D.McDonald at MTSU26 #2 D.McDonald return 74 yards to the NMSU00 TOUCHDOWN nullified by penalty, clock 01:45 PENALTY MTSU Pass Interference (#2 D.McDonald) 24 yards from MTSU26 to MTSU02. NO PLAY
+-- 66	1	Connor Hawkins 27 Yd Field Goal
+-- 70	1	Matt Coghlin 21 yd FG GOOD
+-- 78	1	Alejandro Maldonado Kick Blocked, Recovered By Kansas State For 1-Point Safety For Oregon
+
 select
   c."Id" as "ContestId",
   c."AwayTeamFranchiseSeasonId",

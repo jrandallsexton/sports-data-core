@@ -1,7 +1,6 @@
 using Dapper;
 
-using SportsData.Api.Infrastructure.Data.Canonical.Models;
-using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Dtos.Competition;
 
 using System.Data;
 

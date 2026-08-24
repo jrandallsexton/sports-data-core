@@ -66,20 +66,56 @@ stages:
           # warnings escalate to errors (parity with local `dotnet build`).
           # Classic NuGetCommand@2 + MSBuild /t:Restore did not trigger the
           # audit, masking high-severity transitive vulnerabilities.
+          #
+          # SportsData.Api.Tests.Unit is deliberately listed alongside the
+          # solution: it is NOT a member of sports-data-api.sln (which carries
+          # the Integration test project instead), so restoring the solution
+          # alone leaves the project the test step actually runs untouched.
           - task: DotNetCoreCLI@2
             displayName: 'Restore (.NET SDK)'
             inputs:
               command: 'restore'
-              projects: '**/sports-data-api.sln'
+              projects: |
+                **/sports-data-api.sln
+                **/SportsData.Api.Tests.Unit.csproj
               feedsToUse: 'select'
               vstsFeed: '2bb0cd0d-fa6e-42f0-9b7e-9cc1ce065e55/de94ed5a-8390-4547-bdd9-f975a712aa70'
 
+          # Compile the solution. Without this step the stage never compiled the
+          # PR's code at all: it went restore -> `dotnet test --no-build`, so a
+          # compile error could not fail the gate. The check still passed
+          # because this is a self-hosted agent and `--no-build` happily reused
+          # whatever binaries were left in bin/ from an earlier run, which also
+          # means the tests were not necessarily exercising the PR's code.
+          # A broken `using` merged that way in #670 and only surfaced at the
+          # post-merge Docker build, which is the first place compilation was
+          # actually attempted.
+          #
+          # The test project is built explicitly for the reason given on the
+          # restore step -- it is not in the solution -- and it ProjectReferences
+          # SportsData.Api, so building it compiles the service too.
+          #
+          # --no-restore because the step above already restored, and it carries
+          # the private-feed credentials this one does not.
+          - task: DotNetCoreCLI@2
+            displayName: 'Build (.NET SDK)'
+            inputs:
+              command: 'build'
+              projects: |
+                **/sports-data-api.sln
+                **/SportsData.Api.Tests.Unit.csproj
+              arguments: '--configuration $(buildConfiguration) --no-restore'
+
+          # --configuration must match the build above. It was absent before,
+          # so the test step defaulted to Debug while nothing produced Debug
+          # output in this pipeline -- part of why it was silently running
+          # against stale binaries.
           - task: DotNetCoreCLI@2
             displayName: 'Run Unit Tests'
             inputs:
               command: 'test'
               projects: '**/SportsData.Api.Tests.Unit.csproj'
-              arguments: '--no-build --collect:"XPlat Code Coverage"'
+              arguments: '--configuration $(buildConfiguration) --no-build --collect:"XPlat Code Coverage"'
               publishTestResults: true
               testRunTitle: 'api-tests-unit'
             continueOnError: false

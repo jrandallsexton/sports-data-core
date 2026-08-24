@@ -103,7 +103,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
+using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 
 namespace SportsData.Api.DependencyInjection
 {
@@ -484,8 +484,23 @@ namespace SportsData.Api.DependencyInjection
             // Per-sport historical audit of previously-scored picks. Catches
             // (a) picks scored against a contest that later finalized to a
             // different result and (b) picks still scored against an
-            // unfinalized contest. Runs before PickScoringJob(9) so any
-            // ScoredAt resets land in time for the daily rescore.
+            // unfinalized contest.
+            //
+            // Timing is pinned between two constraints:
+            //   - AFTER games finalize. Contests finalize and enrich roughly
+            //     00:00–06:00 UTC (evening ET through the latest West Coast
+            //     finishes). The old 02:00–02:30 slot sat inside that window,
+            //     so the audit both competed with live Producer traffic and
+            //     widened the race where a correction landing mid-audit is
+            //     watermarked against a stale result (see the note at the
+            //     stamp site in PickScoringAuditProcessor).
+            //   - BEFORE PickScoringJob at 09:00, because the audit resets
+            //     ScoredAt on picks whose contest turns out not to be
+            //     finalized, and that daily rescore is what picks them back
+            //     up. Running after it would delay every reset a full day.
+            // 08:00 clears the latest finishes with well over an hour of
+            // buffer and still leaves an hour before the rescore — ample,
+            // since the watermark keeps a typical night's work near zero.
             //
             // Stagger by 15 min per sport so a single sport's audit owns
             // its window in Seq — pods are separate so the lack of stagger
@@ -494,17 +509,17 @@ namespace SportsData.Api.DependencyInjection
             recurringJobManager.AddOrUpdate<PickScoringAuditJob>(
                 "PickScoringAudit-FootballNcaa",
                 job => job.ExecuteAsync(Sport.FootballNcaa),
-                "0 2 * * *");
+                Cron.Daily(8));
 
             recurringJobManager.AddOrUpdate<PickScoringAuditJob>(
                 "PickScoringAudit-FootballNfl",
                 job => job.ExecuteAsync(Sport.FootballNfl),
-                "15 2 * * *");
+                Cron.Daily(8, 15));
 
             recurringJobManager.AddOrUpdate<PickScoringAuditJob>(
                 "PickScoringAudit-BaseballMlb",
                 job => job.ExecuteAsync(Sport.BaseballMlb),
-                "30 2 * * *");
+                Cron.Daily(8, 30));
 
             return services;
         }

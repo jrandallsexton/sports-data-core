@@ -4,7 +4,6 @@ using FluentValidation;
 
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Athletes.Queries.GetAthleteDetails;
-using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
@@ -104,6 +103,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 
 namespace SportsData.Api.DependencyInjection
 {
@@ -312,6 +312,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IBootstrapLeagueMatchups, BootstrapLeagueMatchupsProcessor>();
             services.AddScoped<IScorePicks, PickScoringProcessor>();
+            services.AddScoped<IInvalidatePickAudits, PickAuditInvalidator>();
             services.AddScoped<IScoreLeagueWeeks, LeagueWeekScoringProcessor>();
             
             // HATEOAS Ref Generator (external API)

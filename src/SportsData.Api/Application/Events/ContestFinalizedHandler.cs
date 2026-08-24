@@ -45,15 +45,18 @@ namespace SportsData.Api.Application.Events
         private readonly ILogger<ContestFinalizedHandler> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IInvalidatePickAudits _auditInvalidator;
 
         public ContestFinalizedHandler(
             ILogger<ContestFinalizedHandler> logger,
             IProvideBackgroundJobs backgroundJobProvider,
-            IHubContext<NotificationHub> hubContext)
+            IHubContext<NotificationHub> hubContext,
+            IInvalidatePickAudits auditInvalidator)
         {
             _logger = logger;
             _backgroundJobProvider = backgroundJobProvider;
             _hubContext = hubContext;
+            _auditInvalidator = auditInvalidator;
         }
 
         public async Task Consume(ConsumeContext<ContestFinalized> context)
@@ -70,6 +73,19 @@ namespace SportsData.Api.Application.Events
             _logger.LogInformation(
                 "ContestFinalized consume: ScorePicksCommand enqueued. ContestId={ContestId}, CorrelationId={CorrelationId}",
                 msg.ContestId, msg.CorrelationId);
+
+            // Clear the audit watermark so the nightly audit re-verifies these
+            // picks. NOT redundant with the scoring enqueued above: that
+            // processor short-circuits when every pick on the contest is
+            // already scored, so a RE-enrichment of settled picks re-scores
+            // nothing. That is exactly how a corrected spread winner or
+            // over/under result arrives — no score changes, so
+            // ContestScoreChanged never fires either. The audit is the only
+            // thing that catches it, and it only looks at unwatermarked picks.
+            await _auditInvalidator.InvalidateForContestAsync(
+                msg.ContestId,
+                nameof(ContestFinalized),
+                context.CancellationToken);
 
             // SignalR broadcast — same Clients.All pattern as the existing
             // ContestStatusChanged / ContestScoreChanged handlers. Web

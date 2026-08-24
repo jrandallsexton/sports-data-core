@@ -52,12 +52,22 @@ public class PickScoringAuditJob
         {
             _logger.LogInformation("{JobName} began.", nameof(PickScoringAuditJob));
 
-            // Sport-scoped candidate selection: every distinct ContestId
-            // that has at least one scored pick whose PickemGroup is for
+            // Sport-scoped candidate selection: every distinct ContestId with
+            // at least one scored-but-UNAUDITED pick whose PickemGroup is for
             // this sport. SQL-level filter so we don't pull other sports'
             // contests into memory just to discard them.
+            //
+            // AuditedUtc is the watermark that keeps this bounded. Without it
+            // the job re-audited every pick ever scored on every run — 1,284
+            // contests on 2026-08-24, almost all settled 2025 games, growing
+            // every week forever, each one its own Hangfire job and Producer
+            // round trip. Re-auditing is still driven by DATA CHANGE rather
+            // than by age: the watermark is cleared when a score correction or
+            // a re-enrichment lands, so a fix that arrives a year later is
+            // still caught. (A time window would not have caught the ATS
+            // re-enrichment, which corrected 2025 games in August 2026.)
             var contestIds = await _dataContext.UserPicks
-                .Where(p => p.ScoredAt != null)
+                .Where(p => p.ScoredAt != null && p.AuditedUtc == null)
                 .Join(_dataContext.PickemGroups,
                     p => p.PickemGroupId,
                     g => g.Id,

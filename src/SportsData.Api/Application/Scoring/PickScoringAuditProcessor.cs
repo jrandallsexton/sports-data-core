@@ -137,6 +137,11 @@ public class PickScoringAuditProcessor : IPickScoringAudit
             pick.PointsAwarded = null;
             pick.ScoredAt = null;
             pick.WasAgainstSpread = null;
+            // Back to unscored, so the watermark must clear with it: when the
+            // contest finalizes for real and the pick is re-scored, it has to
+            // be audited again. A stamp left behind here would make the pick
+            // permanently invisible to the audit.
+            pick.AuditedUtc = null;
             pick.ModifiedUtc = now;
             pick.ModifiedBy = CausationId.Api.PickScoringAuditProcessor;
 
@@ -209,6 +214,29 @@ public class PickScoringAuditProcessor : IPickScoringAudit
                 pick.IsCorrect == clone.IsCorrect
                 && pick.PointsAwarded == clone.PointsAwarded
                 && pick.WasAgainstSpread == clone.WasAgainstSpread;
+
+            // Re-scored and compared against current canonical data — that is
+            // a completed audit whether or not anything differed, so the
+            // watermark is stamped on both branches. Deliberately NOT touching
+            // ModifiedUtc here: that field tracks when the pick's SCORING last
+            // changed, and a clean audit changes nothing the user can see.
+            // The two continue-paths above (missing Group, scoring threw) are
+            // left unstamped on purpose so tomorrow retries them.
+            //
+            // KNOWN RACE (accepted, not fixed): a correction that lands after
+            // the GetMatchupResult call above but before this stamp is lost.
+            // The invalidator finds AuditedUtc already null, no-ops, and then
+            // this line watermarks the pick against the stale result — so the
+            // correction is never re-verified until something else invalidates
+            // that contest. Closing it properly needs a durable invalidation
+            // generation captured at audit start and compared here, which is a
+            // new column plus a conditional update; the entity carries no
+            // concurrency token to lean on. Deferred deliberately: it requires
+            // a RE-finalization of an already-scored contest inside a
+            // sub-second window during the 02:00–02:30 UTC run. Moving that
+            // schedule out of the 00:00–06:00 UTC window when games finalize
+            // would shrink the exposure further at zero cost.
+            pick.AuditedUtc = now;
 
             if (matches)
             {

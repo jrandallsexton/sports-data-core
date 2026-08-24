@@ -103,7 +103,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
+using SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
 
 namespace SportsData.Api.DependencyInjection
 {

@@ -1,0 +1,26 @@
+info:
+  name: sourcing-franchise-season-records
+  type: http
+  seq: 40
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/sourcing/franchise-seasons/FootballNcaa/1999"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {
+        "includeLinkedDocumentTypes": ["TeamSeasonRecord"]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

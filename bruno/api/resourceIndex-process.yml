@@ -1,0 +1,24 @@
+info:
+  name: resourceIndex-process
+  type: http
+  seq: 42
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/ops/provider/football/ncaa/resourceIndex/21b8f021-69f7-4332-8b34-675062c070d5/process"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {}
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

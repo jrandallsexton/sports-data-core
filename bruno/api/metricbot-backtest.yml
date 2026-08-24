@@ -1,0 +1,21 @@
+info:
+  name: metricbot-backtest
+  type: http
+  seq: 22
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/metricbot/backtest"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: '{"sport":"FootballNcaa","seasonYear":2025,"week":6}'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

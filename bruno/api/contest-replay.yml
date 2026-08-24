@@ -1,0 +1,27 @@
+info:
+  name: contest-replay
+  type: http
+  seq: 37
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/football/contests/3e36a0ed-054a-b517-c893-7bb273076b37/replay?league=nfl"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+    - name: Content-Type
+      value: application/json
+  params:
+    - name: league
+      value: nfl
+      type: query
+  body:
+    type: json
+    data: "\n"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,35 @@
+info:
+  name: documentRequest-seasonTypeWeeks
+  type: http
+  seq: 44
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/ops/provider/football/ncaa/documents/documentRequest"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {
+        "id": "5f1c9a2e-1b6d-4a7e-9c3f-2d8e4b7a6c01",
+        "parentId": null,
+        "uri": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/types/1/weeks",
+        "ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/types/1/weeks",
+        "sport": 2,
+        "seasonYear": 2026,
+        "documentType": 35,
+        "sourceDataProvider": 0,
+        "correlationId": "7d02e611-4a38-4f21-b7a9-c05583f2a9d4",
+        "causationId": "7d02e611-4a38-4f21-b7a9-c05583f2a9d4"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,36 @@
+info:
+  name: reenrich-contest
+  type: http
+  seq: 30
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/ops/producer/football/ncaa/contests/76d9f847-30fd-0e8b-fcdf-39109452a9a3/admin/reenrich"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |
+  Re-runs Producer contest enrichment through the API ops proxy
+  (AdminOpsProxyController; "contests" is on the Producer allowlist).
+  Synchronous: when this returns, enrichment has rerun, late odds rows
+  are enriched (odds-late path, #447), ContestFinalized has fired, and
+  the API has enqueued pick re-scoring.
+
+  contestId: supply per-run, or batch via the Collection Runner with
+  reenrich-contests.csv in this folder (column "contestId" maps to the
+  var; 29 rows = the 2025 ATS-gap contests involving an FBS side).
+
+  CAUTION: 49 already-scored ATS picks across 5 test leagues reference
+  these contests; re-scoring may flip results recorded under a NULL
+  spread winner. See sql/pgsql/_debug_spread_context_ats_gap.sql.

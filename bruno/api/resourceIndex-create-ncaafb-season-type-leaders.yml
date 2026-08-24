@@ -1,0 +1,39 @@
+info:
+  name: resourceIndex-create-ncaafb-season-type-leaders
+  type: http
+  seq: 45
+
+# One-shot season-type leaders registration (DocumentType 71).
+# Edit the seasonYear AND the two spots in the ref (seasons/{year}/types/{2|3})
+# per run. Frozen seasons: 2022..2025, each needs BOTH types/2 and types/3.
+# types/2 = regular season, types/3 = through postseason — distinct datasets.
+# limit=200 is REQUIRED (default is 25 leaders per category).
+# Trigger with resourceIndex-process using the id from this response.
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/ops/provider/football/ncaa/resourceIndex/create"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {
+        "sport": 2,
+        "sourceDataProvider": 0,
+        "documentType": 71,
+        "seasonYear": 2025,
+        "ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/leaders?lang=en&region=us&limit=200",
+        "isRecurring": false,
+        "isEnabled": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

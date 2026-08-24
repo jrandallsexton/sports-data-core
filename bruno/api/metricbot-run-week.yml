@@ -1,0 +1,21 @@
+info:
+  name: metricbot-run-week
+  type: http
+  seq: 21
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/metricbot/run-week"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  body:
+    type: json
+    data: '{"sport":"FootballNcaa","seasonYear":2025,"week":6,"priorSeasonTail":5,"includeDtos":true}'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

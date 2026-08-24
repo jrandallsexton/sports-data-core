@@ -87,6 +87,7 @@ public class PickScoringService : IPickScoringService
 
         pick.IsCorrect = pick.FranchiseSeasonId == result.WinnerFranchiseSeasonId;
         pick.ScoredAt = now;
+        pick.AuditedUtc = null;
     }
 
     private void ScoreAgainstSpread(
@@ -138,12 +139,19 @@ public class PickScoringService : IPickScoringService
 
         pick.IsCorrect = spreadWinnerId.HasValue && pick.FranchiseSeasonId == spreadWinnerId.Value;
         pick.ScoredAt = now;
+        pick.AuditedUtc = null;
     }
 
+    // NOTE: every write of ScoredAt above also clears AuditedUtc. Scoring a
+    // pick IS a change to the values the nightly audit verifies, so any prior
+    // audit is stale by definition. Keeping the two together here means a
+    // future caller of ScorePick cannot forget it. (The audit itself scores a
+    // CLONE, so it never trips this on the real pick.)
     private void SetIncorrect(PickemGroupUserPick pick, DateTime now)
     {
         pick.IsCorrect = false;
         pick.ScoredAt = now;
+        pick.AuditedUtc = null;
         pick.PointsAwarded = 0;
     }
 }

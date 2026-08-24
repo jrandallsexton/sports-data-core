@@ -42,6 +42,21 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public DateTime? ScoredAt { get; set; }
 
+        /// <summary>
+        /// When the nightly audit last re-verified this pick against canonical
+        /// data. Null means "needs auditing" — that is the ONLY thing the
+        /// audit job selects on, so this is a watermark rather than a log.
+        ///
+        /// Cleared whenever the pick's inputs could have moved: a score
+        /// correction (ContestScoreChanged), a re-enrichment
+        /// (ContestFinalized — which is how a spread-winner or over/under fix
+        /// arrives WITHOUT the score changing), or a re-score. Without the
+        /// watermark the job re-audited every pick ever scored on every run:
+        /// 1,284 contests on 2026-08-24, almost all of them settled 2025
+        /// games, growing every week forever.
+        /// </summary>
+        public DateTime? AuditedUtc { get; set; }
+
         // === Tiebreaker Fields ===
         public TiebreakerType TiebreakerType { get; set; }
 

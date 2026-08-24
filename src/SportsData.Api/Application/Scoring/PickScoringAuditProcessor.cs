@@ -137,6 +137,11 @@ public class PickScoringAuditProcessor : IPickScoringAudit
             pick.PointsAwarded = null;
             pick.ScoredAt = null;
             pick.WasAgainstSpread = null;
+            // Back to unscored, so the watermark must clear with it: when the
+            // contest finalizes for real and the pick is re-scored, it has to
+            // be audited again. A stamp left behind here would make the pick
+            // permanently invisible to the audit.
+            pick.AuditedUtc = null;
             pick.ModifiedUtc = now;
             pick.ModifiedBy = CausationId.Api.PickScoringAuditProcessor;
 
@@ -209,6 +214,15 @@ public class PickScoringAuditProcessor : IPickScoringAudit
                 pick.IsCorrect == clone.IsCorrect
                 && pick.PointsAwarded == clone.PointsAwarded
                 && pick.WasAgainstSpread == clone.WasAgainstSpread;
+
+            // Re-scored and compared against current canonical data — that is
+            // a completed audit whether or not anything differed, so the
+            // watermark is stamped on both branches. Deliberately NOT touching
+            // ModifiedUtc here: that field tracks when the pick's SCORING last
+            // changed, and a clean audit changes nothing the user can see.
+            // The two continue-paths above (missing Group, scoring threw) are
+            // left unstamped on purpose so tomorrow retries them.
+            pick.AuditedUtc = now;
 
             if (matches)
             {

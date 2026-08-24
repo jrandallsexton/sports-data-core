@@ -17,6 +17,96 @@ namespace SportsData.Api.Tests.Unit.Application.Scoring;
 public class PickScoringAuditJobTests : ApiTestBase<PickScoringAuditJob>
 {
     [Fact]
+    public async Task Execute_SkipsContests_WhosePicksAreAlreadyAudited()
+    {
+        // The watermark is the whole point: before it, the job re-audited
+        // every pick ever scored on every run — 1,284 contests on
+        // 2026-08-24, almost all of them settled 2025 games.
+        var auditedContest = Guid.NewGuid();
+        var unauditedContest = Guid.NewGuid();
+
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.Sport, Sport.FootballNcaa).Create();
+        DataContext.PickemGroups.Add(group);
+
+        var scoredAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        DataContext.UserPicks.AddRange(
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, auditedContest)
+                .With(x => x.PickemGroupId, group.Id)
+                .With(x => x.Group, group)
+                .With(x => x.ScoredAt, (DateTime?)scoredAt)
+                .With(x => x.AuditedUtc, (DateTime?)new DateTime(2026, 8, 24, 2, 0, 0, DateTimeKind.Utc))
+                .Create(),
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, unauditedContest)
+                .With(x => x.PickemGroupId, group.Id)
+                .With(x => x.Group, group)
+                .With(x => x.ScoredAt, (DateTime?)scoredAt)
+                .With(x => x.AuditedUtc, (DateTime?)null)
+                .Create());
+
+        await DataContext.SaveChangesAsync();
+
+        var enqueued = new List<AuditContestCommand>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IPickScoringAudit>(It.IsAny<Expression<Func<IPickScoringAudit, Task>>>()))
+            .Callback<Expression<Func<IPickScoringAudit, Task>>>(expr =>
+            {
+                var cmd = AuditContestCommandFromExpression(expr);
+                if (cmd != null) enqueued.Add(cmd);
+            });
+
+        // Act
+        await Mocker.CreateInstance<PickScoringAuditJob>().ExecuteAsync(Sport.FootballNcaa);
+
+        // Assert — only the contest still carrying an unaudited pick.
+        Assert.Single(enqueued);
+        Assert.Equal(unauditedContest, enqueued[0].ContestId);
+    }
+
+    [Fact]
+    public async Task Execute_ReAuditsAContest_WhenOnlyOneOfItsPicksWasInvalidated()
+    {
+        // Invalidation is per contest, but a partially-invalidated contest
+        // must still be picked up — otherwise a correction that cleared some
+        // picks would be half-audited.
+        var contestId = Guid.NewGuid();
+
+        var group = Fixture.Build<PickemGroup>()
+            .With(g => g.Sport, Sport.FootballNcaa).Create();
+        DataContext.PickemGroups.Add(group);
+
+        var scoredAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        DataContext.UserPicks.AddRange(
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, contestId)
+                .With(x => x.PickemGroupId, group.Id)
+                .With(x => x.Group, group)
+                .With(x => x.ScoredAt, (DateTime?)scoredAt)
+                .With(x => x.AuditedUtc, (DateTime?)new DateTime(2026, 8, 24, 2, 0, 0, DateTimeKind.Utc))
+                .Create(),
+            Fixture.Build<PickemGroupUserPick>()
+                .With(x => x.ContestId, contestId)
+                .With(x => x.PickemGroupId, group.Id)
+                .With(x => x.Group, group)
+                .With(x => x.ScoredAt, (DateTime?)scoredAt)
+                .With(x => x.AuditedUtc, (DateTime?)null)
+                .Create());
+
+        await DataContext.SaveChangesAsync();
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+
+        await Mocker.CreateInstance<PickScoringAuditJob>().ExecuteAsync(Sport.FootballNcaa);
+
+        background.Verify(x => x.Enqueue<IPickScoringAudit>(
+            It.IsAny<Expression<Func<IPickScoringAudit, Task>>>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Execute_EnqueuesAuditCommand_ForEachDistinctScoredContestOfThisSport()
     {
         // Arrange — five scored picks: two distinct NCAAFB contests
@@ -48,32 +138,38 @@ public class PickScoringAuditJobTests : ApiTestBase<PickScoringAuditJob>
                 .With(x => x.ContestId, ncaaContest1)
                 .With(x => x.PickemGroupId, ncaaGroup.Id)
                 .With(x => x.Group, ncaaGroup)
-                .With(x => x.ScoredAt, (DateTime?)scoredAt).Create(),
+                .With(x => x.ScoredAt, (DateTime?)scoredAt)
+                .With(x => x.AuditedUtc, (DateTime?)null).Create(),
             Fixture.Build<PickemGroupUserPick>()
                 .With(x => x.ContestId, ncaaContest1) // duplicate contest, same sport
                 .With(x => x.PickemGroupId, ncaaGroup.Id)
                 .With(x => x.Group, ncaaGroup)
-                .With(x => x.ScoredAt, (DateTime?)scoredAt).Create(),
+                .With(x => x.ScoredAt, (DateTime?)scoredAt)
+                .With(x => x.AuditedUtc, (DateTime?)null).Create(),
             Fixture.Build<PickemGroupUserPick>()
                 .With(x => x.ContestId, ncaaContest2)
                 .With(x => x.PickemGroupId, ncaaGroup.Id)
                 .With(x => x.Group, ncaaGroup)
-                .With(x => x.ScoredAt, (DateTime?)scoredAt).Create(),
+                .With(x => x.ScoredAt, (DateTime?)scoredAt)
+                .With(x => x.AuditedUtc, (DateTime?)null).Create(),
             Fixture.Build<PickemGroupUserPick>()
                 .With(x => x.ContestId, nflContest)
                 .With(x => x.PickemGroupId, nflGroup.Id)
                 .With(x => x.Group, nflGroup)
-                .With(x => x.ScoredAt, (DateTime?)scoredAt).Create(),
+                .With(x => x.ScoredAt, (DateTime?)scoredAt)
+                .With(x => x.AuditedUtc, (DateTime?)null).Create(),
             Fixture.Build<PickemGroupUserPick>()
                 .With(x => x.ContestId, mlbContest)
                 .With(x => x.PickemGroupId, mlbGroup.Id)
                 .With(x => x.Group, mlbGroup)
-                .With(x => x.ScoredAt, (DateTime?)scoredAt).Create(),
+                .With(x => x.ScoredAt, (DateTime?)scoredAt)
+                .With(x => x.AuditedUtc, (DateTime?)null).Create(),
             Fixture.Build<PickemGroupUserPick>()
                 .With(x => x.ContestId, ncaaUnscoredContest)
                 .With(x => x.PickemGroupId, ncaaGroup.Id)
                 .With(x => x.Group, ncaaGroup)
-                .With(x => x.ScoredAt, (DateTime?)null).Create()
+                .With(x => x.ScoredAt, (DateTime?)null)
+                .With(x => x.AuditedUtc, (DateTime?)null).Create()
         );
 
         await DataContext.SaveChangesAsync();
@@ -143,7 +239,8 @@ public class PickScoringAuditJobTests : ApiTestBase<PickScoringAuditJob>
                 .With(x => x.ContestId, Guid.NewGuid())
                 .With(x => x.PickemGroupId, ncaaGroup.Id)
                 .With(x => x.Group, ncaaGroup)
-                .With(x => x.ScoredAt, (DateTime?)null).Create()
+                .With(x => x.ScoredAt, (DateTime?)null)
+                .With(x => x.AuditedUtc, (DateTime?)null).Create()
         );
 
         await DataContext.SaveChangesAsync();

@@ -557,10 +557,11 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         // Act
         await sut.Process(evt);
 
-        // Assert - Verify entry log
+        // Assert - Verify entry log (Debug: per-document tracing was demoted
+        // from Information to cut log volume on the hot path)
         loggerMock.Verify(
             x => x.Log(
-                LogLevel.Information,
+                LogLevel.Debug,
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("DOC_CREATED_PROCESSOR_ENTRY")),
                 It.IsAny<Exception>(),
@@ -570,7 +571,7 @@ public class DocumentCreatedProcessorTests : ProducerTestBase<DocumentCreatedPro
         // Assert - Verify completion log
         loggerMock.Verify(
             x => x.Log(
-                LogLevel.Information,
+                LogLevel.Debug,
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("DOC_CREATED_PROCESSOR_COMPLETED")),
                 It.IsAny<Exception>(),

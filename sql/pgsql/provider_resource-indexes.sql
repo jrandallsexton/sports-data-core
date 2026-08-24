@@ -28,3 +28,6 @@ SHOW config_file
 
 -- GRANT ALL ON SCHEMA public TO umami;
 -- ALTER DATABASE umami OWNER TO umami;
+
+update public."ResourceIndex" set "Uri" = 'http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/3/leaders'
+where "Id" = '21b8f021-69f7-4332-8b34-675062c070d5'

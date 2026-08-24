@@ -1,0 +1,33 @@
+info:
+  name: resourceIndex-create-ncaafb-rankings
+  type: http
+  seq: 41
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/ops/provider/football/ncaa/resourceIndex/create"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {
+        "sport": 2,
+        "sourceDataProvider": 0,
+        "documentType": 56,
+        "seasonYear": 2026,
+        "ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/rankings",
+        "isRecurring": true,
+        "cronExpression": "0 22 * * 0",
+        "isEnabled": true
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -33,3 +33,5 @@ BEGIN
     RAISE NOTICE 'Total Row Count (Excluding OutboxMessage) | %', total_rows;
 END;
 $$;
+
+

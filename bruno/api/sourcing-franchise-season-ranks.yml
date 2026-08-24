@@ -1,0 +1,26 @@
+info:
+  name: sourcing-franchise-season-ranks
+  type: http
+  seq: 43
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/sourcing/franchise-seasons/FootballNcaa/2026"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {
+        "includeLinkedDocumentTypes": ["TeamSeasonRank"]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,5 +1,4 @@
-﻿using SportsData.Core.Common;
-using SportsData.Core.Eventing.Events.Documents;
+﻿using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 
@@ -47,7 +46,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                 ["Sport"] = evt.Sport
             }))
             {
-                _logger.LogInformation("🚀 DOC_CREATED_PROCESSOR_ENTRY: Hangfire job started.");
+                _logger.LogDebug("🚀 DOC_CREATED_PROCESSOR_ENTRY: Hangfire job started.");
 
                 try
                 {
@@ -57,7 +56,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                     
                     using (_logger.BeginScope(new Dictionary<string, object> { ["DurationMs"] = sw.ElapsedMilliseconds }))
                     {
-                        _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_COMPLETED: Document processing completed successfully.");
+                        _logger.LogDebug("✅ DOC_CREATED_PROCESSOR_COMPLETED: Document processing completed successfully.");
                     }
                 }
                 catch (Exception ex)
@@ -88,7 +87,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                 return;
             }
 
-            _logger.LogInformation("🔍 DOC_CREATED_PROCESSOR_GET_PROCESSOR: Looking up document processor from factory.");
+            _logger.LogDebug("🔍 DOC_CREATED_PROCESSOR_GET_PROCESSOR: Looking up document processor from factory.");
 
             var processor = _documentProcessorFactory.GetProcessor(
                 evt.SourceDataProvider,
@@ -98,9 +97,9 @@ namespace SportsData.Producer.Application.Documents.Processors
 
             using (_logger.BeginScope(new Dictionary<string, object> { ["ProcessorName"] = processor.GetType().Name }))
             {
-                _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_FOUND: Document processor found.");
+                _logger.LogDebug("✅ DOC_CREATED_PROCESSOR_FOUND: Document processor found.");
 
-                _logger.LogInformation("⚙️ DOC_CREATED_PROCESSOR_EXECUTE: Executing document-specific processor.");
+                _logger.LogDebug("⚙️ DOC_CREATED_PROCESSOR_EXECUTE: Executing document-specific processor.");
 
                 await processor.ProcessAsync(new ProcessDocumentCommand(
                     evt.SourceDataProvider,
@@ -124,7 +123,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                         : new HashSet<RequestedDependency>()
                 });
 
-                _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED: Document-specific processor completed.");
+                _logger.LogDebug("✅ DOC_CREATED_PROCESSOR_EXECUTE_COMPLETED: Document-specific processor completed.");
             }
         }
 
@@ -147,7 +146,7 @@ namespace SportsData.Producer.Application.Documents.Processors
                 return evt.DocumentJson;
             }
 
-            _logger.LogInformation("📥 DOC_CREATED_PROCESSOR_FETCH_DOCUMENT: Document not in payload, fetching from Provider.");
+            _logger.LogDebug("📥 DOC_CREATED_PROCESSOR_FETCH_DOCUMENT: Document not in payload, fetching from Provider.");
 
             // Document exceeded size limit, fetch from Provider
             var document = await _provider.GetDocumentByUrlHash(evt.SourceUrlHash, evt.DocumentType);
@@ -160,7 +159,7 @@ namespace SportsData.Producer.Application.Documents.Processors
             
             using (_logger.BeginScope(new Dictionary<string, object> { ["DocumentLength"] = document.Length }))
             {
-                _logger.LogInformation("✅ DOC_CREATED_PROCESSOR_DOCUMENT_FETCHED: Document fetched from Provider successfully.");
+                _logger.LogDebug("✅ DOC_CREATED_PROCESSOR_DOCUMENT_FETCHED: Document fetched from Provider successfully.");
             }
 
             return document;

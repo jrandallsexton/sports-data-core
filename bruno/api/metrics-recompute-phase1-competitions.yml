@@ -1,0 +1,17 @@
+info:
+  name: metrics-recompute-phase1-competitions
+  type: http
+  seq: 20
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/ops/producer/football/ncaa/competitions/metrics/generate/2025"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

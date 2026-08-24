@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024
+  url: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025
   auth: inherit
 
 settings:

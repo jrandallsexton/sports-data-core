@@ -1,0 +1,35 @@
+info:
+  name: athletes-source-statistics
+  type: http
+  seq: 47
+
+# 2025 season-stats backfill: fans out one type-scoped statistics
+# DocumentRequested per ACTIVE athlete rostered in the seasonYear in the
+# URL (~25k for 2025; ~7h at the 1s ESPN delay). URLs are SYNTHESIZED as
+# seasons/{year}/types/{seasonType}/athletes/{id}/statistics — never taken
+# from ESPN's athlete doc, which points at the prior season. The season
+# guard attaches each doc to the correct year's roster row. Returns 202
+# with the correlation id = the Seq handle for the batch.
+# Run AFTER the purge script (sql/pgsql/athleteSeasonStatistics_2026_purge.sql).
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/ops/producer/football/ncaa/athletes/seasonYear/2025/statistics/source"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |
+      {
+        "seasonType": 3
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

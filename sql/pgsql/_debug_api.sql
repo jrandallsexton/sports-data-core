@@ -12,6 +12,15 @@ update public."MatchupPreview" set
 "PredictedStraightUpWinner" = 'f3c03a13-7806-c144-9e0e-0d4910ac770d',
 "PredictedSpreadWinner" = 'f3c03a13-7806-c144-9e0e-0d4910ac770d' WHERE "Id" = '2b4b3533-1b75-4e41-a4a5-1d62c0996545'
 */
+select * from public."Prompt";
+
+select * from public."MatchupPreview" where "PromptId" is null;
+
+
+-- NULL
+-- prediction-insights-with-stats
+-- prediction-insights-v1
+-- prediction-insights-with-stats-schedule
 
 select * from public."MatchupPreview" where "ContestId" = 'aa00bd58-a986-d3a3-d1e5-f166c92dbcd0' order by "CreatedUtc" desc
 
@@ -113,7 +122,8 @@ ORDER BY "PickemGroupId", "ContestId", rn;
 
 
 
-select * from public."ContestPrediction"
+select * from public."ContestPrediction" limit 10;
+select * from public."ContestPrediction" where "ContestId" = 'ae646c2a-c263-3b8c-b8ad-16f24b38a8fc';
 --delete from public."ContestPrediction"
 --update public."UserPick" set "PickType" = 2
 --update public."UserPick" set "IsCorrect" = null, "PointsAwarded" = null, "WasAgainstSpread" = null, "ScoredAt" = null where "ContestId" = '8a64dddf-0094-9a3a-2618-55c276296ef8'

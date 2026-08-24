@@ -6,7 +6,7 @@ using SportsData.Core.Infrastructure.Clients.AI;
 
 using System.Diagnostics;
 
-namespace SportsData.Api.Application.Admin.Commands.GenerateGameRecap;
+namespace SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 
 public interface IGenerateGameRecapCommandHandler
 {

@@ -455,3 +455,7 @@ src/metrics-modeling/data/
 
 # MetricBot experiment/backtest results saved from Bruno - prod-derived
 docs/metrics-modeling/output/
+
+# Claude Code personal settings - accumulated permission grants reveal
+# infra hostnames and command patterns; repo is public
+.claude/settings.local.json

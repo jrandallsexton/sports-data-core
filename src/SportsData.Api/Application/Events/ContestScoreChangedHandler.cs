@@ -30,16 +30,21 @@ namespace SportsData.Api.Application.Events
         {
             var msg = context.Message;
 
-            await _hubContext.Clients
-                .All // ? simple, global broadcast for now
-                .SendAsync("ContestScoreChanged", msg, context.CancellationToken);
-
-            // A score correction changes exactly the inputs the audit checks,
-            // so any prior audit of these picks is stale.
+            // Durable state BEFORE the ephemeral broadcast. A score correction
+            // changes exactly the inputs the audit checks, so any prior audit
+            // of these picks is stale. If SendAsync were to throw first, the
+            // contest would stay watermarked and the nightly audit would skip
+            // it — a silent, permanent miss traded for a live UI nudge that
+            // clients recover on their next fetch anyway. Idempotent, so a
+            // MassTransit retry is harmless.
             await _auditInvalidator.InvalidateForContestAsync(
                 msg.ContestId,
                 nameof(ContestScoreChanged),
                 context.CancellationToken);
+
+            await _hubContext.Clients
+                .All // ? simple, global broadcast for now
+                .SendAsync("ContestScoreChanged", msg, context.CancellationToken);
         }
     }
 }

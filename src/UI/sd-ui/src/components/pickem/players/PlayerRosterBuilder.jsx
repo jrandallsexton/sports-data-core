@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PlayerPickemApi from '../../../api/playerPickemApi';
 import {
@@ -19,8 +19,16 @@ import { columnsFor, cellText } from './gridColumns';
 import './PlayerRosterBuilder.css';
 
 // Selections survive reloads — rudimentary stand-in for the carry-over
-// behavior until PlayerLineup entities exist server-side.
-const ROSTER_KEY = 'playerPickemRosterDraft';
+// behavior until PlayerLineup entities exist server-side. Keyed per
+// league so an NCAAFB draft never bleeds into the NFL view.
+const rosterKey = (league) => `playerPickemRosterDraft.${league}`;
+
+// NCAAFB is the product; NFL rides along for closed-testing coverage
+// (and who knows).
+const LEAGUES = [
+  { id: 'ncaa', label: 'NCAAFB (FBS)' },
+  { id: 'nfl', label: 'NFL' },
+];
 
 // Fixed to opening week for the admin preview; a week selector (and
 // deriving the current week server-side) is future work.
@@ -93,13 +101,20 @@ function sanitizeRoster(raw) {
  * current season on the primary row, previous season directly beneath in
  * the same columns for vertical comparison. Sorting orders the pairs by
  * the current-season value, falling back to previous-season when no row
- * has current data (week 1). Roster is local-only (localStorage); data is
- * mock-backed in playerPickemApi until the Producer endpoint lands.
+ * has current data (week 1). Roster is local-only (localStorage), keyed
+ * per league. NCAAFB is the product; the NFL toggle exists for
+ * closed-testing coverage.
  */
 function PlayerRosterBuilder() {
+  const [league, setLeague] = useState('ncaa');
   const [roster, setRoster] = useState(() =>
-    sanitizeRoster(localStorage.getItem(ROSTER_KEY) ?? 'null')
+    sanitizeRoster(localStorage.getItem(rosterKey('ncaa')) ?? 'null')
   );
+  // Which league the current roster state belongs to. Guards the save
+  // effect during a league switch — without it, the old league's roster
+  // would be written over the new league's stored draft before the load
+  // effect has swapped it in.
+  const rosterLeagueRef = useRef('ncaa');
   const [activeSlotId, setActiveSlotId] = useState('QB');
   const [athletes, setAthletes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -109,8 +124,21 @@ function PlayerRosterBuilder() {
   const [opponentText, setOpponentText] = useState('');
   const [page, setPage] = useState(0);
 
+  // Load the new league's draft on switch.
   useEffect(() => {
-    localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
+    if (rosterLeagueRef.current === league) return;
+    setRoster(sanitizeRoster(localStorage.getItem(rosterKey(league)) ?? 'null'));
+    rosterLeagueRef.current = league;
+  }, [league]);
+
+  // Save under the league the roster BELONGS to (the ref), never the
+  // currently selected league. During a switch the two disagree for one
+  // render while state is still the old league's lineup; keying the
+  // write by the ref makes effect ordering irrelevant — the switch pass
+  // doesn't run this effect at all (roster hasn't changed), and once the
+  // loaded roster commits, ref and league agree again.
+  useEffect(() => {
+    localStorage.setItem(rosterKey(rosterLeagueRef.current), JSON.stringify(roster));
   }, [roster]);
 
   const positions = useMemo(
@@ -124,13 +152,14 @@ function PlayerRosterBuilder() {
   );
 
   // Stat columns differ per slot — a sort on CMP% means nothing on the
-  // RB grid, so slot changes reset sort, filter, and page together.
+  // RB grid, so slot and league changes reset sort, filter, and page
+  // together.
   useEffect(() => {
     setSort(NAME_SORT);
     setFilterText('');
     setOpponentText('');
     setPage(0);
-  }, [activeSlotId]);
+  }, [activeSlotId, league]);
 
   // Any change to what's shown restarts at the first page — a filter or
   // re-sort that leaves you stranded on page 40 of a smaller result set
@@ -148,7 +177,7 @@ function PlayerRosterBuilder() {
 
     Promise.all(
       positions.map((pos) =>
-        PlayerPickemApi.getAthletesByPosition('football', 'ncaa', pos, SEASON_YEAR, WEEK)
+        PlayerPickemApi.getAthletesByPosition('football', league, pos, SEASON_YEAR, WEEK)
       )
     )
       .then((responses) => {
@@ -167,7 +196,7 @@ function PlayerRosterBuilder() {
     return () => {
       ignore = true;
     };
-  }, [positions]);
+  }, [positions, league]);
 
   const activeCol = columns.find((c) => c.key === sort.key);
   const getSortValue = useMemo(() => {
@@ -230,9 +259,24 @@ function PlayerRosterBuilder() {
     <div className="roster-builder">
       <h2 className="roster-builder-title">Player Pick&rsquo;em Roster</h2>
       <p className="roster-builder-sub">
-        Week {WEEK} &middot; {SEASON_YEAR} &middot; NCAAFB (FBS) &mdash; admin
-        preview, selections are local-only
+        Week {WEEK} &middot; {SEASON_YEAR} &middot;{' '}
+        {LEAGUES.find((l) => l.id === league)?.label} &mdash; admin preview,
+        selections are local-only
       </p>
+
+      <div className="roster-leagues" role="group" aria-label="League">
+        {LEAGUES.map((l) => (
+          <button
+            key={l.id}
+            type="button"
+            className={`roster-league-btn${l.id === league ? ' roster-league-btn--active' : ''}`}
+            aria-pressed={l.id === league}
+            onClick={() => setLeague(l.id)}
+          >
+            {l.label}
+          </button>
+        ))}
+      </div>
 
       {/* Button group, not tabs: there's no tabpanel relationship here and
           the remove buttons live between the slot controls, so tablist
@@ -393,7 +437,7 @@ function PlayerRosterBuilder() {
                       </span>
                       <Link
                         className="roster-grid-team"
-                        to={`/sport/football/ncaa/team/${a.teamSlug}`}
+                        to={`/sport/football/${league}/team/${a.teamSlug}`}
                       >
                         {a.teamName}
                       </Link>
@@ -406,7 +450,7 @@ function PlayerRosterBuilder() {
                     <td>
                       {a.opponentName ? (
                         a.opponentSlug ? (
-                          <Link to={`/sport/football/ncaa/team/${a.opponentSlug}`}>
+                          <Link to={`/sport/football/${league}/team/${a.opponentSlug}`}>
                             {a.opponentName}
                           </Link>
                         ) : (

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -38,8 +38,15 @@ import {
 
 // Selections survive app restarts — rudimentary stand-in for carry-over
 // until PlayerLineup entities exist server-side. Shares nothing with the
-// web draft; both are local explorations.
-const ROSTER_KEY = 'playerPickemRosterDraft';
+// web draft; both are local explorations. Keyed per league so an NCAAFB
+// draft never bleeds into the NFL view.
+const rosterKey = (league: string) => `playerPickemRosterDraft.${league}`;
+
+// NCAAFB is the product; NFL rides along for closed-testing coverage.
+const LEAGUES = [
+  { id: 'ncaa', label: 'NCAAFB (FBS)' },
+  { id: 'nfl', label: 'NFL' },
+] as const;
 
 /**
  * A stored draft is untrusted input: JSON.parse happily returns null,
@@ -111,8 +118,13 @@ export default function PlayerPickemScreen() {
   const { data: me, isLoading: meLoading } = useCurrentUser();
   const isAdmin = me?.isAdmin === true;
 
+  const [league, setLeague] = useState<string>('ncaa');
   const [roster, setRoster] = useState<Roster>({});
   const [rosterHydrated, setRosterHydrated] = useState(false);
+  // Which league the current roster state belongs to — guards the save
+  // effect during a league switch so the old league's roster is never
+  // written over the new league's stored draft.
+  const rosterLeagueRef = useRef('ncaa');
   const [activeSlotId, setActiveSlotId] = useState('QB');
   const [athletes, setAthletes] = useState<PickemAthlete[]>([]);
   const [loading, setLoading] = useState(false);
@@ -121,11 +133,13 @@ export default function PlayerPickemScreen() {
   const [opponentText, setOpponentText] = useState('');
 
   useEffect(() => {
+    // Initial hydration AND league switches load that league's draft.
     let cancelled = false;
-    AsyncStorage.getItem(ROSTER_KEY)
+    AsyncStorage.getItem(rosterKey(league))
       .then((raw) => {
-        if (cancelled || !raw) return;
-        setRoster(sanitizeRoster(raw));
+        if (cancelled) return;
+        setRoster(raw ? sanitizeRoster(raw) : {});
+        rosterLeagueRef.current = league;
       })
       .finally(() => {
         if (!cancelled) setRosterHydrated(true);
@@ -133,14 +147,15 @@ export default function PlayerPickemScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [league]);
 
   useEffect(() => {
     // Don't clobber a stored draft with the initial empty roster before
-    // hydration has read it.
-    if (!rosterHydrated) return;
-    AsyncStorage.setItem(ROSTER_KEY, JSON.stringify(roster)).catch(() => {});
-  }, [roster, rosterHydrated]);
+    // hydration has read it, and don't write the OLD league's roster to
+    // the NEW league's key mid-switch.
+    if (!rosterHydrated || rosterLeagueRef.current !== league) return;
+    AsyncStorage.setItem(rosterKey(league), JSON.stringify(roster)).catch(() => {});
+  }, [roster, rosterHydrated, league]);
 
   const positions = useMemo(
     () => eligiblePositions(activeSlotId),
@@ -152,19 +167,22 @@ export default function PlayerPickemScreen() {
     [activeSlotId, positions]
   );
 
-  // Stat sets differ per slot — slot changes reset sort and filter.
+  // Stat sets differ per slot — slot and league changes reset sort and
+  // filters.
   useEffect(() => {
     setSort(NAME_SORT);
     setFilterText('');
     setOpponentText('');
-  }, [activeSlotId]);
+  }, [activeSlotId, league]);
 
   useEffect(() => {
     if (positions.length === 0) return;
     let ignore = false;
     setLoading(true);
 
-    Promise.all(positions.map((pos) => getAthletesByPosition(pos, SEASON_YEAR, WEEK)))
+    Promise.all(
+      positions.map((pos) => getAthletesByPosition(pos, SEASON_YEAR, WEEK, 'football', league))
+    )
       .then((responses) => {
         if (ignore) return;
         setAthletes(responses.flatMap((r) => r.athletes));
@@ -176,7 +194,7 @@ export default function PlayerPickemScreen() {
     return () => {
       ignore = true;
     };
-  }, [positions]);
+  }, [positions, league]);
 
   const sorted = useMemo(
     () =>
@@ -313,8 +331,36 @@ export default function PlayerPickemScreen() {
       <Stack.Screen options={{ title: "Player Pick'em", headerBackTitle: 'Back' }} />
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Text style={[styles.sub, { color: theme.textMuted }]}>
-          {`Week ${WEEK} · ${SEASON_YEAR} · NCAAFB (FBS) — admin preview, local-only`}
+          {`Week ${WEEK} · ${SEASON_YEAR} · ${
+            LEAGUES.find((l) => l.id === league)?.label ?? league
+          } — admin preview, local-only`}
         </Text>
+
+        <View style={styles.leagueRow}>
+          {LEAGUES.map((l) => {
+            const active = l.id === league;
+            return (
+              <TouchableOpacity
+                key={l.id}
+                onPress={() => setLeague(l.id)}
+                style={[
+                  styles.leagueChip,
+                  { borderColor: active ? theme.tint : theme.border },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: active ? theme.tint : theme.textMuted,
+                    fontSize: 12,
+                    fontWeight: '600',
+                  }}
+                >
+                  {l.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
         {/* Wrapping grid, not a horizontal scroller — every slot visible at
             once so nothing about the lineup shape hides off-screen. */}
@@ -507,6 +553,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  leagueRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 10,
+  },
+  leagueChip: {
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
   },
   filterRow: {
     flexDirection: 'row',

@@ -34,6 +34,18 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
             .Returns(new DateTime(2026, 8, 26, 0, 0, 0, DateTimeKind.Utc));
         Mocker.Use<IValidator<GetAthleteMatchupSummariesQuery>>(
             new GetAthleteMatchupSummariesQueryValidator(dateTimeProvider.Object));
+
+        // Default the app mode to NCAAFB; the NFL test overrides it. An
+        // unset mock would report Sport 0 and silently skip the FBS filter
+        // the NCAAFB tests exercise.
+        SetAppMode(Sport.FootballNcaa);
+    }
+
+    private void SetAppMode(Sport sport)
+    {
+        Mocker.GetMock<SportsData.Core.DependencyInjection.IAppMode>()
+            .Setup(x => x.CurrentSport)
+            .Returns(sport);
     }
 
     private void SeedPositionAndStatus()
@@ -524,6 +536,26 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
         row.OpponentName.Should().BeNull();
         row.OpponentSlug.Should().BeNull();
         row.OpponentDefPerGame.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task NflMode_ReturnsAthletes_WithoutRequiringGroupSeasonMap()
+    {
+        // NFL FranchiseSeasons carry an EMPTY GroupSeasonMap — there is no
+        // classification concept — so the FBS filter must be NCAAFB-only.
+        SetAppMode(Sport.FootballNfl);
+        SeedPositionAndStatus();
+        var texans = SeedFranchiseSeason(2026, "houston-texans", "Houston Texans", groupSeasonMap: string.Empty);
+        SeedAthleteSeason(Guid.NewGuid(), texans, "C.J.", "Stroud");
+
+        await FootballDataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetAthleteMatchupSummariesQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetAthleteMatchupSummariesQuery("QB", 2026, 1));
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Athletes.Should().ContainSingle()
+            .Which.LastName.Should().Be("Stroud");
     }
 
     [Fact]

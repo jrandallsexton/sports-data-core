@@ -21,6 +21,31 @@
   margin: 4px 0 16px;
 }
 
+/* ── League toggle ────────────────────────────────────────────────── */
+
+.roster-leagues {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.roster-league-btn {
+  border: 1px solid var(--accent-subtle);
+  background: none;
+  color: var(--text-muted, #8d96a0);
+  border-radius: 8px;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.roster-league-btn--active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
 /* ── Slot row ─────────────────────────────────────────────────────── */
 
 .roster-slots {

@@ -4,6 +4,7 @@ using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.DependencyInjection;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
 
@@ -105,15 +106,18 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
     private readonly ILogger<GetAthleteMatchupSummariesQueryHandler> _logger;
     private readonly TeamSportDataContext _dataContext;
     private readonly IValidator<GetAthleteMatchupSummariesQuery> _validator;
+    private readonly IAppMode _appMode;
 
     public GetAthleteMatchupSummariesQueryHandler(
         ILogger<GetAthleteMatchupSummariesQueryHandler> logger,
         TeamSportDataContext dataContext,
-        IValidator<GetAthleteMatchupSummariesQuery> validator)
+        IValidator<GetAthleteMatchupSummariesQuery> validator,
+        IAppMode appMode)
     {
         _logger = logger;
         _dataContext = dataContext;
         _validator = validator;
+        _appMode = appMode;
     }
 
     public async Task<Result<AthleteMatchupSummariesDto>> ExecuteAsync(
@@ -151,9 +155,17 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
         // native vocabulary.
         var dbPosition = position == "K" ? "PK" : position;
 
-        // ── 1. Active FBS athletes at the position for the season ─────────
+        // ── 1. Active athletes at the position for the season ─────────────
         // Explicit join: AthleteSeason carries FranchiseSeasonId with no
         // navigation property.
+        //
+        // Classification is sport-specific: NCAAFB spans FBS/FCS/etc. and
+        // only FBS athletes are in scope, so its GroupSeasonMap must carry
+        // the fbs node. Other sports (NFL) have no classification concept
+        // and their GroupSeasonMap is empty — an unconditional fbs filter
+        // would return zero athletes there.
+        var requireFbs = _appMode.CurrentSport == Sport.FootballNcaa;
+
         var athletes = await (
                 from a in _dataContext.AthleteSeasons.AsNoTracking()
                 join fs in _dataContext.FranchiseSeasons.AsNoTracking()
@@ -162,8 +174,8 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
                       a.Position.Abbreviation == dbPosition &&
                       a.Status != null && a.Status.Name == "Active" &&
                       fs.SeasonYear == query.SeasonYear &&
-                      fs.GroupSeasonMap != null &&
-                      fs.GroupSeasonMap.Contains("fbs")
+                      (!requireFbs ||
+                       (fs.GroupSeasonMap != null && fs.GroupSeasonMap.Contains("fbs")))
                 select new
                 {
                     AthleteSeasonId = a.Id,

@@ -107,6 +107,35 @@ export function seasonLine(
     .join(' · ');
 }
 
+/**
+ * Case-insensitive substring match on last name, first name, or team
+ * name. Empty/whitespace filter returns the SAME array so memo deps stay
+ * cheap. Mirrors sd-ui's athleteSort.filterAthletes.
+ */
+export function filterAthletes(rows: PickemAthlete[], text: string): PickemAthlete[] {
+  const needle = text.trim().toLowerCase();
+  if (!needle) return rows;
+  return rows.filter(
+    (r) =>
+      r.lastName.toLowerCase().includes(needle) ||
+      r.firstName.toLowerCase().includes(needle) ||
+      r.teamName.toLowerCase().includes(needle)
+  );
+}
+
+/**
+ * Case-insensitive substring match on the WEEK OPPONENT's name — the
+ * matchup-hunting filter ("show me every RB playing UMass"). Bye-week
+ * rows never match a non-empty filter. Mirrors sd-ui's filterByOpponent.
+ */
+export function filterByOpponent(rows: PickemAthlete[], text: string): PickemAthlete[] {
+  const needle = text.trim().toLowerCase();
+  if (!needle) return rows;
+  return rows.filter((r) =>
+    (r.opponentName ?? '').toLowerCase().includes(needle)
+  );
+}
+
 export type SortDescriptor = { key: string; dir?: 'desc' | 'asc' };
 
 export const NAME_SORT: SortDescriptor = { key: 'name' };

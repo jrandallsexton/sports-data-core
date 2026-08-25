@@ -6,6 +6,7 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Athletes.Commands.RequestAthleteSeasonStatisticsSourcing;
 using SportsData.Producer.Application.Athletes.Queries.GetAthleteById;
+using SportsData.Producer.Application.Athletes.Queries.GetAthleteMatchupSummaries;
 
 namespace SportsData.Producer.Application.Athletes;
 
@@ -35,6 +36,27 @@ public class AthleteController : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await handler.ExecuteAsync(new GetAthleteByIdQuery(athleteId), cancellationToken);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Active FBS athletes at a position with the week's opponent, the
+    /// opponent's defensive allowance per game, and current/previous
+    /// season stat blocks. Consumed by the API's pick'em relay, but the
+    /// data is game-agnostic athlete/matchup data.
+    /// Example: GET /api/athletes/matchup-summaries?position=QB&amp;seasonYear=2026&amp;week=1
+    /// </summary>
+    [HttpGet("matchup-summaries")]
+    public async Task<ActionResult<AthleteMatchupSummariesDto>> GetAthleteMatchupSummaries(
+        [FromQuery] string position,
+        [FromQuery] int seasonYear,
+        [FromQuery] int week,
+        [FromServices] IGetAthleteMatchupSummariesQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(
+            new GetAthleteMatchupSummariesQuery(position, seasonYear, week),
+            cancellationToken);
         return result.ToActionResult();
     }
 

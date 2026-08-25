@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ScrollView,
   FlatList,
+  TextInput,
   TouchableOpacity,
 } from 'react-native';
 import { Stack } from 'expo-router';
@@ -29,6 +30,8 @@ import {
   statPartsFor,
   seasonLine,
   sortAthletes,
+  filterAthletes,
+  filterByOpponent,
   NAME_SORT,
   type SortDescriptor,
 } from '@/src/utils/pickem/athleteStats';
@@ -79,6 +82,11 @@ function sanitizeRoster(raw: string): Roster {
   }
 }
 
+// Fixed to opening week for the admin preview; a week selector (and
+// deriving the current week server-side) is future work.
+const SEASON_YEAR = 2026;
+const WEEK = 1;
+
 const OPP_DEF_LABEL: Record<string, string> = {
   QB: 'Pass Alw/G',
   RB: 'Rush Alw/G',
@@ -109,6 +117,8 @@ export default function PlayerPickemScreen() {
   const [athletes, setAthletes] = useState<PickemAthlete[]>([]);
   const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<SortDescriptor>(NAME_SORT);
+  const [filterText, setFilterText] = useState('');
+  const [opponentText, setOpponentText] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -142,9 +152,11 @@ export default function PlayerPickemScreen() {
     [activeSlotId, positions]
   );
 
-  // Stat sets differ per slot — slot changes reset to the name sort.
+  // Stat sets differ per slot — slot changes reset sort and filter.
   useEffect(() => {
     setSort(NAME_SORT);
+    setFilterText('');
+    setOpponentText('');
   }, [activeSlotId]);
 
   useEffect(() => {
@@ -152,7 +164,7 @@ export default function PlayerPickemScreen() {
     let ignore = false;
     setLoading(true);
 
-    Promise.all(positions.map((pos) => getAthletesByPosition(pos)))
+    Promise.all(positions.map((pos) => getAthletesByPosition(pos, SEASON_YEAR, WEEK)))
       .then((responses) => {
         if (ignore) return;
         setAthletes(responses.flatMap((r) => r.athletes));
@@ -167,8 +179,13 @@ export default function PlayerPickemScreen() {
   }, [positions]);
 
   const sorted = useMemo(
-    () => sortAthletes(athletes, sort, parts),
-    [athletes, sort, parts]
+    () =>
+      sortAthletes(
+        filterByOpponent(filterAthletes(athletes, filterText), opponentText),
+        sort,
+        parts
+      ),
+    [athletes, filterText, opponentText, sort, parts]
   );
 
   const toggleSort = useCallback((key: string) => {
@@ -266,8 +283,8 @@ export default function PlayerPickemScreen() {
         <View style={styles.seasonRow}>
           <Text style={[styles.seasonTag, { color: theme.text }]}>
             {a.currentSeason
-              ? `'26 · ${a.currentSeason.gamesPlayed} G`
-              : "'26 · —"}
+              ? `'${a.currentSeason.seasonYear % 100} · ${a.currentSeason.gamesPlayed} G`
+              : `'${SEASON_YEAR % 100} · —`}
           </Text>
           <Text style={[styles.seasonStats, { color: theme.text }]} numberOfLines={1}>
             {a.currentSeason
@@ -278,8 +295,8 @@ export default function PlayerPickemScreen() {
         <View style={styles.seasonRow}>
           <Text style={[styles.seasonTag, { color: theme.textMuted }]}>
             {a.previousSeason
-              ? `'25 · ${a.previousSeason.gamesPlayed} G`
-              : "'25 · —"}
+              ? `'${a.previousSeason.seasonYear % 100} · ${a.previousSeason.gamesPlayed} G`
+              : `'${(SEASON_YEAR - 1) % 100} · —`}
           </Text>
           <Text style={[styles.seasonStats, { color: theme.textMuted }]} numberOfLines={1}>
             {a.previousSeason
@@ -296,7 +313,7 @@ export default function PlayerPickemScreen() {
       <Stack.Screen options={{ title: "Player Pick'em", headerBackTitle: 'Back' }} />
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Text style={[styles.sub, { color: theme.textMuted }]}>
-          Week 5 · 2026 · NCAAFB (FBS) — admin preview, local-only, mock data
+          {`Week ${WEEK} · ${SEASON_YEAR} · NCAAFB (FBS) — admin preview, local-only`}
         </Text>
 
         {/* Wrapping grid, not a horizontal scroller — every slot visible at
@@ -351,6 +368,35 @@ export default function PlayerPickemScreen() {
               </TouchableOpacity>
             );
           })}
+        </View>
+
+        <View style={styles.filterRow}>
+          <TextInput
+            style={[
+              styles.filterInput,
+              { borderColor: theme.border, color: theme.text, backgroundColor: theme.card },
+            ]}
+            placeholder="Player or team…"
+            placeholderTextColor={theme.textMuted}
+            value={filterText}
+            onChangeText={setFilterText}
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+          />
+          {/* The matchup hunt: "UMass is horrible, show me the RBs
+              playing them this weekend." */}
+          <TextInput
+            style={[
+              styles.filterInput,
+              { borderColor: theme.border, color: theme.text, backgroundColor: theme.card },
+            ]}
+            placeholder="Opponent…"
+            placeholderTextColor={theme.textMuted}
+            value={opponentText}
+            onChangeText={setOpponentText}
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+          />
         </View>
 
         {/* Sort chips replace the web's clickable column headers. */}
@@ -461,6 +507,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 10,
+  },
+  filterInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    fontSize: 13,
   },
   sortRow: { flexGrow: 0, marginTop: 10 },
   sortRowContent: { paddingHorizontal: 16, gap: 6 },

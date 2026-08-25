@@ -3,7 +3,7 @@ using FluentValidation.Results;
 using SportsData.Core.Common;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Core.Infrastructure.Clients.Franchise;
+using SportsData.Core.Infrastructure.Clients.Athlete;
 
 namespace SportsData.Api.Application.Athletes.Queries.GetAthleteDetails;
 
@@ -15,23 +15,25 @@ public interface IGetAthleteDetailsQueryHandler
 }
 
 /// <summary>
-/// Relay to Producer's athlete drill-down. Resolved through the franchise
-/// client factory — the athlete read lives on the same Producer instance
-/// the franchise reads target, and the dormant Player service's client is
-/// dead code, so a dedicated athlete client would be a factory chain with
-/// one method.
+/// Relay to Producer's athlete drill-down via the athlete client. This
+/// originally rode the franchise client factory ("a dedicated athlete
+/// client would be a factory chain with one method") — the pickem grid
+/// feed made it two methods and athlete reads became their own aggregate
+/// root. The client still resolves to the same Producer instance the
+/// franchise reads target; the dormant Player service's client stays
+/// untouched.
 /// </summary>
 public class GetAthleteDetailsQueryHandler : IGetAthleteDetailsQueryHandler
 {
     private readonly ILogger<GetAthleteDetailsQueryHandler> _logger;
-    private readonly IFranchiseClientFactory _franchiseClientFactory;
+    private readonly IAthleteClientFactory _athleteClientFactory;
 
     public GetAthleteDetailsQueryHandler(
         ILogger<GetAthleteDetailsQueryHandler> logger,
-        IFranchiseClientFactory franchiseClientFactory)
+        IAthleteClientFactory athleteClientFactory)
     {
         _logger = logger;
-        _franchiseClientFactory = franchiseClientFactory;
+        _athleteClientFactory = athleteClientFactory;
     }
 
     public async Task<Result<AthleteDetailDto>> ExecuteAsync(
@@ -68,7 +70,7 @@ public class GetAthleteDetailsQueryHandler : IGetAthleteDetailsQueryHandler
 
         try
         {
-            var client = _franchiseClientFactory.Resolve(mode);
+            var client = _athleteClientFactory.Resolve(mode);
             return await client.GetAthleteDetails(query.AthleteId, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

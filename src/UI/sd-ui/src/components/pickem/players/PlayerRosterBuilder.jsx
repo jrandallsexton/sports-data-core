@@ -9,13 +9,28 @@ import {
   remove,
   isRostered,
 } from './rosterLogic';
-import { NAME_SORT, sortAthletes } from './athleteSort';
+import {
+  NAME_SORT,
+  sortAthletes,
+  filterAthletes,
+  filterByOpponent,
+} from './athleteSort';
 import { columnsFor, cellText } from './gridColumns';
 import './PlayerRosterBuilder.css';
 
 // Selections survive reloads — rudimentary stand-in for the carry-over
 // behavior until PlayerLineup entities exist server-side.
 const ROSTER_KEY = 'playerPickemRosterDraft';
+
+// Fixed to opening week for the admin preview; a week selector (and
+// deriving the current week server-side) is future work.
+const SEASON_YEAR = 2026;
+const WEEK = 1;
+
+// Full-depth FBS position lists run to ~2,000 rows (WR); the grid pages
+// client-side — the payload is already in the browser, so filtering and
+// paging never refetch.
+const PAGE_SIZE = 25;
 
 // Meaning of opponentDefPerGame varies by the position being browsed.
 // FLEX merges positions, so it gets the generic label and the per-row
@@ -90,6 +105,9 @@ function PlayerRosterBuilder() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sort, setSort] = useState(NAME_SORT);
+  const [filterText, setFilterText] = useState('');
+  const [opponentText, setOpponentText] = useState('');
+  const [page, setPage] = useState(0);
 
   useEffect(() => {
     localStorage.setItem(ROSTER_KEY, JSON.stringify(roster));
@@ -106,10 +124,20 @@ function PlayerRosterBuilder() {
   );
 
   // Stat columns differ per slot — a sort on CMP% means nothing on the
-  // RB grid, so slot changes reset to the name sort.
+  // RB grid, so slot changes reset sort, filter, and page together.
   useEffect(() => {
     setSort(NAME_SORT);
+    setFilterText('');
+    setOpponentText('');
+    setPage(0);
   }, [activeSlotId]);
+
+  // Any change to what's shown restarts at the first page — a filter or
+  // re-sort that leaves you stranded on page 40 of a smaller result set
+  // reads as an empty grid.
+  useEffect(() => {
+    setPage(0);
+  }, [filterText, opponentText, sort]);
 
   useEffect(() => {
     if (positions.length === 0) return undefined;
@@ -120,7 +148,7 @@ function PlayerRosterBuilder() {
 
     Promise.all(
       positions.map((pos) =>
-        PlayerPickemApi.getAthletesByPosition('football', 'ncaa', pos)
+        PlayerPickemApi.getAthletesByPosition('football', 'ncaa', pos, SEASON_YEAR, WEEK)
       )
     )
       .then((responses) => {
@@ -151,8 +179,19 @@ function PlayerRosterBuilder() {
   }, [sort.key, activeCol]);
 
   const sortedAthletes = useMemo(
-    () => sortAthletes(athletes, sort, getSortValue),
-    [athletes, sort, getSortValue]
+    () =>
+      sortAthletes(
+        filterByOpponent(filterAthletes(athletes, filterText), opponentText),
+        sort,
+        getSortValue
+      ),
+    [athletes, filterText, opponentText, sort, getSortValue]
+  );
+
+  const pageCount = Math.max(1, Math.ceil(sortedAthletes.length / PAGE_SIZE));
+  const pagedAthletes = useMemo(
+    () => sortedAthletes.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
+    [sortedAthletes, page]
   );
 
   // First click on a stat header = descending (big numbers are what a
@@ -191,8 +230,8 @@ function PlayerRosterBuilder() {
     <div className="roster-builder">
       <h2 className="roster-builder-title">Player Pick&rsquo;em Roster</h2>
       <p className="roster-builder-sub">
-        Week 5 &middot; 2026 &middot; NCAAFB (FBS) &mdash; admin preview,
-        selections are local-only, mock data
+        Week {WEEK} &middot; {SEASON_YEAR} &middot; NCAAFB (FBS) &mdash; admin
+        preview, selections are local-only
       </p>
 
       {/* Button group, not tabs: there's no tabpanel relationship here and
@@ -244,6 +283,31 @@ function PlayerRosterBuilder() {
             </div>
           );
         })}
+      </div>
+
+      <div className="roster-toolbar">
+        <input
+          type="search"
+          className="roster-filter"
+          placeholder="Filter by player or team…"
+          aria-label="Filter athletes by name or team"
+          value={filterText}
+          onChange={(e) => setFilterText(e.target.value)}
+        />
+        <span className="roster-toolbar-count">
+          {sortedAthletes.length.toLocaleString()} athletes
+        </span>
+        {/* Right-aligned so it sits over the opponent columns — the
+            matchup hunt: "UMass is horrible, show me the RBs playing
+            them this weekend." */}
+        <input
+          type="search"
+          className="roster-filter roster-filter--opponent"
+          placeholder="Filter by opponent…"
+          aria-label="Filter athletes by week opponent"
+          value={opponentText}
+          onChange={(e) => setOpponentText(e.target.value)}
+        />
       </div>
 
       {loading ? (
@@ -309,7 +373,7 @@ function PlayerRosterBuilder() {
               </tr>
             </thead>
             <tbody>
-              {sortedAthletes.map((a) => {
+              {pagedAthletes.map((a) => {
                 const rostered = isRostered(roster, a.athleteId);
                 // Adding into an occupied slot replaces its player — say so
                 // on the button instead of springing it on the user.
@@ -386,12 +450,37 @@ function PlayerRosterBuilder() {
               {sortedAthletes.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length + 4} className="roster-grid-status">
-                    No athletes for this position.
+                    {filterText || opponentText
+                      ? 'No athletes match the filters.'
+                      : 'No athletes for this position.'}
                   </td>
                 </tr>
               ) : null}
             </tbody>
           </table>
+          {pageCount > 1 ? (
+            <div className="roster-pager">
+              <button
+                type="button"
+                className="roster-pager-btn"
+                disabled={page === 0}
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+              >
+                &lsaquo; Prev
+              </button>
+              <span className="roster-pager-label">
+                Page {page + 1} of {pageCount}
+              </span>
+              <button
+                type="button"
+                className="roster-pager-btn"
+                disabled={page >= pageCount - 1}
+                onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+              >
+                Next &rsaquo;
+              </button>
+            </div>
+          ) : null}
         </div>
       )}
     </div>

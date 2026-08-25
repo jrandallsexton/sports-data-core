@@ -24,6 +24,7 @@ using SportsData.Core.Infrastructure.Blobs;
 using SportsData.Core.Infrastructure.Clients;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Infrastructure.Clients.Notification;
+using SportsData.Core.Infrastructure.Clients.Athlete;
 using SportsData.Core.Infrastructure.Clients.Franchise;
 using SportsData.Core.Infrastructure.Clients.Provider;
 using SportsData.Core.Infrastructure.Clients.Season;
@@ -593,6 +594,7 @@ namespace SportsData.Core.DependencyInjection
             // Client factories handle resolution by sport/league mode
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();
             services.AddSingleton<IFranchiseClientFactory, FranchiseClientFactory>();
+            services.AddSingleton<IAthleteClientFactory, AthleteClientFactory>();
             services.AddSingleton<IContestClientFactory, ContestClientFactory>();
             services.AddSingleton<ISeasonClientFactory, SeasonClientFactory>();
 

@@ -1,5 +1,55 @@
 import { describe, it, expect } from 'vitest';
-import { NAME_SORT, sortAthletes } from './athleteSort';
+import {
+  NAME_SORT,
+  sortAthletes,
+  filterAthletes,
+  filterByOpponent,
+} from './athleteSort';
+
+describe('filterByOpponent', () => {
+  const rows = [
+    { lastName: 'Love', opponentName: 'UMass Minutemen' },
+    { lastName: 'Singleton', opponentName: 'UCLA Bruins' },
+    { lastName: 'OnBye', opponentName: null },
+  ];
+
+  it('matches the week opponent case-insensitively', () => {
+    const hits = filterByOpponent(rows, 'umass');
+    expect(hits).toHaveLength(1);
+    expect(hits[0].lastName).toBe('Love');
+  });
+
+  it('bye rows never match a non-empty filter', () => {
+    expect(filterByOpponent(rows, 'u')).toHaveLength(2);
+  });
+
+  it('returns the SAME array for an empty filter', () => {
+    expect(filterByOpponent(rows, '')).toBe(rows);
+  });
+});
+
+describe('filterAthletes', () => {
+  const rows = [
+    { firstName: 'Arch', lastName: 'Manning', teamName: 'Texas Longhorns' },
+    { firstName: 'Garrett', lastName: 'Nussmeier', teamName: 'LSU Tigers' },
+    { firstName: 'Cade', lastName: 'Klubnik', teamName: 'Clemson Tigers' },
+  ];
+
+  it('matches last name, first name, and team name case-insensitively', () => {
+    expect(filterAthletes(rows, 'manning')).toHaveLength(1);
+    expect(filterAthletes(rows, 'ARCH')).toHaveLength(1);
+    expect(filterAthletes(rows, 'tigers')).toHaveLength(2);
+  });
+
+  it('returns the SAME array for an empty or whitespace filter', () => {
+    expect(filterAthletes(rows, '')).toBe(rows);
+    expect(filterAthletes(rows, '   ')).toBe(rows);
+  });
+
+  it('returns empty for no match', () => {
+    expect(filterAthletes(rows, 'zzz')).toHaveLength(0);
+  });
+});
 
 // getValue mirrors the grid's column accessors: read one stat off a
 // season block.

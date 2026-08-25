@@ -101,6 +101,81 @@
   border-color: var(--accent);
 }
 
+/* ── Toolbar (filter + count) ─────────────────────────────────────── */
+
+.roster-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.roster-filter {
+  flex: 1;
+  max-width: 320px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--accent-subtle);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.85rem;
+}
+
+.roster-filter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.roster-toolbar-count {
+  color: var(--text-muted, #8d96a0);
+  font-size: 0.8rem;
+  flex: 1;
+}
+
+/* Pushed right so it visually pairs with the opponent columns. */
+.roster-filter--opponent {
+  flex: 0 1 auto;
+  max-width: 220px;
+}
+
+/* ── Pager ────────────────────────────────────────────────────────── */
+
+.roster-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--accent-subtle);
+}
+
+.roster-pager-btn {
+  border: 1px solid var(--accent-subtle);
+  background: none;
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.roster-pager-btn:hover:not(:disabled),
+.roster-pager-btn:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.roster-pager-btn:disabled {
+  color: var(--text-muted, #8d96a0);
+  cursor: default;
+}
+
+.roster-pager-label {
+  color: var(--text-muted, #8d96a0);
+  font-size: 0.8rem;
+}
+
 /* ── Athlete grid ─────────────────────────────────────────────────── */
 
 /* Wide table scrolls inside its own container on narrow viewports —

@@ -4,6 +4,7 @@ using FluentValidation;
 
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Athletes.Queries.GetAthleteDetails;
+using SportsData.Api.Application.Athletes.Queries.GetPickemAthletes;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
@@ -320,6 +321,8 @@ namespace SportsData.Api.DependencyInjection
 
             // Athlete Queries
             services.AddScoped<IGetAthleteDetailsQueryHandler, GetAthleteDetailsQueryHandler>();
+            services.AddScoped<IGetPickemAthletesQueryHandler, GetPickemAthletesQueryHandler>();
+            services.AddScoped<FluentValidation.IValidator<GetPickemAthletesQuery>, GetPickemAthletesQueryValidator>();
 
             // TeamCard Queries
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();

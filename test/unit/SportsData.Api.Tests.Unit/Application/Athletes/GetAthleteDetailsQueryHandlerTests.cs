@@ -5,7 +5,7 @@ using Moq;
 using SportsData.Api.Application.Athletes.Queries.GetAthleteDetails;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
-using SportsData.Core.Infrastructure.Clients.Franchise;
+using SportsData.Core.Infrastructure.Clients.Athlete;
 using SportsData.Tests.Shared;
 
 using Xunit;
@@ -14,16 +14,16 @@ namespace SportsData.Api.Tests.Unit.Application.Athletes;
 
 public class GetAthleteDetailsQueryHandlerTests : UnitTestBase<GetAthleteDetailsQueryHandler>
 {
-    private readonly Mock<IFranchiseClientFactory> _franchiseClientFactoryMock;
-    private readonly Mock<IProvideFranchises> _franchiseClientMock;
+    private readonly Mock<IAthleteClientFactory> _athleteClientFactoryMock;
+    private readonly Mock<IProvideAthletes> _athleteClientMock;
 
     public GetAthleteDetailsQueryHandlerTests()
     {
-        _franchiseClientFactoryMock = Mocker.GetMock<IFranchiseClientFactory>();
-        _franchiseClientMock = new Mock<IProvideFranchises>();
-        _franchiseClientFactoryMock
+        _athleteClientFactoryMock = Mocker.GetMock<IAthleteClientFactory>();
+        _athleteClientMock = new Mock<IProvideAthletes>();
+        _athleteClientFactoryMock
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
-            .Returns(_franchiseClientMock.Object);
+            .Returns(_athleteClientMock.Object);
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public class GetAthleteDetailsQueryHandlerTests : UnitTestBase<GetAthleteDetails
         var athleteId = Guid.NewGuid();
         var dto = new AthleteDetailDto { Id = athleteId, DisplayName = "Arch Manning" };
 
-        _franchiseClientMock
+        _athleteClientMock
             .Setup(x => x.GetAthleteDetails(athleteId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<AthleteDetailDto>(dto));
 
@@ -50,7 +50,7 @@ public class GetAthleteDetailsQueryHandlerTests : UnitTestBase<GetAthleteDetails
     {
         var athleteId = Guid.NewGuid();
 
-        _franchiseClientMock
+        _athleteClientMock
             .Setup(x => x.GetAthleteDetails(athleteId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Failure<AthleteDetailDto>(default!, ResultStatus.NotFound, []));
 
@@ -71,7 +71,7 @@ public class GetAthleteDetailsQueryHandlerTests : UnitTestBase<GetAthleteDetails
             new GetAthleteDetailsQuery("cricket", "ipl", Guid.NewGuid()));
 
         result.Status.Should().Be(ResultStatus.Validation);
-        _franchiseClientMock.Verify(
+        _athleteClientMock.Verify(
             x => x.GetAthleteDetails(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -87,7 +87,7 @@ public class GetAthleteDetailsQueryHandlerTests : UnitTestBase<GetAthleteDetails
             new GetAthleteDetailsQuery("football", "ncaa", Guid.Empty));
 
         result.Status.Should().Be(ResultStatus.Validation);
-        _franchiseClientMock.Verify(
+        _athleteClientMock.Verify(
             x => x.GetAthleteDetails(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -98,7 +98,7 @@ public class GetAthleteDetailsQueryHandlerTests : UnitTestBase<GetAthleteDetails
         var athleteId = Guid.NewGuid();
         using var cts = new CancellationTokenSource();
 
-        _franchiseClientMock
+        _athleteClientMock
             .Setup(x => x.GetAthleteDetails(athleteId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException(cts.Token));
 
@@ -117,7 +117,7 @@ public class GetAthleteDetailsQueryHandlerTests : UnitTestBase<GetAthleteDetails
     {
         var athleteId = Guid.NewGuid();
 
-        _franchiseClientMock
+        _athleteClientMock
             .Setup(x => x.GetAthleteDetails(athleteId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("producer unreachable"));
 

@@ -8,6 +8,7 @@ using SportsData.Core.DependencyInjection;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Athletes.Commands.RequestAthleteSeasonStatisticsSourcing;
 using SportsData.Producer.Application.Athletes.Queries.GetAthleteById;
+using SportsData.Producer.Application.Athletes.Queries.GetAthleteMatchupSummaries;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Application.Competitions.Reconcile;
 using SportsData.Producer.Application.Consumers;
@@ -282,6 +283,8 @@ namespace SportsData.Producer.DependencyInjection
 
             // Athlete Queries
             services.AddScoped<IGetAthleteByIdQueryHandler, GetAthleteByIdQueryHandler>();
+            services.AddScoped<IGetAthleteMatchupSummariesQueryHandler, GetAthleteMatchupSummariesQueryHandler>();
+            services.AddScoped<IValidator<GetAthleteMatchupSummariesQuery>, GetAthleteMatchupSummariesQueryValidator>();
 
             // Athlete Commands
             services.AddScoped<IRequestAthleteSeasonStatisticsSourcingCommandHandler, RequestAthleteSeasonStatisticsSourcingCommandHandler>();

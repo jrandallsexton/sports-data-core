@@ -8,6 +8,8 @@ import {
 import {
   NAME_SORT,
   sortAthletes,
+  filterAthletes,
+  filterByOpponent,
   statPartsFor,
   seasonLine,
 } from '@/src/utils/pickem/athleteStats';
@@ -78,6 +80,30 @@ describe('sortAthletes (mobile port)', () => {
     expect(sortAthletes(rows, NAME_SORT, qbParts).map((r) => r.lastName)).toEqual([
       'Alpha', 'Zeta',
     ]);
+  });
+});
+
+describe('filterAthletes (mobile port)', () => {
+  it('matches names and team case-insensitively; empty filter is identity', () => {
+    const rows = [
+      { ...qb('Manning', 1, 1), teamName: 'Texas Longhorns' },
+      { ...qb('Nussmeier', 1, 1), teamName: 'LSU Tigers' },
+    ];
+    expect(filterAthletes(rows, 'tigers')).toHaveLength(1);
+    expect(filterAthletes(rows, 'MANNING')).toHaveLength(1);
+    expect(filterAthletes(rows, '')).toBe(rows);
+  });
+});
+
+describe('filterByOpponent (mobile port)', () => {
+  it('matches the week opponent; byes never match; empty is identity', () => {
+    const rows = [
+      { ...qb('Love', 1, 1), opponentName: 'UMass Minutemen' },
+      { ...qb('OnBye', 1, 1), opponentName: null },
+    ];
+    expect(filterByOpponent(rows, 'umass')).toHaveLength(1);
+    expect(filterByOpponent(rows, 'x')).toHaveLength(0);
+    expect(filterByOpponent(rows, '')).toBe(rows);
   });
 });
 

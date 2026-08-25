@@ -6,6 +6,36 @@
 
 export const NAME_SORT = { key: 'name' };
 
+/**
+ * Case-insensitive substring match on the WEEK OPPONENT's name — the
+ * matchup-hunting filter ("show me every RB playing UMass"). Bye-week
+ * rows have no opponent and never match a non-empty filter. Empty/
+ * whitespace filter returns the SAME array so memo deps stay cheap.
+ */
+export function filterByOpponent(rows, text) {
+  const needle = (text ?? '').trim().toLowerCase();
+  if (!needle) return rows;
+  return rows.filter((r) =>
+    (r.opponentName ?? '').toLowerCase().includes(needle)
+  );
+}
+
+/**
+ * Case-insensitive substring match on last name, first name, or team
+ * name. Empty/whitespace filter returns the SAME array so memo deps stay
+ * cheap.
+ */
+export function filterAthletes(rows, text) {
+  const needle = (text ?? '').trim().toLowerCase();
+  if (!needle) return rows;
+  return rows.filter(
+    (r) =>
+      r.lastName.toLowerCase().includes(needle) ||
+      r.firstName.toLowerCase().includes(needle) ||
+      (r.teamName ?? '').toLowerCase().includes(needle)
+  );
+}
+
 function byName(a, b) {
   return (
     a.lastName.localeCompare(b.lastName) ||

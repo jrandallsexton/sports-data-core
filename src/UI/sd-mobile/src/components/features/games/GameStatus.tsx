@@ -5,6 +5,7 @@ import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
 import type { Matchup, PickType } from '@/src/types/models';
 import { formatToUserTime, getDefaultGameWeekday } from '@/src/utils/timeUtils';
+import { formatBroadcasts } from '@/src/utils/textUtils';
 import { useUserTimeZone } from '@/src/hooks/useUserTimeZone';
 import { FinalScoreResult } from './FinalScoreResult';
 import { formatFootballSituation } from '@/src/utils/liveSituation';
@@ -100,8 +101,10 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail, pickType }
           {formatToUserTime(matchup.startDateUtc, userTz, getDefaultGameWeekday(leagueSport))}
         </Text>
         {matchup.broadcasts ? (
+          // formatBroadcasts pins wrapping to the "|" separators so a
+          // network name never splits across lines ("Chicago Sports\nNetwork")
           <Text style={[styles.statusMeta, { color: theme.textMuted }]}>
-            {matchup.broadcasts}
+            {formatBroadcasts(matchup.broadcasts)}
           </Text>
         ) : null}
         {matchup.venue ? (

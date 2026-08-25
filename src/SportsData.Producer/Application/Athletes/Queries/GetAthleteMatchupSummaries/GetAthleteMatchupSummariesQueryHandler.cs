@@ -1,3 +1,4 @@
+using FluentValidation;
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
@@ -103,29 +104,47 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
 
     private readonly ILogger<GetAthleteMatchupSummariesQueryHandler> _logger;
     private readonly TeamSportDataContext _dataContext;
+    private readonly IValidator<GetAthleteMatchupSummariesQuery> _validator;
 
     public GetAthleteMatchupSummariesQueryHandler(
         ILogger<GetAthleteMatchupSummariesQueryHandler> logger,
-        TeamSportDataContext dataContext)
+        TeamSportDataContext dataContext,
+        IValidator<GetAthleteMatchupSummariesQuery> validator)
     {
         _logger = logger;
         _dataContext = dataContext;
+        _validator = validator;
     }
 
     public async Task<Result<AthleteMatchupSummariesDto>> ExecuteAsync(
         GetAthleteMatchupSummariesQuery query,
         CancellationToken cancellationToken = default)
     {
-        if (!StatMap.TryGetValue(query.Position, out var statKeys))
+        var validation = await _validator.ValidateAsync(query, cancellationToken);
+        if (!validation.IsValid)
         {
             return new Failure<AthleteMatchupSummariesDto>(
                 default!,
-                ResultStatus.BadRequest,
+                ResultStatus.Validation,
+                validation.Errors);
+        }
+
+        // Resolve the CANONICAL whitelist key rather than echoing the raw
+        // input: the position used everywhere downstream (including logs)
+        // is provably one of the dictionary's compile-time constants, and
+        // the whitelist and the stat mapping stay one dictionary.
+        var position = StatMap.Keys.FirstOrDefault(
+            k => string.Equals(k, query.Position, StringComparison.OrdinalIgnoreCase));
+        if (position is null)
+        {
+            return new Failure<AthleteMatchupSummariesDto>(
+                default!,
+                ResultStatus.Validation,
                 [new ValidationFailure(nameof(query.Position),
                     $"Unsupported position '{query.Position}'. Expected one of: {string.Join(", ", StatMap.Keys)}.")]);
         }
 
-        var position = query.Position.ToUpperInvariant();
+        var statKeys = StatMap[position];
 
         // The UI contract says "K"; ESPN's position row is "PK" (Place
         // Kicker). Translate at the boundary so both sides keep their
@@ -235,12 +254,20 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
         // schedule import leaves Week null until the companion doc
         // hydrates it (all 1,527 local 2026 contests were null), while
         // SeasonWeekId is populated on every one of them.
+        //
+        // Scoped to the REGULAR SEASON phase (TypeCode 2): week numbers
+        // restart per phase, so an unscoped Number match would let a
+        // postseason "week 1" overwrite the real week-1 opponent.
+        const int regularSeasonTypeCode = 2;
         var weekContests = await (
                 from c in _dataContext.Contests.AsNoTracking()
                 join sw in _dataContext.SeasonWeeks.AsNoTracking()
                     on c.SeasonWeekId equals sw.Id
+                join sp in _dataContext.SeasonPhases.AsNoTracking()
+                    on sw.SeasonPhaseId equals sp.Id
                 where c.SeasonYear == query.SeasonYear &&
                       sw.Number == query.Week &&
+                      sp.TypeCode == regularSeasonTypeCode &&
                       c.CancelledUtc == null &&
                       (teamFsIds.Contains(c.HomeTeamFranchiseSeasonId) ||
                        teamFsIds.Contains(c.AwayTeamFranchiseSeasonId))
@@ -288,8 +315,14 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
                 .GroupBy(f => f.FranchiseId)
                 .ToDictionary(g => g.Key, g => g.First().Id);
 
+            // TryGetValue throughout: a Contest can reference a
+            // FranchiseSeasonId with no FranchiseSeason row (unsourced
+            // opponent), and this block runs on every week-1 request — a
+            // direct index would turn that data gap into a 500 instead of
+            // a row with a null allowance.
             var missingPriorIds = missing
-                .Where(id => priorFsLookup.ContainsKey(opponentById[id].FranchiseId))
+                .Where(id => opponentById.TryGetValue(id, out var info) &&
+                             priorFsLookup.ContainsKey(info.FranchiseId))
                 .Select(id => priorFsLookup[opponentById[id].FranchiseId])
                 .Distinct()
                 .ToList();
@@ -300,7 +333,8 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
 
             foreach (var id in missing)
             {
-                if (priorFsLookup.TryGetValue(opponentById[id].FranchiseId, out var priorId) &&
+                if (opponentById.TryGetValue(id, out var info) &&
+                    priorFsLookup.TryGetValue(info.FranchiseId, out var priorId) &&
                     priorAllowed.TryGetValue(priorId, out var value))
                 {
                     allowedByOpponent[id] = value;

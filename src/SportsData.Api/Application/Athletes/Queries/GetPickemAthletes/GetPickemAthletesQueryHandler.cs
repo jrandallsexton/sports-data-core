@@ -1,3 +1,4 @@
+using FluentValidation;
 using FluentValidation.Results;
 
 using SportsData.Core.Common;
@@ -25,19 +26,31 @@ public class GetPickemAthletesQueryHandler : IGetPickemAthletesQueryHandler
 {
     private readonly ILogger<GetPickemAthletesQueryHandler> _logger;
     private readonly IAthleteClientFactory _athleteClientFactory;
+    private readonly IValidator<GetPickemAthletesQuery> _validator;
 
     public GetPickemAthletesQueryHandler(
         ILogger<GetPickemAthletesQueryHandler> logger,
-        IAthleteClientFactory athleteClientFactory)
+        IAthleteClientFactory athleteClientFactory,
+        IValidator<GetPickemAthletesQuery> validator)
     {
         _logger = logger;
         _athleteClientFactory = athleteClientFactory;
+        _validator = validator;
     }
 
     public async Task<Result<AthleteMatchupSummariesDto>> ExecuteAsync(
         GetPickemAthletesQuery query,
         CancellationToken cancellationToken = default)
     {
+        var validation = await _validator.ValidateAsync(query, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return new Failure<AthleteMatchupSummariesDto>(
+                default!,
+                ResultStatus.Validation,
+                validation.Errors);
+        }
+
         Sport mode;
         try
         {

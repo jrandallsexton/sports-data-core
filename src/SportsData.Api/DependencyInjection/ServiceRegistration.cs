@@ -322,6 +322,7 @@ namespace SportsData.Api.DependencyInjection
             // Athlete Queries
             services.AddScoped<IGetAthleteDetailsQueryHandler, GetAthleteDetailsQueryHandler>();
             services.AddScoped<IGetPickemAthletesQueryHandler, GetPickemAthletesQueryHandler>();
+            services.AddScoped<FluentValidation.IValidator<GetPickemAthletesQuery>, GetPickemAthletesQueryValidator>();
 
             // TeamCard Queries
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();

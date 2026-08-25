@@ -595,6 +595,11 @@ namespace SportsData.Core.DependencyInjection
             services.AddSingleton<IVenueClientFactory, VenueClientFactory>();
             services.AddSingleton<IFranchiseClientFactory, FranchiseClientFactory>();
             services.AddSingleton<IAthleteClientFactory, AthleteClientFactory>();
+            // Named registration only — BaseAddress is per-sport-mode and is
+            // set by AthleteClientFactory at resolve time, so it cannot live
+            // here. The name gives future athlete-specific handler/policy
+            // configuration a place to attach.
+            services.AddHttpClient(HttpClients.AthleteClient);
             services.AddSingleton<IContestClientFactory, ContestClientFactory>();
             services.AddSingleton<ISeasonClientFactory, SeasonClientFactory>();
 

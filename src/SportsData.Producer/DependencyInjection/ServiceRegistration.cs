@@ -284,6 +284,7 @@ namespace SportsData.Producer.DependencyInjection
             // Athlete Queries
             services.AddScoped<IGetAthleteByIdQueryHandler, GetAthleteByIdQueryHandler>();
             services.AddScoped<IGetAthleteMatchupSummariesQueryHandler, GetAthleteMatchupSummariesQueryHandler>();
+            services.AddScoped<IValidator<GetAthleteMatchupSummariesQuery>, GetAthleteMatchupSummariesQueryValidator>();
 
             // Athlete Commands
             services.AddScoped<IRequestAthleteSeasonStatisticsSourcingCommandHandler, RequestAthleteSeasonStatisticsSourcingCommandHandler>();

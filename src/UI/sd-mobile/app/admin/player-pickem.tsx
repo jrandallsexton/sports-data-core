@@ -18,6 +18,7 @@ import {
 } from '@/src/services/api/playerPickemApi';
 import {
   SLOT_DEFS,
+  slotById,
   eligiblePositions,
   assign,
   remove,
@@ -36,6 +37,38 @@ import {
 // until PlayerLineup entities exist server-side. Shares nothing with the
 // web draft; both are local explorations.
 const ROSTER_KEY = 'playerPickemRosterDraft';
+
+/**
+ * A stored draft is untrusted input: JSON.parse happily returns null,
+ * arrays, or strings (all valid JSON), and a raw setRoster of any of
+ * those crashes the screen on the next roster[activeSlotId] read. Accept
+ * only a plain object whose keys are real slot ids and whose values look
+ * like athletes; anything else degrades to the slot-by-slot best effort
+ * or an empty roster.
+ */
+function sanitizeRoster(raw: string): Roster {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return {};
+    }
+    const next: Roster = {};
+    for (const [slotId, val] of Object.entries(parsed)) {
+      if (
+        slotById(slotId) &&
+        val !== null &&
+        typeof val === 'object' &&
+        !Array.isArray(val) &&
+        typeof (val as { athleteId?: unknown }).athleteId === 'string'
+      ) {
+        next[slotId] = val as PickemAthlete;
+      }
+    }
+    return next;
+  } catch {
+    return {};
+  }
+}
 
 const OPP_DEF_LABEL: Record<string, string> = {
   QB: 'Pass Alw/G',
@@ -73,11 +106,7 @@ export default function PlayerPickemScreen() {
     AsyncStorage.getItem(ROSTER_KEY)
       .then((raw) => {
         if (cancelled || !raw) return;
-        try {
-          setRoster(JSON.parse(raw));
-        } catch {
-          // Corrupt draft — start clean rather than crash the screen.
-        }
+        setRoster(sanitizeRoster(raw));
       })
       .finally(() => {
         if (!cancelled) setRosterHydrated(true);
@@ -216,7 +245,10 @@ export default function PlayerPickemScreen() {
         <Text style={[styles.cardMatchup, { color: theme.textMuted }]}>
           {a.opponentName ? `vs ${a.opponentName}` : 'BYE'}
           {a.opponentDefPerGame != null
-            ? ` · Opp ${a.opponentDefPerGame.toFixed(1)} ${oppDefLabel}`
+            // Per-row label: on FLEX the number's meaning depends on the
+            // athlete's position (rush vs pass allowed), so the card says
+            // which it is instead of the slot's generic label.
+            ? ` · Opp ${a.opponentDefPerGame.toFixed(1)} ${OPP_DEF_LABEL[a.position]}`
             : ''}
         </Text>
 
@@ -322,7 +354,14 @@ export default function PlayerPickemScreen() {
           {[
             { key: 'name', label: 'Name' },
             ...parts.map((p) => ({ key: p.key, label: p.label })),
-            { key: 'oppDef', label: `Opp ${oppDefLabel}` },
+            // No opponent-defense sort on FLEX: the value is rush yds
+            // allowed/G for an RB but pass yds allowed/G for a WR/TE —
+            // different units, so a cross-position ranking would lie.
+            // (The per-card display stays; each card's label carries its
+            // own meaning.)
+            ...(activeSlotId === 'FLEX'
+              ? []
+              : [{ key: 'oppDef', label: `Opp ${oppDefLabel}` }]),
           ].map((chip) => {
             const active = sort.key === chip.key;
             const arrow =

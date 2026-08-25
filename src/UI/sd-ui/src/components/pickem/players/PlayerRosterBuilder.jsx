@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import PlayerPickemApi from '../../../api/playerPickemApi';
 import {
   SLOT_DEFS,
+  slotById,
   eligiblePositions,
   assign,
   remove,
@@ -34,6 +35,37 @@ const OPP_DEF_LABEL = {
 const OPP_DEF_SORT_KEY = 'oppDef';
 
 /**
+ * A stored draft is untrusted input: JSON.parse happily returns null,
+ * arrays, or strings (all valid JSON). Accept only a plain object whose
+ * keys are real slot ids and whose values look like athletes; anything
+ * else degrades to the slot-by-slot best effort or an empty roster.
+ * Mirrors the mobile screen's sanitizer.
+ */
+function sanitizeRoster(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return {};
+    }
+    const next = {};
+    for (const [slotId, val] of Object.entries(parsed)) {
+      if (
+        slotById(slotId) &&
+        val !== null &&
+        typeof val === 'object' &&
+        !Array.isArray(val) &&
+        typeof val.athleteId === 'string'
+      ) {
+        next[slotId] = val;
+      }
+    }
+    return next;
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Player Pick'em roster builder (admin-gated, v1 exploration).
  *
  * Teaser-style slot row up top (fixed v1 shape, DEF disabled); selecting
@@ -46,13 +78,9 @@ const OPP_DEF_SORT_KEY = 'oppDef';
  * mock-backed in playerPickemApi until the Producer endpoint lands.
  */
 function PlayerRosterBuilder() {
-  const [roster, setRoster] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(ROSTER_KEY)) ?? {};
-    } catch {
-      return {};
-    }
-  });
+  const [roster, setRoster] = useState(() =>
+    sanitizeRoster(localStorage.getItem(ROSTER_KEY) ?? 'null')
+  );
   const [activeSlotId, setActiveSlotId] = useState('QB');
   const [athletes, setAthletes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -163,7 +191,10 @@ function PlayerRosterBuilder() {
         selections are local-only, mock data
       </p>
 
-      <div className="roster-slots" role="tablist" aria-label="Lineup slots">
+      {/* Button group, not tabs: there's no tabpanel relationship here and
+          the remove buttons live between the slot controls, so tablist
+          semantics would promise keyboard behavior this doesn't have. */}
+      <div className="roster-slots" role="group" aria-label="Lineup slots">
         {SLOT_DEFS.map((slot) => {
           const filled = roster[slot.id];
           const isActive = slot.id === activeSlotId;
@@ -181,8 +212,7 @@ function PlayerRosterBuilder() {
             >
               <button
                 type="button"
-                role="tab"
-                aria-selected={isActive}
+                aria-pressed={isActive}
                 className="roster-slot-btn"
                 disabled={slot.disabled}
                 title={slot.disabled ? 'Team defense — coming soon' : undefined}
@@ -249,19 +279,28 @@ function PlayerRosterBuilder() {
                   </th>
                 ))}
                 <th>Opponent</th>
-                <th
-                  className="roster-grid-num"
-                  aria-sort={ariaSort(OPP_DEF_SORT_KEY)}
-                >
-                  <button
-                    type="button"
-                    className="roster-grid-sort"
-                    onClick={() => toggleSort(OPP_DEF_SORT_KEY)}
+                {/* No opponent-defense SORT on FLEX: the value is rush yds
+                    allowed/G for an RB but pass yds allowed/G for a WR/TE —
+                    different units, a cross-position ranking would lie. The
+                    column still displays; the per-row position badge carries
+                    each number's meaning. */}
+                {activeSlot?.id === 'FLEX' ? (
+                  <th className="roster-grid-num">{oppDefLabel}</th>
+                ) : (
+                  <th
+                    className="roster-grid-num"
+                    aria-sort={ariaSort(OPP_DEF_SORT_KEY)}
                   >
-                    {oppDefLabel}
-                    {sortIndicator(OPP_DEF_SORT_KEY)}
-                  </button>
-                </th>
+                    <button
+                      type="button"
+                      className="roster-grid-sort"
+                      onClick={() => toggleSort(OPP_DEF_SORT_KEY)}
+                    >
+                      {oppDefLabel}
+                      {sortIndicator(OPP_DEF_SORT_KEY)}
+                    </button>
+                  </th>
+                )}
                 <th aria-label="Actions" />
               </tr>
             </thead>

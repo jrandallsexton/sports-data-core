@@ -17,6 +17,7 @@ import HomePage from "./components/home/HomePage.jsx";
 import WarRoomPage from "./components/warRoom/WarRoomPage.jsx";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
 import GameMap from "./components/map/GameMap.jsx";
+import PlayerRosterBuilder from "./components/pickem/players/PlayerRosterBuilder";
 import WelcomeDialog from "./components/welcome/WelcomeDialog";
 import TeamCard from "./components/teams/TeamCard";
 import AthleteCard from "./components/athletes/AthleteCard";
@@ -180,6 +181,16 @@ function MainApp() {
               element={
                 <AdminRoute>
                   <GameMap />
+                </AdminRoute>
+              }
+            />
+            {/* Player Pick'em roster builder — admin-only v1 exploration;
+                users see only the home-page teaser until launch. */}
+            <Route
+              path="/pickem/players"
+              element={
+                <AdminRoute>
+                  <PlayerRosterBuilder />
                 </AdminRoute>
               }
             />

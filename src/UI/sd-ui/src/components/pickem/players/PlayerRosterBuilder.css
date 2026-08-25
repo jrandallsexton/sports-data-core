@@ -1,0 +1,247 @@
+/* PlayerRosterBuilder — admin-gated v1 roster exploration. Slot row
+   borrows the teaser's visual language (dashed empty / accent filled);
+   the grid is a plain data table with a muted previous-season sub-row. */
+
+.roster-builder {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 2rem;
+  color: var(--text-primary);
+}
+
+.roster-builder-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.roster-builder-sub {
+  color: var(--text-muted, #8d96a0);
+  font-size: 0.85rem;
+  margin: 4px 0 16px;
+}
+
+/* ── Slot row ─────────────────────────────────────────────────────── */
+
+.roster-slots {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.roster-slot {
+  position: relative;
+}
+
+.roster-slot-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 72px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px dashed
+    color-mix(in srgb, var(--text-muted, #8d96a0) 55%, transparent);
+  background: none;
+  color: var(--text-muted, #8d96a0);
+  cursor: pointer;
+  font: inherit;
+}
+
+.roster-slot-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.roster-slot-player {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.roster-slot--filled .roster-slot-btn {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.roster-slot--active .roster-slot-btn {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  color: var(--text-primary);
+}
+
+.roster-slot--disabled .roster-slot-btn {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.roster-slot-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-subtle);
+  background: var(--bg-card);
+  color: var(--text-muted, #8d96a0);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.roster-slot-remove:hover,
+.roster-slot-remove:focus-visible {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+/* ── Athlete grid ─────────────────────────────────────────────────── */
+
+/* Wide table scrolls inside its own container on narrow viewports —
+   desktop-first, phone degrades gracefully. */
+.roster-grid-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--accent-subtle);
+  border-radius: 10px;
+  background: var(--bg-card);
+}
+
+.roster-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.roster-grid th {
+  text-align: left;
+  padding: 10px 12px;
+  color: var(--text-muted, #8d96a0);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--accent-subtle);
+}
+
+.roster-grid td {
+  padding: 8px 12px;
+}
+
+/* Sortable header cells host a button so keyboard users get them for
+   free; the button restyles to look like the plain header text. */
+.roster-grid-sort {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.roster-grid-sort:hover,
+.roster-grid-sort:focus-visible {
+  color: var(--accent);
+}
+
+/* Team links inherit the browser's default anchor blue otherwise —
+   illegible on the dark background. */
+.roster-grid a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.roster-grid a:hover,
+.roster-grid a:focus-visible {
+  text-decoration: underline;
+}
+
+.roster-grid-num {
+  text-align: right;
+}
+
+.roster-grid-row td {
+  border-top: 1px solid
+    color-mix(in srgb, var(--text-muted, #8d96a0) 18%, transparent);
+}
+
+.roster-grid-row:first-child td {
+  border-top: none;
+}
+
+.roster-grid-player {
+  white-space: nowrap;
+}
+
+/* Team folded under the name — buys column width for the stat cells. */
+.roster-grid-name {
+  display: block;
+  font-weight: 600;
+}
+
+.roster-grid-team {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 1px;
+}
+
+.roster-grid-pos {
+  margin-left: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted, #8d96a0);
+  border: 1px solid var(--accent-subtle);
+  border-radius: 4px;
+  padding: 1px 4px;
+  vertical-align: 1px;
+}
+
+/* Previous-season line rides directly under its primary row. */
+.roster-grid-subrow td {
+  padding-top: 0;
+  padding-bottom: 10px;
+  color: var(--text-muted, #8d96a0);
+  font-size: 0.78rem;
+}
+
+.roster-grid-action {
+  text-align: right;
+}
+
+.roster-grid-add {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.roster-grid-add:hover:not(:disabled),
+.roster-grid-add:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.roster-grid-add:disabled {
+  border-color: var(--accent-subtle);
+  color: var(--text-muted, #8d96a0);
+  cursor: default;
+}
+
+.roster-grid-status {
+  padding: 18px 12px;
+  color: var(--text-muted, #8d96a0);
+}
+
+.roster-grid-status--error {
+  color: var(--error, #e05d5d);
+}

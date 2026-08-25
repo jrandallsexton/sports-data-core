@@ -124,18 +124,22 @@ function PlayerRosterBuilder() {
   const [opponentText, setOpponentText] = useState('');
   const [page, setPage] = useState(0);
 
-  // Load the new league's draft on switch (declared before the save
-  // effect so it runs first in the same pass).
+  // Load the new league's draft on switch.
   useEffect(() => {
     if (rosterLeagueRef.current === league) return;
     setRoster(sanitizeRoster(localStorage.getItem(rosterKey(league)) ?? 'null'));
     rosterLeagueRef.current = league;
   }, [league]);
 
+  // Save under the league the roster BELONGS to (the ref), never the
+  // currently selected league. During a switch the two disagree for one
+  // render while state is still the old league's lineup; keying the
+  // write by the ref makes effect ordering irrelevant — the switch pass
+  // doesn't run this effect at all (roster hasn't changed), and once the
+  // loaded roster commits, ref and league agree again.
   useEffect(() => {
-    if (rosterLeagueRef.current !== league) return;
-    localStorage.setItem(rosterKey(league), JSON.stringify(roster));
-  }, [roster, league]);
+    localStorage.setItem(rosterKey(rosterLeagueRef.current), JSON.stringify(roster));
+  }, [roster]);
 
   const positions = useMemo(
     () => eligiblePositions(activeSlotId),

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { FaCheck } from "react-icons/fa";
 import { contestLink } from '../../utils/sportLinks';
+import { formatBroadcasts } from '../../utils/textUtils';
 import FootballGameStatusInProgress from './FootballGameStatusInProgress';
 import BaseballGameStatusInProgress from './BaseballGameStatusInProgress';
 import FinalScoreResult from './FinalScoreResult';
@@ -240,7 +241,9 @@ function GameStatus({
     <>
       <div className="game-time-location">
         <div>{gameTime}</div>
-        {broadcasts && <div>{broadcasts}</div>}
+        {/* formatBroadcasts pins wrapping to the "|" separators so a
+            network name never splits across lines on narrow viewports */}
+        {broadcasts && <div>{formatBroadcasts(broadcasts)}</div>}
         <div>{venue} | {location}</div>
       </div>
       {/* Bottom-of-status affordance for "open the Contest Overview" —

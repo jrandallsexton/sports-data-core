@@ -54,7 +54,11 @@ function sanitizeRoster(raw) {
         val !== null &&
         typeof val === 'object' &&
         !Array.isArray(val) &&
-        typeof val.athleteId === 'string'
+        typeof val.athleteId === 'string' &&
+        // The slot chip renders firstName.charAt(0) + lastName — an entry
+        // missing either would crash on first paint.
+        typeof val.firstName === 'string' &&
+        typeof val.lastName === 'string'
       ) {
         next[slotId] = val;
       }

@@ -54,12 +54,21 @@ function sanitizeRoster(raw: string): Roster {
     }
     const next: Roster = {};
     for (const [slotId, val] of Object.entries(parsed)) {
+      const candidate = val as {
+        athleteId?: unknown;
+        firstName?: unknown;
+        lastName?: unknown;
+      };
       if (
         slotById(slotId) &&
         val !== null &&
         typeof val === 'object' &&
         !Array.isArray(val) &&
-        typeof (val as { athleteId?: unknown }).athleteId === 'string'
+        typeof candidate.athleteId === 'string' &&
+        // The slot chip renders firstName.charAt(0) + lastName — an entry
+        // missing either would crash on first paint.
+        typeof candidate.firstName === 'string' &&
+        typeof candidate.lastName === 'string'
       ) {
         next[slotId] = val as PickemAthlete;
       }

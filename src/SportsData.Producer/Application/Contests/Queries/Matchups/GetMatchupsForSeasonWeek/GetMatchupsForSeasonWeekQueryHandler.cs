@@ -43,7 +43,7 @@ public class GetMatchupsForSeasonWeekQueryHandler : IGetMatchupsForSeasonWeekQue
 
         var connection = _dbContext.Database.GetDbConnection();
         var result = await connection.QueryAsync<Matchup>(
-            new CommandDefinition(sql, new { query.SeasonYear, query.SeasonWeekNumber }, cancellationToken: cancellationToken));
+            new CommandDefinition(sql, new { query.SeasonYear, query.SeasonWeekNumber, query.SeasonPhaseTypeCode }, cancellationToken: cancellationToken));
 
         return new Success<List<Matchup>>(result.ToList());
     }

@@ -116,6 +116,13 @@ validation error the pre-check produces. An xmin token adds an
 untestable-under-InMemory failure path for negligible remaining gain;
 revisit with the scoring integrity pass.
 
+Week numbers are PHASE-SCOPED: within one season year the NFL counts
+weeks 1-4 in preseason, 1-18 in the regular season, and 1-5 in the
+postseason. Matchup resolution (GetMatchupsForSeasonWeek) filters on
+SeasonPhase.TypeCode — default 2, regular season — so a bare week
+number can never anchor a slot to a preseason or playoff game. A future
+playoff/CFP pick'em passes TypeCode 3 explicitly.
+
 **Alpha-blocking, tracked**: SEASON_YEAR/WEEK are pinned to 2026 week 1
 in the UI. A server-resolved current week (or a week selector) must land
 before the week-3/4 alpha — a user cannot reach later weeks without it.

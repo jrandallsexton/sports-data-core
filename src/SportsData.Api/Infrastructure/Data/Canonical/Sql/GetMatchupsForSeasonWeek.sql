@@ -41,6 +41,10 @@ SELECT
   co."OverOdds"       as "OverOdds",
   co."UnderOdds"      as "UnderOdds"
 FROM public."SeasonWeek" sw
+-- Week numbers repeat across phases within one season year (NFL:
+-- preseason/regular/postseason each count from 1). Scope to the regular
+-- season so a bare number is unambiguous.
+INNER JOIN public."SeasonPhase" sp on sp."Id" = sw."SeasonPhaseId" and sp."TypeCode" = 2
 INNER JOIN public."Season" s on s."Id" = sw."SeasonId"
 inner join public."Contest" c ON c."SeasonWeekId" = sw."Id"
 inner join public."Competition" comp on comp."ContestId" = c."Id"

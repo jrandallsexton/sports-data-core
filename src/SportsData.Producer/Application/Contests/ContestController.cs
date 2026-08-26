@@ -437,10 +437,15 @@ namespace SportsData.Producer.Application.Contests
         public async Task<ActionResult<List<Dtos.Canonical.Matchup>>> GetMatchupsForSeasonWeek(
             [FromQuery] int year,
             [FromQuery] int week,
+            // Week numbers repeat across phases within a season year (NFL:
+            // preseason/regular/postseason each count from 1). Omitted = 2
+            // (regular season); a future playoff pick'em passes 3. Nullable
+            // so an omitted param cannot bind to 0 and match no phase.
+            [FromQuery] int? phaseTypeCode,
             [FromServices] Queries.Matchups.GetMatchupsForSeasonWeek.IGetMatchupsForSeasonWeekQueryHandler handler,
             CancellationToken cancellationToken = default)
         {
-            var result = await handler.ExecuteAsync(new Queries.Matchups.GetMatchupsForSeasonWeek.GetMatchupsForSeasonWeekQuery(year, week), cancellationToken);
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetMatchupsForSeasonWeek.GetMatchupsForSeasonWeekQuery(year, week, phaseTypeCode ?? 2), cancellationToken);
             return result.ToActionResult();
         }
 

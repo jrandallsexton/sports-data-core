@@ -62,6 +62,7 @@ INNER JOIN public."FranchiseSeason" fsHome ON fsHome."Id" = c."HomeTeamFranchise
 INNER JOIN public."Franchise" fHome ON fHome."Id" = fsHome."FranchiseId"
 INNER JOIN public."GroupSeason" gsHome ON gsHome."Id" = fsHome."GroupSeasonId"
 INNER JOIN public."SeasonWeek" sw ON sw."Id" = c."SeasonWeekId"
+INNER JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId"
 INNER JOIN public."Season" s ON s."Id" = sw."SeasonId"
 LEFT JOIN LATERAL (
   -- Rank via poll_rank_asof — the single poll-rank definition (see the
@@ -75,5 +76,12 @@ LEFT JOIN LATERAL (
   -- this team's entry in it, or NULL = honestly unranked.
   SELECT public.poll_rank_asof(fsHome."Id", fsHome."SeasonYear", c."StartDateUtc") AS "Current"
 ) fsrdHome ON TRUE
-WHERE s."Year" = @SeasonYear AND sw."Number" = @SeasonWeekNumber
+-- Phase scope is REQUIRED: week numbers repeat across phases within one
+-- season year (NFL 2026 has a week 4 in Preseason, Regular Season, AND
+-- Postseason). An unscoped number query mixes phases and hands callers
+-- whichever game sorts last. Callers default to TypeCode 2 (regular
+-- season); a future playoff/CFP pick'em passes TypeCode 3.
+WHERE s."Year" = @SeasonYear
+  AND sw."Number" = @SeasonWeekNumber
+  AND sp."TypeCode" = @SeasonPhaseTypeCode
 ORDER BY c."StartDateUtc", fHome."Slug"

@@ -1080,6 +1080,9 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.Property<bool>("Starter")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTime?>("StatsRequestedUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AthleteSeasonId");

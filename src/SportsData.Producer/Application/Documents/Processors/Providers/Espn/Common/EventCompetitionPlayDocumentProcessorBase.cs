@@ -125,6 +125,17 @@ public abstract class EventCompetitionPlayDocumentProcessorBase<TDataContext, TD
                 _logger.LogInformation(
                     "Persisted CompetitionPlay. CompetitionId={CompId}, PlayId={PlayId}, Sequence={Sequence}",
                     competition.Id, play.Id, play.SequenceNumber);
+
+                if (inProgress.Value)
+                {
+                    // Live-stats freshness: let the sport-specific processor
+                    // fan out cumulative athlete-statistics requests for the
+                    // play's participants. AFTER the play persists so a retry
+                    // of a failed save can't have already stamped debounce
+                    // watermarks; skipped on the duplicate-race path below
+                    // because the winning worker performs the same fan-out.
+                    await RequestParticipantStatisticsAsync(command, externalDto, competitionIdValue);
+                }
             }
             catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
             {
@@ -170,8 +181,29 @@ public abstract class EventCompetitionPlayDocumentProcessorBase<TDataContext, TD
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation("Persisted CompetitionPlay update. PlayId={PlayId}", entity.Id);
+
+            if (inProgress.Value)
+            {
+                // A re-processed live play (stat correction) refreshes its
+                // participants' cumulative stats too.
+                await RequestParticipantStatisticsAsync(command, externalDto, competitionIdValue);
+            }
         }
     }
+
+    /// <summary>
+    /// Live-stats freshness hook, called after a play persists while its
+    /// competition is IN PROGRESS — never for backfills, replays of
+    /// completed games, or post-final corrections, which keeps historical
+    /// play sweeps from fanning out millions of ESPN fetches. Default is a
+    /// no-op; sport processors override to request the play participants'
+    /// cumulative EventCompetitionAthleteStatistics documents (debounced —
+    /// see the football implementation).
+    /// </summary>
+    protected virtual Task RequestParticipantStatisticsAsync(
+        ProcessDocumentCommand command,
+        TDto dto,
+        Guid competitionId) => Task.CompletedTask;
 
     /// <summary>
     /// Returns true when the competition's status indicates it is mid-game,

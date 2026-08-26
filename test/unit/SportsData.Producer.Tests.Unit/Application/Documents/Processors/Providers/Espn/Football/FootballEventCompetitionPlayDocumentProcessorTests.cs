@@ -903,4 +903,221 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
         // act & assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ProcessAsync(command));
     }
+
+    // ── Live athlete-stats refresh (participants fan-out + debounce) ──────
+
+    /// <summary>
+    /// Full arrange for the stats-refresh tests: competition + status +
+    /// both teams + participant deps from the KickoffReturnOffense fixture,
+    /// plus AthleteCompetition roster rows carrying the debounce watermark.
+    /// Returns the two roster rows (kicker, returner).
+    /// </summary>
+    private async Task<(Guid CompetitionId, AthleteCompetition Kicker, AthleteCompetition Returner)>
+        ArrangeKickoffStatsScenarioAsync(
+            ExternalRefIdentityGenerator generator,
+            bool inProgress = true,
+            DateTime? statsRequestedUtc = null,
+            bool seedRosterRows = true)
+    {
+        var competitionId = Guid.NewGuid();
+        await FootballDataContext.Competitions.AddAsync(new FootballCompetition
+        {
+            Id = competitionId,
+            ContestId = Guid.NewGuid(),
+            Date = UtcNow(),
+            CreatedUtc = UtcNow(),
+            CreatedBy = Guid.NewGuid()
+        });
+        await FootballDataContext.Set<FootballCompetitionStatus>().AddAsync(new FootballCompetitionStatus
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            IsCompleted = !inProgress,
+            CreatedUtc = UtcNow(),
+            CreatedBy = Guid.NewGuid()
+        });
+
+        foreach (var (teamUrl, abbr) in new[]
+                 {
+                     ("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/99", "T99"),
+                     ("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/teams/30", "T30"),
+                 })
+        {
+            var teamId = Guid.NewGuid();
+            await FootballDataContext.FranchiseSeasons.AddAsync(new FranchiseSeason
+            {
+                Id = teamId,
+                FranchiseId = Guid.NewGuid(),
+                SeasonYear = 2024,
+                Abbreviation = abbr,
+                DisplayName = abbr,
+                DisplayNameShort = abbr,
+                Location = abbr,
+                Name = abbr,
+                Slug = abbr.ToLowerInvariant(),
+                ColorCodeHex = "#FFFFFF",
+                CreatedUtc = UtcNow(),
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new FranchiseSeasonExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        FranchiseSeasonId = teamId,
+                        Provider = SourceDataProvider.Espn,
+                        Value = generator.Generate(teamUrl).UrlHash,
+                        SourceUrl = teamUrl,
+                        SourceUrlHash = generator.Generate(teamUrl).UrlHash,
+                        CreatedBy = Guid.NewGuid()
+                    }
+                ]
+            });
+        }
+        await FootballDataContext.SaveChangesAsync();
+
+        var (kickerSeasonId, returnerSeasonId) = await SeedKickoffReturnParticipantDepsAsync(generator);
+
+        AthleteCompetition SeedRoster(Guid athleteSeasonId)
+        {
+            var row = new AthleteCompetition
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competitionId,
+                CompetitionCompetitorId = Guid.NewGuid(),
+                AthleteSeasonId = athleteSeasonId,
+                StatsRequestedUtc = statsRequestedUtc,
+                CreatedUtc = UtcNow(),
+                CreatedBy = Guid.NewGuid()
+            };
+            FootballDataContext.AthleteCompetitions.Add(row);
+            return row;
+        }
+
+        AthleteCompetition kicker = null!, returner = null!;
+        if (seedRosterRows)
+        {
+            kicker = SeedRoster(kickerSeasonId);
+            returner = SeedRoster(returnerSeasonId);
+            await FootballDataContext.SaveChangesAsync();
+        }
+
+        return (competitionId, kicker, returner);
+    }
+
+    private void VerifyStatsRequests(Times times)
+    {
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(
+                It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.EventCompetitionAthleteStatistics),
+                It.IsAny<CancellationToken>()),
+            times);
+    }
+
+    [Fact]
+    public async Task LivePlay_RequestsParticipantStatistics_AndStampsWatermark()
+    {
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var (competitionId, kicker, returner) = await ArrangeKickoffStatsScenarioAsync(generator);
+
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+
+        await sut.ProcessAsync(CreateCommand(json, competitionId.ToString()));
+
+        // One cumulative-stats request per participant (kicker + returner).
+        VerifyStatsRequests(Times.Exactly(2));
+        kicker.StatsRequestedUtc.Should().Be(FixedUtcNow);
+        returner.StatsRequestedUtc.Should().Be(FixedUtcNow);
+    }
+
+    [Fact]
+    public async Task LivePlay_WithinDebounceWindow_DoesNotRequest()
+    {
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var recent = FixedUtcNow.AddMinutes(-1); // < 3-minute debounce
+        var (competitionId, kicker, _) = await ArrangeKickoffStatsScenarioAsync(
+            generator, statsRequestedUtc: recent);
+
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+
+        await sut.ProcessAsync(CreateCommand(json, competitionId.ToString()));
+
+        VerifyStatsRequests(Times.Never());
+        kicker.StatsRequestedUtc.Should().Be(recent); // watermark untouched
+    }
+
+    [Fact]
+    public async Task LivePlay_AfterDebounceWindow_RequestsAgain()
+    {
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var stale = FixedUtcNow.AddMinutes(-4); // > 3-minute debounce
+        var (competitionId, kicker, _) = await ArrangeKickoffStatsScenarioAsync(
+            generator, statsRequestedUtc: stale);
+
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+
+        await sut.ProcessAsync(CreateCommand(json, competitionId.ToString()));
+
+        VerifyStatsRequests(Times.Exactly(2));
+        kicker.StatsRequestedUtc.Should().Be(FixedUtcNow);
+    }
+
+    [Fact]
+    public async Task ScoringPlay_BypassesDebounce()
+    {
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var recent = FixedUtcNow.AddMinutes(-1); // inside the window
+        var (competitionId, _, _) = await ArrangeKickoffStatsScenarioAsync(
+            generator, statsRequestedUtc: recent);
+
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+        json = json.Replace("\"scoringPlay\": false", "\"scoringPlay\": true");
+
+        await sut.ProcessAsync(CreateCommand(json, competitionId.ToString()));
+
+        // A TD must show up NOW — the debounce does not apply.
+        VerifyStatsRequests(Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task CompletedCompetition_DoesNotRequestStatistics()
+    {
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var (competitionId, _, _) = await ArrangeKickoffStatsScenarioAsync(
+            generator, inProgress: false);
+
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+
+        await sut.ProcessAsync(CreateCommand(json, competitionId.ToString()));
+
+        // Backfills and post-final corrections must never fan out fetches.
+        VerifyStatsRequests(Times.Never());
+    }
+
+    [Fact]
+    public async Task MissingRosterRows_SkipsQuietly_AndStillPersistsThePlay()
+    {
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+        var (competitionId, _, _) = await ArrangeKickoffStatsScenarioAsync(
+            generator, seedRosterRows: false);
+
+        var sut = Mocker.CreateInstance<FootballEventCompetitionPlayDocumentProcessor<FootballDataContext>>();
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionPlay_KickoffReturnOffense.json");
+
+        await sut.ProcessAsync(CreateCommand(json, competitionId.ToString()));
+
+        VerifyStatsRequests(Times.Never());
+        (await FootballDataContext.CompetitionPlays.AnyAsync(p => p.CompetitionId == competitionId))
+            .Should().BeTrue();
+    }
 }

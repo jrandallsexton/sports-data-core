@@ -57,6 +57,16 @@ public class AthleteCompetition : CanonicalEntityBase<Guid>
     /// </summary>
     public bool Active { get; set; }
 
+    /// <summary>
+    /// Debounce watermark for live in-game statistics refresh: the last time
+    /// the play processor requested this athlete's cumulative
+    /// EventCompetitionAthleteStatistics document for this competition.
+    /// Bounds ESPN fetch volume — a QB appears on ~40 plays a game and must
+    /// not trigger a fetch per play. Null = never requested via the live
+    /// play-driven path (pre-game roster cascade requests don't stamp it).
+    /// </summary>
+    public DateTime? StatsRequestedUtc { get; set; }
+
     public class EntityConfiguration : IEntityTypeConfiguration<AthleteCompetition>
     {
         public void Configure(EntityTypeBuilder<AthleteCompetition> builder)

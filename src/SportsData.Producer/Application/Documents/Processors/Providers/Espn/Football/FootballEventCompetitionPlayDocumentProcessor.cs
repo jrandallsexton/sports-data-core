@@ -23,14 +23,93 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
     : EventCompetitionPlayDocumentProcessorBase<TDataContext, EspnFootballEventCompetitionPlayDto>
     where TDataContext : FootballDataContext
 {
+    // Live in-game athlete-stats refresh: minimum minutes between requests
+    // for one athlete's cumulative statistics doc within one competition.
+    // 3 minutes ≈ drive granularity — plays cluster inside drives, so each
+    // involved athlete refreshes about once per drive instead of once per
+    // play (a QB would otherwise fan out ~40 ESPN fetches a game against an
+    // IP-based rate limiter). Scoring plays bypass the debounce.
+    private const int StatsRequestDebounceMinutes = 3;
+
+    private readonly IDateTimeProvider _dateTimeProvider;
+
     public FootballEventCompetitionPlayDocumentProcessor(
         ILogger<FootballEventCompetitionPlayDocumentProcessor<TDataContext>> logger,
         TDataContext dataContext,
         IEventBus publishEndpoint,
         IGenerateExternalRefIdentities externalRefIdentityGenerator,
-        IGenerateResourceRefs refs)
+        IGenerateResourceRefs refs,
+        IDateTimeProvider dateTimeProvider)
         : base(logger, dataContext, publishEndpoint, externalRefIdentityGenerator, refs)
     {
+        _dateTimeProvider = dateTimeProvider;
+    }
+
+    /// <summary>
+    /// Fan out cumulative athlete-statistics requests for the play's
+    /// participants. The base calls this only while the competition is IN
+    /// PROGRESS, and Provider auto-bypasses its cache for current-season
+    /// requests, so each request that survives the debounce is a fresh
+    /// ESPN fetch; Provider's content-hash dedupe suppresses the
+    /// downstream publish when nothing changed. The debounce watermark
+    /// lives on the AthleteCompetition roster row — DB-backed, so it holds
+    /// across the 30-worker fleet (two workers racing the same check cost
+    /// at most one duplicate fetch, which is not worth locking over).
+    /// </summary>
+    protected override async Task RequestParticipantStatisticsAsync(
+        ProcessDocumentCommand command,
+        EspnFootballEventCompetitionPlayDto dto,
+        Guid competitionId)
+    {
+        if (dto.Participants is null || dto.Participants.Count == 0) return;
+
+        var now = _dateTimeProvider.UtcNow();
+        var stampedAny = false;
+
+        foreach (var participant in dto.Participants
+                     .Where(p => p.Athlete?.Ref is not null && p.Statistics?.Ref is not null)
+                     .DistinctBy(p => p.Athlete!.Ref))
+        {
+            var athleteSeasonId = await _dataContext.ResolveIdAsync<AthleteSeason, AthleteSeasonExternalId>(
+                participant.Athlete!,
+                command.SourceDataProvider,
+                () => _dataContext.AthleteSeasons,
+                externalIdsNav: "ExternalIds",
+                key: a => a.Id);
+
+            // Participants were dependency-resolved when the play was
+            // built; a miss here means the play itself threw for retry
+            // before we were called. Defensive skip regardless.
+            if (athleteSeasonId is null) continue;
+
+            var rosterRow = await _dataContext.AthleteCompetitions
+                .FirstOrDefaultAsync(ac =>
+                    ac.CompetitionId == competitionId &&
+                    ac.AthleteSeasonId == athleteSeasonId.Value);
+
+            // Roster doc not sourced yet (pre-game cascade still running).
+            // A later play retries; no watermark to stamp without a row.
+            if (rosterRow is null) continue;
+
+            var due = dto.ScoringPlay
+                      || rosterRow.StatsRequestedUtc is null
+                      || (now - rosterRow.StatsRequestedUtc.Value).TotalMinutes >= StatsRequestDebounceMinutes;
+            if (!due) continue;
+
+            rosterRow.StatsRequestedUtc = now;
+            stampedAny = true;
+
+            await PublishChildDocumentRequest(
+                command,
+                participant.Statistics,
+                rosterRow.Id,
+                DocumentType.EventCompetitionAthleteStatistics);
+        }
+
+        if (stampedAny)
+        {
+            await _dataContext.SaveChangesAsync();
+        }
     }
 
     /// <summary>

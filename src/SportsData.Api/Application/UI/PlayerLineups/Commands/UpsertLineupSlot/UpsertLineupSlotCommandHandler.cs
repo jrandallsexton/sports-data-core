@@ -3,6 +3,8 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
+using Npgsql;
+
 using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.PlayerLineups.Dtos;
 using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
@@ -213,7 +215,19 @@ public class UpsertLineupSlotCommandHandler : IUpsertLineupSlotCommandHandler
         lineup.ModifiedUtc = now;
         lineup.ModifiedBy = command.UserId;
 
-        await _dataContext.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _dataContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // The duplicate-athlete pre-check above raced a concurrent save
+            // into another slot; the unique (PlayerLineupId, AthleteId)
+            // index is the authority. Same user, same intent — reject like
+            // the pre-check would have.
+            return Fail(ResultStatus.Validation, nameof(command.AthleteId),
+                "That athlete is already in your lineup.");
+        }
 
         return new Success<PlayerLineupSlotDto>(existing.ToDto(now));
     }

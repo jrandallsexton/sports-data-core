@@ -65,6 +65,12 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.HasIndex(x => new { x.PlayerLineupId, x.SlotId })
                     .IsUnique();
 
+                // The no-duplicate-athlete rule the handler pre-checks,
+                // enforced at the database so concurrent saves into
+                // different slots cannot slip the same athlete in twice.
+                builder.HasIndex(x => new { x.PlayerLineupId, x.AthleteId })
+                    .IsUnique();
+
                 builder.Property(x => x.SlotId).HasMaxLength(8);
                 builder.Property(x => x.Position).HasMaxLength(4);
                 builder.Property(x => x.FirstName).HasMaxLength(100);

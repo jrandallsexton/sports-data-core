@@ -107,12 +107,14 @@ game server-side and invalidates slots whose stored anchor mismatches.
 Full server-side athlete verification per save would mean re-fetching
 the position feed on every write; deliberately deferred.
 
-Concurrency: lineup writes carry no concurrency token. The only writer
-of a lineup is its owner; the worst same-user race (two simultaneous
-saves of the same athlete into different slots) yields a duplicate
-athlete in one's OWN roster, which the UI and scoring tolerate. An xmin
-token adds an untestable-under-InMemory failure path for negligible
-gain; revisit with the scoring integrity pass.
+Concurrency: lineup writes carry no concurrency token — the only
+writer of a lineup is its owner. The no-duplicate-athlete rule is
+enforced by a unique (PlayerLineupId, AthleteId) index, so the one
+meaningful same-user race (simultaneous saves of the same athlete into
+different slots) is rejected by the database and surfaced as the same
+validation error the pre-check produces. An xmin token adds an
+untestable-under-InMemory failure path for negligible remaining gain;
+revisit with the scoring integrity pass.
 
 **Alpha-blocking, tracked**: SEASON_YEAR/WEEK are pinned to 2026 week 1
 in the UI. A server-resolved current week (or a week selector) must land

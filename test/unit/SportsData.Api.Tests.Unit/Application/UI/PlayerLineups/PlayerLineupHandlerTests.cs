@@ -34,6 +34,10 @@ public class PlayerLineupHandlerTests : ApiTestBase<UpsertLineupSlotCommandHandl
     public PlayerLineupHandlerTests()
     {
         Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow()).Returns(Now);
+        // Real validators — auto-mocked IValidator returns a null
+        // ValidationResult and NREs before the code under test runs.
+        Mocker.Use<FluentValidation.IValidator<UpsertLineupSlotCommand>>(new UpsertLineupSlotCommandValidator());
+        Mocker.Use<FluentValidation.IValidator<ClearLineupSlotCommand>>(new ClearLineupSlotCommandValidator());
         Mocker.GetMock<IContestClientFactory>()
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_contestClient.Object);

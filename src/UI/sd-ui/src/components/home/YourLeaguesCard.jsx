@@ -49,7 +49,7 @@ function YourLeaguesCard() {
           // builder, everything else opens the team picks page.
           const destination =
             league.groupType === 'PlayerPickem'
-              ? '/app/pickem/players'
+              ? `/app/pickem/players/${league.id}`
               : `/app/picks/${league.id}`;
           return (
             <li key={league.id} className="your-leagues-card__item">

@@ -1,3 +1,4 @@
+using FluentValidation;
 using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
@@ -38,25 +39,34 @@ public class UpsertLineupSlotCommandHandler : IUpsertLineupSlotCommandHandler
     private readonly ILeagueMembershipGuard _membershipGuard;
     private readonly IContestClientFactory _contestClientFactory;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IValidator<UpsertLineupSlotCommand> _validator;
 
     public UpsertLineupSlotCommandHandler(
         ILogger<UpsertLineupSlotCommandHandler> logger,
         AppDataContext dataContext,
         ILeagueMembershipGuard membershipGuard,
         IContestClientFactory contestClientFactory,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IValidator<UpsertLineupSlotCommand> validator)
     {
         _logger = logger;
         _dataContext = dataContext;
         _membershipGuard = membershipGuard;
         _contestClientFactory = contestClientFactory;
         _dateTimeProvider = dateTimeProvider;
+        _validator = validator;
     }
 
     public async Task<Result<PlayerLineupSlotDto>> ExecuteAsync(
         UpsertLineupSlotCommand command,
         CancellationToken cancellationToken = default)
     {
+        var validation = await _validator.ValidateAsync(command, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return new Failure<PlayerLineupSlotDto>(default!, ResultStatus.Validation, validation.Errors);
+        }
+
         var gate = await PlayerLineupGate.CheckAsync(
             _dataContext, _membershipGuard, command.LeagueId, command.UserId, cancellationToken);
         if (gate.Failure is not null)
@@ -64,16 +74,20 @@ public class UpsertLineupSlotCommandHandler : IUpsertLineupSlotCommandHandler
             return new Failure<PlayerLineupSlotDto>(default!, gate.Failure.Value.Status, gate.Failure.Value.Errors);
         }
 
-        if (!LineupSlots.IsValidSlot(command.SlotId))
+        // Canonical slot id from here on — persisting the caller's casing
+        // would let "qb" and "QB" become two distinct QB slots under the
+        // case-sensitive unique index.
+        var slotId = LineupSlots.Normalize(command.SlotId);
+        if (slotId is null)
         {
             return Fail(ResultStatus.Validation, nameof(command.SlotId),
                 $"Unknown slot '{command.SlotId}'.");
         }
 
-        if (!LineupSlots.IsEligible(command.SlotId, command.Position))
+        if (!LineupSlots.IsEligible(slotId, command.Position))
         {
             return Fail(ResultStatus.Validation, nameof(command.Position),
-                $"Position '{command.Position}' is not eligible for slot '{command.SlotId}'.");
+                $"Position '{command.Position}' is not eligible for slot '{slotId}'.");
         }
 
         // ── Server-side matchup resolution (the lock authority) ───────────
@@ -121,7 +135,7 @@ public class UpsertLineupSlotCommandHandler : IUpsertLineupSlotCommandHandler
 
         // ── Duplicate athlete across slots ────────────────────────────────
         if (lineup is not null && lineup.Slots.Any(s =>
-                s.SlotId != command.SlotId && s.AthleteId == command.AthleteId))
+                s.SlotId != slotId && s.AthleteId == command.AthleteId))
         {
             return Fail(ResultStatus.Validation, nameof(command.AthleteId),
                 "That athlete is already rostered in another slot.");
@@ -130,11 +144,11 @@ public class UpsertLineupSlotCommandHandler : IUpsertLineupSlotCommandHandler
         // ── Target slot lock (both the stored anchor AND the current
         //    resolution of the OCCUPANT's team — a cloned slot can carry a
         //    null anchor, and null must never mean unlocked-forever) ───────
-        var existing = lineup?.Slots.FirstOrDefault(s => s.SlotId == command.SlotId);
+        var existing = lineup?.Slots.FirstOrDefault(s => s.SlotId == slotId);
         if (existing is not null && IsSlotLocked(existing, weekMap, now))
         {
             return Fail(ResultStatus.Validation, nameof(command.SlotId),
-                $"Slot '{command.SlotId}' is locked — {existing.LastName}'s game has started or starts within 5 minutes.");
+                $"Slot '{slotId}' is locked — {existing.LastName}'s game has started or starts within 5 minutes.");
         }
 
         // ── Incoming athlete's game lock ──────────────────────────────────
@@ -168,7 +182,7 @@ public class UpsertLineupSlotCommandHandler : IUpsertLineupSlotCommandHandler
             {
                 Id = Guid.NewGuid(),
                 PlayerLineupId = lineup.Id,
-                SlotId = command.SlotId,
+                SlotId = slotId,
                 CreatedUtc = now,
                 CreatedBy = command.UserId,
             };

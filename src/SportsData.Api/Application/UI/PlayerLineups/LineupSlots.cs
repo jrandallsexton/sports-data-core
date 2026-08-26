@@ -28,4 +28,14 @@ public static class LineupSlots
     public static bool IsEligible(string slotId, string position) =>
         Eligibility.TryGetValue(slotId, out var positions) &&
         positions.Contains(position, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The CANONICAL slot id (fixed casing) for any accepted spelling, or
+    /// null. Persisting the caller's casing would let "qb" and "QB" slip
+    /// past the case-sensitive unique (PlayerLineupId, SlotId) index as
+    /// two distinct QB slots — always store what this returns.
+    /// </summary>
+    public static string? Normalize(string slotId) =>
+        Eligibility.Keys.FirstOrDefault(
+            k => string.Equals(k, slotId, StringComparison.OrdinalIgnoreCase));
 }

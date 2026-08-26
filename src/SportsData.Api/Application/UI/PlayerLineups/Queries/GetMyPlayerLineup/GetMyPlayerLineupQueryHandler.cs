@@ -62,7 +62,11 @@ public class GetMyPlayerLineupQueryHandler : IGetMyPlayerLineupQueryHandler
             return new Failure<PlayerLineupDto>(default!, gate.Failure.Value.Status, gate.Failure.Value.Errors);
         }
 
+        // Pure read — the result is only projected to the DTO (the clone
+        // path constructs and Adds fresh entities), so nothing needs
+        // tracking.
         var lineup = await _dataContext.PlayerLineups
+            .AsNoTracking()
             .Include(l => l.Slots)
             .FirstOrDefaultAsync(l =>
                     l.PickemGroupId == query.LeagueId &&
@@ -135,6 +139,12 @@ public class GetMyPlayerLineupQueryHandler : IGetMyPlayerLineupQueryHandler
 
             weekMap = new WeekMatchupMap(matchups.Value);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The caller went away — surface the cancellation instead of
+            // serving a fabricated empty week.
+            throw;
+        }
         catch (Exception ex)
         {
             _logger.LogWarning(
@@ -200,6 +210,7 @@ public class GetMyPlayerLineupQueryHandler : IGetMyPlayerLineupQueryHandler
             }
 
             lineup = await _dataContext.PlayerLineups
+                .AsNoTracking()
                 .Include(l => l.Slots)
                 .FirstOrDefaultAsync(l =>
                         l.PickemGroupId == query.LeagueId &&

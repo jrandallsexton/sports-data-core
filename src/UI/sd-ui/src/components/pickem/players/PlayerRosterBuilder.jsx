@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import PlayerPickemApi from '../../../api/playerPickemApi';
 import LeaguesApi from '../../../api/leagues/leaguesApi';
 import {
@@ -83,6 +83,10 @@ function errorMessage(err, fallback) {
  * exists for closed-testing coverage.
  */
 function PlayerRosterBuilder() {
+  // Optional league scope from the route (league cards pass their id) —
+  // without it the page falls back to the first PlayerPickem league per
+  // sport.
+  const { leagueId: routeLeagueId } = useParams();
   const [league, setLeague] = useState('ncaa');
   const [roster, setRoster] = useState({});
   // The user's PlayerPickem-type leagues (null = still loading). The
@@ -112,10 +116,15 @@ function PlayerRosterBuilder() {
         if (ignore) return;
         const mine = (leagues ?? []).filter((l) => l.groupType === 'PlayerPickem');
         setPlayerLeagues(mine);
-        const firstAvailable = LEAGUES.find((opt) =>
-          mine.some((l) => l.sport === opt.sport)
-        );
-        if (firstAvailable) setLeague(firstAvailable.id);
+        // Route-scoped league wins; its sport drives the page. Fallback:
+        // first sport that has a player league.
+        const routed = routeLeagueId
+          ? mine.find((l) => l.id === routeLeagueId)
+          : null;
+        const target = routed
+          ? LEAGUES.find((opt) => opt.sport === routed.sport)
+          : LEAGUES.find((opt) => mine.some((l) => l.sport === opt.sport));
+        if (target) setLeague(target.id);
       })
       .catch(() => {
         if (!ignore) {
@@ -126,7 +135,7 @@ function PlayerRosterBuilder() {
     return () => {
       ignore = true;
     };
-  }, []);
+  }, [routeLeagueId]);
 
   // Resolve the target league for the selected sport, then load the
   // server lineup (whose first read of a new week performs the lazy
@@ -140,7 +149,10 @@ function PlayerRosterBuilder() {
     setRoster({});
 
     const sport = LEAGUES.find((l) => l.id === league)?.sport;
-    const target = playerLeagues.find((l) => l.sport === sport) ?? null;
+    const routed = routeLeagueId
+      ? playerLeagues.find((l) => l.id === routeLeagueId && l.sport === sport)
+      : null;
+    const target = routed ?? playerLeagues.find((l) => l.sport === sport) ?? null;
     setPickemLeague(target);
 
     if (!target) {
@@ -163,7 +175,7 @@ function PlayerRosterBuilder() {
     return () => {
       ignore = true;
     };
-  }, [league, playerLeagues]);
+  }, [league, playerLeagues, routeLeagueId]);
 
   const positions = useMemo(
     () => eligiblePositions(activeSlotId),

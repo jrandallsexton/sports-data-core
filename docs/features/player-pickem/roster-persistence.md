@@ -16,7 +16,7 @@ draft shipped with the admin-preview roster builder (#674–#676).
 
 ## Entities (API database, beside the pick tables)
 
-```
+```text
 PlayerLineup
   Id               Guid PK
   PickemGroupId    Guid
@@ -42,7 +42,7 @@ PlayerLineupSlot
   OpponentName     string?
   Created/Modified audit fields
   UNIQUE (PlayerLineupId, SlotId)
-```
+```text
 
 The v1 lineup shape (1 QB / 2 RB / 2 WR / 1 TE / 1 FLEX / 1 K) is fixed and
 enforced server-side; `DEF` is reserved until the team-defense picker exists.
@@ -93,6 +93,30 @@ modules — kept pure from day one for exactly this move.
 - Admin preview targets the first `PlayerPickem`-type league the user
   belongs to; a proper league picker comes with launch shape.
 - Locked slots render disabled with a lock affordance; bye slots badge.
+
+## Trust boundary (alpha)
+
+The upsert accepts the athlete identity + display snapshot from the
+client; the server authoritatively resolves the CONTEST ANCHOR from the
+athlete's claimed TeamSlug. A malicious member could therefore submit a
+locked athlete under an unlocked team's slug and slip a mid-game player
+into their own lineup. Accepted for the alpha (founder + friends): the
+blast radius is the cheater's own roster, and the planned scoring-side
+audit closes it retroactively — scoring resolves each athlete's REAL
+game server-side and invalidates slots whose stored anchor mismatches.
+Full server-side athlete verification per save would mean re-fetching
+the position feed on every write; deliberately deferred.
+
+Concurrency: lineup writes carry no concurrency token. The only writer
+of a lineup is its owner; the worst same-user race (two simultaneous
+saves of the same athlete into different slots) yields a duplicate
+athlete in one's OWN roster, which the UI and scoring tolerate. An xmin
+token adds an untestable-under-InMemory failure path for negligible
+gain; revisit with the scoring integrity pass.
+
+**Alpha-blocking, tracked**: SEASON_YEAR/WEEK are pinned to 2026 week 1
+in the UI. A server-resolved current week (or a week selector) must land
+before the week-3/4 alpha — a user cannot reach later weeks without it.
 
 ## Future (explicitly out of scope here)
 

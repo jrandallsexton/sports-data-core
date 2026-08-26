@@ -26,6 +26,10 @@ public class AppDataContext : DbContext
 
     public DbSet<PickemGroupMatchup> PickemGroupMatchups { get; set; }
 
+    public DbSet<PlayerLineup> PlayerLineups { get; set; }
+
+    public DbSet<PlayerLineupSlot> PlayerLineupSlots { get; set; }
+
     public DbSet<PickemGroupMember> PickemGroupMembers { get; set; }
 
     public DbSet<PickemGroupInvitation> PickemGroupInvitations { get; set; }

@@ -18,7 +18,16 @@ const LeagueOverviewCard = ({ league, onDuplicate }) => {
       )}
       <div className="league-card-header">
         <h2 className="league-card-title">
-          <Link to={`/app/picks/${league.id}`} className="league-card-name-link">
+          {/* One game per league: PlayerPickem leagues open the roster
+              builder, everything else opens the team picks page. */}
+          <Link
+            to={
+              league.groupType === 'PlayerPickem'
+                ? '/app/pickem/players'
+                : `/app/picks/${league.id}`
+            }
+            className="league-card-name-link"
+          >
             {league.name}
           </Link>
           {isPast && <span className="past-league-badge">Past</span>}

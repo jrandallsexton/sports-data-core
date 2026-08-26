@@ -32,6 +32,16 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public bool UseConfidencePoints { get; set; }
 
+        /// <summary>
+        /// Which game this league plays — see <see cref="Enums.GroupType"/>
+        /// for the one-game-per-league product rule and why this is an
+        /// enum, not capability flags. PickType below remains meaningful
+        /// only for TeamPickem groups. Creation-flow support for
+        /// PlayerPickem groups ships with the standalone-league vertical.
+        /// See docs/features/player-pickem/roster-persistence.md.
+        /// </summary>
+        public GroupType GroupType { get; set; } = GroupType.TeamPickem;
+
         public bool IsPublic { get; set; }
 
         /// <summary>

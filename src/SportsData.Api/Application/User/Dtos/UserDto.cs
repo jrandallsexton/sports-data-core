@@ -49,6 +49,14 @@ public class UserDto
         public Sport Sport { get; set; }
 
         /// <summary>
+        /// Which game this league plays ("TeamPickem" / "PlayerPickem") —
+        /// one game per league. Routes the home-page league card: team
+        /// leagues open the picks page, player leagues open the roster
+        /// builder.
+        /// </summary>
+        public string GroupType { get; set; } = null!;
+
+        /// <summary>
         /// Week numbers that exist for this league, ascending with duplicates removed.
         /// </summary>
         /// <remarks>

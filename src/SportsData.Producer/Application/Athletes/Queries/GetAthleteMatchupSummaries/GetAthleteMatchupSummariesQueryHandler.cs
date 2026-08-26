@@ -283,20 +283,20 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
                       c.CancelledUtc == null &&
                       (teamFsIds.Contains(c.HomeTeamFranchiseSeasonId) ||
                        teamFsIds.Contains(c.AwayTeamFranchiseSeasonId))
-                select new { c.HomeTeamFranchiseSeasonId, c.AwayTeamFranchiseSeasonId })
+                select new { ContestId = c.Id, c.StartDateUtc, c.HomeTeamFranchiseSeasonId, c.AwayTeamFranchiseSeasonId })
             .ToListAsync(cancellationToken);
 
-        var opponentByTeam = new Dictionary<Guid, Guid>();
+        var opponentByTeam = new Dictionary<Guid, (Guid OpponentFsId, Guid ContestId, DateTime StartUtc)>();
         foreach (var c in weekContests)
         {
             // Both sides may be FBS; register each direction we care about.
             if (teamFsIds.Contains(c.HomeTeamFranchiseSeasonId))
-                opponentByTeam[c.HomeTeamFranchiseSeasonId] = c.AwayTeamFranchiseSeasonId;
+                opponentByTeam[c.HomeTeamFranchiseSeasonId] = (c.AwayTeamFranchiseSeasonId, c.ContestId, c.StartDateUtc);
             if (teamFsIds.Contains(c.AwayTeamFranchiseSeasonId))
-                opponentByTeam[c.AwayTeamFranchiseSeasonId] = c.HomeTeamFranchiseSeasonId;
+                opponentByTeam[c.AwayTeamFranchiseSeasonId] = (c.HomeTeamFranchiseSeasonId, c.ContestId, c.StartDateUtc);
         }
 
-        var opponentFsIds = opponentByTeam.Values.Distinct().ToList();
+        var opponentFsIds = opponentByTeam.Values.Select(v => v.OpponentFsId).Distinct().ToList();
 
         var opponentInfo = await _dataContext.FranchiseSeasons
             .AsNoTracking()
@@ -358,12 +358,14 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
         var dto = new AthleteMatchupSummariesDto();
         foreach (var a in athletes.OrderBy(x => x.LastName ?? string.Empty).ThenBy(x => x.FirstName ?? string.Empty))
         {
-            Guid? oppId = opponentByTeam.TryGetValue(a.FranchiseSeasonId, out var o) ? o : null;
+            var hasMatchup = opponentByTeam.TryGetValue(a.FranchiseSeasonId, out var matchup);
+            Guid? oppId = hasMatchup ? matchup.OpponentFsId : null;
             var opp = oppId.HasValue && opponentById.TryGetValue(oppId.Value, out var info) ? info : null;
 
             dto.Athletes.Add(new AthleteMatchupSummaryDto
             {
                 AthleteId = a.AthleteId,
+                AthleteSeasonId = a.AthleteSeasonId,
                 FirstName = a.FirstName ?? string.Empty,
                 LastName = a.LastName ?? string.Empty,
                 TeamName = a.TeamName ?? a.TeamSlug ?? string.Empty,
@@ -371,6 +373,8 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
                 Position = position,
                 OpponentName = opp?.Name,
                 OpponentSlug = opp?.Slug,
+                ContestId = hasMatchup ? matchup.ContestId : null,
+                ContestStartUtc = hasMatchup ? matchup.StartUtc : null,
                 OpponentDefPerGame = oppId.HasValue && allowedByOpponent.TryGetValue(oppId.Value, out var allowed)
                     ? allowed
                     : null,

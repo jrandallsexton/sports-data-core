@@ -15,6 +15,9 @@ namespace SportsData.Core.Dtos.Canonical
     public class AthleteMatchupSummaryDto
     {
         public Guid AthleteId { get; set; }
+
+        /// <summary>The season roster row behind this summary — the lineup-slot scoring join.</summary>
+        public Guid AthleteSeasonId { get; set; }
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
         public required string TeamName { get; set; }
@@ -25,6 +28,17 @@ namespace SportsData.Core.Dtos.Canonical
         /// <summary>Null on a bye week.</summary>
         public string? OpponentName { get; set; }
         public string? OpponentSlug { get; set; }
+
+        /// <summary>The athlete's team's contest for the requested week; null on a bye.</summary>
+        public Guid? ContestId { get; set; }
+
+        /// <summary>
+        /// The contest's kickoff. Consumers derive slot locking from this
+        /// (kickoff − 5 minutes, the product-wide IsStartLocked rule) — the
+        /// API revalidates from its own data on save, so this is a display/
+        /// convenience value, never the authority.
+        /// </summary>
+        public DateTime? ContestStartUtc { get; set; }
 
         /// <summary>
         /// The week opponent's relevant defensive allowance per game,

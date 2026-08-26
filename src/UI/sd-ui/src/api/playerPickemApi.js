@@ -33,6 +33,33 @@ const PlayerPickemApi = {
     apiClient.get(
       `/api/${sport}/${league}/athletes/pickem?position=${encodeURIComponent(position)}&seasonYear=${seasonYear}&week=${week}`
     ),
+
+  // ── Roster persistence (server-side lineups, per-player derived locks).
+  // The server resolves contest anchors and enforces the kickoff−5 lock
+  // rule itself — athlete payloads here are identity + display snapshot.
+
+  getMyLineup: (leagueId, seasonYear, week) =>
+    apiClient.get(`/ui/leagues/${leagueId}/player-lineups/${seasonYear}/${week}/mine`),
+
+  upsertSlot: (leagueId, seasonYear, week, slotId, athlete) =>
+    apiClient.put(
+      `/ui/leagues/${leagueId}/player-lineups/${seasonYear}/${week}/mine/slots/${encodeURIComponent(slotId)}`,
+      {
+        athleteId: athlete.athleteId,
+        athleteSeasonId: athlete.athleteSeasonId,
+        position: athlete.position,
+        firstName: athlete.firstName,
+        lastName: athlete.lastName,
+        teamName: athlete.teamName,
+        teamSlug: athlete.teamSlug,
+        opponentName: athlete.opponentName ?? null,
+      }
+    ),
+
+  clearSlot: (leagueId, seasonYear, week, slotId) =>
+    apiClient.delete(
+      `/ui/leagues/${leagueId}/player-lineups/${seasonYear}/${week}/mine/slots/${encodeURIComponent(slotId)}`
+    ),
 };
 
 export default PlayerPickemApi;

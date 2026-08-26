@@ -45,10 +45,16 @@ function YourLeaguesCard() {
       <ul className="your-leagues-card__list">
         {leagues.map((league) => {
           const icon = SPORT_ICON[league.sport];
+          // One game per league: PlayerPickem leagues open the roster
+          // builder, everything else opens the team picks page.
+          const destination =
+            league.groupType === 'PlayerPickem'
+              ? '/app/pickem/players'
+              : `/app/picks/${league.id}`;
           return (
             <li key={league.id} className="your-leagues-card__item">
               <Link
-                to={`/app/picks/${league.id}`}
+                to={destination}
                 className="your-leagues-card__row"
                 aria-label={`Open ${league.name}`}
               >

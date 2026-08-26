@@ -22,6 +22,14 @@
 
         public string LeagueType { get; set; } = null!;
 
+        /// <summary>
+        /// Which game this league plays ("TeamPickem" / "PlayerPickem") —
+        /// one game per league. Drives the roster builder's league
+        /// resolution. Naming wart acknowledged: the pre-existing
+        /// LeagueType above carries PickType, not this.
+        /// </summary>
+        public string GroupType { get; set; } = null!;
+
         public bool UseConfidencePoints { get; set; } = false;
 
         public int MemberCount { get; set; }

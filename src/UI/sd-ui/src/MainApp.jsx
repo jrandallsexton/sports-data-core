@@ -187,7 +187,7 @@ function MainApp() {
             {/* Player Pick'em roster builder — admin-only v1 exploration;
                 users see only the home-page teaser until launch. */}
             <Route
-              path="/pickem/players"
+              path="/pickem/players/:leagueId?"
               element={
                 <AdminRoute>
                   <PlayerRosterBuilder />

@@ -43,6 +43,7 @@ public class GetUserLeaguesQueryHandler : IGetUserLeaguesQueryHandler
                 Sport = m.Group.Sport.ToString(),
                 League = m.Group.League.ToString(),
                 LeagueType = m.Group.PickType.ToString(),
+                GroupType = m.Group.GroupType.ToString(),
                 UseConfidencePoints = m.Group.UseConfidencePoints,
                 MemberCount = m.Group.Members.Count,
                 SeasonYear = m.Group.SeasonYear,

@@ -1,5 +1,7 @@
 using Dapper;
 
+using FluentValidation;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -26,24 +28,36 @@ public class GetMatchupsForSeasonWeekQueryHandler : IGetMatchupsForSeasonWeekQue
 {
     private readonly TeamSportDataContext _dbContext;
     private readonly ProducerSqlQueryProvider _sqlProvider;
+    private readonly IValidator<GetMatchupsForSeasonWeekQuery> _validator;
 
     public GetMatchupsForSeasonWeekQueryHandler(
         TeamSportDataContext dbContext,
-        ProducerSqlQueryProvider sqlProvider)
+        ProducerSqlQueryProvider sqlProvider,
+        IValidator<GetMatchupsForSeasonWeekQuery> validator)
     {
         _dbContext = dbContext;
         _sqlProvider = sqlProvider;
+        _validator = validator;
     }
 
     public async Task<Result<List<Matchup>>> ExecuteAsync(
         GetMatchupsForSeasonWeekQuery query,
         CancellationToken cancellationToken = default)
     {
+        var validation = await _validator.ValidateAsync(query, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return new Failure<List<Matchup>>(
+                default!,
+                ResultStatus.Validation,
+                validation.Errors);
+        }
+
         var sql = _sqlProvider.GetMatchupsForSeasonWeek();
 
         var connection = _dbContext.Database.GetDbConnection();
         var result = await connection.QueryAsync<Matchup>(
-            new CommandDefinition(sql, new { query.SeasonYear, query.SeasonWeekNumber }, cancellationToken: cancellationToken));
+            new CommandDefinition(sql, new { query.SeasonYear, query.SeasonWeekNumber, query.SeasonPhaseTypeCode }, cancellationToken: cancellationToken));
 
         return new Success<List<Matchup>>(result.ToList());
     }

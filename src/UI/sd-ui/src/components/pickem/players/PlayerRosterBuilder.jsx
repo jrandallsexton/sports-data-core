@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import PlayerPickemApi from '../../../api/playerPickemApi';
+import LeaguesApi from '../../../api/leagues/leaguesApi';
 import {
   SLOT_DEFS,
-  slotById,
   eligiblePositions,
-  assign,
-  remove,
+  canAssign,
   isRostered,
 } from './rosterLogic';
 import {
@@ -18,27 +17,25 @@ import {
 import { columnsFor, cellText } from './gridColumns';
 import './PlayerRosterBuilder.css';
 
-// Selections survive reloads — rudimentary stand-in for the carry-over
-// behavior until PlayerLineup entities exist server-side. Keyed per
-// league so an NCAAFB draft never bleeds into the NFL view.
-const rosterKey = (league) => `playerPickemRosterDraft.${league}`;
-
 // NCAAFB is the product; NFL rides along for closed-testing coverage
-// (and who knows).
+// (and who knows). `sport` matches LeagueSummaryDto.Sport for resolving
+// which of the user's Player-Pick'em-enabled leagues this toggle targets.
 const LEAGUES = [
-  { id: 'ncaa', label: 'NCAAFB (FBS)' },
-  { id: 'nfl', label: 'NFL' },
+  { id: 'ncaa', label: 'NCAAFB (FBS)', sport: 'FootballNcaa' },
+  { id: 'nfl', label: 'NFL', sport: 'FootballNfl' },
 ];
 
-// Fixed to opening week for the admin preview; a week selector (and
+// Fixed to opening week for now; a week selector (and
 // deriving the current week server-side) is future work.
 const SEASON_YEAR = 2026;
 const WEEK = 1;
 
 // Full-depth FBS position lists run to ~2,000 rows (WR); the grid pages
 // client-side — the payload is already in the browser, so filtering and
-// paging never refetch.
-const PAGE_SIZE = 25;
+// paging never refetch. 10 keeps the page scannable (each athlete is a
+// two-line row pair, so 10 athletes ≈ 20 visual rows); operator may tune
+// toward 15.
+const PAGE_SIZE = 10;
 
 // Meaning of opponentDefPerGame varies by the position being browsed.
 // FLEX merges positions, so it gets the generic label and the per-row
@@ -57,39 +54,18 @@ const OPP_DEF_LABEL = {
 // previous fallback in sortAthletes never distinguishes for it).
 const OPP_DEF_SORT_KEY = 'oppDef';
 
-/**
- * A stored draft is untrusted input: JSON.parse happily returns null,
- * arrays, or strings (all valid JSON). Accept only a plain object whose
- * keys are real slot ids and whose values look like athletes; anything
- * else degrades to the slot-by-slot best effort or an empty roster.
- * Mirrors the mobile screen's sanitizer.
- */
-function sanitizeRoster(raw) {
-  try {
-    const parsed = JSON.parse(raw);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return {};
-    }
-    const next = {};
-    for (const [slotId, val] of Object.entries(parsed)) {
-      if (
-        slotById(slotId) &&
-        val !== null &&
-        typeof val === 'object' &&
-        !Array.isArray(val) &&
-        typeof val.athleteId === 'string' &&
-        // The slot chip renders firstName.charAt(0) + lastName — an entry
-        // missing either would crash on first paint.
-        typeof val.firstName === 'string' &&
-        typeof val.lastName === 'string'
-      ) {
-        next[slotId] = val;
-      }
-    }
-    return next;
-  } catch {
-    return {};
+/** Server lineup → the {slotId: slot} shape the slot row renders. */
+function rosterFromLineup(lineup) {
+  return Object.fromEntries((lineup?.slots ?? []).map((s) => [s.slotId, s]));
+}
+
+/** First useful message out of an API validation failure, else a fallback. */
+function errorMessage(err, fallback) {
+  const errors = err?.response?.data?.errors;
+  if (Array.isArray(errors) && errors.length > 0 && errors[0]?.errorMessage) {
+    return errors[0].errorMessage;
   }
+  return fallback;
 }
 
 /**
@@ -101,20 +77,27 @@ function sanitizeRoster(raw) {
  * current season on the primary row, previous season directly beneath in
  * the same columns for vertical comparison. Sorting orders the pairs by
  * the current-season value, falling back to previous-season when no row
- * has current data (week 1). Roster is local-only (localStorage), keyed
- * per league. NCAAFB is the product; the NFL toggle exists for
- * closed-testing coverage.
+ * has current data (week 1). The roster persists server-side to the
+ * user's PlayerPickem-type league for the toggled sport, with per-player
+ * derived locking (kickoff−5). NCAAFB is the product; the NFL toggle
+ * exists for closed-testing coverage.
  */
 function PlayerRosterBuilder() {
+  // Optional league scope from the route (league cards pass their id) —
+  // without it the page falls back to the first PlayerPickem league per
+  // sport.
+  const { leagueId: routeLeagueId } = useParams();
   const [league, setLeague] = useState('ncaa');
-  const [roster, setRoster] = useState(() =>
-    sanitizeRoster(localStorage.getItem(rosterKey('ncaa')) ?? 'null')
-  );
-  // Which league the current roster state belongs to. Guards the save
-  // effect during a league switch — without it, the old league's roster
-  // would be written over the new league's stored draft before the load
-  // effect has swapped it in.
-  const rosterLeagueRef = useRef('ncaa');
+  const [roster, setRoster] = useState({});
+  // The user's PlayerPickem-type leagues (null = still loading). The
+  // SPORT isn't a free choice — it's a fact of these leagues: the page
+  // auto-selects the first sport with a player league, and the toggle
+  // only renders when leagues span more than one sport.
+  const [playerLeagues, setPlayerLeagues] = useState(null);
+  // The PickemGroup this roster persists to for the selected sport.
+  const [pickemLeague, setPickemLeague] = useState(null);
+  const [rosterLoading, setRosterLoading] = useState(true);
+  const [saveError, setSaveError] = useState(null);
   const [activeSlotId, setActiveSlotId] = useState('QB');
   const [athletes, setAthletes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -124,22 +107,75 @@ function PlayerRosterBuilder() {
   const [opponentText, setOpponentText] = useState('');
   const [page, setPage] = useState(0);
 
-  // Load the new league's draft on switch.
+  // Load the user's PlayerPickem leagues once; auto-select the first
+  // sport that actually has one.
   useEffect(() => {
-    if (rosterLeagueRef.current === league) return;
-    setRoster(sanitizeRoster(localStorage.getItem(rosterKey(league)) ?? 'null'));
-    rosterLeagueRef.current = league;
-  }, [league]);
+    let ignore = false;
+    LeaguesApi.getUserLeagues()
+      .then((leagues) => {
+        if (ignore) return;
+        const mine = (leagues ?? []).filter((l) => l.groupType === 'PlayerPickem');
+        setPlayerLeagues(mine);
+        // Route-scoped league wins; its sport drives the page. Fallback:
+        // first sport that has a player league.
+        const routed = routeLeagueId
+          ? mine.find((l) => l.id === routeLeagueId)
+          : null;
+        const target = routed
+          ? LEAGUES.find((opt) => opt.sport === routed.sport)
+          : LEAGUES.find((opt) => mine.some((l) => l.sport === opt.sport));
+        if (target) setLeague(target.id);
+      })
+      .catch(() => {
+        if (!ignore) {
+          setPlayerLeagues([]);
+          setSaveError('Could not load your leagues.');
+        }
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [routeLeagueId]);
 
-  // Save under the league the roster BELONGS to (the ref), never the
-  // currently selected league. During a switch the two disagree for one
-  // render while state is still the old league's lineup; keying the
-  // write by the ref makes effect ordering irrelevant — the switch pass
-  // doesn't run this effect at all (roster hasn't changed), and once the
-  // loaded roster commits, ref and league agree again.
+  // Resolve the target league for the selected sport, then load the
+  // server lineup (whose first read of a new week performs the lazy
+  // carry-over clone server-side).
   useEffect(() => {
-    localStorage.setItem(rosterKey(rosterLeagueRef.current), JSON.stringify(roster));
-  }, [roster]);
+    if (playerLeagues === null) return undefined; // leagues still loading
+
+    let ignore = false;
+    setRosterLoading(true);
+    setSaveError(null);
+    setRoster({});
+
+    const sport = LEAGUES.find((l) => l.id === league)?.sport;
+    const routed = routeLeagueId
+      ? playerLeagues.find((l) => l.id === routeLeagueId && l.sport === sport)
+      : null;
+    const target = routed ?? playerLeagues.find((l) => l.sport === sport) ?? null;
+    setPickemLeague(target);
+
+    if (!target) {
+      setRosterLoading(false);
+      return undefined;
+    }
+
+    PlayerPickemApi.getMyLineup(target.id, SEASON_YEAR, WEEK)
+      .then((response) => {
+        if (ignore) return;
+        setRoster(rosterFromLineup(response.data));
+      })
+      .catch(() => {
+        if (!ignore) setSaveError('Could not load your roster.');
+      })
+      .finally(() => {
+        if (!ignore) setRosterLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [league, playerLeagues, routeLeagueId]);
 
   const positions = useMemo(
     () => eligiblePositions(activeSlotId),
@@ -243,15 +279,39 @@ function PlayerRosterBuilder() {
         : 'descending'
       : undefined;
 
-  const handleAssign = (athlete) => {
-    setRoster((prev) => assign(prev, activeSlotId, athlete));
+  const handleAssign = async (athlete) => {
+    // Client-side pre-checks (eligibility, duplicates) fail fast; the
+    // server re-validates everything INCLUDING locks, which only it can
+    // judge authoritatively.
+    if (!pickemLeague || !canAssign(roster, activeSlotId, athlete)) return;
+    setSaveError(null);
+    try {
+      const response = await PlayerPickemApi.upsertSlot(
+        pickemLeague.id, SEASON_YEAR, WEEK, activeSlotId, athlete
+      );
+      setRoster((prev) => ({ ...prev, [activeSlotId]: response.data }));
+    } catch (err) {
+      setSaveError(errorMessage(err, 'Could not save that pick.'));
+    }
   };
 
-  const handleRemove = (slotId) => {
-    setRoster((prev) => remove(prev, slotId));
+  const handleRemove = async (slotId) => {
+    if (!pickemLeague) return;
+    setSaveError(null);
+    try {
+      await PlayerPickemApi.clearSlot(pickemLeague.id, SEASON_YEAR, WEEK, slotId);
+      setRoster((prev) => {
+        const next = { ...prev };
+        delete next[slotId];
+        return next;
+      });
+    } catch (err) {
+      setSaveError(errorMessage(err, 'Could not clear that slot.'));
+    }
   };
 
   const activeSlot = SLOT_DEFS.find((s) => s.id === activeSlotId);
+  const activeOccupantLocked = roster[activeSlotId]?.isLocked === true;
   const oppDefLabel =
     OPP_DEF_LABEL[activeSlot?.id === 'FLEX' ? 'FLEX' : positions[0]];
 
@@ -260,23 +320,49 @@ function PlayerRosterBuilder() {
       <h2 className="roster-builder-title">Player Pick&rsquo;em Roster</h2>
       <p className="roster-builder-sub">
         Week {WEEK} &middot; {SEASON_YEAR} &middot;{' '}
-        {LEAGUES.find((l) => l.id === league)?.label} &mdash; admin preview,
-        selections are local-only
+        {LEAGUES.find((l) => l.id === league)?.label}
+        {pickemLeague ? (
+          <> &middot; <strong>{pickemLeague.name}</strong></>
+        ) : null}
       </p>
 
-      <div className="roster-leagues" role="group" aria-label="League">
-        {LEAGUES.map((l) => (
-          <button
-            key={l.id}
-            type="button"
-            className={`roster-league-btn${l.id === league ? ' roster-league-btn--active' : ''}`}
-            aria-pressed={l.id === league}
-            onClick={() => setLeague(l.id)}
-          >
-            {l.label}
-          </button>
-        ))}
-      </div>
+      {/* The sport is a fact of the user's player leagues, not a free
+          choice — the toggle only exists when their leagues span more
+          than one sport. */}
+      {(() => {
+        const available = LEAGUES.filter((opt) =>
+          (playerLeagues ?? []).some((l) => l.sport === opt.sport)
+        );
+        return available.length > 1 ? (
+          <div className="roster-leagues" role="group" aria-label="League">
+            {available.map((l) => (
+              <button
+                key={l.id}
+                type="button"
+                className={`roster-league-btn${l.id === league ? ' roster-league-btn--active' : ''}`}
+                aria-pressed={l.id === league}
+                onClick={() => setLeague(l.id)}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        ) : null;
+      })()}
+
+      {rosterLoading ? (
+        <div className="roster-grid-status">Loading your roster&hellip;</div>
+      ) : playerLeagues !== null && playerLeagues.length === 0 ? (
+        <div className="roster-grid-status roster-grid-status--error">
+          You&rsquo;re not in a Player Pick&rsquo;em league yet &mdash; the
+          grid is browsable, but picks can&rsquo;t be saved.
+        </div>
+      ) : null}
+      {saveError ? (
+        <div className="roster-grid-status roster-grid-status--error" role="alert">
+          {saveError}
+        </div>
+      ) : null}
 
       {/* Button group, not tabs: there's no tabpanel relationship here and
           the remove buttons live between the slot controls, so tablist
@@ -308,13 +394,15 @@ function PlayerRosterBuilder() {
                 <span className="roster-slot-label">{slot.label}</span>
                 <span className="roster-slot-player">
                   {filled
-                    ? `${filled.firstName.charAt(0)}. ${filled.lastName}`
+                    ? `${filled.isLocked ? '🔒 ' : ''}${filled.firstName.charAt(0)}. ${filled.lastName}`
                     : slot.disabled
                       ? 'Soon'
                       : '—'}
                 </span>
               </button>
-              {filled ? (
+              {/* Locked slots hide the remove affordance — the server
+                  would reject it anyway; don't offer a dead button. */}
+              {filled && !filled.isLocked ? (
                 <button
                   type="button"
                   className="roster-slot-remove"
@@ -467,10 +555,21 @@ function PlayerRosterBuilder() {
                       <button
                         type="button"
                         className="roster-grid-add"
-                        disabled={rostered}
+                        disabled={rostered || !pickemLeague || activeOccupantLocked}
+                        title={
+                          activeOccupantLocked
+                            ? 'This slot is locked — its game has started.'
+                            : !pickemLeague
+                              ? 'No Player Pick’em league to save to.'
+                              : undefined
+                        }
                         onClick={() => handleAssign(a)}
                       >
-                        {rostered ? 'Rostered' : addLabel}
+                        {rostered
+                          ? 'Rostered'
+                          : activeOccupantLocked
+                            ? 'Locked'
+                            : addLabel}
                       </button>
                     </td>
                   </tr>,

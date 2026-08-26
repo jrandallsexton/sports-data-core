@@ -5,6 +5,9 @@ using FluentValidation;
 using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Athletes.Queries.GetAthleteDetails;
 using SportsData.Api.Application.Athletes.Queries.GetPickemAthletes;
+using SportsData.Api.Application.UI.PlayerLineups.Commands.ClearLineupSlot;
+using SportsData.Api.Application.UI.PlayerLineups.Commands.UpsertLineupSlot;
+using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
@@ -323,6 +326,13 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetAthleteDetailsQueryHandler, GetAthleteDetailsQueryHandler>();
             services.AddScoped<IGetPickemAthletesQueryHandler, GetPickemAthletesQueryHandler>();
             services.AddScoped<FluentValidation.IValidator<GetPickemAthletesQuery>, GetPickemAthletesQueryValidator>();
+
+            // Player Lineups (Player Pick'em roster persistence)
+            services.AddScoped<IGetMyPlayerLineupQueryHandler, GetMyPlayerLineupQueryHandler>();
+            services.AddScoped<IUpsertLineupSlotCommandHandler, UpsertLineupSlotCommandHandler>();
+            services.AddScoped<IClearLineupSlotCommandHandler, ClearLineupSlotCommandHandler>();
+            services.AddScoped<FluentValidation.IValidator<UpsertLineupSlotCommand>, UpsertLineupSlotCommandValidator>();
+            services.AddScoped<FluentValidation.IValidator<ClearLineupSlotCommand>, ClearLineupSlotCommandValidator>();
 
             // TeamCard Queries
             services.AddScoped<IGetTeamCardQueryHandler, GetTeamCardQueryHandler>();

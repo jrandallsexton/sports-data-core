@@ -453,9 +453,13 @@ public class GetAthleteMatchupSummariesQueryHandlerTests : ProducerTestBase<GetA
         var row = result.Value.Athletes.Should().ContainSingle().Subject;
         row.LastName.Should().Be("Manning");
         row.TeamSlug.Should().Be("texas-longhorns");
+        row.AthleteSeasonId.Should().Be(season2026.Id); // the lineup-slot scoring join
         row.OpponentName.Should().Be("Oklahoma Sooners");
         row.OpponentSlug.Should().Be("oklahoma-sooners");
         row.OpponentDefPerGame.Should().Be(250.0m);
+        // Contest anchor for slot locking (kickoff−5 derives from it).
+        row.ContestId.Should().NotBeNull();
+        row.ContestStartUtc.Should().Be(new DateTime(2026, 9, 6, 0, 0, 0, DateTimeKind.Utc));
 
         row.CurrentSeason.Should().NotBeNull();
         row.CurrentSeason!.SeasonYear.Should().Be(2026);

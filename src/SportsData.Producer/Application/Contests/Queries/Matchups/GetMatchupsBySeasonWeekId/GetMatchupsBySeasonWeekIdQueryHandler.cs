@@ -9,11 +9,6 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Sql;
 
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsBySeasonWeekId;
 
 public interface IGetMatchupsBySeasonWeekIdQueryHandler

@@ -44,15 +44,17 @@ The fix is not a URL scheme; it is threading phase through all three.
 - `MatchupScheduleProcessor` fetches by `command.SeasonWeekId` instead
   of (year, number). This alone restores preseason syncs for the test
   league and makes every future postseason sync correct by construction.
-- `PickemGroupWeek` + `PickemGroupMatchup` gain `SeasonPhaseTypeCode`
-  (int, migration) stamped from the Matchup DTO on sync.
+- `PickemGroupWeek` gains `SeasonPhaseTypeCode` (int, migration)
+  stamped from the Matchup DTO on sync. (Matchups reach every consumer
+  through their GroupWeek — no per-matchup copy.)
 - Backfill: one-time UPDATE joining existing rows to canonical
   SeasonWeek data (ops step, local + prod).
 - League DTOs (GetMe membership + league summary): ADDITIVE
   `seasonWeekDetails: [{ seasonWeekId, week, phase }]` alongside the
   existing `seasonWeeks` int list (mobile keeps working untouched;
   mobile adopts later). `phase` is a slug: `preseason` | `regular` |
-  `postseason` (TypeCode 1/2/3).
+  `postseason` | `offseason` (TypeCode 1/2/3/4 — offseason surfaced in
+  real data during backfill and is labeled honestly).
 
 ### Web
 

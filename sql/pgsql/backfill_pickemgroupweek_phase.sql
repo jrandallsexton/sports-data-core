@@ -1,3 +1,11 @@
+-- ============================================================================
+-- MANUAL RELEASE STEP — NOT DIRECTLY EXECUTABLE.
+-- This file is a cross-database RUNBOOK: the mapping is exported from each
+-- Producer DB and applied to the API DB, so `psql -f` on this file alone
+-- performs no work by design. Run the numbered steps below verbatim.
+-- Required BEFORE repair_phantom_league_weeks.sql.
+-- ============================================================================
+--
 -- One-time backfill: PickemGroupWeek.SeasonPhaseTypeCode (added 2026-08-26,
 -- migration PickemGroupWeekSeasonPhase; default 2 = regular season).
 -- Week numbers repeat across SeasonPhases within a season year, so week

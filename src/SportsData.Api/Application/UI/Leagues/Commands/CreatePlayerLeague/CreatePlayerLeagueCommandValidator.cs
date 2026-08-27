@@ -4,11 +4,11 @@ using SportsData.Api.Application.Common.Enums;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands.CreatePlayerLeague;
 
-public class CreatePlayerLeagueRequestValidator : AbstractValidator<CreatePlayerLeagueRequest>
+public class CreatePlayerLeagueCommandValidator : AbstractValidator<CreatePlayerLeagueCommand>
 {
     private static readonly string[] SupportedSports = ["FootballNcaa", "FootballNfl"];
 
-    public CreatePlayerLeagueRequestValidator()
+    public CreatePlayerLeagueCommandValidator()
     {
         RuleFor(x => x.Sport)
             .Must(s => SupportedSports.Contains(s, StringComparer.OrdinalIgnoreCase))
@@ -19,10 +19,14 @@ public class CreatePlayerLeagueRequestValidator : AbstractValidator<CreatePlayer
             .MaximumLength(100);
 
         RuleFor(x => x.Description)
-            .MaximumLength(500);
+            .MaximumLength(100); // PickemGroup.Description column limit
 
         RuleFor(x => x.JoinPolicy)
-            .Must(p => p is null || Enum.TryParse<JoinPolicy>(p, ignoreCase: true, out _))
+            // IsDefined too: TryParse happily accepts numeric strings like
+            // "999" that no downstream logic handles.
+            .Must(p => p is null ||
+                       (Enum.TryParse<JoinPolicy>(p, ignoreCase: true, out var parsed) &&
+                        Enum.IsDefined(parsed)))
             .WithMessage("Unknown join policy");
 
         RuleFor(x => x.SeasonYear)

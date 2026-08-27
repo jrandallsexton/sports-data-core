@@ -92,7 +92,7 @@ public class LeagueController : ApiControllerBase
     [HttpPost("players")]
     [Authorize]
     public async Task<ActionResult<Guid>> CreatePlayerLeague(
-        [FromBody] CreatePlayerLeagueRequest request,
+        [FromBody] CreatePlayerLeagueCommand request,
         [FromServices] ICreatePlayerLeagueCommandHandler handler,
         CancellationToken cancellationToken)
     {

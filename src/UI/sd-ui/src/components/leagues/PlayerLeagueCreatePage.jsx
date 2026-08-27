@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LeaguesApi from "api/leagues/leaguesApi";
 import { useUserDto } from "../../contexts/UserContext";
@@ -20,6 +20,11 @@ import "./LeagueCreatePage.css";
 function PlayerLeagueCreatePage() {
   const navigate = useNavigate();
   const { refreshUserDto } = useUserDto();
+  // Once the POST succeeds the league EXISTS — a later failure (the
+  // userDto refresh) must not funnel back into another POST, or a retry
+  // click creates a duplicate league. Holds the created id so retries
+  // resume at the refresh/navigate step.
+  const createdIdRef = useRef(null);
   const [sport, setSport] = useState("FootballNfl");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -36,35 +41,48 @@ function PlayerLeagueCreatePage() {
     if (!canSubmit) return;
     setSubmitting(true);
     setError(null);
-    try {
-      const { id } = await LeaguesApi.createPlayerLeague({
-        sport,
-        name: name.trim(),
-        description: description.trim() || null,
-        isPublic,
-        // Z-suffixed like the team create form: date-only strings
-        // deserialize as Kind=Unspecified server-side, which Npgsql
-        // rejects for timestamptz.
-        startsOn: startsOn ? `${startsOn}T00:00:00Z` : null,
-        endsOn: endsOn ? `${endsOn}T23:59:59Z` : null,
-      });
-      // Refresh /user/me BEFORE navigating: LeaguePicksRouter resolves
-      // the league from userDto, and a stale DTO can't find the new
-      // league — PicksPage's bad-id fallback would then bounce to the
-      // remembered league instead. (Same contract as the team create
-      // page and invite-accept.)
-      await refreshUserDto();
-      // Straight to the roster builder — the router canonicalizes to the
-      // league's current week once bootstrap materializes its weeks.
-      navigate(leaguePicksPath(id));
-    } catch (err) {
-      const first = err?.response?.data?.errors;
+
+    if (createdIdRef.current === null) {
+      try {
+        const { id } = await LeaguesApi.createPlayerLeague({
+          sport,
+          name: name.trim(),
+          description: description.trim() || null,
+          isPublic,
+          // Z-suffixed like the team create form: date-only strings
+          // deserialize as Kind=Unspecified server-side, which Npgsql
+          // rejects for timestamptz.
+          startsOn: startsOn ? `${startsOn}T00:00:00Z` : null,
+          endsOn: endsOn ? `${endsOn}T23:59:59Z` : null,
+        });
+        createdIdRef.current = id;
+      } catch (err) {
+        const first = err?.response?.data?.errors;
+        setError(
+          (Array.isArray(first) && first[0]?.errorMessage) ||
+            "Could not create the league. Please try again."
+        );
+        setSubmitting(false);
+        return;
+      }
+    }
+
+    // Refresh /user/me BEFORE navigating: LeaguePicksRouter resolves the
+    // league from userDto, and a stale DTO can't find the new league —
+    // PicksPage's bad-id fallback would then bounce to the remembered
+    // league instead. A refresh failure is NOT a creation failure: the
+    // league exists, so the retry path re-runs only this step.
+    const refreshed = await refreshUserDto();
+    if (!refreshed) {
       setError(
-        (Array.isArray(first) && first[0]?.errorMessage) ||
-          "Could not create the league. Please try again."
+        "League created, but loading it failed. Retry to open it."
       );
       setSubmitting(false);
+      return;
     }
+    // Straight to the roster builder — the router canonicalizes to the
+    // league's current week once bootstrap materializes its weeks.
+    navigate(leaguePicksPath(createdIdRef.current));
   };
 
   return (
@@ -115,7 +133,7 @@ function PlayerLeagueCreatePage() {
         <input
           id="pl-description"
           type="text"
-          maxLength={500}
+          maxLength={100}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />

@@ -16,7 +16,7 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.CreatePlayerLeague;
 public interface ICreatePlayerLeagueCommandHandler
 {
     Task<Result<Guid>> ExecuteAsync(
-        CreatePlayerLeagueRequest request,
+        CreatePlayerLeagueCommand request,
         Guid currentUserId,
         CancellationToken cancellationToken = default);
 }
@@ -43,7 +43,7 @@ public class CreatePlayerLeagueCommandHandler : ICreatePlayerLeagueCommandHandle
     private readonly AppDataContext _dbContext;
     private readonly IEventBus _eventBus;
     private readonly IContestClientFactory _contestClientFactory;
-    private readonly IValidator<CreatePlayerLeagueRequest> _validator;
+    private readonly IValidator<CreatePlayerLeagueCommand> _validator;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public CreatePlayerLeagueCommandHandler(
@@ -51,7 +51,7 @@ public class CreatePlayerLeagueCommandHandler : ICreatePlayerLeagueCommandHandle
         AppDataContext dbContext,
         IEventBus eventBus,
         IContestClientFactory contestClientFactory,
-        IValidator<CreatePlayerLeagueRequest> validator,
+        IValidator<CreatePlayerLeagueCommand> validator,
         IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
@@ -63,7 +63,7 @@ public class CreatePlayerLeagueCommandHandler : ICreatePlayerLeagueCommandHandle
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
-        CreatePlayerLeagueRequest request,
+        CreatePlayerLeagueCommand request,
         Guid currentUserId,
         CancellationToken cancellationToken = default)
     {
@@ -170,9 +170,11 @@ public class CreatePlayerLeagueCommandHandler : ICreatePlayerLeagueCommandHandle
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        // League name deliberately not logged — user-provided values in
+        // log entries trip CodeQL (log injection); the id is the join key.
         _logger.LogInformation(
-            "Created PlayerPickem league {LeagueId} ({Sport}) named {LeagueName} by admin {UserId}",
-            group.Id, sport, group.Name, currentUserId);
+            "Created PlayerPickem league {LeagueId} ({Sport}) by admin {UserId}",
+            group.Id, sport, currentUserId);
 
         return new Success<Guid>(group.Id);
     }

@@ -31,6 +31,20 @@ export const currentSeasonKeys = {
     ['season', 'current', sport, league] as const,
 };
 
+/**
+ * Retry policy for current-season observers (use on EVERY observer of a
+ * currentSeasonKeys query — mixed policies on one key are confusing).
+ * 404 is the VALID "no season sourced" state — never retry it. Anything
+ * else (timeouts, connection failures, 5xx) gets the bounded retry a
+ * blank seasonYear deserves, since a resolved failure disables
+ * dependent queries (rankings) until the next mount.
+ */
+export const currentSeasonRetry = (failureCount: number, error: unknown): boolean => {
+  const status = (error as { response?: { status?: number } })?.response?.status;
+  if (status === 404) return false;
+  return failureCount < 2;
+};
+
 export const seasonApi = {
   // GET /api/{sport}/{league}/seasons/current — current-or-upcoming season with
   // its phases. Raw phase data; the caller interprets it (e.g. the off-season

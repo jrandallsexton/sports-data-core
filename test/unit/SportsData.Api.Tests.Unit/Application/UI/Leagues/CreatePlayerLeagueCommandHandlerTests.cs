@@ -28,7 +28,7 @@ public class CreatePlayerLeagueCommandHandlerTests : ApiTestBase<CreatePlayerLea
     {
         // Real validator — an auto-mocked IValidator returns a null
         // ValidationResult and NREs before the code under test runs.
-        Mocker.Use<IValidator<CreatePlayerLeagueRequest>>(new CreatePlayerLeagueRequestValidator());
+        Mocker.Use<IValidator<CreatePlayerLeagueCommand>>(new CreatePlayerLeagueCommandValidator());
 
         // Blackout guard dependency: windowed requests check game dates.
         // The auto-mocked client would return a NULL Result and NRE.
@@ -58,7 +58,7 @@ public class CreatePlayerLeagueCommandHandlerTests : ApiTestBase<CreatePlayerLea
         return userId;
     }
 
-    private static CreatePlayerLeagueRequest ValidRequest() => new()
+    private static CreatePlayerLeagueCommand ValidRequest() => new()
     {
         Sport = "FootballNfl",
         Name = "NFL Rosters",

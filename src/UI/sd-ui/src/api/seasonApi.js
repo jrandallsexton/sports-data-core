@@ -8,6 +8,10 @@ import apiClient from "./apiClient";
 // also dedupes concurrent first-load calls. A failed request is evicted
 // so the next caller retries instead of caching an error forever.
 const currentSeasonCache = new Map();
+// Fresh for an hour (matches mobile's staleTime): long enough to kill
+// the duplicate-call problem, short enough that a tab left open across
+// a season rollover picks up the new season without a reload.
+const CURRENT_SEASON_TTL_MS = 60 * 60 * 1000;
 
 const SeasonApi = {
   getSeasonOverview: (seasonYear) =>
@@ -19,16 +23,18 @@ const SeasonApi = {
   // startDate. `sport`/`league` are the route segments, e.g. ("football","ncaa").
   getCurrentSeason: (sport, league) => {
     const key = `${sport}/${league}`;
-    if (!currentSeasonCache.has(key)) {
-      const request = apiClient
-        .get(`/api/${sport}/${league}/seasons/current`)
-        .catch((err) => {
-          currentSeasonCache.delete(key);
-          throw err;
-        });
-      currentSeasonCache.set(key, request);
+    const cached = currentSeasonCache.get(key);
+    if (cached && Date.now() - cached.at < CURRENT_SEASON_TTL_MS) {
+      return cached.request;
     }
-    return currentSeasonCache.get(key);
+    const request = apiClient
+      .get(`/api/${sport}/${league}/seasons/current`)
+      .catch((err) => {
+        currentSeasonCache.delete(key);
+        throw err;
+      });
+    currentSeasonCache.set(key, { request, at: Date.now() });
+    return request;
   },
 };
 

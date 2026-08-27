@@ -8,7 +8,7 @@ namespace SportsData.Api.Application.UI.Leagues.Commands.CreatePlayerLeague;
 /// <see cref="Sport"/> rather than the per-sport endpoint trio, because
 /// nothing else differs per sport.
 /// </summary>
-public class CreatePlayerLeagueRequest
+public class CreatePlayerLeagueCommand
 {
     /// <summary>"FootballNcaa" | "FootballNfl".</summary>
     public required string Sport { get; set; }

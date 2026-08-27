@@ -519,6 +519,42 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
         }
 
         /// <summary>
+        /// A successful-but-EMPTY canonical response carries no phase; the
+        /// week must stay unlatched so the next scheduler pass can stamp it
+        /// (latching would strand it on the default phase forever).
+        /// </summary>
+        [Fact]
+        public async Task Process_PlayerPickemGroup_EmptyCanonicalResponse_LeavesWeekUnlatched()
+        {
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+
+            var group = Fixture.Build<PickemGroup>()
+                .Without(x => x.StartsOn)
+                .Without(x => x.EndsOn)
+                .With(x => x.Id, groupId)
+                .With(x => x.GroupType, SportsData.Api.Application.Common.Enums.GroupType.PlayerPickem)
+                .With(x => x.Conferences, new List<PickemGroupConference>())
+                .Create();
+
+            await DataContext.PickemGroups.AddAsync(group);
+            await DataContext.SaveChangesAsync();
+
+            _contestClientMock
+                .Setup(x => x.GetMatchupsBySeasonWeekId(seasonWeekId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(new List<Matchup>()));
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+            await sut.Process(new ScheduleGroupWeekMatchupsCommand(
+                groupId, seasonWeekId, 2026, 4, false, Guid.NewGuid()));
+
+            var savedGroupWeek = DataContext.PickemGroupWeeks
+                .FirstOrDefault(x => x.SeasonWeekId == seasonWeekId && x.GroupId == groupId);
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.AreMatchupsGenerated.Should().BeFalse();
+        }
+
+        /// <summary>
         /// Validates that upon successful matchup generation, the processor publishes
         /// a PickemGroupWeekMatchupsGenerated event with the correct GroupId, SeasonYear,
         /// and CorrelationId for downstream consumers to react to.

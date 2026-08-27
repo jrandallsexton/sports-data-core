@@ -140,7 +140,21 @@ namespace SportsData.Api.Application.Processors
             // matchup-created notification fan-out. The roster is the game.
             if (group.GroupType == Application.Common.Enums.GroupType.PlayerPickem)
             {
-                groupWeek.AreMatchupsGenerated = true;
+                // Latch AreMatchupsGenerated ONLY once the phase is stamped
+                // (an empty canonical response — transient producer gap —
+                // leaves phaseTypeCode null). Latching early would let the
+                // generated-guard above skip every future pass and strand
+                // the week on the default phase forever.
+                if (phaseTypeCode is > 0)
+                {
+                    groupWeek.AreMatchupsGenerated = true;
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "PlayerPickem group {GroupId}: week {Week} (SeasonWeekId={SeasonWeekId}) had no canonical matchups; leaving week unlatched for the next scheduler pass.",
+                        group.Id, command.SeasonWeek, command.SeasonWeekId);
+                }
                 await _dataContext.SaveChangesAsync();
                 _logger.LogInformation(
                     "PlayerPickem group {GroupId}: week {Week} (phase {Phase}) materialized without a matchup slate.",

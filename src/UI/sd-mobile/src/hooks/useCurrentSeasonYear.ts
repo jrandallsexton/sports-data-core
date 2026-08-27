@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { currentSeasonKeys, seasonApi } from '@/src/services/api/seasonApi';
+import { currentSeasonKeys, currentSeasonRetry, seasonApi } from '@/src/services/api/seasonApi';
 
 /**
  * Resolves the current (or upcoming) season year for a sport from
@@ -18,9 +18,7 @@ export function useCurrentSeasonYear(sport = 'football', league = 'ncaa') {
     queryKey: currentSeasonKeys.current(sport, league),
     queryFn: async () => (await seasonApi.getCurrentSeason(sport, league)).data,
     staleTime: 60 * 60 * 1000,
-    // No sourced season is a valid "coming soon" state, not a transient
-    // error — matches the countdown's observer options on the same key.
-    retry: false,
+    retry: currentSeasonRetry,
   });
 
   return { seasonYear: data?.seasonYear ?? null, loading: isLoading };

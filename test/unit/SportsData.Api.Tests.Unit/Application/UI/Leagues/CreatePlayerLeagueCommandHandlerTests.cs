@@ -155,20 +155,39 @@ public class CreatePlayerLeagueCommandHandlerTests : ApiTestBase<CreatePlayerLea
     }
 
     [Fact]
-    public async Task LocalStart_SameDayAsDateOnlyEnd_PassesRangeValidation()
+    public async Task LocalStart_WithNextDayDateOnlyEnd_PassesUnderAnyOffset()
     {
         // The range rule compares NORMALIZED bounds. A local mid-day start
-        // with a same-day date-only end must validate regardless of the
-        // machine's offset: effective start (local noon -> UTC, at most
-        // +/-14h) always precedes the effective end (next-day end-of-day
-        // expansion of the date-only value). A raw-vs-effective comparison
-        // could flip this by server timezone.
+        // with a NEXT-day date-only end must validate on any machine:
+        // effective start (local noon -> UTC, at most +/-14h) always
+        // precedes the next day's end-of-day expansion. A deterministic
+        // raw-fails/effective-passes discriminator is not portably
+        // testable — the divergence depends on the process timezone, which
+        // xunit cannot pin.
         var userId = await SeedUserAsync(isAdmin: true);
         var handler = Mocker.CreateInstance<CreatePlayerLeagueCommandHandler>();
 
         var request = ValidRequest();
         request.StartsOn = new DateTime(2026, 8, 27, 12, 0, 0, DateTimeKind.Local);
         request.EndsOn = new DateTime(2026, 8, 28, 0, 0, 0, DateTimeKind.Unspecified);
+        var result = await handler.ExecuteAsync(request, userId);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SameDayStartAndDateOnlyEnd_PassesRangeValidation()
+    {
+        // True same-calendar-day case: a mid-day start with a SAME-day
+        // date-only end validates only because the end expands to
+        // end-of-day (raw midnight end < noon start would fail). Kinds are
+        // Unspecified so the assertion is deterministic on any machine.
+        var userId = await SeedUserAsync(isAdmin: true);
+        var handler = Mocker.CreateInstance<CreatePlayerLeagueCommandHandler>();
+
+        var request = ValidRequest();
+        request.StartsOn = new DateTime(2026, 8, 27, 12, 0, 0, DateTimeKind.Unspecified);
+        request.EndsOn = new DateTime(2026, 8, 27, 0, 0, 0, DateTimeKind.Unspecified);
         var result = await handler.ExecuteAsync(request, userId);
 
         result.IsSuccess.Should().BeTrue();

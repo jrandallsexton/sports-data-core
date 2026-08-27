@@ -118,14 +118,14 @@ public class GetMyPlayerLineupQueryHandler : IGetMyPlayerLineupQueryHandler
         // Persisted scores (Phase 2 consumers) win; live-compute only the
         // slots the consumers haven't touched yet (event lag / pre-Phase-2
         // rows). The read path never writes, so the two can't fight.
+        // Persisted points count toward the total even if the live
+        // computation below fails — set the floor first, refine after.
+        dto.TotalPoints = dto.Slots.Sum(s => s.Points ?? 0m);
+
         var anchored = dto.Slots
             .Where(s => s.ContestId.HasValue && s.Points is null)
             .ToList();
-        if (anchored.Count == 0)
-        {
-            dto.TotalPoints = dto.Slots.Sum(s => s.Points ?? 0m);
-            return;
-        }
+        if (anchored.Count == 0) return;
 
         try
         {

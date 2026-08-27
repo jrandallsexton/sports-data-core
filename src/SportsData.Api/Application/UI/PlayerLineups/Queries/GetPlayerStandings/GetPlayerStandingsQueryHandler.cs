@@ -1,3 +1,5 @@
+using FluentValidation;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leagues.Authorization;
@@ -8,6 +10,16 @@ using SportsData.Core.Common;
 namespace SportsData.Api.Application.UI.PlayerLineups.Queries.GetPlayerStandings;
 
 public record GetPlayerStandingsQuery(Guid LeagueId, Guid UserId, int SeasonYear);
+
+public class GetPlayerStandingsQueryValidator : FluentValidation.AbstractValidator<GetPlayerStandingsQuery>
+{
+    public GetPlayerStandingsQueryValidator()
+    {
+        RuleFor(x => x.LeagueId).NotEmpty();
+        RuleFor(x => x.UserId).NotEmpty();
+        RuleFor(x => x.SeasonYear).InclusiveBetween(2000, 2100);
+    }
+}
 
 public class PlayerStandingsDto
 {
@@ -54,19 +66,28 @@ public class GetPlayerStandingsQueryHandler : IGetPlayerStandingsQueryHandler
 {
     private readonly AppDataContext _dataContext;
     private readonly ILeagueMembershipGuard _membershipGuard;
+    private readonly IValidator<GetPlayerStandingsQuery> _validator;
 
     public GetPlayerStandingsQueryHandler(
         AppDataContext dataContext,
-        ILeagueMembershipGuard membershipGuard)
+        ILeagueMembershipGuard membershipGuard,
+        IValidator<GetPlayerStandingsQuery> validator)
     {
         _dataContext = dataContext;
         _membershipGuard = membershipGuard;
+        _validator = validator;
     }
 
     public async Task<Result<PlayerStandingsDto>> ExecuteAsync(
         GetPlayerStandingsQuery query,
         CancellationToken cancellationToken = default)
     {
+        var validation = await _validator.ValidateAsync(query, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return new Failure<PlayerStandingsDto>(default!, ResultStatus.Validation, validation.Errors);
+        }
+
         var gate = await PlayerLineupGate.CheckAsync(
             _dataContext, _membershipGuard, query.LeagueId, query.UserId, cancellationToken);
         if (gate.Failure is not null)

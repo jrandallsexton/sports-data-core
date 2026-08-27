@@ -30,6 +30,7 @@ namespace SportsData.Api.Tests.Unit.Application.Events;
 public class AthleteCompetitionStatsUpdatedHandlerTests : ApiTestBase<AthleteCompetitionStatsUpdatedHandler>
 {
     private static readonly Guid LeagueId = Guid.NewGuid();
+    private static readonly DateTime FixedNow = new(2026, 8, 27, 12, 0, 0, DateTimeKind.Utc);
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid ContestId = Guid.NewGuid();
     private static readonly Guid AthleteSeasonId = Guid.NewGuid();
@@ -85,7 +86,7 @@ public class AthleteCompetitionStatsUpdatedHandlerTests : ApiTestBase<AthleteCom
             Id = Guid.NewGuid(),
             Name = "Test",
             IsDefault = true,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
         });
         var ruleSetId = DataContext.PlayerScoringRuleSets.Local.First().Id;
         DataContext.PlayerScoringRules.AddRange(
@@ -99,7 +100,7 @@ public class AthleteCompetitionStatsUpdatedHandlerTests : ApiTestBase<AthleteCom
             UserId = UserId,
             SeasonYear = 2026,
             SeasonWeek = 4,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = UserId,
         };
         lineup.Slots.Add(new PlayerLineupSlot
@@ -116,7 +117,7 @@ public class AthleteCompetitionStatsUpdatedHandlerTests : ApiTestBase<AthleteCom
             TeamSlug = "team",
             ContestId = ContestId,
             IsScoreFinal = slotAlreadyFinal,
-            CreatedUtc = DateTime.UtcNow,
+            CreatedUtc = FixedNow,
             CreatedBy = UserId,
         });
         DataContext.PlayerLineups.Add(lineup);

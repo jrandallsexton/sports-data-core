@@ -109,6 +109,7 @@ public class PlayerLineupsController : ApiControllerBase
     /// lineup totals only (the scoring consumers keep them fresh).
     /// </summary>
     [HttpGet("{seasonYear:int}/standings")]
+    [Authorize]
     public async Task<ActionResult<PlayerStandingsDto>> GetStandings(
         [FromRoute] Guid leagueId,
         [FromRoute] int seasonYear,

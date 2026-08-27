@@ -18,7 +18,16 @@ namespace SportsData.Api.Tests.Unit.Application.UI.PlayerLineups;
 /// </summary>
 public class GetPlayerStandingsQueryHandlerTests : ApiTestBase<GetPlayerStandingsQueryHandler>
 {
+    public GetPlayerStandingsQueryHandlerTests()
+    {
+        // Real validator — an auto-mocked IValidator returns a null
+        // ValidationResult and NREs before the code under test runs.
+        Mocker.Use<FluentValidation.IValidator<GetPlayerStandingsQuery>>(
+            new GetPlayerStandingsQueryValidator());
+    }
+
     private static readonly Guid LeagueId = Guid.NewGuid();
+    private static readonly DateTime FixedNow = new(2026, 8, 27, 12, 0, 0, DateTimeKind.Utc);
     private static readonly Guid Alice = Guid.NewGuid();
     private static readonly Guid Bob = Guid.NewGuid();
 
@@ -65,8 +74,8 @@ public class GetPlayerStandingsQueryHandlerTests : ApiTestBase<GetPlayerStanding
                 SeasonYear = 2026,
                 SeasonWeek = week,
                 TotalPoints = total,
-                ScoreUpdatedUtc = DateTime.UtcNow,
-                CreatedUtc = DateTime.UtcNow,
+                ScoreUpdatedUtc = FixedNow,
+                CreatedUtc = FixedNow,
                 CreatedBy = userId,
             };
             lineup.Slots.Add(new PlayerLineupSlot
@@ -83,7 +92,7 @@ public class GetPlayerStandingsQueryHandlerTests : ApiTestBase<GetPlayerStanding
                 TeamSlug = "t",
                 Points = total,
                 IsScoreFinal = final,
-                CreatedUtc = DateTime.UtcNow,
+                CreatedUtc = FixedNow,
                 CreatedBy = userId,
             });
             DataContext.PlayerLineups.Add(lineup);

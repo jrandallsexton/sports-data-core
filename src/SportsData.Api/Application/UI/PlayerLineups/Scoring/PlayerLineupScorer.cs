@@ -91,8 +91,15 @@ public class PlayerLineupScorer : IPlayerLineupScorer
             {
                 // Finalization without a statline still freezes the slot at
                 // its current (possibly null) points — the game is over;
-                // nothing further will arrive.
-                if (finalize) slot.IsScoreFinal = true;
+                // nothing further will arrive. The lineup still counts as
+                // affected so its ScoreUpdatedUtc and the final broadcast
+                // reflect the freeze.
+                if (finalize)
+                {
+                    slot.IsScoreFinal = true;
+                    slot.ModifiedUtc = now;
+                    affectedLineups.TryAdd(slot.Lineup.Id, slot.Lineup);
+                }
                 continue;
             }
 

@@ -1,6 +1,6 @@
 # Player Pick'em Scoring
 
-Status: v1 (read-time live scoring; persistence + standings deferred)
+Status: v2 (Phase 2 shipped — event-driven persistence + standings; see Refresh triggers)
 Date: 2026-08-27
 
 ## Model
@@ -130,8 +130,6 @@ broker BEFORE the shovels bind (see shovels/README.md).
 
 ## Deferred
 
-- Post-final persistence (slot/lineup results on game finalization,
-  mirroring team-pick scoring) + weekly/season standings.
 - Per-league rule-set selection UI; rule-set admin editor.
 - DEF scoring (with the DEF slot).
 - Threshold BONUSES (300-yard game, etc.) — the rule schema gains a

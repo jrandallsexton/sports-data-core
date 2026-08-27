@@ -28,6 +28,10 @@ public class AppDataContext : DbContext
 
     public DbSet<PlayerLineup> PlayerLineups { get; set; }
 
+    public DbSet<PlayerScoringRuleSet> PlayerScoringRuleSets { get; set; }
+
+    public DbSet<PlayerScoringRule> PlayerScoringRules { get; set; }
+
     public DbSet<PlayerLineupSlot> PlayerLineupSlots { get; set; }
 
     public DbSet<PickemGroupMember> PickemGroupMembers { get; set; }

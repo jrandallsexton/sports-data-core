@@ -63,6 +63,25 @@ public class AthleteController : ControllerBase
     }
 
     /// <summary>
+    /// Batch box-score statlines for Player Pick'em scoring: one call per
+    /// lineup, returning category.statName → value maps per
+    /// (athleteSeason, contest). POST because the identity is two id
+    /// lists (same convention as contests/matchups/by-ids).
+    /// </summary>
+    [HttpPost("statlines")]
+    public async Task<ActionResult<List<AthleteStatlineDto>>> GetAthleteStatlines(
+        [FromBody] GetAthleteStatlinesRequest request,
+        [FromServices] Queries.GetAthleteStatlines.IGetAthleteStatlinesQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(
+            new Queries.GetAthleteStatlines.GetAthleteStatlinesQuery(
+                request.ContestIds, request.AthleteSeasonIds),
+            cancellationToken);
+        return result.ToActionResult();
+    }
+
+    /// <summary>
     /// Fans out season-type-scoped statistics DocumentRequests for every
     /// ACTIVE athlete rostered in the season year (immediate driver: the
     /// 2025 NCAAFB season-stats backfill). ~25k athletes per season, so it

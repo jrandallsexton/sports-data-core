@@ -7,6 +7,9 @@ public class PlayerLineupDto
     public int SeasonWeek { get; set; }
     /// <summary>Filled slots only — the client knows the fixed shape.</summary>
     public List<PlayerLineupSlotDto> Slots { get; set; } = [];
+
+    /// <summary>Sum of slot points, recomputed on every read while games run.</summary>
+    public decimal TotalPoints { get; set; }
 }
 
 public class PlayerLineupSlotDto
@@ -25,4 +28,14 @@ public class PlayerLineupSlotDto
     public string? OpponentName { get; set; }
     /// <summary>Derived server-side at read time via the product-wide kickoff−5 rule.</summary>
     public bool IsLocked { get; set; }
+
+    /// <summary>
+    /// Live fantasy points from the league's scoring matrix, recomputed
+    /// at read time from canonical statlines (kept fresh by the
+    /// play-driven refresh). Null = no statline yet (pre-kickoff or bye).
+    /// </summary>
+    public decimal? Points { get; set; }
+
+    /// <summary>Compact scored-stat display ("187 PaYd · 2 PaTD") — always matches Points.</summary>
+    public string? StatLine { get; set; }
 }

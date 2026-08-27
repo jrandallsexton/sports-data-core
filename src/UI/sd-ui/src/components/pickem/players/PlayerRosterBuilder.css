@@ -345,3 +345,15 @@
 .roster-grid-status--error {
   color: var(--error, #e05d5d);
 }
+
+/* Live fantasy points on a filled slot chip (title = scored stat line). */
+.roster-slot-points {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent, #e0a52e);
+}
+
+.roster-total-points {
+  color: var(--accent, #e0a52e);
+}

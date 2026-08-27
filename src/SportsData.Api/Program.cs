@@ -294,6 +294,7 @@ namespace SportsData.Api
                 // shovel").
                 services.AddMessaging<AppDataContext>(config,
                 [
+                    typeof(AthleteCompetitionStatsUpdatedHandler),
                     typeof(BaseballPlayCompletedHandler),
                     typeof(ContestFinalizedHandler),
                     typeof(ContestOddsUpdatedHandler),
@@ -308,6 +309,7 @@ namespace SportsData.Api
                     typeof(PickemGroupMatchupsRequestedConsumer),
                     typeof(PickemGroupsRequestedConsumer),
                     typeof(PickemGroupWeekMatchupsGeneratedHandler),
+                    typeof(PlayerLineupContestFinalizedHandler),
                     typeof(PreviewGeneratedHandler),
                     typeof(PreviewPromptCapturedHandler),
                     typeof(SeasonPollWeekCreatedHandler),

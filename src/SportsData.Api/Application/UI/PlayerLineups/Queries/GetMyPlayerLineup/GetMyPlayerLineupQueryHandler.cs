@@ -115,8 +115,17 @@ public class GetMyPlayerLineupQueryHandler : IGetMyPlayerLineupQueryHandler
         PickemGroup group,
         CancellationToken cancellationToken)
     {
-        var anchored = dto.Slots.Where(s => s.ContestId.HasValue).ToList();
-        if (anchored.Count == 0) return;
+        // Persisted scores (Phase 2 consumers) win; live-compute only the
+        // slots the consumers haven't touched yet (event lag / pre-Phase-2
+        // rows). The read path never writes, so the two can't fight.
+        var anchored = dto.Slots
+            .Where(s => s.ContestId.HasValue && s.Points is null)
+            .ToList();
+        if (anchored.Count == 0)
+        {
+            dto.TotalPoints = dto.Slots.Sum(s => s.Points ?? 0m);
+            return;
+        }
 
         try
         {
@@ -351,6 +360,8 @@ internal static class PlayerLineupSlotExtensions
         ContestId = s.ContestId,
         ContestStartUtc = s.ContestStartUtc,
         OpponentName = s.OpponentName,
+        Points = s.Points,
+        StatLine = s.StatLine,
         IsLocked = s.ContestStartUtc.HasValue &&
                    PickemGroupMatchupExtensions.IsStartLocked(s.ContestStartUtc.Value, nowUtc),
     };

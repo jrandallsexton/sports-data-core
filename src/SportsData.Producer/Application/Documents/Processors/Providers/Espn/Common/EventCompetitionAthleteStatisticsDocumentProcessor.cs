@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
+using SportsData.Core.Eventing.Events.Athletes;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
@@ -142,6 +143,26 @@ public class EventCompetitionAthleteStatisticsDocumentProcessor<TDataContext> : 
                 command.CorrelationId);
 
             await _dataContext.AthleteCompetitionStatistics.AddAsync(entity);
+
+            // Precise Player Pick'em scoring trigger: the statline changed,
+            // so the API can recompute exactly the slots anchored to this
+            // (contest, athleteSeason). Published BEFORE SaveChanges so the
+            // outbox row commits atomically with the stats — a failed save
+            // (concurrency retry) rolls the message back with it. Football
+            // only: the game is football-only and an unshoveled event would
+            // fan out into the void on the MLB broker.
+            if (command.Sport is Sport.FootballNcaa or Sport.FootballNfl)
+            {
+                await _publishEndpoint.Publish(new AthleteCompetitionStatsUpdated(
+                    competition.ContestId,
+                    competition.Id,
+                    athleteSeason.Id,
+                    dto.Ref,
+                    command.Sport,
+                    command.SeasonYear,
+                    command.CorrelationId,
+                    Guid.NewGuid()));
+            }
 
             try
             {

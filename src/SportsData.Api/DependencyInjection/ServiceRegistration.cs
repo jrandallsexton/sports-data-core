@@ -335,6 +335,10 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetMyPlayerLineupQueryHandler, GetMyPlayerLineupQueryHandler>();
             services.AddScoped<IUpsertLineupSlotCommandHandler, UpsertLineupSlotCommandHandler>();
             services.AddScoped<IClearLineupSlotCommandHandler, ClearLineupSlotCommandHandler>();
+            services.AddScoped<Application.UI.PlayerLineups.Scoring.IPlayerLineupScorer,
+                Application.UI.PlayerLineups.Scoring.PlayerLineupScorer>();
+            services.AddScoped<Application.UI.PlayerLineups.Queries.GetPlayerStandings.IGetPlayerStandingsQueryHandler,
+                Application.UI.PlayerLineups.Queries.GetPlayerStandings.GetPlayerStandingsQueryHandler>();
             services.AddScoped<FluentValidation.IValidator<UpsertLineupSlotCommand>, UpsertLineupSlotCommandValidator>();
             services.AddScoped<FluentValidation.IValidator<ClearLineupSlotCommand>, ClearLineupSlotCommandValidator>();
 

@@ -55,6 +55,22 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public string? OpponentName { get; set; }
 
+        /// <summary>
+        /// Persisted fantasy points, written ONLY by the stats-updated /
+        /// contest-finalized consumers (the read path fills nulls with a
+        /// live computation but never writes). Null = no statline yet.
+        /// </summary>
+        public decimal? Points { get; set; }
+
+        /// <summary>Compact scored-stat display persisted alongside Points — the pair always comes from one computation.</summary>
+        public string? StatLine { get; set; }
+
+        /// <summary>
+        /// Frozen at contest finalization: the finalize consumer recomputes
+        /// once from the final statline and later stat events skip the slot.
+        /// </summary>
+        public bool IsScoreFinal { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<PlayerLineupSlot>
         {
             public void Configure(EntityTypeBuilder<PlayerLineupSlot> builder)
@@ -78,6 +94,8 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.TeamName).HasMaxLength(150);
                 builder.Property(x => x.TeamSlug).HasMaxLength(150);
                 builder.Property(x => x.OpponentName).HasMaxLength(150);
+                builder.Property(x => x.Points).HasPrecision(8, 2);
+                builder.Property(x => x.StatLine).HasMaxLength(300);
             }
         }
     }

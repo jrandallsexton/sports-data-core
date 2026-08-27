@@ -5,6 +5,7 @@ using SportsData.Api.Application.UI.PlayerLineups.Commands.ClearLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Commands.UpsertLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Dtos;
 using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
+using SportsData.Api.Application.UI.PlayerLineups.Queries.GetPlayerStandings;
 using SportsData.Api.Extensions;
 using SportsData.Core.Common;
 using SportsData.Core.Extensions;
@@ -102,4 +103,22 @@ public class PlayerLineupsController : ApiControllerBase
             cancellationToken);
         return result.ToActionResult();
     }
+
+    /// <summary>
+    /// Cumulative-points standings with weekly winners — reads persisted
+    /// lineup totals only (the scoring consumers keep them fresh).
+    /// </summary>
+    [HttpGet("{seasonYear:int}/standings")]
+    public async Task<ActionResult<PlayerStandingsDto>> GetStandings(
+        [FromRoute] Guid leagueId,
+        [FromRoute] int seasonYear,
+        [FromServices] IGetPlayerStandingsQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+        var result = await handler.ExecuteAsync(
+            new GetPlayerStandingsQuery(leagueId, userId, seasonYear), cancellationToken);
+        return result.ToActionResult();
+    }
+
 }

@@ -357,3 +357,35 @@
 .roster-total-points {
   color: var(--accent, #e0a52e);
 }
+
+/* League standings — cumulative points + weekly-winner trophies. */
+.roster-standings {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-input, #444);
+  border-radius: 8px;
+  max-width: 28rem;
+}
+
+.roster-standings-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.roster-standings-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.roster-standings-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.roster-standings-points {
+  font-weight: 700;
+  color: var(--accent, #e0a52e);
+}

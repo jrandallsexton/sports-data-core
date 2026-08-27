@@ -89,13 +89,44 @@ No polling, no background jobs (operator constraint):
   lineup twice — ~45s after the play (fast feedback) and again at ~4min
   (after the Producer stat-document debounce catches up). Quiet games
   cost zero requests; nobody polls.
-- **Phase 2 (next PR, with persistence + standings)**: the stat
-  DOCUMENT processor publishes `AthleteCompetitionStatsUpdated
-  (contestId, athleteSeasonId)` → shovel to API → consumer matches
-  PlayerLineupSlot anchors → recompute/persist → SignalR broadcast to
-  the league group. Final results persist on the existing
-  contest-finalized event chain (no jobs). Precise where Phase 1 is
-  approximate.
+- **Phase 2 (this iteration)**: the stat DOCUMENT processor publishes
+  `AthleteCompetitionStatsUpdated(contestId, competitionId,
+  athleteSeasonId)` via the outbox → per-sport shovel to API → consumer
+  matches PlayerLineupSlot anchors → recomputes and PERSISTS the slot's
+  points/stat line and the lineup total → broadcasts
+  `PlayerLineupScoreUpdated` over SignalR (Clients.All + client-side
+  league filter, matching every existing contest event). Finals ride
+  the EXISTING ContestFinalized shovels: a second consumer on that
+  event recomputes every anchored slot one last time and freezes it
+  (`IsScoreFinal`) — frozen slots are skipped by later stat events.
+  Precise where Phase 1 is approximate; Phase 1's client tickle stays
+  as belt-and-suspenders.
+
+### Persistence (Phase 2)
+
+- `PlayerLineupSlot` += `Points decimal?`, `StatLine string?`,
+  `IsScoreFinal bool` (frozen at contest finalization).
+- `PlayerLineup` += `TotalPoints decimal`, `ScoreUpdatedUtc DateTime?`.
+- The lineup READ serves persisted values and live-computes only slots
+  with null Points (pre-Phase-2 rows / event-lag gap) — persisted and
+  computed never fight because the consumer is the only writer.
+
+### Standings (decided 2026-08-27)
+
+**Cumulative season points with weekly winners** (operator-approved):
+season standings = sum of weekly lineup totals; each week's top score
+earns a weekly-winner badge (current week's badge is live/provisional
+until its slots finalize). No head-to-head pairing.
+`GET ui/leagues/{id}/player-lineups/standings` — per member: weekly
+points (with finality), season total, weekly-win count. Web renders a
+standings panel on the roster page.
+
+### Ops
+
+Two new shovel manifests in sports-data-config
+(`shovel-athlete-competition-stats-updated-{ncaa,nfl}-to-api.yaml`) +
+the documented source-exchange pre-declare on each football Producer
+broker BEFORE the shovels bind (see shovels/README.md).
 
 ## Deferred
 

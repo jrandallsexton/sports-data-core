@@ -12,6 +12,9 @@ jest.mock('@/src/services/api/seasonApi', () => ({
   seasonApi: {
     getCurrentSeason: jest.fn(),
   },
+  currentSeasonKeys: {
+    current: (sport: string, league: string) => ['season', 'current', sport, league],
+  },
 }));
 
 jest.mock('@/src/services/api/rankingsApi', () => {

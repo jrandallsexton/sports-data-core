@@ -29,6 +29,13 @@ public class UserDto
 
     public bool IsReadOnly { get; set; }
 
+    /// <summary>
+    /// The user's option set, embedded so clients need no second
+    /// round-trip to /user/me/options (that endpoint remains for
+    /// mobile). Never null — defaults apply when no rows exist.
+    /// </summary>
+    public UserOptionsDto Options { get; set; } = new();
+
     public class UserLeagueMembership
     {
         public Guid Id { get; set; }

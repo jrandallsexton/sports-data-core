@@ -20,6 +20,17 @@ export interface CurrentSeason {
 
 export const REGULAR_SEASON_TYPE_CODE = 2;
 
+/**
+ * Canonical react-query keys for current-season lookups. Every consumer
+ * MUST use these — the off-season countdown and useCurrentSeasonYear
+ * once used different ad-hoc keys for the same endpoint, so react-query
+ * couldn't dedupe and the home screen fetched NCAA's season twice.
+ */
+export const currentSeasonKeys = {
+  current: (sport: string, league: string) =>
+    ['season', 'current', sport, league] as const,
+};
+
 export const seasonApi = {
   // GET /api/{sport}/{league}/seasons/current — current-or-upcoming season with
   // its phases. Raw phase data; the caller interprets it (e.g. the off-season

@@ -24,21 +24,16 @@ export const UserProvider = ({ children }) => {
     try {
       const response = await UsersApi.getCurrentUser();
       setUserDto(response.data);
+      // Options ride the /user/me payload — no second round-trip. The
+      // ?? null keeps pre-rollout cached responses (no options field)
+      // on the safe-defaults path.
+      setUserOptions(response.data?.options ?? null);
     } catch (err) {
       console.error('Failed to load user DTO:', err);
       setUserDto(null);
+      setUserOptions(null);
     } finally {
       setLoading(false);
-    }
-
-    // Off the critical path: options only refine display (safe defaults
-    // apply until they arrive), so they must not delay first render.
-    try {
-      const options = await UsersApi.getUserOptions();
-      setUserOptions(options.data);
-    } catch (err) {
-      console.error('Failed to load user options:', err);
-      setUserOptions(null);
     }
   }, [user]);
 
@@ -51,6 +46,7 @@ export const UserProvider = ({ children }) => {
     try {
       const response = await UsersApi.getCurrentUser();
       setUserDto(response.data);
+      setUserOptions(response.data?.options ?? null);
       return true;
     } catch (err) {
       console.error('Failed to refresh user DTO:', err);

@@ -124,6 +124,10 @@ namespace SportsData.Api.DependencyInjection
                 Application.UI.Leagues.Commands.CloneLeague.CloneLeagueCommandHandler>();
             services.AddScoped<ICreateFootballNcaaLeagueCommandHandler, CreateFootballNcaaLeagueCommandHandler>();
             services.AddScoped<ICreateFootballNflLeagueCommandHandler, CreateFootballNflLeagueCommandHandler>();
+            services.AddScoped<Application.UI.Leagues.Commands.CreatePlayerLeague.ICreatePlayerLeagueCommandHandler,
+                Application.UI.Leagues.Commands.CreatePlayerLeague.CreatePlayerLeagueCommandHandler>();
+            services.AddScoped<FluentValidation.IValidator<Application.UI.Leagues.Commands.CreatePlayerLeague.CreatePlayerLeagueRequest>,
+                Application.UI.Leagues.Commands.CreatePlayerLeague.CreatePlayerLeagueRequestValidator>();
             services.AddScoped<ICreateBaseballMlbLeagueCommandHandler, CreateBaseballMlbLeagueCommandHandler>();
             services.AddScoped<IDeleteLeagueCommandHandler, DeleteLeagueCommandHandler>();
             services.AddScoped<IGenerateLeagueWeekPreviewsCommandHandler, GenerateLeagueWeekPreviewsCommandHandler>();

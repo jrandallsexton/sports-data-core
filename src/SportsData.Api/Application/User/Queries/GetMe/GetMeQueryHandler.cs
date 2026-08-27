@@ -164,6 +164,17 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                 $"SeasonWeeks for league {league.Id} is not ascending+distinct.");
         }
 
+        // Options ride the same payload — clients needed a second GET to
+        // /user/me/options for a handful of booleans, which is a wasted
+        // round-trip on every initial load. One extra indexed read here;
+        // the standalone endpoint remains for mobile.
+        var optionRows = await _db.UserOptions
+            .AsNoTracking()
+            .Where(o => o.UserId == query.UserId)
+            .Select(o => new KeyValuePair<string, string>(o.Key, o.Value))
+            .ToListAsync(cancellationToken);
+        userDto.Options = UserOptionsDto.FromRows(optionRows);
+
         _logger.LogDebug("User retrieved successfully. UserId={UserId}", query.UserId);
 
         return new Success<UserDto>(userDto);

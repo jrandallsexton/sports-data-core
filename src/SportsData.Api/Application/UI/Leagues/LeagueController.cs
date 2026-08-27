@@ -13,6 +13,7 @@ using SportsData.Api.Application.UI.Leagues.Commands.CreateBaseballMlbLeague.Dto
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNcaaLeague.Dtos;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague;
+using SportsData.Api.Application.UI.Leagues.Commands.CreatePlayerLeague;
 using SportsData.Api.Application.UI.Leagues.Commands.CreateFootballNflLeague.Dtos;
 using SportsData.Api.Application.UI.Leagues.Commands.DeclineLeagueInvitation;
 using SportsData.Api.Application.UI.Leagues.Commands.DeleteLeague;
@@ -71,6 +72,28 @@ public class LeagueController : ApiControllerBase
     public async Task<ActionResult<Guid>> CreateFootballNflLeague(
         [FromBody] CreateFootballNflLeagueRequest request,
         [FromServices] ICreateFootballNflLeagueCommandHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var userId = HttpContext.GetCurrentUserId();
+
+        var result = await handler.ExecuteAsync(request, userId, cancellationToken);
+
+        if (result.IsSuccess)
+            return CreatedAtAction(nameof(GetById), new { id = result.Value }, new { id = result.Value });
+
+        return result.ToActionResult();
+    }
+
+    /// <summary>
+    /// Player Pick'em league — one endpoint for both football sports (the
+    /// request carries Sport; nothing else differs). Admin-only during the
+    /// alpha, enforced in the handler.
+    /// </summary>
+    [HttpPost("players")]
+    [Authorize]
+    public async Task<ActionResult<Guid>> CreatePlayerLeague(
+        [FromBody] CreatePlayerLeagueRequest request,
+        [FromServices] ICreatePlayerLeagueCommandHandler handler,
         CancellationToken cancellationToken)
     {
         var userId = HttpContext.GetCurrentUserId();

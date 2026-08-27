@@ -25,6 +25,7 @@ import VenuePage from "components/venues/VenuePage";
 import VenuesPage from "components/venues/VenuesPage";
 import apiWrapper from "./api/apiWrapper";
 import LeagueCreatePage from "./components/leagues/LeagueCreatePage";
+import PlayerLeagueCreatePage from "./components/leagues/PlayerLeagueCreatePage";
 import LandingFooter from "./components/landing/LandingFooter";
 import LeagueDetail from "./components/leagues/LeagueDetail";
 import Leagues from "./components/leagues/Leagues";
@@ -239,6 +240,15 @@ function MainApp() {
             />
             <Route path="/league/discover" element={<LeagueDiscoverPage />} />
             <Route path="/league/create" element={<LeagueCreatePage />} />
+            {/* Player Pick'em league creation — admin-only during alpha. */}
+            <Route
+              path="/league/create/players"
+              element={
+                <AdminRoute>
+                  <PlayerLeagueCreatePage />
+                </AdminRoute>
+              }
+            />
             <Route path="/league/:id" element={<LeagueDetail />} />
             <Route path="/league" element={<Leagues />} />
             {/* Alias: honor the plural /leagues too. */}

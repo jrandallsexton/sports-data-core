@@ -41,7 +41,6 @@ export const usersApi = {
   // never changed anything). PATCH is a full replacement of KNOWN options —
   // unknown/newer options are never touched server-side.
   // See docs/features/user-options.md.
-  getUserOptions: () => apiClient.get<UserOptions>('/user/me/options'),
   updateUserOptions: (options: UserOptions) =>
     apiClient.patch('/user/me/options', options),
 };

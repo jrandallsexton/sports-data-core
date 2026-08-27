@@ -134,6 +134,20 @@ namespace SportsData.Api.Application.Processors
                 groupWeek.SeasonPhaseTypeCode = phaseTypeCode.Value;
             }
 
+            // PLAYER Pick'em leagues get the WEEK (identity + phase — it
+            // powers seasonWeekDetails and lineup lock anchoring) but no
+            // team-pick slate: no PickemGroupMatchup rows, no
+            // matchup-created notification fan-out. The roster is the game.
+            if (group.GroupType == Application.Common.Enums.GroupType.PlayerPickem)
+            {
+                groupWeek.AreMatchupsGenerated = true;
+                await _dataContext.SaveChangesAsync();
+                _logger.LogInformation(
+                    "PlayerPickem group {GroupId}: week {Week} (phase {Phase}) materialized without a matchup slate.",
+                    group.Id, command.SeasonWeek, groupWeek.SeasonPhaseTypeCode);
+                return;
+            }
+
             // League window filter — excludes contests whose kickoff falls outside
             // [StartsOn, EndsOn]. Null bounds mean "no constraint" (full-season league),
             // so this is a no-op when neither is set.

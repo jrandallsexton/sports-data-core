@@ -27,14 +27,19 @@ const SeasonApi = {
     if (cached && Date.now() - cached.at < CURRENT_SEASON_TTL_MS) {
       return cached.request;
     }
-    const request = apiClient
+    const entry = { request: null, at: Date.now() };
+    entry.request = apiClient
       .get(`/api/${sport}/${league}/seasons/current`)
       .catch((err) => {
-        currentSeasonCache.delete(key);
+        // Evict only OUR entry — a TTL-expired request rejecting late must
+        // not delete a newer in-flight replacement.
+        if (currentSeasonCache.get(key) === entry) {
+          currentSeasonCache.delete(key);
+        }
         throw err;
       });
-    currentSeasonCache.set(key, { request, at: Date.now() });
-    return request;
+    currentSeasonCache.set(key, entry);
+    return entry.request;
   },
 };
 

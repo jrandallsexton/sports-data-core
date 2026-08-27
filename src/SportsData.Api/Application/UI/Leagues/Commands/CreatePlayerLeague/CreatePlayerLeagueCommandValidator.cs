@@ -33,9 +33,15 @@ public class CreatePlayerLeagueCommandValidator : AbstractValidator<CreatePlayer
             .InclusiveBetween(2000, 2100)
             .When(x => x.SeasonYear.HasValue);
 
+        RuleFor(x => x.EndsOn)
+            .LessThan(new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc))
+            .When(x => x.EndsOn.HasValue)
+            .WithMessage("EndsOn must be before year 2100");
+
         RuleFor(x => x.StartsOn)
             .LessThanOrEqualTo(x => x.EffectiveEndsOn!.Value)
-            .When(x => x.StartsOn.HasValue && x.EndsOn.HasValue)
+            .When(x => x.StartsOn.HasValue && x.EndsOn.HasValue &&
+                       x.EndsOn.Value < new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc))
             .WithMessage("StartsOn must be on or before EndsOn");
     }
 }

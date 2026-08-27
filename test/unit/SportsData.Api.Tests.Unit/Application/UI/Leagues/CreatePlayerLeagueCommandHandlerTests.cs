@@ -132,4 +132,40 @@ public class CreatePlayerLeagueCommandHandlerTests : ApiTestBase<CreatePlayerLea
         // Inclusive end: midnight input becomes end-of-day.
         group.EndsOn.Value.Hour.Should().Be(23);
     }
+
+    [Fact]
+    public async Task LocalKindBounds_AreConvertedToUtc_NotRelabeled()
+    {
+        // A Local wall-clock relabeled as UTC would silently shift the
+        // instant by the machine's offset — Local must be CONVERTED.
+        var userId = await SeedUserAsync(isAdmin: true);
+        var handler = Mocker.CreateInstance<CreatePlayerLeagueCommandHandler>();
+
+        var localStart = new DateTime(2026, 8, 27, 9, 30, 0, DateTimeKind.Local);
+        var request = ValidRequest();
+        request.StartsOn = localStart;
+        request.EndsOn = new DateTime(2026, 8, 28, 18, 0, 0, DateTimeKind.Local);
+        var result = await handler.ExecuteAsync(request, userId);
+
+        result.IsSuccess.Should().BeTrue();
+        var group = await DataContext.PickemGroups.SingleAsync(g => g.Id == result.Value);
+        group.StartsOn!.Value.Kind.Should().Be(DateTimeKind.Utc);
+        group.StartsOn.Value.Should().Be(localStart.ToUniversalTime());
+        group.EndsOn!.Value.Kind.Should().Be(DateTimeKind.Utc);
+    }
+
+    [Fact]
+    public async Task MaxValueEndsOn_FailsValidation_InsteadOfThrowing()
+    {
+        // DateTime.MaxValue.Date is midnight — without the guard the
+        // end-of-day AddDays(1) would overflow inside the validator.
+        var userId = await SeedUserAsync(isAdmin: true);
+        var handler = Mocker.CreateInstance<CreatePlayerLeagueCommandHandler>();
+
+        var request = ValidRequest();
+        request.EndsOn = DateTime.MaxValue.Date;
+        var result = await handler.ExecuteAsync(request, userId);
+
+        result.Status.Should().Be(ResultStatus.Validation);
+    }
 }

@@ -37,10 +37,7 @@ public class CreatePlayerLeagueCommand
     /// to timestamptz; values are semantically UTC per project
     /// convention, so stamp the kind rather than converting.
     /// </summary>
-    public DateTime? EffectiveStartsOn =>
-        StartsOn is { Kind: DateTimeKind.Unspecified } startsOn
-            ? DateTime.SpecifyKind(startsOn, DateTimeKind.Utc)
-            : StartsOn;
+    public DateTime? EffectiveStartsOn => NormalizeToUtc(StartsOn);
 
     /// <summary>
     /// Midnight-normalized end (same contract as the team-league flow):
@@ -49,9 +46,24 @@ public class CreatePlayerLeagueCommand
     /// rejects Kind=Unspecified on timestamptz).
     /// </summary>
     public DateTime? EffectiveEndsOn =>
-        EndsOn is { TimeOfDay.Ticks: 0 } endsOn
-            ? DateTime.SpecifyKind(endsOn.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc)
-            : EndsOn is { Kind: DateTimeKind.Unspecified } raw
-                ? DateTime.SpecifyKind(raw, DateTimeKind.Utc)
-                : EndsOn;
+        EndsOn is { TimeOfDay.Ticks: 0 } endsOn && endsOn.Date < DateTime.MaxValue.Date
+            // End-of-day on the AUTHORED calendar day (before any timezone
+            // conversion), then normalized to UTC. The MaxValue guard keeps
+            // AddDays(1) from overflowing; the validator's range rule turns
+            // that boundary into a validation failure instead.
+            ? NormalizeToUtc(DateTime.SpecifyKind(
+                endsOn.Date.AddDays(1).AddTicks(-1), endsOn.Kind))
+            : NormalizeToUtc(EndsOn);
+
+    /// <summary>
+    /// Npgsql-safe UTC: Unspecified is STAMPED Utc (values are semantically
+    /// UTC per project convention), Local is CONVERTED — relabeling a local
+    /// wall-clock would shift the instant by the machine's offset.
+    /// </summary>
+    private static DateTime? NormalizeToUtc(DateTime? value) => value switch
+    {
+        { Kind: DateTimeKind.Unspecified } v => DateTime.SpecifyKind(v, DateTimeKind.Utc),
+        { Kind: DateTimeKind.Local } v => v.ToUniversalTime(),
+        _ => value,
+    };
 }

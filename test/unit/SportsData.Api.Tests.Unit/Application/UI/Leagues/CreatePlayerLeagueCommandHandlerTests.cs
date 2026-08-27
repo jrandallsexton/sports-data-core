@@ -155,6 +155,26 @@ public class CreatePlayerLeagueCommandHandlerTests : ApiTestBase<CreatePlayerLea
     }
 
     [Fact]
+    public async Task LocalStart_SameDayAsDateOnlyEnd_PassesRangeValidation()
+    {
+        // The range rule compares NORMALIZED bounds. A local mid-day start
+        // with a same-day date-only end must validate regardless of the
+        // machine's offset: effective start (local noon -> UTC, at most
+        // +/-14h) always precedes the effective end (next-day end-of-day
+        // expansion of the date-only value). A raw-vs-effective comparison
+        // could flip this by server timezone.
+        var userId = await SeedUserAsync(isAdmin: true);
+        var handler = Mocker.CreateInstance<CreatePlayerLeagueCommandHandler>();
+
+        var request = ValidRequest();
+        request.StartsOn = new DateTime(2026, 8, 27, 12, 0, 0, DateTimeKind.Local);
+        request.EndsOn = new DateTime(2026, 8, 28, 0, 0, 0, DateTimeKind.Unspecified);
+        var result = await handler.ExecuteAsync(request, userId);
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task MaxValueEndsOn_FailsValidation_InsteadOfThrowing()
     {
         // DateTime.MaxValue.Date is midnight — without the guard the

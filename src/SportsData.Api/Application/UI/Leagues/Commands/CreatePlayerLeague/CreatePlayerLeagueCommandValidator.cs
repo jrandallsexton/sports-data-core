@@ -38,7 +38,10 @@ public class CreatePlayerLeagueCommandValidator : AbstractValidator<CreatePlayer
             .When(x => x.EndsOn.HasValue)
             .WithMessage("EndsOn must be before year 2100");
 
-        RuleFor(x => x.StartsOn)
+        // Compare NORMALIZED start against normalized end — DateTime
+        // comparison ignores Kind, so raw-Local vs effective-UTC would
+        // pass or fail by the server's offset.
+        RuleFor(x => x.EffectiveStartsOn)
             .LessThanOrEqualTo(x => x.EffectiveEndsOn!.Value)
             .When(x => x.StartsOn.HasValue && x.EndsOn.HasValue &&
                        x.EndsOn.Value < new DateTime(2100, 1, 1, 0, 0, 0, DateTimeKind.Utc))

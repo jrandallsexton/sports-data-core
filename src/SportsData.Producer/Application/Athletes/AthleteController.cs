@@ -46,6 +46,25 @@ public class AthleteController : ControllerBase
     /// data is game-agnostic athlete/matchup data.
     /// Example: GET /api/athletes/matchup-summaries?position=QB&amp;seasonYear=2026&amp;week=1
     /// </summary>
+    /// <summary>
+    /// Batch box-score statlines for Player Pick'em scoring: one call per
+    /// lineup, returning category.statName → value maps per
+    /// (athleteSeason, contest). POST because the identity is two id
+    /// lists (same convention as contests/matchups/by-ids).
+    /// </summary>
+    [HttpPost("statlines")]
+    public async Task<ActionResult<List<AthleteStatlineDto>>> GetAthleteStatlines(
+        [FromBody] GetAthleteStatlinesRequest request,
+        [FromServices] Queries.GetAthleteStatlines.IGetAthleteStatlinesQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(
+            new Queries.GetAthleteStatlines.GetAthleteStatlinesQuery(
+                request.ContestIds, request.AthleteSeasonIds),
+            cancellationToken);
+        return result.ToActionResult();
+    }
+
     [HttpGet("matchup-summaries")]
     public async Task<ActionResult<AthleteMatchupSummariesDto>> GetAthleteMatchupSummaries(
         [FromQuery] string position,

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useContestUpdates } from '../../../contexts/ContestUpdatesContext';
 import PlayerPickemApi from '../../../api/playerPickemApi';
 import LeaguesApi from '../../../api/leagues/leaguesApi';
 import {
@@ -98,6 +99,13 @@ function PlayerRosterBuilder() {
   const seasonWeek = Number.isInteger(routeWeekNum) && routeWeekNum > 0 ? routeWeekNum : WEEK;
   const seasonPhase = routePhaseParam ?? 'regular';
   const [roster, setRoster] = useState({});
+  // Live lineup total from the server's read-time scoring (matrix-priced
+  // statlines, refreshed with the play-driven stat pipeline). Null until
+  // any anchored slot has a statline.
+  const [totalPoints, setTotalPoints] = useState(null);
+  // Live-refresh tickle: bumping this re-runs the lineup fetch WITHOUT
+  // the loading/reset churn of a league change (see the effect below).
+  const [refreshTick, setRefreshTick] = useState(0);
   // The user's PlayerPickem-type leagues (null = still loading). The
   // SPORT isn't a free choice — it's a fact of these leagues: the page
   // auto-selects the first sport with a player league, and the toggle
@@ -149,13 +157,21 @@ function PlayerRosterBuilder() {
   // Resolve the target league for the selected sport, then load the
   // server lineup (whose first read of a new week performs the lazy
   // carry-over clone server-side).
+  const lastRefreshTickRef = useRef(0);
   useEffect(() => {
     if (playerLeagues === null) return undefined; // leagues still loading
 
     let ignore = false;
-    setRosterLoading(true);
-    setSaveError(null);
-    setRoster({});
+    // A live-refresh rerun (refreshTick bumped) keeps the current roster
+    // on screen and silently swaps in fresh points; only a real
+    // league/week change resets the surface.
+    const isLiveRefresh = refreshTick !== lastRefreshTickRef.current;
+    lastRefreshTickRef.current = refreshTick;
+    if (!isLiveRefresh) {
+      setRosterLoading(true);
+      setSaveError(null);
+      setRoster({});
+    }
 
     const sport = LEAGUES.find((l) => l.id === league)?.sport;
     const routed = routeLeagueId
@@ -173,6 +189,7 @@ function PlayerRosterBuilder() {
       .then((response) => {
         if (ignore) return;
         setRoster(rosterFromLineup(response.data));
+        setTotalPoints(response.data?.totalPoints ?? null);
       })
       .catch(() => {
         if (!ignore) setSaveError('Could not load your roster.');
@@ -184,7 +201,49 @@ function PlayerRosterBuilder() {
     return () => {
       ignore = true;
     };
-  }, [league, playerLeagues, routeLeagueId, seasonWeek]);
+  }, [league, playerLeagues, routeLeagueId, seasonWeek, refreshTick]);
+
+  // ── Live scoring refresh (Phase 1 — see scoring.md) ─────────────────
+  // The play-completed SignalR events already flowing into
+  // ContestUpdatesContext stamp contests[id].lastUpdated. When activity
+  // lands on a contest one of OUR slots is anchored to, refetch the
+  // lineup twice: once shortly after the play (fast feedback) and once
+  // after the Producer stat-document debounce window (~3 min) so the
+  // numbers catch up. No polling: quiet games cost zero requests.
+  const { contests: liveContests } = useContestUpdates();
+  const anchoredActivity = useMemo(
+    () =>
+      Object.values(roster)
+        .filter((slot) => slot?.contestId)
+        .reduce(
+          (latest, slot) =>
+            Math.max(latest, liveContests[slot.contestId]?.lastUpdated ?? 0),
+          0
+        ),
+    [roster, liveContests]
+  );
+  const refreshTimersRef = useRef([]);
+  useEffect(() => {
+    if (anchoredActivity === 0) return undefined;
+    if (refreshTimersRef.current.length > 0) return undefined; // pair already pending
+
+    const bump = () => setRefreshTick((t) => t + 1);
+    refreshTimersRef.current = [
+      setTimeout(bump, 45 * 1000),
+      setTimeout(() => {
+        bump();
+        refreshTimersRef.current = [];
+      }, 240 * 1000),
+    ];
+    return undefined;
+  }, [anchoredActivity]);
+  useEffect(
+    () => () => {
+      refreshTimersRef.current.forEach(clearTimeout);
+      refreshTimersRef.current = [];
+    },
+    []
+  );
 
   const positions = useMemo(
     () => eligiblePositions(activeSlotId),
@@ -336,6 +395,9 @@ function PlayerRosterBuilder() {
         {pickemLeague ? (
           <> &middot; <strong>{pickemLeague.name}</strong></>
         ) : null}
+        {totalPoints != null && totalPoints !== 0 ? (
+          <> &middot; <strong className="roster-total-points">{totalPoints.toFixed(1)} pts</strong></>
+        ) : null}
       </p>
 
       {/* The sport is a fact of the user's player leagues, not a free
@@ -411,6 +473,11 @@ function PlayerRosterBuilder() {
                       ? 'Soon'
                       : '—'}
                 </span>
+                {filled && filled.points != null ? (
+                  <span className="roster-slot-points" title={filled.statLine || undefined}>
+                    {filled.points.toFixed(1)}
+                  </span>
+                ) : null}
               </button>
               {/* Locked slots hide the remove affordance — the server
                   would reject it anyway; don't offer a dead button. */}

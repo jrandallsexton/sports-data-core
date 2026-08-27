@@ -4,10 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.PlayerLineups.Dtos;
+using SportsData.Api.Application.UI.PlayerLineups.Scoring;
 using SportsData.Api.Extensions;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
+using SportsData.Core.Infrastructure.Clients.Athlete;
 using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
@@ -35,6 +37,7 @@ public class GetMyPlayerLineupQueryHandler : IGetMyPlayerLineupQueryHandler
     private readonly AppDataContext _dataContext;
     private readonly ILeagueMembershipGuard _membershipGuard;
     private readonly IContestClientFactory _contestClientFactory;
+    private readonly IAthleteClientFactory _athleteClientFactory;
     private readonly IDateTimeProvider _dateTimeProvider;
 
     public GetMyPlayerLineupQueryHandler(
@@ -42,12 +45,14 @@ public class GetMyPlayerLineupQueryHandler : IGetMyPlayerLineupQueryHandler
         AppDataContext dataContext,
         ILeagueMembershipGuard membershipGuard,
         IContestClientFactory contestClientFactory,
+        IAthleteClientFactory athleteClientFactory,
         IDateTimeProvider dateTimeProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
         _membershipGuard = membershipGuard;
         _contestClientFactory = contestClientFactory;
+        _athleteClientFactory = athleteClientFactory;
         _dateTimeProvider = dateTimeProvider;
     }
 
@@ -92,7 +97,65 @@ public class GetMyPlayerLineupQueryHandler : IGetMyPlayerLineupQueryHandler
                 .ToList() ?? [],
         };
 
+        await ApplyLiveScoringAsync(dto, gate.Group!, cancellationToken);
+
         return new Success<PlayerLineupDto>(dto);
+    }
+
+    /// <summary>
+    /// Read-time live scoring: one batch statline call for the lineup's
+    /// anchored slots, priced by the league's scoring matrix (v1: the
+    /// IsDefault set; per-league selection is a later FK). Fail OPEN —
+    /// scoring is display enrichment, never a reason to 500 the roster.
+    /// Persistence on game finalization is deliberately deferred
+    /// (docs/features/player-pickem/scoring.md).
+    /// </summary>
+    private async Task ApplyLiveScoringAsync(
+        PlayerLineupDto dto,
+        PickemGroup group,
+        CancellationToken cancellationToken)
+    {
+        var anchored = dto.Slots.Where(s => s.ContestId.HasValue).ToList();
+        if (anchored.Count == 0) return;
+
+        try
+        {
+            var rules = await _dataContext.PlayerScoringRules
+                .AsNoTracking()
+                .Where(r => r.RuleSet.IsDefault)
+                .ToListAsync(cancellationToken);
+            if (rules.Count == 0) return;
+
+            var statlines = await _athleteClientFactory
+                .Resolve(group.Sport)
+                .GetAthleteStatlines(
+                    anchored.Select(s => s.ContestId!.Value).Distinct().ToList(),
+                    anchored.Select(s => s.AthleteSeasonId).Distinct().ToList(),
+                    cancellationToken);
+            if (!statlines.IsSuccess) return;
+
+            var byKey = statlines.Value.ToDictionary(x => (x.AthleteSeasonId, x.ContestId));
+            foreach (var slot in anchored)
+            {
+                if (!byKey.TryGetValue((slot.AthleteSeasonId, slot.ContestId!.Value), out var line))
+                    continue;
+                var score = PlayerPickemScoringEngine.Score(rules, line.Stats);
+                slot.Points = score.Points;
+                slot.StatLine = PlayerPickemScoringEngine.BuildStatLine(score.Contributions);
+            }
+
+            dto.TotalPoints = dto.Slots.Sum(s => s.Points ?? 0m);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Live scoring skipped for lineup. LeagueId={LeagueId} Week={Week}",
+                dto.LeagueId, dto.SeasonWeek);
+        }
     }
 
     private async Task<PlayerLineup?> TryCloneFromPriorWeekAsync(

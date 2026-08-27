@@ -38,6 +38,10 @@ public class GetCurrentSeasonWeekQueryHandler : IGetCurrentSeasonWeekQueryHandle
             .Include(sw => sw.Season)
             .Include(sw => sw.SeasonPhase)
             .Where(sw => sw.StartDate <= now && sw.EndDate > now)
+            // Contest-less calendar artifacts (NCAA "Preseason Week 1"
+            // spans Feb-Aug with zero games) must never be "current" —
+            // same discriminator as GetSeasonWeeksByDateRange.
+            .Where(sw => _dbContext.Contests.Any(c => c.SeasonWeekId == sw.Id))
             .OrderBy(sw => sw.StartDate)
             .Select(sw => new CanonicalSeasonWeekDto
             {

@@ -15,6 +15,7 @@ public class ProducerSqlQueryProvider
         "GetMatchupForPreviewBatch.sql",
         "GetMatchupsForCurrentWeek.sql",
         "GetMatchupsForSeasonWeek.sql",
+        "GetMatchupsBySeasonWeekId.sql",
         "GetGameDates.sql",
         "GetMatchupByContestId.sql",
         "GetRankingsByPollByWeek.sql",
@@ -97,6 +98,8 @@ public class ProducerSqlQueryProvider
     public string GetMatchupsForCurrentWeek() => Get("GetMatchupsForCurrentWeek.sql");
 
     public string GetMatchupsForSeasonWeek() => Get("GetMatchupsForSeasonWeek.sql");
+
+    public string GetMatchupsBySeasonWeekId() => Get("GetMatchupsBySeasonWeekId.sql");
 
     public string GetGameDates() => Get("GetGameDates.sql");
 

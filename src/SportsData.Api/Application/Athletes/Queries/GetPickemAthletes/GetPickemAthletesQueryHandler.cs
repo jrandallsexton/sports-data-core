@@ -70,8 +70,14 @@ public class GetPickemAthletesQueryHandler : IGetPickemAthletesQueryHandler
         try
         {
             var client = _athleteClientFactory.Resolve(mode);
+            var phaseTypeCode = query.Phase switch
+            {
+                "preseason" => 1,
+                "postseason" => 3,
+                _ => 2,
+            };
             return await client.GetAthleteMatchupSummaries(
-                query.Position, query.SeasonYear, query.Week, cancellationToken);
+                query.Position, query.SeasonYear, query.Week, phaseTypeCode, cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

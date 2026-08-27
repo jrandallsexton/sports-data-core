@@ -267,10 +267,11 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
         // hydrates it (all 1,527 local 2026 contests were null), while
         // SeasonWeekId is populated on every one of them.
         //
-        // Scoped to the REGULAR SEASON phase (TypeCode 2): week numbers
-        // restart per phase, so an unscoped Number match would let a
-        // postseason "week 1" overwrite the real week-1 opponent.
-        const int regularSeasonTypeCode = 2;
+        // Scoped to the REQUESTED phase (default 2, regular season): week
+        // numbers restart per phase, so an unscoped Number match would let
+        // a postseason "week 1" overwrite the real week-1 opponent. A
+        // preseason league passes 1 and gets preseason opponents.
+        var phaseTypeCode = query.SeasonPhaseTypeCode;
         var weekContests = await (
                 from c in _dataContext.Contests.AsNoTracking()
                 join sw in _dataContext.SeasonWeeks.AsNoTracking()
@@ -279,7 +280,7 @@ public class GetAthleteMatchupSummariesQueryHandler : IGetAthleteMatchupSummarie
                     on sw.SeasonPhaseId equals sp.Id
                 where c.SeasonYear == query.SeasonYear &&
                       sw.Number == query.Week &&
-                      sp.TypeCode == regularSeasonTypeCode &&
+                      sp.TypeCode == phaseTypeCode &&
                       c.CancelledUtc == null &&
                       (teamFsIds.Contains(c.HomeTeamFranchiseSeasonId) ||
                        teamFsIds.Contains(c.AwayTeamFranchiseSeasonId))

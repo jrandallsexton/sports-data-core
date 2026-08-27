@@ -88,6 +88,15 @@ public interface IProvideContests : IProvideHealthChecks
     Task<Result<List<Matchup>>> GetMatchupsForSeasonWeek(int year, int week, CancellationToken ct = default);
 
     /// <summary>
+    /// Matchups by SeasonWeek GUID — the precise week identity. Week
+    /// NUMBERS repeat across season phases (NFL: preseason/regular/
+    /// postseason each count from 1); the id form has no such ambiguity
+    /// and works for any phase. Preferred whenever the caller holds a
+    /// SeasonWeekId (the league schedule sync does, end-to-end).
+    /// </summary>
+    Task<Result<List<Matchup>>> GetMatchupsBySeasonWeekId(Guid seasonWeekId, CancellationToken ct = default);
+
+    /// <summary>
     /// Distinct calendar dates (US Eastern) that have at least one scheduled game
     /// in the [from, to] window. Either bound may be null for an open-ended
     /// range. Backs the create-league blackout-date picker and the create-time
@@ -368,6 +377,13 @@ public class ContestClient : ClientBase, IProvideContests
         return await GetAsync<List<Matchup>>(
             $"contests/matchups/by-season-week?year={year}&week={week}",
             new List<Matchup>(), "Matchups for season week", ResultStatus.NotFound, ct);
+    }
+
+    public async Task<Result<List<Matchup>>> GetMatchupsBySeasonWeekId(Guid seasonWeekId, CancellationToken ct = default)
+    {
+        return await GetAsync<List<Matchup>>(
+            $"contests/matchups/by-season-week-id/{seasonWeekId}",
+            new List<Matchup>(), "Matchups for season week id", ResultStatus.NotFound, ct);
     }
 
     public async Task<Result<List<DateOnly>>> GetGameDates(DateTime? from, DateTime? to, CancellationToken ct = default)

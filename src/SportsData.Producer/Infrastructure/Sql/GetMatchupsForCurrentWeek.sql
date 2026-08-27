@@ -1,6 +1,7 @@
 WITH current_week AS (
   SELECT sw."Id" AS "SeasonWeekId",
          sw."Number" AS "WeekNumber",
+         sp."TypeCode" AS "SeasonPhaseTypeCode",
          s."Id" AS "SeasonId",
          s."Year" AS "SeasonYear"
   FROM public."Season" s
@@ -14,6 +15,7 @@ SELECT
   cw."SeasonWeekId",
   cw."SeasonYear" AS "SeasonYear",
   cw."WeekNumber" AS "SeasonWeek",
+  cw."SeasonPhaseTypeCode",
   c."Id" AS "ContestId",
   cn."Headline" AS "Headline",
   c."StartDateUtc" AS "StartDateUtc",

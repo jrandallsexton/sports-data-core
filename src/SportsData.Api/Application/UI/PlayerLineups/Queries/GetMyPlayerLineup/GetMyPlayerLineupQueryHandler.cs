@@ -122,9 +122,10 @@ public class GetMyPlayerLineupQueryHandler : IGetMyPlayerLineupQueryHandler
         WeekMatchupMap weekMap;
         try
         {
-            var matchups = await _contestClientFactory
-                .Resolve(group.Sport)
-                .GetMatchupsForSeasonWeek(query.SeasonYear, query.SeasonWeek, cancellationToken);
+            var matchups = await LeagueWeekMatchupResolver.ResolveAsync(
+                _dataContext,
+                _contestClientFactory.Resolve(group.Sport),
+                query.LeagueId, query.SeasonYear, query.SeasonWeek, cancellationToken);
 
             if (!matchups.IsSuccess)
             {

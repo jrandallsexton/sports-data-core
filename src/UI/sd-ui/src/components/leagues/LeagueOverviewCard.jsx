@@ -1,5 +1,6 @@
 // src/components/leagues/LeagueOverviewCard.jsx
 import { Link } from "react-router-dom";
+import { leaguePicksPath } from "../../routes/paths";
 import "./LeagueOverviewCard.css"; // Assuming you have styles for the card
 
 const LeagueOverviewCard = ({ league, onDuplicate }) => {
@@ -18,16 +19,9 @@ const LeagueOverviewCard = ({ league, onDuplicate }) => {
       )}
       <div className="league-card-header">
         <h2 className="league-card-title">
-          {/* One game per league: PlayerPickem leagues open the roster
-              builder, everything else opens the team picks page. */}
-          <Link
-            to={
-              league.groupType === 'PlayerPickem'
-                ? `/app/pickem/players/${league.id}`
-                : `/app/picks/${league.id}`
-            }
-            className="league-card-name-link"
-          >
+          {/* League-rooted canonical URL — LeaguePicksRouter renders
+              whichever game this league plays, so no branching here. */}
+          <Link to={leaguePicksPath(league.id)} className="league-card-name-link">
             {league.name}
           </Link>
           {isPast && <span className="past-league-badge">Past</span>}

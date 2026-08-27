@@ -96,9 +96,10 @@ public class UpsertLineupSlotCommandHandler : IUpsertLineupSlotCommandHandler
         WeekMatchupMap weekMap;
         try
         {
-            var matchups = await _contestClientFactory
-                .Resolve(gate.Group!.Sport)
-                .GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek, cancellationToken);
+            var matchups = await LeagueWeekMatchupResolver.ResolveAsync(
+                _dataContext,
+                _contestClientFactory.Resolve(gate.Group!.Sport),
+                command.LeagueId, command.SeasonYear, command.SeasonWeek, cancellationToken);
 
             if (!matchups.IsSuccess)
             {

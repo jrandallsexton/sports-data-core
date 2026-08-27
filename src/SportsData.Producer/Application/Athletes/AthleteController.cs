@@ -51,11 +51,13 @@ public class AthleteController : ControllerBase
         [FromQuery] string position,
         [FromQuery] int seasonYear,
         [FromQuery] int week,
+        // Nullable so an omitted param cannot bind to 0 and match no phase.
+        [FromQuery] int? phaseTypeCode,
         [FromServices] IGetAthleteMatchupSummariesQueryHandler handler,
         CancellationToken cancellationToken)
     {
         var result = await handler.ExecuteAsync(
-            new GetAthleteMatchupSummariesQuery(position, seasonYear, week),
+            new GetAthleteMatchupSummariesQuery(position, seasonYear, week, phaseTypeCode ?? 2),
             cancellationToken);
         return result.ToActionResult();
     }

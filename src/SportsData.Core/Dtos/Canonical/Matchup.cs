@@ -9,6 +9,14 @@ using System;
 
         public int SeasonWeek { get; set; }
 
+        /// <summary>
+        /// SeasonPhase.TypeCode of this matchup's week: 1 Preseason,
+        /// 2 Regular Season, 3 Postseason. Week NUMBERS repeat across
+        /// phases within a season year, so consumers that persist or
+        /// display week identity need this alongside SeasonWeek.
+        /// </summary>
+        public int SeasonPhaseTypeCode { get; set; }
+
         public Guid ContestId { get; set; }
 
         public string? Headline { get; set; }

@@ -1,6 +1,45 @@
+using Microsoft.EntityFrameworkCore;
+
+using SportsData.Api.Infrastructure.Data;
+using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.UI.PlayerLineups;
+
+/// <summary>
+/// Resolves the week's matchups for a LEAGUE week. Prefers the league's
+/// own PickemGroupWeek row: its SeasonWeekId is the precise (phase-
+/// qualified) identity, so a preseason-only league anchors to preseason
+/// games — a bare (year, number) lookup is regular-scoped and would
+/// anchor to the wrong phase. Falls back to the number query for weeks
+/// the league hasn't materialized (Player Pick'em leagues may play
+/// weeks with no team-pick slate).
+/// </summary>
+internal static class LeagueWeekMatchupResolver
+{
+    internal static async Task<Result<List<Matchup>>> ResolveAsync(
+        AppDataContext dataContext,
+        IProvideContests contestClient,
+        Guid leagueId,
+        int seasonYear,
+        int seasonWeek,
+        CancellationToken cancellationToken)
+    {
+        var seasonWeekId = await dataContext.PickemGroupWeeks
+            .AsNoTracking()
+            .Where(w => w.GroupId == leagueId &&
+                        w.SeasonYear == seasonYear &&
+                        w.SeasonWeek == seasonWeek)
+            .OrderBy(w => w.SeasonPhaseTypeCode)
+            .Select(w => (Guid?)w.SeasonWeekId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return seasonWeekId is not null
+            ? await contestClient.GetMatchupsBySeasonWeekId(seasonWeekId.Value, cancellationToken)
+            : await contestClient.GetMatchupsForSeasonWeek(seasonYear, seasonWeek, cancellationToken);
+    }
+}
 
 /// <summary>
 /// Team-slug → (ContestId, StartUtc) lookup for one season-week, built

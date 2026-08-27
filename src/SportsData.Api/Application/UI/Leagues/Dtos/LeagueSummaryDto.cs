@@ -51,6 +51,14 @@
         public List<int> SeasonWeeks { get; set; } = [];
 
         /// <summary>
+        /// Phase-qualified week identities, ordered phase-then-week. Week
+        /// numbers repeat across season phases, so <see cref="SeasonWeeks"/>
+        /// under-identifies a week; the UI routes and renders from this
+        /// list. ADDITIVE — existing consumers of SeasonWeeks unaffected.
+        /// </summary>
+        public List<Application.User.Dtos.LeagueSeasonWeekDetailDto> SeasonWeekDetails { get; set; } = [];
+
+        /// <summary>
         /// Set once the group's season has passed. Non-null means the league is
         /// read-only: it cannot be cloned (the clone handler rejects it) and the
         /// UI hides its Duplicate action. Only populated when the caller opts in

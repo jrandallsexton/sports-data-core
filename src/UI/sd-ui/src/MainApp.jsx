@@ -10,14 +10,13 @@ import { setGlobalApiErrorHandler } from "api/apiClient";
 import { useContestUpdates } from "./contexts/ContestUpdatesContext";
 
 import ErrorPage from "components/common/ErrorPage";
-import PicksPage from "./components/picks/PicksPage.jsx";
 import LeaderboardPage from "./components/leaderboard/LeaderboardPage.jsx";
 import MessageBoardPage from "./components/messageboard/MessageboardPage.jsx";
 import HomePage from "./components/home/HomePage.jsx";
 import WarRoomPage from "./components/warRoom/WarRoomPage.jsx";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
 import GameMap from "./components/map/GameMap.jsx";
-import PlayerRosterBuilder from "./components/pickem/players/PlayerRosterBuilder";
+import LeaguePicksRouter from "./routes/LeaguePicksRouter";
 import WelcomeDialog from "./components/welcome/WelcomeDialog";
 import TeamCard from "./components/teams/TeamCard";
 import AthleteCard from "./components/athletes/AthleteCard";
@@ -170,8 +169,22 @@ function MainApp() {
         ) : (
           <Routes>
             <Route index element={<HomePage />} />
-            <Route path="/picks/:leagueId?" element={<PicksPage />} />
-            <Route path="/picks/:leagueId/weeks/:week" element={<PicksPage />} />
+            {/* Canonical league-rooted picks routes — ONE family for both
+                games; LeaguePicksRouter branches on the league's GroupType.
+                Bare /picks is the league-less nav landing (redirects to the
+                remembered league's canonical URL). Canonical week URLs are
+                phase-less; the explicit /phase variant is reserved for a
+                future postseason pick'em (see routes/paths.js). */}
+            <Route path="/picks" element={<LeaguePicksRouter />} />
+            <Route path="/league/:leagueId/picks" element={<LeaguePicksRouter />} />
+            <Route
+              path="/league/:leagueId/picks/weeks/:week"
+              element={<LeaguePicksRouter />}
+            />
+            <Route
+              path="/league/:leagueId/picks/phase/:phase/weeks/:week"
+              element={<LeaguePicksRouter />}
+            />
             <Route path="/warroom" element={<WarRoomPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             {/* Admin-only until launch-ready — the nav link is hidden for
@@ -181,16 +194,6 @@ function MainApp() {
               element={
                 <AdminRoute>
                   <GameMap />
-                </AdminRoute>
-              }
-            />
-            {/* Player Pick'em roster builder — admin-only v1 exploration;
-                users see only the home-page teaser until launch. */}
-            <Route
-              path="/pickem/players/:leagueId?"
-              element={
-                <AdminRoute>
-                  <PlayerRosterBuilder />
                 </AdminRoute>
               }
             />

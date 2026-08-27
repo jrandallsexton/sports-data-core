@@ -25,11 +25,12 @@ public class AthletesController : ApiControllerBase
         [FromQuery] string position,
         [FromQuery] int seasonYear,
         [FromQuery] int week,
+        [FromQuery] string? phase,
         [FromServices] IGetPickemAthletesQueryHandler handler,
         CancellationToken cancellationToken)
     {
         var result = await handler.ExecuteAsync(
-            new GetPickemAthletesQuery(sport, league, position, seasonYear, week),
+            new GetPickemAthletesQuery(sport, league, position, seasonYear, week, phase ?? "regular"),
             cancellationToken);
         return result.ToActionResult();
     }

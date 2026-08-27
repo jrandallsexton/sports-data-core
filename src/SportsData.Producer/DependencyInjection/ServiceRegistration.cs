@@ -379,6 +379,10 @@ namespace SportsData.Producer.DependencyInjection
             services.AddScoped<IGetMatchupsForSeasonWeekQueryHandler, GetMatchupsForSeasonWeekQueryHandler>();
             services.AddScoped<IValidator<Application.Contests.Queries.Matchups.GetMatchupsForSeasonWeek.GetMatchupsForSeasonWeekQuery>,
                 Application.Contests.Queries.Matchups.GetMatchupsForSeasonWeek.GetMatchupsForSeasonWeekQueryValidator>();
+            services.AddScoped<Application.Contests.Queries.Matchups.GetMatchupsBySeasonWeekId.IGetMatchupsBySeasonWeekIdQueryHandler,
+                Application.Contests.Queries.Matchups.GetMatchupsBySeasonWeekId.GetMatchupsBySeasonWeekIdQueryHandler>();
+            services.AddScoped<IValidator<Application.Contests.Queries.Matchups.GetMatchupsBySeasonWeekId.GetMatchupsBySeasonWeekIdQuery>,
+                Application.Contests.Queries.Matchups.GetMatchupsBySeasonWeekId.GetMatchupsBySeasonWeekIdQueryValidator>();
             services.AddScoped<IGetMatchupByContestIdQueryHandler, GetMatchupByContestIdQueryHandler>();
             services.AddScoped<
                 Application.Contests.Queries.GetGameDates.IGetGameDatesQueryHandler,

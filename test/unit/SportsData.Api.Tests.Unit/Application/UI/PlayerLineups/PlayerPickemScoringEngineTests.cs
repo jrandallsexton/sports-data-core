@@ -1,7 +1,6 @@
 using FluentAssertions;
 
 using SportsData.Api.Application.UI.PlayerLineups.Scoring;
-using SportsData.Api.Infrastructure.Data.Entities;
 
 using Xunit;
 
@@ -14,14 +13,8 @@ namespace SportsData.Api.Tests.Unit.Application.UI.PlayerLineups;
 /// </summary>
 public class PlayerPickemScoringEngineTests
 {
-    private static PlayerScoringRule Rule(string key, decimal points, decimal perUnits = 1m) => new()
-    {
-        Id = Guid.NewGuid(),
-        RuleSetId = Guid.NewGuid(),
-        StatKey = key,
-        Points = points,
-        PerUnits = perUnits,
-    };
+    private static ScoringRule Rule(string key, decimal points, decimal perUnits = 1m) =>
+        new(key, points, perUnits);
 
     [Fact]
     public void QbLine_ScoresFractionalYards_AndCountsNegatives()

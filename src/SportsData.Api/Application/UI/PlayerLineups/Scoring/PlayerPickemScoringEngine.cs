@@ -1,6 +1,10 @@
-using SportsData.Api.Infrastructure.Data.Entities;
-
 namespace SportsData.Api.Application.UI.PlayerLineups.Scoring;
+
+/// <summary>
+/// Read-model of one scoring rule — the engine consumes this, never the
+/// persistence entity (EF reads project into it).
+/// </summary>
+public readonly record struct ScoringRule(string StatKey, decimal Points, decimal PerUnits);
 
 /// <summary>
 /// Applies a scoring matrix to a flattened statline. The engine owns the
@@ -16,7 +20,7 @@ public static class PlayerPickemScoringEngine
     public readonly record struct SlotScore(decimal Points, IReadOnlyList<StatContribution> Contributions);
 
     public static SlotScore Score(
-        IReadOnlyCollection<PlayerScoringRule> rules,
+        IReadOnlyCollection<ScoringRule> rules,
         IReadOnlyDictionary<string, decimal> stats)
     {
         var enriched = WithDerived(stats);

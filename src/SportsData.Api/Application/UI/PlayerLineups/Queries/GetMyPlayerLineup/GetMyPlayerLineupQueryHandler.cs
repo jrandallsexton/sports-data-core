@@ -123,6 +123,7 @@ public class GetMyPlayerLineupQueryHandler : IGetMyPlayerLineupQueryHandler
             var rules = await _dataContext.PlayerScoringRules
                 .AsNoTracking()
                 .Where(r => r.RuleSet.IsDefault)
+                .Select(r => new ScoringRule(r.StatKey, r.Points, r.PerUnits))
                 .ToListAsync(cancellationToken);
             if (rules.Count == 0) return;
 

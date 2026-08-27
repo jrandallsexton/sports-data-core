@@ -46,6 +46,22 @@ public class AthleteController : ControllerBase
     /// data is game-agnostic athlete/matchup data.
     /// Example: GET /api/athletes/matchup-summaries?position=QB&amp;seasonYear=2026&amp;week=1
     /// </summary>
+    [HttpGet("matchup-summaries")]
+    public async Task<ActionResult<AthleteMatchupSummariesDto>> GetAthleteMatchupSummaries(
+        [FromQuery] string position,
+        [FromQuery] int seasonYear,
+        [FromQuery] int week,
+        // Nullable so an omitted param cannot bind to 0 and match no phase.
+        [FromQuery] int? phaseTypeCode,
+        [FromServices] IGetAthleteMatchupSummariesQueryHandler handler,
+        CancellationToken cancellationToken)
+    {
+        var result = await handler.ExecuteAsync(
+            new GetAthleteMatchupSummariesQuery(position, seasonYear, week, phaseTypeCode ?? 2),
+            cancellationToken);
+        return result.ToActionResult();
+    }
+
     /// <summary>
     /// Batch box-score statlines for Player Pick'em scoring: one call per
     /// lineup, returning category.statName → value maps per
@@ -61,22 +77,6 @@ public class AthleteController : ControllerBase
         var result = await handler.ExecuteAsync(
             new Queries.GetAthleteStatlines.GetAthleteStatlinesQuery(
                 request.ContestIds, request.AthleteSeasonIds),
-            cancellationToken);
-        return result.ToActionResult();
-    }
-
-    [HttpGet("matchup-summaries")]
-    public async Task<ActionResult<AthleteMatchupSummariesDto>> GetAthleteMatchupSummaries(
-        [FromQuery] string position,
-        [FromQuery] int seasonYear,
-        [FromQuery] int week,
-        // Nullable so an omitted param cannot bind to 0 and match no phase.
-        [FromQuery] int? phaseTypeCode,
-        [FromServices] IGetAthleteMatchupSummariesQueryHandler handler,
-        CancellationToken cancellationToken)
-    {
-        var result = await handler.ExecuteAsync(
-            new GetAthleteMatchupSummariesQuery(position, seasonYear, week, phaseTypeCode ?? 2),
             cancellationToken);
         return result.ToActionResult();
     }

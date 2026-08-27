@@ -33,6 +33,13 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.HasKey(x => x.Id);
                 builder.Property(x => x.Name).HasMaxLength(100);
 
+                // AT MOST one default: the scoring path loads rules from
+                // every IsDefault set, so a second default would silently
+                // merge two matrices into every lineup score.
+                builder.HasIndex(x => x.IsDefault)
+                    .IsUnique()
+                    .HasFilter("\"IsDefault\"");
+
                 builder.HasMany(x => x.Rules)
                     .WithOne(x => x.RuleSet)
                     .HasForeignKey(x => x.RuleSetId)

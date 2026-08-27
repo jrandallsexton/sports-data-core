@@ -171,6 +171,7 @@ function PlayerRosterBuilder() {
       setRosterLoading(true);
       setSaveError(null);
       setRoster({});
+      setTotalPoints(null); // never show a total for a roster we cleared
     }
 
     const sport = LEAGUES.find((l) => l.id === league)?.sport;
@@ -361,6 +362,9 @@ function PlayerRosterBuilder() {
         pickemLeague.id, pickemLeague.seasonYear ?? SEASON_YEAR, seasonWeek, activeSlotId, athlete
       );
       setRoster((prev) => ({ ...prev, [activeSlotId]: response.data }));
+      // Slot points and the total must come from one server response —
+      // pull a silent refresh so they can't drift.
+      setRefreshTick((t) => t + 1);
     } catch (err) {
       setSaveError(errorMessage(err, 'Could not save that pick.'));
     }
@@ -376,6 +380,8 @@ function PlayerRosterBuilder() {
         delete next[slotId];
         return next;
       });
+      setRefreshTick((t) => t + 1); // re-sync total with the server
+
     } catch (err) {
       setSaveError(errorMessage(err, 'Could not clear that slot.'));
     }

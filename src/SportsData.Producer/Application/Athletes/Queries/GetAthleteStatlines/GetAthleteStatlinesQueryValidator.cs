@@ -11,14 +11,17 @@ public class GetAthleteStatlinesQueryValidator : AbstractValidator<GetAthleteSta
 {
     public GetAthleteStatlinesQueryValidator()
     {
+        // Null-guarded predicates: FluentValidation runs the whole chain
+        // even after NotEmpty fails, so a null body list must not NRE
+        // inside Must.
         RuleFor(x => x.ContestIds)
             .NotEmpty()
-            .Must(x => x.Count <= 100)
+            .Must(x => x is null || x.Count <= 100)
             .WithMessage("ContestIds must contain between 1 and 100 entries");
 
         RuleFor(x => x.AthleteSeasonIds)
             .NotEmpty()
-            .Must(x => x.Count <= 100)
+            .Must(x => x is null || x.Count <= 100)
             .WithMessage("AthleteSeasonIds must contain between 1 and 100 entries");
     }
 }

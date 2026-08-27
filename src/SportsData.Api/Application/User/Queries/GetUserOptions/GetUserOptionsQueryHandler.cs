@@ -44,19 +44,7 @@ public class GetUserOptionsQueryHandler : IGetUserOptionsQueryHandler
             .Select(o => new { o.Key, o.Value })
             .ToListAsync(cancellationToken);
 
-        var byKey = rows.ToDictionary(r => r.Key, r => r.Value, StringComparer.Ordinal);
-
-        return new Success<UserOptionsDto>(new UserOptionsDto
-        {
-            ShowGamblingContent = ParseBool(byKey, UserOptionKeys.ShowGamblingContent, defaultValue: false)
-        });
+        return new Success<UserOptionsDto>(
+            UserOptionsDto.FromRows(rows.Select(r => new KeyValuePair<string, string>(r.Key, r.Value))));
     }
-
-    private static bool ParseBool(
-        IReadOnlyDictionary<string, string> byKey,
-        string key,
-        bool defaultValue)
-        => byKey.TryGetValue(key, out var raw) && bool.TryParse(raw, out var parsed)
-            ? parsed
-            : defaultValue;
 }

@@ -10,6 +10,8 @@ import {
   seasonApi,
   REGULAR_SEASON_TYPE_CODE,
   type CurrentSeason,
+  currentSeasonKeys,
+  currentSeasonRetry,
 } from '@/src/services/api/seasonApi';
 import {
   useLeagueCreationGates,
@@ -78,12 +80,11 @@ export function PrimarySlotOffSeasonCountdown() {
 
   const results = useQueries({
     queries: SPORTS.map((s) => ({
-      queryKey: ['season', 'current', s.sport, s.league],
+      queryKey: currentSeasonKeys.current(s.sport, s.league),
       queryFn: () => seasonApi.getCurrentSeason(s.sport, s.league).then((r) => r.data),
       staleTime: 1000 * 60 * 60, // kickoff dates barely move; refetch hourly at most
-      // A sport with no sourced season is a valid "coming soon" state — don't
-      // retry it as though it were a transient error.
-      retry: false,
+      // 404 = valid "coming soon"; transient failures get a bounded retry.
+      retry: currentSeasonRetry,
     })),
   });
 

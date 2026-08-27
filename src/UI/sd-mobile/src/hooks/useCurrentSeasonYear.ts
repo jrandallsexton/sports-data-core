@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { seasonApi } from '@/src/services/api/seasonApi';
+import { currentSeasonKeys, currentSeasonRetry, seasonApi } from '@/src/services/api/seasonApi';
 
 /**
  * Resolves the current (or upcoming) season year for a sport from
@@ -13,9 +13,12 @@ import { seasonApi } from '@/src/services/api/seasonApi';
  */
 export function useCurrentSeasonYear(sport = 'football', league = 'ncaa') {
   const { data, isLoading } = useQuery({
-    queryKey: ['currentSeason', sport, league],
+    // Shared key (currentSeasonKeys) so this and the off-season countdown
+    // dedupe to ONE fetch per sport per staleTime window.
+    queryKey: currentSeasonKeys.current(sport, league),
     queryFn: async () => (await seasonApi.getCurrentSeason(sport, league)).data,
     staleTime: 60 * 60 * 1000,
+    retry: currentSeasonRetry,
   });
 
   return { seasonYear: data?.seasonYear ?? null, loading: isLoading };

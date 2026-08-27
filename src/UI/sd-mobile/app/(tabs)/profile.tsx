@@ -21,7 +21,7 @@ import { getTheme } from '@/constants/Colors';
 import { auth } from '@/src/lib/firebase';
 import { useAuthStore } from '@/src/stores/authStore';
 import { useCurrentUser, standingsKeys } from '@/src/hooks/useStandings';
-import { useUserOptions, userOptionsKeys } from '@/src/hooks/useUserOptions';
+import { useUserOptions, getUserOptionsCache, setUserOptionsCache } from '@/src/hooks/useUserOptions';
 import type { UserOptions } from '@/src/types/models';
 import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
 import { usersApi } from '@/src/services/api/usersApi';
@@ -130,13 +130,14 @@ export default function ProfileScreen() {
   const optionsMutation = useMutation<unknown, unknown, UserOptions, { previous?: UserOptions }>({
     mutationFn: (next) => usersApi.updateUserOptions(next),
     onMutate: (next) => {
-      const previous = queryClient.getQueryData<UserOptions>(userOptionsKeys.me);
-      queryClient.setQueryData(userOptionsKeys.me, next);
+      // Options live inside the cached /user/me payload now — patch it.
+      const previous = getUserOptionsCache(queryClient);
+      setUserOptionsCache(queryClient, next);
       setOptionsMessage('');
       return { previous };
     },
     onError: (_err, _next, context) => {
-      if (context?.previous) queryClient.setQueryData(userOptionsKeys.me, context.previous);
+      if (context?.previous) setUserOptionsCache(queryClient, context.previous);
       setOptionsMessage('Could not save. Please try again.');
     },
   });

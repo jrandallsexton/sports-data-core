@@ -462,6 +462,99 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
         }
 
         /// <summary>
+        /// PLAYER Pick'em leagues get the week (identity + phase stamp) but
+        /// no team-pick slate: no PickemGroupMatchup rows are inserted even
+        /// when canonical matchups exist for the week. The roster is the
+        /// game — a slate would only add dead rows and notification fan-out.
+        /// </summary>
+        [Fact]
+        public async Task Process_PlayerPickemGroup_MaterializesWeekWithoutMatchups()
+        {
+            // Arrange
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+
+            var group = Fixture.Build<PickemGroup>()
+                .Without(x => x.StartsOn)
+                .Without(x => x.EndsOn)
+                .With(x => x.Id, groupId)
+                .With(x => x.GroupType, SportsData.Api.Application.Common.Enums.GroupType.PlayerPickem)
+                .With(x => x.Conferences, new List<PickemGroupConference>())
+                .Create();
+
+            await DataContext.PickemGroups.AddAsync(group);
+            await DataContext.SaveChangesAsync();
+
+            _contestClientMock
+                .Setup(x => x.GetMatchupsBySeasonWeekId(seasonWeekId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(new List<Matchup>
+                {
+                    Fixture.Build<Matchup>().With(x => x.SeasonPhaseTypeCode, 1).Create(),
+                }));
+
+            var command = new ScheduleGroupWeekMatchupsCommand(
+                groupId,
+                seasonWeekId,
+                2026,
+                4,
+                false,
+                Guid.NewGuid());
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+
+            // Act
+            await sut.Process(command);
+
+            // Assert — week exists, phase stamped, flag set, ZERO matchups
+            // for THIS week (AutoFixture seeds unrelated weeks with matchup
+            // graphs on the group; scope the count to the processed week).
+            var savedGroupWeek = DataContext.PickemGroupWeeks
+                .FirstOrDefault(x => x.SeasonWeekId == seasonWeekId && x.GroupId == groupId);
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.SeasonPhaseTypeCode.Should().Be(1);
+            savedGroupWeek.AreMatchupsGenerated.Should().BeTrue();
+            DataContext.PickemGroupMatchups
+                .Count(m => m.GroupId == groupId && m.SeasonWeekId == seasonWeekId)
+                .Should().Be(0);
+        }
+
+        /// <summary>
+        /// A successful-but-EMPTY canonical response carries no phase; the
+        /// week must stay unlatched so the next scheduler pass can stamp it
+        /// (latching would strand it on the default phase forever).
+        /// </summary>
+        [Fact]
+        public async Task Process_PlayerPickemGroup_EmptyCanonicalResponse_LeavesWeekUnlatched()
+        {
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+
+            var group = Fixture.Build<PickemGroup>()
+                .Without(x => x.StartsOn)
+                .Without(x => x.EndsOn)
+                .With(x => x.Id, groupId)
+                .With(x => x.GroupType, SportsData.Api.Application.Common.Enums.GroupType.PlayerPickem)
+                .With(x => x.Conferences, new List<PickemGroupConference>())
+                .Create();
+
+            await DataContext.PickemGroups.AddAsync(group);
+            await DataContext.SaveChangesAsync();
+
+            _contestClientMock
+                .Setup(x => x.GetMatchupsBySeasonWeekId(seasonWeekId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(new List<Matchup>()));
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+            await sut.Process(new ScheduleGroupWeekMatchupsCommand(
+                groupId, seasonWeekId, 2026, 4, false, Guid.NewGuid()));
+
+            var savedGroupWeek = DataContext.PickemGroupWeeks
+                .FirstOrDefault(x => x.SeasonWeekId == seasonWeekId && x.GroupId == groupId);
+            savedGroupWeek.Should().NotBeNull();
+            savedGroupWeek!.AreMatchupsGenerated.Should().BeFalse();
+        }
+
+        /// <summary>
         /// Validates that upon successful matchup generation, the processor publishes
         /// a PickemGroupWeekMatchupsGenerated event with the correct GroupId, SeasonYear,
         /// and CorrelationId for downstream consumers to react to.

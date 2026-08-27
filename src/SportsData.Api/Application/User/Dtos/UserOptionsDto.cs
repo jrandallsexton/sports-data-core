@@ -13,4 +13,28 @@ public record UserOptionsDto
     /// in. Per-user only — never a league setting.
     /// </summary>
     public bool ShowGamblingContent { get; init; }
+
+    /// <summary>
+    /// Single projection from raw UserOption key/value rows — shared by
+    /// GetMe (which embeds options on the user DTO so clients need no
+    /// second round-trip) and the standalone options endpoint (kept for
+    /// mobile). Unknown keys ignored; absent/unparsable values take each
+    /// option's default.
+    /// </summary>
+    public static UserOptionsDto FromRows(IEnumerable<KeyValuePair<string, string>> rows)
+    {
+        var byKey = new Dictionary<string, string>(rows, StringComparer.Ordinal);
+        return new UserOptionsDto
+        {
+            ShowGamblingContent = ParseBool(byKey, UserOptionKeys.ShowGamblingContent, defaultValue: false),
+        };
+    }
+
+    private static bool ParseBool(
+        IReadOnlyDictionary<string, string> byKey,
+        string key,
+        bool defaultValue)
+        => byKey.TryGetValue(key, out var raw) && bool.TryParse(raw, out var parsed)
+            ? parsed
+            : defaultValue;
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import apiWrapper from "../../api/apiWrapper.js";
 import { useUserDto } from "../../contexts/UserContext";
@@ -542,6 +542,16 @@ const LeagueCreatePage = () => {
         Let’s set up your custom league so you can compete with friends - or
         publish it for others to join!
       </p>
+      {/* Player Pick'em is a different game with its own (much smaller)
+          create flow — admin-only during alpha, so the link hides for
+          everyone else. */}
+      {userDto?.isAdmin === true && (
+        <p>
+          <Link to="/app/league/create/players">
+            Creating a Player Pick’em league instead? →
+          </Link>
+        </p>
+      )}
 
       <div className="card">
         <div

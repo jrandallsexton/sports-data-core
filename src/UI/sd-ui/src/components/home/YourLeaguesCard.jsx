@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { GiAmericanFootballHelmet } from "react-icons/gi";
 import { useUserDto } from "../../contexts/UserContext";
 import { leaguePicksPath } from "../../routes/paths";
 import "./YourLeaguesCard.css";
@@ -33,6 +34,16 @@ function YourLeaguesCard() {
 
   if (leagues.length === 0) return null;
 
+  // Player Pick'em is a different game — its rows get a helmet (no
+  // Unicode football-helmet emoji exists, so this one comes from
+  // react-icons' Game Icons set) instead of the sport-ball glyph.
+  const leagueIcon = (league) =>
+    league.groupType === "PlayerPickem" ? (
+      <GiAmericanFootballHelmet />
+    ) : (
+      SPORT_ICON[league.sport]
+    );
+
   return (
     <div className="your-leagues-card">
       <div className="your-leagues-card__header">
@@ -45,7 +56,7 @@ function YourLeaguesCard() {
       </div>
       <ul className="your-leagues-card__list">
         {leagues.map((league) => {
-          const icon = SPORT_ICON[league.sport];
+          const icon = leagueIcon(league);
           // League-rooted canonical URL — LeaguePicksRouter renders
           // whichever game this league plays, so no branching here.
           const destination = leaguePicksPath(league.id);

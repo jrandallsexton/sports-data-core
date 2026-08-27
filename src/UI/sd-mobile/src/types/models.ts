@@ -441,6 +441,12 @@ export interface UserDto {
   leagues: League[];
   isAdmin?: boolean;
   isReadOnly?: boolean;
+  /**
+   * Embedded option set — rides /user/me so no second round-trip is
+   * needed. Optional for pre-rollout API compat; consumers fall back to
+   * safe defaults when absent.
+   */
+  options?: UserOptions;
 }
 
 /**

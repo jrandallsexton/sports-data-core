@@ -23,6 +23,16 @@ const createFootballNflLeague = async (request) => {
 };
 
 /**
+ * Creates a new PLAYER Pick'em league (admin-gated during alpha). One
+ * endpoint for both football sports — the request carries sport.
+ * @returns {Promise<{ id: string }>} Created league ID
+ */
+const createPlayerLeague = async (request) => {
+  const response = await apiClient.post(`${BASE_PATH}/players`, request);
+  return response.data;
+};
+
+/**
  * Creates a new MLB pick'em league (admin-gated).
  * @returns {Promise<{ id: string }>} Created league ID
  */
@@ -215,6 +225,7 @@ const LeaguesApi = {
   createFootballNcaaLeague,
   createFootballNflLeague,
   createBaseballMlbLeague,
+  createPlayerLeague,
   cloneLeague,
   getLeagueById,
   getUserLeagues,

@@ -24,6 +24,17 @@ public interface IGetSeasonWeeksByDateRangeQueryHandler
 /// <c>To</c> or ends exactly on <c>From</c> still overlaps.
 ///
 /// <para>
+/// Only weeks that HAVE at least one contest are returned. ESPN's
+/// calendar carries administrative weeks with huge date windows and no
+/// games — NCAA "Preseason Week 1" spans Feb-Aug — so a bare date
+/// overlap handed league bootstrap phantom weeks whose numbers collide
+/// with real ones (the Curbstomp preseason-keyed week-1 corruption).
+/// Contest existence is the phase-agnostic discriminator: NFL preseason
+/// weeks (real games) stay eligible, contest-less calendar artifacts
+/// drop out.
+/// </para>
+///
+/// <para>
 /// Empty result is a legitimate <see cref="Success{T}"/> (not a
 /// failure). The most common reason for an empty list is "no
 /// SeasonWeeks are sourced yet for the requested date range" — e.g.
@@ -64,6 +75,7 @@ public class GetSeasonWeeksByDateRangeQueryHandler : IGetSeasonWeeksByDateRangeQ
             .Include(sw => sw.Season)
             .Include(sw => sw.SeasonPhase)
             .Where(sw => sw.StartDate <= query.To && sw.EndDate >= query.From)
+            .Where(sw => _dbContext.Contests.Any(c => c.SeasonWeekId == sw.Id))
             .OrderBy(sw => sw.StartDate)
             .Select(sw => new CanonicalSeasonWeekDto
             {

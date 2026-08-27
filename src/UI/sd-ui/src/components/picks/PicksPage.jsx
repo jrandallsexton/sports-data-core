@@ -2,6 +2,7 @@ import "./PicksPage.css";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { leaguePicksPath } from "../../routes/paths";
 import { useUserDto } from "../../contexts/UserContext";
 import { useLeagueContext } from "../../contexts/LeagueContext";
 import { useContestUpdates } from "../../contexts/ContestUpdatesContext";
@@ -23,7 +24,7 @@ function PicksPage() {
     setSelectedLeagueId: setGlobalLeagueId,
     initializeLeagueSelection,
   } = useLeagueContext();
-  const { leagueId: routeLeagueId, week: routeWeekParam } = useParams();
+  const { leagueId: routeLeagueId, week: routeWeekParam, phase: routePhaseParam } = useParams();
   const navigate = useNavigate();
 
   // Route param arrives as a string; parse once. Invalid values (negative,
@@ -34,6 +35,16 @@ function PicksPage() {
     const n = Number(routeWeekParam);
     return Number.isInteger(n) && n > 0 ? n : null;
   }, [routeWeekParam]);
+
+  // Phase slug from the URL. Week NUMBERS repeat across season phases
+  // (an NFL league can hold a preseason Week 4 AND a regular-season
+  // Week 4), so (phase, week) is the full week identity. Unknown or
+  // missing values become null and the week-snap effect redirects to
+  // the canonical URL.
+  const routePhase = useMemo(() => {
+    const known = ["preseason", "regular", "postseason", "offseason"];
+    return known.includes(routePhaseParam) ? routePhaseParam : null;
+  }, [routePhaseParam]);
 
   const [userPicks, setUserPicks] = useState({});
   const [isSubscribed] = useState(false);
@@ -171,17 +182,38 @@ function PicksPage() {
     () => selectedLeague?.seasonWeeks ?? [],
     [selectedLeague]
   );
+  // Phase-qualified week identities ({ seasonWeekId, week, phase }),
+  // ordered phase-then-week by the backend. Falls back to mapping the
+  // legacy int list as regular-season for payloads that predate
+  // seasonWeekDetails (stale cached /me during rollout).
+  const weekDetails = useMemo(() => {
+    const details = selectedLeague?.seasonWeekDetails;
+    if (details && details.length > 0) return details;
+    return seasonWeeks.map((w) => ({
+      seasonWeekId: null,
+      week: w,
+      phase: "regular",
+    }));
+  }, [selectedLeague, seasonWeeks]);
   // Default landing week — prefer the backend-computed current week (the
-  // earliest week with an unstarted matchup, falling back to the last
-  // week of the season). Custom-window leagues may only have a single
-  // entry.
-  const latestSeasonWeek =
-    seasonWeeks.length > 0 ? seasonWeeks[seasonWeeks.length - 1] : null;
-  const currentSeasonWeek = selectedLeague?.currentSeasonWeek ?? null;
-  const defaultLandingWeek =
-    currentSeasonWeek && seasonWeeks.includes(currentSeasonWeek)
-      ? currentSeasonWeek
-      : latestSeasonWeek;
+  // earliest week, in phase order, with an unstarted matchup, falling
+  // back to the last week of the season). Custom-window leagues may only
+  // have a single entry.
+  const currentDetail = useMemo(() => {
+    const byId = selectedLeague?.currentSeasonWeekId
+      ? weekDetails.find(
+          (d) => d.seasonWeekId === selectedLeague.currentSeasonWeekId
+        )
+      : null;
+    if (byId) return byId;
+    const byNumber = selectedLeague?.currentSeasonWeek
+      ? weekDetails.find((d) => d.week === selectedLeague.currentSeasonWeek)
+      : null;
+    return byNumber ?? null;
+  }, [selectedLeague, weekDetails]);
+  const defaultLandingDetail =
+    currentDetail ??
+    (weekDetails.length > 0 ? weekDetails[weekDetails.length - 1] : null);
 
   // Recovery for newly-created leagues. League creation publishes
   // PickemGroupCreated via the outbox; the consumer that populates
@@ -300,7 +332,7 @@ function PicksPage() {
   }, [matchups, getContestUpdate]);
 
   // One-shot init: ensure the URL carries a valid league. When the user
-  // lands on /app/picks with no param (or a stale id) redirect to the
+  // lands here with a stale league id, redirect to the
   // remembered league (LeagueContext, localStorage-backed) or the first
   // available. Once the URL has a valid league id, subsequent league
   // switches happen through `handleLeagueChange` (selector → navigate).
@@ -331,7 +363,7 @@ function PicksPage() {
         ? globalLeagueId
         : activeLeagues[0].id;
     setGlobalLeagueId(fallback);
-    navigate(`/app/picks/${fallback}`, { replace: true });
+    navigate(leaguePicksPath(fallback), { replace: true });
   }, [
     userLoading,
     activeLeagues,
@@ -739,7 +771,9 @@ function PicksPage() {
     (newLeagueId) => {
       if (!newLeagueId || newLeagueId === routeLeagueId) return;
       setGlobalLeagueId(newLeagueId);
-      navigate(`/app/picks/${newLeagueId}`, { replace: true });
+      // The unified router re-branches on the new league's GroupType, so
+      // switching into a Player Pick'em league lands on the roster builder.
+      navigate(leaguePicksPath(newLeagueId), { replace: true });
     },
     [routeLeagueId, navigate, setGlobalLeagueId]
   );
@@ -748,35 +782,45 @@ function PicksPage() {
   // back button returns to wherever the user came from rather than
   // cycling through every week they clicked through.
   const handleWeekChange = useCallback(
-    (newWeek) => {
+    (newWeek, newPhase) => {
       if (!routeLeagueId || newWeek == null) return;
-      if (newWeek === routeWeek) return;
-      navigate(`/app/picks/${routeLeagueId}/weeks/${newWeek}`, {
+      const phase = newPhase ?? "regular";
+      if (newWeek === routeWeek && phase === routePhase) return;
+      navigate(leaguePicksPath(routeLeagueId, newWeek, phase), {
         replace: true,
       });
     },
-    [routeLeagueId, routeWeek, navigate]
+    [routeLeagueId, routeWeek, routePhase, navigate]
   );
 
-  // Redirect to the canonical URL when the route is missing the week
-  // segment or carries one that's not in the league's week list.
-  // Replaces the prior `setSelectedWeek(latestSeasonWeek)` snap which
-  // only updated local state — that's the refresh-loses-selection bug:
-  // every remount re-defaulted to the latest week regardless of what
-  // the user had picked.
+  // Redirect to the canonical URL when the route is missing the week or
+  // phase segment, or carries a (phase, week) pair that's not in the
+  // league's week list. A phase-less /weeks/N URL adopts the phase of
+  // the first matching entry (phase order — chronological), so shared
+  // legacy links keep working. Replaces the prior
+  // `setSelectedWeek(latestSeasonWeek)` snap which only updated local
+  // state — that's the refresh-loses-selection bug: every remount
+  // re-defaulted to the latest week regardless of what the user picked.
   useEffect(() => {
     if (!routeLeagueId) return;
-    if (seasonWeeks.length === 0) return; // user-dto still hydrating
+    if (weekDetails.length === 0) return; // user-dto still hydrating
 
-    const weekIsValid =
-      routeWeek != null && seasonWeeks.includes(routeWeek);
-    if (weekIsValid) return;
+    const exact =
+      routeWeek != null &&
+      routePhase != null &&
+      weekDetails.some((d) => d.week === routeWeek && d.phase === routePhase);
+    if (exact) return;
 
-    if (defaultLandingWeek == null) return;
-    navigate(`/app/picks/${routeLeagueId}/weeks/${defaultLandingWeek}`, {
+    // Week matches but phase is missing/wrong → canonicalize to that
+    // week's real phase rather than bouncing to the default week.
+    const byWeek =
+      routeWeek != null ? weekDetails.find((d) => d.week === routeWeek) : null;
+    const target = byWeek ?? defaultLandingDetail;
+    if (target == null) return;
+    navigate(leaguePicksPath(routeLeagueId, target.week, target.phase), {
       replace: true,
     });
-  }, [routeLeagueId, routeWeek, seasonWeeks, defaultLandingWeek, navigate]);
+  }, [routeLeagueId, routeWeek, routePhase, weekDetails, defaultLandingDetail, navigate]);
 
   if (userLoading) return <div>Loading user info...</div>;
 
@@ -838,8 +882,10 @@ function PicksPage() {
             selectedLeagueId={routeLeagueId}
             setSelectedLeagueId={handleLeagueChange}
             selectedWeek={selectedWeek}
+            selectedPhase={routePhase}
             setSelectedWeek={handleWeekChange}
             seasonWeeks={seasonWeeks}
+            weekDetails={weekDetails}
           />
           <div className="pick-status-toggle-row">
             {isReadOnly && (

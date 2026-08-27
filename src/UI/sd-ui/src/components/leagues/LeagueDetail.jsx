@@ -5,6 +5,7 @@ import leaguesApi from "../../api/leagues/leaguesApi";
 import "./LeagueDetail.css";
 import LeagueInvitation from "./LeagueInvitation";
 import JoinClosesLabel from "./JoinClosesLabel";
+import { leaguePicksPath } from "../../routes/paths";
 
 // Render the league window as a human-readable date range, or "Full Season"
 // when both bounds are null (the league was created without a custom window).
@@ -120,7 +121,7 @@ const LeagueDetail = () => {
               reach this page from public-league discovery — their picks would
               403 at the API, so don't offer the affordance. */}
           {isMember && (
-            <Link to={`/app/picks/${league.id}`} className="make-picks-button">
+            <Link to={leaguePicksPath(league.id)} className="make-picks-button">
               {isPast ? "View Picks" : "Make Your Picks"}
             </Link>
           )}

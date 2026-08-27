@@ -109,16 +109,30 @@ namespace SportsData.Api.Application.Processors
             // 2. are there conferences to always be included?
             var conferenceSlugs = group.Conferences.Select(x => x.ConferenceSlug).ToList();
 
+            // Fetch by SeasonWeekId — the PRECISE week identity the command
+            // already carries. Number-based lookups are phase-ambiguous
+            // (NFL 2026 has a week 4 in preseason, regular season, AND
+            // postseason) and the number endpoint is regular-scoped by
+            // default, which would silently break preseason/postseason
+            // league weeks. The id form syncs any phase correctly.
             var matchupsResult = await _contestClientFactory
                 .Resolve(group.Sport)
-                .GetMatchupsForSeasonWeek(command.SeasonYear, command.SeasonWeek);
+                .GetMatchupsBySeasonWeekId(command.SeasonWeekId);
 
             if (!matchupsResult.IsSuccess)
             {
-                _logger.LogWarning("Failed to retrieve matchups for season {Year} week {Week}. Skipping.", command.SeasonYear, command.SeasonWeek);
+                _logger.LogWarning("Failed to retrieve matchups for season {Year} week {Week} (SeasonWeekId={SeasonWeekId}). Skipping.", command.SeasonYear, command.SeasonWeek, command.SeasonWeekId);
                 return;
             }
             var allMatchups = matchupsResult.Value;
+
+            // Stamp the week's phase from the canonical matchup data — all
+            // matchups of one SeasonWeekId share a phase by construction.
+            var phaseTypeCode = allMatchups.FirstOrDefault()?.SeasonPhaseTypeCode;
+            if (phaseTypeCode is > 0 && groupWeek.SeasonPhaseTypeCode != phaseTypeCode)
+            {
+                groupWeek.SeasonPhaseTypeCode = phaseTypeCode.Value;
+            }
 
             // League window filter — excludes contests whose kickoff falls outside
             // [StartsOn, EndsOn]. Null bounds mean "no constraint" (full-season league),

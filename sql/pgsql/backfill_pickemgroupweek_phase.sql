@@ -1,0 +1,22 @@
+-- One-time backfill: PickemGroupWeek.SeasonPhaseTypeCode (added 2026-08-26,
+-- migration PickemGroupWeekSeasonPhase; default 2 = regular season).
+-- Week numbers repeat across SeasonPhases within a season year, so week
+-- identity needs the phase; rows created before the migration carry the
+-- default and must be corrected from canonical SeasonWeek data.
+--
+-- Cross-database: the API DB (sdApi.All) has no SeasonWeek table — phase
+-- truth lives in each Producer DB. Run per sport:
+--
+--   1. Against sdProducer.<Sport>, export the mapping:
+--        \copy (SELECT sw."Id", sp."TypeCode" FROM public."SeasonWeek" sw JOIN public."SeasonPhase" sp ON sp."Id" = sw."SeasonPhaseId") TO '/tmp/sw_phase.csv' CSV
+--   2. Against sdApi.All, load and apply:
+--        CREATE TEMP TABLE sw_phase ("SeasonWeekId" uuid, "TypeCode" int);
+--        \copy sw_phase FROM '/tmp/sw_phase.csv' CSV
+--        UPDATE public."PickemGroupWeek" w
+--        SET    "SeasonPhaseTypeCode" = p."TypeCode"
+--        FROM   sw_phase p
+--        WHERE  p."SeasonWeekId" = w."SeasonWeekId"
+--          AND  w."SeasonPhaseTypeCode" IS DISTINCT FROM p."TypeCode";
+--
+-- Idempotent (the DISTINCT FROM guard); safe to re-run. Verify with:
+--   SELECT "SeasonPhaseTypeCode", count(*) FROM public."PickemGroupWeek" GROUP BY 1;

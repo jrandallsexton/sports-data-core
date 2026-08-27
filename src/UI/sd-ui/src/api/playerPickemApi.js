@@ -29,9 +29,9 @@ import apiClient from './apiClient';
 const PlayerPickemApi = {
   // position: "QB" | "RB" | "WR" | "TE" | "K". FLEX is a UI concept —
   // the page requests each eligible position and merges.
-  getAthletesByPosition: (sport, league, position, seasonYear, week) =>
+  getAthletesByPosition: (sport, league, position, seasonYear, week, phase) =>
     apiClient.get(
-      `/api/${sport}/${league}/athletes/pickem?position=${encodeURIComponent(position)}&seasonYear=${seasonYear}&week=${week}`
+      `/api/${sport}/${league}/athletes/pickem?position=${encodeURIComponent(position)}&seasonYear=${seasonYear}&week=${week}${phase ? `&phase=${encodeURIComponent(phase)}` : ''}`
     ),
 
   // ── Roster persistence (server-side lineups, per-player derived locks).

@@ -77,4 +77,9 @@ LEFT JOIN LATERAL (
   -- this team's entry in it, or NULL = honestly unranked.
   SELECT public.poll_rank_asof(fsHome."Id", fsHome."SeasonYear", c."StartDateUtc") AS "Current"
 ) fsrdHome ON TRUE
-WHERE c."Id" = @ContestId
+-- SeasonWeekId is the PRECISE week identity — one row in SeasonWeek
+-- belongs to exactly one phase, so unlike number-based lookups there is
+-- no phase ambiguity to scope away. This is the query the league
+-- schedule sync uses (its commands carry SeasonWeekId end-to-end).
+WHERE sw."Id" = @SeasonWeekId
+ORDER BY c."StartDateUtc", fHome."Slug"

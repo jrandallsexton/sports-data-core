@@ -5,6 +5,7 @@ using Moq;
 using SportsData.Core.Common;
 using SportsData.Producer.Application.Seasons.Queries.GetSeasonWeeksByDateRange;
 using SportsData.Producer.Infrastructure.Data.Entities;
+using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 using Xunit;
 
@@ -225,9 +226,16 @@ public class GetSeasonWeeksByDateRangeQueryHandlerTests : ProducerTestBase<GetSe
         await FootballDataContext.SaveChangesAsync();
     }
 
-    private async Task SeedWeekAsync(int weekNumber, DateTime startDate, DateTime endDate)
+    /// <summary>
+    /// Seeds a week WITH one contest by default — the handler only returns
+    /// weeks that have contests (ESPN's calendar carries contest-less
+    /// administrative weeks with huge windows, e.g. NCAA "Preseason Week
+    /// 1" spanning Feb-Aug, which poisoned league bootstrap).
+    /// </summary>
+    private async Task SeedWeekAsync(
+        int weekNumber, DateTime startDate, DateTime endDate, bool withContest = true)
     {
-        await FootballDataContext.SeasonWeeks.AddAsync(new SeasonWeek
+        var week = new SeasonWeek
         {
             Id = Guid.NewGuid(),
             SeasonId = SeasonId,
@@ -237,7 +245,46 @@ public class GetSeasonWeeksByDateRangeQueryHandlerTests : ProducerTestBase<GetSe
             EndDate = endDate,
             CreatedUtc = Mocker.Get<IDateTimeProvider>().UtcNow(),
             CreatedBy = Guid.NewGuid()
-        });
+        };
+        await FootballDataContext.SeasonWeeks.AddAsync(week);
+        if (withContest)
+        {
+            await FootballDataContext.Contests.AddAsync(new FootballContest
+            {
+                Id = Guid.NewGuid(),
+                Name = $"game wk{weekNumber}",
+                ShortName = "game",
+                Sport = Sport.FootballNcaa,
+                SeasonYear = 2026,
+                SeasonWeekId = week.Id,
+                SeasonPhaseId = SeasonPhaseId,
+                StartDateUtc = startDate,
+                HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+                AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+            });
+        }
         await FootballDataContext.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task ContestlessWeek_IsExcluded()
+    {
+        // NCAA "Preseason Week 1" spans Feb-Aug with zero games — a bare
+        // date overlap used to hand bootstrap this phantom week, whose
+        // number collides with the real regular-season week 1.
+        await SeedSeasonScaffoldingAsync();
+        await SeedWeekAsync(1, new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 8, 22, 0, 0, 0, DateTimeKind.Utc), withContest: false);
+        await SeedWeekAsync(1, new DateTime(2026, 8, 22, 0, 0, 0, DateTimeKind.Utc), new DateTime(2026, 9, 8, 0, 0, 0, DateTimeKind.Utc));
+        var handler = Mocker.CreateInstance<GetSeasonWeeksByDateRangeQueryHandler>();
+
+        var result = await handler.ExecuteAsync(new GetSeasonWeeksByDateRangeQuery(
+            new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 12, 1, 0, 0, 0, DateTimeKind.Utc)));
+
+        result.IsSuccess.Should().BeTrue();
+        // Only the contest-bearing week survives; both share Number 1, so
+        // a single result IS the assertion that the phantom was dropped.
+        result.Value.Should().ContainSingle()
+            .Which.WeekNumber.Should().Be(1);
     }
 }

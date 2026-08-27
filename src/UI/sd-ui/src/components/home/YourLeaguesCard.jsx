@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useUserDto } from "../../contexts/UserContext";
+import { leaguePicksPath } from "../../routes/paths";
 import "./YourLeaguesCard.css";
 
 // Default sport-icon glyphs. Stand-in until commissioner-uploaded league
@@ -15,8 +16,8 @@ const SPORT_ICON = {
  * Tier 2 — "Your Leagues" card. Web mirror of sd-mobile's YourLeaguesCard
  * (src/UI/sd-mobile/src/components/features/home/YourLeaguesCard.tsx).
  * Lists the user's active leagues below the Tier 1 primary slot. Each row
- * deep-links to the picks screen with that league preselected
- * (/app/picks/:leagueId — see MainApp route).
+ * deep-links to the league's picks surface (leaguePicksPath — the
+ * unified league-rooted route).
  *
  * Hidden when the user has zero leagues; HomePage already routes that
  * branch to PrimarySlotNewUser.
@@ -45,12 +46,9 @@ function YourLeaguesCard() {
       <ul className="your-leagues-card__list">
         {leagues.map((league) => {
           const icon = SPORT_ICON[league.sport];
-          // One game per league: PlayerPickem leagues open the roster
-          // builder, everything else opens the team picks page.
-          const destination =
-            league.groupType === 'PlayerPickem'
-              ? `/app/pickem/players/${league.id}`
-              : `/app/picks/${league.id}`;
+          // League-rooted canonical URL — LeaguePicksRouter renders
+          // whichever game this league plays, so no branching here.
+          const destination = leaguePicksPath(league.id);
           return (
             <li key={league.id} className="your-leagues-card__item">
               <Link

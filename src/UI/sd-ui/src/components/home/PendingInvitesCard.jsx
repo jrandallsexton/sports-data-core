@@ -4,6 +4,7 @@ import LeaguesApi from "api/leagues/leaguesApi";
 import { useUserDto } from "../../contexts/UserContext";
 import JoinClosesLabel from "../leagues/JoinClosesLabel";
 import JoinLeagueConfirmDialog from "../leagues/JoinLeagueConfirmDialog";
+import { leaguePicksPath } from "../../routes/paths";
 import "./PendingInvitesCard.css";
 
 const SPORT_LABEL = {
@@ -76,10 +77,9 @@ function PendingInvitesCard() {
         return;
       }
       removeRow(invite.invitationId);
-      // Land on picks for the newly joined league. PicksPage takes the league
-      // as a ROUTE param (/picks/:leagueId — see MainApp.jsx), not a query
-      // string; a query param is silently ignored.
-      navigate(`/app/picks/${leagueId}`);
+      // Land on the joined league's picks; LeaguePicksRouter renders
+      // whichever game the league plays.
+      navigate(leaguePicksPath(leagueId));
     } catch (err) {
       console.error("Failed to accept invitation:", err);
       setBusy((b) => ({ ...b, [invite.invitationId]: "error" }));

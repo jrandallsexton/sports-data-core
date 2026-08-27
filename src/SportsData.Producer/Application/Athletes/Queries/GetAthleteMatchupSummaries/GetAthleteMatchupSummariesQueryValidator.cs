@@ -29,5 +29,9 @@ public class GetAthleteMatchupSummariesQueryValidator
         RuleFor(x => x.Week)
             .InclusiveBetween(1, 30)
             .WithMessage("Week must be between 1 and 30");
+
+        RuleFor(x => x.SeasonPhaseTypeCode)
+            .InclusiveBetween(1, 3)
+            .WithMessage("Season phase type code must be 1 (Preseason), 2 (Regular Season), or 3 (Postseason)");
     }
 }

@@ -2,6 +2,7 @@ SELECT
   sw."Id" AS "SeasonWeekId",
   s."Year" AS "SeasonYear",
   sw."Number" AS "SeasonWeek",
+  sp."TypeCode" AS "SeasonPhaseTypeCode",
   c."Id" AS "ContestId",
   cn."Headline" AS "Headline",
   c."StartDateUtc" AS "StartDateUtc",

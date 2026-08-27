@@ -30,5 +30,9 @@ public class GetPickemAthletesQueryValidator : AbstractValidator<GetPickemAthlet
         RuleFor(x => x.Week)
             .InclusiveBetween(1, 30)
             .WithMessage("Week must be between 1 and 30");
+
+        RuleFor(x => x.Phase)
+            .Must(p => p is "preseason" or "regular" or "postseason")
+            .WithMessage("Phase must be 'preseason', 'regular', or 'postseason'");
     }
 }

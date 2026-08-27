@@ -26,9 +26,11 @@ const LEAGUES = [
 ];
 
 // Fixed to opening week for now; a week selector (and
-// deriving the current week server-side) is future work.
-const SEASON_YEAR = 2026;
-const WEEK = 1;
+// deriving the current week server-side) is future work. Exported so
+// LeaguePicksRouter can canonicalize the URL to the week this page
+// actually renders.
+export const SEASON_YEAR = 2026;
+export const WEEK = 1;
 
 // Full-depth FBS position lists run to ~2,000 rows (WR); the grid pages
 // client-side — the payload is already in the browser, so filtering and
@@ -86,8 +88,15 @@ function PlayerRosterBuilder() {
   // Optional league scope from the route (league cards pass their id) —
   // without it the page falls back to the first PlayerPickem league per
   // sport.
-  const { leagueId: routeLeagueId } = useParams();
+  const { leagueId: routeLeagueId, week: routeWeekParam, phase: routePhaseParam } = useParams();
   const [league, setLeague] = useState('ncaa');
+  // Week identity comes from the ROUTE, which LeaguePicksRouter has
+  // already canonicalized to the league's current phase-qualified week
+  // (a preseason-only league lives at its preseason week). The pinned
+  // constants remain only as a fallback for the league-less admin view.
+  const routeWeekNum = Number(routeWeekParam);
+  const seasonWeek = Number.isInteger(routeWeekNum) && routeWeekNum > 0 ? routeWeekNum : WEEK;
+  const seasonPhase = routePhaseParam ?? 'regular';
   const [roster, setRoster] = useState({});
   // The user's PlayerPickem-type leagues (null = still loading). The
   // SPORT isn't a free choice — it's a fact of these leagues: the page
@@ -160,7 +169,7 @@ function PlayerRosterBuilder() {
       return undefined;
     }
 
-    PlayerPickemApi.getMyLineup(target.id, SEASON_YEAR, WEEK)
+    PlayerPickemApi.getMyLineup(target.id, target.seasonYear ?? SEASON_YEAR, seasonWeek)
       .then((response) => {
         if (ignore) return;
         setRoster(rosterFromLineup(response.data));
@@ -175,7 +184,7 @@ function PlayerRosterBuilder() {
     return () => {
       ignore = true;
     };
-  }, [league, playerLeagues, routeLeagueId]);
+  }, [league, playerLeagues, routeLeagueId, seasonWeek]);
 
   const positions = useMemo(
     () => eligiblePositions(activeSlotId),
@@ -213,7 +222,10 @@ function PlayerRosterBuilder() {
 
     Promise.all(
       positions.map((pos) =>
-        PlayerPickemApi.getAthletesByPosition('football', league, pos, SEASON_YEAR, WEEK)
+        PlayerPickemApi.getAthletesByPosition(
+          'football', league, pos,
+          pickemLeague?.seasonYear ?? SEASON_YEAR, seasonWeek, seasonPhase
+        )
       )
     )
       .then((responses) => {
@@ -232,7 +244,7 @@ function PlayerRosterBuilder() {
     return () => {
       ignore = true;
     };
-  }, [positions, league]);
+  }, [positions, league, pickemLeague, seasonWeek, seasonPhase]);
 
   const activeCol = columns.find((c) => c.key === sort.key);
   const getSortValue = useMemo(() => {
@@ -287,7 +299,7 @@ function PlayerRosterBuilder() {
     setSaveError(null);
     try {
       const response = await PlayerPickemApi.upsertSlot(
-        pickemLeague.id, SEASON_YEAR, WEEK, activeSlotId, athlete
+        pickemLeague.id, pickemLeague.seasonYear ?? SEASON_YEAR, seasonWeek, activeSlotId, athlete
       );
       setRoster((prev) => ({ ...prev, [activeSlotId]: response.data }));
     } catch (err) {
@@ -299,7 +311,7 @@ function PlayerRosterBuilder() {
     if (!pickemLeague) return;
     setSaveError(null);
     try {
-      await PlayerPickemApi.clearSlot(pickemLeague.id, SEASON_YEAR, WEEK, slotId);
+      await PlayerPickemApi.clearSlot(pickemLeague.id, pickemLeague.seasonYear ?? SEASON_YEAR, seasonWeek, slotId);
       setRoster((prev) => {
         const next = { ...prev };
         delete next[slotId];
@@ -319,7 +331,7 @@ function PlayerRosterBuilder() {
     <div className="roster-builder">
       <h2 className="roster-builder-title">Player Pick&rsquo;em Roster</h2>
       <p className="roster-builder-sub">
-        Week {WEEK} &middot; {SEASON_YEAR} &middot;{' '}
+        {seasonPhase === 'preseason' ? 'Preseason ' : seasonPhase === 'postseason' ? 'Postseason ' : ''}Week {seasonWeek} &middot; {pickemLeague?.seasonYear ?? SEASON_YEAR} &middot;{' '}
         {LEAGUES.find((l) => l.id === league)?.label}
         {pickemLeague ? (
           <> &middot; <strong>{pickemLeague.name}</strong></>

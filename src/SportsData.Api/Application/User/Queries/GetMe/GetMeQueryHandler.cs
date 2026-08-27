@@ -92,21 +92,53 @@ public class GetMeQueryHandler : IGetMeQueryHandler
                             .Distinct()
                             .OrderBy(w => w)
                             .ToList(),
-                        // "Current week" = smallest SeasonWeek that still has an unstarted
-                        // matchup. Picks-page UX intent: when the user opens the page mid-
-                        // season, drop them on the week they should be picking, not the
-                        // last week of the season. Coalesces to MAX(SeasonWeek) once every
-                        // matchup has kicked off so a season-over visit lands on the most
-                        // recent week instead of nothing.
+                        // "Current week" = first week IN PHASE ORDER (preseason →
+                        // regular → postseason, then week number — chronological
+                        // by construction) that still has an unstarted matchup.
+                        // Picks-page UX intent: when the user opens the page mid-
+                        // season, drop them on the week they should be picking,
+                        // not the last week of the season. Coalesces to the LAST
+                        // week once every matchup has kicked off so a season-over
+                        // visit lands on the most recent week instead of nothing.
                         CurrentSeasonWeek = m.Group.Weeks
                             .Where(w => w.Matchups.Any(mm => mm.StartDateUtc > nowUtc))
-                            .OrderBy(w => w.SeasonWeek)
+                            .OrderBy(w => w.SeasonPhaseTypeCode)
+                            .ThenBy(w => w.SeasonWeek)
                             .Select(w => (int?)w.SeasonWeek)
                             .FirstOrDefault()
                             ?? m.Group.Weeks
-                                .OrderByDescending(w => w.SeasonWeek)
+                                .OrderByDescending(w => w.SeasonPhaseTypeCode)
+                                .ThenByDescending(w => w.SeasonWeek)
                                 .Select(w => (int?)w.SeasonWeek)
-                                .FirstOrDefault()
+                                .FirstOrDefault(),
+                        CurrentSeasonWeekId = m.Group.Weeks
+                            .Where(w => w.Matchups.Any(mm => mm.StartDateUtc > nowUtc))
+                            .OrderBy(w => w.SeasonPhaseTypeCode)
+                            .ThenBy(w => w.SeasonWeek)
+                            .Select(w => (Guid?)w.SeasonWeekId)
+                            .FirstOrDefault()
+                            ?? m.Group.Weeks
+                                .OrderByDescending(w => w.SeasonPhaseTypeCode)
+                                .ThenByDescending(w => w.SeasonWeek)
+                                .Select(w => (Guid?)w.SeasonWeekId)
+                                .FirstOrDefault(),
+                        // Full phase-qualified week identities — what the UI
+                        // routes and renders from. SeasonWeeks (above) keeps
+                        // its dedup because numbers collide across phases;
+                        // this list is the collision-free replacement.
+                        SeasonWeekDetails = m.Group.Weeks
+                            .OrderBy(w => w.SeasonPhaseTypeCode)
+                            .ThenBy(w => w.SeasonWeek)
+                            .Select(w => new LeagueSeasonWeekDetailDto
+                            {
+                                SeasonWeekId = w.SeasonWeekId,
+                                Week = w.SeasonWeek,
+                                Phase = w.SeasonPhaseTypeCode == 1 ? "preseason"
+                                    : w.SeasonPhaseTypeCode == 3 ? "postseason"
+                                    : w.SeasonPhaseTypeCode == 4 ? "offseason"
+                                    : "regular",
+                            })
+                            .ToList()
                     })
                     .ToList()
             })

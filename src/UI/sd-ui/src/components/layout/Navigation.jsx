@@ -1,5 +1,5 @@
 // ./layout/Navigation.jsx
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   FaHome,
   FaClipboardCheck,
@@ -17,6 +17,14 @@ import { useUserDto } from '../../contexts/UserContext';
 import './Navigation.css';
 
 function Navigation({ isSideNav, onToggle, onSignOut }) {
+  // The Picks entry points at the league-less landing (/app/picks), but
+  // the canonical URLs it redirects to are league-rooted
+  // (/app/league/:id/picks...), which NavLink's own matching can't see —
+  // mark it active by path shape instead.
+  const location = useLocation();
+  const picksLinkClass = /\/picks(\/|$)/.test(location.pathname)
+    ? "nav-link active"
+    : "nav-link";
   // Game Map is admin-only until the feature is launch-ready — hidden from
   // regular users in BOTH nav variants (the /app/map route is AdminRoute-
   // gated too, so a typed URL bounces).
@@ -47,7 +55,7 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
               <FaRocket className="nav-icon" />
               <span>War Room</span>
             </NavLink>
-            <NavLink to="/app/picks" className="nav-link" onClick={handleNavLinkClick}>
+            <NavLink to="/app/picks" className={picksLinkClass} onClick={handleNavLinkClick}>
               <FaClipboardCheck className="nav-icon" />
               <span>Picks</span>
             </NavLink>
@@ -118,7 +126,7 @@ function Navigation({ isSideNav, onToggle, onSignOut }) {
                 </NavLink>
               </td>
               <td>
-                <NavLink to="/app/picks" className="nav-link">
+                <NavLink to="/app/picks" className={picksLinkClass}>
                   <FaClipboardCheck className="nav-icon" />
                   <span>Picks</span>
                 </NavLink>

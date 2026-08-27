@@ -28,6 +28,11 @@ public class GetUserLeaguesQueryHandler : IGetUserLeaguesQueryHandler
     {
         var leagues = await _dbContext.PickemGroupMembers
             .AsNoTracking()
+            // Two collection projections (SeasonWeeks + SeasonWeekDetails)
+            // trip the context's throw-on-MultipleCollectionIncludeWarning
+            // under Npgsql (InMemory tests are blind to it) — split, same
+            // as GetMe.
+            .AsSplitQuery()
             .Where(m => m.UserId == query.UserId)
             // Hide deactivated leagues unless the caller opts in — matches the
             // filter on /user/me. Opting in is how the My Leagues page powers its
@@ -55,6 +60,21 @@ public class GetUserLeaguesQueryHandler : IGetUserLeaguesQueryHandler
                     .Select(w => w.SeasonWeek)
                     .Distinct()
                     .OrderBy(w => w)
+                    .ToList(),
+                // Collision-free week identities (numbers repeat across
+                // phases) — mirrors the projection on /user/me.
+                SeasonWeekDetails = m.Group.Weeks
+                    .OrderBy(w => w.SeasonPhaseTypeCode)
+                    .ThenBy(w => w.SeasonWeek)
+                    .Select(w => new Application.User.Dtos.LeagueSeasonWeekDetailDto
+                    {
+                        SeasonWeekId = w.SeasonWeekId,
+                        Week = w.SeasonWeek,
+                        Phase = w.SeasonPhaseTypeCode == 1 ? "preseason"
+                            : w.SeasonPhaseTypeCode == 3 ? "postseason"
+                            : w.SeasonPhaseTypeCode == 4 ? "offseason"
+                            : "regular",
+                    })
                     .ToList(),
                 DeactivatedUtc = m.Group.DeactivatedUtc,
                 CreatedUtc = m.Group.CreatedUtc

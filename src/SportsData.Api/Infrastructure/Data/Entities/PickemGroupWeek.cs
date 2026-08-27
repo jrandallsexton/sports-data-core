@@ -16,6 +16,18 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public required Guid SeasonWeekId { get; set; }
 
+        /// <summary>
+        /// SeasonPhase.TypeCode of this week: 1 Preseason, 2 Regular
+        /// Season, 3 Postseason. Week NUMBERS repeat across phases within
+        /// a season year (an NFL league can hold a preseason Week 4 AND a
+        /// regular-season Week 4), so week identity shown to users — and
+        /// in URLs — needs the phase. Stamped by MatchupScheduleProcessor
+        /// from canonical matchup data; default 2 covers pre-existing
+        /// rows, corrected by the one-time backfill
+        /// (sql/pgsql/backfill_pickemgroupweek_phase.sql).
+        /// </summary>
+        public int SeasonPhaseTypeCode { get; set; } = 2;
+
         public bool IsNonStandardWeek { get; set; }
 
         public bool AreMatchupsGenerated { get; set; }
@@ -33,6 +45,7 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.SeasonYear).IsRequired();
                 builder.Property(x => x.SeasonWeek).IsRequired();
                 builder.Property(x => x.SeasonWeekId).IsRequired();
+                builder.Property(x => x.SeasonPhaseTypeCode).IsRequired().HasDefaultValue(2);
                 builder.Property(x => x.IsNonStandardWeek).IsRequired();
 
                 builder.Property(x => x.AreMatchupsGenerated).IsRequired();

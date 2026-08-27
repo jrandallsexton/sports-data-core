@@ -41,7 +41,7 @@ public class GetPickemAthletesQueryHandlerTests : UnitTestBase<GetPickemAthletes
     {
         var payload = new AthleteMatchupSummariesDto();
         _athleteClientMock
-            .Setup(x => x.GetAthleteMatchupSummaries("QB", 2026, 1, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetAthleteMatchupSummaries("QB", 2026, 1, 2, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<AthleteMatchupSummariesDto>(payload));
 
         var handler = Mocker.CreateInstance<GetPickemAthletesQueryHandler>();
@@ -67,7 +67,7 @@ public class GetPickemAthletesQueryHandlerTests : UnitTestBase<GetPickemAthletes
         result.Status.Should().Be(ResultStatus.Validation);
         _athleteClientMock.Verify(
             x => x.GetAthleteMatchupSummaries(
-                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+                It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 

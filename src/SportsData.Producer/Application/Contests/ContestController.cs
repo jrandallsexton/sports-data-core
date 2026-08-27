@@ -450,6 +450,21 @@ namespace SportsData.Producer.Application.Contests
         }
 
         /// <summary>
+        /// Matchups by SeasonWeek GUID — the precise week identity (no
+        /// phase/number ambiguity). Used by the API's league schedule
+        /// sync, whose commands carry SeasonWeekId end-to-end.
+        /// </summary>
+        [HttpGet("matchups/by-season-week-id/{seasonWeekId:guid}")]
+        public async Task<ActionResult<List<Dtos.Canonical.Matchup>>> GetMatchupsBySeasonWeekId(
+            [FromRoute] Guid seasonWeekId,
+            [FromServices] Queries.Matchups.GetMatchupsBySeasonWeekId.IGetMatchupsBySeasonWeekIdQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(new Queries.Matchups.GetMatchupsBySeasonWeekId.GetMatchupsBySeasonWeekIdQuery(seasonWeekId), cancellationToken);
+            return result.ToActionResult();
+        }
+
+        /// <summary>
         /// Distinct calendar dates (US Eastern) that have at least one scheduled
         /// game in the [from, to] window. Backs the create-league blackout-date
         /// picker and the create-time zero-game guard. Sport is implicit (this

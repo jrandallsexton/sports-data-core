@@ -17,7 +17,7 @@ public interface IProvideAthletes : IProvideHealthChecks
     Task<Result<AthleteDetailDto>> GetAthleteDetails(Guid athleteId, CancellationToken cancellationToken = default);
 
     /// <summary>Athletes at a position with their week opponent, the opponent's defensive allowance per game, and current/previous season stat blocks.</summary>
-    Task<Result<AthleteMatchupSummariesDto>> GetAthleteMatchupSummaries(string position, int seasonYear, int week, CancellationToken cancellationToken = default);
+    Task<Result<AthleteMatchupSummariesDto>> GetAthleteMatchupSummaries(string position, int seasonYear, int week, int seasonPhaseTypeCode = 2, CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -52,10 +52,11 @@ public class AthleteClient : ClientBase, IProvideAthletes
         string position,
         int seasonYear,
         int week,
+        int seasonPhaseTypeCode = 2,
         CancellationToken cancellationToken = default)
     {
         return await GetAsync(
-            $"athletes/matchup-summaries?position={Uri.EscapeDataString(position)}&seasonYear={seasonYear}&week={week}",
+            $"athletes/matchup-summaries?position={Uri.EscapeDataString(position)}&seasonYear={seasonYear}&week={week}&phaseTypeCode={seasonPhaseTypeCode}",
             new AthleteMatchupSummariesDto(),
             entityName: "AthleteMatchupSummaries",
             cancellationToken: cancellationToken);

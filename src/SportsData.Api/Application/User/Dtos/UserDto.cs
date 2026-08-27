@@ -75,5 +75,38 @@ public class UserDto
         /// the league has no weeks at all.
         /// </summary>
         public int? CurrentSeasonWeek { get; set; }
+
+        /// <summary>
+        /// Phase-qualified week identities, ordered phase-then-week. Week
+        /// NUMBERS repeat across season phases (an NFL league can hold a
+        /// preseason Week 4 AND a regular-season Week 4), so
+        /// <see cref="SeasonWeeks"/> alone under-identifies a week; this
+        /// list is the full identity the UI routes and renders from
+        /// (/picks/phase/{phase}/weeks/{week}). ADDITIVE alongside
+        /// SeasonWeeks — mobile keeps consuming the int list untouched.
+        /// </summary>
+        public IList<LeagueSeasonWeekDetailDto> SeasonWeekDetails { get; set; } = [];
+
+        /// <summary>
+        /// SeasonWeekId of the <see cref="CurrentSeasonWeek"/> entry —
+        /// disambiguates which phase's week the user should be picking
+        /// when numbers collide across phases.
+        /// </summary>
+        public Guid? CurrentSeasonWeekId { get; set; }
     }
+}
+
+/// <summary>
+/// One phase-qualified league week. <see cref="Phase"/> is a slug —
+/// "preseason" | "regular" | "postseason" (SeasonPhase.TypeCode 1/2/3) —
+/// chosen over the int for URL and payload readability. Shared by the
+/// GetMe membership payload and the league summary payload.
+/// </summary>
+public class LeagueSeasonWeekDetailDto
+{
+    public Guid SeasonWeekId { get; set; }
+
+    public int Week { get; set; }
+
+    public string Phase { get; set; } = null!;
 }

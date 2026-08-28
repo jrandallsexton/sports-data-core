@@ -29,7 +29,11 @@ public interface IScoreLeagueWeeks
 /// Two-layer safety:
 ///   1. <see cref="DisableConcurrentExecutionAttribute"/> on
 ///      <see cref="IScoreLeagueWeeks.Process"/> serializes invocations
-///      across the cluster — eliminates the 23505 race.
+///      across the cluster. Best-effort: a broken storage connection can
+///      release the lock without notice, so this reduces the probability
+///      of the 23505 race rather than eliminating it — the check-then-
+///      insert in ScoreLeagueWeekAsync plus Hangfire retry (which finds
+///      the existing row and updates) remain the backstop.
 ///   2. A staleness short-circuit collapses N queued runs into 1 actual rescore:
 ///      the first run does the work; the rest find fresh state and exit.
 ///

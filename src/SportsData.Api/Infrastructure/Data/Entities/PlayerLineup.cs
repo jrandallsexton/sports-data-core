@@ -27,10 +27,20 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public ICollection<PlayerLineupSlot> Slots { get; set; } = [];
 
+        /// <summary>
+        /// Persisted sum of slot points — maintained by the scoring
+        /// consumers so standings never re-aggregate statlines.
+        /// </summary>
+        public decimal TotalPoints { get; set; }
+
+        /// <summary>Last consumer write; null = never scored (read path live-computes).</summary>
+        public DateTime? ScoreUpdatedUtc { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<PlayerLineup>
         {
             public void Configure(EntityTypeBuilder<PlayerLineup> builder)
             {
+                builder.Property(x => x.TotalPoints).HasPrecision(8, 2);
                 builder.ToTable(nameof(PlayerLineup));
                 builder.HasKey(x => x.Id);
 

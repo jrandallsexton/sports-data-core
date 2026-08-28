@@ -56,6 +56,11 @@ const PlayerPickemApi = {
       }
     ),
 
+  // Cumulative-points standings with weekly winners — persisted totals
+  // maintained by the scoring consumers.
+  getStandings: (leagueId, seasonYear) =>
+    apiClient.get(`/ui/leagues/${leagueId}/player-lineups/${seasonYear}/standings`),
+
   clearSlot: (leagueId, seasonYear, week, slotId) =>
     apiClient.delete(
       `/ui/leagues/${leagueId}/player-lineups/${seasonYear}/${week}/mine/slots/${encodeURIComponent(slotId)}`

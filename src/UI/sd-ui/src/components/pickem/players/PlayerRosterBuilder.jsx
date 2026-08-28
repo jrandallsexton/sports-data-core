@@ -106,6 +106,10 @@ function PlayerRosterBuilder() {
   // Live-refresh tickle: bumping this re-runs the lineup fetch WITHOUT
   // the loading/reset churn of a league change (see the effect below).
   const [refreshTick, setRefreshTick] = useState(0);
+  // League standings (cumulative points + weekly winners) — persisted
+  // totals from the scoring consumers; refreshed with the same tickle
+  // as the lineup so the two surfaces never disagree for long.
+  const [standings, setStandings] = useState(null);
   // The user's PlayerPickem-type leagues (null = still loading). The
   // SPORT isn't a free choice — it's a fact of these leagues: the page
   // auto-selects the first sport with a player league, and the toggle
@@ -185,6 +189,14 @@ function PlayerRosterBuilder() {
       setRosterLoading(false);
       return undefined;
     }
+
+    PlayerPickemApi.getStandings(target.id, target.seasonYear ?? SEASON_YEAR)
+      .then((response) => {
+        if (!ignore) setStandings(response.data);
+      })
+      .catch(() => {
+        if (!ignore) setStandings(null); // standings are enrichment; never block the roster
+      });
 
     PlayerPickemApi.getMyLineup(target.id, target.seasonYear ?? SEASON_YEAR, seasonWeek)
       .then((response) => {
@@ -429,6 +441,32 @@ function PlayerRosterBuilder() {
           </div>
         ) : null;
       })()}
+
+      {standings && standings.rows && standings.rows.length > 0 ? (
+        <div className="roster-standings" aria-label="League standings">
+          <h3 className="roster-standings-title">Standings</h3>
+          <ol className="roster-standings-list">
+            {standings.rows.map((row) => (
+              <li key={row.userId} className="roster-standings-row">
+                <span className="roster-standings-name">
+                  {row.displayName}
+                  {row.weeklyWins > 0 ? (
+                    <span
+                      className="roster-standings-wins"
+                      title={`${row.weeklyWins} weekly win${row.weeklyWins === 1 ? '' : 's'}`}
+                    >
+                      {' '}&#127942;{row.weeklyWins > 1 ? `×${row.weeklyWins}` : ''}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="roster-standings-points">
+                  {row.totalPoints.toFixed(1)}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
 
       {rosterLoading ? (
         <div className="roster-grid-status">Loading your roster&hellip;</div>

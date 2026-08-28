@@ -14,6 +14,7 @@ using SportsData.Provider.Application.Services;
 using SportsData.Provider.Application.Sourcing.Historical;
 using SportsData.Provider.Application.Sourcing.Historical.Saga;
 using SportsData.Provider.Infrastructure.Data;
+using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System.Net;
 using System.Net.Security;
@@ -36,6 +37,13 @@ namespace SportsData.Provider.DependencyInjection
             services.AddScoped<IResourceIndexItemParser, ResourceIndexItemParser>();
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
             services.AddScoped<IDocumentInclusionService, DocumentInclusionService>();
+
+            // Singleton: ESPN URIs that returned 400 (permanently
+            // unsupported resources) so fixed-cadence re-requests
+            // short-circuit instead of re-hitting ESPN. In-memory for the
+            // hot path, backed by the EspnKnownBadUri table (hydrate at
+            // first use, write-through) so fresh pods inherit the knowledge.
+            services.AddSingleton<IKnownBadUriCache, KnownBadUriCache>();
 
             // Historical sourcing services
             services.AddOptions<HistoricalSourcingConfig>()

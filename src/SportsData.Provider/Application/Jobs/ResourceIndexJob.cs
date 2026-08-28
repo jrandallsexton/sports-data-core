@@ -1,6 +1,4 @@
-﻿using Hangfire;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 using SportsData.Core.Common;
@@ -16,7 +14,10 @@ using SportsData.Provider.Infrastructure.Data;
 
 namespace SportsData.Provider.Application.Jobs
 {
-    [DisableConcurrentExecution(300)] // 5 minutes (outer gate)
+    // Concurrency gate: [DisableConcurrentExecution] lives on
+    // IProcessResourceIndexes.ExecuteAsync — jobs enqueue via the
+    // interface, and Hangfire resolves filters from the stored job's
+    // (interface) method, never from the implementing class.
     public class ResourceIndexJob : IProcessResourceIndexes
     {
         private readonly ILogger<ResourceIndexJob> _logger;

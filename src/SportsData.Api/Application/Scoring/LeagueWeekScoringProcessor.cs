@@ -8,6 +8,14 @@ namespace SportsData.Api.Application.Scoring;
 
 public interface IScoreLeagueWeeks
 {
+    // The DCE attribute MUST live here, not on the implementing class:
+    // callers enqueue via Enqueue<IScoreLeagueWeeks>(...), so Hangfire
+    // stores the job against this interface method and resolves job
+    // filters from it — attributes on the implementation are never seen.
+    // Prod proof (2026-08-28): four simultaneous finalizations ran twelve
+    // concurrent Process invocations and revived the 23505 race the
+    // class-level attribute was meant to kill.
+    [DisableConcurrentExecution(60)]
     Task Process(Guid leagueId, int seasonYear, int seasonWeek, Guid correlationId);
 }
 
@@ -19,8 +27,13 @@ public interface IScoreLeagueWeeks
 /// racing on the <c>PickemGroupWeekResult</c> unique index.
 ///
 /// Two-layer safety:
-///   1. <see cref="DisableConcurrentExecutionAttribute"/> serializes invocations
-///      of <see cref="Process"/> across the cluster — eliminates the 23505 race.
+///   1. <see cref="DisableConcurrentExecutionAttribute"/> on
+///      <see cref="IScoreLeagueWeeks.Process"/> serializes invocations
+///      across the cluster. Best-effort: a broken storage connection can
+///      release the lock without notice, so this reduces the probability
+///      of the 23505 race rather than eliminating it — the check-then-
+///      insert in ScoreLeagueWeekAsync plus Hangfire retry (which finds
+///      the existing row and updates) remain the backstop.
 ///   2. A staleness short-circuit collapses N queued runs into 1 actual rescore:
 ///      the first run does the work; the rest find fresh state and exit.
 ///
@@ -28,7 +41,6 @@ public interface IScoreLeagueWeeks
 /// Acceptable while per-run work is sub-second; revisit with a per-tuple
 /// server filter or pg_advisory lock if contention grows.
 /// </summary>
-[DisableConcurrentExecution(60)]
 public class LeagueWeekScoringProcessor : IScoreLeagueWeeks
 {
     private readonly ILogger<LeagueWeekScoringProcessor> _logger;

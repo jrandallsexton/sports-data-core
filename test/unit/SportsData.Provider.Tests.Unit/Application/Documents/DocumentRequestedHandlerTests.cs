@@ -713,4 +713,64 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         command.Uri.Should().Be(leafUri);
         command.BypassCache.Should().Be(expectBypass);
     }
+
+    private static readonly Uri ProbabilitiesUri = new(
+        "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401866615/competitions/401866615/probabilities?lang=en&region=us");
+
+    private static DocumentRequested ProbabilitiesRequest(IFixture fixture) =>
+        fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, ProbabilitiesUri)
+            .With(x => x.DocumentType, DocumentType.EventCompetitionProbability)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .OmitAutoProperties()
+            .Create();
+
+    [Fact]
+    public async Task WhenEspnReturnsBadRequest_MarksUriKnownBad_AndEnqueuesNothing()
+    {
+        // arrange — ESPN 400s the probabilities index (permanently
+        // unsupported for this competition).
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), true, false))
+            .ReturnsAsync(new Failure<string>(string.Empty, ResultStatus.BadRequest, []));
+
+        var knownBad = Mocker.GetMock<IKnownBadUriCache>();
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = ProbabilitiesRequest(Fixture);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert
+        knownBad.Verify(x => x.MarkBadAsync(ProbabilitiesUri), Times.Once);
+        background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
+            It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task WhenUriIsKnownBad_SkipsEspnFetch()
+    {
+        // arrange — the URI 400'd earlier; re-requests must not hit ESPN.
+        Mocker.GetMock<IKnownBadUriCache>()
+            .Setup(x => x.IsKnownBadAsync(It.IsAny<Uri>()))
+            .ReturnsAsync(true);
+
+        var espnApi = Mocker.GetMock<IProvideEspnApiData>();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = ProbabilitiesRequest(Fixture);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert
+        espnApi.Verify(
+            x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()),
+            Times.Never);
+    }
 }

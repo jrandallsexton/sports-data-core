@@ -64,7 +64,9 @@ namespace SportsData.Provider.Application.ResourceIndex
                     string.Join(", ", request.IncludeLinkedDocumentTypes).Sanitize());
             }
 
-            var result = _backgroundJobProvider.Enqueue<ResourceIndexJob>(x => x.ExecuteAsync(jobDef));
+            // Interface-typed enqueue so the [DisableConcurrentExecution] filter
+            // on IProcessResourceIndexes.ExecuteAsync applies to this job too.
+            var result = _backgroundJobProvider.Enqueue<IProcessResourceIndexes>(x => x.ExecuteAsync(jobDef));
 
             return Accepted(result);
         }

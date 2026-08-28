@@ -9,6 +9,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Provider.Application.Services;
 using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Data.Entities;
+using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System.Diagnostics.Metrics;
 
@@ -31,6 +32,7 @@ namespace SportsData.Provider.Application.Processors
         private readonly IGenerateExternalRefIdentities _identityGenerator;
         private readonly IDocumentInclusionService _documentInclusionService;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IKnownBadUriCache _knownBadUris;
 
         private readonly Counter<long> _mongoCacheHitCounter;
         private readonly Counter<long> _espnLiveFetchCounter;
@@ -46,6 +48,7 @@ namespace SportsData.Provider.Application.Processors
             IGenerateExternalRefIdentities identityGenerator,
             IDocumentInclusionService documentInclusionService,
             IDateTimeProvider dateTimeProvider,
+            IKnownBadUriCache knownBadUris,
             IMeterFactory meterFactory)
         {
             _logger = logger;
@@ -58,6 +61,7 @@ namespace SportsData.Provider.Application.Processors
             _identityGenerator = identityGenerator;
             _documentInclusionService = documentInclusionService;
             _dateTimeProvider = dateTimeProvider;
+            _knownBadUris = knownBadUris;
 
             var meter = meterFactory.Create("SportsData.Provider.Espn");
             _mongoCacheHitCounter = meter.CreateCounter<long>("espn.cache.hit", description: "Documents served from MongoDB cache (no ESPN API call)");
@@ -276,6 +280,14 @@ namespace SportsData.Provider.Application.Processors
             }
             else
             {
+                if (await _knownBadUris.IsKnownBadAsync(command.Uri))
+                {
+                    _logger.LogDebug(
+                        "Skipping known-bad URI (previous ESPN 400). Uri={Uri}",
+                        command.Uri);
+                    return;
+                }
+
                 _espnLiveFetchCounter.Add(1);
                 _logger.LogInformation(
                     "ESPN {CacheResult}. UrlHash={UrlHash}, Uri={Uri}",
@@ -285,6 +297,18 @@ namespace SportsData.Provider.Application.Processors
 
                 if (!result.IsSuccess)
                 {
+                    if (result.Status == ResultStatus.BadRequest)
+                    {
+                        // ESPN 400 = permanently unsupported resource (unlike
+                        // 404 = not yet published, which must keep retrying).
+                        // Suppress the live streamers' fixed-cadence refetches.
+                        await _knownBadUris.MarkBadAsync(command.Uri);
+                        _logger.LogWarning(
+                            "ESPN returned BadRequest; marking URI known-bad and suppressing refetches. Uri={Uri}",
+                            command.Uri);
+                        return;
+                    }
+
                     _logger.LogError(
                         "ESPN request failed: Status={Status}, Uri={Uri}",
                         result.Status,

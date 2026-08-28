@@ -19,6 +19,8 @@ namespace SportsData.Provider.Infrastructure.Data
 
         public DbSet<HistoricalSeasonSourcingState> HistoricalSourcingSagas { get; set; }
 
+        public DbSet<EspnKnownBadUri> EspnKnownBadUris { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

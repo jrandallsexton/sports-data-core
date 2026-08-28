@@ -11,6 +11,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
+using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System.Text.Json;
 
@@ -22,17 +23,20 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     private readonly ILogger<DocumentRequestedHandler> _logger;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
     private readonly CommonConfig _commonConfig;
+    private readonly IKnownBadUriCache _knownBadUris;
 
     public DocumentRequestedHandler(
         IProvideEspnApiData espnApi,
         ILogger<DocumentRequestedHandler> logger,
         IProvideBackgroundJobs backgroundJobProvider,
-        IOptions<CommonConfig> commonConfig)
+        IOptions<CommonConfig> commonConfig,
+        IKnownBadUriCache knownBadUris)
     {
         _espnApi = espnApi;
         _logger = logger;
         _backgroundJobProvider = backgroundJobProvider;
         _commonConfig = commonConfig.Value;
+        _knownBadUris = knownBadUris;
     }
 
     public async Task Consume(ConsumeContext<DocumentRequested> context)
@@ -235,6 +239,14 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
     private async Task ProcessResourceIndex(Uri uri, DocumentRequested evt)
     {
+        if (await _knownBadUris.IsKnownBadAsync(uri))
+        {
+            _logger.LogDebug(
+                "Skipping known-bad URI (previous ESPN 400). Uri={Uri}",
+                uri);
+            return;
+        }
+
         var seenPages = new HashSet<string>();
         var enqueuedAnyRefs = false;
         var totalItemsEnqueued = 0;
@@ -250,6 +262,19 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
 
             if (!result.IsSuccess)
             {
+                if (result.Status == ResultStatus.BadRequest)
+                {
+                    // ESPN 400 = the resource is unsupported (permanent),
+                    // e.g. no win-probability model for this competition.
+                    // Remember it so the live streamers' fixed-cadence
+                    // re-requests short-circuit instead of re-hitting ESPN.
+                    await _knownBadUris.MarkBadAsync(uri);
+                    _logger.LogWarning(
+                        "ESPN returned BadRequest; marking URI known-bad and suppressing refetches. PageUri={PageUri}",
+                        uri);
+                    return;
+                }
+
                 _logger.LogError(
                     "Failed to fetch resource index: Status={Status}, PageUri={PageUri}",
                     result.Status,

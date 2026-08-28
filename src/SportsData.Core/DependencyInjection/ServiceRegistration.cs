@@ -271,7 +271,10 @@ namespace SportsData.Core.DependencyInjection
             services.AddScoped<IDecodeDocumentProvidersAndTypes, DocumentProviderAndTypeDecoder>();
             services.Configure<CommonConfig>(configuration.GetSection("CommonConfig"));
             services.AddSingleton<IValidateOptions<CommonConfig>, CommonConfigValidator>();
-            services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+            // Singleton, not scoped: the clock is stateless, and singletons
+            // (e.g. Provider's KnownBadUriCache) must be able to consume it —
+            // a scoped registration fails DI validation at container startup.
+            services.AddSingleton<IDateTimeProvider, DateTimeProvider>();
             services.AddSingleton<IAppMode>(new AppMode(mode));
             services.AddScoped<IGenerateRoutingKeys, RoutingKeyGenerator>();
             services.AddScoped<IJsonHashCalculator, JsonHashCalculator>();

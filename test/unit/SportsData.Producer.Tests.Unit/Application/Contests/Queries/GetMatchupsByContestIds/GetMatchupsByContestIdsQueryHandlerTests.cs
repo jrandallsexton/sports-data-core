@@ -1,9 +1,11 @@
-#nullable enable
+﻿#nullable enable
 
 using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+
+using SportsData.Core.Dtos.Canonical;
 
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupsByContestIds;
 using SportsData.Producer.Infrastructure.Data.Baseball;
@@ -773,5 +775,66 @@ public class GetMatchupsByContestIdsQueryHandlerTests
         });
 
         return (competitorId, athleteSeasonId);
+    }
+
+    // ─── FilterLiveEligibleContestIds — the situations-stitch gate ───────────
+
+    private static LeagueMatchupDto Matchup(Guid contestId, string? status) =>
+        new() { ContestId = contestId, Status = status };
+
+    [Fact]
+    public void FilterLiveEligible_ExcludesTerminalAndPreGameStatuses()
+    {
+        var matchups = new[]
+        {
+            Matchup(Guid.NewGuid(), "STATUS_FINAL"),
+            Matchup(Guid.NewGuid(), "STATUS_SCHEDULED"),
+            Matchup(Guid.NewGuid(), "STATUS_POSTPONED"),
+            Matchup(Guid.NewGuid(), "STATUS_CANCELED"),
+            Matchup(Guid.NewGuid(), "STATUS_FORFEIT"),
+        };
+
+        GetMatchupsByContestIdsQueryHandler.FilterLiveEligibleContestIds(matchups)
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public void FilterLiveEligible_FailsOpenForLiveUnknownAndNullStatuses()
+    {
+        // Live vocabulary is wider than the terminal one; unknown or
+        // missing statuses must fail OPEN so a live game with a missing
+        // CompetitionStatus row still gets its snap state.
+        var live = Guid.NewGuid();
+        var halftime = Guid.NewGuid();
+        var unknown = Guid.NewGuid();
+        var missing = Guid.NewGuid();
+        var matchups = new[]
+        {
+            Matchup(live, "STATUS_IN_PROGRESS"),
+            Matchup(halftime, "STATUS_HALFTIME"),
+            Matchup(unknown, "STATUS_SOMETHING_NEW"),
+            Matchup(missing, null),
+            Matchup(Guid.NewGuid(), "STATUS_FINAL"),
+        };
+
+        GetMatchupsByContestIdsQueryHandler.FilterLiveEligibleContestIds(matchups)
+            .Should().BeEquivalentTo(new[] { live, halftime, unknown, missing });
+    }
+
+    [Fact]
+    public void FilterLiveEligible_DeduplicatesContestIds()
+    {
+        // A Contest can host multiple Competitions (doubleheaders /
+        // reschedule artifacts) — the outer SQL can emit the same
+        // ContestId twice.
+        var contestId = Guid.NewGuid();
+        var matchups = new[]
+        {
+            Matchup(contestId, "STATUS_IN_PROGRESS"),
+            Matchup(contestId, "STATUS_IN_PROGRESS"),
+        };
+
+        GetMatchupsByContestIdsQueryHandler.FilterLiveEligibleContestIds(matchups)
+            .Should().ContainSingle().Which.Should().Be(contestId);
     }
 }

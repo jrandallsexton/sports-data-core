@@ -166,15 +166,27 @@ LEFT JOIN LATERAL (
 -- FranchiseSeason W/L. Parsed from ESPN's CompetitionCompetitorRecord Summary
 -- ("6-2"). Null (→ 0 via COALESCE) at the season opener or an un-sourced gap.
 -- See docs/features/point-in-time-team-records.md.
+--
+-- Driven from Contest (its Away/HomeTeamFranchiseSeasonId columns), NOT from
+-- CompetitionCompetitor: the previous competitor-first form did a
+-- Competition→Contest PK hop for EVERY historical game of the team just to
+-- learn its date, ~740 random PK lookups per 32-game request — 3.2s of a 5s
+-- execution under cold buffers (measured 2026-08-29). Contest-first walks the
+-- team's prior contests newest-first and joins the record chain only until
+-- LIMIT 1 is satisfied — records are near-universally present, so that's one
+-- contest in practice. Same semantics: the newest prior contest THAT YIELDS a
+-- 'total' record wins.
 LEFT JOIN LATERAL (
   SELECT
     split_part(tot."Summary", '-', 1)::int  AS "Wins",
     split_part(tot."Summary", '-', 2)::int  AS "Losses",
     split_part(conf."Summary", '-', 1)::int AS "ConferenceWins",
     split_part(conf."Summary", '-', 2)::int AS "ConferenceLosses"
-  FROM public."CompetitionCompetitor" prev_cc
-  INNER JOIN public."Competition" prev_comp ON prev_comp."Id" = prev_cc."CompetitionId"
-  INNER JOIN public."Contest" prev_ct ON prev_ct."Id" = prev_comp."ContestId"
+  FROM public."Contest" prev_ct
+  INNER JOIN public."Competition" prev_comp ON prev_comp."ContestId" = prev_ct."Id"
+  INNER JOIN public."CompetitionCompetitor" prev_cc
+    ON prev_cc."CompetitionId" = prev_comp."Id"
+   AND prev_cc."FranchiseSeasonId" = fsAway."Id"
   INNER JOIN public."CompetitionCompetitorRecord" tot
     ON tot."CompetitionCompetitorId" = prev_cc."Id" AND tot."Type" = 'total'
   -- LEFT (not INNER) on purpose: an FBS independent (Notre Dame, UConn, …) has
@@ -183,7 +195,7 @@ LEFT JOIN LATERAL (
   -- the authoritative driver; a missing 'vsconf' correctly yields 0-0 conference.
   LEFT JOIN public."CompetitionCompetitorRecord" conf
     ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
-  WHERE prev_cc."FranchiseSeasonId" = fsAway."Id"
+  WHERE (prev_ct."AwayTeamFranchiseSeasonId" = fsAway."Id" OR prev_ct."HomeTeamFranchiseSeasonId" = fsAway."Id")
     AND prev_ct."StartDateUtc" < c."StartDateUtc"
   ORDER BY prev_ct."StartDateUtc" DESC
   LIMIT 1
@@ -233,21 +245,24 @@ LEFT JOIN LATERAL (
   -- this team's entry in it, or NULL = honestly unranked.
   SELECT public.poll_rank_asof(fsHome."Id", fsHome."SeasonYear", c."StartDateUtc") AS "Current"
 ) fsrdHome ON TRUE
--- Entering record for the home team — same lag as enterAway above.
+-- Entering record for the home team — same lag and same Contest-first
+-- shape as enterAway above.
 LEFT JOIN LATERAL (
   SELECT
     split_part(tot."Summary", '-', 1)::int  AS "Wins",
     split_part(tot."Summary", '-', 2)::int  AS "Losses",
     split_part(conf."Summary", '-', 1)::int AS "ConferenceWins",
     split_part(conf."Summary", '-', 2)::int AS "ConferenceLosses"
-  FROM public."CompetitionCompetitor" prev_cc
-  INNER JOIN public."Competition" prev_comp ON prev_comp."Id" = prev_cc."CompetitionId"
-  INNER JOIN public."Contest" prev_ct ON prev_ct."Id" = prev_comp."ContestId"
+  FROM public."Contest" prev_ct
+  INNER JOIN public."Competition" prev_comp ON prev_comp."ContestId" = prev_ct."Id"
+  INNER JOIN public."CompetitionCompetitor" prev_cc
+    ON prev_cc."CompetitionId" = prev_comp."Id"
+   AND prev_cc."FranchiseSeasonId" = fsHome."Id"
   INNER JOIN public."CompetitionCompetitorRecord" tot
     ON tot."CompetitionCompetitorId" = prev_cc."Id" AND tot."Type" = 'total'
   LEFT JOIN public."CompetitionCompetitorRecord" conf
     ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
-  WHERE prev_cc."FranchiseSeasonId" = fsHome."Id"
+  WHERE (prev_ct."AwayTeamFranchiseSeasonId" = fsHome."Id" OR prev_ct."HomeTeamFranchiseSeasonId" = fsHome."Id")
     AND prev_ct."StartDateUtc" < c."StartDateUtc"
   ORDER BY prev_ct."StartDateUtc" DESC
   LIMIT 1

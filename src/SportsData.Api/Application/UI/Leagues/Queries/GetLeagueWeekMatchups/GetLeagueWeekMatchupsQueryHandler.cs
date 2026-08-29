@@ -138,40 +138,6 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             var contestIds = matchups.Select(x => x.ContestId).Distinct().ToList();
 
             _logger.LogDebug(
-                "Querying contest predictions for {ContestCount} contests, leagueId={LeagueId}, week={Week}",
-                contestIds.Count,
-                query.LeagueId,
-                query.Week);
-
-            var predictions = await _dbContext.ContestPredictions
-                .Where(x => contestIds.Contains(x.ContestId))
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
-
-            _logger.LogDebug(
-                "Found {PredictionCount} contest predictions, leagueId={LeagueId}, week={Week}",
-                predictions.Count,
-                query.LeagueId,
-                query.Week);
-
-            _logger.LogDebug(
-                "Querying matchup previews for {ContestCount} contests, leagueId={LeagueId}, week={Week}",
-                contestIds.Count,
-                query.LeagueId,
-                query.Week);
-
-            var previews = await _dbContext.MatchupPreviews
-                .Where(x => contestIds.Contains(x.ContestId) && x.RejectedUtc == null)
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
-
-            _logger.LogDebug(
-                "Found {PreviewCount} matchup previews, leagueId={LeagueId}, week={Week}",
-                previews.Count,
-                query.LeagueId,
-                query.Week);
-
-            _logger.LogDebug(
                 "Calling ContestClient.GetMatchupsByContestIds for {ContestCount} contests, leagueId={LeagueId}, week={Week}",
                 contestIds.Count,
                 query.LeagueId,
@@ -182,9 +148,45 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             // docs/team-mark-user-preference-design.md.
             var direction = MarkDirection.Roundel;
 
-            var matchupsResult = await _contestClientFactory
+            // The Producer round trip is this handler's long pole — start
+            // it FIRST and run the local predictions/previews queries while
+            // it's in flight. Those two stay sequential relative to each
+            // other (one DbContext can't run concurrent operations), but
+            // they overlap the HTTP call, so total ≈ max(http, local)
+            // instead of the sum.
+            var matchupsTask = _contestClientFactory
                 .Resolve(league.Sport)
                 .GetMatchupsByContestIds(contestIds, direction, cancellationToken);
+
+            var predictions = await _dbContext.ContestPredictions
+                .Where(x => contestIds.Contains(x.ContestId))
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
+
+            // Projection, not entities: MatchupPreview rows carry the full
+            // AI-generated preview text; this handler reads six scalars.
+            var previews = await _dbContext.MatchupPreviews
+                .Where(x => contestIds.Contains(x.ContestId) && x.RejectedUtc == null)
+                .AsNoTracking()
+                .Select(x => new
+                {
+                    x.ContestId,
+                    x.CreatedUtc,
+                    x.ApprovedUtc,
+                    x.RejectedUtc,
+                    x.PredictedStraightUpWinner,
+                    x.PredictedSpreadWinner,
+                })
+                .ToListAsync(cancellationToken);
+
+            _logger.LogDebug(
+                "Found {PredictionCount} contest predictions and {PreviewCount} matchup previews, leagueId={LeagueId}, week={Week}",
+                predictions.Count,
+                previews.Count,
+                query.LeagueId,
+                query.Week);
+
+            var matchupsResult = await matchupsTask;
             if (!matchupsResult.IsSuccess)
             {
                 _logger.LogError("Failed to retrieve canonical matchups for leagueId={LeagueId}, week={Week}", query.LeagueId, query.Week);

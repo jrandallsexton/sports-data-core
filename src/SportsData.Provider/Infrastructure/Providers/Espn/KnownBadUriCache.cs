@@ -114,7 +114,14 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                 var row = await dataContext.EspnKnownBadUris
                     .FirstOrDefaultAsync(x => x.UrlHash == key);
 
-                var failureCount = (row?.FailureCount ?? 0) + 1;
+                // A reason change restarts the escalation: the count only
+                // means "consecutive failures OF THIS KIND" — a URI that
+                // 400'd for weeks then starts 404ing must begin at the
+                // 5-minute base, not inherit a near-cap count.
+                var reasonText = reason.ToString();
+                var failureCount = row is null || row.Reason != reasonText
+                    ? 1
+                    : row.FailureCount + 1;
                 var expiresUtc = now.Add(TtlFor(reason, failureCount));
 
                 if (row is null)
@@ -123,7 +130,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                     {
                         UrlHash = key,
                         Uri = uri,
-                        Reason = reason.ToString(),
+                        Reason = reasonText,
                         FailureCount = failureCount,
                         CreatedUtc = now,
                         ExpiresUtc = expiresUtc,
@@ -131,7 +138,7 @@ namespace SportsData.Provider.Infrastructure.Providers.Espn
                 }
                 else
                 {
-                    row.Reason = reason.ToString();
+                    row.Reason = reasonText;
                     row.FailureCount = failureCount;
                     row.ExpiresUtc = expiresUtc;
                 }

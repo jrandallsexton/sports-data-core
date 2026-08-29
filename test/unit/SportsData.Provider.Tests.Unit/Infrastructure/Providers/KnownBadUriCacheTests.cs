@@ -126,7 +126,7 @@ public class KnownBadUriCacheTests
         // the NotFound backoff) — it is pruned only past the 7-day grace.
         using var scope = _scopeFactory.CreateScope();
         var dataContext = scope.ServiceProvider.GetRequiredService<AppDataContext>();
-        (await dataContext.EspnKnownBadUris.CountAsync()).Should().Be(2);
+        (await dataContext.EspnKnownBadUris.AsNoTracking().CountAsync()).Should().Be(2);
 
         // 8 days later a new write prunes it.
         _clock.Setup(x => x.UtcNow()).Returns(FixedNow.AddDays(8));
@@ -172,6 +172,26 @@ public class KnownBadUriCacheTests
         (await cache.IsKnownBadAsync(uri)).Should().BeTrue();
         // ...and expired just after.
         _clock.Setup(x => x.UtcNow()).Returns(FixedNow.AddMinutes(365));
+        (await cache.IsKnownBadAsync(uri)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ReasonChange_ResetsBackoffEscalation()
+    {
+        // A URI that 400'd repeatedly (count climbing) then starts 404ing
+        // must begin the NotFound backoff at the 5-minute base — the count
+        // means "consecutive failures of this kind".
+        var uri = new Uri("http://sports.core.api.espn.com/v2/flip");
+        var cache = CreateCache();
+        await cache.MarkBadAsync(uri, KnownBadReason.BadRequest);
+        await cache.MarkBadAsync(uri, KnownBadReason.BadRequest);
+        await cache.MarkBadAsync(uri, KnownBadReason.BadRequest);
+
+        await cache.MarkBadAsync(uri, KnownBadReason.NotFound);
+
+        // Inherited count (4) would give a 40-minute window; a reset gives
+        // 5 minutes — expired at +6m proves the reset.
+        _clock.Setup(x => x.UtcNow()).Returns(FixedNow.AddMinutes(6));
         (await cache.IsKnownBadAsync(uri)).Should().BeFalse();
     }
 }

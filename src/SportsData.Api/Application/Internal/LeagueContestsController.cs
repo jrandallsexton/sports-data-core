@@ -28,20 +28,10 @@ public class LeagueContestsController : ApiControllerBase
         [FromServices] IGetContestIdsInLeaguesQueryHandler handler,
         CancellationToken cancellationToken)
     {
-        if (request?.ContestIds is null)
-        {
-            return BadRequest("contestIds is required.");
-        }
-
-        // Bound the probe so a malformed caller can't turn this into a
-        // giant ANY() scan. Producer batches per season week (< 1k).
-        if (request.ContestIds.Length > 5000)
-        {
-            return BadRequest("Too many contest ids; batch the request.");
-        }
-
+        // Null and oversized inputs are the validator's job — the handler
+        // returns BadRequest through the Result pipeline.
         var result = await handler.ExecuteAsync(
-            new GetContestIdsInLeaguesQuery(request.ContestIds), cancellationToken);
+            new GetContestIdsInLeaguesQuery(request?.ContestIds!), cancellationToken);
         return result.ToActionResult();
     }
 }

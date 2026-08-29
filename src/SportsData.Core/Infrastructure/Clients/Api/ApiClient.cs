@@ -48,11 +48,25 @@ public class ApiClient : ClientBase, IProvideApi
 
         try
         {
+            // Null payload must surface as Failure, never as Success([]) —
+            // an empty SUCCESS means "none of these back a league" and
+            // would make the scheduler cull every league stream, the exact
+            // outcome the fail-open contract exists to prevent.
             var result = await PostOrDefaultAsync<List<Guid>, GetContestIdsInLeaguesRequest>(
                 "system/league-contests/in-use",
                 new GetContestIdsInLeaguesRequest(contestIds.ToArray()),
-                [],
+                null!,
                 ct);
+
+            if (result is null)
+            {
+                _logger.LogWarning("GetContestIdsInLeagues returned a null payload; caller should fail open.");
+                return new Failure<List<Guid>>(
+                    default!,
+                    ResultStatus.Error,
+                    [new ValidationFailure("response", "Null payload from system/league-contests/in-use.")]);
+            }
+
             return new Success<List<Guid>>(result);
         }
         catch (Exception ex)

@@ -32,11 +32,16 @@ namespace SportsData.Core.Middleware
         {
             context.Response.OnStarting(() =>
             {
-                if (!context.Response.Headers.ContainsKey(HeaderName))
+                // Only the W3C Activity trace id — no TraceIdentifier
+                // fallback. Serilog emits @TraceId to Seq only when an
+                // Activity is active, so a fallback value would be a header
+                // that matches nothing when pasted into Seq. Contract:
+                // header present ⇒ the value IS queryable as @TraceId.
+                // (With AspNetCore OTel instrumentation on, the Activity is
+                // effectively always present; absence means tracing is off.)
+                var traceId = Activity.Current?.TraceId.ToString();
+                if (traceId is not null && !context.Response.Headers.ContainsKey(HeaderName))
                 {
-                    // Activity is created by the AspNetCore OTel instrumentation;
-                    // TraceIdentifier is the framework fallback when tracing is off.
-                    var traceId = Activity.Current?.TraceId.ToString() ?? context.TraceIdentifier;
                     context.Response.Headers.Append(HeaderName, traceId);
                 }
 

@@ -154,10 +154,28 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             // other (one DbContext can't run concurrent operations), but
             // they overlap the HTTP call, so total ≈ max(http, local)
             // instead of the sum.
-            var producerLegTimer = System.Diagnostics.Stopwatch.StartNew();
-            var matchupsTask = _contestClientFactory
-                .Resolve(league.Sport)
-                .GetMatchupsByContestIds(contestIds, direction, cancellationToken);
+            // Timed INSIDE the async wrapper so the measurement ends when
+            // Producer responds — not when this handler gets around to
+            // awaiting. Stopping a timer after the await would report
+            // max(producer, local) and blame Producer for slow local
+            // queries whenever the overlap goes the other way.
+            long producerLegMs = -1;
+            async Task<Result<List<SportsData.Core.Dtos.Canonical.LeagueMatchupDto>>> CallProducerTimedAsync()
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                try
+                {
+                    return await _contestClientFactory
+                        .Resolve(league.Sport)
+                        .GetMatchupsByContestIds(contestIds, direction, cancellationToken);
+                }
+                finally
+                {
+                    producerLegMs = sw.ElapsedMilliseconds;
+                }
+            }
+
+            var matchupsTask = CallProducerTimedAsync();
 
             List<ContestPredictionDto> predictions;
             List<MatchupPreviewProjection> previews;
@@ -213,7 +231,6 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.Week);
 
             var matchupsResult = await matchupsTask;
-            producerLegTimer.Stop();
             if (!matchupsResult.IsSuccess)
             {
                 _logger.LogError("Failed to retrieve canonical matchups for leagueId={LeagueId}, week={Week}", query.LeagueId, query.Week);
@@ -345,7 +362,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.Week,
                 query.UserId,
                 result.Matchups.Count,
-                producerLegTimer.ElapsedMilliseconds);
+                producerLegMs);
 
             return new Success<LeagueWeekMatchupsDto>(result);
         }

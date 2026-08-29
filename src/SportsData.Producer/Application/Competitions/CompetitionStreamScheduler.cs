@@ -1,7 +1,8 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Infrastructure.Clients.Api;
 using SportsData.Core.Processing;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Infrastructure.Data;
@@ -47,19 +48,22 @@ public class CompetitionStreamScheduler
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
     private readonly IAppMode _appMode;
     private readonly IDateTimeProvider _dateTimeProvider;
+    private readonly IProvideApi _apiClient;
 
     public CompetitionStreamScheduler(
         ILogger<CompetitionStreamScheduler> logger,
         TeamSportDataContext dataContext,
         IProvideBackgroundJobs backgroundJobProvider,
         IAppMode appMode,
-        IDateTimeProvider dateTimeProvider)
+        IDateTimeProvider dateTimeProvider,
+        IProvideApi apiClient)
     {
         _logger = logger;
         _dataContext = dataContext;
         _backgroundJobProvider = backgroundJobProvider;
         _appMode = appMode;
         _dateTimeProvider = dateTimeProvider;
+        _apiClient = apiClient;
     }
 
     /// <summary>
@@ -71,8 +75,8 @@ public class CompetitionStreamScheduler
     /// Event-driven single-contest reschedule path. Invoked from
     /// <see cref="Consumers.ContestStartTimeUpdatedConsumerHandler"/> after
     /// MassTransit delivers <c>ContestStartTimeUpdated</c>. Companion to the
-    /// recurring <see cref="ExecuteAsync"/> sweep — that one runs daily for
-    /// MLB and weekly for football, which is too sparse to catch mid-day ESPN
+    /// recurring <see cref="ExecuteAsync"/> sweep — that one runs hourly,
+    /// which is too sparse to catch mid-day ESPN
     /// game-time changes (the failure mode this method exists to fix).
     ///
     /// Reuses <see cref="TryRescheduleAsync"/> for the actual reschedule logic
@@ -163,8 +167,21 @@ public class CompetitionStreamScheduler
 
         var existingByCompetitionId = existingStreams.ToDictionary(s => s.CompetitionId);
 
+        // Live-source ONLY games that back a pick'em league. A SeasonWeek
+        // holds every sourced game (all NCAA classifications — 700+ on a
+        // fall Saturday); streaming them all live-polls ESPN play-by-play
+        // nobody consumes (2026-08-29: 688 of 729 scheduled NCAA streams
+        // served no league). FAIL OPEN: when the API can't answer, null
+        // disables filtering entirely — briefly over-sourcing beats
+        // blinding league games on game day. Player pick'em is covered
+        // too: those leagues generate PickemGroupMatchup rows as well.
+        var leagueContestIds = await GetLeagueContestIdsAsync(
+            competitions.Select(c => c.ContestId).Distinct().ToList(), cancellationToken);
+
         var scheduledCount = 0;
         var rescheduledCount = 0;
+        var culledCount = 0;
+        var skippedCount = 0;
 
         foreach (var competition in competitions)
         {
@@ -179,15 +196,36 @@ public class CompetitionStreamScheduler
                 continue;
             }
 
+            var inLeague = leagueContestIds is null || leagueContestIds.Contains(competition.ContestId);
+
             var desiredScheduledTimeUtc = ComputeScheduledTimeUtc(competition.Date, now);
 
             if (existingByCompetitionId.TryGetValue(competition.Id, out var existingStream))
             {
+                // A previously-scheduled stream whose contest backs no
+                // league (league deleted, or scheduled before this filter
+                // existed): cancel it. Only Scheduled streams — anything
+                // further along is already running or terminal.
+                if (!inLeague && existingStream.Status == CompetitionStreamStatus.Scheduled)
+                {
+                    _dataContext.CompetitionStreams.Remove(existingStream);
+                    await _dataContext.SaveChangesAsync(cancellationToken);
+                    TryDeleteOrphanJob(existingStream.BackgroundJobId, competition.Id);
+                    culledCount++;
+                    continue;
+                }
+
                 if (await TryRescheduleAsync(existingStream, competition, contest, desiredScheduledTimeUtc, now, cancellationToken))
                 {
                     rescheduledCount++;
                 }
 
+                continue;
+            }
+
+            if (!inLeague)
+            {
+                skippedCount++;
                 continue;
             }
 
@@ -230,8 +268,45 @@ public class CompetitionStreamScheduler
         }
 
         _logger.LogInformation(
-            "Stream scheduling complete for SeasonWeek {SeasonWeekNumber}. New: {ScheduledCount}, Rescheduled: {RescheduledCount}.",
-            seasonWeek.Number, scheduledCount, rescheduledCount);
+            "Stream scheduling complete for SeasonWeek {SeasonWeekNumber}. New: {ScheduledCount}, Rescheduled: {RescheduledCount}, SkippedNonLeague: {SkippedCount}, CulledNonLeague: {CulledCount}, FilterActive: {FilterActive}.",
+            seasonWeek.Number, scheduledCount, rescheduledCount, skippedCount, culledCount, leagueContestIds is not null);
+    }
+
+    /// <summary>
+    /// Asks the API which of the candidate contests appear in any pick'em
+    /// league's matchups. Null = the filter is unavailable (API down, not
+    /// configured, or a defective response) and the caller must schedule
+    /// everything — the pre-filter behavior.
+    /// </summary>
+    private async Task<HashSet<Guid>?> GetLeagueContestIdsAsync(
+        List<Guid> candidateContestIds,
+        CancellationToken cancellationToken)
+    {
+        if (candidateContestIds.Count == 0)
+        {
+            return [];
+        }
+
+        try
+        {
+            var result = await _apiClient.GetContestIdsInLeagues(candidateContestIds, cancellationToken);
+            if (result?.IsSuccess == true && result.Value is not null)
+            {
+                return result.Value.ToHashSet();
+            }
+
+            _logger.LogWarning(
+                "League-contest inquiry did not succeed; scheduling ALL {Count} candidate contests (fail open).",
+                candidateContestIds.Count);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "League-contest inquiry threw; scheduling ALL {Count} candidate contests (fail open).",
+                candidateContestIds.Count);
+            return null;
+        }
     }
 
     private void TryDeleteOrphanJob(string jobId, Guid competitionId)

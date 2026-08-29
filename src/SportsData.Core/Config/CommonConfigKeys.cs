@@ -62,6 +62,11 @@ namespace SportsData.Core.Config
         public static string CacheServiceUri =>
             $"{nameof(CommonConfig)}:{nameof(CommonConfig.RedisUri)}";
 
+        // Single-URL (not sport-keyed): the API service is one deployment,
+        // unlike the per-sport Producer-side services.
+        public static string GetApiUri() =>
+            $"{nameof(CommonConfig)}:ApiClientConfig:ApiUrl";
+
         public static string GetContestProviderUri(Sport mode) =>
             $"{nameof(CommonConfig)}:{nameof(ContestClientConfig)}:{mode}:{nameof(ContestClientConfig.ApiUrl)}";
 

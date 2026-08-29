@@ -197,7 +197,11 @@ LEFT JOIN LATERAL (
     ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
   WHERE (prev_ct."AwayTeamFranchiseSeasonId" = fsAway."Id" OR prev_ct."HomeTeamFranchiseSeasonId" = fsAway."Id")
     AND prev_ct."StartDateUtc" < c."StartDateUtc"
-  ORDER BY prev_ct."StartDateUtc" DESC
+  -- prev_comp."Id" tie-break: a Contest can host multiple Competitions
+  -- (stale reschedule artifacts), and date alone would let LIMIT 1 pick
+  -- an arbitrary one. Deterministic, matching the probables stitch's
+  -- lowest-id-wins convention.
+  ORDER BY prev_ct."StartDateUtc" DESC, prev_comp."Id"
   LIMIT 1
 ) enterAway ON TRUE
 INNER JOIN public."FranchiseSeason" fsHome ON fsHome."Id" = c."HomeTeamFranchiseSeasonId"
@@ -264,7 +268,11 @@ LEFT JOIN LATERAL (
     ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
   WHERE (prev_ct."AwayTeamFranchiseSeasonId" = fsHome."Id" OR prev_ct."HomeTeamFranchiseSeasonId" = fsHome."Id")
     AND prev_ct."StartDateUtc" < c."StartDateUtc"
-  ORDER BY prev_ct."StartDateUtc" DESC
+  -- prev_comp."Id" tie-break: a Contest can host multiple Competitions
+  -- (stale reschedule artifacts), and date alone would let LIMIT 1 pick
+  -- an arbitrary one. Deterministic, matching the probables stitch's
+  -- lowest-id-wins convention.
+  ORDER BY prev_ct."StartDateUtc" DESC, prev_comp."Id"
   LIMIT 1
 ) enterHome ON TRUE
 WHERE c."Id" = ANY(@ContestIds)

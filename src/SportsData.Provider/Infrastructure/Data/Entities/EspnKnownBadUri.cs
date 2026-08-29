@@ -26,6 +26,16 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public required Uri Uri { get; set; }
 
+        /// <summary>"BadRequest" (permanent, flat TTL) or "NotFound" (escalating backoff).</summary>
+        public string Reason { get; set; } = "BadRequest";
+
+        /// <summary>
+        /// Consecutive failures — drives the NotFound backoff (5m doubling
+        /// to a 6h cap). Persisted so a fresh pod continues the escalation
+        /// instead of restarting it at 5 minutes.
+        /// </summary>
+        public int FailureCount { get; set; } = 1;
+
         public DateTime CreatedUtc { get; set; }
 
         public DateTime ExpiresUtc { get; set; }
@@ -43,6 +53,9 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
                 builder.Property(p => p.Uri)
                     .HasMaxLength(512);
+
+                builder.Property(x => x.Reason)
+                    .HasMaxLength(16);
             }
         }
     }

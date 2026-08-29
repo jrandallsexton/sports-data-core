@@ -299,12 +299,29 @@ namespace SportsData.Provider.Application.Processors
                 {
                     if (result.Status == ResultStatus.BadRequest)
                     {
-                        // ESPN 400 = permanently unsupported resource (unlike
-                        // 404 = not yet published, which must keep retrying).
+                        // ESPN 400 = permanently unsupported resource.
                         // Suppress the live streamers' fixed-cadence refetches.
-                        await _knownBadUris.MarkBadAsync(command.Uri);
+                        await _knownBadUris.MarkBadAsync(command.Uri, KnownBadReason.BadRequest);
                         _logger.LogWarning(
                             "ESPN returned BadRequest; marking URI known-bad and suppressing refetches. Uri={Uri}",
+                            command.Uri);
+                        return;
+                    }
+
+                    if (result.Status == ResultStatus.NotFound)
+                    {
+                        // ESPN 404 = doesn't exist NOW but might later, so
+                        // escalating backoff (5m → 6h cap) rather than a flat
+                        // long TTL: a live-window race costs minutes, while a
+                        // URI ESPN references but never serves (e.g. a play
+                        // participant whose athlete page doesn't exist —
+                        // observed at ~1,400 refetches/day) decays to a few
+                        // probes a day. Producer's dependency retry keeps its
+                        // DLQ semantics — Provider just answers from memory
+                        // until the window lapses.
+                        await _knownBadUris.MarkBadAsync(command.Uri, KnownBadReason.NotFound);
+                        _logger.LogWarning(
+                            "ESPN returned NotFound; suppressing refetches with backoff. Uri={Uri}",
                             command.Uri);
                         return;
                     }

@@ -746,7 +746,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         await handler.Consume(ctx);
 
         // assert
-        knownBad.Verify(x => x.MarkBadAsync(ProbabilitiesUri), Times.Once);
+        knownBad.Verify(x => x.MarkBadAsync(ProbabilitiesUri, KnownBadReason.BadRequest), Times.Once);
         background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
             It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.Never);
     }
@@ -772,5 +772,27 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         espnApi.Verify(
             x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task WhenEspnReturnsNotFound_MarksUriWithNotFoundReason()
+    {
+        // arrange — ESPN 404s (resource doesn't exist yet / ever); the
+        // suppression uses the escalating-backoff reason, not the flat one.
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), true, false))
+            .ReturnsAsync(new Failure<string>(string.Empty, ResultStatus.NotFound, []));
+
+        var knownBad = Mocker.GetMock<IKnownBadUriCache>();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = ProbabilitiesRequest(Fixture);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert
+        knownBad.Verify(x => x.MarkBadAsync(ProbabilitiesUri, KnownBadReason.NotFound), Times.Once);
     }
 }

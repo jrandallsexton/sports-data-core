@@ -154,6 +154,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             // other (one DbContext can't run concurrent operations), but
             // they overlap the HTTP call, so total ≈ max(http, local)
             // instead of the sum.
+            var producerLegTimer = System.Diagnostics.Stopwatch.StartNew();
             var matchupsTask = _contestClientFactory
                 .Resolve(league.Sport)
                 .GetMatchupsByContestIds(contestIds, direction, cancellationToken);
@@ -212,6 +213,7 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.Week);
 
             var matchupsResult = await matchupsTask;
+            producerLegTimer.Stop();
             if (!matchupsResult.IsSuccess)
             {
                 _logger.LogError("Failed to retrieve canonical matchups for leagueId={LeagueId}, week={Week}", query.LeagueId, query.Week);
@@ -333,12 +335,17 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()
             };
 
+            // ProducerLegMs = dispatch → response for the overlapped canonical
+            // call, the historical long pole of this endpoint. Pairs with
+            // Producer's "Canonical matchups served" event under the same
+            // @TraceId (surfaced to clients as the X-Trace-Id header).
             _logger.LogInformation(
-                "Successfully completed GetLeagueWeekMatchupsQueryHandler.ExecuteAsync for leagueId={LeagueId}, week={Week}, userId={UserId}, returning {Count} matchups",
+                "Successfully completed GetLeagueWeekMatchupsQueryHandler.ExecuteAsync for leagueId={LeagueId}, week={Week}, userId={UserId}, returning {Count} matchups. ProducerLegMs={ProducerLegMs}",
                 query.LeagueId,
                 query.Week,
                 query.UserId,
-                result.Matchups.Count);
+                result.Matchups.Count,
+                producerLegTimer.ElapsedMilliseconds);
 
             return new Success<LeagueWeekMatchupsDto>(result);
         }

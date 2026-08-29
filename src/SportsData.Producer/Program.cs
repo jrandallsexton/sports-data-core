@@ -125,9 +125,10 @@ public class Program
         //
         // Queue routing:
         //   - Daemon-only pods listen on ["daemon"] exclusively.
-        //   - Worker pods listen on ["default"] only. This is PR D of the streamer
-        //     cutover: Daemon pods are confirmed healthy in prod, so Worker no longer
-        //     needs the transitional "daemon" fallback.
+        //   - Worker-only pods listen on ["default"] exclusively. This is PR D of the
+        //     streamer cutover: Daemon pods are confirmed healthy in prod, so Worker no
+        //     longer uses the transitional "daemon" fallback. (A Worker|Daemon combo is
+        //     the one exception, handled below.)
         //
         //     Dropping it is a correctness fix, not cleanup. Worker replicas are
         //     KEDA-scaled off a trigger that counts the *default* queue only, so the

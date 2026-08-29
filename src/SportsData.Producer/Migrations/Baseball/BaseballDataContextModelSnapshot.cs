@@ -1284,6 +1284,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("AthleteId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("AthleteExternalId", (string)null);
                 });
 
@@ -1424,6 +1426,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("AthletePositionId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("AthletePositionExternalId", (string)null);
                 });
@@ -1571,6 +1575,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("AthleteSeasonId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("AthleteSeasonExternalId", (string)null);
                 });
@@ -1989,6 +1995,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("AwardId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("AwardExternalId", (string)null);
                 });
 
@@ -2078,6 +2086,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("CoachId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("CoachExternalId", (string)null);
                 });
@@ -2171,6 +2181,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("CoachRecordId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("CoachRecordExternalId");
                 });
@@ -2360,6 +2372,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("CoachSeasonRecordId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("CoachSeasonRecordExternalId");
                 });
@@ -2845,6 +2859,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("CompetitionCompetitorId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("CompetitionCompetitorExternalIds");
                 });
 
@@ -2940,6 +2956,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("CompetitionCompetitorLineScoreId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("CompetitionCompetitorLineScoreExternalId", (string)null);
                 });
@@ -3159,6 +3177,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("CompetitionCompetitorScoreId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("CompetitionCompetitorScoreExternalIds");
                 });
 
@@ -3355,6 +3375,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("CompetitionId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("CompetitionExternalId", (string)null);
                 });
@@ -3938,6 +3960,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("CompetitionOddsId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("CompetitionOddsExternalId", (string)null);
                 });
 
@@ -4136,6 +4160,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("CompetitionPlayId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("CompetitionPlayExternalId", (string)null);
                 });
 
@@ -4285,6 +4311,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("CompetitionPowerIndexId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("CompetitionPowerIndexExternalId", (string)null);
                 });
@@ -4477,6 +4505,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("CompetitionProbabilityId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("CompetitionProbabilityExternalId");
                 });
@@ -4700,6 +4730,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("CompetitionStatusId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("CompetitionStatusExternalId", (string)null);
                 });
 
@@ -4859,6 +4891,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("ContestId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("ContestExternalId", (string)null);
                 });
@@ -5161,6 +5195,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("FranchiseId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("FranchiseExternalId", (string)null);
                 });
@@ -5474,6 +5510,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("FranchiseSeasonId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("FranchiseSeasonExternalId", (string)null);
                 });
@@ -5910,6 +5948,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("RankingId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("FranchiseSeasonRankingExternalId");
                 });
@@ -6496,6 +6536,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("GroupSeasonId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("GroupSeasonExternalId", (string)null);
                 });
@@ -7195,6 +7237,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("SeasonId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("SeasonExternalId", (string)null);
                 });
 
@@ -7319,6 +7363,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("SeasonFutureId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("SeasonFutureExternalId", (string)null);
                 });
@@ -7469,6 +7515,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("SeasonPhaseId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("SeasonPhaseExternalId", (string)null);
                 });
 
@@ -7551,6 +7599,8 @@ namespace SportsData.Producer.Migrations.Baseball
                     b.HasKey("Id");
 
                     b.HasIndex("SeasonPollId");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.ToTable("SeasonPollExternalId");
                 });
@@ -7823,6 +7873,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("SeasonPollWeekId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("SeasonPollWeekExternalId");
                 });
 
@@ -7977,6 +8029,8 @@ namespace SportsData.Producer.Migrations.Baseball
 
                     b.HasIndex("SeasonWeekId");
 
+                    b.HasIndex("SourceUrlHash");
+
                     b.ToTable("SeasonWeekExternalId", (string)null);
                 });
 
@@ -8087,6 +8141,8 @@ namespace SportsData.Producer.Migrations.Baseball
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SourceUrlHash");
 
                     b.HasIndex("VenueId");
 

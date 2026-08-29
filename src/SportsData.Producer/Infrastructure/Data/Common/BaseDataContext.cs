@@ -125,5 +125,28 @@ namespace SportsData.Producer.Infrastructure.Data.Common
                 cfg.ToTable(nameof(OutboxMessage));
             });
         }
+
+        /// <summary>
+        /// Indexes every ExternalId table on SourceUrlHash — the document
+        /// identity-resolution predicate (Provider + SourceUrlHash EXISTS)
+        /// that runs for EVERY processed document. Without it those lookups
+        /// sequential-scan tables of up to 14M rows; on 2026-08-28 (NCAAFB
+        /// kickoff) 80+ concurrent multi-second scans saturated the shared
+        /// PG box and queued every other query (UI matchups hit 30s) behind
+        /// outbox lock pileups. MUST be called at the END of each concrete
+        /// context's OnModelCreating — sport-specific ExternalId entities
+        /// aren't in the model yet when the base method runs.
+        /// </summary>
+        protected static void ApplyExternalIdSourceUrlHashIndexes(ModelBuilder modelBuilder)
+        {
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                if (typeof(ExternalId).IsAssignableFrom(entityType.ClrType))
+                {
+                    modelBuilder.Entity(entityType.ClrType)
+                        .HasIndex(nameof(ExternalId.SourceUrlHash));
+                }
+            }
+        }
     }
 }

@@ -53,6 +53,9 @@ namespace SportsData.Producer.Infrastructure.Data.Football
             modelBuilder.ApplyConfiguration(new FootballCompetitionStatus.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionDrive.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new CompetitionDriveExternalId.EntityConfiguration());
+
+            // Last: sees every ExternalId entity registered above (base + football).
+            ApplyExternalIdSourceUrlHashIndexes(modelBuilder);
         }
     }
 }

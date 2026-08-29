@@ -59,6 +59,9 @@ namespace SportsData.Producer.Infrastructure.Data.Baseball
             modelBuilder.ApplyConfiguration(new BaseballCompetitionStatusFeaturedAthlete.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeasonHotZone.EntityConfiguration());
             modelBuilder.ApplyConfiguration(new AthleteSeasonHotZoneEntry.EntityConfiguration());
+
+            // Last: sees every ExternalId entity registered above (base + baseball).
+            ApplyExternalIdSourceUrlHashIndexes(modelBuilder);
         }
     }
 }

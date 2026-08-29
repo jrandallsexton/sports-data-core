@@ -268,9 +268,21 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     // e.g. no win-probability model for this competition.
                     // Remember it so the live streamers' fixed-cadence
                     // re-requests short-circuit instead of re-hitting ESPN.
-                    await _knownBadUris.MarkBadAsync(uri);
+                    await _knownBadUris.MarkBadAsync(uri, KnownBadReason.BadRequest);
                     _logger.LogWarning(
                         "ESPN returned BadRequest; marking URI known-bad and suppressing refetches. PageUri={PageUri}",
+                        uri);
+                    return;
+                }
+
+                if (result.Status == ResultStatus.NotFound)
+                {
+                    // ESPN 404 = doesn't exist NOW, might later (next week's
+                    // poll). Escalating backoff (5m → 6h) so Producer's
+                    // dependency retry loop can't refetch a dead URI forever.
+                    await _knownBadUris.MarkBadAsync(uri, KnownBadReason.NotFound);
+                    _logger.LogWarning(
+                        "ESPN returned NotFound; suppressing refetches with backoff. PageUri={PageUri}",
                         uri);
                     return;
                 }

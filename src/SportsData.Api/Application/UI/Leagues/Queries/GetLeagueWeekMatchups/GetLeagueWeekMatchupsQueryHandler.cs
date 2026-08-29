@@ -1,4 +1,4 @@
-using FluentValidation.Results;
+﻿using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -138,40 +138,6 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             var contestIds = matchups.Select(x => x.ContestId).Distinct().ToList();
 
             _logger.LogDebug(
-                "Querying contest predictions for {ContestCount} contests, leagueId={LeagueId}, week={Week}",
-                contestIds.Count,
-                query.LeagueId,
-                query.Week);
-
-            var predictions = await _dbContext.ContestPredictions
-                .Where(x => contestIds.Contains(x.ContestId))
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
-
-            _logger.LogDebug(
-                "Found {PredictionCount} contest predictions, leagueId={LeagueId}, week={Week}",
-                predictions.Count,
-                query.LeagueId,
-                query.Week);
-
-            _logger.LogDebug(
-                "Querying matchup previews for {ContestCount} contests, leagueId={LeagueId}, week={Week}",
-                contestIds.Count,
-                query.LeagueId,
-                query.Week);
-
-            var previews = await _dbContext.MatchupPreviews
-                .Where(x => contestIds.Contains(x.ContestId) && x.RejectedUtc == null)
-                .AsNoTracking()
-                .ToListAsync(cancellationToken);
-
-            _logger.LogDebug(
-                "Found {PreviewCount} matchup previews, leagueId={LeagueId}, week={Week}",
-                previews.Count,
-                query.LeagueId,
-                query.Week);
-
-            _logger.LogDebug(
                 "Calling ContestClient.GetMatchupsByContestIds for {ContestCount} contests, leagueId={LeagueId}, week={Week}",
                 contestIds.Count,
                 query.LeagueId,
@@ -182,9 +148,70 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             // docs/team-mark-user-preference-design.md.
             var direction = MarkDirection.Roundel;
 
-            var matchupsResult = await _contestClientFactory
+            // The Producer round trip is this handler's long pole — start
+            // it FIRST and run the local predictions/previews queries while
+            // it's in flight. Those two stay sequential relative to each
+            // other (one DbContext can't run concurrent operations), but
+            // they overlap the HTTP call, so total ≈ max(http, local)
+            // instead of the sum.
+            var matchupsTask = _contestClientFactory
                 .Resolve(league.Sport)
                 .GetMatchupsByContestIds(contestIds, direction, cancellationToken);
+
+            List<ContestPredictionDto> predictions;
+            List<MatchupPreviewProjection> previews;
+            try
+            {
+                // Straight into the wire DTO — the handler consumes exactly
+                // these five fields, and projecting here removes the manual
+                // per-matchup mapping loop below.
+                predictions = await _dbContext.ContestPredictions
+                    .Where(x => contestIds.Contains(x.ContestId))
+                    .AsNoTracking()
+                    .Select(x => new ContestPredictionDto
+                    {
+                        ContestId = x.ContestId,
+                        ModelVersion = x.ModelVersion,
+                        PredictionType = x.PredictionType,
+                        WinProbability = x.WinProbability,
+                        WinnerFranchiseSeasonId = x.WinnerFranchiseSeasonId,
+                    })
+                    .ToListAsync(cancellationToken);
+
+                // Projection, not entities: MatchupPreview rows carry the full
+                // AI-generated preview text; this handler reads six scalars.
+                previews = await _dbContext.MatchupPreviews
+                    .Where(x => contestIds.Contains(x.ContestId) && x.RejectedUtc == null)
+                    .AsNoTracking()
+                    .Select(x => new MatchupPreviewProjection(
+                        x.ContestId,
+                        x.CreatedUtc,
+                        x.ApprovedUtc,
+                        x.RejectedUtc,
+                        x.PredictedStraightUpWinner,
+                        x.PredictedSpreadWinner))
+                    .ToListAsync(cancellationToken);
+            }
+            catch
+            {
+                // The Producer call is still in flight; observe its eventual
+                // fault so it can't surface as an unobserved task exception.
+                // (Its own response is simply discarded — the request token
+                // still cancels it if the caller aborted.)
+                _ = matchupsTask.ContinueWith(
+                    static t => _ = t.Exception,
+                    TaskContinuationOptions.OnlyOnFaulted);
+                throw;
+            }
+
+            _logger.LogDebug(
+                "Found {PredictionCount} contest predictions and {PreviewCount} matchup previews, leagueId={LeagueId}, week={Week}",
+                predictions.Count,
+                previews.Count,
+                query.LeagueId,
+                query.Week);
+
+            var matchupsResult = await matchupsTask;
             if (!matchupsResult.IsSuccess)
             {
                 _logger.LogError("Failed to retrieve canonical matchups for leagueId={LeagueId}, week={Week}", query.LeagueId, query.Week);
@@ -271,19 +298,8 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     matchup.IsPreviewReviewed = previews.Any(x => x.ContestId == matchup.ContestId &&
                                                                   x is { ApprovedUtc: not null, RejectedUtc: null });
 
-                    var contestPredictions = predictions.Where(x => x.ContestId == matchup.ContestId);
-
-                    foreach (var prediction in contestPredictions)
-                    {
-                        matchup.Predictions.Add(new ContestPredictionDto()
-                        {
-                            ContestId = prediction.ContestId,
-                            ModelVersion = prediction.ModelVersion,
-                            PredictionType = prediction.PredictionType,
-                            WinProbability = prediction.WinProbability,
-                            WinnerFranchiseSeasonId = prediction.WinnerFranchiseSeasonId
-                        });
-                    }
+                    matchup.Predictions.AddRange(
+                        predictions.Where(x => x.ContestId == matchup.ContestId));
                 }
                 else
                 {
@@ -342,3 +358,16 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
         }
     }
 }
+
+/// <summary>
+/// The six scalars this handler reads from MatchupPreview — a named
+/// projection so the query contract is explicit and the AI preview text
+/// never leaves the database.
+/// </summary>
+internal sealed record MatchupPreviewProjection(
+    Guid ContestId,
+    DateTime CreatedUtc,
+    DateTime? ApprovedUtc,
+    DateTime? RejectedUtc,
+    Guid? PredictedStraightUpWinner,
+    Guid? PredictedSpreadWinner);

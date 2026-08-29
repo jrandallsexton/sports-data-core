@@ -70,7 +70,18 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
         var streamTimes = await GetActiveStreamTimesAsync(query.ContestIds, cancellationToken);
         var probables = await GetProbablePitchersAsync(query.ContestIds, cancellationToken);
         var seriesSummaries = await GetCurrentSeriesSummariesAsync(query.ContestIds, cancellationToken);
-        var situations = await GetLiveSituationsAsync(query.ContestIds, cancellationToken);
+
+        // Snap state exists only for games currently being played, but this
+        // used to load EVERY play of EVERY requested contest — for a
+        // completed 32-game NCAA week that's thousands of rows fetched per
+        // request to decorate cards that never render a situation line.
+        // Restrict the stitch to contests that aren't terminal or pre-game;
+        // unknown/null statuses fail OPEN into the stitch so a live game
+        // with a missing status row still gets its snap state.
+        var liveEligibleContestIds = FilterLiveEligibleContestIds(matchups);
+        var situations = liveEligibleContestIds.Length == 0
+            ? new Dictionary<Guid, LiveSituation>()
+            : await GetLiveSituationsAsync(liveEligibleContestIds, cancellationToken);
         foreach (var matchup in matchups)
         {
             matchup.StreamScheduledTimeUtc = streamTimes.GetValueOrDefault(matchup.ContestId);
@@ -103,6 +114,31 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
 
         return new Success<List<LeagueMatchupDto>>(matchups);
     }
+
+    /// <summary>
+    /// Statuses that can never carry live snap state: the game hasn't
+    /// started, or is over and will never produce another play. An
+    /// EXCLUSION list on purpose — ESPN's live vocabulary is wider than
+    /// its terminal one (STATUS_IN_PROGRESS, STATUS_HALFTIME,
+    /// STATUS_END_PERIOD, STATUS_DELAYED, ...), and a status we've never
+    /// seen (or a null from a missing CompetitionStatus row) must fail
+    /// open into the stitch rather than blank a live card.
+    /// </summary>
+    private static readonly HashSet<string> NoSnapStateStatuses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "STATUS_SCHEDULED",
+        "STATUS_FINAL",
+        "STATUS_POSTPONED",
+        "STATUS_CANCELED",
+        "STATUS_FORFEIT",
+    };
+
+    internal static Guid[] FilterLiveEligibleContestIds(IReadOnlyCollection<LeagueMatchupDto> matchups) =>
+        matchups
+            .Where(m => m.Status is null || !NoSnapStateStatuses.Contains(m.Status))
+            .Select(m => m.ContestId)
+            .Distinct()
+            .ToArray();
 
     /// <summary>
     /// Football snap state (down, distance, ball spot) for the live card,

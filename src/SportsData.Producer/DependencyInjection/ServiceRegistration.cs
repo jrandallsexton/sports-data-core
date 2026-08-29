@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 using Hangfire;
 
@@ -467,21 +467,27 @@ namespace SportsData.Producer.DependencyInjection
                     job => job.ExecuteAsync(),
                     "0 7 * * 0"); // Sunday at 07:00 UTC
 
+                // Hourly (was weekly): with the league-contest filter the
+                // sweep is cheap and idempotent, and hourly runs mean a
+                // league created mid-week gets its games' streams within
+                // the hour instead of waiting for Sunday. The
+                // matchups-generated event path (immediate scheduling) is
+                // the planned follow-up.
                 recurringJobManager.AddOrUpdate<CompetitionStreamScheduler>(
                     nameof(CompetitionStreamScheduler),
                     job => job.Execute(),
-                    "0 7 * * 0"); // Sunday at 07:00 UTC
+                    Cron.Hourly());
             }
 
             if (mode is Sport.BaseballMlb)
             {
-                // MLB plays daily, so re-run the scheduler each morning to catch
-                // newly-rolled SeasonWeek windows. The scheduler is idempotent —
-                // already-scheduled streams are skipped via the existing CompetitionStream row.
+                // Hourly (was daily): same rationale as football — the
+                // league-contest filter makes each run cheap, and new
+                // leagues get streams within the hour.
                 recurringJobManager.AddOrUpdate<CompetitionStreamScheduler>(
                     nameof(CompetitionStreamScheduler),
                     job => job.Execute(),
-                    "0 7 * * *"); // Daily at 07:00 UTC
+                    Cron.Hourly());
             }
 
             if (mode is Sport.FootballNcaa or Sport.FootballNfl or Sport.BaseballMlb)

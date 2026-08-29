@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 using FluentAssertions;
 
@@ -6,6 +6,7 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Infrastructure.Clients.Api;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Competitions;
 using SportsData.Producer.Enums;
@@ -514,5 +515,101 @@ public class CompetitionStreamSchedulerTests : ProducerTestBase<CompetitionStrea
                 It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
                 It.IsAny<TimeSpan>()))
             .Returns(jobId);
+    }
+
+    // ─── League-contest filter — live-source only games that back a league ───
+
+    private void SetupLeagueContests(params Guid[] contestIds)
+    {
+        Mocker.GetMock<IProvideApi>()
+            .Setup(x => x.GetContestIdsInLeagues(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<Guid>>(contestIds.ToList()));
+    }
+
+    [Fact]
+    public async Task Execute_ContestNotInAnyLeague_SkipsScheduling()
+    {
+        await SeedSeasonWeekAsync();
+        await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(3));
+        SetupLeagueContests(); // API answers: none of these back a league
+
+        await _sut.ExecuteAsync(CancellationToken.None);
+
+        FootballDataContext.CompetitionStreams.Should().BeEmpty();
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Schedule<ICompetitionBroadcastingJob>(
+                It.IsAny<Expression<Func<ICompetitionBroadcastingJob, Task>>>(),
+                It.IsAny<TimeSpan>()),
+                Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_ContestInLeague_SchedulesNormally()
+    {
+        await SeedSeasonWeekAsync();
+        var competitionId = await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(3));
+        var contestId = FootballDataContext.Competitions.Single(c => c.Id == competitionId).ContestId;
+        SetupLeagueContests(contestId);
+        SetupScheduleReturns("hf-league-1");
+
+        await _sut.ExecuteAsync(CancellationToken.None);
+
+        FootballDataContext.CompetitionStreams.Single().BackgroundJobId.Should().Be("hf-league-1");
+    }
+
+    [Fact]
+    public async Task Execute_ExistingScheduledStream_NoLongerInLeague_IsCulled()
+    {
+        // Scheduled before the filter existed (or the league was deleted):
+        // the sweep removes the row and deletes the Hangfire job.
+        await SeedSeasonWeekAsync();
+        var competitionId = await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(3));
+        await SeedExistingStreamAsync(
+            competitionId, FixedNow.AddHours(3) - TimeSpan.FromMinutes(10),
+            CompetitionStreamStatus.Scheduled, "hf-stale");
+        SetupLeagueContests(); // no league contests
+
+        await _sut.ExecuteAsync(CancellationToken.None);
+
+        FootballDataContext.CompetitionStreams.Should().BeEmpty();
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Delete("hf-stale"), Times.Once);
+    }
+
+    [Fact]
+    public async Task Execute_ActiveStream_NotInLeague_IsLeftAlone()
+    {
+        // Only Scheduled streams are culled — a live stream is never
+        // yanked out from under a running job.
+        await SeedSeasonWeekAsync();
+        var competitionId = await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(3));
+        await SeedExistingStreamAsync(
+            competitionId, FixedNow.AddHours(3) - TimeSpan.FromMinutes(10),
+            CompetitionStreamStatus.Active, "hf-live");
+        SetupLeagueContests();
+
+        await _sut.ExecuteAsync(CancellationToken.None);
+
+        FootballDataContext.CompetitionStreams.Single().BackgroundJobId.Should().Be("hf-live");
+        Mock.Get(Mocker.Get<IProvideBackgroundJobs>())
+            .Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_LeagueInquiryFails_FailsOpenAndSchedulesEverything()
+    {
+        // API down / unconfigured → schedule ALL candidates. Briefly
+        // over-sourcing beats blinding league games on game day.
+        await SeedSeasonWeekAsync();
+        var competitionId = await SeedCompetitionAsync(competitionDate: FixedNow.AddHours(3));
+        Mocker.GetMock<IProvideApi>()
+            .Setup(x => x.GetContestIdsInLeagues(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Failure<List<Guid>>(
+                default!, ResultStatus.Error, []));
+        SetupScheduleReturns("hf-failopen-1");
+
+        await _sut.ExecuteAsync(CancellationToken.None);
+
+        FootballDataContext.CompetitionStreams.Single().CompetitionId.Should().Be(competitionId);
     }
 }

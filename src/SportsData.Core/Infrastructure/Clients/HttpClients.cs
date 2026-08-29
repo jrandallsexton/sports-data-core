@@ -2,6 +2,7 @@
 {
     public static class HttpClients
     {
+        public const string ApiClient = "ApiClient";
         public const string AthleteClient = "AthleteClient";
         public const string ContestClient = "ContestClient";
         public const string FranchiseClient = "FranchiseClient";

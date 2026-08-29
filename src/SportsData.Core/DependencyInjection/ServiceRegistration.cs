@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
@@ -605,6 +606,20 @@ namespace SportsData.Core.DependencyInjection
             services.AddHttpClient(HttpClients.AthleteClient);
             services.AddSingleton<IContestClientFactory, ContestClientFactory>();
             services.AddSingleton<ISeasonClientFactory, SeasonClientFactory>();
+
+            // API client (Producer→API inquiries). Registered as a typed
+            // client only where CommonConfig:ApiClientConfig:ApiUrl is
+            // present (currently the Producer labels); everywhere else the
+            // TryAdd fallback resolves to UnconfiguredApiClient, whose
+            // Failure results push callers onto their fail-open path.
+            var apiUrl = configuration[CommonConfigKeys.GetApiUri()];
+            if (!string.IsNullOrEmpty(apiUrl))
+            {
+                services.AddHttpClient<Infrastructure.Clients.Api.IProvideApi, Infrastructure.Clients.Api.ApiClient>(
+                    HttpClients.ApiClient,
+                    client => client.BaseAddress = new Uri(apiUrl));
+            }
+            services.TryAddSingleton<Infrastructure.Clients.Api.IProvideApi, Infrastructure.Clients.Api.UnconfiguredApiClient>();
 
             // Register mode-agnostic clients (same URL for all sports)
             var contestApiUrl = configuration[CommonConfigKeys.GetContestProviderUri()];

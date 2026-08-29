@@ -1,4 +1,4 @@
-using Hangfire;
+﻿using Hangfire;
 
 using FluentValidation;
 
@@ -341,6 +341,10 @@ namespace SportsData.Api.DependencyInjection
                 Application.UI.PlayerLineups.Queries.GetPlayerStandings.GetPlayerStandingsQueryHandler>();
             services.AddScoped<FluentValidation.IValidator<Application.UI.PlayerLineups.Queries.GetPlayerStandings.GetPlayerStandingsQuery>,
                 Application.UI.PlayerLineups.Queries.GetPlayerStandings.GetPlayerStandingsQueryValidator>();
+            services.AddScoped<Application.Internal.Queries.GetContestIdsInLeagues.IGetContestIdsInLeaguesQueryHandler,
+                Application.Internal.Queries.GetContestIdsInLeagues.GetContestIdsInLeaguesQueryHandler>();
+            services.AddScoped<FluentValidation.IValidator<Application.Internal.Queries.GetContestIdsInLeagues.GetContestIdsInLeaguesQuery>,
+                Application.Internal.Queries.GetContestIdsInLeagues.GetContestIdsInLeaguesQueryValidator>();
             services.AddScoped<FluentValidation.IValidator<UpsertLineupSlotCommand>, UpsertLineupSlotCommandValidator>();
             services.AddScoped<FluentValidation.IValidator<ClearLineupSlotCommand>, ClearLineupSlotCommandValidator>();
 

@@ -7,7 +7,6 @@ using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.Mapping;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
 
@@ -159,13 +158,24 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 .Resolve(league.Sport)
                 .GetMatchupsByContestIds(contestIds, direction, cancellationToken);
 
-            List<ContestPrediction> predictions;
+            List<ContestPredictionDto> predictions;
             List<MatchupPreviewProjection> previews;
             try
             {
+                // Straight into the wire DTO — the handler consumes exactly
+                // these five fields, and projecting here removes the manual
+                // per-matchup mapping loop below.
                 predictions = await _dbContext.ContestPredictions
                     .Where(x => contestIds.Contains(x.ContestId))
                     .AsNoTracking()
+                    .Select(x => new ContestPredictionDto
+                    {
+                        ContestId = x.ContestId,
+                        ModelVersion = x.ModelVersion,
+                        PredictionType = x.PredictionType,
+                        WinProbability = x.WinProbability,
+                        WinnerFranchiseSeasonId = x.WinnerFranchiseSeasonId,
+                    })
                     .ToListAsync(cancellationToken);
 
                 // Projection, not entities: MatchupPreview rows carry the full
@@ -288,19 +298,8 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     matchup.IsPreviewReviewed = previews.Any(x => x.ContestId == matchup.ContestId &&
                                                                   x is { ApprovedUtc: not null, RejectedUtc: null });
 
-                    var contestPredictions = predictions.Where(x => x.ContestId == matchup.ContestId);
-
-                    foreach (var prediction in contestPredictions)
-                    {
-                        matchup.Predictions.Add(new ContestPredictionDto()
-                        {
-                            ContestId = prediction.ContestId,
-                            ModelVersion = prediction.ModelVersion,
-                            PredictionType = prediction.PredictionType,
-                            WinProbability = prediction.WinProbability,
-                            WinnerFranchiseSeasonId = prediction.WinnerFranchiseSeasonId
-                        });
-                    }
+                    matchup.Predictions.AddRange(
+                        predictions.Where(x => x.ContestId == matchup.ContestId));
                 }
                 else
                 {

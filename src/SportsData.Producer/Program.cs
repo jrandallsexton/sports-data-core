@@ -125,20 +125,30 @@ public class Program
         //
         // Queue routing:
         //   - Daemon-only pods listen on ["daemon"] exclusively.
-        //   - Worker pods listen on ["default", "daemon"] during the streamer-cutover
-        //     transition (PR A–C). PR D will drop "daemon" from Worker once Daemon pods
-        //     are confirmed healthy in prod.
+        //   - Worker pods listen on ["default"] only. This is PR D of the streamer
+        //     cutover: Daemon pods are confirmed healthy in prod, so Worker no longer
+        //     needs the transitional "daemon" fallback.
+        //
+        //     Dropping it is a correctness fix, not cleanup. Worker replicas are
+        //     KEDA-scaled off a trigger that counts the *default* queue only, so the
+        //     autoscaler cannot see a Worker holding a daemon job. The failure mode is
+        //     self-arming: when "default" drains, a Worker reaches into "daemon" and can
+        //     claim a competition streamer built to run for hours - and that same empty
+        //     queue is what tells KEDA to scale down and kill the pod 90s later
+        //     (ShutdownTimeout). Long-running daemon work must only ever land on pods no
+        //     autoscaler is authorized to reap.
         //   - All (local-dev / docker-compose) listens on both.
         //   - Other combos fall back to Hangfire's default ["default"].
         // See docs/contest-finalization-reconcile-backstop.md Step 4.
         var needsHangfireServer = role.HasFlag(ProducerRole.Worker) || role.HasFlag(ProducerRole.Daemon);
-        // Worker checked before Daemon (same mutual-exclusion rationale as the
-        // pool-sizing switch above): an accidental `Worker|Daemon` combo falls
-        // through to the both-queues case, which is the safer fallback.
+        // An explicit `Worker|Daemon` combo is matched before either flag alone so it
+        // still listens on both queues - a single pod wearing both hats has no separate
+        // daemon pod to defer to. Deployed roles are always one or the other.
         string[]? hangfireQueues = role switch
         {
             _ when role == ProducerRole.All => new[] { "default", "daemon" },
-            _ when role.HasFlag(ProducerRole.Worker) => new[] { "default", "daemon" },
+            _ when role.HasFlag(ProducerRole.Worker) && role.HasFlag(ProducerRole.Daemon) => new[] { "default", "daemon" },
+            _ when role.HasFlag(ProducerRole.Worker) => new[] { "default" },
             _ when role.HasFlag(ProducerRole.Daemon) => new[] { "daemon" },
             _ => null
         };

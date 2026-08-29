@@ -24,6 +24,7 @@ using SportsData.Core.Common;
 using SportsData.Core.Config;
 using SportsData.Core.DependencyInjection;
 using SportsData.Core.Infrastructure.Clients.AI;
+using SportsData.Core.Middleware;
 using SportsData.Core.Infrastructure.Clients.MetricBot;
 using SportsData.Core.Middleware.Health;
 using SportsData.Core.Processing;
@@ -358,7 +359,7 @@ namespace SportsData.Api
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials() // Required for cookies
-                        .WithExposedHeaders("Set-Cookie") // Explicitly expose Set-Cookie header
+                        .WithExposedHeaders("Set-Cookie", TraceIdResponseHeaderMiddleware.HeaderName) // Set-Cookie + X-Trace-Id (complete-trace lookup)
                         .SetIsOriginAllowedToAllowWildcardSubdomains(); // Allow subdomains
                 });
             });
@@ -374,6 +375,11 @@ namespace SportsData.Api
             // Configure the HTTP request pipeline.
             // Don't redirect to HTTPS when behind a proxy (Front Door, Traefik)
             // app.UseHttpsRedirection();
+
+            // First in the pipeline so every response — including CORS
+            // preflights, 401s and 500s — carries X-Trace-Id. The value is
+            // the Seq @TraceId for the whole cross-service call.
+            app.UseMiddleware<TraceIdResponseHeaderMiddleware>();
 
             app.UseCors("AllowFrontend");
 

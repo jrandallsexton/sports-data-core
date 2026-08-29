@@ -52,6 +52,11 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
             return new Success<List<LeagueMatchupDto>>(new List<LeagueMatchupDto>());
         }
 
+        // Timed so the Producer leg of a cross-service trace is legible in
+        // Seq: these events carry the same @TraceId as the API request that
+        // called us (W3C traceparent via HttpClient instrumentation).
+        var totalTimer = System.Diagnostics.Stopwatch.StartNew();
+
         var sql = _sqlProvider.GetMatchupsByContestIds();
 
         // Direction is the lowercase enum name ("roundel" / "shield" / "hex")
@@ -66,6 +71,8 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
                 new { ContestIds = query.ContestIds, Direction = directionTag },
                 cancellationToken: cancellationToken)))
             .ToList();
+
+        var sqlMs = totalTimer.ElapsedMilliseconds;
 
         var streamTimes = await GetActiveStreamTimesAsync(query.ContestIds, cancellationToken);
         var probables = await GetProbablePitchersAsync(query.ContestIds, cancellationToken);
@@ -111,6 +118,13 @@ public class GetMatchupsByContestIdsQueryHandler : IGetMatchupsByContestIdsQuery
                 }
             }
         }
+
+        _logger.LogInformation(
+            "Canonical matchups served. Requested={RequestedCount}, Returned={ReturnedCount}, SqlMs={SqlMs}, TotalMs={TotalMs}",
+            query.ContestIds.Length,
+            matchups.Count,
+            sqlMs,
+            totalTimer.ElapsedMilliseconds);
 
         return new Success<List<LeagueMatchupDto>>(matchups);
     }

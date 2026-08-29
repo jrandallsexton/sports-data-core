@@ -154,9 +154,28 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             // other (one DbContext can't run concurrent operations), but
             // they overlap the HTTP call, so total ≈ max(http, local)
             // instead of the sum.
-            var matchupsTask = _contestClientFactory
-                .Resolve(league.Sport)
-                .GetMatchupsByContestIds(contestIds, direction, cancellationToken);
+            // Timed INSIDE the async wrapper so the measurement ends when
+            // Producer responds — not when this handler gets around to
+            // awaiting. Stopping a timer after the await would report
+            // max(producer, local) and blame Producer for slow local
+            // queries whenever the overlap goes the other way.
+            long producerLegMs = -1;
+            async Task<Result<List<SportsData.Core.Dtos.Canonical.LeagueMatchupDto>>> CallProducerTimedAsync()
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                try
+                {
+                    return await _contestClientFactory
+                        .Resolve(league.Sport)
+                        .GetMatchupsByContestIds(contestIds, direction, cancellationToken);
+                }
+                finally
+                {
+                    producerLegMs = sw.ElapsedMilliseconds;
+                }
+            }
+
+            var matchupsTask = CallProducerTimedAsync();
 
             List<ContestPredictionDto> predictions;
             List<MatchupPreviewProjection> previews;
@@ -333,12 +352,17 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 Matchups = matchups.OrderBy(x => x.StartDateUtc).ToList()
             };
 
+            // ProducerLegMs = dispatch → response for the overlapped canonical
+            // call, the historical long pole of this endpoint. Pairs with
+            // Producer's "Canonical matchups served" event under the same
+            // @TraceId (surfaced to clients as the X-Trace-Id header).
             _logger.LogInformation(
-                "Successfully completed GetLeagueWeekMatchupsQueryHandler.ExecuteAsync for leagueId={LeagueId}, week={Week}, userId={UserId}, returning {Count} matchups",
+                "Successfully completed GetLeagueWeekMatchupsQueryHandler.ExecuteAsync for leagueId={LeagueId}, week={Week}, userId={UserId}, returning {Count} matchups. ProducerLegMs={ProducerLegMs}",
                 query.LeagueId,
                 query.Week,
                 query.UserId,
-                result.Matchups.Count);
+                result.Matchups.Count,
+                producerLegMs);
 
             return new Success<LeagueWeekMatchupsDto>(result);
         }

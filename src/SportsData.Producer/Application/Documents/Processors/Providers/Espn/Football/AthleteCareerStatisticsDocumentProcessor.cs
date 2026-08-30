@@ -13,7 +13,15 @@ using SportsData.Producer.Infrastructure.Data.Football;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 
+// NCAA registration was missing until 2026-08-30. FootballAthleteDocumentProcessor
+// spawns AthleteCareerStatistics for both football sports, and Provider sources the
+// documents, but with no NCAA processor registered every one of them threw
+// "No processor registered for (Espn, FootballNcaa, AthleteCareerStatistics)" and
+// then burned the full retry ladder failing again. The processor itself is
+// sport-agnostic within football — TDataContext is FootballDataContext, which NCAA
+// already uses — so registration was the only thing missing.
 [DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNfl, DocumentType.AthleteCareerStatistics)]
+[DocumentProcessor(SourceDataProvider.Espn, Sport.FootballNcaa, DocumentType.AthleteCareerStatistics)]
 public class AthleteCareerStatisticsDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : FootballDataContext
 {

@@ -65,15 +65,34 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 validationResult.Errors);
         }
 
-        // Assembling this DTO costs ~10 sequential round trips and is identical for
-        // every user viewing the same matchup. Read sits after validation so a
-        // malformed query still fails fast.
-        var fromCache = await _cache.GetAsync(query);
+        var connection = _dbContext.Database.GetDbConnection();
+
+        // The spread is fetched BEFORE the cache read, and its value goes into the key.
+        //
+        // Everything else in this payload is settled history, so the only thing that can
+        // make a cached answer wrong is the line moving. Putting the line in the key makes
+        // that impossible by construction: when it moves, the key changes and we recompute
+        // — no TTL guessing, and no window in which we serve spread-conditioned facts
+        // derived from a line that no longer exists.
+        //
+        // This matters because this endpoint is read almost entirely BEFORE kickoff, while
+        // people are deciding picks. A time-based expiry short enough to keep the line
+        // honest would expire during the exact window the feature is used.
+        //
+        // Cost is one indexed read on the hot path, against a database measured at one
+        // active connection under fifty concurrent users. A hit still avoids the other
+        // nine round trips.
+        var spreadTarget = await connection.QueryFirstOrDefaultAsync<SpreadTargetRow>(
+            new CommandDefinition(
+                _sqlProvider.GetContestSpreadTarget(),
+                new { query.ContestId },
+                cancellationToken: cancellationToken));
+
+        // Read sits after validation so a malformed query still fails fast.
+        var fromCache = await _cache.GetAsync(query, spreadTarget?.HomeSpread);
 
         if (fromCache is not null)
             return new Success<ContestPreviewHistoryDto>(fromCache);
-
-        var connection = _dbContext.Database.GetDbConnection();
 
         var headToHead = (await connection.QueryAsync<PreviewGameResultDto>(
             new CommandDefinition(
@@ -120,9 +139,9 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 target.HomeTeamFranchiseSeasonId, target.SeasonYear, cancellationToken);
         }
 
-        dto.SpreadContext = await BuildSpreadContextAsync(connection, query.ContestId, cancellationToken);
+        dto.SpreadContext = await BuildSpreadContextAsync(connection, spreadTarget, cancellationToken);
 
-        await _cache.SetAsync(query, dto, target?.StartDateUtc);
+        await _cache.SetAsync(query, dto, target?.StartDateUtc, spreadTarget?.HomeSpread);
 
         return new Success<ContestPreviewHistoryDto>(dto);
     }
@@ -182,17 +201,15 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
     /// odds era only). Null when the contest has no line — the block is
     /// spread-derived and meaningless without one.
     /// </summary>
+    /// <param name="target">
+    /// Already fetched by ExecuteAsync to build the cache key — passed in rather than
+    /// re-queried, so keying by spread costs no extra round trip on a miss.
+    /// </param>
     private async Task<PreviewSpreadContextDto?> BuildSpreadContextAsync(
         System.Data.Common.DbConnection connection,
-        Guid contestId,
+        SpreadTargetRow? target,
         CancellationToken cancellationToken)
     {
-        var target = await connection.QueryFirstOrDefaultAsync<SpreadTargetRow>(
-            new CommandDefinition(
-                _sqlProvider.GetContestSpreadTarget(),
-                new { ContestId = contestId },
-                cancellationToken: cancellationToken));
-
         if (target?.HomeSpread is null || target.HomeSpread.Value == 0)
             return null;
 

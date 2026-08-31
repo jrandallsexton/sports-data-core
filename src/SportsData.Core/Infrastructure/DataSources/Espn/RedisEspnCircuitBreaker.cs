@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
 using System;
+using System.Globalization;
 using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn
@@ -113,7 +114,19 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
                 if (!value.HasValue)
                     return null;
 
-                return DateTime.TryParse(value.ToString(), out var dt) ? dt : null;
+                // RoundtripKind + InvariantCulture to match how TripAsync writes it ("O").
+                // A bare DateTime.TryParse honours the trailing 'Z' by CONVERTING to local
+                // time and returning Kind=Local, so this method would hand back a local
+                // timestamp that every caller would reasonably read as UTC. Invisible on a
+                // UTC-configured host — which every one of ours is — and therefore exactly
+                // the kind of bug that only appears somewhere else.
+                return DateTime.TryParse(
+                    value.ToString(),
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind,
+                    out var dt)
+                    ? dt
+                    : null;
             }
             catch (Exception ex)
             {

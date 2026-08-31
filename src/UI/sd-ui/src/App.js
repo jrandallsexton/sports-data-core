@@ -5,6 +5,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
   useNavigate,
   useLocation,
 } from "react-router-dom";
@@ -77,9 +78,19 @@ function AppRoutes() {
           short-circuit. Trailing slashes are stripped before matching — the
           router itself treats /terms/ as /terms, so the allowlist must too. */}
       {apiOffline &&
-      !["/terms", "/privacy", "/account-deletion", "/forgot-password"].includes(
-        location.pathname.replace(/\/+$/, "") || "/"
-      ) ? (
+      ![
+        "/terms",
+        "/privacy",
+        "/account-deletion",
+        // Support must survive an API outage above all the others: the page
+        // exists to tell people how to reach us, and "how do I get help" is
+        // exactly the question an outage produces. Without this entry a user
+        // hitting /support during a backend failure would be shown
+        // "We lost the ball trying to contact the server" instead of our
+        // contact address — and app-store reviewers check this URL.
+        "/support",
+        "/forgot-password",
+      ].includes(location.pathname.replace(/\/+$/, "") || "/") ? (
         <ErrorPage message="We lost the ball trying to contact the server." />
       ) : (
         <Routes>
@@ -110,6 +121,14 @@ function AppRoutes() {
               support URL that 404s is a rejection. Must stay reachable without
               auth: people who need help often cannot sign in. */}
           <Route path="/support" element={<SupportPage />} />
+          {/* Catch-all. Without it every unmatched path rendered a blank page,
+              because the SPA serves index.html for any URL and nothing claimed
+              the leftovers — so /contact, /help, /faq and every typo returned
+              HTTP 200 with no content. Sending them to the landing page is the
+              minimal honest fix; a dedicated 404 would be nicer and can come
+              later. Must stay LAST: React Router picks the best match, but
+              keeping it here makes the intent obvious to the next reader. */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       )}
     </>

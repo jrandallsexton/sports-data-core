@@ -8,6 +8,8 @@ using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.Refs;
+using SportsData.Core.Processing;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestPreviewHistory;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
@@ -24,6 +26,7 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
     where TDataContext : TeamSportDataContext
 {
     private readonly IJsonHashCalculator _jsonHash;
+    private readonly IProvideBackgroundJobs _backgroundJobProvider;
 
     public EventCompetitionOddsDocumentProcessor(
         ILogger<EventCompetitionOddsDocumentProcessor<TDataContext>> logger,
@@ -31,10 +34,12 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
         IEventBus bus,
         IGenerateExternalRefIdentities idGen,
         IGenerateResourceRefs refs,
-        IJsonHashCalculator jsonHash)
+        IJsonHashCalculator jsonHash,
+        IProvideBackgroundJobs backgroundJobProvider)
         : base(logger, db, bus, idGen, refs)
     {
         _jsonHash = jsonHash;
+        _backgroundJobProvider = backgroundJobProvider;
     }
 
     protected override async Task ProcessInternal(ProcessDocumentCommand command)
@@ -190,5 +195,18 @@ public class EventCompetitionOddsDocumentProcessor<TDataContext> : DocumentProce
 
         _logger.LogInformation("Persisted CompetitionOdds. CompetitionId={CompId}, Provider={Prov}, OddsId={OddsId}",
             competition.Id, dto.Provider.Id, incoming.Id);
+
+        // The preview-history cache is keyed by the spread, so a line move creates a key
+        // nothing has filled yet. Rebuild it now, off the request path, rather than
+        // leaving the next person who opens the matchup dialog to pay ~10 round trips.
+        //
+        // Gated on the SPREAD specifically: an over/under move does not appear in that
+        // key, so regenerating for it would be pure waste. Enqueued after SaveChanges so
+        // the job reads committed odds.
+        if (existing is null || existing.Spread != incoming.Spread)
+        {
+            _backgroundJobProvider.Enqueue<IRegenerateContestPreviewHistoryJob>(
+                job => job.RegenerateAsync(competition.Contest.Id));
+        }
     }
 }

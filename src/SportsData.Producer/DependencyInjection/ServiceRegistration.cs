@@ -399,6 +399,10 @@ namespace SportsData.Producer.DependencyInjection
                 Application.Contests.Queries.Matchups.GetContestPreviewHistory.GetContestPreviewHistoryQueryValidator>();
             services.AddScoped<Application.Contests.Queries.Matchups.GetContestPreviewHistory.IContestPreviewHistoryCache,
                 Application.Contests.Queries.Matchups.GetContestPreviewHistory.ContestPreviewHistoryCache>();
+            // Enqueued by interface from the odds processor, so the registration is
+            // required — Hangfire resolves the job type out of the container.
+            services.AddScoped<Application.Contests.Queries.Matchups.GetContestPreviewHistory.IRegenerateContestPreviewHistoryJob,
+                Application.Contests.Queries.Matchups.GetContestPreviewHistory.RegenerateContestPreviewHistoryJob>();
             services.AddScoped<IGetMatchupResultQueryHandler, GetMatchupResultQueryHandler>();
             services.AddScoped<IGetContestResultsByContestIdsQueryHandler, GetContestResultsByContestIdsQueryHandler>();
             services.AddScoped<IGetFinalizedContestIdsQueryHandler, GetFinalizedContestIdsQueryHandler>();

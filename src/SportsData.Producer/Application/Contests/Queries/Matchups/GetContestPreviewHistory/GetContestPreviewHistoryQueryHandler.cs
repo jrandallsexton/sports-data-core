@@ -3,9 +3,11 @@ using Dapper;
 using FluentValidation;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Sql;
@@ -26,16 +28,90 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
     private readonly IValidator<GetContestPreviewHistoryQuery> _validator;
     private readonly IGetFranchiseSeasonMetricsByIdQueryHandler _metricsHandler;
 
+    private readonly IDistributedCache _cache;
+    private readonly IDateTimeProvider _dateTimeProvider;
+
+    /// <summary>
+    /// TTL once the contest's inputs have frozen — see <see cref="ResolveCacheTtl"/>.
+    /// </summary>
+    private static readonly TimeSpan SettledTtl = TimeSpan.FromDays(7);
+
+    /// <summary>
+    /// TTL while the contest is still ahead of us. Short because the spread moves.
+    /// </summary>
+    private static readonly TimeSpan LiveTtl = TimeSpan.FromHours(1);
+
+    /// <summary>
+    /// TTL for a contest id we could not resolve. Kept brief so a request that
+    /// arrives before the contest is sourced does not pin an empty result.
+    /// </summary>
+    private static readonly TimeSpan UnresolvedContestTtl = TimeSpan.FromMinutes(5);
+
+    /// <summary>
+    /// Inputs freeze this long after kickoff, at which point the entry can live a
+    /// long time.
+    /// </summary>
+    private static readonly TimeSpan SettlesAfterStart = TimeSpan.FromHours(24);
+
     public GetContestPreviewHistoryQueryHandler(
         TeamSportDataContext dbContext,
         ProducerSqlQueryProvider sqlProvider,
         IValidator<GetContestPreviewHistoryQuery> validator,
-        IGetFranchiseSeasonMetricsByIdQueryHandler metricsHandler)
+        IGetFranchiseSeasonMetricsByIdQueryHandler metricsHandler,
+        IDistributedCache cache,
+        IDateTimeProvider dateTimeProvider)
     {
         _dbContext = dbContext;
         _sqlProvider = sqlProvider;
         _validator = validator;
         _metricsHandler = metricsHandler;
+        _cache = cache;
+        _dateTimeProvider = dateTimeProvider;
+    }
+
+    /// <summary>
+    /// Cache key for one preview-history result.
+    /// </summary>
+    /// <remarks>
+    /// Includes MeetingCount and RecentGameCount deliberately. The query exposes
+    /// both, so two callers asking for different depths must not share an entry.
+    /// Every caller happens to use the 5/5 defaults today, which is precisely why
+    /// keying on contest id alone would have looked correct indefinitely.
+    /// <para>
+    /// The v1 segment is a payload-shape version: changing ContestPreviewHistoryDto
+    /// invalidates every entry by bumping it, rather than serving old shapes to new
+    /// deserializers until the TTL expires.
+    /// </para>
+    /// </remarks>
+    private static string BuildCacheKey(GetContestPreviewHistoryQuery query) =>
+        $"preview-history:v1:{query.ContestId}:{query.MeetingCount}:{query.RecentGameCount}";
+
+    /// <summary>
+    /// How long this result stays valid.
+    /// </summary>
+    /// <remarks>
+    /// Almost everything here is genuinely historical — head-to-head meetings and
+    /// prior-season records cannot change. The exception is the spread:
+    /// <see cref="BuildSpreadContextAsync"/> reads the contest's current line and
+    /// derives favorite, magnitude and ATS bucket from it, and lines move through
+    /// the week. A multi-day entry for an upcoming game would therefore serve a
+    /// stale line dressed up as historical fact.
+    /// <para>
+    /// So: short TTL until the game is 24h past kickoff, long TTL after. An hour
+    /// still collapses thousands of user views into one computation, which is
+    /// where nearly all the benefit lives.
+    /// </para>
+    /// </remarks>
+    private TimeSpan ResolveCacheTtl(DateTime? startDateUtc)
+    {
+        if (startDateUtc is null)
+            return UnresolvedContestTtl;
+
+        var settlesAt = startDateUtc.Value.Add(SettlesAfterStart);
+
+        return _dateTimeProvider.UtcNow() >= settlesAt
+            ? SettledTtl
+            : LiveTtl;
     }
 
     /// <summary>
@@ -59,6 +135,18 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 ResultStatus.Validation,
                 validationResult.Errors);
         }
+
+        // Assembling this DTO costs ~10 sequential round trips (head-to-head,
+        // prior-season summaries for both sides, spread target, two margin facts,
+        // two ATS buckets), and it is identical for every user viewing the same
+        // matchup — it is not user-scoped. Cache read sits after validation so a
+        // malformed query still fails fast.
+        var cacheKey = BuildCacheKey(query);
+
+        var fromCache = await _cache.GetRecordAsync<ContestPreviewHistoryDto>(cacheKey);
+
+        if (fromCache is not null)
+            return new Success<ContestPreviewHistoryDto>(fromCache);
 
         var connection = _dbContext.Database.GetDbConnection();
 
@@ -93,6 +181,7 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
             .Select(c => new
             {
                 c.SeasonYear,
+                c.StartDateUtc,
                 c.AwayTeamFranchiseSeasonId,
                 c.HomeTeamFranchiseSeasonId
             })
@@ -107,6 +196,8 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         }
 
         dto.SpreadContext = await BuildSpreadContextAsync(connection, query.ContestId, cancellationToken);
+
+        await _cache.SetRecordAsync(cacheKey, dto, ResolveCacheTtl(target?.StartDateUtc));
 
         return new Success<ContestPreviewHistoryDto>(dto);
     }

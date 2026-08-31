@@ -184,6 +184,13 @@ namespace SportsData.Api
 
             services.AddCoreServices(config);
 
+            // Distributed cache (Redis). The API had none until now — AddMemoryCache
+            // earlier is per-pod and serves Firebase token validation only. Registered
+            // here so a league's week of matchups is cached once for every member rather
+            // than recomputed per request, per pod.
+            // See docs/audit/caching-vertical-2026-08.md.
+            services.AddCaching(config, builder.Environment.ApplicationName);
+
             // Add OpenTelemetry instrumentation
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
 

@@ -28,19 +28,22 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
     private readonly IContestClientFactory _contestClientFactory;
     private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILeagueMembershipGuard _membershipGuard;
+    private readonly ILeagueWeekMatchupsCache _cache;
 
     public GetLeagueWeekMatchupsQueryHandler(
         ILogger<GetLeagueWeekMatchupsQueryHandler> logger,
         AppDataContext dbContext,
         IContestClientFactory contestClientFactory,
         IDateTimeProvider dateTimeProvider,
-        ILeagueMembershipGuard membershipGuard)
+        ILeagueMembershipGuard membershipGuard,
+        ILeagueWeekMatchupsCache cache)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contestClientFactory = contestClientFactory;
         _dateTimeProvider = dateTimeProvider;
         _membershipGuard = membershipGuard;
+        _cache = cache;
     }
 
     public async Task<Result<LeagueWeekMatchupsDto>> ExecuteAsync(
@@ -62,6 +65,21 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             query.UserId,
             query.LeagueId,
             query.Week);
+
+        // Read sits AFTER the membership guard, never before: the guard is the only
+        // per-user thing here and must run on every request. The payload itself is
+        // league-scoped, so one entry serves every member.
+        var fromCache = await _cache.GetAsync(query.LeagueId, query.Week);
+
+        if (fromCache is not null)
+        {
+            _logger.LogDebug(
+                "League week matchups served from cache, leagueId={LeagueId}, week={Week}",
+                query.LeagueId,
+                query.Week);
+
+            return new Success<LeagueWeekMatchupsDto>(fromCache);
+        }
 
         try
         {
@@ -363,6 +381,9 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                 query.UserId,
                 result.Matchups.Count,
                 producerLegMs);
+
+            // No-ops while any contest in the week is live — see the cache's TTL policy.
+            await _cache.SetAsync(query.LeagueId, query.Week, result);
 
             return new Success<LeagueWeekMatchupsDto>(result);
         }

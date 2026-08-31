@@ -181,6 +181,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IGetInviteableUsersQueryHandler, GetInviteableUsersQueryHandler>();
             services.AddScoped<IGetLeagueScoresByWeekQueryHandler, GetLeagueScoresByWeekQueryHandler>();
             services.AddScoped<IGetLeagueWeekMatchupsQueryHandler, GetLeagueWeekMatchupsQueryHandler>();
+            services.AddScoped<ILeagueWeekMatchupsCache, LeagueWeekMatchupsCache>();
             services.AddScoped<IGetLeagueWeekOverviewQueryHandler, GetLeagueWeekOverviewQueryHandler>();
             services.AddScoped<IGetPublicLeaguesQueryHandler, GetPublicLeaguesQueryHandler>();
             services.AddScoped<IGetUserLeaguesQueryHandler, GetUserLeaguesQueryHandler>();

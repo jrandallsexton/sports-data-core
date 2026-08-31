@@ -38,10 +38,20 @@ public class RegenerateContestPreviewHistoryJob : IRegenerateContestPreviewHisto
     /// immediately after the odds are persisted, means the entry is already warm by the
     /// time anyone asks.
     /// <para>
-    /// This is why the preview-history cache does not need a recurring warm job or a
-    /// short expiry: line movement is the only thing that invalidates it, and line
-    /// movement already publishes an event. React to that and there is no window in which
-    /// a user can take the hit.
+    /// This closes the one miss that is caused by the DATA changing. Line movement is the
+    /// only content change that invalidates an entry, and it already publishes an event,
+    /// so reacting to it removes the window in which a reader would rebuild after a line
+    /// move.
+    /// </para>
+    /// <para>
+    /// It does not make misses impossible, and nothing here should be read as claiming so.
+    /// A reader still rebuilds when an entry simply is not there: the seven-day expiry on
+    /// a resolved contest, the five-minute expiry on one whose id did not resolve (so a
+    /// request arriving before the contest is sourced re-checks shortly after), eviction
+    /// under Redis's allkeys-lru policy when memory is tight, a Redis restart (the cache
+    /// has no persistence, by design), or a deliberate payload-version bump. Those are
+    /// lifecycle events rather than staleness, and rebuilding on them is the correct
+    /// behaviour — it is also exactly what happened before any of this caching existed.
     /// </para>
     /// <para>
     /// Failures are logged and swallowed. This is a cache warm — if it does not run, the

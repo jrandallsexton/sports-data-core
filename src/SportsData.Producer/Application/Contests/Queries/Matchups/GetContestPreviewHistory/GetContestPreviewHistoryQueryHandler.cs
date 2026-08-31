@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
+using SportsData.Core.Extensions;
 using SportsData.Producer.Application.FranchiseSeasons.Queries.GetFranchiseSeasonMetricsById;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Sql;
@@ -26,16 +27,20 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
     private readonly IValidator<GetContestPreviewHistoryQuery> _validator;
     private readonly IGetFranchiseSeasonMetricsByIdQueryHandler _metricsHandler;
 
+    private readonly IContestPreviewHistoryCache _cache;
+
     public GetContestPreviewHistoryQueryHandler(
         TeamSportDataContext dbContext,
         ProducerSqlQueryProvider sqlProvider,
         IValidator<GetContestPreviewHistoryQuery> validator,
-        IGetFranchiseSeasonMetricsByIdQueryHandler metricsHandler)
+        IGetFranchiseSeasonMetricsByIdQueryHandler metricsHandler,
+        IContestPreviewHistoryCache cache)
     {
         _dbContext = dbContext;
         _sqlProvider = sqlProvider;
         _validator = validator;
         _metricsHandler = metricsHandler;
+        _cache = cache;
     }
 
     /// <summary>
@@ -59,6 +64,14 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 ResultStatus.Validation,
                 validationResult.Errors);
         }
+
+        // Assembling this DTO costs ~10 sequential round trips and is identical for
+        // every user viewing the same matchup. Read sits after validation so a
+        // malformed query still fails fast.
+        var fromCache = await _cache.GetAsync(query);
+
+        if (fromCache is not null)
+            return new Success<ContestPreviewHistoryDto>(fromCache);
 
         var connection = _dbContext.Database.GetDbConnection();
 
@@ -93,6 +106,7 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
             .Select(c => new
             {
                 c.SeasonYear,
+                c.StartDateUtc,
                 c.AwayTeamFranchiseSeasonId,
                 c.HomeTeamFranchiseSeasonId
             })
@@ -107,6 +121,8 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         }
 
         dto.SpreadContext = await BuildSpreadContextAsync(connection, query.ContestId, cancellationToken);
+
+        await _cache.SetAsync(query, dto, target?.StartDateUtc);
 
         return new Success<ContestPreviewHistoryDto>(dto);
     }

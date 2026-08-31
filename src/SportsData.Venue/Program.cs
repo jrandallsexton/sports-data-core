@@ -63,16 +63,12 @@ namespace SportsData.Venue
             services.AddDataPersistenceWithClampedPool<AppDataContext>(config, builder.Environment.ApplicationName, Sport.All);
             services.AddMessaging(config, [typeof(VenueCreatedHandler)]);
             services.AddInstrumentation(builder.Environment.ApplicationName, config);
-            services.AddCaching(config);
+            services.AddCaching(config, builder.Environment.ApplicationName);
             services.AddHealthChecks<AppDataContext>(builder.Environment.ApplicationName, Sport.All);
 
             var hostAssembly = Assembly.GetExecutingAssembly();
             services.AddAutoMapper(hostAssembly);
             builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(hostAssembly));
-                //.AddTransient(typeof(IPipelineBehavior<,>), typeof(QueryCachingBehavior<,>));
-            //builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(hostAssembly))
-            //.AddTransient(typeof(IPipelineBehavior<,>), typeof(QueryCachingBehavior<,>))
-            //.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
             services.AddValidatorsFromAssemblyContaining<GetVenueById.Validator>();
 

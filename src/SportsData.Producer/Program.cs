@@ -65,6 +65,15 @@ public class Program
 
         services.AddClients(config);
 
+        // Producer had no distributed cache until now. Registered here because
+        // GetContestPreviewHistoryQueryHandler caches its result: that query makes ~10
+        // sequential round trips per contest to assemble head-to-head records, prior-season
+        // summaries and spread-conditioned facts, and it is served to every user viewing
+        // the same matchup as well as to AI preview generation. Caching in Producer rather
+        // than the API means one entry serves both callers.
+        // See docs/audit/caching-vertical-2026-08.md.
+        services.AddCaching(config, builder.Environment.ApplicationName);
+
         // Per-role connection pool sizing — configurable via Azure App Config.
         // Keys: {appName}:ConnectionPool:All, :Worker, :Api, :Ingest, :Daemon
         // Defaults: All=60, Worker=22, Daemon=10, Api=5, Ingest=5

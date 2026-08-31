@@ -17,6 +17,7 @@ import LandingPage from "./components/landing/LandingPage";
 import TermsPage from "./components/legal/TermsPage";
 import PrivacyPage from "./components/legal/PrivacyPage";
 import AccountDeletionPage from "./components/legal/AccountDeletionPage";
+import SupportPage from "./components/legal/SupportPage";
 import ErrorPage from "components/common/ErrorPage"; // ✅ reusable component
 import Gallery from "./components/gallery/Gallery";
 import ResultsPage from "./components/results/ResultsPage";
@@ -104,6 +105,11 @@ function AppRoutes() {
           {/* Public account-deletion page — the URL submitted in Google
               Play's Data Safety section. Must stay reachable without auth. */}
           <Route path="/account-deletion" element={<AccountDeletionPage />} />
+          {/* Public support page — the URL submitted as the Support URL in App
+              Store Connect and the Play Console. Reviewers visit it, and a
+              support URL that 404s is a rejection. Must stay reachable without
+              auth: people who need help often cannot sign in. */}
+          <Route path="/support" element={<SupportPage />} />
         </Routes>
       )}
     </>

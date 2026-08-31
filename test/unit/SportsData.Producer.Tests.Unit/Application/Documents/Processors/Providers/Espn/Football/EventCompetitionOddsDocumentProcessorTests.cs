@@ -11,6 +11,10 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
+using SportsData.Core.Processing;
+
+using System.Linq.Expressions;
+using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestPreviewHistory;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -322,6 +326,13 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             count.Should().Be(1);
             // No events expected: NotifyOnCompletion=false and no domain changes
             bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Never);
+
+            // Nothing moved, so nothing to rebuild. Regenerating on every odds document
+            // would recompute ~10 round trips per contest for an unchanged answer.
+            Mocker.GetMock<IProvideBackgroundJobs>().Verify(
+                x => x.Enqueue<IRegenerateContestPreviewHistoryJob>(
+                    It.IsAny<Expression<Func<IRegenerateContestPreviewHistoryJob, Task>>>()),
+                Times.Never);
         }
 
         [Fact]
@@ -422,6 +433,15 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
             // Events: one for create, one for update
             bus.Verify(x => x.Publish(It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+
+            // The preview-history cache is keyed by the spread, so a line move leaves a
+            // key nothing has filled. Regeneration must be enqueued or the next person to
+            // open the matchup dialog pays the full rebuild.
+            // Twice: once when the odds were created, once when the spread moved.
+            Mocker.GetMock<IProvideBackgroundJobs>().Verify(
+                x => x.Enqueue<IRegenerateContestPreviewHistoryJob>(
+                    It.IsAny<Expression<Func<IRegenerateContestPreviewHistoryJob, Task>>>()),
+                Times.Exactly(2));
         }
 
         [Fact]

@@ -53,7 +53,7 @@ namespace SportsData.Provider
             services.AddSwaggerGen();
 
             services.AddClients(config);
-            services.AddCaching(config);
+            services.AddCaching(config, builder.Environment.ApplicationName);
 
             // ESPN circuit breaker and rate limiter — needed by Worker (Hangfire jobs) and Ingest
             // (resource index pagination in DocumentRequestedHandler)

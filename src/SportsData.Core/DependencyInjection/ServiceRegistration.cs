@@ -102,12 +102,32 @@ namespace SportsData.Core.DependencyInjection
             return $"{connString.TrimEnd(';')};Application Name={tag};";
         }
 
-        public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration config)
+        /// <summary>
+        /// Registers the distributed cache. <paramref name="applicationName"/> becomes the
+        /// Redis key prefix, so each service gets its own namespace in the shared instance.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately the application name and NOT the sport mode. Provider runs one
+        /// deployment per sport against a single Redis, and the ESPN circuit breaker
+        /// (<c>espn:circuit:open</c>, written through IDistributedCache and therefore
+        /// prefixed) must be SHARED across those deployments — ESPN rate-limits by IP, so
+        /// a circuit tripped while sourcing NCAA must also stop NFL. Adding sport mode to
+        /// the prefix would silently give each sport its own circuit and defeat that.
+        /// Contest ids and the like are GUIDs, so application-level separation is
+        /// sufficient for application data.
+        /// </remarks>
+        public static IServiceCollection AddCaching(
+            this IServiceCollection services,
+            IConfiguration config,
+            string applicationName)
         {
             var redisConnectionString = config[CommonConfigKeys.CacheServiceUri];
 
             if (string.IsNullOrWhiteSpace(redisConnectionString))
             {
+                // Failsafe, but note it is a SILENT downgrade: this yields a working
+                // per-pod, non-shared cache, which can look like Redis is fine when the
+                // config is simply missing.
                 services.AddDistributedMemoryCache();
                 return services;
             }
@@ -115,11 +135,7 @@ namespace SportsData.Core.DependencyInjection
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = redisConnectionString;
-
-                // TODO: Determine how to pass in an instance name from each consumer
-                // i.e. sdApi, sdContest, sdVenue, etc.
-                // (or have it generated here based on EnvironmentName and ApplicationName
-                options.InstanceName = "sdapi_"; // (only one app using; good practice)
+                options.InstanceName = $"{applicationName}:";
             });
 
             // Register IConnectionMultiplexer for direct Redis access (Lua scripts, etc.)
@@ -548,6 +564,7 @@ namespace SportsData.Core.DependencyInjection
             // Enables IHttpClientFactory for named clients
             services.AddHttpClient();
 
+            // TODO: Why is this in Core?  Only Provider needs this.
             /* ESPN */
             services.Configure<EspnApiClientConfig>(
                 configuration.GetSection("SportsData.Provider:EspnApiClientConfig")
@@ -564,6 +581,7 @@ namespace SportsData.Core.DependencyInjection
             services.AddSingleton<IEspnRateLimiter, NoOpEspnRateLimiter>();
             /* End ESPN */
 
+            // TODO: Why is this in Core? Only API needs this.
             /* YouTube */
             services.Configure<YouTubeClientConfig>(
                 configuration.GetSection("CommonConfig:YouTubeClientConfig"));

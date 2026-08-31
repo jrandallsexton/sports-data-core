@@ -1,36 +1,60 @@
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
+using StackExchange.Redis;
 
 using System;
 using System.Threading.Tasks;
 
 namespace SportsData.Core.Infrastructure.DataSources.Espn
 {
+    // TODO: This does not belong in Core
     public class RedisEspnCircuitBreaker : IEspnCircuitBreaker
     {
+        /// <summary>
+        /// Fixed, unprefixed key — the same namespace <see cref="RedisEspnRateLimiter"/>
+        /// uses for <c>espn:ratelimit:bucket</c>.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately NOT read or written through IDistributedCache. That path applies
+        /// the cache's InstanceName prefix, which is derived per application, so the ESPN
+        /// circuit would silently land in an application-scoped namespace. The circuit is
+        /// a GLOBAL concern — ESPN rate-limits by IP, so a circuit tripped by one caller
+        /// must stop every caller on that address. Tying it to an application name means a
+        /// rename, or a second service ever calling ESPN, quietly splits the circuit in two
+        /// and the protection stops working with nothing to show for it.
+        /// <para>
+        /// Going direct through IConnectionMultiplexer also puts both ESPN mechanisms in
+        /// one namespace, which is what makes splitting ESPN state onto its own Redis
+        /// instance a config change rather than a refactor. Safe because Provider only
+        /// registers this implementation when CacheServiceUri is set, which is precisely
+        /// when AddCaching registers IConnectionMultiplexer; otherwise the NoOp
+        /// implementations in Core are used.
+        /// </para>
+        /// </remarks>
         private const string CircuitKey = "espn:circuit:open";
 
-        private readonly IDistributedCache _cache;
+        private readonly IConnectionMultiplexer _redis;
         private readonly IOptionsMonitor<EspnApiClientConfig> _configMonitor;
         private readonly ILogger<RedisEspnCircuitBreaker> _logger;
 
         public RedisEspnCircuitBreaker(
-            IDistributedCache cache,
+            IConnectionMultiplexer redis,
             IOptionsMonitor<EspnApiClientConfig> config,
             ILogger<RedisEspnCircuitBreaker> logger)
         {
-            _cache = cache;
+            _redis = redis;
             _configMonitor = config;
             _logger = logger;
         }
+
+        private IDatabase Db => _redis.GetDatabase();
 
         public async Task<bool> IsOpenAsync()
         {
             try
             {
-                var value = await _cache.GetStringAsync(CircuitKey);
-                return value is not null;
+                return await Db.KeyExistsAsync(CircuitKey);
             }
             catch (Exception ex)
             {
@@ -45,7 +69,7 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
             var readSucceeded = false;
             try
             {
-                alreadyOpen = await _cache.GetStringAsync(CircuitKey);
+                alreadyOpen = await Db.StringGetAsync(CircuitKey);
                 readSucceeded = true;
             }
             catch (Exception ex)
@@ -58,10 +82,13 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
 
             try
             {
-                await _cache.SetStringAsync(CircuitKey, openUntil.ToString("O"), new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpiration = openUntil
-                });
+                // Expiry as a relative TimeSpan rather than an absolute instant: Redis
+                // takes a duration, and deriving it here keeps the key's lifetime tied to
+                // the configured cooldown even if clocks disagree.
+                await Db.StringSetAsync(
+                    CircuitKey,
+                    openUntil.ToString("O"),
+                    TimeSpan.FromSeconds(cooldownSeconds));
             }
             catch (Exception ex)
             {
@@ -82,11 +109,11 @@ namespace SportsData.Core.Infrastructure.DataSources.Espn
         {
             try
             {
-                var value = await _cache.GetStringAsync(CircuitKey);
-                if (value is null)
+                var value = await Db.StringGetAsync(CircuitKey);
+                if (!value.HasValue)
                     return null;
 
-                return DateTime.TryParse(value, out var dt) ? dt : null;
+                return DateTime.TryParse(value.ToString(), out var dt) ? dt : null;
             }
             catch (Exception ex)
             {

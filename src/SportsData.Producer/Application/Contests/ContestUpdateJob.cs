@@ -26,10 +26,23 @@ namespace SportsData.Producer.Application.Contests
     {
         // One-shot backfill: when true, ignore current-season-week scoping and enqueue
         // updates for every non-finalized contest in the most recent season whose start
-        // time has passed. Used to catch MLB up after mid-season onboarding. Flip back
-        // to false before steady-state deploys — the default per-week path is what runs
-        // in production.
-        private static readonly bool BackfillCurrentSeason = true;
+        // time has passed. Used to catch MLB up after mid-season onboarding.
+        //
+        // LEAVE THIS FALSE. It was left on after the MLB catch-up and ran daily in
+        // backfill mode for weeks before anyone noticed — the scope stayed small only
+        // because finalization was keeping up.
+        //
+        // The reason it must not be on during a season is the predicate itself:
+        // "StartDateUtc < now AND FinalizedUtc == null" matches every game CURRENTLY IN
+        // PROGRESS. This job is Cron.Daily, which Hangfire fires at midnight UTC —
+        // 8pm Eastern, i.e. the middle of a Saturday evening slate. On a full NCAAFB
+        // Saturday that means enqueueing a re-source, with the full child-document
+        // cascade, for every live game simultaneously. That is the exact shape of load
+        // that buried the pipeline on 2026-08-29.
+        //
+        // The per-week path below is what production wants: scoped to the current
+        // season week, which is bounded and predictable.
+        private static readonly bool BackfillCurrentSeason = false;
 
         private readonly ILogger<ContestUpdateJob<TDataContext>> _logger;
         private readonly TDataContext _dataContext;

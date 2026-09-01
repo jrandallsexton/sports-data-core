@@ -31,9 +31,7 @@
   height: 1.25em;
   display: inline-flex;
   align-items: center;
-  vertical-align: middle;
   transition: color 0.2s;
-  /* margin-bottom removed, spacing handled by flex gap */
 }
 .pick-button.selected {
   color: var(--text-inverse) !important;
@@ -587,7 +585,14 @@
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
-  text-align: center;
+  /* Flex, not text-align: the button mixes a text node with inline SVGs
+     (check/lock/robot icons), and baseline alignment sat the robot visibly
+     low beside the uppercase team short. Centering the cross axis aligns
+     every child the same way; the icons' vertical-align band-aids are
+     inert under flex. Existing icon margins still provide the spacing. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pick-button:hover {

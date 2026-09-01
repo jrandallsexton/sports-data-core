@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Colors, getTheme } from '@/constants/Colors';
 import type { Matchup, UserPick, PickChoice, PreviewResponse, TeamComparisonData, PickType } from '@/src/types/models';
+import { DeetsMeter } from './DeetsMeter';
 import { matchupsApi } from '@/src/services/api/matchupsApi';
 import { teamCardApi } from '@/src/services/api/teamCardApi';
 import { useContestUpdate } from '@/src/stores/contestUpdatesStore';
@@ -357,6 +358,7 @@ function PickButton({
   isLocked,
   onPress,
   confidence,
+  isAiPick,
 }: {
   teamShort: string;
   isSelected: boolean;
@@ -365,6 +367,8 @@ function PickButton({
   onPress: () => void;
   /** Assigned confidence points — badged on the selected button. */
   confidence?: number | null;
+  /** StatBot's predicted winner — robot icon beside the team short (web parity). */
+  isAiPick?: boolean;
 }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -414,6 +418,18 @@ function PickButton({
       <Text style={[styles.pickBtnTeam, { color: teamColor }]} numberOfLines={1}>
         {teamShort}
       </Text>
+      {/* StatBot pick — robot beside the team short, mirroring web's lucide
+          <Bot /> in PickButton.jsx. Inherits teamColor so it stays legible
+          across selected/correct/incorrect button palettes. */}
+      {isAiPick && (
+        <View
+          style={styles.aiPickIcon}
+          testID="ai-pick-indicator"
+          accessibilityLabel="AI Selection"
+        >
+          <MaterialCommunityIcons name="robot" size={14} color={teamColor} />
+        </View>
+      )}
       {/* Confidence badge — only ever non-null in confidence leagues. */}
       {isSelected && confidence != null && (
         <View style={[styles.confidenceBadge, { borderColor: teamColor }]}>
@@ -469,6 +485,7 @@ function PickButtons({
         isLocked={locked}
         onPress={() => onPick('away', matchup.awayFranchiseSeasonId)}
         confidence={pickedAway ? confidence : null}
+        isAiPick={matchup.aiWinnerFranchiseSeasonId === matchup.awayFranchiseSeasonId}
       />
       <TouchableOpacity
         style={[styles.actionBtn, { backgroundColor: theme.separator }]}
@@ -500,6 +517,7 @@ function PickButtons({
         isLocked={locked}
         onPress={() => onPick('home', matchup.homeFranchiseSeasonId)}
         confidence={pickedHome ? confidence : null}
+        isAiPick={matchup.aiWinnerFranchiseSeasonId === matchup.homeFranchiseSeasonId}
       />
     </View>
   );
@@ -942,6 +960,16 @@ export function MatchupCard({ matchup, pick, onPress, onPressTeam, onPick, defer
         pickType={pickType}
       />
 
+      {/* deetsMeter — model win-probability bars (web parity: rendered
+          between the game status block and the pick buttons). Renders
+          nothing when the matchup carries no predictions. */}
+      <DeetsMeter
+        predictions={matchup.predictions}
+        pickType={pickType}
+        homeFranchiseSeasonId={matchup.homeFranchiseSeasonId}
+        awayFranchiseSeasonId={matchup.awayFranchiseSeasonId}
+      />
+
       {/* Inline pick buttons */}
       {onPick && (
         <PickButtons
@@ -1202,6 +1230,9 @@ const styles = StyleSheet.create({
   pickBtnTeam: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  aiPickIcon: {
+    marginLeft: 4,
   },
   pickVsBox: {
     width: 28,

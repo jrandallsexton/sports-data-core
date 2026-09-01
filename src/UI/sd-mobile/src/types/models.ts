@@ -175,7 +175,26 @@ export interface Matchup {
   isPreviewAvailable?: boolean;
   isPreviewReviewed?: boolean;
 
+  /**
+   * Model predictions for this contest (StatBot). One entry per prediction
+   * type; the deetsMeter renders StraightUp/AgainstTheSpread as win-probability
+   * bars. Present on the wire for every matchup that has been through the
+   * prediction pipeline; older contests may have none. Mirrors
+   * ContestPredictionDto on the API.
+   */
+  predictions?: ContestPrediction[];
+
   [key: string]: unknown;
+}
+
+/** Matches ContestPredictionDto on the API. */
+export interface ContestPrediction {
+  contestId: string;
+  winnerFranchiseSeasonId: string;
+  /** Probability (0..1) that winnerFranchiseSeasonId wins/covers, per predictionType. */
+  winProbability: number;
+  predictionType: PickType;
+  modelVersion: string;
 }
 
 // Response shape from GET /ui/leagues/{id}/matchups/{week}

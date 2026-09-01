@@ -366,3 +366,37 @@ describe('MatchupCard — live updates', () => {
     expect(screen.queryByText('LIVE')).toBeNull();
   });
 });
+
+describe('MatchupCard — StatBot pick indicator', () => {
+  beforeEach(() => {
+    useContestUpdatesStore.setState(useContestUpdatesStore.getInitialState(), true);
+  });
+
+  it('shows the robot on the AI-predicted team and only that team', () => {
+    const matchup = buildFootballMatchup({
+      aiWinnerFranchiseSeasonId: '00000000-0000-0000-0000-0000000000b2', // home (BUF)
+    });
+
+    renderWithProviders(
+      <MatchupCard matchup={matchup} pick={undefined} onPick={jest.fn()} />,
+    );
+
+    // Exactly one robot, and it sits on the home button — asserted by there
+    // being one indicator while both teams render. Team shorts use
+    // getAllByText: with logoUri null the license-free placeholder ALSO
+    // prints the abbreviation, so each short appears twice by design.
+    expect(screen.getAllByTestId('ai-pick-indicator')).toHaveLength(1);
+    expect(screen.getAllByText('BUF').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('KC').length).toBeGreaterThan(0);
+  });
+
+  it('shows no robot when the matchup has no AI winner', () => {
+    const matchup = buildFootballMatchup();
+
+    renderWithProviders(
+      <MatchupCard matchup={matchup} pick={undefined} onPick={jest.fn()} />,
+    );
+
+    expect(screen.queryByTestId('ai-pick-indicator')).toBeNull();
+  });
+});

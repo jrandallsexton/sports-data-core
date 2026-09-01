@@ -112,7 +112,11 @@ export function PrimarySlotOffSeasonCountdown() {
   const eyebrow = allLive ? seasonLabel : `${seasonLabel} KICKOFFS`;
 
   const body = allLive
-    ? 'Jump into your leagues and lock in your picks before the next kickoff.'
+    // Creation wording even when everything is live — the actions row only
+    // offers create CTAs (the picks shortcut had a wrong-league hazard), so
+    // the copy must not steer to leagues a user may not have. Revisit with
+    // the all-live CTA redesign.
+    ? "Spin up a pick'em league and get your picks in before the next kickoff."
     : allGated
       ? "Leagues open soon - we'll be ready before Week\u00A01."
       : seasonYear
@@ -138,7 +142,7 @@ export function PrimarySlotOffSeasonCountdown() {
 
       {allLive ? (
         <Text style={[styles.headline, { color: theme.text }]}>
-          NCAAFB and NFL are underway — pick your week
+          NCAAFB and NFL are underway
         </Text>
       ) : (
         <View style={styles.headlineLines}>
@@ -153,27 +157,23 @@ export function PrimarySlotOffSeasonCountdown() {
       <Text style={[styles.body, { color: theme.textMuted }]}>{body}</Text>
 
       <View style={styles.actions}>
-        {allLive ? (
-          <Button
-            title="Go to picks"
-            onPress={() => router.push('/(tabs)/picks' as never)}
-            size="md"
-            style={styles.actionButton}
-          />
-        ) : (
+        {/* Always the per-sport creation CTAs — including when everything is
+            live (owner call, 2026-09-01): the "Go to picks" shortcut had the
+            same wrong-league hazard for users without a league in the sport.
+            The all-live presentation may get a redesigned CTA once that state
+            is actually reached; until then, creation is the one action this
+            card offers. */}
+        {(
           phrases.map((s) => {
-            const isLive = s.phrase.status === 'live';
-            if (isLive) {
-              return (
-                <Button
-                  key={s.key}
-                  title={`Pick ${s.label} games`}
-                  onPress={() => router.push('/(tabs)/picks' as never)}
-                  size="md"
-                  style={styles.actionButton}
-                />
-              );
-            }
+            // Deliberately NO live special-case here (owner call, 2026-09-01):
+            // this card is a league-CREATION surface, and a "Pick {sport}
+            // games" CTA routed to the generic picks tab, which lands a user
+            // with zero leagues in that sport on some unrelated default
+            // league (observed: an NFL league for a no-NCAAFB user). A live
+            // sport that isn't gated still gets the create CTA below; users
+            // with leagues reach picks through the tab bar. It also kept the
+            // action row lopsided — a one-line label beside the two-line
+            // create/gated buttons.
 
             // Creation gated (e.g. NCAAFB awaiting AP Poll release) — show when it
             // opens instead of a create action. The server enforces the same gate.

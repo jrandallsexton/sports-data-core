@@ -74,13 +74,23 @@ export function RankingsCard() {
         {topEntries.map((team, i) => {
           // The wire carries one logo URL — no theme variants (see rankingsApi).
           const logoSrc = team.franchiseLogoUrl;
+          // One fallback, used by BOTH the visible name and the a11y label —
+          // otherwise a missing name reads "Unknown" but announces "undefined".
+          const teamName = team.franchiseName || 'Unknown';
           return (
             <TouchableOpacity
               key={team.franchiseSeasonId || team.rank}
               onPress={() => openTeam(team.franchiseSlug)}
               activeOpacity={0.6}
               accessibilityRole="button"
-              accessibilityLabel={`Open ${team.franchiseName}`}
+              // Mirrors the visible row: rank, name, and (when shown) the
+              // first-place votes — screen readers hear what sighted users see.
+              accessibilityLabel={
+                `Open ${teamName}, ranked ${team.rank}` +
+                ((team.firstPlaceVotes ?? 0) > 0
+                  ? `, ${team.firstPlaceVotes} first-place votes`
+                  : '')
+              }
               style={[
                 styles.row,
                 i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },
@@ -91,9 +101,24 @@ export function RankingsCard() {
               <View style={styles.logoSlot}>
                 {logoSrc ? <Image source={{ uri: logoSrc }} style={styles.logo} /> : null}
               </View>
-              <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
-                {team.franchiseName || 'Unknown'}
-              </Text>
+              {/* name + AP-style first-place votes, e.g. "Ohio State (40)".
+                  The votes are their own element INSIDE the flex:1 block so
+                  they sit adjacent to the name (AP convention) while a long
+                  school name truncates before the votes do; zero/absent
+                  renders nothing — most ranked teams have no #1 votes. */}
+              <View style={styles.nameBlock}>
+                <Text
+                  style={[styles.name, { color: theme.text }]}
+                  numberOfLines={1}
+                >
+                  {teamName}
+                </Text>
+                {(team.firstPlaceVotes ?? 0) > 0 && (
+                  <Text style={[styles.firstPlaceVotes, { color: theme.textSecondary }]}>
+                    ({team.firstPlaceVotes})
+                  </Text>
+                )}
+              </View>
               <Text style={[styles.record, { color: theme.textSecondary }]}>
                 {team.wins}-{team.losses}
               </Text>
@@ -106,12 +131,15 @@ export function RankingsCard() {
 }
 
 const styles = StyleSheet.create({
+  // Card recipe matches JoinableLeaguesCard EXACTLY. The previous drift
+  // (borderWidth 1 vs hairline, 12 vertical padding, own marginBottom
+  // stacking with the scroll gap, eyebrow 12 vs 11) added up to visibly
+  // inconsistent insets between adjacent home cards. Per-card spacing
+  // overrides are a pattern we deliberately do not start on mobile.
   card: {
     borderRadius: 14,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 16,
   },
   headerRow: {
     flexDirection: 'row',
@@ -120,7 +148,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   eyebrow: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.5,
   },
@@ -134,9 +162,17 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     gap: 8,
   },
+  // Left-aligned, not right: right-alignment inside the gutter meant the
+  // rank NEVER started at the card's 16px content line — even double
+  // digits sat ~9px deep, reading as an inset against the neighboring
+  // cards whose text all starts flush (measured 2026-09-01). minWidth
+  // still fixes the logo/name columns across rows.
   rank: {
-    minWidth: 22,
-    textAlign: 'right',
+    // No reserved gutter: this card only ever renders the top 5, so every
+    // rank is one digit and rows can't misalign — the row gap alone spaces
+    // rank/logo/name. (The full rankings screen, which does show double
+    // digits, is a different component.) A reserved column here just read
+    // as dead space between the digit and the logo.
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
   },
@@ -149,9 +185,18 @@ const styles = StyleSheet.create({
     height: 20,
     resizeMode: 'contain',
   },
-  name: {
+  nameBlock: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  name: {
+    flexShrink: 1,
     fontWeight: '500',
+  },
+  firstPlaceVotes: {
+    fontSize: 12,
+    marginLeft: 4,
   },
   record: {
     fontSize: 13,

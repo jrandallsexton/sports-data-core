@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 
 using FluentValidation;
 
@@ -158,6 +158,19 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
     /// </summary>
     private static readonly double[] AtsKeyNumbers = [3, 7, 10, 14, 21, 28, 35];
 
+    /// <summary>
+    /// The ATS pair renders only when the chosen bucket actually describes the
+    /// line: within one touchdown. Past that, the cohort stops being evidence —
+    /// a 46.5-point favorite IS "a 35+ favorite", but that cohort's typical
+    /// member is a ~36-point spread and covering 35 says nothing about covering
+    /// 46.5 ("that's great, but it has zero bearing on a 46.5-point spread" —
+    /// owner, 2026-09-01, looking at Furman/Tennessee). The magnitude facts
+    /// above carry monster spreads; the ATS pair is omitted rather than
+    /// stretched. Widening the key-number ladder instead was rejected: cohorts
+    /// past 35 are too thin to say anything (the reason the buckets exist).
+    /// </summary>
+    private const double AtsBucketMaxDistancePoints = 7;
+
     private class SpreadTargetRow
     {
         public DateTime StartDateUtc { get; set; }
@@ -233,7 +246,7 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         };
 
         var threshold = AtsKeyNumbers.Where(k => k <= magnitude).DefaultIfEmpty(0).Max();
-        if (threshold > 0)
+        if (threshold > 0 && magnitude - threshold <= AtsBucketMaxDistancePoints)
         {
             context.FavoriteAtsAsBigFavorite = await BuildAtsBucketFactAsync(
                 connection, favoriteFranchiseId, threshold, target.StartDateUtc, asFavorite: true, cancellationToken);
@@ -242,6 +255,16 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         }
 
         return context;
+    }
+
+    private class MarginInstanceRow
+    {
+        public DateTime GameDate { get; set; }
+        public int SeasonYear { get; set; }
+        public string Opponent { get; set; } = default!;
+        public int TeamScore { get; set; }
+        public int OpponentScore { get; set; }
+        public string? OpponentSeasonRecord { get; set; }
     }
 
     private async Task<PreviewMarginFactDto> BuildMarginFactAsync(
@@ -302,6 +325,37 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 row.OpponentFranchiseSeasonId.Value, cancellationToken);
             fact.OpponentPriorSeasonRecord = await GetPriorSeasonOverallRecordAsync(
                 row.OpponentFranchiseSeasonId.Value, cancellationToken);
+        }
+
+        // The games BEHIND the count — "8 such wins" invites exactly one
+        // question ("against whom?") and this list answers it (owner ask,
+        // 2026-09-01). Fetched only when the count is non-zero; opponent
+        // records ride the same query (SQL lateral), so this is one round
+        // trip on an already off-request-path generation.
+        if (fact.CountLastFiveSeasons > 0)
+        {
+            var instances = await connection.QueryAsync<MarginInstanceRow>(
+                new CommandDefinition(
+                    _sqlProvider.GetFranchiseMarginInstances(),
+                    new
+                    {
+                        FranchiseId = franchiseId,
+                        Margin = margin,
+                        AsOf = asOf,
+                        WindowStartSeason = targetSeasonYear - 4,
+                        Won = won
+                    },
+                    cancellationToken: cancellationToken));
+
+            fact.WindowGames = instances.Select(x => new PreviewMarginInstanceDto
+            {
+                GameDate = x.GameDate,
+                SeasonYear = x.SeasonYear,
+                Opponent = x.Opponent,
+                TeamScore = x.TeamScore,
+                OpponentScore = x.OpponentScore,
+                OpponentSeasonRecord = x.OpponentSeasonRecord
+            }).ToList();
         }
 
         return fact;

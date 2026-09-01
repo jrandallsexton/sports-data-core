@@ -668,9 +668,18 @@ export default function TeamComparison({
           })`
         : "";
     const times = fact.countLastFiveSeasons;
+    // The games behind the count, newest first — "8 such wins" invites
+    // exactly one question ("against whom?") and this line answers it.
+    // Compact: 'YY opponent score (their record). Server caps at 10.
+    const windowGames = (fact.windowGames ?? []).map((g) => {
+      const yr = `'${String(g.seasonYear).slice(-2)}`;
+      const rec = g.opponentSeasonRecord ? ` (${g.opponentSeasonRecord})` : "";
+      return `${yr} ${g.opponent} ${g.teamScore}-${g.opponentScore}${rec}`;
+    });
     return {
       head: `Last time ${teamName} ${won ? "won" : "lost"} by ${fmtLine(magnitude)}+:`,
       detail: `${when} — ${won ? "beat" : "lost to"} ${opponent} ${ourScore}-${theirScore}${quality}. ${times} such ${won ? "win" : "loss"}${times === 1 ? "" : won ? "s" : "es"} in the last 5 seasons.`,
+      windowGames,
     };
   };
 
@@ -707,6 +716,13 @@ export default function TeamComparison({
           <div className="line-fact" key={i}>
             <span className="line-fact-head">{f.head}</span>{" "}
             <span className="line-fact-detail">{f.detail}</span>
+            {f.windowGames?.length > 0 && (
+              <ul className="line-fact-games">
+                {f.windowGames.map((g, j) => (
+                  <li key={j}>{g}</li>
+                ))}
+              </ul>
+            )}
           </div>
         ))}
       </div>

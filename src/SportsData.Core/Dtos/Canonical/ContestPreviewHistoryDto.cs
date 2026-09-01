@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace SportsData.Core.Dtos.Canonical
@@ -87,6 +87,31 @@ namespace SportsData.Core.Dtos.Canonical
 
         /// <summary>Earliest season in the corpus for this franchise — the honest search floor.</summary>
         public int SearchFloorSeason { get; set; }
+
+        /// <summary>
+        /// The games behind <see cref="CountLastFiveSeasons"/>, newest first,
+        /// capped at 10 — who was actually beaten (or lost to), with the
+        /// opponent's record that season as quality context. The count remains
+        /// the authority on totals; this list is its evidence.
+        /// </summary>
+        public List<PreviewMarginInstanceDto> WindowGames { get; set; } = [];
+    }
+
+    /// <summary>One qualifying game inside the five-season count window.</summary>
+    public class PreviewMarginInstanceDto
+    {
+        public DateTime GameDate { get; set; }
+
+        public int SeasonYear { get; set; }
+
+        public string Opponent { get; set; } = default!;
+
+        public int TeamScore { get; set; }
+
+        public int OpponentScore { get; set; }
+
+        /// <summary>Opponent's overall W-L that season ("7-5"); null when unsourced.</summary>
+        public string? OpponentSeasonRecord { get; set; }
     }
 
     /// <summary>

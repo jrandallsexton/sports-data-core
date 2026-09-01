@@ -150,7 +150,10 @@ public sealed class ContestPreviewHistoryCache : IContestPreviewHistoryCache
     {
         var spread = homeSpread?.ToString("0.##", CultureInfo.InvariantCulture) ?? "none";
 
-        return $"preview-history:v1:{query.ContestId}:{query.MeetingCount}:{query.RecentGameCount}:s{spread}";
+        // v2: ATS-pair distance guard (2026-09-01) changed the payload for
+        // wide spreads; the version bump retires 7-day-TTL v1 entries that
+        // would otherwise serve the stretched "35+ favorite" bullets.
+        return $"preview-history:v2:{query.ContestId}:{query.MeetingCount}:{query.RecentGameCount}:s{spread}";
     }
 
     /// <summary>

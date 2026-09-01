@@ -1,6 +1,7 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging.Abstractions;
 
 using Moq;
 
@@ -42,7 +43,7 @@ public class LeagueWeekMatchupsCacheTests
     private static (LeagueWeekMatchupsCache Cache, Mock<IDistributedCache> Store) BuildSut()
     {
         var store = new Mock<IDistributedCache>();
-        return (new LeagueWeekMatchupsCache(store.Object), store);
+        return (new LeagueWeekMatchupsCache(store.Object, NullLogger<LeagueWeekMatchupsCache>.Instance), store);
     }
 
     private static void VerifyWritten(Mock<IDistributedCache> store, Times times) =>

@@ -290,7 +290,7 @@ function priorSeasonRecordLabel(summary: ContestPriorSeasonSummary | null | unde
 // Deterministic sentences composed from server-computed facts — every number
 // comes from a query, never from prose. Mirrors the web dialog's wording.
 
-type LineFact = { head: string; detail: string };
+type LineFact = { head: string; detail: string; windowGames?: string[] };
 
 function marginFactSentence(
   teamName: string,
@@ -318,9 +318,18 @@ function marginFactSentence(
         })`
       : '';
   const times = fact.countLastFiveSeasons;
+  // The games behind the count, newest first — "8 such wins" invites exactly
+  // one question ("against whom?") and these lines answer it. Web twin:
+  // TeamComparison.jsx marginFactSentence.
+  const windowGames = (fact.windowGames ?? []).map((gm) => {
+    const yr = `'${String(gm.seasonYear).slice(-2)}`;
+    const rec = gm.opponentSeasonRecord ? ` (${gm.opponentSeasonRecord})` : '';
+    return `${yr} ${gm.opponent} ${gm.teamScore}-${gm.opponentScore}${rec}`;
+  });
   return {
     head: `Last time ${teamName} ${won ? 'won' : 'lost'} by ${magnitude}+:`,
     detail: `${when} — ${won ? 'beat' : 'lost to'} ${opponent} ${ourScore ?? '—'}-${theirScore ?? '—'}${quality}. ${times} such ${won ? 'win' : 'loss'}${times === 1 ? '' : won ? 's' : 'es'} in the last 5 seasons.`,
+    windowGames,
   };
 }
 
@@ -499,6 +508,18 @@ export function StatsComparisonModal({
                         <Text style={[styles.lineFactText, { color: theme.text }]}>
                           <Text style={styles.lineFactHead}>{f.head}</Text> {f.detail}
                         </Text>
+                        {(f.windowGames?.length ?? 0) > 0 && (
+                          <View style={styles.lineFactGames}>
+                            {f.windowGames!.map((g, j) => (
+                              <Text
+                                key={j}
+                                style={[styles.lineFactGame, { color: theme.textMuted }]}
+                              >
+                                {g}
+                              </Text>
+                            ))}
+                          </View>
+                        )}
                       </View>
                     ))}
                   </>
@@ -946,6 +967,15 @@ const styles = StyleSheet.create({
   },
   lineFactHead: {
     fontWeight: '700',
+  },
+  // Evidence list under a margin fact — muted, tabular, one game per line.
+  lineFactGames: {
+    marginTop: 4,
+    gap: 1,
+  },
+  lineFactGame: {
+    fontSize: 12,
+    fontVariant: ['tabular-nums'],
   },
 
   barTrack: {

@@ -1,4 +1,4 @@
-using SportsData.Producer.Application.Contests.Queries.Matchups;
+﻿using SportsData.Producer.Application.Contests.Queries.Matchups;
 
 namespace SportsData.Producer.Infrastructure.Sql;
 
@@ -23,6 +23,7 @@ public class ProducerSqlQueryProvider
         "GetContestPriorSeasonResults.sql",
         "GetContestSpreadTarget.sql",
         "GetFranchiseMarginFact.sql",
+        "GetFranchiseMarginInstances.sql",
         "GetFranchiseAtsBucket.sql",
         "GetFranchiseSeasonCompetitionResults.sql",
         "GetFranchiseSeasonPreviewStats.sql",
@@ -114,6 +115,8 @@ public class ProducerSqlQueryProvider
     public string GetContestSpreadTarget() => Get("GetContestSpreadTarget.sql");
 
     public string GetFranchiseMarginFact() => Get("GetFranchiseMarginFact.sql");
+
+    public string GetFranchiseMarginInstances() => Get("GetFranchiseMarginInstances.sql");
 
     public string GetFranchiseAtsBucket() => Get("GetFranchiseAtsBucket.sql");
 

@@ -387,6 +387,19 @@ export interface ContestMarginFact {
   opponentPriorSeasonRecord?: string | null;
   countLastFiveSeasons: number;
   searchFloorSeason: number;
+  /** The games behind the count, newest first (server caps at 10). */
+  windowGames?: ContestMarginInstance[];
+}
+
+/** One qualifying game inside the five-season count window. */
+export interface ContestMarginInstance {
+  gameDate: string;
+  seasonYear: number;
+  opponent: string;
+  teamScore: number;
+  opponentScore: number;
+  /** Opponent's overall W-L that season ("7-5"); null when unsourced. */
+  opponentSeasonRecord?: string | null;
 }
 
 /** ATS record conditioned on spread size ("as a 35+ underdog") — market tier (~2022+). */

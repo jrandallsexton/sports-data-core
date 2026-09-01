@@ -153,27 +153,23 @@ export function PrimarySlotOffSeasonCountdown() {
       <Text style={[styles.body, { color: theme.textMuted }]}>{body}</Text>
 
       <View style={styles.actions}>
-        {allLive ? (
-          <Button
-            title="Go to picks"
-            onPress={() => router.push('/(tabs)/picks' as never)}
-            size="md"
-            style={styles.actionButton}
-          />
-        ) : (
+        {/* Always the per-sport creation CTAs — including when everything is
+            live (owner call, 2026-09-01): the "Go to picks" shortcut had the
+            same wrong-league hazard for users without a league in the sport.
+            The all-live presentation may get a redesigned CTA once that state
+            is actually reached; until then, creation is the one action this
+            card offers. */}
+        {(
           phrases.map((s) => {
-            const isLive = s.phrase.status === 'live';
-            if (isLive) {
-              return (
-                <Button
-                  key={s.key}
-                  title={`Pick ${s.label} games`}
-                  onPress={() => router.push('/(tabs)/picks' as never)}
-                  size="md"
-                  style={styles.actionButton}
-                />
-              );
-            }
+            // Deliberately NO live special-case here (owner call, 2026-09-01):
+            // this card is a league-CREATION surface, and a "Pick {sport}
+            // games" CTA routed to the generic picks tab, which lands a user
+            // with zero leagues in that sport on some unrelated default
+            // league (observed: an NFL league for a no-NCAAFB user). A live
+            // sport that isn't gated still gets the create CTA below; users
+            // with leagues reach picks through the tab bar. It also kept the
+            // action row lopsided — a one-line label beside the two-line
+            // create/gated buttons.
 
             // Creation gated (e.g. NCAAFB awaiting AP Poll release) — show when it
             // opens instead of a create action. The server enforces the same gate.

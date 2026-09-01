@@ -100,7 +100,7 @@
     },
     "owner": "sportdeets",
     "runtimeVersion": {
-      "policy": "appVersion"
+      "policy": "fingerprint"
     },
     "updates": {
       "url": "https://u.expo.dev/7605ab96-0b46-4b5e-8940-3d492ead7d75"

@@ -80,7 +80,14 @@ export function RankingsCard() {
               onPress={() => openTeam(team.franchiseSlug)}
               activeOpacity={0.6}
               accessibilityRole="button"
-              accessibilityLabel={`Open ${team.franchiseName}`}
+              // Mirrors the visible row: rank, name, and (when shown) the
+              // first-place votes — screen readers hear what sighted users see.
+              accessibilityLabel={
+                `Open ${team.franchiseName}, ranked ${team.rank}` +
+                ((team.firstPlaceVotes ?? 0) > 0
+                  ? `, ${team.firstPlaceVotes} first-place votes`
+                  : '')
+              }
               style={[
                 styles.row,
                 i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.border },

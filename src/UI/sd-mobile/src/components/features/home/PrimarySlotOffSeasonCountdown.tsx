@@ -112,7 +112,11 @@ export function PrimarySlotOffSeasonCountdown() {
   const eyebrow = allLive ? seasonLabel : `${seasonLabel} KICKOFFS`;
 
   const body = allLive
-    ? 'Jump into your leagues and lock in your picks before the next kickoff.'
+    // Creation wording even when everything is live — the actions row only
+    // offers create CTAs (the picks shortcut had a wrong-league hazard), so
+    // the copy must not steer to leagues a user may not have. Revisit with
+    // the all-live CTA redesign.
+    ? "Spin up a pick'em league and get your picks in before the next kickoff."
     : allGated
       ? "Leagues open soon - we'll be ready before Week\u00A01."
       : seasonYear
@@ -138,7 +142,7 @@ export function PrimarySlotOffSeasonCountdown() {
 
       {allLive ? (
         <Text style={[styles.headline, { color: theme.text }]}>
-          NCAAFB and NFL are underway — pick your week
+          NCAAFB and NFL are underway
         </Text>
       ) : (
         <View style={styles.headlineLines}>

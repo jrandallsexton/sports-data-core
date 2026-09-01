@@ -76,9 +76,13 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
             // Information, not Debug. Prod runs SportsData at Information, so a Debug
             // line here is invisible — which left the only evidence of a cache hit being
             // the ABSENCE of the completion log below. Inferring behaviour from a missing
-            // log entry is not observability. This is the counterpart to that completion
-            // line: every request now emits exactly one terminal event, and the hit rate
-            // on this endpoint is countable rather than deduced.
+            // log entry is not observability, so a successful hit now emits its own
+            // Information event and can be counted directly rather than deduced.
+            //
+            // That claim is scoped to this path and no further. It says nothing about
+            // requests that never reach here — the membership guard above returns without
+            // logging anything — nor about a cache read that fails, which the cache
+            // swallows and reports as a miss, sending us down the uncached path below.
             _logger.LogInformation(
                 "League week matchups served from cache, leagueId={LeagueId}, week={Week}",
                 query.LeagueId,

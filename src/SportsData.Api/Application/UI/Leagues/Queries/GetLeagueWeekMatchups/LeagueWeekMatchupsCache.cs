@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
 
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Core.Extensions;
@@ -41,14 +42,42 @@ public sealed class LeagueWeekMatchupsCache : ILeagueWeekMatchupsCache
     private const string FinalStatus = "STATUS_FINAL";
 
     private readonly IDistributedCache _cache;
+    private readonly ILogger<LeagueWeekMatchupsCache> _logger;
 
-    public LeagueWeekMatchupsCache(IDistributedCache cache)
+    public LeagueWeekMatchupsCache(
+        IDistributedCache cache,
+        ILogger<LeagueWeekMatchupsCache> logger)
     {
         _cache = cache;
+        _logger = logger;
     }
 
-    public Task<LeagueWeekMatchupsDto?> GetAsync(Guid leagueId, int week) =>
-        _cache.GetRecordAsync<LeagueWeekMatchupsDto>(BuildKey(leagueId, week));
+    /// <summary>
+    /// Returns the cached payload, or null on a miss — including when Redis itself fails.
+    /// </summary>
+    /// <remarks>
+    /// A cache must never be able to fail the request it is supposed to accelerate. This
+    /// is the same fail-open stance <c>RedisEspnCircuitBreaker</c> takes: an unreachable
+    /// Redis degrades to the behaviour we had before any caching existed, rather than
+    /// turning an optimisation into an outage on the most-used endpoint in the app.
+    /// </remarks>
+    public async Task<LeagueWeekMatchupsDto?> GetAsync(Guid leagueId, int week)
+    {
+        try
+        {
+            return await _cache.GetRecordAsync<LeagueWeekMatchupsDto>(BuildKey(leagueId, week));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "League week matchups cache read failed; falling back to the uncached path. leagueId={LeagueId}, week={Week}",
+                leagueId,
+                week);
+
+            return null;
+        }
+    }
 
     public async Task SetAsync(Guid leagueId, int week, LeagueWeekMatchupsDto dto)
     {
@@ -57,7 +86,21 @@ public sealed class LeagueWeekMatchupsCache : ILeagueWeekMatchupsCache
         if (ttl is null)
             return;
 
-        await _cache.SetRecordAsync(BuildKey(leagueId, week), dto, ttl.Value);
+        try
+        {
+            await _cache.SetRecordAsync(BuildKey(leagueId, week), dto, ttl.Value);
+        }
+        catch (Exception ex)
+        {
+            // Swallowed deliberately. The caller already has the payload and is about to
+            // return it successfully; failing to memoise it is not a reason to hand the
+            // user an error for data we are holding.
+            _logger.LogWarning(
+                ex,
+                "League week matchups cache write failed; the response is unaffected. leagueId={LeagueId}, week={Week}",
+                leagueId,
+                week);
+        }
     }
 
     /// <summary>

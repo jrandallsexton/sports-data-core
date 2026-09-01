@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Caching.Distributed;
+﻿using Microsoft.Extensions.Caching.Distributed;
 
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Core.Extensions;
@@ -58,26 +58,69 @@ public sealed class ContestPreviewHistoryCache : IContestPreviewHistoryCache
     private static readonly TimeSpan UnresolvedContestTtl = TimeSpan.FromMinutes(5);
 
     private readonly IDistributedCache _cache;
+    private readonly ILogger<ContestPreviewHistoryCache> _logger;
 
-    public ContestPreviewHistoryCache(IDistributedCache cache)
+    public ContestPreviewHistoryCache(
+        IDistributedCache cache,
+        ILogger<ContestPreviewHistoryCache> logger)
     {
         _cache = cache;
+        _logger = logger;
     }
 
-    public Task<ContestPreviewHistoryDto?> GetAsync(
+    /// <summary>
+    /// Returns the cached payload, or null on a miss — including when Redis itself fails.
+    /// </summary>
+    /// <remarks>
+    /// A cache must never be able to fail the request it is supposed to accelerate. An
+    /// unreachable Redis degrades this slice to the ~10 round trips it cost before any
+    /// caching existed, which is slow but correct; letting the exception escape would
+    /// turn an optimisation into an outage. Same fail-open stance as
+    /// <c>RedisEspnCircuitBreaker</c>.
+    /// </remarks>
+    public async Task<ContestPreviewHistoryDto?> GetAsync(
         GetContestPreviewHistoryQuery query,
-        double? homeSpread) =>
-        _cache.GetRecordAsync<ContestPreviewHistoryDto>(BuildKey(query, homeSpread));
+        double? homeSpread)
+    {
+        try
+        {
+            return await _cache.GetRecordAsync<ContestPreviewHistoryDto>(BuildKey(query, homeSpread));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Preview history cache read failed; falling back to the uncached path. ContestId={ContestId}",
+                query.ContestId);
 
-    public Task SetAsync(
+            return null;
+        }
+    }
+
+    public async Task SetAsync(
         GetContestPreviewHistoryQuery query,
         ContestPreviewHistoryDto dto,
         DateTime? contestStartUtc,
-        double? homeSpread) =>
-        _cache.SetRecordAsync(
-            BuildKey(query, homeSpread),
-            dto,
-            ResolveTtl(contestStartUtc));
+        double? homeSpread)
+    {
+        try
+        {
+            await _cache.SetRecordAsync(
+                BuildKey(query, homeSpread),
+                dto,
+                ResolveTtl(contestStartUtc));
+        }
+        catch (Exception ex)
+        {
+            // Swallowed deliberately. The caller already has the payload and is about to
+            // return it successfully; failing to memoise it is not a reason to hand the
+            // user an error for data we are holding.
+            _logger.LogWarning(
+                ex,
+                "Preview history cache write failed; the response is unaffected. ContestId={ContestId}",
+                query.ContestId);
+        }
+    }
 
     /// <summary>
     /// Key for one preview-history result.

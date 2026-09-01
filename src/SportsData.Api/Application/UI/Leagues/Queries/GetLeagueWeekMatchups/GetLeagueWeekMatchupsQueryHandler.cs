@@ -73,7 +73,13 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
 
         if (fromCache is not null)
         {
-            _logger.LogDebug(
+            // Information, not Debug. Prod runs SportsData at Information, so a Debug
+            // line here is invisible — which left the only evidence of a cache hit being
+            // the ABSENCE of the completion log below. Inferring behaviour from a missing
+            // log entry is not observability. This is the counterpart to that completion
+            // line: every request now emits exactly one terminal event, and the hit rate
+            // on this endpoint is countable rather than deduced.
+            _logger.LogInformation(
                 "League week matchups served from cache, leagueId={LeagueId}, week={Week}",
                 query.LeagueId,
                 query.Week);

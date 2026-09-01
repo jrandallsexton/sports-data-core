@@ -74,6 +74,9 @@ export function RankingsCard() {
         {topEntries.map((team, i) => {
           // The wire carries one logo URL — no theme variants (see rankingsApi).
           const logoSrc = team.franchiseLogoUrl;
+          // One fallback, used by BOTH the visible name and the a11y label —
+          // otherwise a missing name reads "Unknown" but announces "undefined".
+          const teamName = team.franchiseName || 'Unknown';
           return (
             <TouchableOpacity
               key={team.franchiseSeasonId || team.rank}
@@ -83,7 +86,7 @@ export function RankingsCard() {
               // Mirrors the visible row: rank, name, and (when shown) the
               // first-place votes — screen readers hear what sighted users see.
               accessibilityLabel={
-                `Open ${team.franchiseName}, ranked ${team.rank}` +
+                `Open ${teamName}, ranked ${team.rank}` +
                 ((team.firstPlaceVotes ?? 0) > 0
                   ? `, ${team.firstPlaceVotes} first-place votes`
                   : '')
@@ -108,7 +111,7 @@ export function RankingsCard() {
                   style={[styles.name, { color: theme.text }]}
                   numberOfLines={1}
                 >
-                  {team.franchiseName || 'Unknown'}
+                  {teamName}
                 </Text>
                 {(team.firstPlaceVotes ?? 0) > 0 && (
                   <Text style={[styles.firstPlaceVotes, { color: theme.textSecondary }]}>

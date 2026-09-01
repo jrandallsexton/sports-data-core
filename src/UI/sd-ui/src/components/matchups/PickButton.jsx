@@ -51,7 +51,7 @@ function PickButton({
       {teamShort}
       {isAiPick && (
         <span title="AI Selection" aria-label="AI Selection">
-          <Bot className="ai-pick-indicator" style={{ marginLeft: 6, verticalAlign: 'middle' }} />
+          <Bot className="ai-pick-indicator" />
         </span>
       )}
     </button>

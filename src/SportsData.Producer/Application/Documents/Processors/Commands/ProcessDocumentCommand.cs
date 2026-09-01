@@ -45,9 +45,12 @@ public class ProcessDocumentCommand(
     public int AttemptCount { get; init; } = attemptCount;
 
     /// <summary>
-    /// Optional inclusion-only list of linked document types.
-    /// If provided and non-empty, downstream processors should only spawn linked documents
-    /// of types in this collection. If null or empty, all linked documents are processed.
+    /// Optional inclusion-only list of linked document types. Three meanings:
+    /// null = no filter, spawn all linked documents (default); EMPTY = spawn none —
+    /// this document is wanted for itself alone (FK-only dependency requests);
+    /// non-empty = spawn only the listed types. The filter propagates onto every
+    /// request this command publishes, so an empty filter keeps the entire chain
+    /// beneath it lean. See docs/features/athlete-cascade-scoping.md.
     /// </summary>
     public IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes { get; init; } = includeLinkedDocumentTypes;
 

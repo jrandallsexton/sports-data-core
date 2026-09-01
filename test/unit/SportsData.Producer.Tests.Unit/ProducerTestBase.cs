@@ -1,10 +1,11 @@
-using AutoFixture;
+﻿using AutoFixture;
 using AutoFixture.Kernel;
 
 using AutoMapper;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -38,6 +39,21 @@ public abstract class ProducerTestBase<T> : UnitTestBase<T>
         Fixture.Customizations.Add(new TypeRelay(typeof(CompetitionStatusBase), typeof(FootballCompetitionStatus)));
         Fixture.Customizations.Add(new TypeRelay(typeof(CompetitionCompetitorBase), typeof(FootballCompetitionCompetitor)));
 
+        // Pin ProcessDocumentCommand's boolean flags (NotifyOnCompletion today) to
+        // false for fixture-built commands. AutoFixture fills booleans by
+        // ALTERNATION, so which flag lands true depends on how many bools the
+        // fixture handed out before it — adding a bool parameter anywhere in the
+        // command flips the parity for every test downstream. Discovered 2026-09-01
+        // when a prototype bool on the command turned two green AthleteSeason guard
+        // tests red: NotifyOnCompletion silently became true and the base class
+        // published DocumentProcessingCompleted, failing their "publishes nothing"
+        // assertions. EventCompetitionOddsDocumentProcessorTests had already been
+        // bitten and pins the flag per call site. A specimen builder (not
+        // Customize<T>) because Fixture.Build<T> bypasses Customize<T> — this
+        // intercepts the ctor-parameter and property requests themselves, and an
+        // explicit .With(...) in a test still wins.
+        Fixture.Customizations.Add(new ProcessDocumentCommandFlagsOffByDefault());
+
         // Override mapper with Producer-specific mapping profile
         var mapperConfig = new MapperConfiguration(c =>
         {
@@ -46,6 +62,28 @@ public abstract class ProducerTestBase<T> : UnitTestBase<T>
         });
         var mapper = mapperConfig.CreateMapper();
         Mocker.Use(typeof(IMapper), mapper);
+    }
+
+    private sealed class ProcessDocumentCommandFlagsOffByDefault : ISpecimenBuilder
+    {
+        public object Create(object request, ISpecimenContext context)
+        {
+            if (request is System.Reflection.ParameterInfo pi
+                && pi.Member.DeclaringType == typeof(ProcessDocumentCommand)
+                && pi.ParameterType == typeof(bool))
+            {
+                return false;
+            }
+
+            if (request is System.Reflection.PropertyInfo prop
+                && prop.DeclaringType == typeof(ProcessDocumentCommand)
+                && prop.PropertyType == typeof(bool))
+            {
+                return false;
+            }
+
+            return new NoSpecimen();
+        }
     }
 
     private static DbContextOptions<FootballDataContext> GetFootballDataContextOptions()

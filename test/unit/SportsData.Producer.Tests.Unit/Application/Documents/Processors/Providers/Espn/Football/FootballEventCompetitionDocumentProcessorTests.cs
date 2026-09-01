@@ -1,4 +1,4 @@
-using AutoFixture;
+﻿using AutoFixture;
 
 using FluentAssertions;
 
@@ -285,7 +285,11 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .With(x => x.UrlHash, competitionIdentity.UrlHash)
-                .With(x => x.IncludeLinkedDocumentTypes, new List<DocumentType>())
+                // Explicit null (= no filter, spawn all). This override exists to
+                // defeat AutoFixture's random list fill; it used to pass an empty
+                // list, which meant the same thing until empty became "spawn
+                // nothing" (docs/features/athlete-cascade-scoping.md).
+                .With(x => x.IncludeLinkedDocumentTypes, (IReadOnlyCollection<DocumentType>)null!)
                 .Create();
 
             // act
@@ -523,7 +527,11 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.DocumentType, DocumentType.EventCompetition)
                 .With(x => x.Document, documentJson)
                 .With(x => x.UrlHash, competitionIdentity.UrlHash)
-                .With(x => x.IncludeLinkedDocumentTypes, new List<DocumentType>())
+                // Explicit null (= no filter, spawn all). This override exists to
+                // defeat AutoFixture's random list fill; it used to pass an empty
+                // list, which meant the same thing until empty became "spawn
+                // nothing" (docs/features/athlete-cascade-scoping.md).
+                .With(x => x.IncludeLinkedDocumentTypes, (IReadOnlyCollection<DocumentType>)null!)
                 .Create();
 
             // act

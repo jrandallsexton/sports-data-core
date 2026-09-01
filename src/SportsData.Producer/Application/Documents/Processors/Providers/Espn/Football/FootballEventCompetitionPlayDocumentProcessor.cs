@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Common.Hashing;
@@ -182,8 +182,21 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
 
                 if (athleteSeasonId is null)
                 {
+                    // Empty filter = document only: this request exists purely to
+                    // satisfy the participant FK. The AthleteSeason row will persist
+                    // (its Athlete parent is a blocking dependency, which still flows),
+                    // but its child subtree — headshot, season statistics, notes — will
+                    // not spawn. That subtree was the largest single term in the
+                    // 2026-08-29 fan-out (~4 documents per unique athlete, across every
+                    // division), and nothing on the scoring path consumes it: per-game
+                    // stats arrive via EventCompetitionAthleteStatistics from the
+                    // roster/leaders/play spawns, and their processor resolves the
+                    // AthleteSeason row itself. Season-level data that is genuinely
+                    // wanted must be sourced deliberately, not inherited from a play.
+                    // See docs/features/athlete-cascade-scoping.md.
                     await PublishDependencyRequest<string?>(
-                        command, participant.Athlete, parentId: null, DocumentType.AthleteSeason);
+                        command, participant.Athlete, parentId: null, DocumentType.AthleteSeason,
+                        includeLinkedDocumentTypes: Array.Empty<DocumentType>());
                     anyMissing = true;
                 }
             }
@@ -200,8 +213,10 @@ public class FootballEventCompetitionPlayDocumentProcessor<TDataContext>
 
                 if (positionId is null)
                 {
+                    // Same FK-only treatment as the AthleteSeason request above.
                     await PublishDependencyRequest<string?>(
-                        command, participant.Position, parentId: null, DocumentType.AthletePosition);
+                        command, participant.Position, parentId: null, DocumentType.AthletePosition,
+                        includeLinkedDocumentTypes: Array.Empty<DocumentType>());
                     anyMissing = true;
                 }
             }

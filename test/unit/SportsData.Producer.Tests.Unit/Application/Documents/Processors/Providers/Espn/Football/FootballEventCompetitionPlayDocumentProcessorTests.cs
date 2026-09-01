@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 
 using AutoFixture;
 
@@ -632,12 +632,23 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
             .FirstOrDefaultAsync(x => x.CompetitionId == competitionId);
         play.Should().BeNull("the play must be withheld until its participants are sourced");
 
+        // Both participant requests are FK-only: they must carry an EMPTY inclusion
+        // filter (document only, no children) so the AthleteSeason row arrives
+        // WITHOUT its child subtree (headshot, season statistics, notes) — the
+        // 4x-per-athlete multiplier behind the 2026-08-29 flood.
+        // See docs/features/athlete-cascade-scoping.md.
         bus.Verify(x => x.Publish(
-            It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.AthleteSeason),
+            It.Is<DocumentRequested>(d =>
+                d.DocumentType == DocumentType.AthleteSeason &&
+                d.IncludeLinkedDocumentTypes != null &&
+                d.IncludeLinkedDocumentTypes.Count == 0),
             It.IsAny<CancellationToken>()),
             Times.AtLeastOnce);
         bus.Verify(x => x.Publish(
-            It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.AthletePosition),
+            It.Is<DocumentRequested>(d =>
+                d.DocumentType == DocumentType.AthletePosition &&
+                d.IncludeLinkedDocumentTypes != null &&
+                d.IncludeLinkedDocumentTypes.Count == 0),
             It.IsAny<CancellationToken>()),
             Times.AtLeastOnce);
     }
@@ -713,7 +724,10 @@ public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBa
             .Should().BeFalse();
 
         bus.Verify(x => x.Publish(
-            It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.AthleteSeason),
+            It.Is<DocumentRequested>(d =>
+                d.DocumentType == DocumentType.AthleteSeason &&
+                d.IncludeLinkedDocumentTypes != null &&
+                d.IncludeLinkedDocumentTypes.Count == 0),
             It.IsAny<CancellationToken>()),
             Times.AtLeastOnce);
     }

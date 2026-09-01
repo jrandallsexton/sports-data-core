@@ -233,6 +233,11 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .With(x => x.DocumentType, DocumentType.EventCompetitionOdds)
                 .With(x => x.Document, json)
                 .With(x => x.UrlHash, "url-hash")
+                // Explicit, not fixture-supplied: this test asserts the completion
+                // event below, and the test base now pins the command's behavioural
+                // flags to false by default (they used to arrive by boolean-alternation
+                // accident — see ProducerTestBase).
+                .With(x => x.NotifyOnCompletion, true)
                 .OmitAutoProperties()
                 .Create();
 

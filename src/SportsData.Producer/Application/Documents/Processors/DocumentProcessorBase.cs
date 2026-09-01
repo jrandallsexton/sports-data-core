@@ -187,10 +187,26 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
     /// <returns>True if the document should be spawned; false otherwise</returns>
     protected bool ShouldSpawn(DocumentType documentType, ProcessDocumentCommand command)
     {
-        // If no inclusion filter is specified, spawn all documents (default behavior)
-        if (command.IncludeLinkedDocumentTypes == null || command.IncludeLinkedDocumentTypes.Count == 0)
+        // No filter at all: spawn everything (default behaviour, unchanged).
+        if (command.IncludeLinkedDocumentTypes == null)
         {
             return true;
+        }
+
+        // An EMPTY filter means "this document only, no children". It used to be
+        // collapsed into the null case above, which left no way to express a
+        // dependency request that exists purely to satisfy a foreign key (a play
+        // participant needing an AthleteSeason row has no use for that athlete's
+        // headshot, season statistics, or notes — the 4x-per-athlete multiplier
+        // behind the 2026-08-29 flood). One vocabulary, three meanings: null = all,
+        // empty = none, non-empty = only these.
+        // See docs/features/athlete-cascade-scoping.md.
+        if (command.IncludeLinkedDocumentTypes.Count == 0)
+        {
+            _logger.LogInformation(
+                "Skipping spawn of {DocumentType}: empty inclusion filter (document-only request).",
+                documentType);
+            return false;
         }
 
         // If inclusion filter is specified, only spawn if the type is in the list
@@ -278,7 +294,8 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         ProcessDocumentCommand command,
         IHasRef? hasRef,
         TParentId parentId,
-        DocumentType documentType)
+        DocumentType documentType,
+        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null)
     {
         using (_logger.BeginScope(new Dictionary<string, object?>
         {
@@ -319,7 +336,9 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
 
             // Publish dependency request - track only after successful publish to allow retries if publish fails
             // Pass precomputed identity to avoid redundant Generate call
-            var published = await PublishDocumentRequestInternal(command, hasRef, parentId, documentType, "DEPENDENCY", identity);
+            var published = await PublishDocumentRequestInternal(
+                command, hasRef, parentId, documentType, "DEPENDENCY", identity,
+                includeLinkedDocumentTypes: includeLinkedDocumentTypes);
 
             // Only track when the publish actually occurred — early returns (URI/identity failure) must not mark as done
             if (published)
@@ -351,6 +370,24 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             ["ParentId"] = parentId?.ToString()
         }))
         {
+            // The empty-filter case is enforced here as well as in ShouldSpawn,
+            // because not every call site is gated — several processors spawn
+            // children unconditionally when an entity is new (the `isNew ||`
+            // pattern). Refusing the publish at the choke point makes a
+            // document-only request hold regardless of call-site discipline.
+            // Dependency requests (FK resolution) are NOT blocked — only children.
+            // Deliberately ONLY the empty case: enforcing a NON-empty filter here
+            // would implicitly decide the isNew-bypass question (item 3 of the
+            // design doc), which is a separate behavioural change.
+            if (command.IncludeLinkedDocumentTypes is { Count: 0 })
+            {
+                _logger.LogInformation(
+                    "⏭️ SKIP_CHILD_DOCUMENT: empty inclusion filter (document-only request). ChildDocumentType={ChildDocumentType}, ParentId={ParentId}",
+                    documentType,
+                    parentId?.ToString());
+                return;
+            }
+
             if (hasRef is null)
             {
                 _logger.LogWarning(
@@ -385,7 +422,8 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
         DocumentType documentType,
         string requestType,
         ExternalRefIdentity? precomputedIdentity = null,
-        Dictionary<string, string>? propertyBag = null)
+        Dictionary<string, string>? propertyBag = null,
+        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null)
     {
         ExternalRefIdentity identity;
         Uri uri;
@@ -429,7 +467,15 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             CorrelationId: command.CorrelationId,
             CausationId: command.MessageId,
             PropertyBag: propertyBag,
-            IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes?.ToList()
+            // A NON-NULL per-call override is applied to THIS request only; a null
+            // override means "inherit the parent's filter" (the ?? below). There is
+            // deliberately no way to force null past a filtered parent: that would
+            // let one hop WIDEN a narrowing set at the seed (e.g. Refresh Contest),
+            // and the cascade's contract is that filters only narrow downhill. An
+            // empty filter is sticky the same way: a document-only command publishes
+            // its own empty filter onto every FK request it makes, so the chain
+            // beneath a lean request stays lean (play -> AthleteSeason -> Athlete).
+            IncludeLinkedDocumentTypes: (includeLinkedDocumentTypes ?? command.IncludeLinkedDocumentTypes)?.ToList()
         ));
 
         _logger.LogInformation(

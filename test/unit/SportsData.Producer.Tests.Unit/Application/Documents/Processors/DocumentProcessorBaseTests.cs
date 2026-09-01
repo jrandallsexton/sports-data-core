@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 
 using FluentAssertions;
 
@@ -304,6 +304,155 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    // ---- Empty-filter ("document only") semantics ----
+    // IncludeLinkedDocumentTypes has three meanings: null = spawn all (default,
+    // unchanged), EMPTY = spawn nothing, non-empty = only the listed types. The
+    // empty case exists because a dependency request that only satisfies a foreign
+    // key (a play participant needing an AthleteSeason row) has no use for the
+    // subtree beneath it (Defect B in docs/features/athlete-cascade-scoping.md).
+    // These tests pin the three behaviours that make it airtight: ShouldSpawn
+    // refuses, the child publish choke point refuses even for ungated call sites,
+    // and the empty filter propagates onto every request the command publishes.
+
+    [Fact]
+    public void ShouldSpawn_Should_Return_True_When_Filter_Is_Null()
+    {
+        // The default is unchanged: no filter means spawn everything.
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+        var command = CreateTestCommand();
+
+        processor.ShouldSpawnPublic(DocumentType.AthleteImage, command).Should().BeTrue();
+    }
+
+    [Fact]
+    public void ShouldSpawn_Should_Return_False_When_Filter_Is_Empty()
+    {
+        // An empty filter is no longer collapsed into the null case: it means
+        // "this document only, no children".
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+        var command = CreateTestCommand(includeLinkedDocumentTypes: new List<DocumentType>());
+
+        processor.ShouldSpawnPublic(DocumentType.AthleteImage, command).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task PublishChildDocumentRequest_Should_Not_Publish_When_Filter_Is_Empty()
+    {
+        // Several processors spawn children unconditionally when an entity is new
+        // (the isNew short-circuit bypasses ShouldSpawn). The choke point must hold
+        // regardless of call-site discipline.
+        var busMock = Mocker.GetMock<IEventBus>();
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var command = CreateTestCommand(includeLinkedDocumentTypes: new List<DocumentType>());
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/12345/statistics") };
+
+        await processor.PublishChildDocumentRequestPublic(command, hasRef, Guid.NewGuid(), DocumentType.AthleteSeasonStatistics);
+
+        busMock.Verify(x => x.Publish(
+            It.IsAny<DocumentRequested>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task PublishChildDocumentRequest_Should_Publish_When_Filter_Is_NonEmpty()
+    {
+        // Deliberately narrow: the choke point enforces ONLY the empty case.
+        // A non-empty filter must not be enforced there — that would implicitly
+        // decide the isNew-bypass question (item 3 of the design doc), which is a
+        // separate behavioural change. This test pins the boundary.
+        var busMock = Mocker.GetMock<IEventBus>();
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var command = CreateTestCommand(
+            includeLinkedDocumentTypes: new List<DocumentType> { DocumentType.EventCompetition });
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/12345/statistics") };
+
+        await processor.PublishChildDocumentRequestPublic(command, hasRef, Guid.NewGuid(), DocumentType.AthleteSeasonStatistics);
+
+        busMock.Verify(x => x.Publish(
+            It.IsAny<DocumentRequested>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishDependencyRequest_Should_Still_Publish_When_Filter_Is_Empty()
+    {
+        // An empty filter blocks children, never FK resolution — a document-only
+        // AthleteSeason command must still be able to request its missing Athlete
+        // parent, or the row could never persist. The published request carries the
+        // empty filter forward so the FK chain stays lean.
+        var busMock = Mocker.GetMock<IEventBus>();
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var command = CreateTestCommand(includeLinkedDocumentTypes: new List<DocumentType>());
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/athletes/12345") };
+
+        await processor.PublishDependencyRequestPublic(command, hasRef, Guid.NewGuid(), DocumentType.Athlete);
+
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e =>
+                e.IncludeLinkedDocumentTypes != null &&
+                e.IncludeLinkedDocumentTypes.Count == 0),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishDependencyRequest_Should_Apply_PerCall_Filter_Override()
+    {
+        // An unfiltered command (a play) can mark ONE dependency request (its
+        // participant's AthleteSeason) as document-only without affecting its own
+        // filter or its other requests.
+        var busMock = Mocker.GetMock<IEventBus>();
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var command = CreateTestCommand(documentType: DocumentType.EventCompetitionPlay);
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/12345") };
+
+        await processor.PublishDependencyRequestPublic(
+            command, hasRef, Guid.NewGuid(), DocumentType.AthleteSeason,
+            includeLinkedDocumentTypes: Array.Empty<DocumentType>());
+
+        command.IncludeLinkedDocumentTypes.Should().BeNull("the override must not mutate the command");
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e =>
+                e.IncludeLinkedDocumentTypes != null &&
+                e.IncludeLinkedDocumentTypes.Count == 0),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishDependencyRequest_Should_Inherit_Parent_Filter_When_Override_Is_Null()
+    {
+        // A null override means "inherit", NOT "force the default null filter".
+        // This is deliberate: if a caller could force null past a filtered parent,
+        // one hop could WIDEN a narrowing set at the seed (e.g. Refresh Contest's
+        // set), and the cascade's contract is that filters only narrow downhill.
+        var busMock = Mocker.GetMock<IEventBus>();
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var parentFilter = new List<DocumentType> { DocumentType.EventCompetitionStatus };
+        var command = CreateTestCommand(
+            documentType: DocumentType.Event,
+            includeLinkedDocumentTypes: parentFilter);
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401234567/competitions/401234567") };
+
+        await processor.PublishDependencyRequestPublic(
+            command, hasRef, Guid.NewGuid(), DocumentType.EventCompetition,
+            includeLinkedDocumentTypes: null);
+
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e =>
+                e.IncludeLinkedDocumentTypes != null &&
+                e.IncludeLinkedDocumentTypes.SequenceEqual(parentFilter)),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     [Fact]
     public async Task PublishDependencyRequest_Should_Not_Publish_When_Identity_Generation_Throws()
     {
@@ -363,9 +512,24 @@ public class TestDocumentProcessor<TDataContext> : DocumentProcessorBase<TDataCo
         ProcessDocumentCommand command,
         IHasRef? hasRef,
         TParentId parentId,
+        DocumentType documentType,
+        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null)
+    {
+        return PublishDependencyRequest(command, hasRef, parentId, documentType, includeLinkedDocumentTypes);
+    }
+
+    public bool ShouldSpawnPublic(DocumentType documentType, ProcessDocumentCommand command)
+    {
+        return ShouldSpawn(documentType, command);
+    }
+
+    public Task PublishChildDocumentRequestPublic<TParentId>(
+        ProcessDocumentCommand command,
+        IHasRef? hasRef,
+        TParentId parentId,
         DocumentType documentType)
     {
-        return PublishDependencyRequest(command, hasRef, parentId, documentType);
+        return PublishChildDocumentRequest(command, hasRef, parentId, documentType);
     }
 }
 

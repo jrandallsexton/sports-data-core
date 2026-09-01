@@ -467,9 +467,12 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             CorrelationId: command.CorrelationId,
             CausationId: command.MessageId,
             PropertyBag: propertyBag,
-            // The per-call override (when given) replaces the command's filter for
-            // THIS request only; otherwise the parent's filter propagates unchanged.
-            // An empty filter is sticky downhill: a document-only command publishes
+            // A NON-NULL per-call override is applied to THIS request only; a null
+            // override means "inherit the parent's filter" (the ?? below). There is
+            // deliberately no way to force null past a filtered parent: that would
+            // let one hop WIDEN a narrowing set at the seed (e.g. Refresh Contest),
+            // and the cascade's contract is that filters only narrow downhill. An
+            // empty filter is sticky the same way: a document-only command publishes
             // its own empty filter onto every FK request it makes, so the chain
             // beneath a lean request stays lean (play -> AthleteSeason -> Athlete).
             IncludeLinkedDocumentTypes: (includeLinkedDocumentTypes ?? command.IncludeLinkedDocumentTypes)?.ToList()

@@ -41,7 +41,7 @@ up.
 
 ## The chain
 
-```
+```text
 Event sourced (all divisions, national slate)
   └─> Competition is new  ──> spawns EventCompetitionPlay + EventCompetitionDrive
         └─> Play processor resolves participants
@@ -108,7 +108,7 @@ probabilities and their athlete subtrees for every game in every division.
 before the 2026-08-29 flood and the flood happened anyway. Sampling the backlog that same
 night, with league-scoped streaming live, gave:
 
-```
+```text
  20  EventCompetitionPlay
  15  AthleteSeason
   3  Athlete

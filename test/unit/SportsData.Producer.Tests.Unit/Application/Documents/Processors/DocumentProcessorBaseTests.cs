@@ -426,6 +426,34 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
     }
 
     [Fact]
+    public async Task PublishDependencyRequest_Should_Inherit_Parent_Filter_When_Override_Is_Null()
+    {
+        // A null override means "inherit", NOT "force the default null filter".
+        // This is deliberate: if a caller could force null past a filtered parent,
+        // one hop could WIDEN a narrowing set at the seed (e.g. Refresh Contest's
+        // set), and the cascade's contract is that filters only narrow downhill.
+        var busMock = Mocker.GetMock<IEventBus>();
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var parentFilter = new List<DocumentType> { DocumentType.EventCompetitionStatus };
+        var command = CreateTestCommand(
+            documentType: DocumentType.Event,
+            includeLinkedDocumentTypes: parentFilter);
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401234567/competitions/401234567") };
+
+        await processor.PublishDependencyRequestPublic(
+            command, hasRef, Guid.NewGuid(), DocumentType.EventCompetition,
+            includeLinkedDocumentTypes: null);
+
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e =>
+                e.IncludeLinkedDocumentTypes != null &&
+                e.IncludeLinkedDocumentTypes.SequenceEqual(parentFilter)),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task PublishDependencyRequest_Should_Not_Publish_When_Identity_Generation_Throws()
     {
         // Arrange

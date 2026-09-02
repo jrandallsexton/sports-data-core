@@ -8,7 +8,6 @@ import {
   ScrollView,
   Switch,
   TouchableOpacity,
-  Alert,
   Modal,
 } from 'react-native';
 import DateTimePicker, {
@@ -1025,13 +1024,16 @@ export default function CreateLeagueScreen() {
       } as never);
     },
     onError: (err: unknown) => {
+      // Rendered INSIDE the confirm modal, not Alert.alert: on iOS an alert
+      // presented while a RN Modal is visible (and this screen is itself
+      // presentation:'modal') is silently dropped — the server's rejection,
+      // e.g. the profanity filter's "That league name isn't allowed.",
+      // produced no visible feedback at all. Inline text in the modal is
+      // where the user is already looking and has no platform quirks.
       const serverMessage =
         (err as { response?: { data?: { errors?: { errorMessage?: string }[] } } })
           ?.response?.data?.errors?.[0]?.errorMessage;
-      Alert.alert(
-        'Could not create league',
-        serverMessage || 'Something went wrong. Please try again.',
-      );
+      setCreateError(serverMessage ?? 'Something went wrong. Please try again.');
     },
   });
 
@@ -1040,17 +1042,21 @@ export default function CreateLeagueScreen() {
   // The validated snapshot is held in state so the modal renders from what
   // will actually be sent, not live form values.
   const [pendingData, setPendingData] = useState<FormData | null>(null);
+  // Server rejection shown inline in the confirm modal (see onError).
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const onSubmit = (data: FormData) => {
     if (allSportsLocked) return; // nothing creatable; the button is also disabled
+    setCreateError(null);
     setPendingData(data);
   };
 
   const confirmCreate = () => {
     if (!pendingData || createMutation.isPending) return;
+    setCreateError(null);
     createMutation.mutate(pendingData, {
-      // Close the modal on success only — on error it stays up behind the
-      // Alert so the user can retry without re-validating the form.
+      // Close the modal on success only — on error it stays up with the
+      // inline rejection message so the user can retry without re-validating.
       onSuccess: () => setPendingData(null),
     });
   };
@@ -1593,6 +1599,11 @@ export default function CreateLeagueScreen() {
                 </View>
               ))}
             </ScrollView>
+            {createError && (
+              <Text style={[styles.confirmError, { color: theme.pickIncorrect }]}>
+                {createError}
+              </Text>
+            )}
             <View style={[styles.confirmFooter, { borderTopColor: theme.border }]}>
               <Button
                 title="Back"
@@ -1833,6 +1844,15 @@ const styles = StyleSheet.create({
   },
   confirmLabel: { fontSize: 13, fontWeight: '600', flexShrink: 0 },
   confirmValue: { fontSize: 13, textAlign: 'right', flex: 1 },
+  // Server rejection inside the confirm modal — centered above the footer
+  // so it can't be missed next to the button that triggered it.
+  confirmError: {
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
   confirmFooter: {
     flexDirection: 'row',
     gap: 12,

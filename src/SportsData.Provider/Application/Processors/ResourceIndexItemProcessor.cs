@@ -415,7 +415,8 @@ namespace SportsData.Provider.Application.Processors
                 0,
                 command.IncludeLinkedDocumentTypes,
                 null,  // RequestedDependencies
-                command.NotifyOnCompletion);
+                command.NotifyOnCompletion,
+                command.Priority);
 
             await _publisher.Publish(evt);
             await UpdateLastPublishedStateAsync(collectionName, urlHash, json);
@@ -469,7 +470,8 @@ namespace SportsData.Provider.Application.Processors
                 0,
                 command.IncludeLinkedDocumentTypes,
                 null,  // RequestedDependencies
-                command.NotifyOnCompletion);
+                command.NotifyOnCompletion,
+                command.Priority);
 
             await _publisher.Publish(evt);
             await UpdateLastPublishedStateAsync(collectionName, urlHash, json);
@@ -509,7 +511,8 @@ namespace SportsData.Provider.Application.Processors
                 0,
                 command.IncludeLinkedDocumentTypes,
                 null,  // RequestedDependencies
-                notifyOnCompletion);
+                notifyOnCompletion,
+                command.Priority);
 
             await _publisher.Publish(evt);
 
@@ -635,5 +638,6 @@ namespace SportsData.Provider.Application.Processors
         bool BypassCache = false,
         IReadOnlyCollection<DocumentType>? IncludeLinkedDocumentTypes = null,
         bool NotifyOnCompletion = false,
-        string? InlineJson = null);
+        string? InlineJson = null,
+        bool Priority = false);
 }

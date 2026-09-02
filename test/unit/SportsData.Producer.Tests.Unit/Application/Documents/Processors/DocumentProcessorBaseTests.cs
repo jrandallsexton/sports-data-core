@@ -37,7 +37,8 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
     private static ProcessDocumentCommand CreateTestCommand(
         int attemptCount = 0,
         DocumentType documentType = DocumentType.TeamSeason,
-        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null)
+        IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null,
+        bool priority = false)
     {
         return new ProcessDocumentCommand(
             sourceDataProvider: SourceDataProvider.Espn,
@@ -51,7 +52,8 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             sourceUri: new Uri("http://test.com"),
             urlHash: "test123",
             attemptCount: attemptCount,
-            includeLinkedDocumentTypes: includeLinkedDocumentTypes);
+            includeLinkedDocumentTypes: includeLinkedDocumentTypes,
+            priority: priority);
     }
 
     [Fact]
@@ -450,6 +452,48 @@ public class DocumentProcessorBaseTests : ProducerTestBase<FootballDataContext>
             It.Is<DocumentRequested>(e =>
                 e.IncludeLinkedDocumentTypes != null &&
                 e.IncludeLinkedDocumentTypes.SequenceEqual(parentFilter)),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // ---- Priority ("live" queue) propagation ----
+    // A live document's dependencies and children must ride the live queue
+    // with it — a streamer-originated play blocking on an AthleteSeason
+    // sitting behind 700k bulk jobs is the exact starvation the queue kills
+    // (athlete-cascade-scoping.md item 5).
+
+    [Fact]
+    public async Task PublishDependencyRequest_Should_Propagate_Priority()
+    {
+        var busMock = Mocker.GetMock<IEventBus>();
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var command = CreateTestCommand(documentType: DocumentType.EventCompetitionPlay, priority: true);
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2024/athletes/12345") };
+
+        await processor.PublishDependencyRequestPublic(command, hasRef, Guid.NewGuid(), DocumentType.AthleteSeason);
+
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e => e.Priority),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PublishDependencyRequest_Should_Default_To_NonPriority()
+    {
+        // Guard the default: bulk work must never accidentally ride the live
+        // queue, or priority stops meaning anything.
+        var busMock = Mocker.GetMock<IEventBus>();
+        Mocker.Use<IGenerateExternalRefIdentities>(new ExternalRefIdentityGenerator());
+        var processor = Mocker.CreateInstance<TestDocumentProcessor<FootballDataContext>>();
+
+        var command = CreateTestCommand(documentType: DocumentType.Event);
+        var hasRef = new EspnLinkDto { Ref = new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401234567/competitions/401234567") };
+
+        await processor.PublishDependencyRequestPublic(command, hasRef, Guid.NewGuid(), DocumentType.EventCompetition);
+
+        busMock.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(e => !e.Priority),
             It.IsAny<CancellationToken>()), Times.Once);
     }
 

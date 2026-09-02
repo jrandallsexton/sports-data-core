@@ -18,7 +18,8 @@ public class ProcessDocumentCommand(
     Uri? originalUri = null,
     int attemptCount = 0,
     IReadOnlyCollection<DocumentType>? includeLinkedDocumentTypes = null,
-    bool notifyOnCompletion = false)
+    bool notifyOnCompletion = false,
+    bool priority = false)
 {
     public SourceDataProvider SourceDataProvider { get; init; } = sourceDataProvider;
 
@@ -59,6 +60,15 @@ public class ProcessDocumentCommand(
     /// Used by Provider saga to orchestrate tier progression in historical sourcing.
     /// </summary>
     public bool NotifyOnCompletion { get; init; } = notifyOnCompletion;
+
+    /// <summary>
+    /// True when this document rides the "live" Hangfire queue — streamer-
+    /// originated work for a contest backing a pick'em league (#688 scoping
+    /// makes streamer-originated == league-live). Propagates onto every
+    /// request this command publishes so a live play's FK dependencies do
+    /// not stall behind bulk backfill. See athlete-cascade-scoping.md item 5.
+    /// </summary>
+    public bool Priority { get; init; } = priority;
 
     public Dictionary<string, string> PropertyBag = new Dictionary<string, string>();
 
@@ -110,6 +120,7 @@ public class ProcessDocumentCommand(
             ["DocumentType"] = DocumentType,
             ["MessageId"] = MessageId,
             ["NotifyOnCompletion"] = NotifyOnCompletion,
+            ["Priority"] = Priority,
             ["ParentId"] = ParentId ?? string.Empty,
             ["Ref"] = GetDocumentRef() ?? string.Empty,
             ["SeasonYear"] = SeasonYear ?? -1,

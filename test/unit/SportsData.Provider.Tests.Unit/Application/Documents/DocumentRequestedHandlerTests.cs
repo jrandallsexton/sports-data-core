@@ -70,6 +70,60 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
             It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.AtLeastOnce);
     }
 
+    // ── Priority ("live" queue) routing ─────────────────────────────────────
+    // Streamer-originated (league-live) requests must ride the "live" Hangfire
+    // queue through THIS fetch hop too — the 2026-08-29 flood had ~222K jobs
+    // in Provider's Hangfire while a league game's documents waited.
+    // See docs/features/athlete-cascade-scoping.md item 5.
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ResourceIndexItems_RouteByPriority(bool priority)
+    {
+        // arrange
+        var json = await LoadJsonTestData("EspnAwardsIndex.json");
+
+        var espnApi = Mocker.GetMock<IProvideEspnApiData>();
+        espnApi.Setup(x => x.GetResource(It.IsAny<Uri>(), true, false)).ReturnsAsync(new Success<string>(json));
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = Fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, new Uri("https://sports.core.api.espn.com/v2/awards/index"))
+            .With(x => x.DocumentType, DocumentType.Award)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Priority, priority)
+            .OmitAutoProperties()
+            .Create();
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert — priority work targets the live queue; bulk work must NOT
+        // (a leak would quietly make priority meaningless).
+        if (priority)
+        {
+            background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
+                HangfireQueues.Live,
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.AtLeastOnce);
+            background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.Never);
+        }
+        else
+        {
+            background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.AtLeastOnce);
+            background.Verify(x => x.Enqueue<IProcessResourceIndexItems>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.Never);
+        }
+    }
+
     [Theory]
     // Immutable type in-season: non-edge items served from Mongo (BypassCache=false);
     // the live edge (last item) still bypasses. Mutable type: every item bypasses.

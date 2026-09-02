@@ -115,7 +115,8 @@ namespace SportsData.Producer.Application.Documents.Processors
                     evt.Ref,
                     evt.AttemptCount,
                     evt.IncludeLinkedDocumentTypes,
-                    evt.NotifyOnCompletion)
+                    evt.NotifyOnCompletion,
+                    evt.Priority)
                 {
                     // Propagate RequestedDependencies from previous attempt to preserve dependency tracking across retries
                     RequestedDependencies = evt.RequestedDependencies != null 

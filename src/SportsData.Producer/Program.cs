@@ -1,4 +1,4 @@
-using Hangfire;
+﻿using Hangfire;
 using Hangfire.Dashboard;
 
 using Microsoft.EntityFrameworkCore;
@@ -154,12 +154,19 @@ public class Program
         // An explicit `Worker|Daemon` combo is matched before either flag alone so it
         // still listens on both queues - a single pod wearing both hats has no separate
         // daemon pod to defer to. Deployed roles are always one or the other.
+        // Priority is ALPHABETICAL in Hangfire.PostgreSql (the array only
+        // filters — see HangfireQueues doc): "00-live" sorts before
+        // "daemon"/"default", so live (streamer-originated, league-backing
+        // contests) is strict priority over bulk work. Listed first here for
+        // readability only. KEDA's scaler counts "default" only —
+        // deliberately: bulk depth drives replicas, and every worker drains
+        // live first regardless. See docs/features/athlete-cascade-scoping.md.
         string[]? hangfireQueues = role switch
         {
-            _ when role == ProducerRole.All => new[] { "default", "daemon" },
-            _ when role.HasFlag(ProducerRole.Worker) && role.HasFlag(ProducerRole.Daemon) => new[] { "default", "daemon" },
-            _ when role.HasFlag(ProducerRole.Worker) => new[] { "default" },
-            _ when role.HasFlag(ProducerRole.Daemon) => new[] { "daemon" },
+            _ when role == ProducerRole.All => new[] { HangfireQueues.Live, HangfireQueues.Default, HangfireQueues.Daemon },
+            _ when role.HasFlag(ProducerRole.Worker) && role.HasFlag(ProducerRole.Daemon) => new[] { HangfireQueues.Live, HangfireQueues.Default, HangfireQueues.Daemon },
+            _ when role.HasFlag(ProducerRole.Worker) => new[] { HangfireQueues.Live, HangfireQueues.Default },
+            _ when role.HasFlag(ProducerRole.Daemon) => new[] { HangfireQueues.Daemon },
             _ => null
         };
         services.AddHangfire(config, builder.Environment.ApplicationName, mode,

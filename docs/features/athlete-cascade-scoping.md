@@ -300,6 +300,54 @@ filters through untouched; none of them construct an empty list today, so their
 behaviour is unchanged. `DocumentJobDefinition`'s doc comment was corrected — it
 claimed "null or empty" both meant spawn-all.
 
+## Item 5 as built (2026-09-02): the "live" Hangfire queue
+
+Starvation is now structurally impossible rather than merely unlikely.
+
+**The insight that made it cheap:** post-#688 the competition streamer polls
+ONLY contests backing a pick'em league — so "streamer-originated" equals
+"league-live" by construction, and priority is a tag riding the existing
+pipeline instead of a per-document league lookup.
+
+- `DocumentRequested`/`DocumentCreated` carry an appended optional
+  `Priority` flag (wire-safe both directions: mixed versions degrade to
+  single-queue behaviour, never misroute).
+- `CompetitionStreamerBase` publishes with `Priority: true`; the Provider
+  relay carries it; and BOTH Hangfire hops route on it — Provider's
+  `DocumentRequestedHandler` (the fetch hop: ~222K jobs deep on
+  2026-08-29) and Producer's `DocumentCreatedHandler` (the processing
+  hop), each on both the immediate and retry/backoff paths. Provider
+  Workers listen `["00-live", "default"]` too. (The Provider hop was an
+  operator catch in review — the first cut only prioritized Producer.)
+- The queue is named **`00-live`** because priority in Hangfire.PostgreSql
+  is ALPHABETICAL — its dequeue orders by `"fetchedat" NULLS FIRST,
+  "queue", "jobid"`; the configured array only filters. (Array-order
+  priority is Hangfire.SqlServer semantics and does not apply. Caught by
+  CodeRabbit on PR #709: the first cut's `"live"` sorts after `"default"`
+  and would have INVERTED the priority.) Workers listen
+  `["00-live", "default"]`; every worker empties live before touching
+  bulk. Daemons unchanged.
+- Priority is sticky downhill exactly like the inclusion filter: a live
+  play's FK dependencies (AthleteSeason -> Athlete -> AthletePosition) ride
+  the live queue too, and `ToDocumentCreated` keeps retries prioritized.
+  Hangfire 1.8 sticky queues keep even exception retries and scheduled
+  backoffs on the queue they were born on.
+- KEDA deliberately untouched: its scaler counts `default` only — bulk
+  depth is what should drive replicas; the live queue is small (~3-6
+  publishes/min per active streamer) and drains first regardless.
+
+**Admission rule (owner, 2026-09-02): if everything is a priority, nothing
+is.** Exactly one code path sets `Priority: true` — the competition
+streamer, whose scope is already narrowed to league-backing contests by
+PR #688. Propagation may only INHERIT priority from a live parent, never
+originate it. Expanding admission (Refresh Contest, operator replays,
+anything) requires the same scrutiny this design got, and the burden of
+proof is on the new admission: the live queue's value is precisely its
+emptiness. Default-false is pinned by never-style tests in both services.
+
+Net effect on a 2026-08-29-shaped day: the backlog can be a million deep
+and the play a user is watching still processes within seconds of arrival.
+
 ## What this does not fix
 
 Independent of scoping, the dependency retry has no attempt cap (logs "attempt 1" forever).

@@ -16,5 +16,6 @@ public record DocumentRequested(
     Guid CorrelationId,
     Guid CausationId,
     Dictionary<string, string>? PropertyBag = null,
-    List<DocumentType>? IncludeLinkedDocumentTypes = null
+    List<DocumentType>? IncludeLinkedDocumentTypes = null,
+    bool Priority = false
 ) : EventBase(Ref, Sport, SeasonYear, CorrelationId, CausationId);

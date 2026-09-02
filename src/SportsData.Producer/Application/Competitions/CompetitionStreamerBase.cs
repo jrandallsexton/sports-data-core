@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
@@ -738,7 +738,11 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             DocumentType: DocumentType.Event,
             SourceDataProvider: command.DataProvider,
             CorrelationId: correlationId,
-            CausationId: correlationId
+            CausationId: correlationId,
+            // The streamer only polls contests backing a pick'em league
+            // (#688), so everything it requests is league-live by
+            // construction — ride the priority queue end to end.
+            Priority: true
         ), cancellationToken);
     }
 
@@ -784,7 +788,11 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             DocumentType: type,
             SourceDataProvider: command.DataProvider,
             CorrelationId: correlationId,
-            CausationId: correlationId
+            CausationId: correlationId,
+            // The streamer only polls contests backing a pick'em league
+            // (#688), so everything it requests is league-live by
+            // construction — ride the priority queue end to end.
+            Priority: true
         ), cancellationToken);
     }
 

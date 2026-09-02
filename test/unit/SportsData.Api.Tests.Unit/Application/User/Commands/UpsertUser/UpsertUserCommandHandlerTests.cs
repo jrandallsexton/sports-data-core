@@ -669,7 +669,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
             "password");
 
         result.IsSuccess.Should().BeTrue("provisioning must never fail over a name");
-        var user = await DataContext.Users.FirstAsync(u => u.FirebaseUid == "firebase-profane-create");
+        var user = await DataContext.Users.AsNoTracking().FirstAsync(u => u.FirebaseUid == "firebase-profane-create");
         user.DisplayName.Should().NotBeNullOrWhiteSpace();
         user.DisplayName.Should().NotContain("fuck");
         user.Username.Should().NotContain("fuck", "the username seed must see the sanitized value too");
@@ -691,7 +691,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
             "password");
 
         result.IsSuccess.Should().BeTrue();
-        var user = await DataContext.Users.FirstAsync(u => u.FirebaseUid == "firebase-profane-update");
+        var user = await DataContext.Users.AsNoTracking().FirstAsync(u => u.FirebaseUid == "firebase-profane-update");
         user.DisplayName.Should().Be("Clean Name");
     }
 
@@ -708,7 +708,7 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
             "google.com");
 
         result.IsSuccess.Should().BeTrue();
-        var user = await DataContext.Users.FirstAsync(u => u.FirebaseUid == "firebase-sexton");
+        var user = await DataContext.Users.AsNoTracking().FirstAsync(u => u.FirebaseUid == "firebase-sexton");
         user.DisplayName.Should().Be("Randall Sexton");
     }
 }

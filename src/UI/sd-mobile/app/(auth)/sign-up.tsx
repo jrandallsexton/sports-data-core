@@ -80,20 +80,33 @@ export default function SignUpScreen() {
     try {
       // Retry path: if the first attempt's PATCH was rejected, the Firebase
       // account already exists and we are signed in — creating again would
-      // fail with email-already-in-use. Reuse the session; only the name run
-      // below is being retried.
+      // fail with email-already-in-use. Reuse the session, but ONLY for the
+      // same email: an edited email on retry must not silently save the name
+      // to the first account while the form shows a different address.
+      const existingUser = auth.currentUser;
+      if (
+        existingUser?.email &&
+        existingUser.email.toLowerCase() !== email.trim().toLowerCase()
+      ) {
+        // Keep the hold — releasing it here would let AuthGuard redirect the
+        // signed-in user into the app mid-error.
+        setError('email', {
+          message: `This signup already created an account for ${existingUser.email}. Keep that email here; you can change it later in Profile.`,
+        });
+        return;
+      }
       const firebaseUser =
-        auth.currentUser ??
+        existingUser ??
         (await createUserWithEmailAndPassword(auth, email.trim(), password)).user;
-      // Set the display name before downstream consumers read the profile;
-      // reload so the local user object reflects it immediately.
-      await updateProfile(firebaseUser, { displayName: displayName.trim() });
-      await firebaseUser.reload();
 
-      // Persist the typed name through the VALIDATED path. The first
-      // authenticated call also auto-provisions the backend account (the
-      // middleware creates it with a generated name because this token
-      // predates the profile update); this PATCH then applies the real one.
+      // Persist the typed name through the VALIDATED path FIRST — the
+      // Firebase profile is only written after the backend accepts, so a
+      // rejected name (profanity filter) never lands anywhere, not even at
+      // the identity provider. The first authenticated call here also
+      // auto-provisions the backend account (with a generated name, since
+      // this token predates any profile update); the PATCH applies the real
+      // one.
+      let nameAccepted = true;
       try {
         await usersApi.updateDisplayName(displayName.trim());
       } catch (patchErr: unknown) {
@@ -108,7 +121,15 @@ export default function SignUpScreen() {
         }
         // Transport failure: don't strand a created account on the sign-up
         // screen — proceed with the generated name; Profile can fix it later.
+        nameAccepted = false;
         console.warn('[SignUp] display name PATCH failed (non-validation)', patchErr);
+      }
+
+      if (nameAccepted) {
+        // Mirror the accepted name onto the Firebase profile; reload so the
+        // local user object reflects it immediately.
+        await updateProfile(firebaseUser, { displayName: displayName.trim() });
+        await firebaseUser.reload();
       }
       // Release the hold — AuthGuard in root _layout.tsx now redirects.
       useAuthStore.getState().setSignupHold(false);

@@ -662,6 +662,21 @@
   color: var(--text-primary);
 }
 
+/* The games behind a margin fact's count — compact evidence list. Muted and
+   smaller than the sentence it supports; two columns when space allows so
+   eight entries don't dominate the dialog. */
+.line-fact-games {
+  list-style: none;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.1rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
 .line-fact-detail {
   color: var(--text-primary);
 }

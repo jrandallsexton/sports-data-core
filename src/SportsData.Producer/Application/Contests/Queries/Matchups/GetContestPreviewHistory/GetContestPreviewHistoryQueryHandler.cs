@@ -1,4 +1,4 @@
-using Dapper;
+﻿using Dapper;
 
 using FluentValidation;
 
@@ -154,9 +154,25 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
     /// <summary>
     /// ATS facts bucket on football key numbers rather than the exact line:
     /// "as a 35+ favorite" reads naturally and accrues a meaningful sample,
-    /// where "as a 38.5-point favorite" would almost always be n=0.
+    /// where "as a 38.5-point favorite" would almost always be n=0. The ladder
+    /// extends through 42/49 (touchdown multiples) so monster lines land near
+    /// a rung — a 46.5 spread renders as "42+", not a stretched "35+" (owner
+    /// call, 2026-09-02: closeness beats cohort mass; a thin cohort
+    /// self-discloses because the count is in the sentence, and n=0 renders
+    /// the informative "no games with a line that large" instead).
     /// </summary>
-    private static readonly double[] AtsKeyNumbers = [3, 7, 10, 14, 21, 28, 35];
+    private static readonly double[] AtsKeyNumbers = [3, 7, 10, 14, 21, 28, 35, 42, 49];
+
+    /// <summary>
+    /// Safety net, rarely reached now that the ladder tops out at 49: the ATS
+    /// pair renders only when the chosen bucket sits within one touchdown of
+    /// the line, so a stretched cohort can never masquerade as line-specific
+    /// evidence (the original Furman/Tennessee complaint: a 46.5 spread
+    /// rendering "as a 35+ favorite" — "zero bearing on a 46.5-point spread").
+    /// With rungs every 7 points from 35 up, every realistic football spread
+    /// lands within the guard; this fires only for absurd (56+) lines.
+    /// </summary>
+    private const double AtsBucketMaxDistancePoints = 7;
 
     private class SpreadTargetRow
     {
@@ -233,7 +249,7 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         };
 
         var threshold = AtsKeyNumbers.Where(k => k <= magnitude).DefaultIfEmpty(0).Max();
-        if (threshold > 0)
+        if (threshold > 0 && magnitude - threshold <= AtsBucketMaxDistancePoints)
         {
             context.FavoriteAtsAsBigFavorite = await BuildAtsBucketFactAsync(
                 connection, favoriteFranchiseId, threshold, target.StartDateUtc, asFavorite: true, cancellationToken);
@@ -242,6 +258,16 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         }
 
         return context;
+    }
+
+    private class MarginInstanceRow
+    {
+        public DateTime GameDate { get; set; }
+        public int SeasonYear { get; set; }
+        public string Opponent { get; set; } = default!;
+        public int TeamScore { get; set; }
+        public int OpponentScore { get; set; }
+        public string? OpponentSeasonRecord { get; set; }
     }
 
     private async Task<PreviewMarginFactDto> BuildMarginFactAsync(
@@ -302,6 +328,37 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 row.OpponentFranchiseSeasonId.Value, cancellationToken);
             fact.OpponentPriorSeasonRecord = await GetPriorSeasonOverallRecordAsync(
                 row.OpponentFranchiseSeasonId.Value, cancellationToken);
+        }
+
+        // The games BEHIND the count — "8 such wins" invites exactly one
+        // question ("against whom?") and this list answers it (owner ask,
+        // 2026-09-01). Fetched only when the count is non-zero; opponent
+        // records ride the same query (SQL lateral), so this is one round
+        // trip on an already off-request-path generation.
+        if (fact.CountLastFiveSeasons > 0)
+        {
+            var instances = await connection.QueryAsync<MarginInstanceRow>(
+                new CommandDefinition(
+                    _sqlProvider.GetFranchiseMarginInstances(),
+                    new
+                    {
+                        FranchiseId = franchiseId,
+                        Margin = margin,
+                        AsOf = asOf,
+                        WindowStartSeason = targetSeasonYear - 4,
+                        Won = won
+                    },
+                    cancellationToken: cancellationToken));
+
+            fact.WindowGames = instances.Select(x => new PreviewMarginInstanceDto
+            {
+                GameDate = x.GameDate,
+                SeasonYear = x.SeasonYear,
+                Opponent = x.Opponent,
+                TeamScore = x.TeamScore,
+                OpponentScore = x.OpponentScore,
+                OpponentSeasonRecord = x.OpponentSeasonRecord
+            }).ToList();
         }
 
         return fact;

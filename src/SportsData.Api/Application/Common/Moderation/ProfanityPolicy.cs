@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 
 namespace SportsData.Api.Application.Common.Moderation;
@@ -68,13 +67,17 @@ public static class ProfanityPolicy
     /// </summary>
     private static string Normalize(string value)
     {
-        var lowered = value.ToLowerInvariant().Normalize(NormalizationForm.FormD);
+        // FormKD, not FormD: canonical decomposition alone handles diacritics
+        // but leaves COMPATIBILITY characters intact, so full-width letters
+        // (e.g. “ｆｕｃｋ”) sailed through as non-a-z and matched nothing.
+        // Compatibility decomposition folds them to ASCII before matching.
+        var lowered = value.ToLowerInvariant().Normalize(NormalizationForm.FormKD);
         var sb = new StringBuilder(lowered.Length);
 
         foreach (var ch in lowered)
         {
             if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark)
-                continue; // diacritic — drop it (é→e came from FormD)
+                continue; // diacritic — drop it (é→e came from the FormKD decomposition)
 
             var folded = ch switch
             {

@@ -24,6 +24,7 @@ public class ProfanityPolicyTests
     [InlineData("Cummings")]
     [InlineData("Hancock")]
     [InlineData("Scunthorpe United")]   // the namesake
+    [InlineData("Ｓｅｘｔｏｎ")]         // full-width Sexton - FormKD folding must not create a false positive
     [InlineData("Cassandra")]           // contains "ass"
     [InlineData("Matt Titsworth")]      // contains "tits"
     public void RealNames_AreNotProfane(string candidate)
@@ -56,6 +57,8 @@ public class ProfanityPolicyTests
     [InlineData("b!tch")]               // !→i
     [InlineData("N1gger")]              // leet slur
     [InlineData("c.u.n.t")]
+    [InlineData("ｆｕｃｋ")]             // full-width Latin - FormKD folds to ascii
+    [InlineData("ＦＵＣＫ")]             // full-width uppercase
     public void LeetAndSeparatorEvasion_IsBlocked(string candidate)
     {
         ProfanityPolicy.ContainsProfanity(candidate).Should().BeTrue(

@@ -28,6 +28,7 @@ import 'react-native-reanimated';
 
 import { queryClient } from '@/src/lib/queryClient';
 import { useAuthInit, useAuth } from '@/src/hooks/useAuth';
+import { useAuthStore } from '@/src/stores/authStore';
 import { useOtaUpdates } from '@/src/hooks/useOtaUpdates';
 import { useRegisterPushDevice } from '@/src/hooks/useRegisterPushDevice';
 import { ThemeProvider, useThemeMode } from '@/src/lib/theme/ThemeContext';
@@ -94,6 +95,7 @@ if (Platform.OS !== 'web') {
  */
 function AuthGuard() {
   const { user, isInitialized } = useAuth();
+  const signupHold = useAuthStore((s) => s.signupHold);
   const segments = useSegments();
   const router = useRouter();
 
@@ -106,10 +108,13 @@ function AuthGuard() {
       // new welcome.tsx file yet at typecheck time; regenerates on next
       // expo start / build.
       router.replace('/(auth)/welcome' as never);
-    } else if (user && inAuthGroup) {
+    } else if (user && inAuthGroup && !signupHold) {
+      // signupHold: sign-up is still persisting the typed display name
+      // through the validated PATCH and may need to show a rejection
+      // inline — it releases the hold when done (see sign-up.tsx).
       router.replace('/(tabs)');
     }
-  }, [user, isInitialized, segments]);
+  }, [user, isInitialized, segments, signupHold]);
 
   return null;
 }

@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -649,7 +649,66 @@ public class UpsertUserCommandHandlerTests : ApiTestBase<UpsertUserCommandHandle
         user!.CreatedUtc.Should().BeCloseTo(originalCreatedUtc, TimeSpan.FromSeconds(1)); // Should preserve original
         user.LastLoginUtc.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5)); // Should be updated
     }
+
+    // ── Provisioning-path profanity substitution ────────────────────────────
+    // Both provisioning doors (auth-middleware auto-provision and web's
+    // POST /user) funnel through this handler, and DisplayName can arrive
+    // from an external source (a Firebase token's "name" claim). Profane
+    // names are SUBSTITUTED — never rejected: account creation must not fail
+    // over a Google profile name. Deliberate renames go through
+    // UpdateDisplayName, which rejects with a message instead.
+
+    [Fact]
+    public async Task ExecuteAsync_ProfaneDisplayNameAtCreate_GetsGeneratedNameInsteadOfFailing()
+    {
+        var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
+
+        var result = await handler.ExecuteAsync(
+            new UpsertUserCommand { Email = "new@example.com", DisplayName = "fuck face" },
+            "firebase-profane-create",
+            "password");
+
+        result.IsSuccess.Should().BeTrue("provisioning must never fail over a name");
+        var user = await DataContext.Users.AsNoTracking().FirstAsync(u => u.FirebaseUid == "firebase-profane-create");
+        user.DisplayName.Should().NotBeNullOrWhiteSpace();
+        user.DisplayName.Should().NotContain("fuck");
+        user.Username.Should().NotContain("fuck", "the username seed must see the sanitized value too");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ProfaneDisplayNameOnUpdate_KeepsExistingName()
+    {
+        var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
+
+        await handler.ExecuteAsync(
+            new UpsertUserCommand { Email = "keep@example.com", DisplayName = "Clean Name" },
+            "firebase-profane-update",
+            "password");
+
+        var result = await handler.ExecuteAsync(
+            new UpsertUserCommand { Email = "keep@example.com", DisplayName = "sh1thead" },
+            "firebase-profane-update",
+            "password");
+
+        result.IsSuccess.Should().BeTrue();
+        var user = await DataContext.Users.AsNoTracking().FirstAsync(u => u.FirebaseUid == "firebase-profane-update");
+        user.DisplayName.Should().Be("Clean Name");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ScunthorpeNameAtCreate_IsPersistedVerbatim()
+    {
+        // The whole-word guarantee must hold on this path too: a federated
+        // login named Sexton (the operator's surname) keeps their name.
+        var handler = Mocker.CreateInstance<UpsertUserCommandHandler>();
+
+        var result = await handler.ExecuteAsync(
+            new UpsertUserCommand { Email = "sexton@example.com", DisplayName = "Randall Sexton" },
+            "firebase-sexton",
+            "google.com");
+
+        result.IsSuccess.Should().BeTrue();
+        var user = await DataContext.Users.AsNoTracking().FirstAsync(u => u.FirebaseUid == "firebase-sexton");
+        user.DisplayName.Should().Be("Randall Sexton");
+    }
 }
-
-
-

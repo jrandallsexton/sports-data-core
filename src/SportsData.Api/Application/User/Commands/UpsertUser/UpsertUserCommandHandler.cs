@@ -1,4 +1,6 @@
-using FluentValidation;
+﻿using FluentValidation;
+
+using SportsData.Api.Application.Common.Moderation;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Infrastructure.Data;
@@ -61,6 +63,17 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
             return new Failure<Guid>(default, ResultStatus.BadRequest, validationErrors);
         }
 
+        // Both provisioning doors (auth-middleware auto-provision via
+        // UserService, and web's POST /user) funnel through this handler, and
+        // the display name can arrive from an external source — a Firebase
+        // token's "name" claim carries the Google/typed profile name. Profane
+        // names are SUBSTITUTED (null -> generated at create / keep-current at
+        // update), never rejected: provisioning must not fail over a name.
+        // Deliberate renames go through UpdateDisplayName, which rejects with
+        // a message instead. Sanitized once here so every write site below —
+        // including the username seed — sees the same value.
+        var displayName = ProfanityPolicy.SanitizeOrNull(command.DisplayName);
+
         // Defense in depth. SignInProvider originates in an external token
         // claim, and an oversized value fails the INSERT — which does not
         // merely lose the provider label, it prevents the USER ROW FROM BEING
@@ -72,7 +85,7 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
 
         try
         {
-            return await UpsertUserInternalAsync(command, firebaseUid, signInProvider, cancellationToken);
+            return await UpsertUserInternalAsync(command, displayName, firebaseUid, signInProvider, cancellationToken);
         }
         catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
         {
@@ -99,7 +112,7 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
 
                 existingUser.Email = command.Email;
                 existingUser.SignInProvider = signInProvider;
-                existingUser.DisplayName = command.DisplayName ?? existingUser.DisplayName;
+                existingUser.DisplayName = displayName ?? existingUser.DisplayName;
                 existingUser.LastLoginUtc = DateTime.UtcNow;
 
                 try
@@ -138,6 +151,7 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
 
     private async Task<Result<Guid>> UpsertUserInternalAsync(
         UpsertUserCommand command,
+        string? displayName, // pre-sanitized by ExecuteAsync — never read command.DisplayName here
         string firebaseUid,
         string signInProvider,
         CancellationToken cancellationToken)
@@ -157,8 +171,8 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
                 Email = command.Email,
                 EmailVerified = false,
                 SignInProvider = signInProvider,
-                DisplayName = command.DisplayName ?? DisplayNameGenerator.Generate(),
-                Username = await ResolveUniqueUsernameAsync(command.Email, command.DisplayName, cancellationToken),
+                DisplayName = displayName ?? DisplayNameGenerator.Generate(),
+                Username = await ResolveUniqueUsernameAsync(command.Email, displayName, cancellationToken),
                 LastLoginUtc = DateTime.UtcNow,
                 CreatedUtc = DateTime.UtcNow
             };
@@ -178,7 +192,7 @@ public class UpsertUserCommandHandler : IUpsertUserCommandHandler
 
             user.Email = command.Email;
             user.SignInProvider = signInProvider;
-            user.DisplayName = command.DisplayName ?? user.DisplayName;
+            user.DisplayName = displayName ?? user.DisplayName;
             user.LastLoginUtc = DateTime.UtcNow;
         }
 

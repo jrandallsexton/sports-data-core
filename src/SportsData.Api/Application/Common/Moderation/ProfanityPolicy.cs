@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -60,6 +60,17 @@ public static class ProfanityPolicy
         var collapsed = normalized.Replace(" ", string.Empty);
         return banned.Contains(collapsed);
     }
+
+    /// <summary>
+    /// Substitution form for PROVISIONING paths (signup / federated login):
+    /// returns null when the candidate is profane so the caller's existing
+    /// null-fallbacks take over (generated name at create, keep-current at
+    /// update). These paths must never REJECT — account creation cannot be
+    /// allowed to fail over a Google profile name — which is why this exists
+    /// alongside the rejecting validator rules used on deliberate renames.
+    /// </summary>
+    public static string? SanitizeOrNull(string? candidate) =>
+        ContainsProfanity(candidate) ? null : candidate;
 
     /// <summary>
     /// Lowercase, strip diacritics, fold leet substitutions, and replace every

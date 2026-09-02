@@ -9,15 +9,23 @@ using System.Threading.Tasks;
 namespace SportsData.Core.Processing
 {
     /// <summary>
-    /// Hangfire queue names. Order matters where servers list them: Hangfire
-    /// dequeues in listed order, so "live" before "default" is strict
-    /// priority. "live" carries streamer-originated documents for contests
+    /// Hangfire queue names. PRIORITY IS ALPHABETICAL, NOT ARRAY ORDER:
+    /// Hangfire.PostgreSql's dequeue is
+    ///   ORDER BY "fetchedat" NULLS FIRST, "queue", "jobid"
+    /// so among available jobs the alphabetically-first queue NAME wins —
+    /// the configured queue array only filters, it does not rank (that's
+    /// Hangfire.SqlServer semantics, which do NOT apply here). The "00-"
+    /// prefix is therefore load-bearing: it is what makes live work dequeue
+    /// before "daemon"/"default". Caught in review of PR #709 — the first
+    /// cut used "live", which sorts AFTER "default" and would have inverted
+    /// the priority. Any future queue must be named with its sort position
+    /// in mind. "00-live" carries streamer-originated documents for contests
     /// backing a pick'em league — see docs/features/athlete-cascade-scoping.md
     /// (item 5: a league game must never starve behind bulk backfill).
     /// </summary>
     public static class HangfireQueues
     {
-        public const string Live = "live";
+        public const string Live = "00-live";
         public const string Default = "default";
         public const string Daemon = "daemon";
     }

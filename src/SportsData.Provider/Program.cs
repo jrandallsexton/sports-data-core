@@ -89,9 +89,10 @@ namespace SportsData.Provider
             // Hangfire — Worker gets client + server; Ingest and Api get client only
             // Api needs client so controllers can enqueue jobs; Ingest needs it to enqueue from MassTransit consumers
             var needsHangfireServer = role.HasFlag(ProviderRole.Worker);
-            // Workers listen "live" FIRST (Hangfire dequeues in listed order =
-            // strict priority): streamer-originated fetches for league-backing
-            // contests must not queue behind bulk sourcing — the 2026-08-29
+            // Priority is ALPHABETICAL in Hangfire.PostgreSql (the array only
+            // filters — see HangfireQueues doc): "00-live" sorts before
+            // "default", so streamer-originated fetches for league-backing
+            // contests never queue behind bulk sourcing — the 2026-08-29
             // flood had ~222K jobs in THIS Hangfire while a league game's
             // documents waited. KEDA still counts "default" only (bulk depth
             // drives replicas; every replica drains live first regardless).

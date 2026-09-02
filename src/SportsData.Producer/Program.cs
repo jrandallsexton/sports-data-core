@@ -154,12 +154,13 @@ public class Program
         // An explicit `Worker|Daemon` combo is matched before either flag alone so it
         // still listens on both queues - a single pod wearing both hats has no separate
         // daemon pod to defer to. Deployed roles are always one or the other.
-        // "live" is listed FIRST wherever Workers listen: Hangfire dequeues
-        // queues in listed order, so live (streamer-originated, league-backing
-        // contests) is strict priority over bulk "default" work. KEDA's
-        // scaler counts "default" only — deliberately: bulk depth drives
-        // replicas, and every worker drains "live" first regardless.
-        // See docs/features/athlete-cascade-scoping.md item 5.
+        // Priority is ALPHABETICAL in Hangfire.PostgreSql (the array only
+        // filters — see HangfireQueues doc): "00-live" sorts before
+        // "daemon"/"default", so live (streamer-originated, league-backing
+        // contests) is strict priority over bulk work. Listed first here for
+        // readability only. KEDA's scaler counts "default" only —
+        // deliberately: bulk depth drives replicas, and every worker drains
+        // live first regardless. See docs/features/athlete-cascade-scoping.md.
         string[]? hangfireQueues = role switch
         {
             _ when role == ProducerRole.All => new[] { HangfireQueues.Live, HangfireQueues.Default, HangfireQueues.Daemon },

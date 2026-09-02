@@ -319,8 +319,14 @@ pipeline instead of a per-document league lookup.
   hop), each on both the immediate and retry/backoff paths. Provider
   Workers listen `["live", "default"]` too. (The Provider hop was an
   operator catch in review — the first cut only prioritized Producer.)
-- Workers listen `["live", "default"]`: Hangfire dequeues in listed order,
-  so every worker MUST empty live before touching bulk. Daemons unchanged.
+- The queue is named **`00-live`** because priority in Hangfire.PostgreSql
+  is ALPHABETICAL — its dequeue orders by `"fetchedat" NULLS FIRST,
+  "queue", "jobid"`; the configured array only filters. (Array-order
+  priority is Hangfire.SqlServer semantics and does not apply. Caught by
+  CodeRabbit on PR #709: the first cut's `"live"` sorts after `"default"`
+  and would have INVERTED the priority.) Workers listen
+  `["00-live", "default"]`; every worker empties live before touching
+  bulk. Daemons unchanged.
 - Priority is sticky downhill exactly like the inclusion filter: a live
   play's FK dependencies (AthleteSeason -> Athlete -> AthletePosition) ride
   the live queue too, and `ToDocumentCreated` keeps retries prioritized.
@@ -333,7 +339,7 @@ pipeline instead of a per-document league lookup.
 **Admission rule (owner, 2026-09-02): if everything is a priority, nothing
 is.** Exactly one code path sets `Priority: true` — the competition
 streamer, whose scope is already narrowed to league-backing contests by
-#688. Propagation may only INHERIT priority from a live parent, never
+PR #688. Propagation may only INHERIT priority from a live parent, never
 originate it. Expanding admission (Refresh Contest, operator replays,
 anything) requires the same scrutiny this design got, and the burden of
 proof is on the new admission: the live queue's value is precisely its

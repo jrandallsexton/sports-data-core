@@ -1,4 +1,4 @@
-using MassTransit;
+﻿using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -54,6 +54,16 @@ namespace SportsData.Api.Application.PickemGroups
                 _logger.LogInformation(
                     "Matchup preview generation disabled by config. Skipping preview enqueue for contest {ContestId}.",
                     @event.ContestId);
+                return;
+            }
+
+            // Sport gate — mirrors PickemGroupWeekMatchupsGeneratedHandler;
+            // MatchupPreviewProcessor enforces the same policy as the choke point.
+            if (!MatchupPreviewPolicy.SupportsSport(@event.Sport))
+            {
+                _logger.LogInformation(
+                    "Preview generation not supported for {Sport}; skipping enqueue for contest {ContestId}.",
+                    @event.Sport, @event.ContestId);
                 return;
             }
 

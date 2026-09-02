@@ -1,4 +1,4 @@
-using Moq;
+﻿using Moq;
 
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Infrastructure.Prompts;
@@ -830,5 +830,40 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             Assert.Equal("this is not json", capture.RawResponse);
             Assert.NotNull(capture.ResponseValidationErrors);
         }
+
+        [Fact]
+        public async Task Process_UnsupportedSport_SkipsBeforeAnyWork()
+        {
+            // BaseballMlb has no prompts and is the live-pipeline test sport —
+            // a throwaway single-day league must never reach the model, or
+            // even the Producer round trip (MatchupPreviewPolicy).
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = Guid.NewGuid(),
+                Sport = Sport.BaseballMlb
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+
+            await sut.Process(command);
+
+            Mocker.GetMock<IContestClientFactory>()
+                .Verify(x => x.Resolve(It.IsAny<Sport>()), Times.Never);
+        }
+
+        [Theory]
+        [InlineData(Sport.FootballNcaa)]
+        [InlineData(Sport.FootballNfl)]
+        public void SupportedSports_AreExactlyTheFootballs(Sport sport)
+        {
+            Assert.True(MatchupPreviewPolicy.SupportsSport(sport));
+        }
+
+        [Fact]
+        public void BaseballMlb_IsNotSupported()
+        {
+            Assert.False(MatchupPreviewPolicy.SupportsSport(Sport.BaseballMlb));
+        }
+
     }
 }

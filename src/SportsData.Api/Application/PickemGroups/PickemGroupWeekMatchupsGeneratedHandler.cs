@@ -109,6 +109,17 @@ namespace SportsData.Api.Application.PickemGroups
                 return;
             }
 
+            // Sport gate (cheap early-out; MatchupPreviewProcessor enforces the
+            // same policy as the real choke point): no prompts, no enqueue —
+            // an MLB test league must not spend model tokens.
+            if (!MatchupPreviewPolicy.SupportsSport(@event.Sport))
+            {
+                _logger.LogInformation(
+                    "Preview generation not supported for {Sport}; skipping enqueue for {Count} contests.",
+                    @event.Sport, groupWeekMatchupsContestIds.Count);
+                return;
+            }
+
             var existingPreviews = await _dataContext.MatchupPreviews
                 .Where(p => groupWeekMatchupsContestIds.Contains(p.ContestId))
                 .ToListAsync(ct);

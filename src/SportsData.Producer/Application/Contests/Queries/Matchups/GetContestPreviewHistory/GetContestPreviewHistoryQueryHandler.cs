@@ -154,20 +154,23 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
     /// <summary>
     /// ATS facts bucket on football key numbers rather than the exact line:
     /// "as a 35+ favorite" reads naturally and accrues a meaningful sample,
-    /// where "as a 38.5-point favorite" would almost always be n=0.
+    /// where "as a 38.5-point favorite" would almost always be n=0. The ladder
+    /// extends through 42/49 (touchdown multiples) so monster lines land near
+    /// a rung — a 46.5 spread renders as "42+", not a stretched "35+" (owner
+    /// call, 2026-09-02: closeness beats cohort mass; a thin cohort
+    /// self-discloses because the count is in the sentence, and n=0 renders
+    /// the informative "no games with a line that large" instead).
     /// </summary>
-    private static readonly double[] AtsKeyNumbers = [3, 7, 10, 14, 21, 28, 35];
+    private static readonly double[] AtsKeyNumbers = [3, 7, 10, 14, 21, 28, 35, 42, 49];
 
     /// <summary>
-    /// The ATS pair renders only when the chosen bucket actually describes the
-    /// line: within one touchdown. Past that, the cohort stops being evidence —
-    /// a 46.5-point favorite IS "a 35+ favorite", but that cohort's typical
-    /// member is a ~36-point spread and covering 35 says nothing about covering
-    /// 46.5 ("that's great, but it has zero bearing on a 46.5-point spread" —
-    /// owner, 2026-09-01, looking at Furman/Tennessee). The magnitude facts
-    /// above carry monster spreads; the ATS pair is omitted rather than
-    /// stretched. Widening the key-number ladder instead was rejected: cohorts
-    /// past 35 are too thin to say anything (the reason the buckets exist).
+    /// Safety net, rarely reached now that the ladder tops out at 49: the ATS
+    /// pair renders only when the chosen bucket sits within one touchdown of
+    /// the line, so a stretched cohort can never masquerade as line-specific
+    /// evidence (the original Furman/Tennessee complaint: a 46.5 spread
+    /// rendering "as a 35+ favorite" — "zero bearing on a 46.5-point spread").
+    /// With rungs every 7 points from 35 up, every realistic football spread
+    /// lands within the guard; this fires only for absurd (56+) lines.
     /// </summary>
     private const double AtsBucketMaxDistancePoints = 7;
 

@@ -317,7 +317,7 @@ pipeline instead of a per-document league lookup.
   `DocumentRequestedHandler` (the fetch hop: ~222K jobs deep on
   2026-08-29) and Producer's `DocumentCreatedHandler` (the processing
   hop), each on both the immediate and retry/backoff paths. Provider
-  Workers listen `["live", "default"]` too. (The Provider hop was an
+  Workers listen `["00-live", "default"]` too. (The Provider hop was an
   operator catch in review — the first cut only prioritized Producer.)
 - The queue is named **`00-live`** because priority in Hangfire.PostgreSql
   is ALPHABETICAL — its dequeue orders by `"fetchedat" NULLS FIRST,

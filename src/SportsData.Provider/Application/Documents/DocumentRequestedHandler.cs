@@ -228,13 +228,20 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             ParentId: evt.ParentId,
             SeasonYear: evt.SeasonYear,
             BypassCache: bypassCache,
-            IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes);
+            IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes,
+            Priority: evt.Priority);
 
         _logger.LogInformation(
             "Enqueuing ProcessResourceIndexItem. UrlHash={UrlHash}",
             urlHash);
-            
-        _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+
+        // Priority (streamer-originated, league-live) rides the "live" queue
+        // through BOTH Hangfire hops — this fetch hop and Producer's
+        // processing hop. Hangfire 1.8 sticky queues keep retries on it.
+        if (cmd.Priority)
+            _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(HangfireQueues.Live, p => p.Process(cmd));
+        else
+            _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
     }
 
     private async Task ProcessResourceIndex(Uri uri, DocumentRequested evt)
@@ -423,9 +430,13 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     SeasonYear: evt.SeasonYear,
                     BypassCache: bypassCache,
                     IncludeLinkedDocumentTypes: evt.IncludeLinkedDocumentTypes,
-                    InlineJson: useInlineJson == true ? rawItemJsonList![i] : null);
+                    InlineJson: useInlineJson == true ? rawItemJsonList![i] : null,
+                    Priority: evt.Priority);
 
-                _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
+                if (cmd.Priority)
+                    _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(HangfireQueues.Live, p => p.Process(cmd));
+                else
+                    _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                 enqueuedAnyRefs = true;
                 totalItemsEnqueued++;
             }

@@ -23,7 +23,10 @@ public static class ProcessDocumentCommandExtensions
             AttemptCount: attemptCount,
             IncludeLinkedDocumentTypes: command.IncludeLinkedDocumentTypes,
             RequestedDependencies: command.RequestedDependencies,
-            NotifyOnCompletion: command.NotifyOnCompletion
+            NotifyOnCompletion: command.NotifyOnCompletion,
+            // Retries must not demote: the republished DocumentCreated re-enters
+            // DocumentCreatedHandler, whose queue routing reads this flag.
+            Priority: command.Priority
         );
     }
 }

@@ -89,7 +89,13 @@ namespace SportsData.Producer.Application.Documents
                         _logger.LogDebug(
                             "HANDLER_ENQUEUE_IMMEDIATE: First attempt - enqueueing background job immediately.");
                         
-                        var jobId = _backgroundJobProvider.Enqueue<DocumentCreatedProcessor>(x => x.Process(message));
+                        // Queue routing: live (streamer-originated, league-backing
+                        // contest) jumps every bulk job; Hangfire 1.8 sticky queues
+                        // keep retries/reschedules on the queue they were born on.
+                        var jobId = message.Priority
+                            ? _backgroundJobProvider.Enqueue<DocumentCreatedProcessor>(
+                                HangfireQueues.Live, x => x.Process(message))
+                            : _backgroundJobProvider.Enqueue<DocumentCreatedProcessor>(x => x.Process(message));
                         
                         _logger.LogDebug(
                             "HANDLER_ENQUEUED: Background job enqueued successfully. {JobId}",
@@ -127,10 +133,18 @@ namespace SportsData.Producer.Application.Documents
                             _logger.LogInformation("HANDLER_SCHEDULE_IMMEDIATE: Scheduling retry immediately (no backoff).");
                         }
 
-                        var scheduledJobId = _backgroundJobProvider.Schedule<DocumentCreatedProcessor>(
-                            x => x.Process(message),
-                            delay: TimeSpan.FromSeconds(backoffSeconds)
-                        );
+                        // Same routing on the backoff path — a live document's retry
+                        // demoting to "default" would put the play we're streaming
+                        // behind the bulk backlog, the exact starvation this queue kills.
+                        var scheduledJobId = message.Priority
+                            ? _backgroundJobProvider.Schedule<DocumentCreatedProcessor>(
+                                HangfireQueues.Live,
+                                x => x.Process(message),
+                                TimeSpan.FromSeconds(backoffSeconds))
+                            : _backgroundJobProvider.Schedule<DocumentCreatedProcessor>(
+                                x => x.Process(message),
+                                delay: TimeSpan.FromSeconds(backoffSeconds)
+                            );
 
                         _logger.LogInformation("HANDLER_SCHEDULED: Background job scheduled successfully. HangfireJobId={HangfireJobId}", scheduledJobId);
                     }

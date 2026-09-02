@@ -475,7 +475,11 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             // empty filter is sticky the same way: a document-only command publishes
             // its own empty filter onto every FK request it makes, so the chain
             // beneath a lean request stays lean (play -> AthleteSeason -> Athlete).
-            IncludeLinkedDocumentTypes: (includeLinkedDocumentTypes ?? command.IncludeLinkedDocumentTypes)?.ToList()
+            IncludeLinkedDocumentTypes: (includeLinkedDocumentTypes ?? command.IncludeLinkedDocumentTypes)?.ToList(),
+            // Priority is sticky downhill like the filter: a live document's
+            // children AND dependencies ride the live queue, or a live play
+            // would block on an AthleteSeason stuck behind bulk backfill.
+            Priority: command.Priority
         ));
 
         _logger.LogInformation(

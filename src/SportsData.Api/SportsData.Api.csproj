@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
 	<TargetFramework>net10.0</TargetFramework>
@@ -42,6 +42,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Infrastructure\Data\Canonical\Sql\GetMatchupByContestId.sql" />
+    <EmbeddedResource Include="Application\Common\Moderation\profanity-wordlist.txt" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,6 +1,7 @@
 using FluentValidation;
 
 using SportsData.Api.Application.Common.Enums;
+using SportsData.Api.Application.Common.Moderation;
 using SportsData.Core.Common;
 
 namespace SportsData.Api.Application.UI.Leagues.Commands;
@@ -21,6 +22,13 @@ public abstract class CreateLeagueRequestBaseValidator<TRequest> : AbstractValid
         RuleFor(x => x.Name)
             .NotEmpty()
             .WithMessage("League name is required.");
+
+        // League names are the app's most public user-authored text (they
+        // surface in the joinable-leagues browse for strangers). Same
+        // whole-word profanity policy as display names.
+        RuleFor(x => x.Name)
+            .Must(v => !ProfanityPolicy.ContainsProfanity(v))
+            .WithMessage("That league name isn't allowed.");
 
         RuleFor(x => x.PickType)
             .Must(IsDefinedEnumName<PickType>)

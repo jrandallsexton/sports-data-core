@@ -1,5 +1,7 @@
 using FluentValidation;
 
+using SportsData.Api.Application.Common.Moderation;
+
 namespace SportsData.Api.Application.User.Commands.UpdateDisplayName;
 
 public class UpdateDisplayNameCommandValidator : AbstractValidator<UpdateDisplayNameCommand>
@@ -18,5 +20,11 @@ public class UpdateDisplayNameCommandValidator : AbstractValidator<UpdateDisplay
             .MaximumLength(MaxLength)
             .When(x => !string.IsNullOrWhiteSpace(x.DisplayName))
             .WithMessage($"Display name must not exceed {MaxLength} characters.");
+
+        // Whole-word profanity check (see ProfanityPolicy — substring matching
+        // is deliberately NOT used; real surnames must pass).
+        RuleFor(x => x.DisplayName)
+            .Must(v => !ProfanityPolicy.ContainsProfanity(v))
+            .WithMessage("That display name isn't allowed.");
     }
 }

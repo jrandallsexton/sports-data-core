@@ -1,0 +1,117 @@
+# Banned words for user-authored labels (display names, league names).
+# One word per line; '#' starts a comment. Matching is WHOLE-WORD ONLY after
+# normalization (see ProfanityPolicy) — never substring — so real surnames
+# like Sexton, Dickinson, Cummings, Hancock are unaffected by entries here.
+#
+# Curated for the NAME context: precision over recall. A miss is a manual
+# moderation follow-up; a false positive blocks someone's actual name.
+# Known tradeoff, deliberate: "dick"/"willy"/"fanny" are legitimate given
+# names but are listed because their abusive use in pick'em league contexts
+# vastly outnumbers the legitimate one; remove here if that call changes.
+
+# ── Core profanity ──
+fuck
+fucker
+fucking
+fucked
+motherfucker
+shit
+shits
+shithead
+shitty
+bullshit
+ass
+asshole
+assholes
+asshat
+asswipe
+dumbass
+jackass
+bitch
+bitches
+bastard
+damn
+goddamn
+crap
+piss
+pissed
+prick
+douche
+douchebag
+wanker
+bollocks
+arse
+arsehole
+twat
+
+# ── Sexual/anatomical ──
+dick
+dickhead
+cock
+cocks
+penis
+vagina
+pussy
+pussies
+cunt
+tits
+titties
+boobs
+dildo
+blowjob
+handjob
+rimjob
+cum
+cumshot
+jizz
+semen
+anal
+porn
+porno
+sex
+sexy
+milf
+whore
+slut
+sluts
+hooker
+willy
+fanny
+schlong
+boner
+horny
+
+# ── Slurs (racial, ethnic, homophobic, ableist) ──
+nigger
+nigga
+niggas
+chink
+gook
+spic
+wetback
+kike
+raghead
+towelhead
+beaner
+coon
+darkie
+fag
+faggot
+fags
+dyke
+tranny
+homo
+queer
+retard
+retarded
+spastic
+midget
+
+# ── Hate/violence adjacent ──
+nazi
+hitler
+kkk
+rape
+rapist
+pedo
+pedophile

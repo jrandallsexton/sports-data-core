@@ -313,7 +313,16 @@ export default function ProfileScreen() {
       setEditingDisplayName(false);
     } catch (err) {
       console.warn('[ProfileScreen] display name update failed', err);
-      setDisplayNameMessage('Could not save display name. Try again.');
+      // Surface the server's validation message when there is one — e.g. the
+      // profanity filter's "That display name isn't allowed." The generic
+      // text below reads as a TRANSIENT failure, and a user whose name was
+      // rejected by policy would otherwise retry the same name forever.
+      // Same errors[0].errorMessage dig as create-league.tsx's onError
+      // (ToActionResult serializes failures as { errors: [{ errorMessage }] }).
+      const serverMessage =
+        (err as { response?: { data?: { errors?: { errorMessage?: string }[] } } })
+          ?.response?.data?.errors?.[0]?.errorMessage;
+      setDisplayNameMessage(serverMessage ?? 'Could not save display name. Try again.');
     } finally {
       setDisplayNameSaving(false);
     }

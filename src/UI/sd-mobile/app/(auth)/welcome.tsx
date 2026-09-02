@@ -33,7 +33,7 @@ const features: ReadonlyArray<{
   {
     icon: 'bulb-outline',
     title: 'Pick Smarter',
-    body: 'Insider stats, matchup breakdowns, and AI-driven insights — every game.',
+    body: 'Insider stats, matchup breakdowns, and AI-driven insights - every game.',
   },
   {
     icon: 'trophy-outline',
@@ -43,7 +43,7 @@ const features: ReadonlyArray<{
   {
     icon: 'options-outline',
     title: 'Pick Your Way',
-    body: 'Straight up, against the spread, over/under — your call, every week.',
+    body: 'Straight up, against the spread, over/under - your call, every week.',
   },
 ];
 
@@ -62,8 +62,12 @@ export default function WelcomeScreen() {
         {/* Hero */}
         <View style={styles.hero}>
           <Wordmark size={36} />
+          {/* Deliberate two-line break — one sentence per line. As a single
+              string it wrapped wherever the viewport decided (observed:
+              "Friends." orphaned on line 2), which reads as an accident
+              rather than a slogan. The explicit newline pins the break. */}
           <Text style={[styles.tagline, { color: theme.text }]}>
-            Win Your Picks. Crush Your Friends.
+            Win Your Picks.{'\n'}Crush Your Friends.
           </Text>
           <Text style={[styles.subhead, { color: theme.textMuted }]}>
             Data-driven insights for every matchup.

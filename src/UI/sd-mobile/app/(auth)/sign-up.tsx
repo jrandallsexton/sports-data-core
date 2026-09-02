@@ -16,6 +16,8 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
 import { Text } from '@/src/components/ui/AppText';
 import { auth } from '@/src/lib/firebase';
+import { useAuthStore } from '@/src/stores/authStore';
+import { usersApi } from '@/src/services/api/usersApi';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { Button } from '@/src/components/ui/Button';
 import { Wordmark } from '@/src/components/brand/Wordmark';
@@ -62,14 +64,54 @@ export default function SignUpScreen() {
     defaultValues: { displayName: '', email: '', password: '' },
   });
 
+  // If the user abandons sign-up after a name rejection (back to welcome /
+  // sign-in), the hold must not outlive this screen — a stuck hold with a
+  // signed-in user would trap them in the auth group forever.
+  React.useEffect(
+    () => () => useAuthStore.getState().setSignupHold(false),
+    [],
+  );
+
   const onSubmit = async ({ displayName, email, password }: FormData) => {
+    // Hold AuthGuard's redirect while the typed display name is persisted —
+    // the PATCH below can reject (server profanity filter) and the rejection
+    // must land inline on THIS form, not after navigation.
+    useAuthStore.getState().setSignupHold(true);
     try {
-      const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      // Retry path: if the first attempt's PATCH was rejected, the Firebase
+      // account already exists and we are signed in — creating again would
+      // fail with email-already-in-use. Reuse the session; only the name run
+      // below is being retried.
+      const firebaseUser =
+        auth.currentUser ??
+        (await createUserWithEmailAndPassword(auth, email.trim(), password)).user;
       // Set the display name before downstream consumers read the profile;
       // reload so the local user object reflects it immediately.
-      await updateProfile(result.user, { displayName: displayName.trim() });
-      await result.user.reload();
-      // AuthGuard in root _layout.tsx handles the redirect.
+      await updateProfile(firebaseUser, { displayName: displayName.trim() });
+      await firebaseUser.reload();
+
+      // Persist the typed name through the VALIDATED path. The first
+      // authenticated call also auto-provisions the backend account (the
+      // middleware creates it with a generated name because this token
+      // predates the profile update); this PATCH then applies the real one.
+      try {
+        await usersApi.updateDisplayName(displayName.trim());
+      } catch (patchErr: unknown) {
+        const serverMessage =
+          (patchErr as { response?: { data?: { errors?: { errorMessage?: string }[] } }; })
+            ?.response?.data?.errors?.[0]?.errorMessage;
+        if (serverMessage) {
+          // Validation rejection (e.g. "That display name isn't allowed.") —
+          // keep the hold, show it on the field, let the user fix and retry.
+          setError('displayName', { message: serverMessage });
+          return;
+        }
+        // Transport failure: don't strand a created account on the sign-up
+        // screen — proceed with the generated name; Profile can fix it later.
+        console.warn('[SignUp] display name PATCH failed (non-validation)', patchErr);
+      }
+      // Release the hold — AuthGuard in root _layout.tsx now redirects.
+      useAuthStore.getState().setSignupHold(false);
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code ?? '';
       if (code === 'auth/email-already-in-use') {
@@ -87,6 +129,8 @@ export default function SignUpScreen() {
       } else {
         setError('root', { message: 'Sign up failed. Please try again.' });
       }
+      // No account materialized (or it pre-existed) — nothing to hold for.
+      useAuthStore.getState().setSignupHold(false);
     }
   };
 

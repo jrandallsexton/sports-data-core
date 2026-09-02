@@ -350,5 +350,14 @@ and the play a user is watching still processes within seconds of arrival.
 
 ## What this does not fix
 
-Independent of scoping, the dependency retry has no attempt cap (logs "attempt 1" forever).
-That is a separate queued fix; it makes a flood durable but does not create one.
+~~Independent of scoping, the dependency retry has no attempt cap.~~
+**CORRECTED 2026-09-02 — investigated, no fix needed.** The per-chain cap
+has existed since PR #144 (`MaxAttempts = 10` in DocumentCreatedHandler,
+exhaustion -> dead-letter), and prod Seq confirms attempts increment with
+backoff and recent chains resolve within ~5 attempts, zero exhaustions in
+retention. The 08-29 "attempt 1 forever" observation was unbounded chain
+BIRTHS, not an uncapped chain: every new play referencing the same missing
+athlete spawned a fresh dependency chain, each legitimately starting at
+attempt 1 — thousands of parents per minute read as a broken counter.
+Chain births are what #699 (FK-only suppression) killed, with Provider's
+~90-minute republish suppression as the second brake. Nothing left to cap.

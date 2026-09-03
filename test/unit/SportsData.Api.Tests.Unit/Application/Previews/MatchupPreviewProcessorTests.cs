@@ -874,13 +874,16 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             string apiModelId = "openai/gpt-test",
             bool isDefault = false)
         {
+            // Fixed seed time: the repo rule bans DateTime.UtcNow — and a
+            // deterministic fixture is the point of the rule.
+            var seedTime = new DateTime(2026, 9, 3, 0, 0, 0, DateTimeKind.Utc);
             var provider = new ModelProvider
             {
                 Id = Guid.NewGuid(),
                 Name = $"Provider-{Guid.NewGuid():N}",
                 Kind = ModelProviderKind.OpenAi,
                 IsActive = providerActive,
-                CreatedUtc = DateTime.UtcNow
+                CreatedUtc = seedTime
             };
             var model = new Model
             {
@@ -891,7 +894,7 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
                 Gateway = gateway,
                 IsActive = modelActive,
                 IsDefault = isDefault,
-                CreatedUtc = DateTime.UtcNow
+                CreatedUtc = seedTime
             };
             await DataContext.ModelProviders.AddAsync(provider);
             await DataContext.Models.AddAsync(model);

@@ -126,7 +126,9 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                     .HasConversion<int>()
                     .IsRequired();
 
-                builder.Property(x => x.Model).HasMaxLength(50);
+                // 100 matches Model.ApiModelId — gateway-namespaced ids
+                // ("google/gemini-3.1-pro-preview-customtools") outgrow 50.
+                builder.Property(x => x.Model).HasMaxLength(100);
 
                 builder.Property(x => x.ResponseValidationErrors).HasMaxLength(1024);
             }

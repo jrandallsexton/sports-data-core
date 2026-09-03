@@ -128,7 +128,26 @@ live pick until weeks of season data justify the swap.
 - Baseline rows in the matrix — confirmed in?
 - deetsMeter as the abstention tie-break — confirmed?
 - Once stable: auto-run the audition weekly for league-backing contests, or
-  keep admin-triggered?
+  keep admin-triggered? (Cost is a non-issue: owner measured ~$0.15-0.20
+  per game across six models — a full league-covered week runs under $5.)
+
+## Future (owner ideas 2026-09-03, deliberately not started)
+
+- **Panel consensus into the production preview prompt** — injected as a
+  decided GIVEN ("model predicts, LLM explains"), never a hint: anchoring
+  would launder the panel's chalk bias into confident prose. Sequenced
+  AFTER the Phase 4 evidence gate proves the panel beats the baselines.
+- **Audition the preview PROSE itself** (most accurate/factual/logical
+  model earns public display). The corpus already accrues for free —
+  capture rows store every model's full raw response. First mechanically
+  checkable rung: factuality diff of cited stats vs the PayloadJson the
+  model was given. Style/logic scoring needs a judge; LLM-as-judge
+  circularity (judge and contestant share training data) is the noted
+  risk to solve first.
+- **Admin prose-review surface** — the original point of the lab, beyond
+  pick accuracy: read each model's generated preview side by side with
+  its pick (all in MatchupPreviewPrompt today; drill-down from a matrix
+  cell). Next web work after Phase 1 ships.
 
 ## Constraints carried forward
 

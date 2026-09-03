@@ -141,7 +141,13 @@ public class OpenRouterClient : IProvideAiCommunication, IProvideModelEvaluation
                 stopwatch.ElapsedMilliseconds,
                 finishReason));
         }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
+        // Caller-requested cancellation propagates (it is not a model
+        // failure); an HttpClient TIMEOUT also surfaces as
+        // TaskCanceledException but with an untripped token — that one IS
+        // an evaluation failure and stays caught.
+        catch (Exception ex) when (
+            ex is HttpRequestException or JsonException
+            || (ex is TaskCanceledException && !ct.IsCancellationRequested))
         {
             stopwatch.Stop();
             _logger.LogError(ex, "OpenRouter call failed for model {Model}", _model);

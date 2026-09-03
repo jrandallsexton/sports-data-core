@@ -80,16 +80,28 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
             return new Failure<Guid>(default!, ResultStatus.Validation, validation.Errors);
         }
 
-        var providerExists = await _dataContext.ModelProviders
+        var provider = await _dataContext.ModelProviders
             .AsNoTracking()
-            .AnyAsync(p => p.Id == command.ModelProviderId, cancellationToken);
+            .Where(p => p.Id == command.ModelProviderId)
+            .Select(p => new { p.Kind })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!providerExists)
+        if (provider is null)
         {
             return new Failure<Guid>(
                 default!,
                 ResultStatus.Validation,
                 [new ValidationFailure(nameof(command.ModelProviderId), "Model provider not found — create it first (POST /admin/model-providers)")]);
+        }
+
+        // A GatewayOnly provider has no first-party client by definition —
+        // a direct-routed model under it would be unreachable forever.
+        if (provider.Kind == ModelProviderKind.GatewayOnly && command.Gateway == ModelGateway.None)
+        {
+            return new Failure<Guid>(
+                default!,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(command.Gateway), "This provider is gateway-only (no first-party client) — the model must specify a gateway route.")]);
         }
 
         var name = command.Name.Trim();

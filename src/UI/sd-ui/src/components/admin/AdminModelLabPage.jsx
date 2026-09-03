@@ -18,6 +18,10 @@ const LEAGUE_OPTIONS = [
 
 const DEFAULT_YEAR = 2026;
 
+// Queued-marker lifecycle (see the reconcile effect below).
+const QUEUED_SKEW_GRACE_MS = 2 * 60 * 1000;
+const QUEUED_EXPIRY_MS = 10 * 60 * 1000;
+
 /**
  * Model Consensus Lab — the week matrix. Rows = contests any pick'em
  * league carries for the selected sport/week (one SU line + one ATS line
@@ -79,15 +83,22 @@ export default function AdminModelLabPage() {
     localStorage.setItem(LEAGUE_STORAGE_KEY, league);
     localStorage.setItem(YEAR_STORAGE_KEY, String(year));
     localStorage.setItem(WEEK_STORAGE_KEY, String(week));
-    loadMatrix(leagueSport, year, week);
+    // Year/week arrive digit by digit — debounce so intermediate values
+    // ("2", "20", "202"...) never fire a request, and skip invalid ones.
+    if (!Number.isInteger(year) || year < 2000 || !Number.isInteger(week) || week < 1) {
+      return undefined;
+    }
+    const timer = setTimeout(() => loadMatrix(leagueSport, year, week), 400);
+    return () => clearTimeout(timer);
   }, [league, leagueSport, year, week, loadMatrix]);
 
-  // A completed run clears its queued marker and quietly refreshes the
-  // matrix so the cell fills in as each model finishes. Read current
-  // selection through refs so the handler identity stays stable (the
-  // SignalR hook keys its connection on it).
+  // Read current selection through refs so the SignalR handler identity
+  // stays stable (the hook keys its connection on it). Assigned in
+  // effects — never during render.
   const selectionRef = useRef({ leagueSport, year, week });
-  selectionRef.current = { leagueSport, year, week };
+  useEffect(() => {
+    selectionRef.current = { leagueSport, year, week };
+  }, [leagueSport, year, week]);
   const contestIdsRef = useRef(new Set());
   useEffect(() => {
     contestIdsRef.current = new Set(
@@ -95,17 +106,47 @@ export default function AdminModelLabPage() {
     );
   }, [matrix]);
 
+  // Queued markers hold their set-time and clear only when the reloaded
+  // matrix shows a cell CREATED AFTER the marker (2-minute clock-skew
+  // grace) — a stale completion event can no longer clear an in-flight
+  // retry, and a panel marker survives until every column has landed.
+  // A 10-minute expiry stops a dead job from pinning "queued…" forever.
+  useEffect(() => {
+    if (!matrix) return;
+    setQueued(q => {
+      const entries = Object.entries(q);
+      if (entries.length === 0) return q;
+      const cellTime = {};
+      const modelIds = (matrix.models ?? []).map(m => String(m.id).toLowerCase());
+      for (const c of matrix.contests ?? []) {
+        for (const cell of c.cells ?? []) {
+          cellTime[`${String(c.contestId).toLowerCase()}|${String(cell.modelId).toLowerCase()}`] =
+            Date.parse(cell.createdUtc) || 0;
+        }
+      }
+      const now = Date.now();
+      const next = {};
+      let changed = false;
+      for (const [key, setAt] of entries) {
+        const [cid, mid] = key.toLowerCase().split('|');
+        const landedAfter = (m) => (cellTime[`${cid}|${m}`] ?? 0) > setAt - QUEUED_SKEW_GRACE_MS;
+        const done = mid === '*'
+          ? modelIds.length > 0 && modelIds.every(landedAfter)
+          : landedAfter(mid);
+        if (done || now - setAt > QUEUED_EXPIRY_MS) {
+          changed = true;
+          continue;
+        }
+        next[key] = setAt;
+      }
+      return changed ? next : q;
+    });
+  }, [matrix]);
+
   const handlePromptCaptured = useCallback(
     (data) => {
       const id = data?.contestId?.toLowerCase();
       if (!id || !contestIdsRef.current.has(id)) return;
-      setQueued(q => {
-        const next = { ...q };
-        for (const key of Object.keys(next)) {
-          if (key.startsWith(`${id}|`) || key.startsWith(`${data.contestId}|`)) delete next[key];
-        }
-        return next;
-      });
       const { leagueSport: s, year: y, week: w } = selectionRef.current;
       loadMatrix(s, y, w, { quiet: true });
     },
@@ -129,7 +170,7 @@ export default function AdminModelLabPage() {
 
   const generateCell = async (contestId, modelId) => {
     const key = `${contestId}|${modelId}`;
-    setQueued(q => ({ ...q, [key]: true }));
+    setQueued(q => ({ ...q, [key]: Date.now() }));
     try {
       await apiWrapper.Admin.runPreviewExperiment(
         contestId, leagueSport, promptId.trim() || undefined, modelId
@@ -146,7 +187,7 @@ export default function AdminModelLabPage() {
 
   const runPanelForContest = async (contestId) => {
     const key = `${contestId}|*`;
-    setQueued(q => ({ ...q, [key]: true }));
+    setQueued(q => ({ ...q, [key]: Date.now() }));
     try {
       const res = await apiWrapper.Admin.runPreviewPanel(
         contestId, leagueSport, promptId.trim() || undefined

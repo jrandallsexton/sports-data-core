@@ -35,27 +35,27 @@ INSERT INTO "Model" (
 VALUES
   ('b0000000-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000002',
    'Claude Sonnet 4.6', 'anthropic/claude-sonnet-4.6', 1,
-   '2026-01-01', '2025-08-01', 'llm-training-dates.md: Aug 2025 — DISPUTED (one source claims training to Jan 2026); verify at docs.anthropic.com before trusting lower-risk', NULL,
+   '2026-02-17', '2025-08-01', 'llm-training-dates.md: Aug 2025 — DISPUTED (one source claims training to Jan 2026); verify at docs.anthropic.com before trusting lower-risk', NULL,
    3.00, 15.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
   ('b0000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000002',
    'Claude Haiku 4.5', 'anthropic/claude-haiku-4.5', 1,
-   '2025-10-01', '2025-07-01', 'llm-training-dates.md: Jul 2025 (lower-risk full 2025 season; cheap floor)', NULL,
+   '2025-10-15', '2025-07-01', 'llm-training-dates.md: Jul 2025 (lower-risk full 2025 season; cheap floor)', NULL,
    1.00, 5.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
   ('b0000000-0000-0000-0000-000000000003', 'a0000000-0000-0000-0000-000000000003',
    'GPT-5.2', 'openai/gpt-5.2', 1,
-   '2025-12-01', '2025-08-31', 'llm-training-dates.md: Aug 31 2025 — NCAA wk0/1 sits INSIDE training; per-game comparison handles the boundary', NULL,
+   '2025-12-10', '2025-08-31', 'llm-training-dates.md: Aug 31 2025 — NCAA wk0/1 sits INSIDE training; per-game comparison handles the boundary', NULL,
    1.75, 14.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
   ('b0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000004',
    'Gemini 3.1 Pro', 'google/gemini-3.1-pro-preview', 1,
-   '2026-02-01', '2025-01-01', 'llm-training-dates.md: Jan 2025 (lower-risk full season + current capability); verify via model card', NULL,
+   '2026-02-19', '2025-01-01', 'llm-training-dates.md: Jan 2025 (lower-risk full season + current capability); verify via model card', NULL,
    2.00, 12.00, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
   ('b0000000-0000-0000-0000-000000000005', 'a0000000-0000-0000-0000-000000000005',
    'Grok 4.3', 'x-ai/grok-4.3', 1,
-   NULL, '2025-12-01', 'llm-training-dates.md: Dec 2025 (higher-risk Sep-Nov); server-side Web/X search MUST stay disabled for backtests', NULL,
+   '2026-04-30', '2025-12-01', 'llm-training-dates.md: Dec 2025 (higher-risk Sep-Nov); server-side Web/X search MUST stay disabled for backtests', NULL,
    1.25, 2.50, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
   ('b0000000-0000-0000-0000-000000000006', 'a0000000-0000-0000-0000-000000000001',

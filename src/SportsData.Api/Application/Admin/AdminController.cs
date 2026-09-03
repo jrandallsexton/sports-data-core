@@ -206,7 +206,7 @@ namespace SportsData.Api.Application.Admin
         /// </summary>
         [HttpGet]
         [Route("model-lab/matrix")]
-        public async Task<IActionResult> GetModelLabMatrix(
+        public async Task<ActionResult<Queries.GetModelLabMatrix.ModelLabMatrixDto>> GetModelLabMatrix(
             [FromServices] Queries.GetModelLabMatrix.IGetModelLabMatrixQueryHandler handler,
             [FromQuery] Sport sport = Sport.FootballNcaa,
             [FromQuery] int seasonYear = 0,
@@ -222,9 +222,7 @@ namespace SportsData.Api.Application.Admin
                 },
                 cancellationToken);
 
-            return result.IsSuccess
-                ? Ok(result.Value)
-                : UnprocessableEntity(result);
+            return result.ToActionResult();
         }
 
         /// <summary>

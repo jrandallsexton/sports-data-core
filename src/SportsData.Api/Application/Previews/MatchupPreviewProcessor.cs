@@ -417,7 +417,9 @@ namespace SportsData.Api.Application.Previews
             var wiredModelName = _aiCommunication.GetModelName();
             var defaultModel = await _dataContext.Models
                 .AsNoTracking()
-                .FirstOrDefaultAsync(m => m.IsDefault);
+                .Where(m => m.IsDefault)
+                .Select(m => new { m.Id, m.ApiModelId })
+                .FirstOrDefaultAsync();
             if (defaultModel is null)
             {
                 _logger.LogWarning(

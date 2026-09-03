@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Previews.Models;
 using SportsData.Api.Application.UI.Matchups;
@@ -67,6 +67,19 @@ namespace SportsData.Api.Application.Previews
             _logger.LogInformation(
                 "Preview processing started. ContestId: {ContestId}, Sport: {Sport}, Mode: {Mode}, CorrelationId: {CorrelationId}",
                 command.ContestId, command.Sport, command.Mode, command.CorrelationId);
+
+            // Hard gate, before any DB or Producer work: prompts exist only
+            // for the sports MatchupPreviewPolicy lists. Everything that can
+            // enqueue this job (league handlers, the recurring generator,
+            // admin paths) funnels through here, so an unsupported sport can
+            // never reach the model regardless of which door it came in.
+            if (!MatchupPreviewPolicy.SupportsSport(command.Sport))
+            {
+                _logger.LogInformation(
+                    "Preview generation not supported for {Sport} — no prompts exist; skipping. ContestId={ContestId}",
+                    command.Sport, command.ContestId);
+                return;
+            }
 
             var rejectedPreview = await _dataContext.MatchupPreviews
                 .OrderByDescending(x => x.CreatedUtc)

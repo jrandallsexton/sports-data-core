@@ -142,3 +142,35 @@
   color: var(--accent);
   text-decoration: none;
 }
+
+/* Model Lab buttons: same surface idiom as the admin nav links
+   (bg-input, 8px radius, accent on hover). */
+.model-lab-btn {
+  padding: 6px 14px;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.model-lab-btn:hover:not(:disabled),
+.model-lab-btn:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.model-lab-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Cell-sized variant for generate/retry inside the matrix. */
+.model-lab-btn--small {
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  border-radius: 6px;
+}

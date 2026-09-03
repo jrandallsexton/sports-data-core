@@ -40,6 +40,9 @@ public class ModelLabMatrixDto
 
         public Guid HomeFranchiseSeasonId { get; set; }
 
+        /// <summary>Current line, HOME-relative (negative = home favored, e.g. -22.5); null when no odds. The team name would be redundant — the spread is always the home team's.</summary>
+        public double? Spread { get; set; }
+
         /// <summary>Latest experiment per model; a model absent here has no run yet.</summary>
         public List<MatrixCellDto> Cells { get; set; } = [];
     }

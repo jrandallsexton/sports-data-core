@@ -193,7 +193,7 @@ export default function AdminModelLabPage() {
         contestId, leagueSport, promptId.trim() || undefined
       );
       const count = res?.data?.modelCount;
-      toast.success(count ? `Panel queued — ${count} model(s).` : 'Panel queued.');
+      toast.success(count ? `Panel queued - ${count} model(s).` : 'Panel queued.');
     } catch (err) {
       setQueued(q => {
         const next = { ...q };
@@ -216,7 +216,7 @@ export default function AdminModelLabPage() {
         <h2 style={{ marginBottom: 4 }}>Model Consensus Lab</h2>
         <p style={{ color: 'var(--text-secondary)', marginTop: 0 }}>
           Every contest any pick'em league carries for the week, against
-          every active lab-reachable model. Empty cell = no run yet — the
+          every active lab-reachable model. Empty cell = no run yet - the
           button generates just that pair. Experiments never write a
           MatchupPreview. Models live on /admin/models; consensus is a
           simple majority of the picks cast.
@@ -254,7 +254,7 @@ export default function AdminModelLabPage() {
             onChange={(e) => setWeek(Number(e.target.value))}
             style={{ width: 70, padding: '6px 8px' }}
           />
-          <button type="button" onClick={() => loadMatrix(leagueSport, year, week)}>
+          <button type="button" className="model-lab-btn" onClick={() => loadMatrix(leagueSport, year, week)}>
             Refresh
           </button>
           <label htmlFor="modellab-prompt-id" style={{ fontWeight: 600 }}>Prompt ID:</label>
@@ -263,7 +263,7 @@ export default function AdminModelLabPage() {
             type="text"
             value={promptId}
             onChange={handlePromptIdChange}
-            placeholder="optional — Prompt GUID override for generated runs"
+            placeholder="optional - Prompt GUID override for generated runs"
             title="Explicit Prompt entity override (Guid) applied to runs started from this page. Blank = the sport/variant default."
             style={{ flex: 1, padding: '6px 8px', minWidth: 240 }}
           />
@@ -272,7 +272,7 @@ export default function AdminModelLabPage() {
         {loading && <div>Loading matrix…</div>}
         {!loading && models.length === 0 && (
           <div style={{ color: 'var(--text-secondary)' }}>
-            No active lab-reachable models — add models (gateway: OpenRouter)
+            No active lab-reachable models - add models (gateway: OpenRouter)
             on /admin/models first.
           </div>
         )}
@@ -329,6 +329,16 @@ const cellStyle = {
 };
 
 /** Majority of the picks cast; needs at least 2 votes and no tie. */
+/**
+ * Home-relative line as " (-22.5)" / " (+3.5)" / " (PK)" — no team name,
+ * the spread is always the home team's. Empty string when no odds.
+ */
+function formatSpread(spread) {
+  if (spread == null) return '';
+  if (spread === 0) return ' (PK)';
+  return ` (${spread > 0 ? '+' : ''}${spread})`;
+}
+
 function consensusOf(picks) {
   const votes = picks.filter(Boolean);
   if (votes.length < 2) return null;
@@ -353,7 +363,7 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
 
   const teamFor = (fsId) => {
     if (!fsId) return null;
-    // A pick GUID outside the matchup is itself a finding — show it raw.
+    // A pick GUID outside the matchup is itself a finding - show it raw.
     return teamById[String(fsId).toLowerCase()] ?? `${String(fsId).substring(0, 8)}…?`;
   };
 
@@ -372,9 +382,9 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
           ) : (
             <button
               type="button"
+              className="model-lab-btn model-lab-btn--small"
               onClick={() => onGenerateCell(contest.contestId, model.id)}
               title={`Run ${model.name} on ${label}`}
-              style={{ fontSize: '0.8rem' }}
             >
               generate
             </button>
@@ -387,7 +397,7 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
     if (!pick) {
       // No pick + recorded problems = the run FAILED (parse error, bad
       // response); a clean row with no pick = the model genuinely
-      // abstained. Different facts, different cells — and both keep a
+      // abstained. Different facts, different cells - and both keep a
       // retry (a rerun supersedes; the failed capture stays as history).
       return (
         <td key={model.id} style={cellStyle}>
@@ -406,9 +416,10 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
           ) : (
             <button
               type="button"
+              className="model-lab-btn model-lab-btn--small"
               onClick={() => onGenerateCell(contest.contestId, model.id)}
               title={`Retry ${model.name} on ${label}`}
-              style={{ fontSize: '0.75rem', marginLeft: 6 }}
+              style={{ marginLeft: 6 }}
             >
               retry
             </button>
@@ -441,16 +452,16 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
   return (
     <>
       <tr>
-        <td style={{ ...cellStyle, fontWeight: 600 }}>{label} — SU</td>
+        <td style={{ ...cellStyle, fontWeight: 600 }}>{label} - SU</td>
         {models.map(m => renderPickCell(m, 'predictedStraightUpWinnerId'))}
-        <td style={{ ...cellStyle, fontWeight: 700 }}>{suConsensus ? teamFor(suConsensus) : '—'}</td>
+        <td style={{ ...cellStyle, fontWeight: 700 }}>{suConsensus ? teamFor(suConsensus) : '-'}</td>
         <td rowSpan={2} style={{ ...cellStyle, verticalAlign: 'middle' }}>
           {hasHoles && !rowPanelQueued && (
             <button
               type="button"
+              className="model-lab-btn model-lab-btn--small"
               onClick={() => onRunPanel(contest.contestId)}
               title={`Run every lab model on ${label}`}
-              style={{ fontSize: '0.8rem' }}
             >
               run panel
             </button>
@@ -459,7 +470,9 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
         </td>
       </tr>
       <tr>
-        <td style={{ ...cellStyle, color: 'var(--text-secondary)' }}>{label} — ATS</td>
+        <td style={{ ...cellStyle, color: 'var(--text-secondary)' }}>
+          {label} - ATS{formatSpread(contest.spread)}
+        </td>
         {models.map(m => renderPickCell(m, 'predictedSpreadWinnerId'))}
         <td style={{ ...cellStyle, fontWeight: 700 }}>{atsConsensus ? teamFor(atsConsensus) : '—'}</td>
       </tr>

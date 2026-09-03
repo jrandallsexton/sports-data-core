@@ -80,6 +80,7 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
             // schedule, and letting it close the deletion window would lock
             // every league without any human investment.
             var hasScoredPicks = await _dbContext.UserPicks
+                .AsNoTracking()
                 .AnyAsync(
                     p => p.PickemGroupId == command.LeagueId
                          && !_dbContext.Users.Any(u => u.Id == p.UserId && u.IsSynthetic)

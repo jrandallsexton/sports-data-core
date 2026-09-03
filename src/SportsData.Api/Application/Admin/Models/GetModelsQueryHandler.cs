@@ -16,6 +16,7 @@ public class ModelDto
     public ModelProviderKind ProviderKind { get; set; }
     public string Name { get; set; } = default!;
     public string ApiModelId { get; set; } = default!;
+    public ModelGateway Gateway { get; set; }
     public DateTime? ReleaseDate { get; set; }
     public DateTime? KnowledgeCutoffUtc { get; set; }
     public string? CutoffEvidence { get; set; }
@@ -61,6 +62,7 @@ public class GetModelsQueryHandler : IGetModelsQueryHandler
                 ProviderKind = m.ModelProvider.Kind,
                 Name = m.Name,
                 ApiModelId = m.ApiModelId,
+                Gateway = m.Gateway,
                 ReleaseDate = m.ReleaseDate,
                 KnowledgeCutoffUtc = m.KnowledgeCutoffUtc,
                 CutoffEvidence = m.CutoffEvidence,
@@ -99,6 +101,7 @@ public class GetModelByIdQueryHandler : IGetModelByIdQueryHandler
                 ProviderKind = m.ModelProvider.Kind,
                 Name = m.Name,
                 ApiModelId = m.ApiModelId,
+                Gateway = m.Gateway,
                 ReleaseDate = m.ReleaseDate,
                 KnowledgeCutoffUtc = m.KnowledgeCutoffUtc,
                 CutoffEvidence = m.CutoffEvidence,

@@ -29,6 +29,16 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public string? Model { get; set; }
 
+        /// <summary>
+        /// The registry Model row that generated this preview — stamped
+        /// from the IsDefault row ONLY when its ApiModelId matches the
+        /// wired client's model (a mismatch means the flag and DI config
+        /// drifted; we stamp nothing rather than lie). No FK — the Model
+        /// string above stays the provenance of record (same pattern as
+        /// MatchupPreviewPrompt.ModelId).
+        /// </summary>
+        public Guid? ModelId { get; set; }
+
         public string? ValidationErrors { get; set; }
 
         /// <summary>

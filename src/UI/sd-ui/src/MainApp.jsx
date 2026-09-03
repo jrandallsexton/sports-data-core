@@ -38,6 +38,7 @@ import AdminBaseballPage from "./components/admin/AdminBaseballPage";
 import AdminPreviewLabPage from "./components/admin/AdminPreviewLabPage";
 import AdminPromptsPage from "./components/admin/AdminPromptsPage";
 import AdminModelsPage from "./components/admin/AdminModelsPage";
+import AdminModelLabPage from "./components/admin/AdminModelLabPage";
 import AdminSmackLabPage from "./components/admin/AdminSmackLabPage";
 import AdminRoute from "./routes/AdminRoute";
 import SeasonOverview from "./components/season/SeasonOverview";
@@ -315,6 +316,14 @@ function MainApp() {
               element={
                 <AdminRoute>
                   <AdminModelsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/model-lab"
+              element={
+                <AdminRoute>
+                  <AdminModelLabPage />
                 </AdminRoute>
               }
             />

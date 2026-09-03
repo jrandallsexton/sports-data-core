@@ -74,6 +74,28 @@ namespace SportsData.Api.Infrastructure.Data.Entities
         /// <summary>Parse/validation problems recorded on experiment runs; null = clean.</summary>
         public string? ResponseValidationErrors { get; set; }
 
+        // ── Model Consensus Lab measurements (experiment runs; see
+        //    docs/features/model-consensus-lab.md). The entity's own charter
+        //    ("the backtest corpus: payload x model x prompt vs actual
+        //    outcome") is what the lab scores — these columns make the picks
+        //    queryable instead of buried in RawResponse.
+
+        /// <summary>The Model entity that supplied this evaluation. No FK — the Model string stays the provenance of record (same pattern as PromptId/PromptVersion).</summary>
+        public Guid? ModelId { get; set; }
+
+        /// <summary>Parsed SU pick (FranchiseSeasonId); null when the response did not parse.</summary>
+        public Guid? PredictedStraightUpWinnerId { get; set; }
+
+        /// <summary>Parsed ATS pick (FranchiseSeasonId); null when absent or unparsed.</summary>
+        public Guid? PredictedSpreadWinnerId { get; set; }
+
+        /// <summary>Actual prompt tokens reported by the transport (EstTokens is the pre-call estimate).</summary>
+        public int? PromptTokens { get; set; }
+
+        public int? CompletionTokens { get; set; }
+
+        public long? LatencyMs { get; set; }
+
         public class EntityConfiguration : IEntityTypeConfiguration<MatchupPreviewPrompt>
         {
             public void Configure(EntityTypeBuilder<MatchupPreviewPrompt> builder)

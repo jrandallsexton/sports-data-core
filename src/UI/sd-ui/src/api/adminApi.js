@@ -33,14 +33,35 @@ const AdminApi = {
       null,
       { params: { ...(sport ? { sport } : {}), ...(promptId ? { promptId } : {}) } }
     ),
-  runPreviewExperiment: (contestId, sport, promptId) =>
+  // modelId (optional): run against that Model row instead of the
+  // production client — the Model Lab's single-cell fill-in.
+  runPreviewExperiment: (contestId, sport, promptId, modelId) =>
     apiClient.post(
       `/admin/matchup/preview/${encodeURIComponent(contestId)}/experiment`,
       null,
-      { params: { ...(sport ? { sport } : {}), ...(promptId ? { promptId } : {}) } }
+      {
+        params: {
+          ...(sport ? { sport } : {}),
+          ...(promptId ? { promptId } : {}),
+          ...(modelId ? { modelId } : {}),
+        },
+      }
     ),
   getPreviewCaptures: (contestId) =>
     apiClient.get(`/admin/matchup/preview/${encodeURIComponent(contestId)}/captures`),
+  // Model Consensus Lab fan-out: one Experiment per active, lab-reachable
+  // model (same prompt, same contest) — a capture row per model, never a
+  // MatchupPreview. docs/features/model-consensus-lab.md.
+  runPreviewPanel: (contestId, sport, promptId) =>
+    apiClient.post(
+      `/admin/matchup/preview/${encodeURIComponent(contestId)}/experiment/panel`,
+      null,
+      { params: { ...(sport ? { sport } : {}), ...(promptId ? { promptId } : {}) } }
+    ),
+  // Week matrix: contests any pick'em league carries for (sport, year,
+  // week) x active lab-reachable models, latest picks per pair.
+  getModelLabMatrix: (sport, seasonYear, week) =>
+    apiClient.get('/admin/model-lab/matrix', { params: { sport, seasonYear, week } }),
 
   // Prompt management (per-sport-league prompt entities; text lives in
   // the API database). Name and slot (sport, withStats) are immutable —

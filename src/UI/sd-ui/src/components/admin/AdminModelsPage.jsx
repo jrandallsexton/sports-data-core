@@ -9,6 +9,9 @@ const PROVIDER_KINDS = [
   { value: 'Anthropic', label: 'Anthropic' },
   { value: 'OpenAi', label: 'OpenAI' },
   { value: 'Google', label: 'Google' },
+  // Long-tail makers (xAI, Alibaba, Moonshot, ...) with no first-party
+  // client — their models are reachable only via a gateway row.
+  { value: 'GatewayOnly', label: 'Gateway-only (no first-party client)' },
 ];
 
 // 2025 season window for the risk chip (see llm-training-dates.md):
@@ -26,10 +29,18 @@ function riskFor2025(cutoffUtc) {
   return { label: 'HIGHER-RISK (full 2025 season in training)', color: 'var(--color-danger, #c0392b)' };
 }
 
+// How the model is reached — a routing attribute, NOT a provider (the
+// provider stays who MAKES the model). Identity, like apiModelId: create-only.
+const GATEWAY_OPTIONS = [
+  { value: 'None', label: 'Direct (first-party client)' },
+  { value: 'OpenRouter', label: 'via OpenRouter gateway' },
+];
+
 const EMPTY_FORM = {
   modelProviderId: '',
   name: '',
   apiModelId: '',
+  gateway: 'None',
   releaseDate: '',
   knowledgeCutoffUtc: '',
   cutoffEvidence: '',
@@ -96,6 +107,7 @@ export default function AdminModelsPage() {
       modelProviderId: m.modelProviderId,
       name: m.name,
       apiModelId: m.apiModelId,
+      gateway: m.gateway ?? 'None',
       releaseDate: toDateInput(m.releaseDate),
       knowledgeCutoffUtc: toDateInput(m.knowledgeCutoffUtc),
       cutoffEvidence: m.cutoffEvidence ?? '',
@@ -153,6 +165,7 @@ export default function AdminModelsPage() {
           modelProviderId: form.modelProviderId,
           name: form.name.trim(),
           apiModelId: form.apiModelId.trim(),
+          gateway: form.gateway,
           releaseDate: fromDateInput(form.releaseDate),
           knowledgeCutoffUtc: fromDateInput(form.knowledgeCutoffUtc),
           cutoffEvidence: form.cutoffEvidence || null,
@@ -180,6 +193,30 @@ export default function AdminModelsPage() {
       loadAll();
     } catch (err) {
       toast.error(err?.response?.data?.errors?.[0]?.errorMessage ?? err.message ?? 'Set default failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // One-click matrix curation: active models are the Model Lab's columns.
+  // The update endpoint replaces all metadata, so echo the row's own
+  // values back with only IsActive flipped.
+  const handleToggleActive = async (m) => {
+    setSubmitting(true);
+    try {
+      await apiWrapper.Admin.updateModel(m.id, {
+        releaseDate: m.releaseDate,
+        knowledgeCutoffUtc: m.knowledgeCutoffUtc,
+        cutoffEvidence: m.cutoffEvidence,
+        cutoffVerifiedUtc: m.cutoffVerifiedUtc,
+        inputCostPerMTok: m.inputCostPerMTok,
+        outputCostPerMTok: m.outputCostPerMTok,
+        isActive: !m.isActive,
+      });
+      toast.success(m.isActive ? 'Deactivated — dropped from the lab matrix.' : 'Activated — now a lab matrix column.');
+      loadAll();
+    } catch (err) {
+      toast.error(err?.response?.data?.errors?.[0]?.errorMessage ?? err.message ?? 'Toggle failed');
     } finally {
       setSubmitting(false);
     }
@@ -269,6 +306,7 @@ export default function AdminModelsPage() {
                     <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
                       <strong>{m.name}</strong>
                       <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{m.providerName}</span>
+                      {(m.gateway === 'OpenRouter' || m.gateway === 1) && <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-warning, #e67e22)' }}>via OpenRouter</span>}
                       {m.isDefault && <span style={{ color: 'var(--color-success, #27ae60)', fontSize: '0.8rem', fontWeight: 700 }}>PRODUCTION DEFAULT</span>}
                       {!m.isActive && <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>INACTIVE</span>}
                     </div>
@@ -285,6 +323,16 @@ export default function AdminModelsPage() {
                       {!m.isDefault && m.isActive && (
                         <button type="button" disabled={submitting} onClick={() => handleSetDefault(m.id)}>
                           Set default
+                        </button>
+                      )}
+                      {!m.isDefault && (
+                        <button
+                          type="button"
+                          disabled={submitting}
+                          onClick={() => handleToggleActive(m)}
+                          title={m.isActive ? 'Drop from the lab matrix' : 'Add to the lab matrix'}
+                        >
+                          {m.isActive ? 'Deactivate' : 'Activate'}
                         </button>
                       )}
                       <button type="button" onClick={() => handleCopyId(m.id)}>Copy ID</button>
@@ -332,12 +380,25 @@ export default function AdminModelsPage() {
                     placeholder="display name (e.g. Claude Haiku 4.5)"
                     style={{ padding: '6px 8px' }}
                   />
+                  <select
+                    aria-label="Gateway (how the model is reached)"
+                    value={form.gateway}
+                    onChange={(e) => setForm(f => ({ ...f, gateway: e.target.value }))}
+                    title="Routing, not identity of the maker — a gateway row keeps its true provider. Create-only: the same weights reached two ways are different evaluands."
+                    style={{ padding: '6px 8px' }}
+                  >
+                    {GATEWAY_OPTIONS.map(g => (
+                      <option key={g.value} value={g.value}>{g.label}</option>
+                    ))}
+                  </select>
                   <input
                     type="text"
                     aria-label="API model id"
                     value={form.apiModelId}
                     onChange={(e) => setForm(f => ({ ...f, apiModelId: e.target.value }))}
-                    placeholder="exact API id (e.g. claude-haiku-4-5)"
+                    placeholder={form.gateway === 'OpenRouter'
+                      ? "gateway's namespaced id (e.g. anthropic/claude-sonnet-4.5)"
+                      : 'exact API id (e.g. claude-haiku-4-5)'}
                     style={{ padding: '6px 8px', fontFamily: 'monospace' }}
                   />
                 </>

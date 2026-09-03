@@ -1,4 +1,4 @@
-using FirebaseAdmin;
+﻿using FirebaseAdmin;
 
 using Google.Apis.Auth.OAuth2;
 
@@ -236,6 +236,22 @@ namespace SportsData.Api
             });
 
             services.AddScoped<IProvideAiCommunication>(sp => sp.GetRequiredService<DeepSeekClient>());
+
+            // Model Consensus Lab (docs/features/model-consensus-lab.md):
+            // OpenRouter is the audition transport — one OpenAI-compatible
+            // endpoint, per-catalog-row models. The resolver constructs one
+            // client per model; the named HttpClient supplies the timeout.
+            var openRouterConfig = new OpenRouterClientConfig
+            {
+                ApiKey = config["CommonConfig:OpenRouterClientConfig:ApiKey"]!,
+                BaseUrl = config["CommonConfig:OpenRouterClientConfig:BaseUrl"]!
+            };
+            services.AddSingleton(openRouterConfig);
+            services.AddHttpClient(Application.Previews.AiModelClientResolver.OpenRouterHttpClientName, client =>
+            {
+                client.Timeout = TimeSpan.FromMinutes(5);
+            });
+            services.AddScoped<Application.Previews.IAiModelClientResolver, Application.Previews.AiModelClientResolver>();
 
             // MetricBot (internal Python service; deetsMeter predictions).
             // Hangfire owns the weekly schedule + manual triggers; this

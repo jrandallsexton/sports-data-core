@@ -1,6 +1,7 @@
 ﻿using Moq;
 
 using SportsData.Api.Application.Previews;
+using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Api.Infrastructure.Prompts;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
@@ -863,6 +864,248 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
         public void BaseballMlb_IsNotSupported()
         {
             Assert.False(MatchupPreviewPolicy.SupportsSport(Sport.BaseballMlb));
+        }
+
+
+        private async Task<Model> SeedLabModelAsync(
+            bool modelActive = true,
+            bool providerActive = true,
+            ModelGateway gateway = ModelGateway.OpenRouter,
+            string apiModelId = "openai/gpt-test",
+            bool isDefault = false)
+        {
+            var provider = new ModelProvider
+            {
+                Id = Guid.NewGuid(),
+                Name = $"Provider-{Guid.NewGuid():N}",
+                Kind = ModelProviderKind.OpenAi,
+                IsActive = providerActive,
+                CreatedUtc = DateTime.UtcNow
+            };
+            var model = new Model
+            {
+                Id = Guid.NewGuid(),
+                ModelProviderId = provider.Id,
+                Name = $"Model-{Guid.NewGuid():N}",
+                ApiModelId = apiModelId,
+                Gateway = gateway,
+                IsActive = modelActive,
+                IsDefault = isDefault,
+                CreatedUtc = DateTime.UtcNow
+            };
+            await DataContext.ModelProviders.AddAsync(provider);
+            await DataContext.Models.AddAsync(model);
+            await DataContext.SaveChangesAsync();
+            return model;
+        }
+
+        [Fact]
+        public async Task Generate_ParsesMarkdownFencedJsonResponse()
+        {
+            // Many models fence JSON out of habit — Claude Haiku did on the
+            // lab's first multi-model run and a valid pick was discarded as
+            // a parse failure. The fence is cosmetic; the answer counts.
+            SetupPipeline(BuildMatchup("STATUS_SCHEDULED"));
+
+            var responseJson = $$"""
+                ```json
+                {
+                  "overview": "o", "analysis": "a", "prediction": "p",
+                  "predictedStraightUpWinner": "{{_homeFranchiseSeasonId}}",
+                  "predictedSpreadWinner": null,
+                  "overUnderPrediction": 2, "awayScore": 17, "homeScore": 27
+                }
+                ```
+                """;
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<string>(responseJson));
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetModelName())
+                .Returns("test-model");
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+            await sut.Process(new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl
+            });
+
+            var preview = Assert.Single(DataContext.MatchupPreviews);
+            Assert.Equal(_homeFranchiseSeasonId, preview.PredictedStraightUpWinner);
+            Assert.Null(preview.ValidationErrors);
+        }
+
+        [Fact]
+        public async Task Generate_StampsModelId_WhenDefaultRowMatchesWiredClient()
+        {
+            SetupPipeline(BuildMatchup("STATUS_SCHEDULED"));
+
+            // The registry's IsDefault row IS the production model selection —
+            // when its ApiModelId matches the wired client, the preview gets
+            // registry provenance alongside the model string.
+            var defaultModel = await SeedLabModelAsync(
+                gateway: ModelGateway.None, apiModelId: "test-model", isDefault: true);
+
+            var responseJson = $$"""
+                {
+                  "overview": "o", "analysis": "a", "prediction": "p",
+                  "predictedStraightUpWinner": "{{_homeFranchiseSeasonId}}",
+                  "predictedSpreadWinner": null,
+                  "overUnderPrediction": 2, "awayScore": 17, "homeScore": 27
+                }
+                """;
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<string>(responseJson));
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetModelName())
+                .Returns("test-model");
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+            await sut.Process(new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl
+            });
+
+            var preview = Assert.Single(DataContext.MatchupPreviews);
+            Assert.Equal(defaultModel.Id, preview.ModelId);
+            Assert.Equal("test-model", preview.Model);
+            var capture = Assert.Single(DataContext.MatchupPreviewPrompts);
+            Assert.Equal(defaultModel.Id, capture.ModelId);
+        }
+
+        [Fact]
+        public async Task Generate_StampsNoModelId_WhenDefaultRowMismatchesWiredClient()
+        {
+            SetupPipeline(BuildMatchup("STATUS_SCHEDULED"));
+
+            // Flag/config drift: a null stamp beats a false one.
+            await SeedLabModelAsync(
+                gateway: ModelGateway.None, apiModelId: "some-other-model", isDefault: true);
+
+            var responseJson = $$"""
+                {
+                  "overview": "o", "analysis": "a", "prediction": "p",
+                  "predictedStraightUpWinner": "{{_homeFranchiseSeasonId}}",
+                  "predictedSpreadWinner": null,
+                  "overUnderPrediction": 2, "awayScore": 17, "homeScore": 27
+                }
+                """;
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<string>(responseJson));
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Setup(x => x.GetModelName())
+                .Returns("test-model");
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+            await sut.Process(new GenerateMatchupPreviewsCommand
+            {
+                ContestId = _contestId,
+                Sport = Sport.FootballNfl
+            });
+
+            var preview = Assert.Single(DataContext.MatchupPreviews);
+            Assert.Null(preview.ModelId);
+            Assert.Equal("test-model", preview.Model);
+        }
+
+        [Fact]
+        public async Task Process_ExperimentWithInactiveModel_Skips()
+        {
+            // A fan-out enqueued before an admin deactivated the row must not
+            // call any model — inactive means inactive, even for in-flight jobs.
+            var model = await SeedLabModelAsync(modelActive: false);
+
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = Guid.NewGuid(),
+                Sport = Sport.FootballNfl,
+                Mode = PreviewGenerationMode.Experiment,
+                ModelId = model.Id
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+            await sut.Process(command);
+
+            Mocker.GetMock<IAiModelClientResolver>()
+                .Verify(x => x.Resolve(It.IsAny<Model>()), Times.Never);
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Verify(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Process_ExperimentWithInactiveProvider_Skips()
+        {
+            // Deactivating a PROVIDER silences its whole fleet at once.
+            var model = await SeedLabModelAsync(providerActive: false);
+
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = Guid.NewGuid(),
+                Sport = Sport.FootballNfl,
+                Mode = PreviewGenerationMode.Experiment,
+                ModelId = model.Id
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+            await sut.Process(command);
+
+            Mocker.GetMock<IAiModelClientResolver>()
+                .Verify(x => x.Resolve(It.IsAny<Model>()), Times.Never);
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Verify(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Process_ExperimentWithMissingModel_Skips()
+        {
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = Guid.NewGuid(),
+                Sport = Sport.FootballNcaa,
+                Mode = PreviewGenerationMode.Experiment,
+                ModelId = Guid.NewGuid() // no such Model row
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+            await sut.Process(command);
+
+            Mocker.GetMock<IAiModelClientResolver>()
+                .Verify(x => x.Resolve(It.IsAny<Model>()), Times.Never);
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Verify(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task Process_ExperimentWithUnresolvableRoute_SkipsWithoutThrowing()
+        {
+            // Direct routes have no lab client until panel promotion; that
+            // must be a logged skip, never an exception — a throw here
+            // would put Hangfire into a pointless retry loop.
+            var model = await SeedLabModelAsync(gateway: ModelGateway.None);
+
+            Mocker.GetMock<IAiModelClientResolver>()
+                .Setup(x => x.CanResolve(ModelGateway.None, It.IsAny<ModelProviderKind>()))
+                .Returns(false);
+
+            var command = new GenerateMatchupPreviewsCommand
+            {
+                ContestId = Guid.NewGuid(),
+                Sport = Sport.FootballNfl,
+                Mode = PreviewGenerationMode.Experiment,
+                ModelId = model.Id
+            };
+
+            var sut = Mocker.CreateInstance<MatchupPreviewProcessor>();
+            await sut.Process(command);
+
+            Mocker.GetMock<IAiModelClientResolver>()
+                .Verify(x => x.Resolve(It.IsAny<Model>()), Times.Never);
+            Mocker.GetMock<IProvideAiCommunication>()
+                .Verify(x => x.GetResponseAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
     }

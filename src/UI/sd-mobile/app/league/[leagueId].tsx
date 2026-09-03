@@ -169,6 +169,12 @@ export default function LeagueDetailScreen() {
   };
 
   // ── Commissioner delete ────────────────────────────────────────────────────
+  // Confirmation and errors render INLINE in the danger zone — Alert.alert
+  // is silently dropped on iOS in too many render contexts (the #706
+  // lesson; this exact button did nothing when reached from My Leagues).
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const deleteMutation = useMutation({
     mutationFn: () => leaguesApi.deleteLeague(leagueId!),
     onSuccess: async () => {
@@ -187,26 +193,18 @@ export default function LeagueDetailScreen() {
       const serverMessage = (
         err as { response?: { data?: { errors?: { errorMessage?: string }[] } } }
       )?.response?.data?.errors?.[0]?.errorMessage;
-      Alert.alert(
-        'Could not delete league',
-        serverMessage || 'Something went wrong. Please try again.',
-      );
+      setDeleteError(serverMessage || 'Something went wrong. Please try again.');
     },
   });
 
-  const confirmDelete = () => {
-    Alert.alert(
-      'Delete League?',
-      'Are you sure you want to delete this league? This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Yes, Delete League',
-          style: 'destructive',
-          onPress: () => deleteMutation.mutate(),
-        },
-      ],
-    );
+  const startDelete = () => {
+    setDeleteError(null);
+    setConfirmingDelete(true);
+  };
+
+  const cancelDelete = () => {
+    setConfirmingDelete(false);
+    setDeleteError(null);
   };
 
   const openPicks = () => {
@@ -425,14 +423,52 @@ export default function LeagueDetailScreen() {
                 <Text style={[styles.sectionTitle, { color: theme.errorText }]}>
                   Danger Zone
                 </Text>
-                <Button
-                  title={deleteMutation.isPending ? 'Deleting…' : 'Delete League'}
-                  onPress={confirmDelete}
-                  variant="danger"
-                  fullWidth
-                  size="md"
-                  disabled={deleteMutation.isPending}
-                />
+                {!confirmingDelete ? (
+                  <Button
+                    title="Delete League"
+                    onPress={startDelete}
+                    variant="danger"
+                    fullWidth
+                    size="md"
+                  />
+                ) : (
+                  <>
+                    <Text style={[styles.deleteWarning, { color: theme.text }]}>
+                      This permanently deletes the league for every member. It
+                      cannot be undone.
+                    </Text>
+                    <View style={styles.deleteConfirmRow}>
+                      <View style={styles.deleteConfirmButton}>
+                        <Button
+                          title="Cancel"
+                          onPress={cancelDelete}
+                          variant="secondary"
+                          fullWidth
+                          size="md"
+                          disabled={deleteMutation.isPending}
+                        />
+                      </View>
+                      <View style={styles.deleteConfirmButton}>
+                        <Button
+                          title={deleteMutation.isPending ? 'Deleting…' : 'Yes, Delete'}
+                          onPress={() => deleteMutation.mutate()}
+                          variant="danger"
+                          fullWidth
+                          size="md"
+                          disabled={deleteMutation.isPending}
+                        />
+                      </View>
+                    </View>
+                  </>
+                )}
+                {deleteError && (
+                  <Text
+                    style={[styles.deleteError, { color: theme.errorText }]}
+                    accessibilityRole="alert"
+                  >
+                    {deleteError}
+                  </Text>
+                )}
               </View>
             )}
           </>
@@ -454,6 +490,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   byline: { fontSize: 13, lineHeight: 18 },
+  deleteWarning: { fontSize: 14, lineHeight: 20 },
+  deleteConfirmRow: { flexDirection: 'row', gap: 10 },
+  deleteConfirmButton: { flex: 1 },
+  deleteError: { fontSize: 13, lineHeight: 18, marginTop: 4 },
   picksButton: { marginBottom: 4 },
   paramRow: {
     flexDirection: 'row',

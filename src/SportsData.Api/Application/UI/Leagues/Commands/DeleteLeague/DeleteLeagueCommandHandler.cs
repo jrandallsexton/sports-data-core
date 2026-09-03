@@ -70,8 +70,16 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
             await using var transaction = await _dbContext.Database
                 .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
+            // Only HUMAN picks are scoring data worth protecting. StatBot is
+            // auto-joined at creation and its picks regenerate on the next
+            // AI-existence refresh — counting them would close the deletion
+            // window on every league the moment the bot picks, locking
+            // misconfigured leagues in forever.
             var hasPicks = await _dbContext.UserPicks
-                .AnyAsync(p => p.PickemGroupId == command.LeagueId, cancellationToken);
+                .AnyAsync(
+                    p => p.PickemGroupId == command.LeagueId
+                         && !_dbContext.Users.Any(u => u.Id == p.UserId && u.IsSynthetic),
+                    cancellationToken);
 
             if (hasPicks)
                 return new Failure<Guid>(

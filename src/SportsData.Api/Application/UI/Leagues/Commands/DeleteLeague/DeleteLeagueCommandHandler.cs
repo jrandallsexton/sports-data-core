@@ -49,15 +49,15 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
                 ResultStatus.Unauthorized,
                 [new ValidationFailure(nameof(command.UserId), $"User {command.UserId} is not the commissioner of league {command.LeagueId}.")]);
 
-        // Don't let a commissioner nuke a league that members have already started picking
-        // for — too easy to destroy real scoring data during testing. Empty leagues (no
-        // picks yet) are fair game to delete.
+        // Don't let a commissioner nuke a league whose picks have been SCORED —
+        // that is real history. Leagues with only unscored picks are fair game:
+        // parameters are immutable, so starting over is the supported way to
+        // fix a misconfigured league, and unscored picks are cheap to re-enter.
         //
-        // Serializable transaction: the has-picks check and the cascade delete run in one
-        // unit so a pick inserted between the two operations can't sneak through. Without
-        // this, a race (user submits a pick mid-delete) would let us delete a league that
-        // now has picks, silently destroying real scoring data — the PickemGroupUserPick
-        // FK is OnDelete.Cascade, so FK constraints alone won't block the race.
+        // Serializable transaction: the has-scored-picks check and the cascade
+        // delete run in one unit so a result written between the two operations
+        // (the scoring consumer grading picks mid-delete) can't sneak through.
+        // FK constraints alone won't block the race.
         //
         // Wrap in the DbContext execution strategy: EnableRetryOnFailure is configured
         // globally for Npgsql (see Core/DependencyInjection/ServiceRegistration.cs),
@@ -70,22 +70,27 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
             await using var transaction = await _dbContext.Database
                 .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
-            // Only HUMAN picks are scoring data worth protecting. StatBot is
-            // auto-joined at creation and its picks regenerate on the next
-            // AI-existence refresh — counting them would close the deletion
-            // window on every league the moment the bot picks, locking
-            // misconfigured leagues in forever.
-            var hasPicks = await _dbContext.UserPicks
+            // The deletion rule (owner decision 2026-09-03): allowed until
+            // SCORED human picks exist. League parameters are immutable, so
+            // "made a few picks, want a different league" must be able to
+            // start over — unscored picks are intent, cheaply re-entered in
+            // the replacement league; scored picks are HISTORY, and history
+            // is what this guard protects. Synthetic (StatBot) picks never
+            // count, scored or not — the bot joins and picks on its own
+            // schedule, and letting it close the deletion window would lock
+            // every league without any human investment.
+            var hasScoredPicks = await _dbContext.UserPicks
                 .AnyAsync(
                     p => p.PickemGroupId == command.LeagueId
-                         && !_dbContext.Users.Any(u => u.Id == p.UserId && u.IsSynthetic),
+                         && !_dbContext.Users.Any(u => u.Id == p.UserId && u.IsSynthetic)
+                         && _dbContext.PickResults.Any(r => r.UserPickId == p.Id),
                     cancellationToken);
 
-            if (hasPicks)
+            if (hasScoredPicks)
                 return new Failure<Guid>(
                     default!,
                     ResultStatus.Validation,
-                    [new ValidationFailure(nameof(command.LeagueId), "Cannot delete a league that already has user picks.")]);
+                    [new ValidationFailure(nameof(command.LeagueId), "Cannot delete a league that already has scored picks.")]);
 
             _logger.LogInformation(
                 "Deleting league {LeagueId} by commissioner {UserId}",
@@ -94,6 +99,15 @@ public class DeleteLeagueCommandHandler : IDeleteLeagueCommandHandler
 
             // Remove all members
             _dbContext.PickemGroupMembers.RemoveRange(league.Members);
+
+            // Remove pick results FIRST — PickResult has no FK to UserPick
+            // (loose coupling, unique index only), so nothing cascades and
+            // skipping this would orphan result rows for the synthetic picks
+            // that scoring may already have graded.
+            _dbContext.PickResults.RemoveRange(
+                _dbContext.PickResults.Where(r =>
+                    _dbContext.UserPicks.Any(p =>
+                        p.Id == r.UserPickId && p.PickemGroupId == command.LeagueId)));
 
             // Remove all picks
             _dbContext.UserPicks.RemoveRange(

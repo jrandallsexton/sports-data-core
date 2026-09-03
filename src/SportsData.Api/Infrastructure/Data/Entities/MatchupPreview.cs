@@ -29,6 +29,16 @@ namespace SportsData.Api.Infrastructure.Data.Entities
 
         public string? Model { get; set; }
 
+        /// <summary>
+        /// The registry Model row that generated this preview — stamped
+        /// from the IsDefault row ONLY when its ApiModelId matches the
+        /// wired client's model (a mismatch means the flag and DI config
+        /// drifted; we stamp nothing rather than lie). No FK — the Model
+        /// string above stays the provenance of record (same pattern as
+        /// MatchupPreviewPrompt.ModelId).
+        /// </summary>
+        public Guid? ModelId { get; set; }
+
         public string? ValidationErrors { get; set; }
 
         /// <summary>
@@ -62,7 +72,9 @@ namespace SportsData.Api.Infrastructure.Data.Entities
                 builder.Property(x => x.Analysis).HasMaxLength(1024);
                 builder.Property(x => x.Prediction).HasMaxLength(768);
 
-                builder.Property(x => x.Model).HasMaxLength(50);
+                // 100 matches Model.ApiModelId — gateway-namespaced ids
+                // ("google/gemini-3.1-pro-preview-customtools") outgrow 50.
+                builder.Property(x => x.Model).HasMaxLength(100);
 
                 builder.Property(x => x.ValidationErrors).HasMaxLength(1024);
                 builder.Property(x => x.RejectionNote).HasMaxLength(512);

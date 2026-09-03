@@ -623,7 +623,15 @@ model/prompt choice before real generations start):
      goes non-nullable.
 
      **Provider strategy — DECIDED 2026-08-08: first-party clients
-     only.** Keep the existing DeepSeek client; add sibling
+     only. AMENDED 2026-09-03:** the owner revised this for the Model
+     Consensus Lab's many-model audition (a breadth ambition this
+     decision predates) — OpenRouter admitted, but as what it is: a
+     GATEWAY, not a provider. The route lives on the Model row
+     (Model.Gateway: None | OpenRouter); providers stay who make the
+     models, so cutoff/cost metadata stays truthful. First-party
+     clients remain preferred for production panel seats; see
+     docs/features/model-consensus-lab.md.
+     Keep the existing DeepSeek client; add sibling
      IProvideAiCommunication implementations for Anthropic, OpenAI, and
      Google, resolved by a factory keyed off the Model row's provider —
      the platform's established typed-client/factory idiom. Evaluated

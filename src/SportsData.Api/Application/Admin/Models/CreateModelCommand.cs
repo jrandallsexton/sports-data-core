@@ -16,8 +16,11 @@ public class CreateModelCommand
     /// <summary>Display name (unique), e.g. "Claude Haiku 4.5".</summary>
     public required string Name { get; set; }
 
-    /// <summary>Exact API identifier, e.g. "claude-haiku-4-5".</summary>
+    /// <summary>Exact API identifier for the chosen route, e.g. "claude-haiku-4-5" direct, "anthropic/claude-sonnet-4.5" via OpenRouter.</summary>
     public required string ApiModelId { get; set; }
+
+    /// <summary>How the model is reached (None = first-party client). Identity, like ApiModelId — a different route is a different evaluand, so it is create-only.</summary>
+    public ModelGateway Gateway { get; set; } = ModelGateway.None;
 
     public DateTime? ReleaseDate { get; set; }
 
@@ -43,6 +46,7 @@ public class CreateModelCommandValidator : AbstractValidator<CreateModelCommand>
         RuleFor(x => x.ModelProviderId).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
         RuleFor(x => x.ApiModelId).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Gateway).IsInEnum();
         RuleFor(x => x.CutoffEvidence).MaximumLength(512);
     }
 }
@@ -76,16 +80,28 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
             return new Failure<Guid>(default!, ResultStatus.Validation, validation.Errors);
         }
 
-        var providerExists = await _dataContext.ModelProviders
+        var provider = await _dataContext.ModelProviders
             .AsNoTracking()
-            .AnyAsync(p => p.Id == command.ModelProviderId, cancellationToken);
+            .Where(p => p.Id == command.ModelProviderId)
+            .Select(p => new { p.Kind })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!providerExists)
+        if (provider is null)
         {
             return new Failure<Guid>(
                 default!,
                 ResultStatus.Validation,
                 [new ValidationFailure(nameof(command.ModelProviderId), "Model provider not found — create it first (POST /admin/model-providers)")]);
+        }
+
+        // A GatewayOnly provider has no first-party client by definition —
+        // a direct-routed model under it would be unreachable forever.
+        if (provider.Kind == ModelProviderKind.GatewayOnly && command.Gateway == ModelGateway.None)
+        {
+            return new Failure<Guid>(
+                default!,
+                ResultStatus.Validation,
+                [new ValidationFailure(nameof(command.Gateway), "This provider is gateway-only (no first-party client) — the model must specify a gateway route.")]);
         }
 
         var name = command.Name.Trim();
@@ -124,6 +140,7 @@ public class CreateModelCommandHandler : ICreateModelCommandHandler
             ModelProviderId = command.ModelProviderId,
             Name = name,
             ApiModelId = apiModelId,
+            Gateway = command.Gateway,
             ReleaseDate = command.ReleaseDate,
             KnowledgeCutoffUtc = command.KnowledgeCutoffUtc,
             CutoffEvidence = command.CutoffEvidence,

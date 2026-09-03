@@ -59,6 +59,12 @@ public class GetMatchupPreviewCapturesQueryHandler : IGetMatchupPreviewCapturesQ
                     Model = x.Model,
                     RawResponse = x.RawResponse,
                     ResponseValidationErrors = x.ResponseValidationErrors,
+                    ModelId = x.ModelId,
+                    PredictedStraightUpWinnerId = x.PredictedStraightUpWinnerId,
+                    PredictedSpreadWinnerId = x.PredictedSpreadWinnerId,
+                    PromptTokens = x.PromptTokens,
+                    CompletionTokens = x.CompletionTokens,
+                    LatencyMs = x.LatencyMs,
                     // The instruction text is stored per capture, so this is
                     // the EXACT model input — no blob round-trip, immune to
                     // in-place blob edits after the fact.

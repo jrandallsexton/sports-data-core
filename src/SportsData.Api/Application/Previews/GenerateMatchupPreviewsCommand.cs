@@ -22,6 +22,13 @@ public class GenerateMatchupPreviewsCommand
     public PreviewGenerationMode Mode { get; set; } = PreviewGenerationMode.Generate;
 
     /// <summary>
+    /// Model Consensus Lab: run this experiment against a specific Model
+    /// entity instead of the default production client. Experiment mode only.
+    /// See docs/features/model-consensus-lab.md.
+    /// </summary>
+    public Guid? ModelId { get; set; }
+
+    /// <summary>
     /// Explicit Prompt entity override for Preview Lab runs — honored in
     /// Capture/Experiment modes only; Generate always uses the resolved
     /// default so an experiment override can never leak into production

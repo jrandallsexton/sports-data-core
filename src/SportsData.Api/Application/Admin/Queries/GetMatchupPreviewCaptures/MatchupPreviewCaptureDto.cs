@@ -42,5 +42,24 @@ public class MatchupPreviewCaptureDto
     /// <summary>Parse/validation problems recorded on experiment runs; null = clean.</summary>
     public string? ResponseValidationErrors { get; set; }
 
+    // Model Consensus Lab measurements (experiment runs; null elsewhere).
+    // See docs/features/model-consensus-lab.md.
+
+    /// <summary>The Model entity that supplied the evaluation (Model string is the provenance of record).</summary>
+    public Guid? ModelId { get; set; }
+
+    /// <summary>Parsed SU pick (FranchiseSeasonId); null when the response did not parse.</summary>
+    public Guid? PredictedStraightUpWinnerId { get; set; }
+
+    /// <summary>Parsed ATS pick (FranchiseSeasonId); null when absent or unparsed.</summary>
+    public Guid? PredictedSpreadWinnerId { get; set; }
+
+    /// <summary>Actual prompt tokens reported by the transport (EstTokens is the pre-call estimate).</summary>
+    public int? PromptTokens { get; set; }
+
+    public int? CompletionTokens { get; set; }
+
+    public long? LatencyMs { get; set; }
+
     public DateTime CreatedUtc { get; set; }
 }

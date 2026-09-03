@@ -27,6 +27,7 @@ namespace SportsData.Api.Application.Previews
         private readonly IMatchupPreviewPromptProvider _promptProvider;
         private readonly IEventBus _eventBus;
         private readonly IDateTimeProvider _dateTimeProvider;
+        private readonly IAiModelClientResolver _modelClientResolver;
 
         public MatchupPreviewProcessor(
             AppDataContext dataContext,
@@ -36,7 +37,8 @@ namespace SportsData.Api.Application.Previews
             IProvideAiCommunication aiCommunication,
             IMatchupPreviewPromptProvider promptProvider,
             IEventBus eventBus,
-            IDateTimeProvider dateTimeProvider)
+            IDateTimeProvider dateTimeProvider,
+            IAiModelClientResolver modelClientResolver)
         {
             _dataContext = dataContext;
             _logger = logger;
@@ -45,7 +47,8 @@ namespace SportsData.Api.Application.Previews
             _aiCommunication = aiCommunication;
             _promptProvider = promptProvider;
             _eventBus = eventBus;
-            _dateTimeProvider = dateTimeProvider;
+            _dateTimeProvider = dateTimeProvider;            _modelClientResolver = modelClientResolver;
+
         }
 
         /// <summary>
@@ -79,6 +82,38 @@ namespace SportsData.Api.Application.Previews
                     "Preview generation not supported for {Sport} — no prompts exist; skipping. ContestId={ContestId}",
                     command.Sport, command.ContestId);
                 return;
+            }
+
+            // Model Consensus Lab: resolve the Model row FIRST — a missing
+            // or inactive model must cost nothing (no Producer round trip,
+            // no prompt assembly). Inactive means inactive, including for
+            // fan-out jobs enqueued moments before an admin flipped the row.
+            Model? labModel = null;
+            if (command.Mode == PreviewGenerationMode.Experiment && command.ModelId is not null)
+            {
+                labModel = await _dataContext.Models
+                    .AsNoTracking()
+                    .Include(x => x.ModelProvider)
+                    .FirstOrDefaultAsync(x => x.Id == command.ModelId.Value);
+
+                if (labModel is null || !labModel.IsActive || labModel.ModelProvider?.IsActive != true)
+                {
+                    _logger.LogWarning(
+                        "Experiment references missing or inactive model {ModelId}; skipping. ContestId={ContestId}",
+                        command.ModelId, command.ContestId);
+                    return;
+                }
+
+                // A route without a lab client (direct first-party clients
+                // arrive with panel promotion) is a skip, not a crash —
+                // throwing here would put Hangfire into a pointless retry loop.
+                if (!_modelClientResolver.CanResolve(labModel.Gateway, labModel.ModelProvider.Kind))
+                {
+                    _logger.LogWarning(
+                        "No lab evaluation client for gateway {Gateway} / provider kind {Kind} (model {ModelName}); skipping. ContestId={ContestId}",
+                        labModel.Gateway, labModel.ModelProvider.Kind, labModel.Name, command.ContestId);
+                    return;
+                }
             }
 
             var rejectedPreview = await _dataContext.MatchupPreviews
@@ -153,7 +188,37 @@ namespace SportsData.Api.Application.Previews
                 return;
             }
 
-            var aiResponse = await _aiCommunication.GetResponseAsync(assembled.FullPrompt, CancellationToken.None);
+            // Model Consensus Lab: an experiment naming a Model row runs
+            // against THAT model (resolved by provider Kind: OpenRouter
+            // audition, or a direct client once a panel seat is earned) and
+            // records the measurements the lab scores on. Everything else
+            // uses the default production client, unchanged.
+            Result<string> aiResponse;
+            AiEvaluationResult? evaluation = null;
+
+            if (labModel is not null)
+            {
+                var evalClient = _modelClientResolver.Resolve(labModel);
+                var evalResult = await evalClient.EvaluateAsync(assembled.FullPrompt, CancellationToken.None);
+
+                if (evalResult.IsSuccess)
+                {
+                    evaluation = evalResult.Value;
+                    aiResponse = new Success<string>(evaluation.Content);
+                }
+                else
+                {
+                    aiResponse = new Failure<string>(
+                        string.Empty,
+                        evalResult.Status,
+                        ((Failure<AiEvaluationResult>)evalResult).Errors);
+                }
+            }
+            else
+            {
+                aiResponse = await _aiCommunication.GetResponseAsync(assembled.FullPrompt, CancellationToken.None);
+            }
+
             var rawResponse = aiResponse.Value;
 
             if (command.Mode == PreviewGenerationMode.Experiment)
@@ -162,10 +227,25 @@ namespace SportsData.Api.Application.Previews
                 // on the capture row. NEVER writes a MatchupPreview (an
                 // experimental row would shadow a prior season's real preview
                 // on the picks page) and never publishes PreviewGenerated.
-                capture.Model = _aiCommunication.GetModelName();
+                capture.Model = labModel?.ApiModelId ?? _aiCommunication.GetModelName();
+                capture.ModelId = labModel?.Id;
                 capture.RawResponse = string.IsNullOrWhiteSpace(rawResponse) ? null : rawResponse;
+                capture.PromptTokens = evaluation?.PromptTokens;
+                capture.CompletionTokens = evaluation?.CompletionTokens;
+                capture.LatencyMs = evaluation?.LatencyMs;
 
                 var problems = new List<string>();
+
+                // Truncation is a CONFIG problem, not a model problem —
+                // name it so the matrix's error tooltip says what to fix
+                // instead of blaming the parse that inevitably follows.
+                var truncated = string.Equals(
+                    evaluation?.FinishReason, "length", StringComparison.OrdinalIgnoreCase);
+                if (truncated)
+                {
+                    problems.Add(
+                        $"TRUNCATED at the max-tokens ceiling (finish_reason=length, completion={evaluation?.CompletionTokens}) — raise OpenRouterClientConfig MaxTokens; reasoning models spend thinking tokens against the same cap");
+                }
 
                 if (!aiResponse.IsSuccess || string.IsNullOrWhiteSpace(rawResponse))
                 {
@@ -178,10 +258,21 @@ namespace SportsData.Api.Application.Previews
                     var experimentParsed = TryParseResponse(rawResponse);
                     if (experimentParsed is null)
                     {
-                        problems.Add("Response could not be parsed by either deserialization strategy");
+                        // A truncated response's parse failure is already
+                        // explained by the truncation problem above.
+                        if (!truncated)
+                        {
+                            problems.Add("Response could not be parsed by either deserialization strategy");
+                        }
                     }
                     else
                     {
+                        // Persist the parsed picks even when validation
+                        // flags problems — the matrix scores the PICK; the
+                        // problems column records the caveat alongside it.
+                        capture.PredictedStraightUpWinnerId = experimentParsed.PredictedStraightUpWinner;
+                        capture.PredictedSpreadWinnerId = experimentParsed.PredictedSpreadWinner;
+
                         var experimentValidation = MatchupPreviewValidator.Validate(
                             contestId: command.ContestId,
                             homeScore: experimentParsed.HomeScore,
@@ -318,6 +409,34 @@ namespace SportsData.Api.Application.Previews
             // We have a valid response (parsed + valid)
             _logger.LogDebug("AI generated preview. {@Parsed}", parsed);
 
+            // Registry provenance: the IsDefault Model row IS the production
+            // model selection. Stamp its id only when it agrees with the
+            // client actually wired — a mismatch means the flag and the DI
+            // config have drifted, and a null stamp beats a false one.
+            Guid? productionModelId = null;
+            var wiredModelName = _aiCommunication.GetModelName();
+            var defaultModel = await _dataContext.Models
+                .AsNoTracking()
+                .Where(m => m.IsDefault)
+                .Select(m => new { m.Id, m.ApiModelId })
+                .FirstOrDefaultAsync();
+            if (defaultModel is null)
+            {
+                _logger.LogWarning(
+                    "No IsDefault Model row in the registry — preview {ContestId} gets string-only model provenance ({Model})",
+                    command.ContestId, wiredModelName);
+            }
+            else if (!string.Equals(defaultModel.ApiModelId, wiredModelName, StringComparison.Ordinal))
+            {
+                _logger.LogWarning(
+                    "IsDefault Model row ({DefaultApiModelId}) does not match the wired production client ({Model}) — stamping no ModelId on preview {ContestId}",
+                    defaultModel.ApiModelId, wiredModelName, command.ContestId);
+            }
+            else
+            {
+                productionModelId = defaultModel.Id;
+            }
+
             var preview = new MatchupPreview
             {
                 Id = Guid.NewGuid(),
@@ -332,7 +451,8 @@ namespace SportsData.Api.Application.Previews
                     : OverUnderPrediction.Under,
                 AwayScore = parsed.AwayScore,
                 HomeScore = parsed.HomeScore,
-                Model = _aiCommunication.GetModelName(),
+                Model = wiredModelName,
+                ModelId = productionModelId,
                 ValidationErrors = null,
                 CreatedUtc = _dateTimeProvider.UtcNow(),
                 CreatedBy = command.CorrelationId,
@@ -345,6 +465,7 @@ namespace SportsData.Api.Application.Previews
 
             capture.MatchupPreviewId = preview.Id;
             capture.Model = preview.Model;
+            capture.ModelId = productionModelId;
             capture.RawResponse = rawResponse;
 
             await _eventBus.Publish(new PreviewGenerated(
@@ -544,8 +665,34 @@ namespace SportsData.Api.Application.Previews
             };
         }
 
+        /// <summary>
+        /// Strips a markdown code fence (```json ... ``` or ``` ... ```)
+        /// wrapping the payload. Many models fence JSON out of habit
+        /// (Claude Haiku did on the lab's first multi-model run) — the
+        /// answer inside is valid, and discarding it would be waste, not
+        /// rigor. Anything short of a leading fence is returned untouched.
+        /// </summary>
+        private static string StripCodeFence(string raw)
+        {
+            var trimmed = raw.Trim();
+            if (!trimmed.StartsWith("```", StringComparison.Ordinal))
+                return raw;
+
+            var firstLineBreak = trimmed.IndexOf('\n');
+            if (firstLineBreak < 0)
+                return raw;
+
+            var closingFence = trimmed.LastIndexOf("```", StringComparison.Ordinal);
+            if (closingFence <= firstLineBreak)
+                return raw;
+
+            return trimmed[(firstLineBreak + 1)..closingFence].Trim();
+        }
+
         private MatchupPreviewResponse? TryParseResponse(string rawResponse)
         {
+            rawResponse = StripCodeFence(rawResponse);
+
             try
             {
                 return JsonSerializer.Deserialize<MatchupPreviewResponse>(rawResponse, new JsonSerializerOptions

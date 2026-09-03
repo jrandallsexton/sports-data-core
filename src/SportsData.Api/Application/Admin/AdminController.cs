@@ -19,6 +19,8 @@ using SportsData.Api.Application.Admin.Queries.GetMatchupPreviewCaptures;
 using SportsData.Api.Application.Admin.SignalRDebug;
 using SportsData.Api.Application.Contests.Commands.GenerateGameRecap;
 using SportsData.Api.Application.Previews;
+using Microsoft.EntityFrameworkCore;
+using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
 using SportsData.Api.Application.UI.Contest.Dtos;
@@ -178,17 +180,107 @@ namespace SportsData.Api.Application.Admin
         public IActionResult RunContestPreviewExperiment(
             [FromRoute] Guid contestId,
             [FromQuery] Sport sport = Sport.FootballNcaa,
-            [FromQuery] Guid? promptId = null)
+            [FromQuery] Guid? promptId = null,
+            [FromQuery] Guid? modelId = null)
         {
+            // modelId (optional): run against that Model row instead of the
+            // production client — the Model Lab's single-cell fill-in.
             var cmd = new GenerateMatchupPreviewsCommand
             {
                 ContestId = contestId,
                 Sport = sport,
                 Mode = PreviewGenerationMode.Experiment,
-                PromptId = promptId
+                PromptId = promptId,
+                ModelId = modelId
             };
             _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
             return Accepted(new { cmd.CorrelationId });
+        }
+
+        /// <summary>
+        /// Model Consensus Lab week matrix: every contest any pick'em league
+        /// carries for (sport, season, week) x every active lab-reachable
+        /// model, with each pair's latest experiment picks. Missing cells
+        /// are generated one at a time via the experiment endpoint's
+        /// modelId parameter. See docs/features/model-consensus-lab.md.
+        /// </summary>
+        [HttpGet]
+        [Route("model-lab/matrix")]
+        public async Task<ActionResult<Queries.GetModelLabMatrix.ModelLabMatrixDto>> GetModelLabMatrix(
+            [FromServices] Queries.GetModelLabMatrix.IGetModelLabMatrixQueryHandler handler,
+            [FromQuery] Sport sport = Sport.FootballNcaa,
+            [FromQuery] int seasonYear = 0,
+            [FromQuery] int week = 0,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(
+                new Queries.GetModelLabMatrix.GetModelLabMatrixQuery
+                {
+                    Sport = sport,
+                    SeasonYear = seasonYear,
+                    Week = week
+                },
+                cancellationToken);
+
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Model Consensus Lab fan-out: run the SAME experiment (same prompt
+        /// assembly, same contest) against every active Model whose provider
+        /// the lab can reach — one capture row per model, never a
+        /// MatchupPreview. The audition in one call. Model/ModelProvider
+        /// rows are managed by the existing admin CRUD (models /
+        /// model-providers routes). See docs/features/model-consensus-lab.md.
+        /// </summary>
+        [HttpPost]
+        [Route("matchup/preview/{contestId}/experiment/panel")]
+        public async Task<IActionResult> RunContestPreviewPanel(
+            [FromRoute] Guid contestId,
+            [FromServices] AppDataContext dataContext,
+            [FromServices] IAiModelClientResolver modelClientResolver,
+            [FromQuery] Sport sport = Sport.FootballNcaa,
+            [FromQuery] Guid? promptId = null,
+            CancellationToken cancellationToken = default)
+        {
+            // Budget guard: experiment spend is approved, runaway loops are
+            // not. 25 models per fan-out is far above any realistic audition.
+            const int maxPanelSize = 25;
+
+            var candidates = await dataContext.Models
+                .AsNoTracking()
+                .Where(x => x.IsActive && x.ModelProvider!.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new { x.Id, x.Name, x.Gateway, x.ModelProvider!.Kind })
+                .ToListAsync(cancellationToken);
+
+            // The resolver is the single source of truth for which routes
+            // have a lab client (today: the OpenRouter gateway; direct
+            // first-party clients arrive with panel promotion).
+            var models = candidates
+                .Where(x => modelClientResolver.CanResolve(x.Gateway, x.Kind))
+                .Take(maxPanelSize)
+                .ToList();
+
+            if (models.Count == 0)
+                return UnprocessableEntity(new { error = "No active models under a lab-reachable provider." });
+
+            var correlationId = Guid.NewGuid();
+            foreach (var model in models)
+            {
+                var cmd = new GenerateMatchupPreviewsCommand
+                {
+                    ContestId = contestId,
+                    Sport = sport,
+                    Mode = PreviewGenerationMode.Experiment,
+                    PromptId = promptId,
+                    ModelId = model.Id,
+                    CorrelationId = correlationId
+                };
+                _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
+            }
+
+            return Accepted(new { correlationId, modelCount = models.Count });
         }
 
         /// <summary>

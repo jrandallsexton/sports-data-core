@@ -123,6 +123,7 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
                 Home = m.Home,
                 HomeShort = m.HomeShort,
                 HomeFranchiseSeasonId = m.HomeFranchiseSeasonId,
+                Spread = m.SpreadCurrent,
                 Cells = latestCells[m.ContestId]
                     .Select(c => new ModelLabMatrixDto.MatrixCellDto
                     {

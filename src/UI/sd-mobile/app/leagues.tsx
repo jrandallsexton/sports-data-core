@@ -296,6 +296,12 @@ export default function LeaguesScreen() {
                   }
                   onOpenPicks={() => openPicks(league.id)}
                   onDuplicate={() => setCloneTarget(league)}
+                  onManage={() =>
+                    router.push({
+                      pathname: '/league/[leagueId]',
+                      params: { leagueId: league.id },
+                    } as never)
+                  }
                 />
               </View>
             ))}

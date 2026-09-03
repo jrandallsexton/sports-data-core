@@ -58,6 +58,7 @@ interface Props {
   onToggleExpanded: () => void;
   onOpenPicks: () => void;
   onDuplicate: () => void;
+  onManage: () => void;
 }
 
 /**
@@ -75,6 +76,7 @@ export function LeagueCard({
   onToggleExpanded,
   onOpenPicks,
   onDuplicate,
+  onManage,
 }: Props) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -222,6 +224,18 @@ export function LeagueCard({
             <Text style={[styles.actionText, { color: theme.text }]}>Duplicate</Text>
           </TouchableOpacity>
         )}
+        {/* The full league page (members, invites, commissioner tools) was
+            only reachable as the post-create landing — a commissioner who
+            left it had no path back to Delete. Shown to everyone: the
+            detail screen gates its own danger zone. */}
+        <TouchableOpacity
+          style={[styles.action, styles.actionSecondary, { borderColor: theme.border }]}
+          onPress={onManage}
+          accessibilityRole="button"
+          accessibilityLabel={`Manage ${league.name}`}
+        >
+          <Text style={[styles.actionText, { color: theme.text }]}>Manage</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

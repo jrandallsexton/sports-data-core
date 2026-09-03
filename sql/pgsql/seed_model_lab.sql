@@ -22,7 +22,8 @@ VALUES
   ('a0000000-0000-0000-0000-000000000002', 'Anthropic', 1, NULL, TRUE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
   ('a0000000-0000-0000-0000-000000000003', 'OpenAI',    2, NULL, TRUE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
   ('a0000000-0000-0000-0000-000000000004', 'Google',    3, NULL, TRUE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
-  ('a0000000-0000-0000-0000-000000000005', 'xAI',       99, 'Gateway-only (no first-party client); disable retrieval for backtests', TRUE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000')
+  ('a0000000-0000-0000-0000-000000000005', 'xAI',       99, 'Gateway-only (no first-party client); disable retrieval for backtests', TRUE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
+  ('a0000000-0000-0000-0000-000000000006', 'Alibaba',   99, 'Gateway-only (no first-party client)', TRUE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000')
 ON CONFLICT DO NOTHING;
 
 -- Models, all Gateway = 1 (OpenRouter). KnowledgeCutoffUtc = declared
@@ -62,6 +63,17 @@ VALUES
    'DeepSeek V3.1', 'deepseek/deepseek-chat-v3.1', 1,
    '2025-08-01', NULL, 'Provider publishes no cutoff (~Jul 2024 inferred, unofficial) — NULL = treated higher-risk by design', NULL,
    0.25, 0.95, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
+
+  -- The SEVENTH SEAT (added 2026-09-03): an odd audition panel makes the
+  -- matrix's strict-majority consensus decidable whenever every model
+  -- votes — six voters pushed 3-3 too often. Qwen 3 Max is the top of
+  -- llm-training-dates.md's lower-risk pool (Jun 30 2025 cutoff, full
+  -- 2025 season clean) AND a fourth architecture family — a tiebreaker
+  -- correlated with existing panelists would just vote with the herd.
+  ('b0000000-0000-0000-0000-000000000008', 'a0000000-0000-0000-0000-000000000006',
+   'Qwen 3 Max', 'qwen/qwen3-max', 1,
+   '2025-09-01', '2025-06-30', 'llm-training-dates.md: Jun 30 2025 (Tier-2 aggregator confidence — verify against Alibaba docs)', NULL,
+   0.78, 3.90, TRUE, FALSE, NOW() AT TIME ZONE 'utc', '00000000-0000-0000-0000-000000000000'),
 
   -- The production incumbent, reached DIRECTLY (Gateway 0 = None) — the
   -- same weights as the OpenRouter row above but a different evaluand.

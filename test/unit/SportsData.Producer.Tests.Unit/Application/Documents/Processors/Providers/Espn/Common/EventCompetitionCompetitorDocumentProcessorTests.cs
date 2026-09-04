@@ -148,5 +148,226 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             saved.Order.Should().Be(0);
             saved.Winner.Should().BeFalse();
         }
+
+        [Fact]
+        public async Task WhenNewCompetitorClaimsOccupiedSide_ShouldRelocateStaleOccupant()
+        {
+            // The 2026-08-29 Howard @ Alabama A&M jam: ESPN re-designated
+            // home/away, our DB held the OLD home occupant, and the new
+            // competitor's insert collided with the (CompetitionId, HomeAway)
+            // unique index forever. The occupant must be relocated to the
+            // vacant opposite side before the insert.
+
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+            var sut = Mocker.CreateInstance<FootballEventCompetitionCompetitorDocumentProcessor<FootballDataContext>>();
+
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitor.json");
+            var dto = json.FromJson<EspnEventCompetitionCompetitorDto>();
+
+            var competitorIdentity = generator.Generate(dto!.Ref);
+            var teamIdentity = generator.Generate(dto.Team.Ref);
+
+            var competitionId = Guid.NewGuid();
+            await FootballDataContext.Competitions.AddAsync(new FootballCompetition
+            {
+                Id = competitionId,
+                ContestId = Guid.NewGuid(),
+                Date = FixedTestNow,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid()
+            });
+
+            var franchiseSeasonId = Guid.NewGuid();
+            await FootballDataContext.FranchiseSeasons.AddAsync(new FranchiseSeason
+            {
+                Id = franchiseSeasonId,
+                Abbreviation = "TST",
+                DisplayName = "Test FS",
+                DisplayNameShort = "TFS",
+                Slug = teamIdentity.CanonicalId.ToString(),
+                Location = "Test Location",
+                Name = "Test Franchise Season",
+                ColorCodeHex = "#FFFFFF",
+                ColorCodeAltHex = "#000000",
+                IsActive = true,
+                SeasonYear = 2024,
+                FranchiseId = Guid.NewGuid(),
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new FranchiseSeasonExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = teamIdentity.CleanUrl,
+                        SourceUrlHash = teamIdentity.UrlHash,
+                        Value = teamIdentity.UrlHash
+                    }
+                ]
+            });
+
+            // The STALE occupant: a different franchise's row holding the
+            // side the document claims (fixture: home). No row exists for
+            // the document's own competitor.
+            var occupantId = Guid.NewGuid();
+            await FootballDataContext.CompetitionCompetitors.AddAsync(new FootballCompetitionCompetitor
+            {
+                Id = occupantId,
+                CompetitionId = competitionId,
+                FranchiseSeasonId = Guid.NewGuid(),
+                HomeAway = "home",
+                Order = 0,
+                Winner = false,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid()
+            });
+            await FootballDataContext.SaveChangesAsync();
+
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.Document, json)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitor)
+                .With(x => x.SeasonYear, 2024)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.ParentId, competitionId.ToString())
+                .With(x => x.UrlHash, competitorIdentity.UrlHash)
+                .OmitAutoProperties()
+                .Create();
+
+            await sut.ProcessAsync(command);
+
+            var occupant = await FootballDataContext.CompetitionCompetitors
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == occupantId);
+            occupant.HomeAway.Should().Be("away", "the stale occupant belongs on the vacated side");
+
+            var created = await FootballDataContext.CompetitionCompetitors
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == competitorIdentity.CanonicalId);
+            created.HomeAway.Should().Be("home");
+        }
+
+        [Fact]
+        public async Task WhenBothCompetitorsSwapSides_ShouldSwapWithoutCollision()
+        {
+            // Full re-designation: OUR row holds away, the other franchise's
+            // row holds home, and the document says we are now home. Both
+            // rows must end swapped — the parking step keeps the relocation
+            // from colliding with our own row.
+
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+            var sut = Mocker.CreateInstance<FootballEventCompetitionCompetitorDocumentProcessor<FootballDataContext>>();
+
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitor.json");
+            var dto = json.FromJson<EspnEventCompetitionCompetitorDto>();
+
+            var competitorIdentity = generator.Generate(dto!.Ref);
+            var teamIdentity = generator.Generate(dto.Team.Ref);
+
+            var competitionId = Guid.NewGuid();
+            await FootballDataContext.Competitions.AddAsync(new FootballCompetition
+            {
+                Id = competitionId,
+                ContestId = Guid.NewGuid(),
+                Date = FixedTestNow,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid()
+            });
+
+            var franchiseSeasonId = Guid.NewGuid();
+            await FootballDataContext.FranchiseSeasons.AddAsync(new FranchiseSeason
+            {
+                Id = franchiseSeasonId,
+                Abbreviation = "TST",
+                DisplayName = "Test FS",
+                DisplayNameShort = "TFS",
+                Slug = teamIdentity.CanonicalId.ToString(),
+                Location = "Test Location",
+                Name = "Test Franchise Season",
+                ColorCodeHex = "#FFFFFF",
+                ColorCodeAltHex = "#000000",
+                IsActive = true,
+                SeasonYear = 2024,
+                FranchiseId = Guid.NewGuid(),
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new FranchiseSeasonExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = teamIdentity.CleanUrl,
+                        SourceUrlHash = teamIdentity.UrlHash,
+                        Value = teamIdentity.UrlHash
+                    }
+                ]
+            });
+
+            // OUR row, keyed by the document's UrlHash, currently away.
+            await FootballDataContext.CompetitionCompetitors.AddAsync(new FootballCompetitionCompetitor
+            {
+                Id = competitorIdentity.CanonicalId,
+                CompetitionId = competitionId,
+                FranchiseSeasonId = franchiseSeasonId,
+                HomeAway = "away",
+                Order = 0,
+                Winner = false,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new CompetitionCompetitorExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = competitorIdentity.CleanUrl,
+                        SourceUrlHash = competitorIdentity.UrlHash,
+                        Value = competitorIdentity.UrlHash
+                    }
+                ]
+            });
+
+            // The other franchise's row, currently home.
+            var occupantId = Guid.NewGuid();
+            await FootballDataContext.CompetitionCompetitors.AddAsync(new FootballCompetitionCompetitor
+            {
+                Id = occupantId,
+                CompetitionId = competitionId,
+                FranchiseSeasonId = Guid.NewGuid(),
+                HomeAway = "home",
+                Order = 1,
+                Winner = false,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid()
+            });
+            await FootballDataContext.SaveChangesAsync();
+
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.Document, json)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitor)
+                .With(x => x.SeasonYear, 2024)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.ParentId, competitionId.ToString())
+                .With(x => x.UrlHash, competitorIdentity.UrlHash)
+                .OmitAutoProperties()
+                .Create();
+
+            await sut.ProcessAsync(command);
+
+            var ours = await FootballDataContext.CompetitionCompetitors
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == competitorIdentity.CanonicalId);
+            ours.HomeAway.Should().Be("home");
+
+            var occupant = await FootballDataContext.CompetitionCompetitors
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == occupantId);
+            occupant.HomeAway.Should().Be("away");
+        }
     }
 }

@@ -26,6 +26,7 @@ using SportsData.Api.Application.UI.Contest.Commands.SubmitContestPredictions;
 using SportsData.Api.Application.UI.Contest.Dtos;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Core.Common;
+using SportsData.Core.Eventing.Events.PickemGroups;
 using SportsData.Core.Common.Hashing;
 using SportsData.Core.Common.Mapping;
 using SportsData.Core.Dtos.Canonical;
@@ -195,6 +196,43 @@ namespace SportsData.Api.Application.Admin
             };
             _backgroundJobProvider.Enqueue<IGenerateMatchupPreviews>(p => p.Process(cmd));
             return Accepted(new { cmd.CorrelationId });
+        }
+
+        /// <summary>
+        /// Notification reminder backfill: publishes the (until now
+        /// trigger-less) PickemGroupMatchupsRequested event. The API's own
+        /// consumer re-publishes PickemGroupMatchupDataPublished for every
+        /// FUTURE matchup of the sport; the Notification service upserts its
+        /// projection and (re)schedules pick-deadline and contest-start
+        /// reminders. Built 2026-09-04: leagues created during the
+        /// Notification deploy hold (image pinned at 5371 until mid-Aug)
+        /// never had reminders scheduled, and the designed backfill event
+        /// had no publisher anywhere. Idempotent — the schedulers no-op on
+        /// unchanged fire times.
+        /// </summary>
+        [HttpPost]
+        [Route("notifications/matchups/backfill")]
+        public async Task<IActionResult> BackfillNotificationMatchups(
+            [FromQuery] Sport sport = Sport.FootballNcaa,
+            [FromQuery] int? seasonYear = null,
+            CancellationToken cancellationToken = default)
+        {
+            var correlationId = Guid.NewGuid();
+
+            // No DbContext write on this path — publish straight to the
+            // broker. UseBusOutbox would otherwise buffer the event waiting
+            // for a SaveChangesAsync that never comes, and the backfill
+            // would 202 while silently doing nothing.
+            using (_deliveryScope.Use(DeliveryMode.Direct))
+            {
+                await _eventBus.Publish(new PickemGroupMatchupsRequested(
+                    sport,
+                    seasonYear,
+                    correlationId,
+                    CausationId.Api.AdminNotificationBackfill), cancellationToken);
+            }
+
+            return Accepted(new { correlationId });
         }
 
         /// <summary>

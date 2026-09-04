@@ -163,6 +163,12 @@ export default function AdminModelLabPage() {
   // preselecting the DEFAULT with the server's own slot precedence:
   // sport-specific default outranks the sport-null default.
   const [prompts, setPrompts] = useState([]);
+  // Completion tracked separately from the list: an empty list MID-FETCH
+  // must not clobber a stored selection, but an empty list AFTER the
+  // fetch means the stored promptId is stale (deleted prompt, or a
+  // league with no eligible prompts) and must clear — otherwise the
+  // matrix stays scoped to a prompt that doesn't exist.
+  const [promptsLoaded, setPromptsLoaded] = useState(false);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -170,9 +176,11 @@ export default function AdminModelLabPage() {
         const res = await apiWrapper.Admin.getPrompts();
         if (!cancelled) setPrompts(Array.isArray(res.data) ? res.data : []);
       } catch {
-        // Fetch failure leaves the "(slot default)" option — runs still
+        // Fetch failure leaves the "(all prompts)" option — runs still
         // work; the server resolves the default itself.
         if (!cancelled) setPrompts([]);
+      } finally {
+        if (!cancelled) setPromptsLoaded(true);
       }
     })();
     return () => { cancelled = true; };
@@ -186,7 +194,12 @@ export default function AdminModelLabPage() {
   );
 
   useEffect(() => {
-    if (leaguePrompts.length === 0) return;
+    if (!promptsLoaded) return;
+    if (leaguePrompts.length === 0) {
+      // Loaded and nothing eligible: a lingering selection is stale.
+      if (promptId) setPromptId('');
+      return;
+    }
     // Keep a still-valid stored choice; otherwise select the slot default.
     if (promptId && leaguePrompts.some(p => p.id === promptId)) return;
     const def = leaguePrompts.find(p => p.isDefault && p.sport === leagueSport)
@@ -194,9 +207,10 @@ export default function AdminModelLabPage() {
       ?? null;
     setPromptId(def?.id ?? '');
     // Deliberately not depending on promptId — this effect only reconciles
-    // when the list or league changes; the user's own selection wins.
+    // when the list, load state, or league changes; the user's own
+    // selection wins.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leaguePrompts, leagueSport]);
+  }, [leaguePrompts, leagueSport, promptsLoaded]);
 
   const handlePromptIdChange = (e) => {
     const next = e.target.value;

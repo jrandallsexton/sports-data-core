@@ -24,6 +24,14 @@ namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Co
 public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataContext> : DocumentProcessorBase<TDataContext>
     where TDataContext : TeamSportDataContext
 {
+    /// <summary>
+    /// Transient HomeAway value parking OUR row during a full home/away
+    /// swap (see the re-designation block in ProcessInternal). MUST fit
+    /// the column's varchar(10) — the PostgresException the length test
+    /// pins is exactly what a longer value did in production.
+    /// </summary>
+    public const string SwapParkingValue = "swap";
+
     protected EventCompetitionCompetitorDocumentProcessorBase(
         ILogger logger,
         TDataContext dataContext,
@@ -169,10 +177,14 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
                 // Full-swap case: OUR row currently holds the other side —
                 // park it out of the way first or the occupant's relocation
                 // collides with it. ProcessUpdate below writes the final side.
+                // Parking value MUST fit HomeAway's varchar(10) — the first
+                // deploy used "swap-pending" (12 chars) and every full-swap
+                // doc failed with 22001; InMemory tests can't catch length
+                // violations, so the length is asserted in the test suite.
                 if (entity is not null
                     && string.Equals(entity.HomeAway, otherSide, StringComparison.OrdinalIgnoreCase))
                 {
-                    entity.HomeAway = "swap-pending";
+                    entity.HomeAway = SwapParkingValue;
                     await _dataContext.SaveChangesAsync();
                 }
 

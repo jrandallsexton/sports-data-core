@@ -43,6 +43,15 @@ public class ModelLabMatrixDto
         /// <summary>Current line, HOME-relative (negative = home favored, e.g. -22.5); null when no odds. The team name would be redundant — the spread is always the home team's.</summary>
         public double? Spread { get; set; }
 
+        /// <summary>True once the contest is completed — the gate for grading picks. Unfinalized games render ungraded.</summary>
+        public bool IsFinal { get; set; }
+
+        /// <summary>Actual straight-up winner (FranchiseSeasonId); null until final (or on a tie).</summary>
+        public Guid? ActualWinnerId { get; set; }
+
+        /// <summary>Actual ATS winner (FranchiseSeasonId); null until final — and null on a PUSH, which grades nobody.</summary>
+        public Guid? ActualSpreadWinnerId { get; set; }
+
         /// <summary>Latest experiment per model; a model absent here has no run yet.</summary>
         public List<MatrixCellDto> Cells { get; set; } = [];
     }

@@ -117,7 +117,11 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail, pickType }
             {cityState}
           </Text>
         ) : null}
-        <OverviewLink label="Game Preview" onPress={onPressGameDetail} theme={theme} />
+        {/* No Contest Overview link on scheduled games (removed 2026-09-04,
+            owner call, in step with web): pre-kickoff the overview is
+            essentially empty, so "Game Preview" led nowhere useful. The
+            live/final branches keep their Box Score links — that's when
+            the overview has content. */}
       </View>
     );
   }
@@ -249,9 +253,10 @@ export function GameStatus({ matchup, leagueSport, onPressGameDetail, pickType }
 // TouchableOpacity (which gave no visual hint that it was tappable).
 //
 // Per-state labels live at the call sites:
-//   Scheduled  → "Game Preview"
 //   InProgress → "Live Box Score"
 //   Final      → "Box Score"
+// (Scheduled games render no link since 2026-09-04 — the overview is
+// essentially empty pre-kickoff.)
 
 export function OverviewLink({
   label,

@@ -209,8 +209,10 @@ export default function AdminModelLabPage() {
   const models = useMemo(() => matrix?.models ?? [], [matrix]);
   const contests = useMemo(() => matrix?.contests ?? [], [matrix]);
 
-  // Season-to-date records for the footer: per model and for the
-  // consensus column, X/Y = correct picks / graded picks. A pick is
+  // WEEK records for the footer (scope = the displayed matrix: the
+  // selected week's contests only — season-to-date needs a cross-week
+  // aggregate and is future work): per model and for the consensus
+  // column, X/Y = correct picks / graded picks. A pick is
   // GRADED only when the game is final, the model actually picked, and
   // an actual exists (ATS pushes grade nobody). Abstentions and
   // not-yet-run cells never count against a model here — cost of
@@ -340,7 +342,7 @@ export default function AdminModelLabPage() {
               </tbody>
               <tfoot>
                 <tr>
-                  <td style={footerStyle}>Record - SU</td>
+                  <td style={footerStyle}>Week Record - SU</td>
                   {models.map(m => (
                     <td key={m.id} style={footerStyle}>{formatRecord(records.perModel[m.id]?.su)}</td>
                   ))}
@@ -348,7 +350,7 @@ export default function AdminModelLabPage() {
                   <td style={footerStyle} />
                 </tr>
                 <tr>
-                  <td style={footerStyle}>Record - ATS</td>
+                  <td style={footerStyle}>Week Record - ATS</td>
                   {models.map(m => (
                     <td key={m.id} style={footerStyle}>{formatRecord(records.perModel[m.id]?.ats)}</td>
                   ))}

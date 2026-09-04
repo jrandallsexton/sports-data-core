@@ -161,6 +161,25 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
     }
 
     [Fact]
+    public async Task Consume_MissingMatchupProjection_DoesNotNotify()
+    {
+        // FAIL-CLOSED: the qualifying-picks join never touches the matchup
+        // projection, so without this gate an unprojected (typically past,
+        // never-to-be-backfilled) contest would send ungated — the exact
+        // reported bug.
+        var userId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        await SeedPickAsync(userId, contestId, Guid.NewGuid(), LeaguePickType.AgainstTheSpread);
+        await SeedDeviceAsync(userId);
+        // no SeedMatchupProjectionAsync on purpose
+
+        var sut = Mocker.CreateInstance<ContestOddsUpdatedConsumer>();
+        await sut.Consume(ContextFor(Msg(contestId, oldSpread: -3m, newSpread: -6m)));
+
+        VerifySendCount(Times.Never());
+    }
+
+    [Fact]
     public async Task Consume_ContestNotStarted_StillNotifies()
     {
         var userId = Guid.NewGuid();
@@ -183,6 +202,7 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
         await SeedPickAsync(userId, contestId, Guid.NewGuid(), LeaguePickType.AgainstTheSpread);
         await SeedDeviceAsync(userId);
 
+        await SeedMatchupProjectionAsync(contestId, FixedNow.AddHours(4));
         var sut = Mocker.CreateInstance<ContestOddsUpdatedConsumer>();
         await sut.Consume(ContextFor(Msg(contestId, oldSpread: -3m, newSpread: -6m)));
 
@@ -211,6 +231,7 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
         await SeedPickAsync(userId, contestId, Guid.NewGuid(), LeaguePickType.OverUnder);
         await SeedDeviceAsync(userId);
 
+        await SeedMatchupProjectionAsync(contestId, FixedNow.AddHours(4));
         var sut = Mocker.CreateInstance<ContestOddsUpdatedConsumer>();
         await sut.Consume(ContextFor(Msg(contestId, oldTotal: 50m, newTotal: 54m)));
 
@@ -226,6 +247,7 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
         await SeedPickAsync(userId, contestId, Guid.NewGuid(), LeaguePickType.AgainstTheSpread);
         await SeedDeviceAsync(userId);
 
+        await SeedMatchupProjectionAsync(contestId, FixedNow.AddHours(4));
         var sut = Mocker.CreateInstance<ContestOddsUpdatedConsumer>();
         await sut.Consume(ContextFor(Msg(contestId, oldSpread: -3m, newSpread: -6m)));
 
@@ -250,6 +272,7 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
         });
         await DataContext.SaveChangesAsync();
 
+        await SeedMatchupProjectionAsync(contestId, FixedNow.AddHours(4));
         var sut = Mocker.CreateInstance<ContestOddsUpdatedConsumer>();
         await sut.Consume(ContextFor(Msg(contestId, oldSpread: -3m, newSpread: -6m)));
 
@@ -264,6 +287,7 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
         await SeedPickAsync(userId, contestId, Guid.NewGuid(), LeaguePickType.AgainstTheSpread);
         await SeedDeviceAsync(userId, enabled: false);
 
+        await SeedMatchupProjectionAsync(contestId, FixedNow.AddHours(4));
         var sut = Mocker.CreateInstance<ContestOddsUpdatedConsumer>();
         await sut.Consume(ContextFor(Msg(contestId, oldSpread: -3m, newSpread: -6m)));
 
@@ -364,6 +388,7 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
             Week = 3
         });
 
+        await SeedMatchupProjectionAsync(contestId, FixedNow.AddHours(4));
         var sut = Mocker.CreateInstance<ContestOddsUpdatedConsumer>();
         await sut.Consume(ContextFor(Msg(contestId, oldSpread: -3m, newSpread: -1.5m)));
 
@@ -392,6 +417,7 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
 
         StubContestThrows();
 
+        await SeedMatchupProjectionAsync(contestId, FixedNow.AddHours(4));
         var sut = Mocker.CreateInstance<ContestOddsUpdatedConsumer>();
         await sut.Consume(ContextFor(Msg(contestId, oldSpread: -3m, newSpread: -1.5m)));
 
@@ -453,6 +479,7 @@ public class ContestOddsUpdatedConsumerTests : NotificationTestBase<ContestOddsU
 
         StubContest(new SeasonContestDto { Id = contestId, Name = FullName, ShortName = ShortName });
 
+        await SeedMatchupProjectionAsync(contestId, FixedNow.AddHours(4));
         var sut = Mocker.CreateInstance<ContestOddsUpdatedConsumer>();
         await sut.Consume(ContextFor(Msg(contestId, oldSpread: -3m, newSpread: -1.5m)));
 

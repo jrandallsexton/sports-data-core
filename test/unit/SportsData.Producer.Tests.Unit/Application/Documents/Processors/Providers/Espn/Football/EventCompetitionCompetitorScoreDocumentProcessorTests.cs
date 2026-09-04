@@ -24,6 +24,11 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 [Collection("Sequential")]
 public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
+    // Fixed seed time: the repo rule bans DateTime.UtcNow, and deterministic
+    // fixtures are the point of the rule.
+    private static readonly DateTime SeedTime =
+        new(2026, 9, 4, 0, 0, 0, DateTimeKind.Utc);
+
     private const string ScoreUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/1/score";
 
     private ProcessDocumentCommand CreateCommand(string jsonFile, string? parentId = null)
@@ -140,11 +145,11 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
             SeasonWeekId = Guid.NewGuid(),
             HomeTeamFranchiseSeasonId = Guid.NewGuid(),
             AwayTeamFranchiseSeasonId = Guid.NewGuid(),
-            StartDateUtc = DateTime.UtcNow,
-            FinalizedUtc = DateTime.UtcNow.AddDays(-2),
-            AuditedUtc = DateTime.UtcNow.AddDays(-1),
+            StartDateUtc = SeedTime,
+            FinalizedUtc = SeedTime.AddDays(-2),
+            AuditedUtc = SeedTime.AddDays(-1),
             CreatedBy = Guid.NewGuid(),
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = SeedTime
         };
         await FootballDataContext.Contests.AddAsync(contest);
 
@@ -153,7 +158,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
             Id = competitionId,
             ContestId = contestId,
             CreatedBy = Guid.NewGuid(),
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = SeedTime
         };
         await FootballDataContext.Competitions.AddAsync(competition);
 
@@ -166,7 +171,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
             HomeAway = "home",
             Winner = false,
             CreatedBy = Guid.NewGuid(),
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = SeedTime
         };
         await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
         await FootballDataContext.SaveChangesAsync();
@@ -204,9 +209,9 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
             SeasonWeekId = Guid.NewGuid(),
             HomeTeamFranchiseSeasonId = Guid.NewGuid(),
             AwayTeamFranchiseSeasonId = Guid.NewGuid(),
-            StartDateUtc = DateTime.UtcNow,
+            StartDateUtc = SeedTime,
             CreatedBy = Guid.NewGuid(),
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = SeedTime
         };
         await FootballDataContext.Contests.AddAsync(contest);
 
@@ -215,7 +220,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
             Id = competitionId,
             ContestId = contestId,
             CreatedBy = Guid.NewGuid(),
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = SeedTime
         };
         await FootballDataContext.Competitions.AddAsync(competition);
 
@@ -228,7 +233,7 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
             HomeAway = "home",
             Winner = false,
             CreatedBy = Guid.NewGuid(),
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = SeedTime
         };
         await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
         await FootballDataContext.SaveChangesAsync();

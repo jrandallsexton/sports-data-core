@@ -211,6 +211,7 @@ namespace SportsData.Api.Application.Admin
             [FromQuery] Sport sport = Sport.FootballNcaa,
             [FromQuery] int seasonYear = 0,
             [FromQuery] int week = 0,
+            [FromQuery] Guid? promptId = null,
             CancellationToken cancellationToken = default)
         {
             var result = await handler.ExecuteAsync(
@@ -218,7 +219,8 @@ namespace SportsData.Api.Application.Admin
                 {
                     Sport = sport,
                     SeasonYear = seasonYear,
-                    Week = week
+                    Week = week,
+                    PromptId = promptId
                 },
                 cancellationToken);
 

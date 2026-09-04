@@ -103,6 +103,28 @@ namespace SportsData.Notification.Application.Consumers
                 return;
             }
 
+            // Started-contest gate (2026-09-04): odds updates are ROUTINE
+            // after kickoff and even after finalization (odds-late
+            // finalization rewrites lines on final games) — and a line move
+            // on a game the user can no longer pick is pure noise. The
+            // operator received "line changed" pushes for games that had
+            // gone final. The local projection's StartDateUtc is the same
+            // clock picks lock on; an absent projection row falls through
+            // (the qualifying-picks join yields nobody in that case anyway).
+            var startDateUtc = await _dataContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.ContestId == msg.ContestId)
+                .Select(m => (DateTime?)m.StartDateUtc)
+                .FirstOrDefaultAsync(context.CancellationToken);
+
+            if (startDateUtc is not null && startDateUtc <= _dateTimeProvider.UtcNow())
+            {
+                _logger.LogInformation(
+                    "Contest already started ({StartDateUtc}); suppressing line-move notification.",
+                    startDateUtc);
+                return;
+            }
+
             // Pickers in leagues whose scoring depends on the moved dimension.
             // The join to PickemGroups applies the PickType filter (ATS↔spread,
             // OverUnder↔total, StraightUp never) and drops picks whose league

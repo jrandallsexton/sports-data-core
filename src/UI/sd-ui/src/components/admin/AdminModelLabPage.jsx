@@ -64,11 +64,11 @@ export default function AdminModelLabPage() {
   // refreshes overlap; an out-of-order response must not win.
   const loadSeqRef = useRef(0);
 
-  const loadMatrix = useCallback(async (sport, y, w, { quiet = false } = {}) => {
+  const loadMatrix = useCallback(async (sport, y, w, pId, { quiet = false } = {}) => {
     const seq = ++loadSeqRef.current;
     if (!quiet) setLoading(true);
     try {
-      const res = await apiWrapper.Admin.getModelLabMatrix(sport, y, w);
+      const res = await apiWrapper.Admin.getModelLabMatrix(sport, y, w, pId || undefined);
       if (seq !== loadSeqRef.current) return;
       setMatrix(res.data ?? { models: [], contests: [] });
     } catch (err) {
@@ -88,17 +88,17 @@ export default function AdminModelLabPage() {
     if (!Number.isInteger(year) || year < 2000 || !Number.isInteger(week) || week < 1) {
       return undefined;
     }
-    const timer = setTimeout(() => loadMatrix(leagueSport, year, week), 400);
+    const timer = setTimeout(() => loadMatrix(leagueSport, year, week, promptId), 400);
     return () => clearTimeout(timer);
-  }, [league, leagueSport, year, week, loadMatrix]);
+  }, [league, leagueSport, year, week, promptId, loadMatrix]);
 
   // Read current selection through refs so the SignalR handler identity
   // stays stable (the hook keys its connection on it). Assigned in
   // effects — never during render.
-  const selectionRef = useRef({ leagueSport, year, week });
+  const selectionRef = useRef({ leagueSport, year, week, promptId });
   useEffect(() => {
-    selectionRef.current = { leagueSport, year, week };
-  }, [leagueSport, year, week]);
+    selectionRef.current = { leagueSport, year, week, promptId };
+  }, [leagueSport, year, week, promptId]);
   const contestIdsRef = useRef(new Set());
   useEffect(() => {
     contestIdsRef.current = new Set(
@@ -147,8 +147,8 @@ export default function AdminModelLabPage() {
     (data) => {
       const id = data?.contestId?.toLowerCase();
       if (!id || !contestIdsRef.current.has(id)) return;
-      const { leagueSport: s, year: y, week: w } = selectionRef.current;
-      loadMatrix(s, y, w, { quiet: true });
+      const { leagueSport: s, year: y, week: w, promptId: pId } = selectionRef.current;
+      loadMatrix(s, y, w, pId, { quiet: true });
     },
     [loadMatrix]
   );
@@ -157,6 +157,46 @@ export default function AdminModelLabPage() {
     userId: userDto?.id,
     onPreviewPromptCaptured: handlePromptCaptured,
   });
+
+  // Prompt picker: replaces the paste-a-GUID input. Lists MatchupPreview
+  // prompts for the selected league (sport-specific plus sport-agnostic),
+  // preselecting the DEFAULT with the server's own slot precedence:
+  // sport-specific default outranks the sport-null default.
+  const [prompts, setPrompts] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiWrapper.Admin.getPrompts();
+        if (!cancelled) setPrompts(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        // Fetch failure leaves the "(slot default)" option — runs still
+        // work; the server resolves the default itself.
+        if (!cancelled) setPrompts([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const leaguePrompts = useMemo(
+    () => prompts.filter(p =>
+      (p.type === 'MatchupPreview' || p.type === 0)
+      && (p.sport == null || p.sport === leagueSport)),
+    [prompts, leagueSport]
+  );
+
+  useEffect(() => {
+    if (leaguePrompts.length === 0) return;
+    // Keep a still-valid stored choice; otherwise select the slot default.
+    if (promptId && leaguePrompts.some(p => p.id === promptId)) return;
+    const def = leaguePrompts.find(p => p.isDefault && p.sport === leagueSport)
+      ?? leaguePrompts.find(p => p.isDefault)
+      ?? null;
+    setPromptId(def?.id ?? '');
+    // Deliberately not depending on promptId — this effect only reconciles
+    // when the list or league changes; the user's own selection wins.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaguePrompts, leagueSport]);
 
   const handlePromptIdChange = (e) => {
     const next = e.target.value;
@@ -220,6 +260,8 @@ export default function AdminModelLabPage() {
   const records = useMemo(() => {
     const perModel = {};
     const consensus = { su: [0, 0], ats: [0, 0] };
+    const favorites = { su: [0, 0], ats: [0, 0] };
+    const home = { su: [0, 0], ats: [0, 0] };
     const tally = (pair, grade) => {
       if (!grade) return;
       pair[1] += 1;
@@ -238,14 +280,22 @@ export default function AdminModelLabPage() {
       const atsC = consensusOf(models.map(m => cellBy[String(m.id).toLowerCase()]?.predictedSpreadWinnerId ?? null));
       tally(consensus.su, gradePick(suC, c.actualWinnerId, c.isFinal));
       tally(consensus.ats, gradePick(atsC, c.actualSpreadWinnerId, c.isFinal));
+      const fav = favoritePickFor(c);
+      tally(favorites.su, gradePick(fav, c.actualWinnerId, c.isFinal));
+      tally(favorites.ats, gradePick(fav, c.actualSpreadWinnerId, c.isFinal));
+      tally(home.su, gradePick(c.homeFranchiseSeasonId, c.actualWinnerId, c.isFinal));
+      tally(home.ats, gradePick(c.homeFranchiseSeasonId, c.actualSpreadWinnerId, c.isFinal));
     }
-    return { perModel, consensus };
+    return { perModel, consensus, favorites, home };
   }, [contests, models]);
 
   return (
     <div className="admin-page">
       <AdminHeader />
-      <div style={{ maxWidth: 1400, margin: '0 auto' }}>
+      {/* Full width, matching .admin-header above — nine-plus columns of
+          matrix deserve every pixel; the table's own overflow-x scroll
+          still guards narrow viewports. */}
+      <div>
         <h2 style={{ marginBottom: 4 }}>Model Consensus Lab</h2>
         <p style={{ color: 'var(--text-secondary)', marginTop: 0 }}>
           Every contest any pick'em league carries for the week, against
@@ -287,19 +337,27 @@ export default function AdminModelLabPage() {
             onChange={(e) => setWeek(Number(e.target.value))}
             style={{ width: 70, padding: '6px 8px' }}
           />
-          <button type="button" className="model-lab-btn" onClick={() => loadMatrix(leagueSport, year, week)}>
+          <button type="button" className="model-lab-btn" onClick={() => loadMatrix(leagueSport, year, week, promptId)}>
             Refresh
           </button>
-          <label htmlFor="modellab-prompt-id" style={{ fontWeight: 600 }}>Prompt ID:</label>
-          <input
+          <label htmlFor="modellab-prompt-id" style={{ fontWeight: 600 }}>Prompt:</label>
+          <select
             id="modellab-prompt-id"
-            type="text"
             value={promptId}
             onChange={handlePromptIdChange}
-            placeholder="optional - Prompt GUID override for generated runs"
-            title="Explicit Prompt entity override (Guid) applied to runs started from this page. Blank = the sport/variant default."
+            title="Scopes BOTH the displayed matrix and new runs to this prompt — the corpus is payload x model x prompt. '(all prompts)' shows each pair's latest run regardless of prompt and lets the server resolve the default for new runs."
             style={{ flex: 1, padding: '6px 8px', minWidth: 240 }}
-          />
+          >
+            <option value="">(all prompts - latest run)</option>
+            {leaguePrompts.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+                {p.sport == null ? ' · any sport' : ''}
+                {p.withStats ? ' · stats' : ''}
+                {p.isDefault ? ' — default' : ''}
+              </option>
+            ))}
+          </select>
         </div>
 
         {loading && <div>Loading matrix…</div>}
@@ -325,6 +383,18 @@ export default function AdminModelLabPage() {
                     <th key={m.id} style={headerStyle}>{m.name}</th>
                   ))}
                   <th style={headerStyle}>Consensus</th>
+                  <th
+                    style={{ ...headerStyle, color: 'var(--text-secondary)', fontStyle: 'italic' }}
+                    title="Control group: always the team laying the points (spread favorite). Abstains on pick'em."
+                  >
+                    Favorites
+                  </th>
+                  <th
+                    style={{ ...headerStyle, color: 'var(--text-secondary)', fontStyle: 'italic' }}
+                    title="Control group: always the home team."
+                  >
+                    Home
+                  </th>
                   <th style={headerStyle} aria-label="Row actions" />
                 </tr>
               </thead>
@@ -347,6 +417,8 @@ export default function AdminModelLabPage() {
                     <td key={m.id} style={footerStyle}>{formatRecord(records.perModel[m.id]?.su)}</td>
                   ))}
                   <td style={footerStyle}>{formatRecord(records.consensus.su)}</td>
+                  <td style={{ ...footerStyle, fontStyle: 'italic' }}>{formatRecord(records.favorites.su)}</td>
+                  <td style={{ ...footerStyle, fontStyle: 'italic' }}>{formatRecord(records.home.su)}</td>
                   <td style={footerStyle} />
                 </tr>
                 <tr>
@@ -355,6 +427,8 @@ export default function AdminModelLabPage() {
                     <td key={m.id} style={footerStyle}>{formatRecord(records.perModel[m.id]?.ats)}</td>
                   ))}
                   <td style={footerStyle}>{formatRecord(records.consensus.ats)}</td>
+                  <td style={{ ...footerStyle, fontStyle: 'italic' }}>{formatRecord(records.favorites.ats)}</td>
+                  <td style={{ ...footerStyle, fontStyle: 'italic' }}>{formatRecord(records.home.ats)}</td>
                   <td style={footerStyle} />
                 </tr>
               </tfoot>
@@ -407,6 +481,19 @@ function gradePick(pickId, actualId, isFinal) {
   return String(pickId).toLowerCase() === String(actualId).toLowerCase()
     ? 'correct'
     : 'incorrect';
+}
+
+/**
+ * The two zero-cost CONTROL columns. The favorite is the team laying the
+ * points — the home-relative spread's sign says which side (NOT betting
+ * odds: -110/-110 is the spread's vig, +150 is a moneyline, a different
+ * market). PK or no line = the Favorites baseline abstains.
+ */
+function favoritePickFor(contest) {
+  if (contest.spread == null || contest.spread === 0) return null;
+  return contest.spread < 0
+    ? contest.homeFranchiseSeasonId
+    : contest.awayFranchiseSeasonId;
 }
 
 const GRADE_STYLES = {
@@ -541,6 +628,27 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
   const suGrade = gradePick(suConsensus, contest.actualWinnerId, contest.isFinal);
   const atsGrade = gradePick(atsConsensus, contest.actualSpreadWinnerId, contest.isFinal);
 
+  // Control columns: same pick for the SU and ATS rows, graded against
+  // each row's own actual.
+  const favoritePick = favoritePickFor(contest);
+  const homePick = contest.homeFranchiseSeasonId;
+  const renderBaselineCell = (pickId, actualId, key) => {
+    const grade = gradePick(pickId, actualId, contest.isFinal);
+    return (
+      <td
+        key={key}
+        style={{
+          ...cellStyle,
+          color: 'var(--text-secondary)',
+          fontStyle: 'italic',
+          ...(grade ? GRADE_STYLES[grade] : null),
+        }}
+      >
+        {pickId ? teamFor(pickId) : '—'}
+      </td>
+    );
+  };
+
   const hasHoles = models.some(m => !cellByModel[String(m.id).toLowerCase()]);
 
   return (
@@ -551,6 +659,8 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
         <td style={{ ...cellStyle, fontWeight: 700, ...(suGrade ? GRADE_STYLES[suGrade] : null) }}>
           {suConsensus ? teamFor(suConsensus) : '-'}
         </td>
+        {renderBaselineCell(favoritePick, contest.actualWinnerId, 'fav-su')}
+        {renderBaselineCell(homePick, contest.actualWinnerId, 'home-su')}
         <td rowSpan={2} style={{ ...cellStyle, verticalAlign: 'middle' }}>
           {hasHoles && !rowPanelQueued && (
             <button
@@ -573,6 +683,8 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
         <td style={{ ...cellStyle, fontWeight: 700, ...(atsGrade ? GRADE_STYLES[atsGrade] : null) }}>
           {atsConsensus ? teamFor(atsConsensus) : '—'}
         </td>
+        {renderBaselineCell(favoritePick, contest.actualSpreadWinnerId, 'fav-ats')}
+        {renderBaselineCell(homePick, contest.actualSpreadWinnerId, 'home-ats')}
       </tr>
     </>
   );

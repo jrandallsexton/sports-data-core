@@ -16,6 +16,15 @@ public class GetModelLabMatrixQuery
     public int SeasonYear { get; set; }
 
     public int Week { get; set; }
+
+    /// <summary>
+    /// Scope the matrix to experiments generated with THIS prompt. The
+    /// corpus is payload x model x PROMPT — collapsing the prompt
+    /// dimension would silently mix runs and grade apples against
+    /// oranges. Null = latest run regardless of prompt (the pre-picker
+    /// behavior, kept as an explicit mixed view).
+    /// </summary>
+    public Guid? PromptId { get; set; }
 }
 
 public class GetModelLabMatrixQueryValidator : AbstractValidator<GetModelLabMatrixQuery>

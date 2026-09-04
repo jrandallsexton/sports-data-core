@@ -60,8 +60,13 @@ const AdminApi = {
     ),
   // Week matrix: contests any pick'em league carries for (sport, year,
   // week) x active lab-reachable models, latest picks per pair.
-  getModelLabMatrix: (sport, seasonYear, week) =>
-    apiClient.get('/admin/model-lab/matrix', { params: { sport, seasonYear, week } }),
+  // promptId scopes the matrix to experiments generated with that prompt
+  // (the corpus is payload x model x prompt); omitted = latest run
+  // regardless of prompt (mixed view).
+  getModelLabMatrix: (sport, seasonYear, week, promptId) =>
+    apiClient.get('/admin/model-lab/matrix', {
+      params: { sport, seasonYear, week, ...(promptId ? { promptId } : {}) },
+    }),
 
   // Prompt management (per-sport-league prompt entities; text lives in
   // the API database). Name and slot (sport, withStats) are immutable —

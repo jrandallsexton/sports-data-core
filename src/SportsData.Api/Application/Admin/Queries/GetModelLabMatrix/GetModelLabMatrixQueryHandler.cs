@@ -91,7 +91,8 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
             .AsNoTracking()
             .Where(x => x.Mode == PreviewGenerationMode.Experiment
                      && x.ModelId != null
-                     && contestIds.Contains(x.ContestId))
+                     && contestIds.Contains(x.ContestId)
+                     && (query.PromptId == null || x.PromptId == query.PromptId))
             .Select(x => new
             {
                 x.ContestId,

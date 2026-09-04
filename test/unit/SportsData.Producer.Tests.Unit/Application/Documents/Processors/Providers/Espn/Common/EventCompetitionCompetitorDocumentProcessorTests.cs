@@ -9,6 +9,7 @@ using SportsData.Core.Common.Hashing;
 using SportsData.Core.Extensions;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Producer.Application.Documents.Processors.Commands;
+using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
 using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Football;
@@ -147,6 +148,17 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             saved.HomeAway.Should().Be("home");
             saved.Order.Should().Be(0);
             saved.Winner.Should().BeFalse();
+        }
+
+        [Fact]
+        public void SwapParkingValue_FitsHomeAwayColumn()
+        {
+            // HomeAway is varchar(10) and the InMemory provider does NOT
+            // enforce column lengths — the first deploy shipped a 12-char
+            // parking value and every full-swap document failed with
+            // Postgres 22001. This pins the length where the provider can't.
+            EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
+                .SwapParkingValue.Length.Should().BeLessThanOrEqualTo(10);
         }
 
         [Fact]

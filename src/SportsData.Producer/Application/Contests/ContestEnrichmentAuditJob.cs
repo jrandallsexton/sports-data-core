@@ -73,13 +73,18 @@ public class ContestEnrichmentAuditJob<TDataContext> : IContestEnrichmentAuditJo
             "ContestEnrichmentAuditJob starting. BatchSize={BatchSize}",
             BatchSize);
 
-        // Order by FinalizedUtc so the oldest unverified finalizations are
-        // audited first — keeps the backlog draining predictably during
-        // the post-deploy ramp.
+        // NEWEST first (flipped 2026-09-04): fresh finalizations are what
+        // users see, picks score against, and preview payloads consume — a
+        // corrupted weekend batch must be caught within hours, not after
+        // the sweep finishes chewing the 2008+ backlog (oldest-first left
+        // the 2026-08-30 inverted-winner batch unaudited for days while
+        // auditing historical rows nobody was reading). The backlog still
+        // drains fully — from the other end, whenever a firing has fewer
+        // fresh candidates than the batch cap.
         var contestIds = await _dataContext.Contests
             .AsNoTracking()
             .Where(c => c.FinalizedUtc != null && c.AuditedUtc == null)
-            .OrderBy(c => c.FinalizedUtc)
+            .OrderByDescending(c => c.FinalizedUtc)
             .Take(BatchSize)
             .Select(c => c.Id)
             .ToListAsync();

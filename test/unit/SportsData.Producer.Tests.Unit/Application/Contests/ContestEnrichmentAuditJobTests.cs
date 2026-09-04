@@ -21,10 +21,13 @@ public class ContestEnrichmentAuditJobTests : ProducerTestBase<ContestEnrichment
         new(2026, 6, 19, 6, 0, 0, DateTimeKind.Utc);
 
     [Fact]
-    public async Task Execute_EnqueuesOnePerCandidate_OldestFinalizedFirst()
+    public async Task Execute_EnqueuesOnePerCandidate_NewestFinalizedFirst()
     {
         // Three legitimate candidates: FinalizedUtc set, AuditedUtc null.
-        // Seed in non-chronological order to verify ordering is by FinalizedUtc asc.
+        // Seed in non-chronological order to verify ordering is by
+        // FinalizedUtc DESC — fresh finalizations are the user-facing ones
+        // (flipped 2026-09-04 after the 2026-08-30 inverted-winner batch sat
+        // behind the historical backlog).
         var middleId = await SeedContestAsync(finalizedUtc: FixedNow.AddDays(-5));
         var oldestId = await SeedContestAsync(finalizedUtc: FixedNow.AddDays(-30));
         var newestId = await SeedContestAsync(finalizedUtc: FixedNow.AddDays(-1));
@@ -39,7 +42,7 @@ public class ContestEnrichmentAuditJobTests : ProducerTestBase<ContestEnrichment
 
         await sut.ExecuteAsync();
 
-        enqueued.Should().Equal(oldestId, middleId, newestId);
+        enqueued.Should().Equal(newestId, middleId, oldestId);
     }
 
     [Fact]
@@ -85,13 +88,13 @@ public class ContestEnrichmentAuditJobTests : ProducerTestBase<ContestEnrichment
     }
 
     [Fact]
-    public async Task Execute_RespectsBatchSizeCap_EnqueuesOldestFiveHundredOnly()
+    public async Task Execute_RespectsBatchSizeCap_EnqueuesNewestFiveHundredOnly()
     {
         // Regression lock on the BatchSize cap (500) — prevents the first-run
         // historical backlog from enqueuing tens of thousands of Hangfire jobs
         // at once. Seed 600 candidates with monotonically-increasing
-        // FinalizedUtc so the expected enqueue set is the oldest 500, and the
-        // 100 newest get deferred to the next firing.
+        // FinalizedUtc so the expected enqueue set is the NEWEST 500 (fresh
+        // corruption heals first), and the 100 oldest defer to a later firing.
         const int totalCandidates = 600;
         const int expectedBatchSize = 500;
 
@@ -101,7 +104,7 @@ public class ContestEnrichmentAuditJobTests : ProducerTestBase<ContestEnrichment
             var id = await SeedContestAsync(finalizedUtc: FixedNow.AddDays(-totalCandidates + i));
             seededIds.Add(id);
         }
-        var expectedOldest = seededIds.Take(expectedBatchSize).ToList();
+        var expectedNewest = Enumerable.Reverse(seededIds).Take(expectedBatchSize).ToList();
 
         var enqueued = new List<Guid>();
         Mocker.GetMock<IProvideBackgroundJobs>()
@@ -114,7 +117,7 @@ public class ContestEnrichmentAuditJobTests : ProducerTestBase<ContestEnrichment
         await sut.ExecuteAsync();
 
         enqueued.Should().HaveCount(expectedBatchSize);
-        enqueued.Should().Equal(expectedOldest);
+        enqueued.Should().Equal(expectedNewest);
     }
 
     [Fact]

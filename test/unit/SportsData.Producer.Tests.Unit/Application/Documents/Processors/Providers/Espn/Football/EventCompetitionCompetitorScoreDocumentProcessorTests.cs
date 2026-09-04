@@ -24,6 +24,11 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 [Collection("Sequential")]
 public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
+    // Fixed seed time: the repo rule bans DateTime.UtcNow, and deterministic
+    // fixtures are the point of the rule.
+    private static readonly DateTime SeedTime =
+        new(2026, 9, 4, 0, 0, 0, DateTimeKind.Utc);
+
     private const string ScoreUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/1/score";
 
     private ProcessDocumentCommand CreateCommand(string jsonFile, string? parentId = null)
@@ -114,6 +119,134 @@ public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTes
         entity.DisplayValue.Should().NotBeNullOrEmpty();
         entity.SourceId.Should().NotBeNullOrEmpty();
         entity.SourceDescription.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task WhenScoreArrivesOnFinalizedAuditedContest_ShouldRearmAudit()
+    {
+        // A score landing AFTER finalization is an input change the one-shot
+        // audit would never re-verify (the 2026-08-30 inverted-winner batch).
+        // The processor must clear AuditedUtc so the sweep re-checks the
+        // derived winner/ATS/O-U against the corrected inputs.
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var competitorId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+
+        var contest = new FootballContest
+        {
+            Id = contestId,
+            Name = "Test Contest",
+            ShortName = "Test",
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2024,
+            SeasonWeekId = Guid.NewGuid(),
+            HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+            AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+            StartDateUtc = SeedTime,
+            FinalizedUtc = SeedTime.AddDays(-2),
+            AuditedUtc = SeedTime.AddDays(-1),
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = SeedTime
+        };
+        await FootballDataContext.Contests.AddAsync(contest);
+
+        var competition = new FootballCompetition
+        {
+            Id = competitionId,
+            ContestId = contestId,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = SeedTime
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        var competitor = new FootballCompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = competitionId,
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            HomeAway = "home",
+            Winner = false,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = SeedTime
+        };
+        await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
+        await FootballDataContext.SaveChangesAsync();
+
+        var sut = Mocker.CreateInstance<EventCompetitionCompetitorScoreDocumentProcessor<FootballDataContext>>();
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorScore.json");
+        var command = CreateCommand(json, competitorId.ToString());
+
+        await sut.ProcessAsync(command);
+
+        var reloaded = await FootballDataContext.Contests.FirstAsync(x => x.Id == contestId);
+        reloaded.AuditedUtc.Should().BeNull("a post-finalization score change must re-arm the audit");
+        reloaded.FinalizedUtc.Should().NotBeNull("re-arming must not unfinalize — the audit decides that on mismatch");
+    }
+
+    [Fact]
+    public async Task WhenScoreArrivesOnUnfinalizedContest_ShouldNotTouchAuditFields()
+    {
+        // Live games stream score updates constantly — the re-arm must only
+        // fire on finalized contests.
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var competitorId = Guid.NewGuid();
+        var competitionId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+
+        var contest = new FootballContest
+        {
+            Id = contestId,
+            Name = "Test Contest",
+            ShortName = "Test",
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2024,
+            SeasonWeekId = Guid.NewGuid(),
+            HomeTeamFranchiseSeasonId = Guid.NewGuid(),
+            AwayTeamFranchiseSeasonId = Guid.NewGuid(),
+            StartDateUtc = SeedTime,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = SeedTime
+        };
+        await FootballDataContext.Contests.AddAsync(contest);
+
+        var competition = new FootballCompetition
+        {
+            Id = competitionId,
+            ContestId = contestId,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = SeedTime
+        };
+        await FootballDataContext.Competitions.AddAsync(competition);
+
+        var competitor = new FootballCompetitionCompetitor
+        {
+            Id = competitorId,
+            CompetitionId = competitionId,
+            FranchiseSeasonId = Guid.NewGuid(),
+            Order = 1,
+            HomeAway = "home",
+            Winner = false,
+            CreatedBy = Guid.NewGuid(),
+            CreatedUtc = SeedTime
+        };
+        await FootballDataContext.CompetitionCompetitors.AddAsync(competitor);
+        await FootballDataContext.SaveChangesAsync();
+
+        var sut = Mocker.CreateInstance<EventCompetitionCompetitorScoreDocumentProcessor<FootballDataContext>>();
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitorScore.json");
+        var command = CreateCommand(json, competitorId.ToString());
+
+        await sut.ProcessAsync(command);
+
+        var reloaded = await FootballDataContext.Contests.FirstAsync(x => x.Id == contestId);
+        reloaded.FinalizedUtc.Should().BeNull();
+        reloaded.AuditedUtc.Should().BeNull();
     }
 
     [Fact]

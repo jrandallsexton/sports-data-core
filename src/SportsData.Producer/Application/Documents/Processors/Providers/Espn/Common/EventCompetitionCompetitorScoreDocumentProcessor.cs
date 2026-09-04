@@ -11,6 +11,7 @@ using SportsData.Core.Infrastructure.Refs;
 using SportsData.Producer.Application.Documents.Processors.Commands;
 using SportsData.Producer.Exceptions;
 using SportsData.Producer.Infrastructure.Data.Common;
+using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common;
@@ -118,7 +119,16 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 competitionCompetitorIdValue,
                 score.Value,
                 dto.Value);
-            
+
+            // A score CORRECTION on a finalized contest means the derived
+            // results (winner / ATS / O-U) may now be stale — the audit is
+            // one-shot and would never look again (the 2026-08-30 batch left
+            // 14 NCAA contests with inverted winners this way). Re-arm it:
+            // the sweep re-verifies against the corrected inputs and
+            // self-heals on mismatch. Live games never hit this (not
+            // finalized); already-unaudited rows are a no-op.
+            await RearmAuditIfFinalizedAsync(competitor, dto.Value);
+
             score.Value = dto.Value;
             score.DisplayValue = dto.DisplayValue;
             score.ModifiedBy = command.CorrelationId;
@@ -150,6 +160,10 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
         else
         {
             _logger.LogInformation("Creating new CompetitorScore. CompetitorId={CompetitorId}", competitionCompetitorIdValue);
+
+            // Same re-arm as the update branch: a score row ARRIVING after
+            // finalization is also an input change the audit must re-verify.
+            await RearmAuditIfFinalizedAsync(competitor, dto.Value);
 
             var entity = dto.AsEntity(
                 competitionCompetitorIdValue,
@@ -183,8 +197,41 @@ public class EventCompetitionCompetitorScoreDocumentProcessor<TDataContext> : Do
                 dto.Value);
         }
 
-        _logger.LogInformation("CompetitorScore processing completed. CompetitorId={CompetitorId}, Value={Value}", 
-            competitionCompetitorIdValue, 
+        _logger.LogInformation("CompetitorScore processing completed. CompetitorId={CompetitorId}, Value={Value}",
+            competitionCompetitorIdValue,
             dto.Value);
+    }
+
+    /// <summary>
+    /// Re-arms the enrichment audit when a score input lands on a FINALIZED
+    /// contest: the audit is one-shot, so a post-finalization correction
+    /// would otherwise never be re-verified (2026-08-30: 14 NCAA contests
+    /// kept inverted winners this way). The competitor was loaded
+    /// AsNoTracking, so its Contest navigation only GATES the tracked fetch
+    /// — live-game score updates (contest not finalized) cost zero extra
+    /// queries. The tracked write rides the caller's SaveChangesAsync, so
+    /// the re-arm commits atomically with the score change itself.
+    /// </summary>
+    private async Task RearmAuditIfFinalizedAsync(CompetitionCompetitorBase competitor, double newValue)
+    {
+        var contestNav = competitor.Competition?.Contest;
+        if (contestNav?.FinalizedUtc is null || contestNav.AuditedUtc is null)
+        {
+            return;
+        }
+
+        var contest = await _dataContext.Contests
+            .FirstOrDefaultAsync(c => c.Id == contestNav.Id);
+
+        if (contest?.FinalizedUtc is null || contest.AuditedUtc is null)
+        {
+            return;
+        }
+
+        contest.AuditedUtc = null;
+        _logger.LogWarning(
+            "Score input changed on FINALIZED contest — audit re-armed for re-verification. ContestId={ContestId}, NewValue={NewValue}",
+            contest.Id,
+            newValue);
     }
 }

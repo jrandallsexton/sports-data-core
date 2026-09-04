@@ -448,14 +448,17 @@ namespace SportsData.Producer.DependencyInjection
                     job => job.ExecuteAsync(),
                     Cron.Weekly);
 
-                // Nightly at 06:00 UTC — after all US prime-time games have
-                // ended and any post-game enrichment lag has resolved. Picks
-                // up corruption like the 2026-06-18 Rockies @ Cubs case
-                // (FinalizedUtc + null Winner from a stale-source race).
+                // Every 6 hours (was nightly 06:00): a corrupted weekend
+                // finalization batch (2026-08-30: 14 inverted winners) must
+                // heal within hours — a Thursday-night mistake poisons
+                // Friday's preview payloads. The sweep enqueues cheap
+                // single-row read jobs on the DEFAULT queue, so live-window
+                // work on 00-live always drains first (the #709 priority
+                // split is what makes the in-window firings safe).
                 recurringJobManager.AddOrUpdate<IContestEnrichmentAuditJob>(
                     "ContestEnrichmentAuditJob",
                     job => job.ExecuteAsync(),
-                    "0 6 * * *");
+                    "0 */6 * * *");
             }
 
             if (mode is Sport.FootballNcaa or Sport.FootballNfl or Sport.BaseballMlb)

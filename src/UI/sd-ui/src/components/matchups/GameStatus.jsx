@@ -246,28 +246,11 @@ function GameStatus({
         {broadcasts && <div>{formatBroadcasts(broadcasts)}</div>}
         <div>{venue} | {location}</div>
       </div>
-      {/* Bottom-of-status affordance for "open the Contest Overview" —
-          mirrors mobile's OverviewLink ("Game Preview ›" on scheduled
-          games). Replaces the old webcam icon + "View" block, which was
-          an internal marker for stream-scheduled games but read to users
-          like a watch-the-game link. Renders for every scheduled game
-          with a contestId, matching mobile. The explicit STATUS_SCHEDULED
-          check keeps the link out of this branch's other role as the
-          defensive fallback for unrecognized status strings (mobile
-          renders those as a bare label with no link). */}
-      {contestId && status === 'STATUS_SCHEDULED' && (
-        <div className="game-preview-link-row">
-          <Link
-            to={contestLink(contestId, sport, league)}
-            className="game-preview-link"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`Game preview: ${awayShort ?? 'Away'} at ${homeShort ?? 'Home'}${gameTime ? `, ${gameTime}` : ''}`}
-          >
-            Game Preview ›
-          </Link>
-        </div>
-      )}
+      {/* No Contest Overview link on scheduled games (removed 2026-09-04,
+          owner call): pre-kickoff the overview is essentially empty, so
+          the "Game Preview ›" affordance led nowhere useful. The gamecast
+          link in the in-progress block above is the overview's real entry
+          point once there is something to see. */}
     </>
   );
 }

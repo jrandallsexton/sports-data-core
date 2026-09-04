@@ -143,6 +143,49 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
                 x.ExternalIds.Any(z => z.SourceUrlHash == command.UrlHash &&
                                        z.Provider == command.SourceDataProvider));
 
+        // ESPN home/away re-designation swaps sides on BOTH competitors, but
+        // documents arrive one at a time — the first writer collides with the
+        // STALE occupant of its new side under the (CompetitionId, HomeAway)
+        // unique index (2026-08-29 Howard @ Alabama A&M: six Hangfire jobs
+        // retrying into the same stale row; the stale side also poisoned
+        // score-side attribution downstream). A competition has exactly two
+        // competitors, so the occupant of our target side belongs on the
+        // other one: relocate it FIRST, in its own SaveChanges, so the slot
+        // is free before our write. Each step is idempotent under Hangfire
+        // retries — a crash at any point converges on reprocessing.
+        var desiredSide = dto.HomeAway?.Trim().ToLowerInvariant();
+        if (desiredSide is "home" or "away")
+        {
+            var occupant = await _dataContext.CompetitionCompetitors
+                .FirstOrDefaultAsync(x =>
+                    x.CompetitionId == competitionId
+                    && x.HomeAway == desiredSide
+                    && x.FranchiseSeasonId != franchiseSeasonId.Value);
+
+            if (occupant is not null)
+            {
+                var otherSide = desiredSide == "home" ? "away" : "home";
+
+                // Full-swap case: OUR row currently holds the other side —
+                // park it out of the way first or the occupant's relocation
+                // collides with it. ProcessUpdate below writes the final side.
+                if (entity is not null
+                    && string.Equals(entity.HomeAway, otherSide, StringComparison.OrdinalIgnoreCase))
+                {
+                    entity.HomeAway = "swap-pending";
+                    await _dataContext.SaveChangesAsync();
+                }
+
+                _logger.LogWarning(
+                    "Home/away re-designation: relocating stale occupant of side '{Side}' to '{OtherSide}'. " +
+                    "CompetitionId={CompetitionId}, OccupantId={OccupantId}, OccupantFranchiseSeasonId={OccupantFranchiseSeasonId}",
+                    desiredSide, otherSide, competitionId, occupant.Id, occupant.FranchiseSeasonId);
+
+                occupant.HomeAway = otherSide;
+                await _dataContext.SaveChangesAsync();
+            }
+        }
+
         if (entity is null)
         {
             _logger.LogInformation("Processing new CompetitionCompetitor entity. Ref={Ref}", dto.Ref);

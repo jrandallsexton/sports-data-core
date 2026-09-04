@@ -219,11 +219,18 @@ namespace SportsData.Api.Application.Admin
         {
             var correlationId = Guid.NewGuid();
 
-            await _eventBus.Publish(new PickemGroupMatchupsRequested(
-                sport,
-                seasonYear,
-                correlationId,
-                CausationId.Api.AdminNotificationBackfill), cancellationToken);
+            // No DbContext write on this path — publish straight to the
+            // broker. UseBusOutbox would otherwise buffer the event waiting
+            // for a SaveChangesAsync that never comes, and the backfill
+            // would 202 while silently doing nothing.
+            using (_deliveryScope.Use(DeliveryMode.Direct))
+            {
+                await _eventBus.Publish(new PickemGroupMatchupsRequested(
+                    sport,
+                    seasonYear,
+                    correlationId,
+                    CausationId.Api.AdminNotificationBackfill), cancellationToken);
+            }
 
             return Accepted(new { correlationId });
         }

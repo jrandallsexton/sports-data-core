@@ -174,13 +174,16 @@ export default function AdminModelLabPage() {
     (async () => {
       try {
         const res = await apiWrapper.Admin.getPrompts();
-        if (!cancelled) setPrompts(Array.isArray(res.data) ? res.data : []);
+        if (!cancelled) {
+          setPrompts(Array.isArray(res.data) ? res.data : []);
+          // Loaded flags SUCCESS only: a transient fetch failure must not
+          // masquerade as "successfully empty" and wipe a valid selection.
+          setPromptsLoaded(true);
+        }
       } catch {
-        // Fetch failure leaves the "(all prompts)" option — runs still
-        // work; the server resolves the default itself.
+        // Fetch failure: keep any stored selection (it still scopes runs
+        // and the matrix correctly); the dropdown just can't show names.
         if (!cancelled) setPrompts([]);
-      } finally {
-        if (!cancelled) setPromptsLoaded(true);
       }
     })();
     return () => { cancelled = true; };
@@ -196,8 +199,13 @@ export default function AdminModelLabPage() {
   useEffect(() => {
     if (!promptsLoaded) return;
     if (leaguePrompts.length === 0) {
-      // Loaded and nothing eligible: a lingering selection is stale.
-      if (promptId) setPromptId('');
+      // Loaded and nothing eligible: a lingering selection is stale —
+      // clear the persisted copy too, or the next mount resurrects it
+      // and the initial matrix load sends it before reconciliation runs.
+      if (promptId) {
+        setPromptId('');
+        localStorage.removeItem(PROMPT_ID_STORAGE_KEY);
+      }
       return;
     }
     // Keep a still-valid stored choice; otherwise select the slot default.

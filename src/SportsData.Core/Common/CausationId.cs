@@ -10,6 +10,7 @@ namespace SportsData.Core.Common
             public static Guid PickScoringAuditProcessor = new Guid("10000000-2000-0000-0000-000000000002");
             public static Guid MatchupPreviewProcessor = new Guid("10000000-3000-0000-0000-000000000001");
             public static readonly Guid SignalRDebugBroadcaster = new Guid("10000000-4000-0000-0000-000000000001");
+            public static readonly Guid AdminNotificationBackfill = new Guid("10000000-5000-0000-0000-000000000001");
         }
 
         public static class Producer

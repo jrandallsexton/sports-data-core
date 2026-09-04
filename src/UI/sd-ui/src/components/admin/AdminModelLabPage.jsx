@@ -206,8 +206,39 @@ export default function AdminModelLabPage() {
     }
   };
 
-  const models = matrix?.models ?? [];
-  const contests = matrix?.contests ?? [];
+  const models = useMemo(() => matrix?.models ?? [], [matrix]);
+  const contests = useMemo(() => matrix?.contests ?? [], [matrix]);
+
+  // Season-to-date records for the footer: per model and for the
+  // consensus column, X/Y = correct picks / graded picks. A pick is
+  // GRADED only when the game is final, the model actually picked, and
+  // an actual exists (ATS pushes grade nobody). Abstentions and
+  // not-yet-run cells never count against a model here — cost of
+  // abstaining is a Phase-4 scoring question, not a display one.
+  const records = useMemo(() => {
+    const perModel = {};
+    const consensus = { su: [0, 0], ats: [0, 0] };
+    const tally = (pair, grade) => {
+      if (!grade) return;
+      pair[1] += 1;
+      if (grade === 'correct') pair[0] += 1;
+    };
+    for (const c of contests) {
+      const cellBy = {};
+      for (const cell of c.cells ?? []) cellBy[String(cell.modelId).toLowerCase()] = cell;
+      for (const m of models) {
+        const cell = cellBy[String(m.id).toLowerCase()];
+        const rec = (perModel[m.id] ??= { su: [0, 0], ats: [0, 0] });
+        tally(rec.su, gradePick(cell?.predictedStraightUpWinnerId, c.actualWinnerId, c.isFinal));
+        tally(rec.ats, gradePick(cell?.predictedSpreadWinnerId, c.actualSpreadWinnerId, c.isFinal));
+      }
+      const suC = consensusOf(models.map(m => cellBy[String(m.id).toLowerCase()]?.predictedStraightUpWinnerId ?? null));
+      const atsC = consensusOf(models.map(m => cellBy[String(m.id).toLowerCase()]?.predictedSpreadWinnerId ?? null));
+      tally(consensus.su, gradePick(suC, c.actualWinnerId, c.isFinal));
+      tally(consensus.ats, gradePick(atsC, c.actualSpreadWinnerId, c.isFinal));
+    }
+    return { perModel, consensus };
+  }, [contests, models]);
 
   return (
     <div className="admin-page">
@@ -307,6 +338,24 @@ export default function AdminModelLabPage() {
                   />
                 ))}
               </tbody>
+              <tfoot>
+                <tr>
+                  <td style={footerStyle}>Record - SU</td>
+                  {models.map(m => (
+                    <td key={m.id} style={footerStyle}>{formatRecord(records.perModel[m.id]?.su)}</td>
+                  ))}
+                  <td style={footerStyle}>{formatRecord(records.consensus.su)}</td>
+                  <td style={footerStyle} />
+                </tr>
+                <tr>
+                  <td style={footerStyle}>Record - ATS</td>
+                  {models.map(m => (
+                    <td key={m.id} style={footerStyle}>{formatRecord(records.perModel[m.id]?.ats)}</td>
+                  ))}
+                  <td style={footerStyle}>{formatRecord(records.consensus.ats)}</td>
+                  <td style={footerStyle} />
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
@@ -328,6 +377,13 @@ const cellStyle = {
   whiteSpace: 'nowrap',
 };
 
+const footerStyle = {
+  padding: '8px 10px',
+  borderTop: '2px solid var(--border-primary)',
+  whiteSpace: 'nowrap',
+  fontWeight: 700,
+};
+
 /** Majority of the picks cast; needs at least 2 votes and no tie. */
 /**
  * Home-relative line as " (-22.5)" / " (+3.5)" / " (PK)" — no team name,
@@ -337,6 +393,34 @@ function formatSpread(spread) {
   if (spread == null) return '';
   if (spread === 0) return ' (PK)';
   return ` (${spread > 0 ? '+' : ''}${spread})`;
+}
+
+/**
+ * 'correct' | 'incorrect' | null. Null = ungraded: game not final, no
+ * pick, or no actual to grade against (an ATS PUSH leaves
+ * actualSpreadWinnerId null on a finalized game — a push grades nobody).
+ */
+function gradePick(pickId, actualId, isFinal) {
+  if (!isFinal || !pickId || !actualId) return null;
+  return String(pickId).toLowerCase() === String(actualId).toLowerCase()
+    ? 'correct'
+    : 'incorrect';
+}
+
+const GRADE_STYLES = {
+  correct: {
+    backgroundColor: 'rgba(39, 174, 96, 0.18)',
+    color: 'var(--color-success, #27ae60)',
+  },
+  incorrect: {
+    backgroundColor: 'rgba(192, 57, 43, 0.18)',
+    color: 'var(--color-danger, #c0392b)',
+  },
+};
+
+function formatRecord(pair) {
+  if (!pair || pair[1] === 0) return '—';
+  return `${pair[0]}/${pair[1]}`;
 }
 
 function consensusOf(picks) {
@@ -393,6 +477,11 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
       );
     }
 
+    const actualId = pickField === 'predictedStraightUpWinnerId'
+      ? contest.actualWinnerId
+      : contest.actualSpreadWinnerId;
+    const grade = gradePick(cell[pickField], actualId, contest.isFinal);
+
     const pick = teamFor(cell[pickField]);
     if (!pick) {
       // No pick + recorded problems = the run FAILED (parse error, bad
@@ -428,7 +517,7 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
       );
     }
     return (
-      <td key={model.id} style={{ ...cellStyle, fontWeight: 600 }}>
+      <td key={model.id} style={{ ...cellStyle, fontWeight: 600, ...(grade ? GRADE_STYLES[grade] : null) }}>
         {pick}
         {cell.problems && (
           <span
@@ -447,6 +536,9 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
   const atsConsensus = consensusOf(models.map(m =>
     cellByModel[String(m.id).toLowerCase()]?.predictedSpreadWinnerId ?? null));
 
+  const suGrade = gradePick(suConsensus, contest.actualWinnerId, contest.isFinal);
+  const atsGrade = gradePick(atsConsensus, contest.actualSpreadWinnerId, contest.isFinal);
+
   const hasHoles = models.some(m => !cellByModel[String(m.id).toLowerCase()]);
 
   return (
@@ -454,7 +546,9 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
       <tr>
         <td style={{ ...cellStyle, fontWeight: 600 }}>{label} - SU</td>
         {models.map(m => renderPickCell(m, 'predictedStraightUpWinnerId'))}
-        <td style={{ ...cellStyle, fontWeight: 700 }}>{suConsensus ? teamFor(suConsensus) : '-'}</td>
+        <td style={{ ...cellStyle, fontWeight: 700, ...(suGrade ? GRADE_STYLES[suGrade] : null) }}>
+          {suConsensus ? teamFor(suConsensus) : '-'}
+        </td>
         <td rowSpan={2} style={{ ...cellStyle, verticalAlign: 'middle' }}>
           {hasHoles && !rowPanelQueued && (
             <button
@@ -474,7 +568,9 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
           {label} - ATS{formatSpread(contest.spread)}
         </td>
         {models.map(m => renderPickCell(m, 'predictedSpreadWinnerId'))}
-        <td style={{ ...cellStyle, fontWeight: 700 }}>{atsConsensus ? teamFor(atsConsensus) : '—'}</td>
+        <td style={{ ...cellStyle, fontWeight: 700, ...(atsGrade ? GRADE_STYLES[atsGrade] : null) }}>
+          {atsConsensus ? teamFor(atsConsensus) : '—'}
+        </td>
       </tr>
     </>
   );

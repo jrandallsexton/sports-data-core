@@ -124,6 +124,9 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
                 HomeShort = m.HomeShort,
                 HomeFranchiseSeasonId = m.HomeFranchiseSeasonId,
                 Spread = m.SpreadCurrent,
+                IsFinal = ContestStatusValues.IsCompleted(m.Status),
+                ActualWinnerId = m.WinnerFranchiseSeasonId,
+                ActualSpreadWinnerId = m.SpreadWinnerFranchiseSeasonId,
                 Cells = latestCells[m.ContestId]
                     .Select(c => new ModelLabMatrixDto.MatrixCellDto
                     {

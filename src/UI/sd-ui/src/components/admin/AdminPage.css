@@ -205,13 +205,17 @@
   }
 
   /* Paper is white regardless of app theme — pin readable ink colors
-     over the dark theme's light-on-dark variables. */
+     over the dark theme's light-on-dark variables, including the grade
+     and problem-marker colors the matrix cells resolve through vars. */
   .admin-page {
     background: #fff !important;
     color: #000 !important;
     --text-primary: #000;
     --text-secondary: #555;
     --border-primary: #999;
+    --color-success: #1e8449;
+    --color-danger: #c0392b;
+    --color-warning: #b9770e;
   }
 
   .admin-page table th,

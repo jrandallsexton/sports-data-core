@@ -70,16 +70,31 @@ export default function AdminModelLabPage() {
   // model lineup and prompts stay internal; the export is shareable.
   const [printMode, setPrintMode] = useState(false);
   useEffect(() => {
+    // Belt-and-braces reset; the deterministic path is the post-print()
+    // reset below (afterprint doesn't fire in every browser/webview,
+    // and a stuck printMode would leave the screen anonymized and the
+    // export button inert).
     const onAfterPrint = () => setPrintMode(false);
     window.addEventListener('afterprint', onAfterPrint);
     return () => window.removeEventListener('afterprint', onAfterPrint);
   }, []);
   useEffect(() => {
-    if (!printMode) return;
-    // Two frames so the anonymized headers are painted before the
-    // print snapshot is taken.
-    const raf = requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
-    return () => cancelAnimationFrame(raf);
+    if (!printMode) return undefined;
+    // Two frames so the anonymized headers are painted before the print
+    // snapshot is taken. The browser captures the snapshot when print()
+    // is invoked, so resetting immediately after it returns is safe for
+    // the produced PDF even where print() doesn't block on the dialog.
+    let innerRaf = null;
+    const outerRaf = requestAnimationFrame(() => {
+      innerRaf = requestAnimationFrame(() => {
+        window.print();
+        setPrintMode(false);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(outerRaf);
+      if (innerRaf != null) cancelAnimationFrame(innerRaf);
+    };
   }, [printMode]);
 
   const loadMatrix = useCallback(async (sport, y, w, pId, { quiet = false } = {}) => {
@@ -440,7 +455,7 @@ export default function AdminModelLabPage() {
                   {models.map((m, i) => (
                     <th key={m.id} className="model-lab-model-col" style={headerStyle}>
                       {printMode
-                        ? <>Model<br />{String.fromCharCode(65 + i)}</>
+                        ? <>Model<br />{modelLetter(i)}</>
                         : m.name}
                     </th>
                   ))}
@@ -500,6 +515,21 @@ export default function AdminModelLabPage() {
       </div>
     </div>
   );
+}
+
+/**
+ * Base-26 column label: A..Z, then AA, AB, ... — the anonymized export
+ * header must stay a letter no matter how many models the lab carries
+ * (charCode arithmetic alone prints punctuation past the 26th).
+ */
+function modelLetter(index) {
+  let n = index;
+  let label = '';
+  do {
+    label = String.fromCharCode(65 + (n % 26)) + label;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return label;
 }
 
 const headerStyle = {

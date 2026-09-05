@@ -60,12 +60,15 @@ week's **wave set** instead of a single deadline:
 - `PendingScheduledJob` natural key gains the wave anchor: new column
   `WaveAnchorUtc` (non-null for JobKind=PickDeadline v2); lookup key becomes
   (UserId, JobKind, TargetId, SeasonWeek, WaveAnchorUtc).
-- Re-evaluation deletes rows whose wave window [anchor, anchor + coalesce]
-  no longer contains any kickoff (v1 "leaves them alone" gap closed); moved
-  kickoffs reschedule their wave. Window-based rather than anchor-set-based:
-  a kickoff moving earlier can merge waves while the old row remains the
-  only viable fire for the unmoved games (the merged wave's fire time may
-  already be past) — the rare overlap double-nag is the accepted trade.
+- Re-evaluation deletes a future-scheduled row unless some kickoff in its
+  window [anchor, anchor + coalesce] is UNCOVERED by every schedulable
+  re-derived wave (v1 "leaves them alone" gap closed); moved kickoffs
+  reschedule their wave. The rule balances two failure modes found in
+  review: anchor-set orphaning silently dropped the sole remaining cover
+  when an earlier-moving kickoff merged waves whose new fire time was
+  already past, while keep-if-window-has-any-kickoff double-pushed when a
+  later-moving kickoff re-anchored a wave that a new schedulable row fully
+  covers.
 - Waves whose fire time is already past are skipped (unchanged semantic).
 
 ### Dispatch (SendPickDeadlineReminderCommandHandler)

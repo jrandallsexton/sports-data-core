@@ -50,13 +50,16 @@ namespace SportsData.Notification.Application.Scheduling
     ///   ordering as Producer's <c>CompetitionStreamScheduler</c>) when the
     ///   wave's fire time has moved.</item>
     ///   <item>No-ops when unchanged or already past.</item>
-    ///   <item>Deletes future-scheduled rows whose wave window
-    ///   [anchor, anchor + coalesce] no longer contains any kickoff —
-    ///   including v1 rows (null anchor). Window-based, not anchor-set-based:
-    ///   a kickoff moving earlier can merge waves while the old row remains
-    ///   the only fire covering the unmoved games. In-flight rows (fire time
-    ///   reached) are left alone so a legitimate mid-fire dispatch isn't
-    ///   stale-fired by its own scheduler.</item>
+    ///   <item>Deletes future-scheduled rows unless some kickoff in their
+    ///   window [anchor, anchor + coalesce] is UNCOVERED by every schedulable
+    ///   re-derived wave — v1 rows (null anchor) always delete. This is the
+    ///   balance point between two failure modes: anchor-set orphaning
+    ///   silently dropped the sole remaining cover after an earlier-moving
+    ///   kickoff merged waves, while any-kickoff-in-window retention
+    ///   double-pushed after a later-moving kickoff re-anchored a wave a new
+    ///   row already covers. In-flight rows (fire time reached) are left
+    ///   alone so a legitimate mid-fire dispatch isn't stale-fired by its
+    ///   own scheduler.</item>
     /// </list>
     /// </para>
     /// </summary>
@@ -88,20 +91,22 @@ namespace SportsData.Notification.Application.Scheduling
         /// Clusters sorted distinct kickoff times into waves: a kickoff joins
         /// the current wave when within <paramref name="coalesceWindow"/> of
         /// the wave's anchor (its earliest kickoff); otherwise it anchors a
-        /// new wave.
+        /// new wave. Members are returned alongside each anchor so orphan
+        /// cleanup can reason about which kickoffs a wave covers.
         /// </summary>
-        private static List<DateTime> DeriveWaveAnchors(
+        private static List<(DateTime Anchor, List<DateTime> Kickoffs)> DeriveWaves(
             IReadOnlyList<DateTime> sortedDistinctKickoffs, TimeSpan coalesceWindow)
         {
-            var anchors = new List<DateTime>();
+            var waves = new List<(DateTime Anchor, List<DateTime> Kickoffs)>();
             foreach (var kickoff in sortedDistinctKickoffs)
             {
-                if (anchors.Count == 0 || kickoff - anchors[^1] > coalesceWindow)
+                if (waves.Count == 0 || kickoff - waves[^1].Anchor > coalesceWindow)
                 {
-                    anchors.Add(kickoff);
+                    waves.Add((kickoff, new List<DateTime>()));
                 }
+                waves[^1].Kickoffs.Add(kickoff);
             }
-            return anchors;
+            return waves;
         }
 
         public async Task EvaluateAndScheduleForLeagueWeekAsync(
@@ -128,14 +133,24 @@ namespace SportsData.Notification.Application.Scheduling
 
             var lead = TimeSpan.FromMinutes(_config.PickDeadlineLeadMinutes);
             var coalesce = TimeSpan.FromMinutes(_config.PickDeadlineCoalesceMinutes);
-            var anchors = DeriveWaveAnchors(kickoffs, coalesce);
+            var waves = DeriveWaves(kickoffs, coalesce);
             var now = _dateTimeProvider.UtcNow();
 
             // Waves whose fire time is past (or is now) can't get a "soon"
             // reminder — skip scheduling but keep their rows (an in-flight
             // fire must not be stale-fired by its own scheduler).
-            var schedulableAnchors = anchors
+            var schedulableAnchors = waves
+                .Select(w => w.Anchor)
                 .Where(a => a - lead > now)
+                .ToList();
+
+            // Kickoffs NOT covered by any schedulable re-derived wave — their
+            // wave's fire time is already past, so only a surviving stale row
+            // can still remind about them.
+            var schedulableSet = schedulableAnchors.ToHashSet();
+            var uncoveredKickoffs = waves
+                .Where(w => !schedulableSet.Contains(w.Anchor))
+                .SelectMany(w => w.Kickoffs)
                 .ToList();
 
             // Existing rows for the whole league-week in one query — cheaper
@@ -146,25 +161,31 @@ namespace SportsData.Notification.Application.Scheduling
                             && j.SeasonWeek == seasonWeek)
                 .ToListAsync(cancellationToken);
 
-            // Orphan cleanup: a future-scheduled row is an orphan when its
-            // wave WINDOW [anchor, anchor + coalesce] no longer contains any
-            // kickoff — NOT merely when its anchor stopped being a derived
-            // anchor. A kickoff moving EARLIER can merge two waves (the old
-            // anchor joins the new, earlier wave), yet the old row can be
-            // the only fire able to cover the unmoved games: the merged
-            // wave's own fire time may already be past. Deleting by
-            // anchor-set membership silently dropped those reminders. The
-            // rare overlap double-nag this allows is the accepted trade —
-            // the dispatcher's missing-pick gate suppresses anyone already
-            // picked. v1 rows (null anchor) are always orphans. Rows at/past
-            // their fire time are left alone: the fire may be mid-dispatch,
-            // and deleting the row would trip the dispatcher's stale-fire
-            // gate on a legitimate send.
+            // Orphan cleanup: a future-scheduled row survives when its anchor
+            // is itself a schedulable derived anchor (the current wave's own
+            // row — ScheduleOrReschedule no-ops or reschedules it below), OR
+            // while some kickoff in its window [anchor, anchor + coalesce] is
+            // UNCOVERED (its re-derived wave can no longer fire). Rationale,
+            // both directions:
+            //   - Anchor-set membership alone over-deleted: a kickoff moving
+            //     EARLIER merges waves, and when the merged wave's fire time
+            //     is already past, the old row is the sole remaining cover
+            //     for the unmoved games — deleting it silently dropped their
+            //     reminder.
+            //   - Window-contains-any-kickoff alone over-kept: a kickoff
+            //     moving LATER within the coalesce window re-anchors the
+            //     wave, a new schedulable row covers everything, and the
+            //     stale row would fire a near-duplicate push minutes apart.
+            // v1 rows (null anchor) are always orphans. Rows at/past their
+            // fire time are left alone: the fire may be mid-dispatch, and
+            // deleting the row would trip the dispatcher's stale-fire gate
+            // on a legitimate send.
             var orphans = existingRows
                 .Where(j => j.ScheduledFireUtc > now
                             && (j.WaveAnchorUtc is null
-                                || !kickoffs.Any(k => k >= j.WaveAnchorUtc.Value
-                                                      && k <= j.WaveAnchorUtc.Value + coalesce)))
+                                || (!schedulableSet.Contains(j.WaveAnchorUtc.Value)
+                                    && !uncoveredKickoffs.Any(k => k >= j.WaveAnchorUtc.Value
+                                                                   && k <= j.WaveAnchorUtc.Value + coalesce))))
                 .ToList();
             if (orphans.Count > 0)
             {

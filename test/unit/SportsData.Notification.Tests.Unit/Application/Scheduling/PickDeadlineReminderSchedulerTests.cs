@@ -166,6 +166,43 @@ public class PickDeadlineReminderSchedulerTests : NotificationTestBase<PickDeadl
     }
 
     [Fact]
+    public async Task Evaluate_AnchorDelayedWithinCoalesce_OldRowOrphanedNoDoublePush()
+    {
+        // The 18:00 anchor game slips to 18:10; the wave re-anchors and a new
+        // schedulable row (fire 17:10) covers BOTH games. The stale 18:00 row
+        // must be orphaned — keeping it fires a near-duplicate push at 17:00.
+        var leagueId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        await SeedMemberAsync(leagueId, userId);
+        var day = FixedNow.Date;
+        await SeedMatchupAsync(leagueId, day.AddHours(18));
+        await SeedMatchupAsync(leagueId, day.AddHours(18).AddMinutes(25));
+
+        var sut = Mocker.CreateInstance<PickDeadlineReminderScheduler>();
+        await sut.EvaluateAndScheduleForLeagueWeekAsync(leagueId, 2, CancellationToken.None);
+
+        var original = await DataContext.PendingScheduledJobs.AsNoTracking().SingleAsync();
+        original.WaveAnchorUtc.Should().Be(day.AddHours(18));
+
+        var anchorGame = await DataContext.PickemGroupMatchups
+            .SingleAsync(m => m.StartDateUtc == day.AddHours(18));
+        anchorGame.StartDateUtc = day.AddHours(18).AddMinutes(10);
+        await DataContext.SaveChangesAsync();
+
+        // Re-evaluate at 16:55 — the re-anchored wave (18:10, fire 17:10) is
+        // schedulable and covers every kickoff.
+        Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow())
+            .Returns(day.AddHours(16).AddMinutes(55));
+        await sut.EvaluateAndScheduleForLeagueWeekAsync(leagueId, 2, CancellationToken.None);
+
+        var rows = await DataContext.PendingScheduledJobs.AsNoTracking().ToListAsync();
+        rows.Should().HaveCount(1);
+        rows[0].WaveAnchorUtc.Should().Be(day.AddHours(18).AddMinutes(10));
+        rows[0].ScheduledFireUtc.Should().Be(day.AddHours(17).AddMinutes(10));
+        _jobs.Verify(x => x.Delete(original.HangfireJobId), Times.Once);
+    }
+
+    [Fact]
     public async Task Evaluate_EarlierKickoffMergesWaves_KeepsCoveringRow()
     {
         // A 18:25 game moves up to 17:40, merging the 18:00 wave into a new

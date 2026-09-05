@@ -174,3 +174,67 @@
   font-size: 0.75rem;
   border-radius: 6px;
 }
+
+/* --- Model Lab PDF export (browser print-to-PDF) ---------------------
+   The screen page prints as a shareable matrix: admin chrome, controls,
+   and action buttons drop out; a title block drops in; grade tints are
+   forced through (browsers strip backgrounds by default). Model-name
+   anonymization is component state, not CSS — the header cells render
+   "Model A/B/..." while printMode is on. */
+.model-lab-print-header {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
+  .admin-header,
+  .model-lab-no-print,
+  .model-lab-actions,
+  .model-lab-btn {
+    display: none !important;
+  }
+
+  .model-lab-print-header {
+    display: block;
+    margin-bottom: 12px;
+    color: #000;
+  }
+
+  /* Paper is white regardless of app theme — pin readable ink colors
+     over the dark theme's light-on-dark variables. */
+  .admin-page {
+    background: #fff !important;
+    color: #000 !important;
+    --text-primary: #000;
+    --text-secondary: #555;
+    --border-primary: #999;
+  }
+
+  .admin-page table th,
+  .admin-page table td {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+/* Print density: 12 columns must fit one landscape page. Inline styles
+   set the screen sizing, so the print overrides need !important. Model
+   headers render as stacked "Model / A" (component state) and center. */
+@media print {
+  .admin-page table {
+    font-size: 0.72rem !important;
+  }
+
+  .admin-page table th,
+  .admin-page table td {
+    padding: 3px 5px !important;
+  }
+
+  .model-lab-model-col {
+    text-align: center !important;
+  }
+}

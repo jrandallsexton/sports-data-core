@@ -15,6 +15,10 @@ namespace SportsData.Notification.Migrations
                 name: "IX_PendingScheduledJobs_UserId_JobKind_TargetId_SeasonWeek",
                 table: "PendingScheduledJobs");
 
+            migrationBuilder.DropIndex(
+                name: "IX_NotificationPickDeadlines_UserId_LeagueId_SeasonWeek_FireTi~",
+                table: "NotificationPickDeadlines");
+
             migrationBuilder.AddColumn<string>(
                 name: "Headline",
                 table: "PickemGroupMatchups",
@@ -25,6 +29,12 @@ namespace SportsData.Notification.Migrations
             migrationBuilder.AddColumn<DateTime>(
                 name: "WaveAnchorUtc",
                 table: "PendingScheduledJobs",
+                type: "timestamp with time zone",
+                nullable: true);
+
+            migrationBuilder.AddColumn<DateTime>(
+                name: "WaveAnchorUtc",
+                table: "NotificationPickDeadlines",
                 type: "timestamp with time zone",
                 nullable: true);
 
@@ -45,6 +55,13 @@ namespace SportsData.Notification.Migrations
                 columns: new[] { "UserId", "JobKind", "TargetId", "SeasonWeek", "WaveAnchorUtc" },
                 unique: true)
                 .Annotation("Npgsql:NullsDistinct", false);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NotificationPickDeadlines_UserId_LeagueId_SeasonWeek_FireTi~",
+                table: "NotificationPickDeadlines",
+                columns: new[] { "UserId", "LeagueId", "SeasonWeek", "FireTimeUtc", "WaveAnchorUtc" },
+                unique: true)
+                .Annotation("Npgsql:NullsDistinct", false);
         }
 
         /// <inheritdoc />
@@ -56,12 +73,23 @@ namespace SportsData.Notification.Migrations
             // back forfeits the schedule rows either way (their Hangfire
             // jobs target the v2 slice handlers); the v1 image's steady-state
             // events rebuild its week-level schedule.
+            //
+            // NotificationPickDeadline claim rows are dispatch AUDIT history
+            // and are deliberately NOT purged. Recreating their narrower v1
+            // index can only fail in the contrived case the wider key exists
+            // to prevent — two waves claimed on the same FireTimeUtc across
+            // a lead-time change; resolve such a duplicate manually before
+            // rolling back.
             migrationBuilder.Sql(
                 "DELETE FROM \"PendingScheduledJobs\" WHERE \"JobKind\" = 'PickDeadline';");
 
             migrationBuilder.DropIndex(
                 name: "IX_PendingScheduledJobs_UserId_JobKind_TargetId_SeasonWeek_Wav~",
                 table: "PendingScheduledJobs");
+
+            migrationBuilder.DropIndex(
+                name: "IX_NotificationPickDeadlines_UserId_LeagueId_SeasonWeek_FireTi~",
+                table: "NotificationPickDeadlines");
 
             migrationBuilder.DropColumn(
                 name: "Headline",
@@ -71,12 +99,22 @@ namespace SportsData.Notification.Migrations
                 name: "WaveAnchorUtc",
                 table: "PendingScheduledJobs");
 
+            migrationBuilder.DropColumn(
+                name: "WaveAnchorUtc",
+                table: "NotificationPickDeadlines");
+
             migrationBuilder.CreateIndex(
                 name: "IX_PendingScheduledJobs_UserId_JobKind_TargetId_SeasonWeek",
                 table: "PendingScheduledJobs",
                 columns: new[] { "UserId", "JobKind", "TargetId", "SeasonWeek" },
                 unique: true)
                 .Annotation("Npgsql:NullsDistinct", false);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NotificationPickDeadlines_UserId_LeagueId_SeasonWeek_FireTi~",
+                table: "NotificationPickDeadlines",
+                columns: new[] { "UserId", "LeagueId", "SeasonWeek", "FireTimeUtc" },
+                unique: true);
         }
     }
 }

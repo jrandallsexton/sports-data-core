@@ -180,7 +180,8 @@ public class SendPickDeadlineReminderCommandHandler : ISendPickDeadlineReminderC
 
         const string title = "Picks due soon";
         var body = ComposePickDeadlineBody(unpicked.Count,
-            unpicked.Count == 1 ? unpicked[0].Headline : null, leagueName);
+            unpicked.Count == 1 ? unpicked[0].Headline : null, leagueName,
+            FormatLeadPhrase(_config.PickDeadlineLeadMinutes));
 
         var outcome = await _fanout.SendToUserDevicesAsync(userId, title, body);
 
@@ -203,23 +204,30 @@ public class SendPickDeadlineReminderCommandHandler : ISendPickDeadlineReminderC
     /// Operator-approved copy (docs/features/pick-deadline-reminders-v2.md):
     /// one unpicked game names the matchup; several collapse to a count.
     /// A null headline on the single case falls back to count wording.
-    /// Wording says "about an hour" because the default lead is 60 —
-    /// deliberately vague enough to survive modest lead-time retuning.
+    /// The time phrase tracks the configured lead so retuning
+    /// PickDeadlineLeadMinutes never makes the copy lie.
     /// </summary>
-    private static string ComposePickDeadlineBody(int unpickedCount, string? singleHeadline, string? leagueName)
+    private static string ComposePickDeadlineBody(
+        int unpickedCount, string? singleHeadline, string? leagueName, string leadPhrase)
     {
         if (unpickedCount == 1 && !string.IsNullOrWhiteSpace(singleHeadline))
         {
             return leagueName is not null
-                ? $"Your pick for {singleHeadline} ({leagueName}) locks in about an hour."
-                : $"Your pick for {singleHeadline} locks in about an hour.";
+                ? $"Your pick for {singleHeadline} ({leagueName}) locks in {leadPhrase}."
+                : $"Your pick for {singleHeadline} locks in {leadPhrase}.";
         }
 
         var noun = unpickedCount == 1 ? "pick locks" : "picks lock";
         return leagueName is not null
-            ? $"{unpickedCount} {noun} in about an hour in {leagueName}."
-            : $"{unpickedCount} {noun} in about an hour.";
+            ? $"{unpickedCount} {noun} in {leadPhrase} in {leagueName}."
+            : $"{unpickedCount} {noun} in {leadPhrase}.";
     }
+
+    private static string FormatLeadPhrase(int leadMinutes) => leadMinutes switch
+    {
+        60 => "about an hour",
+        _ => $"about {leadMinutes} minutes"
+    };
 
     private async Task FinalizeAsync(NotificationPickDeadline claim, string result)
     {

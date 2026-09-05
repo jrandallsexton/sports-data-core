@@ -12,7 +12,7 @@ using SportsData.Notification.Infrastructure.Data;
 namespace SportsData.Notification.Migrations
 {
     [DbContext(typeof(AppDataContext))]
-    [Migration("20260905094134_PickDeadlineWaveModel")]
+    [Migration("20260905104237_PickDeadlineWaveModel")]
     partial class PickDeadlineWaveModel
     {
         /// <inheritdoc />
@@ -331,10 +331,15 @@ namespace SportsData.Notification.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("WaveAnchorUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "LeagueId", "SeasonWeek", "FireTimeUtc")
+                    b.HasIndex("UserId", "LeagueId", "SeasonWeek", "FireTimeUtc", "WaveAnchorUtc")
                         .IsUnique();
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("UserId", "LeagueId", "SeasonWeek", "FireTimeUtc", "WaveAnchorUtc"), false);
 
                     b.ToTable("NotificationPickDeadlines");
                 });

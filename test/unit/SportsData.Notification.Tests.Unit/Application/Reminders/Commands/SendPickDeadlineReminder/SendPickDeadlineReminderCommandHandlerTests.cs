@@ -220,6 +220,28 @@ public class SendPickDeadlineReminderCommandHandlerTests
     }
 
     [Fact]
+    public async Task Execute_NonDefaultLead_CopyTracksConfiguredMinutes()
+    {
+        // The time phrase must follow PickDeadlineLeadMinutes — retuning the
+        // lead can never make the copy lie about "an hour".
+        Mocker.Use<IOptions<NotificationConfig>>(
+            Options.Create(new NotificationConfig { PickDeadlineLeadMinutes = 30 }));
+
+        var userId = Guid.NewGuid();
+        var leagueId = Guid.NewGuid();
+        await SeedDeviceAsync(userId);
+        await SeedScheduleAsync(userId, leagueId, FireTime, WaveAnchor);
+        await SeedWaveMatchupAsync(leagueId, WaveAnchor, headline: "Idaho Vandals at Utah Utes");
+
+        var sut = Mocker.CreateInstance<SendPickDeadlineReminderCommandHandler>();
+        await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
+
+        var row = await GetSingleClaimAsync();
+        row.Body.Should().Contain("about 30 minutes");
+        row.Body.Should().NotContain("hour");
+    }
+
+    [Fact]
     public async Task Execute_MatchupOutsideCoalesceWindow_NotCounted()
     {
         // A kickoff past anchor + coalesce (default 30) belongs to the NEXT

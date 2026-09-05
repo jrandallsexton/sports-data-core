@@ -42,7 +42,10 @@ wave at `anchor − Lead` (default 60 min).
 Both knobs come from AppConfig
 (`SportsData.Notification:NotificationConfig:PickDeadlineLeadMinutes` and
 `SportsData.Notification:NotificationConfig:PickDeadlineCoalesceMinutes`);
-the current hardcoded lead const goes away.
+the current hardcoded lead const goes away. The notification copy's time
+phrase tracks the configured lead ("about an hour" at the default 60,
+"about N minutes" otherwise), so retuning the lead never makes the copy
+lie.
 
 ### Scheduling (PickDeadlineReminderScheduler)
 

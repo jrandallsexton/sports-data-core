@@ -39,8 +39,10 @@ wave at `anchor − Lead` (default 60 min).
 - Thursday 19:30 game alone → 1 wave → the "specific" case when unpicked.
 - Saturday 16:00/16:15/16:30 stagger → 1 wave, 1 notification, count of 3.
 
-Both knobs come from AppConfig (`NotificationConfig:PickDeadlineLeadMinutes`,
-`...:PickDeadlineCoalesceMinutes`); the current hardcoded lead const goes away.
+Both knobs come from AppConfig
+(`SportsData.Notification:NotificationConfig:PickDeadlineLeadMinutes` and
+`SportsData.Notification:NotificationConfig:PickDeadlineCoalesceMinutes`);
+the current hardcoded lead const goes away.
 
 ### Scheduling (PickDeadlineReminderScheduler)
 

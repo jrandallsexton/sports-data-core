@@ -50,6 +50,15 @@ namespace SportsData.Notification.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // Mirror of Up's purge: v2 holds multiple wave rows per
+            // (user, league, week) that differ only by WaveAnchorUtc —
+            // recreating the v1 unique index over them would fail. Rolling
+            // back forfeits the schedule rows either way (their Hangfire
+            // jobs target the v2 slice handlers); the v1 image's steady-state
+            // events rebuild its week-level schedule.
+            migrationBuilder.Sql(
+                "DELETE FROM \"PendingScheduledJobs\" WHERE \"JobKind\" = 'PickDeadline';");
+
             migrationBuilder.DropIndex(
                 name: "IX_PendingScheduledJobs_UserId_JobKind_TargetId_SeasonWeek_Wav~",
                 table: "PendingScheduledJobs");

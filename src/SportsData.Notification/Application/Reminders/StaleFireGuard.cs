@@ -46,12 +46,14 @@ public class StaleFireGuard : IStaleFireGuard
     {
         var row = await _dataContext.PendingScheduledJobs
             .AsNoTracking()
-            .FirstOrDefaultAsync(j =>
+            .Where(j =>
                 j.UserId == userId &&
                 j.JobKind == jobKind &&
                 j.TargetId == targetId &&
                 j.SeasonWeek == seasonWeek &&
-                j.WaveAnchorUtc == waveAnchorUtc);
+                j.WaveAnchorUtc == waveAnchorUtc)
+            .Select(j => new { j.ScheduledFireUtc })
+            .FirstOrDefaultAsync();
 
         if (row is null)
         {

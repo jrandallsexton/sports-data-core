@@ -47,6 +47,18 @@ public class SendPickDeadlineReminderCommandHandlerTests
         Mocker.Use<IPushDeviceFanout>(Mocker.CreateInstance<PushDeviceFanout>());
     }
 
+    private sealed record ClaimView(
+        Guid UserId, Guid LeagueId, int SeasonWeek, DateTime FireTimeUtc, DateTime? WaveAnchorUtc,
+        Guid CorrelationId, string Result, string Body);
+
+    private Task<ClaimView> GetSingleClaimAsync() =>
+        DataContext.NotificationPickDeadlines
+            .AsNoTracking()
+            .Select(c => new ClaimView(
+                c.UserId, c.LeagueId, c.SeasonWeek, c.FireTimeUtc, c.WaveAnchorUtc,
+                c.CorrelationId, c.Result, c.Body))
+            .SingleAsync();
+
     private void VerifySendCount(Times times) =>
         _pushSender.Verify(x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), times);
 
@@ -133,11 +145,12 @@ public class SendPickDeadlineReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
 
         VerifySendCount(Times.Once());
-        var row = await DataContext.NotificationPickDeadlines.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.UserId.Should().Be(userId);
         row.LeagueId.Should().Be(leagueId);
         row.SeasonWeek.Should().Be(3);
         row.FireTimeUtc.Should().Be(FireTime);
+        row.WaveAnchorUtc.Should().Be(WaveAnchor);
         row.CorrelationId.Should().NotBeEmpty();
         row.Result.Should().Be("Sent");
     }
@@ -157,7 +170,7 @@ public class SendPickDeadlineReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
 
         VerifySendCount(Times.Never());
-        var row = await DataContext.NotificationPickDeadlines.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Result.Should().Be("Suppressed_AllPicked");
     }
 
@@ -179,7 +192,7 @@ public class SendPickDeadlineReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
 
         VerifySendCount(Times.Once());
-        var row = await DataContext.NotificationPickDeadlines.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Result.Should().Be("Sent");
         row.Body.Should().Contain("Idaho Vandals at Utah Utes");
         row.Body.Should().NotContain("Other at Game");
@@ -200,7 +213,7 @@ public class SendPickDeadlineReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
 
         VerifySendCount(Times.Once());
-        var row = await DataContext.NotificationPickDeadlines.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Result.Should().Be("Sent");
         row.Body.Should().Contain("3 picks");
         row.Body.Should().NotContain("Idaho Vandals");
@@ -221,7 +234,7 @@ public class SendPickDeadlineReminderCommandHandlerTests
         var sut = Mocker.CreateInstance<SendPickDeadlineReminderCommandHandler>();
         await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
 
-        var row = await DataContext.NotificationPickDeadlines.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Body.Should().Contain("Idaho Vandals at Utah Utes");
     }
 
@@ -238,7 +251,7 @@ public class SendPickDeadlineReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
 
         VerifySendCount(Times.Never());
-        var row = await DataContext.NotificationPickDeadlines.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Result.Should().Be("Suppressed_NoMatchups");
     }
 
@@ -254,7 +267,7 @@ public class SendPickDeadlineReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
 
         VerifySendCount(Times.Never());
-        var row = await DataContext.NotificationPickDeadlines.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Result.Should().Be("Suppressed_StaleFire");
     }
 
@@ -280,7 +293,7 @@ public class SendPickDeadlineReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
 
         VerifySendCount(Times.Never());
-        var row = await DataContext.NotificationPickDeadlines.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Result.Should().Be("Suppressed_UserOptedOut");
     }
 
@@ -296,7 +309,7 @@ public class SendPickDeadlineReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
 
         VerifySendCount(Times.Never());
-        var row = await DataContext.NotificationPickDeadlines.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Result.Should().Be("Suppressed_NoDevice");
     }
 }

@@ -98,11 +98,14 @@ public class SendContestStartReminderCommandHandler : ISendContestStartReminderC
             return;
         }
 
-        var prefs = await _dataContext.UserNotificationPreferences
+        // Prefs gate — projected to the one flag; null (no row) allows.
+        var reminderEnabled = await _dataContext.UserNotificationPreferences
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.UserId == userId);
+            .Where(p => p.UserId == userId)
+            .Select(p => (bool?)p.ContestStartReminderEnabled)
+            .FirstOrDefaultAsync();
 
-        if (prefs is { ContestStartReminderEnabled: false })
+        if (reminderEnabled == false)
         {
             await FinalizeAsync(claim, "Suppressed_UserOptedOut");
             return;

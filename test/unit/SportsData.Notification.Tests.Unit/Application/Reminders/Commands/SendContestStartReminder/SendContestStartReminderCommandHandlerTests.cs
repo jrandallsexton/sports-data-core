@@ -40,6 +40,15 @@ public class SendContestStartReminderCommandHandlerTests
         Mocker.Use<IPushDeviceFanout>(Mocker.CreateInstance<PushDeviceFanout>());
     }
 
+    private sealed record ClaimView(
+        Guid UserId, Guid ContestId, DateTime FireTimeUtc, Guid CorrelationId, string Result);
+
+    private Task<ClaimView> GetSingleClaimAsync() =>
+        DataContext.NotificationContestStarts
+            .AsNoTracking()
+            .Select(c => new ClaimView(c.UserId, c.ContestId, c.FireTimeUtc, c.CorrelationId, c.Result))
+            .SingleAsync();
+
     private void VerifySendCount(Times times) =>
         _pushSender.Verify(x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), times);
 
@@ -90,7 +99,7 @@ public class SendContestStartReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, contestId, FireTime);
 
         VerifySendCount(Times.Once());
-        var row = await DataContext.NotificationContestStarts.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.UserId.Should().Be(userId);
         row.ContestId.Should().Be(contestId);
         row.FireTimeUtc.Should().Be(FireTime);
@@ -119,7 +128,7 @@ public class SendContestStartReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, contestId, FireTime);
 
         VerifySendCount(Times.Never());
-        var row = await DataContext.NotificationContestStarts.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Result.Should().Be("Suppressed_UserOptedOut");
     }
 
@@ -135,7 +144,7 @@ public class SendContestStartReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, contestId, FireTime);
 
         VerifySendCount(Times.Never());
-        var row = await DataContext.NotificationContestStarts.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Result.Should().Be("Suppressed_StaleFire");
     }
 
@@ -150,7 +159,7 @@ public class SendContestStartReminderCommandHandlerTests
         await sut.ExecuteAsync(userId, contestId, FireTime);
 
         VerifySendCount(Times.Never());
-        var row = await DataContext.NotificationContestStarts.SingleAsync();
+        var row = await GetSingleClaimAsync();
         row.Result.Should().Be("Suppressed_NoDevice");
     }
 }

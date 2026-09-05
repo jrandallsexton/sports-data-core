@@ -68,6 +68,7 @@ public class PushDeviceFanout : IPushDeviceFanout
         var devices = await _dataContext.UserDevices
             .AsNoTracking()
             .Where(d => d.UserId == userId && d.NotificationsEnabled)
+            .Select(d => new { d.Id, d.FcmToken, d.Platform })
             .ToListAsync();
 
         if (devices.Count == 0)

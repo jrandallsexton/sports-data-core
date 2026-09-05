@@ -92,6 +92,7 @@ public class SendPickDeadlineReminderCommandHandler : ISendPickDeadlineReminderC
             LeagueId = pickemGroupId,
             SeasonWeek = seasonWeek,
             FireTimeUtc = fireTimeUtc,
+            WaveAnchorUtc = waveAnchorUtc,
             CorrelationId = correlationId,
             Channel = "Fcm",
             Result = "Dispatching",
@@ -118,12 +119,14 @@ public class SendPickDeadlineReminderCommandHandler : ISendPickDeadlineReminderC
             return;
         }
 
-        // Prefs gate.
-        var prefs = await _dataContext.UserNotificationPreferences
+        // Prefs gate — projected to the one flag; null (no row) allows.
+        var reminderEnabled = await _dataContext.UserNotificationPreferences
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.UserId == userId);
+            .Where(p => p.UserId == userId)
+            .Select(p => (bool?)p.PickDeadlineReminderEnabled)
+            .FirstOrDefaultAsync();
 
-        if (prefs is { PickDeadlineReminderEnabled: false })
+        if (reminderEnabled == false)
         {
             await FinalizeAsync(claim, "Suppressed_UserOptedOut");
             return;

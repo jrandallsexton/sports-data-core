@@ -167,9 +167,16 @@ namespace SportsData.Notification.Infrastructure.Data
             // the deterministic-CorrelationId trick against NotificationLog.
             // SeasonWeek is non-null here (PickDeadline always scopes a week), so
             // no nulls-distinct concern like the shared PendingScheduledJob index.
+            // WaveAnchorUtc joined the key with the v2 wave model: two
+            // different waves can share a FireTimeUtc across a lead-time
+            // config change, and each must claim independently. NULLS NOT
+            // DISTINCT so pre-wave rows (null anchor) keep colliding as
+            // before. SeasonWeek and FireTimeUtc are non-null here, so the
+            // nulls-distinct concern applies only to the anchor column.
             modelBuilder.Entity<NotificationPickDeadline>()
-                .HasIndex(l => new { l.UserId, l.LeagueId, l.SeasonWeek, l.FireTimeUtc })
-                .IsUnique();
+                .HasIndex(l => new { l.UserId, l.LeagueId, l.SeasonWeek, l.FireTimeUtc, l.WaveAnchorUtc })
+                .IsUnique()
+                .AreNullsDistinct(false);
 
             // Typed contest-start reminder idempotency key. Same fire-time
             // versioning as PickDeadline. Replaces the NotificationLog claim.

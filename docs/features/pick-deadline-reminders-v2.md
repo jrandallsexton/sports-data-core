@@ -87,8 +87,13 @@ unchanged): claim-table dedupe → stale-fire → prefs → **missing-pick
 gate** → devices.
 
 Missing-pick gate: wave matchups = league matchups with
-`StartDateUtc ∈ [anchor, anchor + CoalesceWindow]`; unpicked = wave matchups
-minus the user's `UserPicks` rows (projection kept fresh by
+`StartDateUtc ∈ [anchor, anchor + CoalesceWindow]` that this row OWNS —
+ownership = the sibling `PendingScheduledJob` row with the latest anchor
+at or below the kickoff (the same assignment wave derivation uses). The
+ownership filter exists because a retained stale row's window can
+partially overlap a re-derived sibling's; without it the overlap region
+is pushed by both fires minutes apart. Unpicked = owned matchups minus
+the user's `UserPicks` rows (projection kept fresh by
 `UserPickMadeConsumer`). Evaluated at fire time, so picks made between
 scheduling and fire correctly suppress.
 

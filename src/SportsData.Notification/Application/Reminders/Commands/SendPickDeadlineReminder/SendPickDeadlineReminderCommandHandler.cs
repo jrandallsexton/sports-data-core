@@ -139,14 +139,48 @@ public class SendPickDeadlineReminderCommandHandler : ISendPickDeadlineReminderC
         // anchor. A pick on file suppresses that game; all picked (or
         // wave emptied by reschedules) → no push, audited.
         var waveEndUtc = waveAnchorUtc.AddMinutes(_config.PickDeadlineCoalesceMinutes);
-        var waveMatchups = await _dataContext.PickemGroupMatchups
+        var windowMatchups = await _dataContext.PickemGroupMatchups
             .AsNoTracking()
             .Where(m => m.PickemGroupId == pickemGroupId
                         && m.SeasonWeek == seasonWeek
                         && m.StartDateUtc >= waveAnchorUtc
                         && m.StartDateUtc <= waveEndUtc)
-            .Select(m => new { m.ContestId, m.Headline })
+            .Select(m => new { m.ContestId, m.Headline, m.StartDateUtc })
             .ToListAsync();
+
+        // Wave OWNERSHIP: retained stale rows' windows can overlap a
+        // re-derived sibling's (the scheduler keeps a stale row when it is
+        // the sole cover for an uncovered kickoff). Each kickoff is pushed
+        // by exactly ONE row — the sibling with the LATEST anchor at or
+        // below it (the same assignment wave derivation uses) — otherwise
+        // the overlap region fires twice, minutes apart. Anchors of every
+        // (member, league, week) row participate; v1 null anchors don't.
+        var coalesce = TimeSpan.FromMinutes(_config.PickDeadlineCoalesceMinutes);
+        var siblingAnchors = await _dataContext.PendingScheduledJobs
+            .AsNoTracking()
+            .Where(j => j.UserId == userId
+                        && j.JobKind == "PickDeadline"
+                        && j.TargetId == pickemGroupId
+                        && j.SeasonWeek == seasonWeek
+                        && j.WaveAnchorUtc != null)
+            .Select(j => j.WaveAnchorUtc!.Value)
+            .ToListAsync();
+        if (!siblingAnchors.Contains(waveAnchorUtc))
+        {
+            // Own anchor always participates (defensive: the stale-fire
+            // guard already proved our row exists).
+            siblingAnchors.Add(waveAnchorUtc);
+        }
+
+        var waveMatchups = windowMatchups
+            .Where(m =>
+            {
+                var owner = siblingAnchors
+                    .Where(a => a <= m.StartDateUtc && m.StartDateUtc <= a + coalesce)
+                    .Max();
+                return owner == waveAnchorUtc;
+            })
+            .ToList();
 
         if (waveMatchups.Count == 0)
         {

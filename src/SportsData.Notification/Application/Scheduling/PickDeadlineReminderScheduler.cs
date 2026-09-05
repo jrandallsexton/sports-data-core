@@ -176,10 +176,15 @@ namespace SportsData.Notification.Application.Scheduling
             //     moving LATER within the coalesce window re-anchors the
             //     wave, a new schedulable row covers everything, and the
             //     stale row would fire a near-duplicate push minutes apart.
-            // v1 rows (null anchor) are always orphans. Rows at/past their
-            // fire time are left alone: the fire may be mid-dispatch, and
-            // deleting the row would trip the dispatcher's stale-fire gate
-            // on a legitimate send.
+            // Retained rows' windows may partially overlap a schedulable
+            // sibling's — the dispatch handler's wave-OWNERSHIP filter
+            // (latest anchor at or below each kickoff) guarantees every
+            // kickoff is pushed by exactly one row, so retention here only
+            // decides EXISTENCE, never double-coverage. v1 rows (null
+            // anchor) are always orphans. Rows at/past their fire time are
+            // left alone: the fire may be mid-dispatch, and deleting the row
+            // would trip the dispatcher's stale-fire gate on a legitimate
+            // send.
             var orphans = existingRows
                 .Where(j => j.ScheduledFireUtc > now
                             && (j.WaveAnchorUtc is null

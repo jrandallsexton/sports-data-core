@@ -261,6 +261,48 @@ public class SendPickDeadlineReminderCommandHandlerTests
     }
 
     [Fact]
+    public async Task Execute_MatchupOwnedByLaterSiblingWave_ExcludedFromThisFire()
+    {
+        // A retained stale row's window can partially overlap a re-derived
+        // sibling's. Ownership = latest sibling anchor at or below the
+        // kickoff, so the overlap region is pushed by exactly one fire.
+        var userId = Guid.NewGuid();
+        var leagueId = Guid.NewGuid();
+        await SeedDeviceAsync(userId);
+        await SeedScheduleAsync(userId, leagueId, FireTime, WaveAnchor);
+
+        // Sibling row anchored 26 min later — inside this row's window.
+        DataContext.PendingScheduledJobs.Add(new PendingScheduledJob
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            JobKind = "PickDeadline",
+            TargetId = leagueId,
+            SeasonWeek = 3,
+            WaveAnchorUtc = WaveAnchor.AddMinutes(26),
+            HangfireJobId = "job-sibling",
+            ScheduledFireUtc = FireTime.AddMinutes(26),
+            CreatedUtc = FixedNow,
+            CreatedBy = Guid.NewGuid()
+        });
+        await DataContext.SaveChangesAsync();
+
+        // 17:20 belongs to this row (latest anchor ≤ 17:20 is 17:00);
+        // 17:26 belongs to the sibling (its own anchor).
+        await SeedWaveMatchupAsync(leagueId, WaveAnchor.AddMinutes(20), headline: "Owned at Game");
+        await SeedWaveMatchupAsync(leagueId, WaveAnchor.AddMinutes(26), headline: "Sibling at Game");
+
+        var sut = Mocker.CreateInstance<SendPickDeadlineReminderCommandHandler>();
+        await sut.ExecuteAsync(userId, leagueId, 3, FireTime, WaveAnchor);
+
+        VerifySendCount(Times.Once());
+        var row = await GetSingleClaimAsync();
+        row.Result.Should().Be("Sent");
+        row.Body.Should().Contain("Owned at Game");
+        row.Body.Should().NotContain("Sibling at Game");
+    }
+
+    [Fact]
     public async Task Execute_NoMatchupsInWave_Suppressed()
     {
         // All the wave's kickoffs moved after scheduling; nothing to remind.

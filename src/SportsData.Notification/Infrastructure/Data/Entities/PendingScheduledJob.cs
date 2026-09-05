@@ -49,6 +49,16 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
         /// </summary>
         public int? SeasonWeek { get; set; }
 
+        /// <summary>
+        /// Only meaningful for <c>JobKind = "PickDeadline"</c> (v2 wave
+        /// model): the earliest kickoff of the wave this reminder covers.
+        /// Part of the natural key so one (user, league, week) can carry a
+        /// row per kickoff wave. Null for ContestStart jobs — with the
+        /// index's NULLS NOT DISTINCT, those keep their v1 one-row-per-
+        /// (user, contest) semantics.
+        /// </summary>
+        public DateTime? WaveAnchorUtc { get; set; }
+
         [Required]
         [MaxLength(64)]
         public string HangfireJobId { get; set; }

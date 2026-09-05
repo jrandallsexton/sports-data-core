@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
-using SportsData.Notification.Application.Dispatching;
+using SportsData.Notification.Application.Reminders.Commands.SendPickDeadlineReminder;
+using SportsData.Notification.Config;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
 
@@ -27,47 +29,77 @@ namespace SportsData.Notification.Application.Scheduling
     /// </list>
     ///
     /// <para>
-    /// Computes the deadline as <c>MIN(StartDateUtc)</c> of all matchups in
-    /// the (group, week) — picks lock when the first game starts. Fires at
-    /// <c>deadline - leadTime</c> (currently 1 hour, hardcoded for v1).
+    /// v2 wave model (docs/features/pick-deadline-reminders-v2.md): picks
+    /// lock PER GAME at kickoff, so the week's distinct kickoff times are
+    /// clustered into waves — a kickoff joins the current wave when it is
+    /// within <c>PickDeadlineCoalesceMinutes</c> of the wave's anchor
+    /// (earliest kickoff), otherwise it starts a new wave. One reminder per
+    /// (member, wave), firing at <c>anchor - PickDeadlineLeadMinutes</c>.
+    /// Whether the member actually gets a push is decided at fire time by
+    /// the dispatcher's missing-pick gate.
     /// </para>
     ///
     /// <para>
-    /// Per-user, the scheduler walks the <c>PendingScheduledJob</c> entries
-    /// for <c>(UserId, "PickDeadline", PickemGroupId, SeasonWeek)</c> and:
+    /// Per (member, wave), the scheduler walks <c>PendingScheduledJob</c>
+    /// entries for <c>(UserId, "PickDeadline", PickemGroupId, SeasonWeek,
+    /// WaveAnchorUtc)</c> and:
     /// <list type="bullet">
-    ///   <item>Inserts + schedules if no row exists and the deadline is still
-    ///   in the future.</item>
+    ///   <item>Inserts + schedules if no row exists and the fire time is
+    ///   still in the future.</item>
     ///   <item>Reschedules (schedule-new → save → delete-old, same crash-safe
     ///   ordering as Producer's <c>CompetitionStreamScheduler</c>) when the
-    ///   deadline has moved.</item>
-    ///   <item>No-ops when the deadline is unchanged or already past.</item>
+    ///   wave's fire time has moved.</item>
+    ///   <item>No-ops when unchanged or already past.</item>
+    ///   <item>Deletes future-scheduled rows whose anchor no longer exists in
+    ///   the derived wave set (kickoff moved) — including v1 rows
+    ///   (null anchor). In-flight rows (fire time reached) are left alone so
+    ///   a legitimate mid-fire dispatch isn't stale-fired by its own
+    ///   scheduler.</item>
     /// </list>
     /// </para>
     /// </summary>
     public class PickDeadlineReminderScheduler : IPickDeadlineReminderScheduler
     {
-        // Hardcoded for v1 — per the design discussion. Will become a
-        // per-user pref later when we surface notification timing controls.
-        private static readonly TimeSpan PickDeadlineLeadTime = TimeSpan.FromHours(1);
-
         private const string JobKind = "PickDeadline";
 
         private readonly ILogger<PickDeadlineReminderScheduler> _logger;
         private readonly AppDataContext _dataContext;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
+        private readonly NotificationConfig _config;
 
         public PickDeadlineReminderScheduler(
             ILogger<PickDeadlineReminderScheduler> logger,
             AppDataContext dataContext,
             IDateTimeProvider dateTimeProvider,
-            IProvideBackgroundJobs backgroundJobProvider)
+            IProvideBackgroundJobs backgroundJobProvider,
+            IOptions<NotificationConfig> config)
         {
             _logger = logger;
             _dataContext = dataContext;
             _dateTimeProvider = dateTimeProvider;
             _backgroundJobProvider = backgroundJobProvider;
+            _config = config.Value;
+        }
+
+        /// <summary>
+        /// Clusters sorted distinct kickoff times into waves: a kickoff joins
+        /// the current wave when within <paramref name="coalesceWindow"/> of
+        /// the wave's anchor (its earliest kickoff); otherwise it anchors a
+        /// new wave.
+        /// </summary>
+        private static List<DateTime> DeriveWaveAnchors(
+            IReadOnlyList<DateTime> sortedDistinctKickoffs, TimeSpan coalesceWindow)
+        {
+            var anchors = new List<DateTime>();
+            foreach (var kickoff in sortedDistinctKickoffs)
+            {
+                if (anchors.Count == 0 || kickoff - anchors[^1] > coalesceWindow)
+                {
+                    anchors.Add(kickoff);
+                }
+            }
+            return anchors;
         }
 
         public async Task EvaluateAndScheduleForLeagueWeekAsync(
@@ -81,34 +113,64 @@ namespace SportsData.Notification.Application.Scheduling
                 ["SeasonWeek"] = seasonWeek
             });
 
-            // Compute deadline from current DB state. Null = no matchups
-            // for this league-week (e.g., matchups got deleted) → nothing
-            // to schedule, but if existing rows reference this scope they
-            // should arguably be cancelled. v1 leaves them alone; the
-            // dispatcher's prefs/device gates will absorb a stale fire.
-            var deadline = await _dataContext.PickemGroupMatchups
+            // Derive the week's kickoff waves from current DB state. Empty =
+            // no matchups for this league-week (e.g., matchups got deleted);
+            // orphan cleanup below still cancels any future-scheduled rows.
+            var kickoffs = await _dataContext.PickemGroupMatchups
+                .AsNoTracking()
                 .Where(m => m.PickemGroupId == pickemGroupId && m.SeasonWeek == seasonWeek)
-                .Select(m => (DateTime?)m.StartDateUtc)
-                .MinAsync(cancellationToken);
+                .Select(m => m.StartDateUtc)
+                .Distinct()
+                .OrderBy(d => d)
+                .ToListAsync(cancellationToken);
 
-            if (deadline is null)
-            {
-                _logger.LogDebug("No matchups for league-week; nothing to schedule.");
-                return;
-            }
-
-            var fireTime = deadline.Value - PickDeadlineLeadTime;
+            var lead = TimeSpan.FromMinutes(_config.PickDeadlineLeadMinutes);
+            var coalesce = TimeSpan.FromMinutes(_config.PickDeadlineCoalesceMinutes);
+            var anchors = DeriveWaveAnchors(kickoffs, coalesce);
             var now = _dateTimeProvider.UtcNow();
 
-            if (fireTime <= now)
+            // Waves whose fire time is past (or is now) can't get a "soon"
+            // reminder — skip scheduling but keep their rows (an in-flight
+            // fire must not be stale-fired by its own scheduler).
+            var schedulableAnchors = anchors
+                .Where(a => a - lead > now)
+                .ToList();
+
+            // Existing rows for the whole league-week in one query — cheaper
+            // than per-user round trips for a 30-person league.
+            var existingRows = await _dataContext.PendingScheduledJobs
+                .Where(j => j.JobKind == JobKind
+                            && j.TargetId == pickemGroupId
+                            && j.SeasonWeek == seasonWeek)
+                .ToListAsync(cancellationToken);
+
+            // Orphan cleanup: a future-scheduled row whose anchor left the
+            // derived set (kickoff moved, matchup removed) — or a v1 row
+            // (null anchor) — no longer represents a real wave. Delete row +
+            // best-effort Hangfire job. Rows at/past their fire time are left
+            // alone: the fire may be mid-dispatch, and deleting the row would
+            // trip the dispatcher's stale-fire gate on a legitimate send.
+            var anchorSet = anchors.ToHashSet();
+            var orphans = existingRows
+                .Where(j => j.ScheduledFireUtc > now
+                            && (j.WaveAnchorUtc is null || !anchorSet.Contains(j.WaveAnchorUtc.Value)))
+                .ToList();
+            if (orphans.Count > 0)
             {
-                // Deadline already past or within the lead window — too late
-                // to schedule a "soon" reminder. We could send-immediate
-                // instead, but v1 just skips: the user is presumably already
-                // making picks if they're going to.
+                _dataContext.PendingScheduledJobs.RemoveRange(orphans);
+                await _dataContext.SaveChangesAsync(cancellationToken);
+                foreach (var orphan in orphans)
+                {
+                    TryDeleteHangfireJob(orphan.HangfireJobId);
+                }
                 _logger.LogInformation(
-                    "Deadline {Deadline} is past or within lead window from now {Now}; skipping schedule.",
-                    deadline, now);
+                    "Cancelled {Count} orphaned PickDeadline rows (anchors no longer derived).",
+                    orphans.Count);
+            }
+
+            if (schedulableAnchors.Count == 0)
+            {
+                _logger.LogDebug("No schedulable kickoff waves for league-week; nothing to schedule.");
                 return;
             }
 
@@ -127,16 +189,8 @@ namespace SportsData.Notification.Application.Scheduling
             }
 
             _logger.LogInformation(
-                "Evaluating PickDeadline reminders for {MemberCount} members. Deadline={Deadline}, FireTime={FireTime}",
-                memberIds.Count, deadline, fireTime);
-
-            // Pull existing jobs for the whole league-week in one query —
-            // cheaper than per-user round trips for a 30-person league.
-            var existingByUser = await _dataContext.PendingScheduledJobs
-                .Where(j => j.JobKind == JobKind
-                            && j.TargetId == pickemGroupId
-                            && j.SeasonWeek == seasonWeek)
-                .ToDictionaryAsync(j => j.UserId, cancellationToken);
+                "Evaluating PickDeadline reminders for {MemberCount} members across {WaveCount} kickoff waves.",
+                memberIds.Count, schedulableAnchors.Count);
 
             // Skip the per-user prefs lookup inside the loop by batching.
             var optedOutUserIds = await _dataContext.UserNotificationPreferences
@@ -145,6 +199,10 @@ namespace SportsData.Notification.Application.Scheduling
                 .Select(p => p.UserId)
                 .ToListAsync(cancellationToken);
             var optedOut = optedOutUserIds.ToHashSet();
+
+            var existingByUserAndAnchor = existingRows
+                .Where(j => j.WaveAnchorUtc is not null && !orphans.Contains(j))
+                .ToDictionary(j => (j.UserId, j.WaveAnchorUtc.Value));
 
             foreach (var userId in memberIds)
             {
@@ -157,9 +215,13 @@ namespace SportsData.Notification.Application.Scheduling
                     continue;
                 }
 
-                existingByUser.TryGetValue(userId, out var existing);
-                await ScheduleOrRescheduleAsync(
-                    userId, pickemGroupId, seasonWeek, fireTime, existing, now, cancellationToken);
+                foreach (var anchor in schedulableAnchors)
+                {
+                    existingByUserAndAnchor.TryGetValue((userId, anchor), out var existing);
+                    await ScheduleOrRescheduleAsync(
+                        userId, pickemGroupId, seasonWeek, anchor, anchor - lead,
+                        existing, now, cancellationToken);
+                }
             }
         }
 
@@ -167,6 +229,7 @@ namespace SportsData.Notification.Application.Scheduling
             Guid userId,
             Guid pickemGroupId,
             int seasonWeek,
+            DateTime waveAnchorUtc,
             DateTime fireTime,
             PendingScheduledJob existing,
             DateTime now,
@@ -174,7 +237,7 @@ namespace SportsData.Notification.Application.Scheduling
         {
             if (existing is not null && existing.ScheduledFireUtc == fireTime)
             {
-                // Deadline hasn't moved — no work.
+                // Wave's fire time hasn't moved — no work.
                 return;
             }
 
@@ -190,8 +253,8 @@ namespace SportsData.Notification.Application.Scheduling
             // survived a failed best-effort delete will see the row no
             // longer matches its fireTime and abort before sending.
             var delay = fireTime - now;
-            var newJobId = _backgroundJobProvider.Schedule<INotificationDispatcher>(
-                d => d.SendPickDeadlineReminderAsync(userId, pickemGroupId, seasonWeek, fireTime),
+            var newJobId = _backgroundJobProvider.Schedule<ISendPickDeadlineReminderCommandHandler>(
+                d => d.ExecuteAsync(userId, pickemGroupId, seasonWeek, fireTime, waveAnchorUtc),
                 delay);
 
             if (existing is null)
@@ -202,6 +265,7 @@ namespace SportsData.Notification.Application.Scheduling
                     JobKind = JobKind,
                     TargetId = pickemGroupId,
                     SeasonWeek = seasonWeek,
+                    WaveAnchorUtc = waveAnchorUtc,
                     HangfireJobId = newJobId,
                     ScheduledFireUtc = fireTime,
                     CreatedUtc = now,
@@ -226,7 +290,8 @@ namespace SportsData.Notification.Application.Scheduling
                         .FirstAsync(j => j.UserId == userId
                                          && j.JobKind == JobKind
                                          && j.TargetId == pickemGroupId
-                                         && j.SeasonWeek == seasonWeek,
+                                         && j.SeasonWeek == seasonWeek
+                                         && j.WaveAnchorUtc == waveAnchorUtc,
                                     cancellationToken);
 
                     if (winner.ScheduledFireUtc == fireTime)

@@ -245,7 +245,7 @@ namespace SportsData.Api.Application.Processors
             var existingByContestId = groupWeek.Matchups
                 .ToDictionary(m => m.ContestId, m => m);
             var insertedCount = 0;
-            var insertedMatchups = new List<(Guid ContestId, DateTime StartDateUtc)>();
+            var insertedMatchups = new List<(Guid ContestId, DateTime StartDateUtc, string? Headline)>();
 
             foreach (var groupMatchup in groupMatchups)
             {
@@ -305,7 +305,7 @@ namespace SportsData.Api.Application.Processors
                         UnderOdds = groupMatchup.UnderOdds
                     });
                     insertedCount++;
-                    insertedMatchups.Add((groupMatchup.ContestId, groupMatchup.StartDateUtc));
+                    insertedMatchups.Add((groupMatchup.ContestId, groupMatchup.StartDateUtc, groupMatchup.Headline));
                 }
             }
 
@@ -365,7 +365,7 @@ namespace SportsData.Api.Application.Processors
             // newly-inserted matchup (refresh-only updates are intentionally
             // silent here — Notification cares about "this league now has this
             // contest," not about line/rank churn on already-known matchups).
-            foreach (var (contestId, startDateUtc) in insertedMatchups)
+            foreach (var (contestId, startDateUtc, headline) in insertedMatchups)
             {
                 await _eventBus.Publish(new PickemGroupMatchupCreated(
                         group.Id,
@@ -375,7 +375,8 @@ namespace SportsData.Api.Application.Processors
                         group.Sport,
                         command.SeasonYear,
                         command.CorrelationId,
-                        Guid.NewGuid()),
+                        Guid.NewGuid(),
+                        headline),
                     CancellationToken.None);
             }
 

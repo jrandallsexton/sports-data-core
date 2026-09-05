@@ -111,8 +111,13 @@ namespace SportsData.Notification.Infrastructure.Data
             // (User, "ContestStart", ContestId) tuple would slip through the
             // unique index. Requires Postgres 15+ (the live cluster runs 16,
             // so we're fine).
+            //
+            // WaveAnchorUtc joined the key for the pick-deadline v2 wave
+            // model: one row per (user, league, week, kickoff wave).
+            // ContestStart rows leave it null; NULLS NOT DISTINCT preserves
+            // their one-row-per-(user, contest) invariant unchanged.
             modelBuilder.Entity<PendingScheduledJob>()
-                .HasIndex(j => new { j.UserId, j.JobKind, j.TargetId, j.SeasonWeek })
+                .HasIndex(j => new { j.UserId, j.JobKind, j.TargetId, j.SeasonWeek, j.WaveAnchorUtc })
                 .IsUnique()
                 .AreNullsDistinct(false);
 

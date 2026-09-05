@@ -85,6 +85,7 @@ namespace SportsData.Notification.Application.Consumers
                     SeasonYear = msg.SeasonYear ?? 0,
                     SeasonWeek = msg.SeasonWeek,
                     StatusTypeName = DefaultStatusTypeName,
+                    Headline = msg.Headline,
                     CreatedUtc = now,
                     CreatedBy = msg.CausationId
                 };
@@ -125,10 +126,15 @@ namespace SportsData.Notification.Application.Consumers
             // Update path. StatusTypeName intentionally untouched — owned by
             // future ContestStatusChanged consumer, same rationale as the
             // backfill consumer.
+            // Null Headline never clobbers a stored value — events serialized
+            // before the field existed deserialize with null.
+            var headlineChanged = msg.Headline is not null && existing.Headline != msg.Headline;
+
             var changed =
                 existing.StartDateUtc != msg.StartDateUtc
                 || existing.SeasonYear != (msg.SeasonYear ?? 0)
-                || existing.SeasonWeek != msg.SeasonWeek;
+                || existing.SeasonWeek != msg.SeasonWeek
+                || headlineChanged;
 
             if (!changed)
             {
@@ -149,6 +155,10 @@ namespace SportsData.Notification.Application.Consumers
             }
             existing.SeasonYear = msg.SeasonYear ?? 0;
             existing.SeasonWeek = msg.SeasonWeek;
+            if (headlineChanged)
+            {
+                existing.Headline = msg.Headline;
+            }
             existing.ModifiedUtc = now;
             existing.ModifiedBy = msg.CausationId;
 

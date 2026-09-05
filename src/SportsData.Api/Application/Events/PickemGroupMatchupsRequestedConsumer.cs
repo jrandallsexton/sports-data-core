@@ -111,6 +111,7 @@ namespace SportsData.Api.Application.Events
                     x.Matchup.StartDateUtc,
                     x.Matchup.SeasonYear,
                     x.Matchup.SeasonWeek,
+                    x.Matchup.Headline,
                     x.Sport
                 });
 
@@ -144,7 +145,8 @@ namespace SportsData.Api.Application.Events
                             m.Sport,
                             m.SeasonYear,
                             msg.CorrelationId,
-                            Guid.NewGuid()))
+                            Guid.NewGuid(),
+                            m.Headline))
                         .ToList();
 
                     await _eventBus.PublishBatch(events, context.CancellationToken);

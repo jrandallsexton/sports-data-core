@@ -20,6 +20,12 @@ namespace SportsData.Core.Eventing.Events.PickemGroups
     /// set.
     /// </para>
     /// </summary>
+    /// <remarks>
+    /// <see cref="Headline"/> ("Away Team at Home Team") feeds the
+    /// single-unpicked-game reminder body. Optional trailing parameter so
+    /// pre-existing serialized messages deserialize with null — the
+    /// reminder copy falls back to count wording when absent.
+    /// </remarks>
     public record PickemGroupMatchupDataPublished(
         Guid PickemGroupId,
         Guid ContestId,
@@ -28,6 +34,7 @@ namespace SportsData.Core.Eventing.Events.PickemGroups
         Sport Sport,
         int? SeasonYear,
         Guid CorrelationId,
-        Guid CausationId
+        Guid CausationId,
+        string? Headline = null
     ) : EventBase(null, Sport, SeasonYear, CorrelationId, CausationId);
 }

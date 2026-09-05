@@ -60,8 +60,12 @@ week's **wave set** instead of a single deadline:
 - `PendingScheduledJob` natural key gains the wave anchor: new column
   `WaveAnchorUtc` (non-null for JobKind=PickDeadline v2); lookup key becomes
   (UserId, JobKind, TargetId, SeasonWeek, WaveAnchorUtc).
-- Re-evaluation deletes rows whose anchor no longer exists in the derived set
-  (v1 "leaves them alone" gap closed); moved kickoffs reschedule their wave.
+- Re-evaluation deletes rows whose wave window [anchor, anchor + coalesce]
+  no longer contains any kickoff (v1 "leaves them alone" gap closed); moved
+  kickoffs reschedule their wave. Window-based rather than anchor-set-based:
+  a kickoff moving earlier can merge waves while the old row remains the
+  only viable fire for the unmoved games (the merged wave's fire time may
+  already be past) — the rare overlap double-nag is the accepted trade.
 - Waves whose fire time is already past are skipped (unchanged semantic).
 
 ### Dispatch (SendPickDeadlineReminderCommandHandler)
@@ -90,8 +94,12 @@ scheduling and fire correctly suppress.
 - unpicked = N → "{N} picks in {league} lock in about an hour."
 - Headline null on the single row → fall back to the count wording.
 
-Claim dedupe already keys on fire-time ticks, so per-wave claims are unique
-with no schema change to `NotificationPickDeadline`.
+Claim dedupe: `NotificationPickDeadline` gains `WaveAnchorUtc` in its
+unique key `(UserId, LeagueId, SeasonWeek, FireTimeUtc, WaveAnchorUtc)`
+(NULLS NOT DISTINCT; pre-wave audit rows carry null). Fire-time ticks
+alone are not sufficient — a lead-time config change can land two
+different waves on the same `FireTimeUtc`, and each must claim
+independently.
 
 ### Headline plumbing (the one data gap)
 

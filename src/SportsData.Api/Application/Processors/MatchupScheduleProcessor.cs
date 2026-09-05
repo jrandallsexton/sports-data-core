@@ -256,10 +256,12 @@ namespace SportsData.Api.Application.Processors
                     // projection mirrors (reminder copy) — a change (e.g. an
                     // ESPN home/away re-designation flipping "A at B") must
                     // reach it via the same upsert event new matchups use.
-                    if (groupMatchup.Headline is not null && existing.Headline != groupMatchup.Headline)
+                    var headlineChanged =
+                        groupMatchup.Headline is not null && existing.Headline != groupMatchup.Headline;
+                    if (headlineChanged)
                     {
                         headlineChangedMatchups.Add(
-                            (groupMatchup.ContestId, groupMatchup.StartDateUtc, groupMatchup.Headline));
+                            (groupMatchup.ContestId, groupMatchup.StartDateUtc, groupMatchup.Headline!));
                     }
 
                     existing.AwayConferenceLosses = groupMatchup.AwayConferenceLosses;
@@ -268,7 +270,17 @@ namespace SportsData.Api.Application.Processors
                     existing.AwayRank = groupMatchup.AwayRank;
                     existing.AwaySpread = groupMatchup.AwaySpread;
                     existing.AwayWins = groupMatchup.AwayWins;
-                    existing.Headline = groupMatchup.Headline;
+                    if (headlineChanged)
+                    {
+                        // Same null-never-clobbers contract as Notification's
+                        // consumers: Headline rides a LEFT JOIN on
+                        // CompetitionNote, so a refresh can transiently lack
+                        // it. Writing that null (while the non-null publish
+                        // gate stays silent) would leave the two projections
+                        // permanently diverged — API null, Notification
+                        // holding the last real value.
+                        existing.Headline = groupMatchup.Headline;
+                    }
                     existing.HomeConferenceLosses = groupMatchup.HomeConferenceLosses;
                     existing.HomeConferenceWins = groupMatchup.HomeConferenceWins;
                     existing.HomeLosses = groupMatchup.HomeLosses;

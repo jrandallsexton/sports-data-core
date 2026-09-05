@@ -50,11 +50,13 @@ namespace SportsData.Notification.Application.Scheduling
     ///   ordering as Producer's <c>CompetitionStreamScheduler</c>) when the
     ///   wave's fire time has moved.</item>
     ///   <item>No-ops when unchanged or already past.</item>
-    ///   <item>Deletes future-scheduled rows whose anchor no longer exists in
-    ///   the derived wave set (kickoff moved) — including v1 rows
-    ///   (null anchor). In-flight rows (fire time reached) are left alone so
-    ///   a legitimate mid-fire dispatch isn't stale-fired by its own
-    ///   scheduler.</item>
+    ///   <item>Deletes future-scheduled rows whose wave window
+    ///   [anchor, anchor + coalesce] no longer contains any kickoff —
+    ///   including v1 rows (null anchor). Window-based, not anchor-set-based:
+    ///   a kickoff moving earlier can merge waves while the old row remains
+    ///   the only fire covering the unmoved games. In-flight rows (fire time
+    ///   reached) are left alone so a legitimate mid-fire dispatch isn't
+    ///   stale-fired by its own scheduler.</item>
     /// </list>
     /// </para>
     /// </summary>
@@ -144,16 +146,25 @@ namespace SportsData.Notification.Application.Scheduling
                             && j.SeasonWeek == seasonWeek)
                 .ToListAsync(cancellationToken);
 
-            // Orphan cleanup: a future-scheduled row whose anchor left the
-            // derived set (kickoff moved, matchup removed) — or a v1 row
-            // (null anchor) — no longer represents a real wave. Delete row +
-            // best-effort Hangfire job. Rows at/past their fire time are left
-            // alone: the fire may be mid-dispatch, and deleting the row would
-            // trip the dispatcher's stale-fire gate on a legitimate send.
-            var anchorSet = anchors.ToHashSet();
+            // Orphan cleanup: a future-scheduled row is an orphan when its
+            // wave WINDOW [anchor, anchor + coalesce] no longer contains any
+            // kickoff — NOT merely when its anchor stopped being a derived
+            // anchor. A kickoff moving EARLIER can merge two waves (the old
+            // anchor joins the new, earlier wave), yet the old row can be
+            // the only fire able to cover the unmoved games: the merged
+            // wave's own fire time may already be past. Deleting by
+            // anchor-set membership silently dropped those reminders. The
+            // rare overlap double-nag this allows is the accepted trade —
+            // the dispatcher's missing-pick gate suppresses anyone already
+            // picked. v1 rows (null anchor) are always orphans. Rows at/past
+            // their fire time are left alone: the fire may be mid-dispatch,
+            // and deleting the row would trip the dispatcher's stale-fire
+            // gate on a legitimate send.
             var orphans = existingRows
                 .Where(j => j.ScheduledFireUtc > now
-                            && (j.WaveAnchorUtc is null || !anchorSet.Contains(j.WaveAnchorUtc.Value)))
+                            && (j.WaveAnchorUtc is null
+                                || !kickoffs.Any(k => k >= j.WaveAnchorUtc.Value
+                                                      && k <= j.WaveAnchorUtc.Value + coalesce)))
                 .ToList();
             if (orphans.Count > 0)
             {

@@ -166,6 +166,44 @@ public class PickDeadlineReminderSchedulerTests : NotificationTestBase<PickDeadl
     }
 
     [Fact]
+    public async Task Evaluate_EarlierKickoffMergesWaves_KeepsCoveringRow()
+    {
+        // A 18:25 game moves up to 17:40, merging the 18:00 wave into a new
+        // 17:40-anchored wave whose fire time (16:40) is already past. The
+        // 18:00-anchor row must SURVIVE: its window still contains the
+        // unmoved 18:00 game, and it is the only fire that can cover it.
+        // Anchor-set-based orphaning deleted it (silent missed reminder).
+        var leagueId = Guid.NewGuid();
+        var userId = Guid.NewGuid();
+        await SeedMemberAsync(leagueId, userId);
+        var day = FixedNow.Date;
+        await SeedMatchupAsync(leagueId, day.AddHours(18));
+        await SeedMatchupAsync(leagueId, day.AddHours(18).AddMinutes(25));
+
+        var sut = Mocker.CreateInstance<PickDeadlineReminderScheduler>();
+        await sut.EvaluateAndScheduleForLeagueWeekAsync(leagueId, 2, CancellationToken.None);
+
+        var original = await DataContext.PendingScheduledJobs.AsNoTracking().SingleAsync();
+        original.WaveAnchorUtc.Should().Be(day.AddHours(18));
+
+        var moved = await DataContext.PickemGroupMatchups
+            .SingleAsync(m => m.StartDateUtc == day.AddHours(18).AddMinutes(25));
+        moved.StartDateUtc = day.AddHours(17).AddMinutes(40);
+        await DataContext.SaveChangesAsync();
+
+        // Re-evaluate at 16:50 — the merged wave's fire (16:40) is past.
+        Mocker.GetMock<IDateTimeProvider>().Setup(x => x.UtcNow())
+            .Returns(day.AddHours(16).AddMinutes(50));
+        await sut.EvaluateAndScheduleForLeagueWeekAsync(leagueId, 2, CancellationToken.None);
+
+        var rows = await DataContext.PendingScheduledJobs.AsNoTracking().ToListAsync();
+        rows.Should().HaveCount(1);
+        rows[0].WaveAnchorUtc.Should().Be(day.AddHours(18));
+        rows[0].ScheduledFireUtc.Should().Be(day.AddHours(17));
+        _jobs.Verify(x => x.Delete(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Evaluate_V1NullAnchorRow_CleanedUp()
     {
         // Rows from the pre-wave model (null anchor) are orphans whenever

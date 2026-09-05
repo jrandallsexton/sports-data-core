@@ -27,11 +27,13 @@ public interface ISendPickDeadlineReminderCommandHandler
 ///
 /// <para>
 /// Idempotency rides on the typed claim table's natural key —
-/// <c>NotificationPickDeadline (UserId, LeagueId, SeasonWeek,
-/// FireTimeUtc)</c>. The <c>FireTimeUtc</c> component is the version
+/// <c>NotificationPickDeadline (UserId, LeagueId, SeasonWeek, FireTimeUtc,
+/// WaveAnchorUtc)</c>. The <c>FireTimeUtc</c> component is the version
 /// anchor: a Hangfire retry of the same fire collides and is suppressed,
-/// while a reschedule (new fire-time) is a new row and re-fires. The
-/// deterministic CorrelationId is a trace id only.
+/// while a reschedule (new fire-time) is a new row and re-fires.
+/// <c>WaveAnchorUtc</c> keeps two different waves claimable even when a
+/// lead-time change lands them on the same fire time. The deterministic
+/// CorrelationId is a trace id only.
 /// </para>
 /// </summary>
 public class SendPickDeadlineReminderCommandHandler : ISendPickDeadlineReminderCommandHandler
@@ -82,7 +84,8 @@ public class SendPickDeadlineReminderCommandHandler : ISendPickDeadlineReminderC
 
         _logger.LogInformation("SendPickDeadlineReminder invoked.");
 
-        // Atomic claim on (UserId, LeagueId, SeasonWeek, FireTimeUtc): a
+        // Atomic claim on (UserId, LeagueId, SeasonWeek, FireTimeUtc,
+        // WaveAnchorUtc): a
         // Hangfire retry of the same fire collides (suppressed) while a
         // reschedule (new FireTimeUtc) re-fires. See UserPickScoredConsumer
         // for the claim-first rationale.

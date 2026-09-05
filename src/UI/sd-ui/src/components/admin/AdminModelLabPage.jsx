@@ -64,6 +64,39 @@ export default function AdminModelLabPage() {
   // refreshes overlap; an out-of-order response must not win.
   const loadSeqRef = useRef(0);
 
+  // PDF export = the browser's own print-to-PDF over a print stylesheet.
+  // While printMode is on, model columns render as anonymous letters
+  // ("Model A"...) and the print header omits the prompt name — the
+  // model lineup and prompts stay internal; the export is shareable.
+  const [printMode, setPrintMode] = useState(false);
+  useEffect(() => {
+    // Belt-and-braces reset; the deterministic path is the post-print()
+    // reset below (afterprint doesn't fire in every browser/webview,
+    // and a stuck printMode would leave the screen anonymized and the
+    // export button inert).
+    const onAfterPrint = () => setPrintMode(false);
+    window.addEventListener('afterprint', onAfterPrint);
+    return () => window.removeEventListener('afterprint', onAfterPrint);
+  }, []);
+  useEffect(() => {
+    if (!printMode) return undefined;
+    // Two frames so the anonymized headers are painted before the print
+    // snapshot is taken. The browser captures the snapshot when print()
+    // is invoked, so resetting immediately after it returns is safe for
+    // the produced PDF even where print() doesn't block on the dialog.
+    let innerRaf = null;
+    const outerRaf = requestAnimationFrame(() => {
+      innerRaf = requestAnimationFrame(() => {
+        window.print();
+        setPrintMode(false);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(outerRaf);
+      if (innerRaf != null) cancelAnimationFrame(innerRaf);
+    };
+  }, [printMode]);
+
   const loadMatrix = useCallback(async (sport, y, w, pId, { quiet = false } = {}) => {
     const seq = ++loadSeqRef.current;
     if (!quiet) setLoading(true);
@@ -318,8 +351,8 @@ export default function AdminModelLabPage() {
           matrix deserve every pixel; the table's own overflow-x scroll
           still guards narrow viewports. */}
       <div>
-        <h2 style={{ marginBottom: 4 }}>Model Consensus Lab</h2>
-        <p style={{ color: 'var(--text-secondary)', marginTop: 0 }}>
+        <h2 className="model-lab-no-print" style={{ marginBottom: 4 }}>Model Consensus Lab</h2>
+        <p className="model-lab-no-print" style={{ color: 'var(--text-secondary)', marginTop: 0 }}>
           Every contest any pick'em league carries for the week, against
           every active lab-reachable model. Empty cell = no run yet - the
           button generates just that pair. Experiments never write a
@@ -327,7 +360,16 @@ export default function AdminModelLabPage() {
           simple majority of the picks cast.
         </p>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '16px 0', flexWrap: 'wrap' }}>
+        <div className="model-lab-print-header">
+          <h2 style={{ margin: 0 }}>sportDeets Model Matrix</h2>
+          <div>
+            {LEAGUE_OPTIONS.find(o => o.value === league)?.label ?? league}
+            {' · '}Season {year} · Week {week}
+            {' · '}generated {new Date().toLocaleDateString()}
+          </div>
+        </div>
+
+        <div className="model-lab-no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '16px 0', flexWrap: 'wrap' }}>
           <label htmlFor="modellab-league" style={{ fontWeight: 600 }}>League:</label>
           <select
             id="modellab-league"
@@ -361,6 +403,15 @@ export default function AdminModelLabPage() {
           />
           <button type="button" className="model-lab-btn" onClick={() => loadMatrix(leagueSport, year, week, promptId)}>
             Refresh
+          </button>
+          <button
+            type="button"
+            className="model-lab-btn"
+            onClick={() => setPrintMode(true)}
+            disabled={loading || models.length === 0 || contests.length === 0}
+            title="Print-to-PDF with model names anonymized (Model A, B, ...) — safe to share outside admin."
+          >
+            Export PDF
           </button>
           <label htmlFor="modellab-prompt-id" style={{ fontWeight: 600 }}>Prompt:</label>
           <select
@@ -401,8 +452,12 @@ export default function AdminModelLabPage() {
               <thead>
                 <tr>
                   <th style={headerStyle}>Contest</th>
-                  {models.map(m => (
-                    <th key={m.id} style={headerStyle}>{m.name}</th>
+                  {models.map((m, i) => (
+                    <th key={m.id} className="model-lab-model-col" style={headerStyle}>
+                      {printMode
+                        ? <>Model<br />{modelLetter(i)}</>
+                        : m.name}
+                    </th>
                   ))}
                   <th style={headerStyle}>Consensus</th>
                   <th
@@ -417,7 +472,7 @@ export default function AdminModelLabPage() {
                   >
                     Home
                   </th>
-                  <th style={headerStyle} aria-label="Row actions" />
+                  <th className="model-lab-actions" style={headerStyle} aria-label="Row actions" />
                 </tr>
               </thead>
               <tbody>
@@ -441,7 +496,7 @@ export default function AdminModelLabPage() {
                   <td style={footerStyle}>{formatRecord(records.consensus.su)}</td>
                   <td style={{ ...footerStyle, fontStyle: 'italic' }}>{formatRecord(records.favorites.su)}</td>
                   <td style={{ ...footerStyle, fontStyle: 'italic' }}>{formatRecord(records.home.su)}</td>
-                  <td style={footerStyle} />
+                  <td className="model-lab-actions" style={footerStyle} />
                 </tr>
                 <tr>
                   <td style={footerStyle}>Week Record - ATS</td>
@@ -451,7 +506,7 @@ export default function AdminModelLabPage() {
                   <td style={footerStyle}>{formatRecord(records.consensus.ats)}</td>
                   <td style={{ ...footerStyle, fontStyle: 'italic' }}>{formatRecord(records.favorites.ats)}</td>
                   <td style={{ ...footerStyle, fontStyle: 'italic' }}>{formatRecord(records.home.ats)}</td>
-                  <td style={footerStyle} />
+                  <td className="model-lab-actions" style={footerStyle} />
                 </tr>
               </tfoot>
             </table>
@@ -460,6 +515,21 @@ export default function AdminModelLabPage() {
       </div>
     </div>
   );
+}
+
+/**
+ * Base-26 column label: A..Z, then AA, AB, ... — the anonymized export
+ * header must stay a letter no matter how many models the lab carries
+ * (charCode arithmetic alone prints punctuation past the 26th).
+ */
+function modelLetter(index) {
+  let n = index;
+  let label = '';
+  do {
+    label = String.fromCharCode(65 + (n % 26)) + label;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return label;
 }
 
 const headerStyle = {
@@ -683,7 +753,7 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
         </td>
         {renderBaselineCell(favoritePick, contest.actualWinnerId, 'fav-su')}
         {renderBaselineCell(homePick, contest.actualWinnerId, 'home-su')}
-        <td rowSpan={2} style={{ ...cellStyle, verticalAlign: 'middle' }}>
+        <td rowSpan={2} className="model-lab-actions" style={{ ...cellStyle, verticalAlign: 'middle' }}>
           {hasHoles && !rowPanelQueued && (
             <button
               type="button"

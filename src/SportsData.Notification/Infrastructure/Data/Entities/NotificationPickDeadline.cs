@@ -40,6 +40,15 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
         public DateTime FireTimeUtc { get; set; }
 
         /// <summary>
+        /// v2 wave model: earliest kickoff of the wave this fire covered.
+        /// Part of the dedup key — without it, a lead-time config change can
+        /// land two DIFFERENT waves on the same FireTimeUtc and the second
+        /// fire's claim would collide and be suppressed as a retry. Null on
+        /// rows written before the wave model.
+        /// </summary>
+        public DateTime? WaveAnchorUtc { get; set; }
+
+        /// <summary>
         /// Deterministic trace id derived from the reminder's parameters. Stable
         /// across retries for log correlation; NOT part of the dedup key.
         /// </summary>

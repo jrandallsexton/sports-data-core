@@ -245,19 +245,42 @@ namespace SportsData.Api.Application.Processors
             var existingByContestId = groupWeek.Matchups
                 .ToDictionary(m => m.ContestId, m => m);
             var insertedCount = 0;
-            var insertedMatchups = new List<(Guid ContestId, DateTime StartDateUtc)>();
+            var insertedMatchups = new List<(Guid ContestId, DateTime StartDateUtc, string? Headline)>();
+            var headlineChangedMatchups = new List<(Guid ContestId, DateTime StartDateUtc, string Headline)>();
 
             foreach (var groupMatchup in groupMatchups)
             {
                 if (existingByContestId.TryGetValue(groupMatchup.ContestId, out var existing))
                 {
+                    // Headline is the one refreshed field Notification's
+                    // projection mirrors (reminder copy) — a change (e.g. an
+                    // ESPN home/away re-designation flipping "A at B") must
+                    // reach it via the same upsert event new matchups use.
+                    var headlineChanged =
+                        groupMatchup.Headline is not null && existing.Headline != groupMatchup.Headline;
+                    if (headlineChanged)
+                    {
+                        headlineChangedMatchups.Add(
+                            (groupMatchup.ContestId, groupMatchup.StartDateUtc, groupMatchup.Headline!));
+                    }
+
                     existing.AwayConferenceLosses = groupMatchup.AwayConferenceLosses;
                     existing.AwayConferenceWins = groupMatchup.AwayConferenceWins;
                     existing.AwayLosses = groupMatchup.AwayLosses;
                     existing.AwayRank = groupMatchup.AwayRank;
                     existing.AwaySpread = groupMatchup.AwaySpread;
                     existing.AwayWins = groupMatchup.AwayWins;
-                    existing.Headline = groupMatchup.Headline;
+                    if (headlineChanged)
+                    {
+                        // Same null-never-clobbers contract as Notification's
+                        // consumers: Headline rides a LEFT JOIN on
+                        // CompetitionNote, so a refresh can transiently lack
+                        // it. Writing that null (while the non-null publish
+                        // gate stays silent) would leave the two projections
+                        // permanently diverged — API null, Notification
+                        // holding the last real value.
+                        existing.Headline = groupMatchup.Headline;
+                    }
                     existing.HomeConferenceLosses = groupMatchup.HomeConferenceLosses;
                     existing.HomeConferenceWins = groupMatchup.HomeConferenceWins;
                     existing.HomeLosses = groupMatchup.HomeLosses;
@@ -305,7 +328,7 @@ namespace SportsData.Api.Application.Processors
                         UnderOdds = groupMatchup.UnderOdds
                     });
                     insertedCount++;
-                    insertedMatchups.Add((groupMatchup.ContestId, groupMatchup.StartDateUtc));
+                    insertedMatchups.Add((groupMatchup.ContestId, groupMatchup.StartDateUtc, groupMatchup.Headline));
                 }
             }
 
@@ -362,10 +385,14 @@ namespace SportsData.Api.Application.Processors
             // Per-matchup fan-out for the Notification service. Published BEFORE
             // SaveChanges so the bus-outbox interceptor commits these together
             // with the matchup inserts in the same transaction. One event per
-            // newly-inserted matchup (refresh-only updates are intentionally
-            // silent here — Notification cares about "this league now has this
-            // contest," not about line/rank churn on already-known matchups).
-            foreach (var (contestId, startDateUtc) in insertedMatchups)
+            // newly-inserted matchup, plus one per existing matchup whose
+            // Headline changed on refresh — Notification's consumer is an
+            // idempotent upsert, so the same event doubles as the update
+            // signal. Other refresh-only churn (lines, ranks, records) stays
+            // intentionally silent: the projection doesn't mirror it.
+            foreach (var (contestId, startDateUtc, headline) in
+                     insertedMatchups.Concat(headlineChangedMatchups.Select(
+                         m => (m.ContestId, m.StartDateUtc, (string?)m.Headline))))
             {
                 await _eventBus.Publish(new PickemGroupMatchupCreated(
                         group.Id,
@@ -375,7 +402,8 @@ namespace SportsData.Api.Application.Processors
                         group.Sport,
                         command.SeasonYear,
                         command.CorrelationId,
-                        Guid.NewGuid()),
+                        Guid.NewGuid(),
+                        headline),
                     CancellationToken.None);
             }
 

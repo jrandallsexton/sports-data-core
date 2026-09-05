@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
-using SportsData.Notification.Application.Dispatching;
+using SportsData.Notification.Application.Reminders.Commands.SendContestStartReminder;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Data.Entities;
 
@@ -179,8 +179,8 @@ namespace SportsData.Notification.Application.Scheduling
             // against PendingScheduledJob.ScheduledFireUtc — an orphan that
             // survived a failed best-effort delete will see the row no
             // longer matches its fireTime and abort before sending.
-            var newJobId = _backgroundJobProvider.Schedule<INotificationDispatcher>(
-                d => d.SendContestStartReminderAsync(userId, contestId, fireTime),
+            var newJobId = _backgroundJobProvider.Schedule<ISendContestStartReminderCommandHandler>(
+                d => d.ExecuteAsync(userId, contestId, fireTime),
                 delay);
 
             if (existing is null)

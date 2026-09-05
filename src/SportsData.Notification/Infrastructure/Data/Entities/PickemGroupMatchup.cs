@@ -44,6 +44,16 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
         public string StatusTypeName { get; set; }
 
         /// <summary>
+        /// "Away Team at Home Team" copy from API's canonical matchup —
+        /// feeds the single-unpicked-game reminder body. Nullable: rows
+        /// projected before the field existed carry null until the next
+        /// backfill; the reminder copy falls back to count wording.
+        /// Length mirrors API's canonical HasMaxLength(256).
+        /// </summary>
+        [MaxLength(256)]
+        public string Headline { get; set; }
+
+        /// <summary>
         /// EventBase.CreatedUtc of the last event that wrote
         /// <see cref="StartDateUtc"/>. Used as a monotonic version key to
         /// reject stale <c>ContestStartTimeUpdated</c> events under

@@ -10,6 +10,9 @@ using SportsData.Notification.Application.Backfill.Commands.RequestPickemGroupsB
 using SportsData.Notification.Application.Backfill.Commands.RequestUsersBackfill;
 using SportsData.Notification.Application.Consumers;
 using SportsData.Notification.Application.Dispatching;
+using SportsData.Notification.Application.Reminders;
+using SportsData.Notification.Application.Reminders.Commands.SendContestStartReminder;
+using SportsData.Notification.Application.Reminders.Commands.SendPickDeadlineReminder;
 using SportsData.Notification.Application.Scheduling;
 using SportsData.Notification.Application.Smack.Commands.CreateSmackPhrase;
 using SportsData.Notification.Application.Smack.Commands.RateSmackPreview;
@@ -17,6 +20,7 @@ using SportsData.Notification.Application.Smack.Commands.UpdateSmackPhrase;
 using SportsData.Notification.Application.Smack.Queries.GetSmackPhrases;
 using SportsData.Notification.Application.Smack.Queries.GetSmackRatings;
 using SportsData.Notification.Application.Smack.Queries.PreviewSmack;
+using SportsData.Notification.Config;
 using SportsData.Notification.Infrastructure.Data;
 using SportsData.Notification.Infrastructure.Notifications;
 
@@ -126,13 +130,25 @@ namespace SportsData.Notification
             services.AddHangfire(config, builder.Environment.ApplicationName, mode, maxPoolSize: hangfirePoolSize);
             services.AddScoped<IProvideBackgroundJobs, BackgroundJobProvider>();
 
-            // Phase 2c-main: pick-deadline reminder scheduling + dispatch.
-            // Phase 2d: contest-start reminder scheduling — same dispatcher,
-            // per-contest scope, sport-aware copy at fire time. Dispatcher is
-            // the Hangfire-invoked target; each scheduler is the helper
+            // Reminder knobs (lead/coalesce minutes) — section may be absent
+            // locally; class defaults apply. Same binding shape as API's
+            // SportsData.Api:ApiConfig.
+            services.Configure<NotificationConfig>(config.GetSection("SportsData.Notification:NotificationConfig"));
+
+            // Reminder dispatch is vertically sliced (Application/Reminders):
+            // each reminder's Hangfire-invoked handler owns its claim +
+            // gates + copy; StaleFireGuard and PushDeviceFanout are the
+            // shared pieces both slices use. Each scheduler is the helper
             // consumers call after a projection write that could affect its
-            // respective scope.
-            services.AddScoped<INotificationDispatcher, NotificationDispatcher>();
+            // respective scope. The old NotificationDispatcher was deleted
+            // with the refactor — its in-flight Hangfire jobs are handled by
+            // the deploy runbook (bulk-delete Scheduled jobs, then backfill
+            // rebuilds every reminder against the slice handlers; see
+            // docs/features/pick-deadline-reminders-v2.md).
+            services.AddScoped<IStaleFireGuard, StaleFireGuard>();
+            services.AddScoped<IPushDeviceFanout, PushDeviceFanout>();
+            services.AddScoped<ISendPickDeadlineReminderCommandHandler, SendPickDeadlineReminderCommandHandler>();
+            services.AddScoped<ISendContestStartReminderCommandHandler, SendContestStartReminderCommandHandler>();
             services.AddScoped<ISmackPhraseCatalog, SmackPhraseCatalog>();
             services.AddScoped<IPickDeadlineReminderScheduler, PickDeadlineReminderScheduler>();
             services.AddScoped<IContestStartReminderScheduler, ContestStartReminderScheduler>();

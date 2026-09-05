@@ -125,7 +125,20 @@ namespace SportsData.Notification.Application.Consumers
 
             if (!changed)
             {
-                _logger.LogDebug("PickemGroupMatchup projection unchanged.");
+                // An unchanged projection is NOT proof that reminder
+                // schedules exist — leagues consumed by the pre-scheduler
+                // image have current projections and zero schedules. This
+                // event is the operator's remediation trigger, so evaluate
+                // unconditionally; both schedulers are idempotent no-ops
+                // when the schedules are already in place.
+                _logger.LogInformation(
+                    "PickemGroupMatchup projection unchanged; evaluating reminder schedules.");
+
+                await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
+                    msg.PickemGroupId, msg.SeasonWeek, context.CancellationToken);
+
+                await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
+                    msg.ContestId, context.CancellationToken);
                 return;
             }
 
@@ -147,22 +160,19 @@ namespace SportsData.Notification.Application.Consumers
             await _dataContext.SaveChangesAsync(context.CancellationToken);
             _logger.LogInformation("PickemGroupMatchup projection updated.");
 
-            if (startDateChanged || weekChanged)
+            if (weekChanged)
             {
-                if (weekChanged)
-                {
-                    await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
-                        msg.PickemGroupId, priorSeasonWeek, context.CancellationToken);
-                }
                 await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
-                    msg.PickemGroupId, msg.SeasonWeek, context.CancellationToken);
+                    msg.PickemGroupId, priorSeasonWeek, context.CancellationToken);
             }
 
-            if (startDateChanged)
-            {
-                await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
-                    msg.ContestId, context.CancellationToken);
-            }
+            // Unconditional for the same reason as the unchanged path:
+            // schedule state is independent of projection state.
+            await _reminderScheduler.EvaluateAndScheduleForLeagueWeekAsync(
+                msg.PickemGroupId, msg.SeasonWeek, context.CancellationToken);
+
+            await _contestStartScheduler.EvaluateAndScheduleForContestAsync(
+                msg.ContestId, context.CancellationToken);
         }
 
         private static bool IsUniqueConstraintViolation(DbUpdateException ex)

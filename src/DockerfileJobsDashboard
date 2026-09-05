@@ -16,6 +16,7 @@ WORKDIR /src
 COPY ../SportsData.JobsDashboard/SportsData.JobsDashboard.csproj SportsData.JobsDashboard/
 COPY ../SportsData.Core/SportsData.Core.csproj SportsData.Core/
 COPY ../SportsData.Api/SportsData.Api.csproj SportsData.Api/
+COPY ../SportsData.Notification/SportsData.Notification.csproj SportsData.Notification/
 COPY ../SportsData.Producer/SportsData.Producer.csproj SportsData.Producer/
 COPY ../SportsData.Provider/SportsData.Provider.csproj SportsData.Provider/
 
@@ -26,6 +27,7 @@ RUN dotnet restore "SportsData.JobsDashboard/SportsData.JobsDashboard.csproj"
 COPY ../SportsData.JobsDashboard/ SportsData.JobsDashboard/
 COPY ../SportsData.Core/ SportsData.Core/
 COPY ../SportsData.Api/ SportsData.Api/
+COPY ../SportsData.Notification/ SportsData.Notification/
 COPY ../SportsData.Producer/ SportsData.Producer/
 COPY ../SportsData.Provider/ SportsData.Provider/
 

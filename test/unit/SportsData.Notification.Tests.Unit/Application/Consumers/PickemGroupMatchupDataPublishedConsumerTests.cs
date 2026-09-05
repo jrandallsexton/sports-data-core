@@ -101,7 +101,9 @@ public class PickemGroupMatchupDataPublishedConsumerTests
 
         var row = await DataContext.PickemGroupMatchups
             .AsNoTracking()
-            .SingleAsync(m => m.PickemGroupId == groupId && m.ContestId == contestId);
+            .Where(m => m.PickemGroupId == groupId && m.ContestId == contestId)
+            .Select(m => new { m.ModifiedUtc })
+            .SingleAsync();
         row.ModifiedUtc.Should().BeNull();
     }
 
@@ -117,7 +119,9 @@ public class PickemGroupMatchupDataPublishedConsumerTests
 
         var row = await DataContext.PickemGroupMatchups
             .AsNoTracking()
-            .SingleAsync(m => m.PickemGroupId == groupId && m.ContestId == contestId);
+            .Where(m => m.PickemGroupId == groupId && m.ContestId == contestId)
+            .Select(m => new { m.StartDateUtc, m.StatusTypeName })
+            .SingleAsync();
         row.StartDateUtc.Should().Be(start);
         row.StatusTypeName.Should().Be("STATUS_SCHEDULED");
 
@@ -152,6 +156,36 @@ public class PickemGroupMatchupDataPublishedConsumerTests
     }
 
     [Fact]
+    public async Task Consume_SeasonYearOnlyChanged_UpdatesProjectionAndSchedules()
+    {
+        // Regression: scheduling was gated on startDateChanged || weekChanged,
+        // so a SeasonYear-only update skipped both schedulers.
+        var groupId = Guid.NewGuid();
+        var contestId = Guid.NewGuid();
+        var start = FixedNow.AddDays(1);
+        await SeedProjectionAsync(groupId, contestId, start, seasonYear: 2025);
+
+        var sut = Mocker.CreateInstance<PickemGroupMatchupDataPublishedConsumer>();
+        await sut.Consume(ContextFor(Msg(groupId, contestId, start, seasonYear: 2026)));
+
+        var row = await DataContext.PickemGroupMatchups
+            .AsNoTracking()
+            .Where(m => m.PickemGroupId == groupId && m.ContestId == contestId)
+            .Select(m => new { m.SeasonYear, m.StartDateUtc, m.SeasonWeek })
+            .SingleAsync();
+        row.SeasonYear.Should().Be(2026);
+        row.StartDateUtc.Should().Be(start);
+        row.SeasonWeek.Should().Be(2);
+
+        _reminderScheduler.Verify(
+            x => x.EvaluateAndScheduleForLeagueWeekAsync(groupId, 2, It.IsAny<CancellationToken>()),
+            Times.Once);
+        _contestStartScheduler.Verify(
+            x => x.EvaluateAndScheduleForContestAsync(contestId, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task Consume_StartDateChanged_UpdatesProjectionAndSchedules()
     {
         var groupId = Guid.NewGuid();
@@ -164,7 +198,9 @@ public class PickemGroupMatchupDataPublishedConsumerTests
 
         var row = await DataContext.PickemGroupMatchups
             .AsNoTracking()
-            .SingleAsync(m => m.PickemGroupId == groupId && m.ContestId == contestId);
+            .Where(m => m.PickemGroupId == groupId && m.ContestId == contestId)
+            .Select(m => new { m.StartDateUtc, m.ModifiedUtc })
+            .SingleAsync();
         row.StartDateUtc.Should().Be(newStart);
         row.ModifiedUtc.Should().Be(FixedNow);
 

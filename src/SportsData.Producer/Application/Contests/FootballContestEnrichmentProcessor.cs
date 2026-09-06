@@ -111,12 +111,10 @@ namespace SportsData.Producer.Application.Contests
                         contest.AwayScore.Value,
                         contest.HomeScore.Value);
 
-                    // Refresh Contest-level denorm if a higher-priority provider
-                    // just landed (e.g. EspnBet missing before, now present —
-                    // promote it).
-                    var primaryOddsLate = competition.Odds!
-                        .FirstOrDefault(o => o.FinalizedUtc.HasValue && o.ProviderId == SportsBook.EspnBet.ToProviderId())
-                        ?? competition.Odds!.FirstOrDefault(o => o.FinalizedUtc.HasValue);
+                    // Refresh Contest-level denorm if a higher-preference
+                    // provider just landed — ordered preference, live odds
+                    // never eligible (see OddsProviderPreference).
+                    var primaryOddsLate = OddsProviderPreference.SelectPrimary(competition.Odds);
 
                     if (primaryOddsLate != null)
                     {
@@ -263,10 +261,10 @@ namespace SportsData.Producer.Application.Contests
                         contest.AwayScore!.Value,
                         contest.HomeScore!.Value);
 
-                    // Maintain Contest-level denormalized fields from the primary provider
-                    var primaryOdds = competition.Odds
-                        .FirstOrDefault(o => o.FinalizedUtc.HasValue && o.ProviderId == SportsBook.EspnBet.ToProviderId())
-                        ?? competition.Odds.FirstOrDefault(o => o.FinalizedUtc.HasValue);
+                    // Maintain Contest-level denormalized fields from the
+                    // primary provider — ordered preference, live odds never
+                    // eligible (see OddsProviderPreference; Kent-SC 09-05).
+                    var primaryOdds = OddsProviderPreference.SelectPrimary(competition.Odds);
 
                     if (primaryOdds != null)
                     {

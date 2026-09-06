@@ -55,9 +55,12 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     {
         var evt = context.Message;
 
+        // PascalCase tag keys match Producer's document counters
+        // ("DocumentType"/"Sport") so cross-service pipeline queries group
+        // on one label pair end to end.
         _documentsRequestedCounter.Add(1,
-            new KeyValuePair<string, object?>("document_type", evt.DocumentType.ToString()),
-            new KeyValuePair<string, object?>("sport", evt.Sport.ToString()));
+            new KeyValuePair<string, object?>("DocumentType", evt.DocumentType.ToString()),
+            new KeyValuePair<string, object?>("Sport", evt.Sport.ToString()));
 
         // Resolve the upstream correlation id with explicit fallbacks.
         // The previous implementation regenerated silently on

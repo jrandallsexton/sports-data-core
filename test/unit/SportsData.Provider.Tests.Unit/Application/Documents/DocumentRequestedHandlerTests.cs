@@ -80,6 +80,51 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
             It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()), Times.AtLeastOnce);
     }
 
+    // ── Arrival counter ─────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Consume_CountsArrivalWithTypeAndSportTags_EvenWhenProcessingFails()
+    {
+        // arrange — espnApi is deliberately NOT set up, so processing blows
+        // up after the counter. The arrival-count contract is that demand
+        // is measured at the door, regardless of what happens inside.
+        var measurements = new List<(long Value, Dictionary<string, object?> Tags)>();
+        using var listener = new MeterListener();
+        listener.InstrumentPublished = (instrument, l) =>
+        {
+            if (instrument.Name == "provider.documents.requested")
+                l.EnableMeasurementEvents(instrument);
+        };
+        listener.SetMeasurementEventCallback<long>((instrument, value, tags, state) =>
+        {
+            var dict = new Dictionary<string, object?>();
+            foreach (var tag in tags) dict[tag.Key] = tag.Value;
+            measurements.Add((value, dict));
+        });
+        listener.Start();
+
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = Fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, new Uri("https://sports.core.api.espn.com/v2/awards/index"))
+            .With(x => x.DocumentType, DocumentType.Award)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .OmitAutoProperties()
+            .Create();
+
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act — outcome irrelevant to the arrival contract
+        await Record.ExceptionAsync(() => handler.Consume(ctx));
+
+        // assert
+        var m = Assert.Single(measurements);
+        Assert.Equal(1, m.Value);
+        Assert.Equal(nameof(DocumentType.Award), m.Tags["DocumentType"]);
+        Assert.Equal(nameof(Sport.FootballNcaa), m.Tags["Sport"]);
+    }
+
     // ── Priority ("live" queue) routing ─────────────────────────────────────
     // Streamer-originated (league-live) requests must ride the "live" Hangfire
     // queue through THIS fetch hop too — the 2026-08-29 flood had ~222K jobs

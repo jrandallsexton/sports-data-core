@@ -43,9 +43,13 @@ namespace SportsData.Producer.Application.Documents
         {
             var message = context.Message;
 
+            // PascalCase tag keys deliberately: DocumentProcessorBase's
+            // sibling counters on this meter tag with "DocumentType"/"Sport",
+            // and Prometheus labels are case-sensitive - snake_case here
+            // would make the intake-vs-outcome funnel un-joinable.
             DocumentsReceived.Add(1,
-                new KeyValuePair<string, object?>("document_type", message.DocumentType.ToString()),
-                new KeyValuePair<string, object?>("sport", message.Sport.ToString()));
+                new KeyValuePair<string, object?>("DocumentType", message.DocumentType.ToString()),
+                new KeyValuePair<string, object?>("Sport", message.Sport.ToString()));
             
             // Extract retry context from headers once for use throughout the method
             var retryReason = context.Headers.Get<string>("RetryReason", "Unknown") ?? "Unknown";

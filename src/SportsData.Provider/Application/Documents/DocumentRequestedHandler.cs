@@ -13,6 +13,7 @@ using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
+using System.Diagnostics.Metrics;
 using System.Text.Json;
 
 namespace SportsData.Provider.Application.Documents;
@@ -24,24 +25,39 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
     private readonly CommonConfig _commonConfig;
     private readonly IKnownBadUriCache _knownBadUris;
+    private readonly Counter<long> _documentsRequestedCounter;
 
     public DocumentRequestedHandler(
         IProvideEspnApiData espnApi,
         ILogger<DocumentRequestedHandler> logger,
         IProvideBackgroundJobs backgroundJobProvider,
         IOptions<CommonConfig> commonConfig,
-        IKnownBadUriCache knownBadUris)
+        IKnownBadUriCache knownBadUris,
+        IMeterFactory meterFactory)
     {
         _espnApi = espnApi;
         _logger = logger;
         _backgroundJobProvider = backgroundJobProvider;
         _commonConfig = commonConfig.Value;
         _knownBadUris = knownBadUris;
+
+        // Counted at ARRIVAL — before dedupe/skip/cache decisions — so the
+        // metric answers "what is being asked of Provider, per type", not
+        // "what did Provider choose to do". Scraped via /metrics
+        // (Prometheus); meter registered in Core's AddMeter list.
+        var meter = meterFactory.Create("SportsData.Provider.Documents");
+        _documentsRequestedCounter = meter.CreateCounter<long>(
+            "provider.documents.requested",
+            description: "DocumentRequested events arriving at Provider, tagged by document type and sport");
     }
 
     public async Task Consume(ConsumeContext<DocumentRequested> context)
     {
         var evt = context.Message;
+
+        _documentsRequestedCounter.Add(1,
+            new KeyValuePair<string, object?>("document_type", evt.DocumentType.ToString()),
+            new KeyValuePair<string, object?>("sport", evt.Sport.ToString()));
 
         // Resolve the upstream correlation id with explicit fallbacks.
         // The previous implementation regenerated silently on

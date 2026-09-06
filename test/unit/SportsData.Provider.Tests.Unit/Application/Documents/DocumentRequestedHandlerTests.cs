@@ -23,6 +23,7 @@ using FluentValidation.Results;
 
 using SportsData.Core.Config;
 
+using System.Diagnostics.Metrics;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
@@ -32,6 +33,15 @@ namespace SportsData.Provider.Tests.Unit.Application.Documents;
 
 public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedHandler>
 {
+    public DocumentRequestedHandlerTests()
+    {
+        // Same pattern as ResourceIndexItemProcessorTests: a real (test)
+        // Meter so counter calls are no-op recorded, never null.
+        Mocker.GetMock<IMeterFactory>()
+            .Setup(f => f.Create(It.IsAny<MeterOptions>()))
+            .Returns(new Meter("test"));
+    }
+
     [Theory]
     [InlineData("EspnAwardsIndex.json", "https://sports.core.api.espn.com/v2/awards/index", DocumentType.Award)]
     [InlineData("EspnSeasonTypeWeeks.json", "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks?lang=en&region=us", DocumentType.SeasonTypeWeek)]

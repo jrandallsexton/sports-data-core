@@ -9,6 +9,10 @@ namespace SportsData.Producer.Tests.Unit.Application.Contests;
 
 public class OddsProviderPreferenceTests
 {
+    // Fixed timestamp: only HasValue matters to the policy, and the repo
+    // convention bans direct clock access in tests either way.
+    private static readonly DateTime FinalizedAt = new(2026, 9, 5, 23, 0, 0, DateTimeKind.Utc);
+
     private static CompetitionOdds Odds(
         string providerId, string providerName, decimal? spread, bool finalized = true)
         => new()
@@ -19,7 +23,7 @@ public class OddsProviderPreferenceTests
             ProviderId = providerId,
             ProviderName = providerName,
             Spread = spread,
-            FinalizedUtc = finalized ? DateTime.UtcNow : null,
+            FinalizedUtc = finalized ? FinalizedAt : null,
         };
 
     [Fact]
@@ -67,6 +71,31 @@ public class OddsProviderPreferenceTests
 
         OddsProviderPreference.SelectPrimary(new[] { unfinalized, finalized })
             .Should().BeSameAs(finalized);
+    }
+
+    [Fact]
+    public void SpreadlessPreferredRow_LosesToSpreadCarryingUnknownBook()
+    {
+        // Vortex (PR #732): a preferred-tier row posted moneyline/O-U-only
+        // must not beat a real pregame line from a lesser book - that
+        // recreates the null-ATS push. Spread presence outranks preference.
+        var dkSpreadless = Odds("100", "DraftKings", spread: null);
+        var caesarsWithSpread = Odds("31", "Caesars", spread: -6.5m);
+
+        OddsProviderPreference.SelectPrimary(new[] { dkSpreadless, caesarsWithSpread })
+            .Should().BeSameAs(caesarsWithSpread);
+    }
+
+    [Fact]
+    public void NoSpreadAnywhere_PreferredRowStillSelectedForOverUnder()
+    {
+        // With no pregame line at all, ATS legitimately stays null - but the
+        // O-U denorm should still come from the preferred book.
+        var dkSpreadless = Odds("100", "DraftKings", spread: null);
+        var caesarsSpreadless = Odds("31", "Caesars", spread: null);
+
+        OddsProviderPreference.SelectPrimary(new[] { caesarsSpreadless, dkSpreadless })
+            .Should().BeSameAs(dkSpreadless);
     }
 
     [Fact]

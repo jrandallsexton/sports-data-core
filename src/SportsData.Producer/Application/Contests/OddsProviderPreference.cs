@@ -39,12 +39,18 @@ namespace SportsData.Producer.Application.Contests
         };
 
         /// <summary>
-        /// The finalized, non-live row to denormalize from: first match in
-        /// preference order; for unknown books, one carrying a spread beats
-        /// one without. Null when nothing qualifies — callers then leave the
-        /// Contest-level ATS/O-U fields alone rather than denormalizing
-        /// garbage (a null here on a finalized contest reads as "no line",
-        /// not "push").
+        /// The finalized, non-live row to denormalize from. Spread presence
+        /// outranks book preference: a spread-carrying row from ANY book
+        /// beats a spreadless row from a preferred one — EnrichOddsResults
+        /// finalizes spreadless (moneyline/O-U-only) rows too, and choosing
+        /// one while a real pregame line exists elsewhere recreates the
+        /// null-ATS "push" this policy exists to kill (Vortex, PR #732).
+        /// Selection: (1) preference order among spread-carrying rows;
+        /// (2) any spread-carrying row; (3) no spread anywhere — preference
+        /// order among the rest, so O-U still denormalizes from the best
+        /// book while ATS stays legitimately null ("no line", not "push");
+        /// (4) null when nothing qualifies — callers leave the
+        /// Contest-level fields alone.
         /// </summary>
         public static CompetitionOdds? SelectPrimary(IEnumerable<CompetitionOdds>? allOdds)
         {
@@ -56,12 +62,20 @@ namespace SportsData.Producer.Application.Contests
 
             foreach (var id in PreferredProviderIds)
             {
+                var match = candidates.FirstOrDefault(o => o.ProviderId == id && o.Spread.HasValue);
+                if (match != null) return match;
+            }
+
+            var anyWithSpread = candidates.FirstOrDefault(o => o.Spread.HasValue);
+            if (anyWithSpread != null) return anyWithSpread;
+
+            foreach (var id in PreferredProviderIds)
+            {
                 var match = candidates.FirstOrDefault(o => o.ProviderId == id);
                 if (match != null) return match;
             }
 
-            return candidates.FirstOrDefault(o => o.Spread.HasValue)
-                   ?? candidates.FirstOrDefault();
+            return candidates.FirstOrDefault();
         }
     }
 }

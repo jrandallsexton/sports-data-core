@@ -1,3 +1,4 @@
+using SportsData.Producer.Application.Contests.Queries.Matchups;
 using SportsData.Producer.Enums;
 using SportsData.Producer.Extensions;
 using SportsData.Producer.Infrastructure.Data.Entities;
@@ -6,30 +7,41 @@ namespace SportsData.Producer.Application.Contests
 {
     /// <summary>
     /// Which <see cref="CompetitionOdds"/> row is the PRIMARY for
-    /// Contest-level denorm (SpreadWinnerFranchiseSeasonId / OverUnder)
-    /// and odds reconciliation.
+    /// Contest-level denorm (SpreadWinnerFranchiseSeasonId / OverUnder).
     ///
-    /// Two rules, born of Kent State @ South Carolina 2026-09-05 (0-57
-    /// against SC -35.5, graded a PUSH because the old
-    /// "EspnBet-or-arbitrary-FirstOrDefault" fallback picked the
-    /// "DraftKings - Live Odds" row, whose null spread yields a null ATS
-    /// winner):
-    ///  1. LIVE odds rows are NEVER primary. They are in-game snapshots
-    ///     (ESPN deletes them post-game); the pregame closing line is the
-    ///     record a pick was made against.
-    ///  2. Preference is an ORDERED LIST, not a single id with an
-    ///     arbitrary fallback. ESPN's featured book changed from ESPN Bet
-    ///     to DraftKings for 2026; either (or both) can appear.
-    /// <see cref="Queries.Matchups.MatchupSqlBuilder"/> encodes the same
-    /// order for display SQL — keep them aligned.
+    /// Contract (Kent State @ South Carolina 2026-09-05 + Vortex rounds on
+    /// PR #732):
+    ///  1. LIVE odds rows are NEVER primary — in-game snapshots, deleted by
+    ///     ESPN post-game; the pregame line is the record.
+    ///  2. When ANY row from the DISPLAYED set exists (the providers the
+    ///     matchup cards and the API's pick-scoring snapshot read —
+    ///     compile-time bound to <see cref="MatchupSqlBuilder"/>), selection
+    ///     resolves STRICTLY within that set, spread-carrying first. A
+    ///     spreadless displayed row beating a spread-carrying foreign book
+    ///     is deliberate: the product showed no line, picks were scored
+    ///     straight-up (PickScoringService's null-spread fallback), and the
+    ///     contest denorm must agree with what users experienced — an ATS
+    ///     winner from a book nobody saw would contradict the pick grades.
+    ///  3. Only when NO displayed-set row exists (the historical corpus —
+    ///     10,588 contests carry spreads exclusively from era books like
+    ///     Westgate/SugarHouse/consensus, measured 2026-09-06) fall back to
+    ///     any other non-live book, spread-carrying first, so historical
+    ///     re-finalization preserves the corpus ATS record.
+    ///  4. Null when nothing qualifies — callers leave the Contest-level
+    ///     fields alone ("no line", never "push").
     /// </summary>
     public static class OddsProviderPreference
     {
-        public static readonly string[] PreferredProviderIds =
+        /// <summary>
+        /// The set the display/scoring read-stack queries (see
+        /// MatchupSqlBuilder + GetMatchup*.sql lateral joins). Order is the
+        /// preference order. Widening this set REQUIRES widening the SQL on
+        /// both the Producer and API sides in the same change.
+        /// </summary>
+        public static readonly string[] DisplayedProviderIds =
         {
-            SportsBook.EspnBet.ToProviderId(),          // 58
-            SportsBook.DraftKings100.ToProviderId(),    // 100
-            SportsBook.DraftKings.ToProviderId(),       // 40
+            MatchupSqlBuilder.PreferredOddsProviderId.ToString(),   // 58 EspnBet
+            MatchupSqlBuilder.FallbackOddsProviderId.ToString(),    // 100 DraftKings (2026 featured)
         };
 
         public static readonly string[] LiveOddsProviderIds =
@@ -38,20 +50,6 @@ namespace SportsData.Producer.Application.Contests
             SportsBook.DraftKingsLiveOdds.ToProviderId(),  // 200
         };
 
-        /// <summary>
-        /// The finalized, non-live row to denormalize from. Spread presence
-        /// outranks book preference: a spread-carrying row from ANY book
-        /// beats a spreadless row from a preferred one — EnrichOddsResults
-        /// finalizes spreadless (moneyline/O-U-only) rows too, and choosing
-        /// one while a real pregame line exists elsewhere recreates the
-        /// null-ATS "push" this policy exists to kill (Vortex, PR #732).
-        /// Selection: (1) preference order among spread-carrying rows;
-        /// (2) any spread-carrying row; (3) no spread anywhere — preference
-        /// order among the rest, so O-U still denormalizes from the best
-        /// book while ATS stays legitimately null ("no line", not "push");
-        /// (4) null when nothing qualifies — callers leave the
-        /// Contest-level fields alone.
-        /// </summary>
         public static CompetitionOdds? SelectPrimary(IEnumerable<CompetitionOdds>? allOdds)
         {
             if (allOdds is null) return null;
@@ -60,22 +58,28 @@ namespace SportsData.Producer.Application.Contests
                 .Where(o => o.FinalizedUtc.HasValue && !LiveOddsProviderIds.Contains(o.ProviderId))
                 .ToList();
 
-            foreach (var id in PreferredProviderIds)
+            var displayed = candidates
+                .Where(o => DisplayedProviderIds.Contains(o.ProviderId))
+                .ToList();
+
+            if (displayed.Count > 0)
             {
-                var match = candidates.FirstOrDefault(o => o.ProviderId == id && o.Spread.HasValue);
-                if (match != null) return match;
+                // Modern era: resolve strictly within what the product reads.
+                foreach (var id in DisplayedProviderIds)
+                {
+                    var withSpread = displayed.FirstOrDefault(o => o.ProviderId == id && o.Spread.HasValue);
+                    if (withSpread != null) return withSpread;
+                }
+                foreach (var id in DisplayedProviderIds)
+                {
+                    var any = displayed.FirstOrDefault(o => o.ProviderId == id);
+                    if (any != null) return any;
+                }
             }
 
-            var anyWithSpread = candidates.FirstOrDefault(o => o.Spread.HasValue);
-            if (anyWithSpread != null) return anyWithSpread;
-
-            foreach (var id in PreferredProviderIds)
-            {
-                var match = candidates.FirstOrDefault(o => o.ProviderId == id);
-                if (match != null) return match;
-            }
-
-            return candidates.FirstOrDefault();
+            // Historical era: no displayed-set rows at all.
+            return candidates.FirstOrDefault(o => o.Spread.HasValue)
+                   ?? candidates.FirstOrDefault();
         }
     }
 }

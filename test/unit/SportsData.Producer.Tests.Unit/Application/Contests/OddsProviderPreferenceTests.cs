@@ -74,35 +74,46 @@ public class OddsProviderPreferenceTests
     }
 
     [Fact]
-    public void SpreadlessPreferredRow_LosesToSpreadCarryingUnknownBook()
+    public void ModernContest_ResolvesWithinDisplayedSet_ForeignLineNeverFinalizes()
     {
-        // Vortex (PR #732): a preferred-tier row posted moneyline/O-U-only
-        // must not beat a real pregame line from a lesser book - that
-        // recreates the null-ATS push. Spread presence outranks preference.
+        // Vortex round 2 (PR #732): the display/scoring stack reads only
+        // 58/100. When a displayed-set row exists - even spreadless - a
+        // foreign book's line must NOT finalize the contest: the product
+        // showed no line and picks were scored straight-up, so an ATS
+        // winner from a book nobody saw would contradict the pick grades.
         var dkSpreadless = Odds("100", "DraftKings", spread: null);
         var caesarsWithSpread = Odds("31", "Caesars", spread: -6.5m);
 
-        OddsProviderPreference.SelectPrimary(new[] { dkSpreadless, caesarsWithSpread })
-            .Should().BeSameAs(caesarsWithSpread);
-    }
-
-    [Fact]
-    public void NoSpreadAnywhere_PreferredRowStillSelectedForOverUnder()
-    {
-        // With no pregame line at all, ATS legitimately stays null - but the
-        // O-U denorm should still come from the preferred book.
-        var dkSpreadless = Odds("100", "DraftKings", spread: null);
-        var caesarsSpreadless = Odds("31", "Caesars", spread: null);
-
-        OddsProviderPreference.SelectPrimary(new[] { caesarsSpreadless, dkSpreadless })
+        OddsProviderPreference.SelectPrimary(new[] { caesarsWithSpread, dkSpreadless })
             .Should().BeSameAs(dkSpreadless);
     }
 
     [Fact]
-    public void UnknownBooks_RowWithSpreadBeatsRowWithout()
+    public void ModernContest_SpreadCarryingDisplayedRowBeatsSpreadlessOne()
     {
+        // Within the displayed set, spread presence outranks book order:
+        // a spreadless DK100 must not beat an EspnBet line and vice versa.
+        var dkSpreadless = Odds("100", "DraftKings", spread: null);
+        var dkWithSpread2 = Odds("58", "ESPN BET", spread: -3m);
+
+        OddsProviderPreference.SelectPrimary(new[] { dkSpreadless, dkWithSpread2 })
+            .Should().BeSameAs(dkWithSpread2);
+
+        var espnSpreadless = Odds("58", "ESPN BET", spread: null);
+        var dkWithSpread = Odds("100", "DraftKings", spread: -35.5m);
+
+        OddsProviderPreference.SelectPrimary(new[] { espnSpreadless, dkWithSpread })
+            .Should().BeSameAs(dkWithSpread);
+    }
+
+    [Fact]
+    public void HistoricalContest_NoDisplayedRows_FallsBackToSpreadCarryingEraBook()
+    {
+        // The pre-2023 corpus (10,588 contests measured 2026-09-06) carries
+        // spreads only from era books - historical re-finalization must
+        // preserve their ATS record.
         var spreadless = Odds("31", "Caesars", spread: null);
-        var withSpread = Odds("47", "MGM", spread: -7m);
+        var withSpread = Odds("25", "Westgate", spread: -7m);
 
         OddsProviderPreference.SelectPrimary(new[] { spreadless, withSpread })
             .Should().BeSameAs(withSpread);

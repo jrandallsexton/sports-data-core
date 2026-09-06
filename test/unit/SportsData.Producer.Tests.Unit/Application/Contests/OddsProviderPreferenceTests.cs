@@ -64,13 +64,19 @@ public class OddsProviderPreferenceTests
     }
 
     [Fact]
-    public void UnfinalizedRowsAreIgnored()
+    public void UnfinalizedDisplayedRow_ShadowsAndAbstains()
     {
+        // The SQL laterals have no finalized filter - they resolve to the
+        // 58 row regardless. If that exact row has no results yet, the
+        // denorm ABSTAINS; falling through to the 100 row would denorm
+        // from a row the product does not read (CodeRabbit, PR #732).
+        // Unobservable at current call sites (enrichment finalizes all
+        // rows before selection) - this pins the contract for future ones.
         var unfinalized = Odds("58", "ESPN BET", spread: -3.5m, finalized: false);
         var finalized = Odds("100", "DraftKings", spread: -3m);
 
         OddsProviderPreference.SelectPrimary(new[] { unfinalized, finalized })
-            .Should().BeSameAs(finalized);
+            .Should().BeNull();
     }
 
     [Fact]

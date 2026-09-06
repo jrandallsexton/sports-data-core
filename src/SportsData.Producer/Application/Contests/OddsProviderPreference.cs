@@ -55,11 +55,19 @@ namespace SportsData.Producer.Application.Contests
         {
             if (allOdds is null) return null;
 
-            var candidates = allOdds
-                .Where(o => o.FinalizedUtc.HasValue && !LiveOddsProviderIds.Contains(o.ProviderId))
+            // Live exclusion is the only pre-resolution filter. Finalized
+            // eligibility is checked AFTER provider resolution, mirroring
+            // the SQL laterals (which have no finalized filter): if the row
+            // the read-stack resolves to has no results yet, the denorm
+            // ABSTAINS rather than falling through to a row the product
+            // doesn't read. Unobservable at current call sites (enrichment
+            // finalizes every row before selection) but keeps the contract
+            // pure for any future caller (CodeRabbit, PR #732).
+            var nonLive = allOdds
+                .Where(o => !LiveOddsProviderIds.Contains(o.ProviderId))
                 .ToList();
 
-            var displayed = candidates
+            var displayed = nonLive
                 .Where(o => DisplayedProviderIds.Contains(o.ProviderId))
                 .ToList();
 
@@ -78,13 +86,17 @@ namespace SportsData.Producer.Application.Contests
                 foreach (var id in DisplayedProviderIds)
                 {
                     var match = displayed.FirstOrDefault(o => o.ProviderId == id);
-                    if (match != null) return match;
+                    if (match != null)
+                    {
+                        return match.FinalizedUtc.HasValue ? match : null;
+                    }
                 }
             }
 
             // Historical era: no displayed-set rows at all.
-            return candidates.FirstOrDefault(o => o.Spread.HasValue)
-                   ?? candidates.FirstOrDefault();
+            var finalized = nonLive.Where(o => o.FinalizedUtc.HasValue).ToList();
+            return finalized.FirstOrDefault(o => o.Spread.HasValue)
+                   ?? finalized.FirstOrDefault();
         }
     }
 }

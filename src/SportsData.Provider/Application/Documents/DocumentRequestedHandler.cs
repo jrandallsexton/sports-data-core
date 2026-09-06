@@ -13,6 +13,7 @@ using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
+using System.Diagnostics.Metrics;
 using System.Text.Json;
 
 namespace SportsData.Provider.Application.Documents;
@@ -24,24 +25,42 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
     private readonly CommonConfig _commonConfig;
     private readonly IKnownBadUriCache _knownBadUris;
+    private readonly Counter<long> _documentsRequestedCounter;
 
     public DocumentRequestedHandler(
         IProvideEspnApiData espnApi,
         ILogger<DocumentRequestedHandler> logger,
         IProvideBackgroundJobs backgroundJobProvider,
         IOptions<CommonConfig> commonConfig,
-        IKnownBadUriCache knownBadUris)
+        IKnownBadUriCache knownBadUris,
+        IMeterFactory meterFactory)
     {
         _espnApi = espnApi;
         _logger = logger;
         _backgroundJobProvider = backgroundJobProvider;
         _commonConfig = commonConfig.Value;
         _knownBadUris = knownBadUris;
+
+        // Counted at ARRIVAL — before dedupe/skip/cache decisions — so the
+        // metric answers "what is being asked of Provider, per type", not
+        // "what did Provider choose to do". Scraped via /metrics
+        // (Prometheus); meter registered in Core's AddMeter list.
+        var meter = meterFactory.Create("SportsData.Provider.Documents");
+        _documentsRequestedCounter = meter.CreateCounter<long>(
+            "provider.documents.requested",
+            description: "DocumentRequested events arriving at Provider, tagged by document type and sport");
     }
 
     public async Task Consume(ConsumeContext<DocumentRequested> context)
     {
         var evt = context.Message;
+
+        // PascalCase tag keys match Producer's document counters
+        // ("DocumentType"/"Sport") so cross-service pipeline queries group
+        // on one label pair end to end.
+        _documentsRequestedCounter.Add(1,
+            new KeyValuePair<string, object?>("DocumentType", evt.DocumentType.ToString()),
+            new KeyValuePair<string, object?>("Sport", evt.Sport.ToString()));
 
         // Resolve the upstream correlation id with explicit fallbacks.
         // The previous implementation regenerated silently on

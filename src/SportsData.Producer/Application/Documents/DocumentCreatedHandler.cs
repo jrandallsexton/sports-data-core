@@ -5,11 +5,23 @@ using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Documents.Processors;
 
+using System.Diagnostics.Metrics;
+
 namespace SportsData.Producer.Application.Documents
 {
     public class DocumentCreatedHandler :
         IConsumer<DocumentCreated>
     {
+        // Same static-meter pattern as DocumentProcessorBase, which owns the
+        // other counters on this meter. Counted at ARRIVAL - before the
+        // processor enqueue - so the metric answers "what is flowing into
+        // Producer per type", the intake mirror of Provider's
+        // provider.documents.requested.
+        private static readonly Meter Meter = new("SportsData.Producer.Documents");
+        private static readonly Counter<long> DocumentsReceived = Meter.CreateCounter<long>(
+            "documents.received",
+            description: "DocumentCreated events arriving at Producer, tagged by document type and sport");
+
         private readonly ILogger<DocumentCreatedHandler> _logger;
         private readonly IProvideBackgroundJobs _backgroundJobProvider;
         private readonly IEventBus _eventBus;
@@ -30,6 +42,14 @@ namespace SportsData.Producer.Application.Documents
         public async Task Consume(ConsumeContext<DocumentCreated> context)
         {
             var message = context.Message;
+
+            // PascalCase tag keys deliberately: DocumentProcessorBase's
+            // sibling counters on this meter tag with "DocumentType"/"Sport",
+            // and Prometheus labels are case-sensitive - snake_case here
+            // would make the intake-vs-outcome funnel un-joinable.
+            DocumentsReceived.Add(1,
+                new KeyValuePair<string, object?>("DocumentType", message.DocumentType.ToString()),
+                new KeyValuePair<string, object?>("Sport", message.Sport.ToString()));
             
             // Extract retry context from headers once for use throughout the method
             var retryReason = context.Headers.Get<string>("RetryReason", "Unknown") ?? "Unknown";

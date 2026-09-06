@@ -501,6 +501,7 @@ namespace SportsData.Core.DependencyInjection
                         "Microsoft.AspNetCore.Server.Kestrel",
                         "System.Net.Http",
                         "SportsData.Provider.Espn",
+                        "SportsData.Provider.Documents",
                         "SportsData.Producer.Documents");
 
                     // Prometheus scraping endpoint

@@ -16,12 +16,13 @@ namespace SportsData.Producer.Application.Contests
     ///  2. When ANY row from the DISPLAYED set exists (the providers the
     ///     matchup cards and the API's pick-scoring snapshot read —
     ///     compile-time bound to <see cref="MatchupSqlBuilder"/>), selection
-    ///     resolves STRICTLY within that set, spread-carrying first. A
-    ///     spreadless displayed row beating a spread-carrying foreign book
-    ///     is deliberate: the product showed no line, picks were scored
-    ///     straight-up (PickScoringService's null-spread fallback), and the
-    ///     contest denorm must agree with what users experienced — an ATS
-    ///     winner from a book nobody saw would contradict the pick grades.
+    ///     MIRRORS the read-stack's exact resolution: provider order,
+    ///     first-existing wins, spread not considered — because that is
+    ///     precisely what the SQL laterals do (ORDER BY 58-first LIMIT 1).
+    ///     The denorm row is therefore the literal row users saw and picks
+    ///     were graded against; when that row is spreadless, ATS stays null
+    ///     (PickScoringService scored those picks straight-up) rather than
+    ///     asserting a winner from a line nobody was shown.
     ///  3. Only when NO displayed-set row exists (the historical corpus —
     ///     10,588 contests carry spreads exclusively from era books like
     ///     Westgate/SugarHouse/consensus, measured 2026-09-06) fall back to
@@ -64,16 +65,20 @@ namespace SportsData.Producer.Application.Contests
 
             if (displayed.Count > 0)
             {
-                // Modern era: resolve strictly within what the product reads.
+                // Modern era: mirror the read-stack's EXACT resolution — the
+                // SQL laterals are provider-order LIMIT 1 with spread never
+                // considered (ORDER BY 58-first). The denorm row must be the
+                // literal row display/scoring reads, so a spreadless 58
+                // shadowing a spread-carrying 100 leaves ATS null BY DESIGN:
+                // the product showed no line and picks scored straight-up
+                // (Vortex round 3, PR #732). Preferring spread within this
+                // set is a real product improvement, but it starts with the
+                // SQL laterals (Producer GetMatchup*.sql + the API's copies)
+                // and this method flips in the SAME change.
                 foreach (var id in DisplayedProviderIds)
                 {
-                    var withSpread = displayed.FirstOrDefault(o => o.ProviderId == id && o.Spread.HasValue);
-                    if (withSpread != null) return withSpread;
-                }
-                foreach (var id in DisplayedProviderIds)
-                {
-                    var any = displayed.FirstOrDefault(o => o.ProviderId == id);
-                    if (any != null) return any;
+                    var match = displayed.FirstOrDefault(o => o.ProviderId == id);
+                    if (match != null) return match;
                 }
             }
 

@@ -89,21 +89,20 @@ public class OddsProviderPreferenceTests
     }
 
     [Fact]
-    public void ModernContest_SpreadCarryingDisplayedRowBeatsSpreadlessOne()
+    public void ModernContest_MirrorsSqlLateralExactly_ProviderOrderSpreadIgnored()
     {
-        // Within the displayed set, spread presence outranks book order:
-        // a spreadless DK100 must not beat an EspnBet line and vice versa.
-        var dkSpreadless = Odds("100", "DraftKings", spread: null);
-        var dkWithSpread2 = Odds("58", "ESPN BET", spread: -3m);
-
-        OddsProviderPreference.SelectPrimary(new[] { dkSpreadless, dkWithSpread2 })
-            .Should().BeSameAs(dkWithSpread2);
-
+        // Vortex round 3 (PR #732): the SQL laterals resolve by provider
+        // order LIMIT 1 with spread never considered, and the denorm row
+        // must be the LITERAL row the display/scoring stack reads. So a
+        // spreadless 58 shadows a spread-carrying 100 - ATS stays null,
+        // matching the no-line-shown, scored-straight-up experience.
+        // (Flipping this to spread-first starts with the SQL laterals on
+        // both services, then this policy, in the same change.)
         var espnSpreadless = Odds("58", "ESPN BET", spread: null);
         var dkWithSpread = Odds("100", "DraftKings", spread: -35.5m);
 
-        OddsProviderPreference.SelectPrimary(new[] { espnSpreadless, dkWithSpread })
-            .Should().BeSameAs(dkWithSpread);
+        OddsProviderPreference.SelectPrimary(new[] { dkWithSpread, espnSpreadless })
+            .Should().BeSameAs(espnSpreadless);
     }
 
     [Fact]

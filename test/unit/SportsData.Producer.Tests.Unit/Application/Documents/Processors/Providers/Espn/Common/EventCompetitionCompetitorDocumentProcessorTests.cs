@@ -156,9 +156,38 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // HomeAway is varchar(10) and the InMemory provider does NOT
             // enforce column lengths — the first deploy shipped a 12-char
             // parking value and every full-swap document failed with
-            // Postgres 22001. This pins the length where the provider can't.
+            // Postgres 22001. This pins the length where the provider can't,
+            // for the legacy sentinel AND both side-derived parking values.
             EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
                 .SwapParkingValue.Length.Should().BeLessThanOrEqualTo(10);
+            EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
+                .ParkingSideFor("home").Length.Should().BeLessThanOrEqualTo(10);
+            EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
+                .ParkingSideFor("away").Length.Should().BeLessThanOrEqualTo(10);
+        }
+
+        [Fact]
+        public void ParkingSideAndOrder_AreDistinctPerRow()
+        {
+            // Both competitor documents of one competition can park
+            // CONCURRENTLY (30 Hangfire workers, at-least-once delivery). A
+            // single shared sentinel would make the second park collide on
+            // the unique index — parking values must therefore differ
+            // whenever the rows' real designations differ, and parked orders
+            // must be negative so they never collide with real orders.
+            EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
+                .ParkingSideFor("home").Should().NotBe(
+                    EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>.ParkingSideFor("away"));
+
+            EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
+                .ParkingOrderFor(0).Should().BeNegative();
+            EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
+                .ParkingOrderFor(1).Should().BeNegative();
+            EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
+                .ParkingOrderFor(2).Should().BeNegative();
+            EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
+                .ParkingOrderFor(0).Should().NotBe(
+                    EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>.ParkingOrderFor(1));
         }
 
         [Fact]
@@ -383,17 +412,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
         }
 
         [Fact]
-        public void OrderParkingValue_IsNegative()
-        {
-            // Real orders are non-negative (0/1 or 1/2 per the index comment),
-            // so the parking value must be negative to never collide under
-            // the (CompetitionId, Order) unique index — which the InMemory
-            // provider cannot enforce, hence the pin.
-            EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
-                .OrderParkingValue.Should().BeNegative();
-        }
-
-        [Fact]
         public async Task WhenBothCompetitorsSwapOrders_ShouldRelocateOccupantOrder()
         {
             // ESPN re-designation flips Order together with HomeAway, but the
@@ -515,6 +533,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .AsNoTracking()
                 .FirstAsync(x => x.Id == occupantId);
             occupant.Order.Should().Be(1, "the stale occupant takes the order we vacated");
+            occupant.HomeAway.Should().Be("away", "the order dance must not touch the occupant's side");
         }
 
         [Fact]
@@ -641,6 +660,9 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .AsNoTracking()
                 .FirstAsync(x => x.Id == strandedId);
             stranded.Order.Should().Be(1, "the stranded occupant vacates the order our document claims");
+            stranded.HomeAway.Should().Be(
+                EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>.SwapParkingValue,
+                "only the stranded row's OWN document heals its side — the order dance must not touch it");
         }
     }
 }

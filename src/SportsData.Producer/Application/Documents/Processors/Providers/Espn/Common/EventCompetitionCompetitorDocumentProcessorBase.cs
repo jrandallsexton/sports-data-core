@@ -25,20 +25,33 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
     where TDataContext : TeamSportDataContext
 {
     /// <summary>
-    /// Transient HomeAway value parking OUR row during a full home/away
-    /// swap (see the re-designation block in ProcessInternal). MUST fit
-    /// the column's varchar(10) — the PostgresException the length test
-    /// pins is exactly what a longer value did in production.
+    /// Legacy transient HomeAway parking value (pre-#734). Still recognized
+    /// on rows stranded by a crashed swap — ProcessUpdate converges them —
+    /// and referenced by the 2026-09-07 remediation SQL. New parks use
+    /// <see cref="ParkingSideFor"/>.
     /// </summary>
     public const string SwapParkingValue = "swap";
 
     /// <summary>
+    /// Transient HomeAway value parking OUR row during a full home/away
+    /// swap. Derived from the side being vacated so the two competitor
+    /// documents of one competition can park CONCURRENTLY without colliding
+    /// on the (CompetitionId, HomeAway) unique index — their real sides
+    /// differ, so their parking values do too. MUST fit the column's
+    /// varchar(10) — the PostgresException the length test pins is exactly
+    /// what a longer value did in production ("swap-home"/"swap-away" = 9).
+    /// </summary>
+    public static string ParkingSideFor(string vacatedSide) => $"swap-{vacatedSide}";
+
+    /// <summary>
     /// Transient Order value parking OUR row during an order swap — the
     /// (CompetitionId, Order) unique index needs the same choreography as
-    /// (CompetitionId, HomeAway). Real orders are non-negative (0/1 or 1/2),
-    /// so -1 can never collide.
+    /// (CompetitionId, HomeAway). Derived from the order being vacated
+    /// (bijective, always negative for real non-negative orders), so
+    /// concurrent parks by both competitors' documents cannot collide the
+    /// way a single shared sentinel would.
     /// </summary>
-    public const int OrderParkingValue = -1;
+    public static int ParkingOrderFor(int vacatedOrder) => -(vacatedOrder + 1);
 
     protected EventCompetitionCompetitorDocumentProcessorBase(
         ILogger logger,
@@ -192,7 +205,7 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
                 if (entity is not null
                     && string.Equals(entity.HomeAway, otherSide, StringComparison.OrdinalIgnoreCase))
                 {
-                    entity.HomeAway = SwapParkingValue;
+                    entity.HomeAway = ParkingSideFor(otherSide);
                     await _dataContext.SaveChangesAsync();
                 }
 
@@ -228,18 +241,18 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
         if (orderOccupant is not null)
         {
             // The occupant takes the order we are vacating. When we have no
-            // row yet (or ours is parked from a prior crashed swap), fall
-            // back to the 0/1 complement — the occupant's own document
-            // corrects it if the scheme differs (1/2).
+            // row yet (or ours is parked — negative — from a prior crashed
+            // swap), fall back to the 0/1 complement — the occupant's own
+            // document corrects it if the scheme differs (1/2).
             var otherOrder = entity is not null
                 && entity.Order != dto.Order
-                && entity.Order != OrderParkingValue
+                && entity.Order >= 0
                 ? entity.Order
                 : (dto.Order == 0 ? 1 : 0);
 
             if (entity is not null && entity.Order == otherOrder)
             {
-                entity.Order = OrderParkingValue;
+                entity.Order = ParkingOrderFor(otherOrder);
                 await _dataContext.SaveChangesAsync();
             }
 

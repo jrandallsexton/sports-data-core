@@ -38,6 +38,15 @@ namespace SportsData.Provider.Infrastructure.Data
 
         Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> filter);
 
+        /// <summary>
+        /// Returns the subset of <paramref name="ids"/> that already exist as
+        /// document <c>_id</c>s in the collection — one batched primary-key
+        /// read. Used by the live-index already-seen skip (L2): for immutable
+        /// documents, existence in the store IS the durable "seen" signal.
+        /// See docs/features/live-sourcing-already-seen-skip.md.
+        /// </summary>
+        Task<HashSet<string>> GetExistingIdsAsync(string collectionName, IReadOnlyCollection<string> ids);
+
         Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl;
 
         Task ReplaceOneAsync<T>(string collectionName, string id, T document) where T : IHasSourceUrl;
@@ -150,6 +159,26 @@ namespace SportsData.Provider.Infrastructure.Data
             var collection = _database.GetCollection<T>(collectionName);
             var cursor = await collection.FindAsync(filter);
             return await cursor.FirstOrDefaultAsync();
+        }
+
+        public async Task<HashSet<string>> GetExistingIdsAsync(string collectionName, IReadOnlyCollection<string> ids)
+        {
+            if (ids.Count == 0)
+                return new HashSet<string>();
+
+            // BsonDocument on "_id" (rather than a typed filter) so the query
+            // is a pure primary-key $in with an _id-only projection — the
+            // driver maps DocumentBase.Id to _id by convention, and Id is
+            // assigned from SourceUrlHash on insert.
+            var collection = _database.GetCollection<BsonDocument>(collectionName);
+            var filter = Builders<BsonDocument>.Filter.In("_id", ids);
+
+            var found = await collection
+                .Find(filter)
+                .Project(Builders<BsonDocument>.Projection.Include("_id"))
+                .ToListAsync();
+
+            return found.Select(d => d["_id"].AsString).ToHashSet();
         }
 
         public async Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl

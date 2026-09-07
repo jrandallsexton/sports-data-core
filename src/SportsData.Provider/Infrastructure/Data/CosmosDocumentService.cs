@@ -154,10 +154,37 @@ namespace SportsData.Provider.Infrastructure.Data
             return default;
         }
 
+        public async Task<HashSet<string>> GetExistingIdsAsync(string collectionName, IReadOnlyCollection<string> ids)
+        {
+            if (ids.Count == 0)
+                return new HashSet<string>();
+
+            ValidateContainer(collectionName);
+            var container = _client.GetContainer(_databaseName, collectionName);
+
+            // Cross-partition id-only read (partition key is the 3-char
+            // routing prefix, so a single-partition query is not possible);
+            // Contains translates to an IN clause.
+            var iterator = container.GetItemLinqQueryable<DocumentBase>()
+                .Where(x => ids.Contains(x.Id))
+                .Select(x => x.Id)
+                .ToFeedIterator();
+
+            var found = new HashSet<string>();
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                foreach (var id in response)
+                    found.Add(id);
+            }
+
+            return found;
+        }
+
         public async Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl
         {
             ValidateContainer(collectionName);
-            
+
             if (string.IsNullOrWhiteSpace(document.SourceUrlHash))
             {
                 if (string.IsNullOrWhiteSpace(document.Uri.AbsoluteUri))

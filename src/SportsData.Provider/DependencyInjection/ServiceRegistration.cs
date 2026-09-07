@@ -45,6 +45,13 @@ namespace SportsData.Provider.DependencyInjection
             // first use, write-through) so fresh pods inherit the knowledge.
             services.AddSingleton<IKnownBadUriCache, KnownBadUriCache>();
 
+            // Singleton: immutable in-season items the live-index fan-out has
+            // already handed to Hangfire, so subsequent polling cycles skip
+            // them at the enqueue site. Deliberately per-pod, no durable
+            // backing — a cold cache costs one full-index cycle, then
+            // converges. See docs/features/live-sourcing-already-seen-skip.md.
+            services.AddSingleton<ISeenUriCache, SeenUriCache>();
+
             // Historical sourcing services
             services.AddOptions<HistoricalSourcingConfig>()
                 .Bind(configuration.GetSection($"SportsData.Provider:{HistoricalSourcingConfig.SectionName}"))

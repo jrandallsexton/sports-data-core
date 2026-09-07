@@ -26,6 +26,7 @@ import { ImportPicksModal } from '@/src/components/features/picks/ImportPicksMod
 import { ConfidencePickerModal } from '@/src/components/features/picks/ConfidencePickerModal';
 import { getLeagues } from '@/src/lib/leagues';
 import { resolveSportLeague } from '@/src/utils/sportLinks';
+import { useLeagueSelectionStore } from '@/src/stores/leagueSelectionStore';
 import { useQuery } from '@tanstack/react-query';
 import { leaguesApi, leaguesKeys } from '@/src/services/api/leaguesApi';
 import type { League, UserPick } from '@/src/types/models';
@@ -119,19 +120,28 @@ export default function PicksScreen() {
   const [importOpen, setImportOpen] = useState(false);
 
 
+  // App-wide current league (leagueSelectionStore): a deep-link or explicit
+  // tap here writes it; a choice made on another surface (Standings, Home) is
+  // adopted below.
+  const storeLeagueId = useLeagueSelectionStore((s) => s.selectedLeagueId);
+  const setStoreLeague = useLeagueSelectionStore((s) => s.setSelectedLeague);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps — intentionally excluding leagueId to only initialize/target, not rerun on user selection
   useEffect(() => {
     // Deep-link param wins: an active league, or the on-demand past league.
+    // A deep link is explicit intent, so it writes the app-wide selection too.
     if (leagueIdParam) {
       const active = leagues.find((l) => l.id === leagueIdParam);
       if (active) {
         setLeagueId(active.id);
         setSelectedWeek(defaultWeek(active));
+        setStoreLeague(active.id);
         return;
       }
       if (pastLeagueAsLeague && pastLeagueAsLeague.id === leagueIdParam) {
         setLeagueId(pastLeagueAsLeague.id);
         setSelectedWeek(defaultWeek(pastLeagueAsLeague));
+        setStoreLeague(pastLeagueAsLeague.id);
         return;
       }
       // Param is a past league still being fetched → wait rather than default to
@@ -140,12 +150,27 @@ export default function PicksScreen() {
       // Otherwise it's not one of the user's leagues → fall through to default.
     }
 
-    // Initialize once to the first active league.
+    // Initialize once: the app-wide selection when it's one of ours, else the
+    // first active league. Fallbacks do NOT write the store (see its contract).
     if (!leagueId && leagues.length > 0) {
-      setLeagueId(leagues[0].id);
-      setSelectedWeek(defaultWeek(leagues[0]));
+      const preferred = storeLeagueId ? leagues.find((l) => l.id === storeLeagueId) : undefined;
+      const initial = preferred ?? leagues[0];
+      setLeagueId(initial.id);
+      setSelectedWeek(defaultWeek(initial));
     }
   }, [leagues, leagueIdParam, pastLeagueAsLeague, candidatePastId, allLeaguesFetched]);
+
+  // Adopt a league chosen on ANOTHER surface while this tab stays mounted
+  // (tab navigators keep screens alive). Our own picks write the store first,
+  // so store === local means nothing to do; validation against
+  // selectableLeagues keeps a foreign id from clearing the screen.
+  useEffect(() => {
+    if (!storeLeagueId || storeLeagueId === leagueId) return;
+    const target = selectableLeagues.find((l) => l.id === storeLeagueId);
+    if (!target) return;
+    setLeagueId(target.id);
+    setSelectedWeek(defaultWeek(target));
+  }, [storeLeagueId, selectableLeagues, leagueId]);
 
   const selectedLeague = selectableLeagues.find((l) => l.id === leagueId) ?? null;
   const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
@@ -186,8 +211,10 @@ export default function PicksScreen() {
       // league resolves its weeks instead of transiently clearing selectedWeek.
       const league = selectableLeagues.find((l) => l.id === id);
       setSelectedWeek(defaultWeek(league));
+      // Explicit tap → app-wide selection (leagueSelectionStore contract).
+      setStoreLeague(id);
     },
-    [selectableLeagues],
+    [selectableLeagues, setStoreLeague],
   );
 
   const {

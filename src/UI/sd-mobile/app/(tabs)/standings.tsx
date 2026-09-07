@@ -13,10 +13,15 @@ import { LoadingSpinner } from '@/src/components/ui/LoadingSpinner';
 import { EmptyState } from '@/src/components/ui/EmptyState';
 import { Button } from '@/src/components/ui/Button';
 import { StandingsControls } from '@/src/components/features/selectors/StandingsControls';
+import { SegmentedControl } from '@/src/components/ui/SegmentedControl';
+import { ByWeekPane } from '@/src/components/features/standings/ByWeekPane';
 import { useStandings, useUserLeagues } from '@/src/hooks/useStandings';
 import { useSeasonLeagueSelection } from '@/src/hooks/useSeasonLeagueSelection';
 import { useAuthStore } from '@/src/stores/authStore';
+import { useLeagueSelectionStore } from '@/src/stores/leagueSelectionStore';
 import type { Standing } from '@/src/types/models';
+
+type StandingsPane = 'standings' | 'byWeek';
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
 
@@ -87,6 +92,11 @@ export default function StandingsScreen() {
   // season and recently-ended leagues are reachable — /user/me is active-only.
   const { data: allLeagues = [], isLoading: leaguesLoading } = useUserLeagues();
 
+  // App-wide current league: adopt what another surface (Picks, Home) chose,
+  // and record explicit choices made here.
+  const storeLeagueId = useLeagueSelectionStore((s) => s.selectedLeagueId);
+  const setStoreLeague = useLeagueSelectionStore((s) => s.setSelectedLeague);
+
   // Season/league selection state machine (derivation + reconciliation).
   const {
     seasons,
@@ -98,9 +108,31 @@ export default function StandingsScreen() {
     canFilterEnded,
     showEnded,
     setShowEnded,
-  } = useSeasonLeagueSelection(allLeagues);
+  } = useSeasonLeagueSelection(allLeagues, storeLeagueId);
+
+  // Explicit league taps write the app-wide selection; reconciliation snaps
+  // and defaults never do (see leagueSelectionStore contract).
+  const handleLeagueChange = (id: string) => {
+    setSelectedLeagueId(id);
+    setStoreLeague(id);
+  };
 
   const [showBots, setShowBots] = useState(true);
+  const [pane, setPane] = useState<StandingsPane>('standings');
+
+  const selectedLeague = seasonLeagues.find((l) => l.id === selectedLeagueId) ?? null;
+
+  // By Week's selected week, keyed to the league so switching leagues
+  // re-defaults to that league's latest week (web-standings parity —
+  // LeagueSummary carries no currentSeasonWeek).
+  const [weekByLeague, setWeekByLeague] = useState<Record<string, number>>({});
+  const seasonWeeks = selectedLeague?.seasonWeeks ?? [];
+  const selectedWeek =
+    (selectedLeagueId ? weekByLeague[selectedLeagueId] : undefined) ??
+    (seasonWeeks.length ? seasonWeeks[seasonWeeks.length - 1] : null);
+  const setSelectedWeek = (w: number) => {
+    if (selectedLeagueId) setWeekByLeague((prev) => ({ ...prev, [selectedLeagueId]: w }));
+  };
 
   const {
     data: standings = [],
@@ -139,7 +171,7 @@ export default function StandingsScreen() {
         onSeasonChange={setSelectedSeason}
         leagues={seasonLeagues}
         selectedLeagueId={selectedLeagueId}
-        onLeagueChange={setSelectedLeagueId}
+        onLeagueChange={handleLeagueChange}
         canFilterEnded={canFilterEnded}
         showEnded={showEnded}
         onToggleEnded={() => setShowEnded((v) => !v)}
@@ -147,7 +179,29 @@ export default function StandingsScreen() {
         onToggleBots={() => setShowBots((v) => !v)}
       />
 
-      {standingsLoading ? (
+      <View style={styles.paneSwitch}>
+        <SegmentedControl<StandingsPane>
+          value={pane}
+          options={[
+            { value: 'standings', label: 'Standings' },
+            { value: 'byWeek', label: 'By Week' },
+          ]}
+          onChange={setPane}
+          accessibilityLabel="Standings view"
+        />
+      </View>
+
+      {pane === 'byWeek' && selectedLeagueId ? (
+        <ByWeekPane
+          leagueId={selectedLeagueId}
+          week={selectedWeek}
+          seasonWeeks={seasonWeeks}
+          onWeekChange={setSelectedWeek}
+          showBots={showBots}
+          currentUserId={user?.uid}
+          pickType={selectedLeague?.leagueType ?? null}
+        />
+      ) : standingsLoading ? (
         <LoadingSpinner message="Loading standings…" />
       ) : isError ? (
         // Genuine fetch failure (distinct from the not-started empty state,
@@ -212,6 +266,7 @@ export default function StandingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  paneSwitch: { paddingHorizontal: 14, paddingTop: 8 },
   list: { padding: 14, paddingBottom: 24 },
   // flexGrow fills the viewport so the error centers and pull-to-refresh works.
   errorContent: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 10 },

@@ -93,4 +93,44 @@ describe('useSeasonLeagueSelection', () => {
     expect(result.current.seasonLeagues.map((l) => l.id)).toEqual(['past']);
     expect(result.current.selectedLeagueId).toBe('past');
   });
+
+  describe('preferredLeagueId adoption (app-wide league store)', () => {
+    const leagues = [
+      league({ id: 'a-2026', seasonYear: 2026 }),
+      league({ id: 'b-2026', seasonYear: 2026 }),
+      league({ id: 'old-2025', seasonYear: 2025 }),
+      league({ id: 'ended-2026', seasonYear: 2026, deactivatedUtc: '2026-01-01T00:00:00Z' }),
+    ];
+
+    it('adopts the preferred league and flips the season along', () => {
+      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'old-2025'));
+
+      expect(result.current.selectedLeagueId).toBe('old-2025');
+      expect(result.current.selectedSeason).toBe(2025);
+    });
+
+    it('adopts an ended current-season league by revealing ended leagues', () => {
+      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'ended-2026'));
+
+      expect(result.current.selectedLeagueId).toBe('ended-2026');
+      expect(result.current.showEnded).toBe(true);
+    });
+
+    it('adopts each preferred value at most once — local browsing is never yanked back', () => {
+      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'old-2025'));
+      expect(result.current.selectedLeagueId).toBe('old-2025');
+
+      // The user browses back to 2026; reconciliation snaps to the first
+      // visible league. The still-set preferred id must NOT re-adopt.
+      act(() => result.current.setSelectedSeason(2026));
+      expect(result.current.selectedSeason).toBe(2026);
+      expect(result.current.selectedLeagueId).not.toBe('old-2025');
+    });
+
+    it('ignores a preferred id that is not one of the user leagues', () => {
+      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'foreign'));
+
+      expect(result.current.selectedLeagueId).toBe('a-2026');
+    });
+  });
 });

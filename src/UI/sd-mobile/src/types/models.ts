@@ -266,6 +266,9 @@ export interface UserPicksResult {
 export interface UserPick {
   id: string;
   userId: string;
+  /** The member's display name (UserPickDto.User) — populated on the
+   *  league week overview payload; absent on own-picks endpoints. */
+  user?: string;
   contestId: string;
   franchiseSeasonId: string;
   pickType: PickType;
@@ -274,6 +277,60 @@ export interface UserPick {
   isCorrect?: boolean | null;
   pointsAwarded?: number | null;
   isSynthetic?: boolean;
+}
+
+// ─── League week overview (By Week pane) ─────────────────────────────────────
+
+/** Matches LeagueWeekMemberDto from GET /ui/leagues/{id}/overview/{week}. */
+export interface LeagueWeekMember {
+  userId: string;
+  displayName: string;
+  isSynthetic: boolean;
+  /**
+   * How many of the week's games this member has picked — INCLUDING picks on
+   * un-locked contests, whose content the server withholds. Safe metadata;
+   * powers the pre-lock "Who's Ready" list.
+   */
+  submittedPickCount: number;
+}
+
+/** Matches LeagueWeekMatchupResultDto (ContestResultDto + league winner). */
+export interface LeagueWeekContest {
+  startDateUtc: string;
+  contestId: string;
+  isLocked: boolean;
+  awayShort: string;
+  awayFranchiseSeasonId: string;
+  awaySlug: string;
+  awayRank?: number | null;
+  homeShort: string;
+  homeFranchiseSeasonId: string;
+  homeSlug: string;
+  homeRank?: number | null;
+  awaySpread?: number | null;
+  homeSpread?: number | null;
+  overUnder?: number | null;
+  finalizedUtc?: string | null;
+  awayScore?: number | null;
+  homeScore?: number | null;
+  winnerFranchiseSeasonId?: string | null;
+  spreadWinnerFranchiseSeasonId?: string | null;
+  overUnderResult?: string | null;
+  completedUtc?: string | null;
+  /** Spread winner when the league has a spread, else outright winner. */
+  leagueWinnerFranchiseSeasonId?: string | null;
+}
+
+/**
+ * Matches LeagueWeekOverviewDto from GET /ui/leagues/{id}/overview/{week}.
+ * userPicks carries ONLY revealed picks: the caller's own, plus other
+ * members' picks on locked contests (server-side reveal enforcement, #736).
+ * Derive columns/rows from members, never from userPicks.
+ */
+export interface LeagueWeekOverview {
+  contests: LeagueWeekContest[];
+  userPicks: UserPick[];
+  members: LeagueWeekMember[];
 }
 
 // ─── Standings ───────────────────────────────────────────────────────────────

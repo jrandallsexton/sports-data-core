@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { LeagueWeekOverview } from '@/src/types/models';
 
 // Matches SportsData.Api.Application.Common.Enums.PickType (by name).
 export type PickType = 'StraightUp' | 'AgainstTheSpread' | 'OverUnder';
@@ -83,6 +84,7 @@ export const leaguesKeys = {
   public: ['leagues', 'public'] as const,
   invitations: ['leagues', 'invitations'] as const,
   seasonWeeks: (sport: string) => ['leagues', 'season-weeks', sport] as const,
+  weekOverview: (id: string, week: number) => ['league', id, 'overview', week] as const,
 };
 
 /**
@@ -330,6 +332,13 @@ export const leaguesApi = {
     apiClient.get<LeagueSummary[]>('/ui/leagues', {
       params: includeDeactivated ? { includeDeactivated: true } : undefined,
     }),
+
+  // GET /ui/leagues/{id}/overview/{week} — the By Week pane's payload:
+  // contests, the member roster (with readiness counts), and REVEALED picks
+  // only (own always; others' once their contest locks — reveal enforcement
+  // is server-side, #736; do not re-derive it client-side).
+  getLeagueWeekOverview: (id: string, week: number) =>
+    apiClient.get<LeagueWeekOverview>(`/ui/leagues/${id}/overview/${week}`),
 
   // POST /ui/leagues/{id}/clone — duplicate a league the user belongs to.
   // Copies config and regenerates the slate server-side; picks are NOT copied.

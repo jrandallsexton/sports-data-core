@@ -7,6 +7,7 @@ import {
   Platform,
   UIManager,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
@@ -60,6 +61,23 @@ export function StandingsControls({
   // Start collapsed if a league is already selected (e.g. returning to the tab);
   // otherwise open so the user can pick.
   const [collapsed, setCollapsed] = useState(() => selectedLeagueId != null);
+
+  // Auto-close whenever a selection is in hand:
+  //  - on tab focus (navigating Picks → Standings must land content-first,
+  //    not on an open picker shoving everything down), and
+  //  - when the selection changes while focused — the async reconciliation
+  //    landing after mount, an adoption from the app-wide league store, or
+  //    the user tapping a league in the open panel (task complete → close).
+  // Browsing with the panel open (season taps, pills) doesn't change
+  // selectedLeagueId, so it never slams shut mid-exploration.
+  useFocusEffect(
+    React.useCallback(() => {
+      if (selectedLeagueId != null) {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setCollapsed(true);
+      }
+    }, [selectedLeagueId]),
+  );
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);

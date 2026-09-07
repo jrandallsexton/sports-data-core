@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
 import type { LeagueSummary } from '@/src/services/api/leaguesApi';
 
 export interface SeasonLeagueSelection {
@@ -34,7 +34,18 @@ export interface SeasonLeagueSelection {
  *  - selectedLeagueId snaps to the first visible league whenever it drops out of
  *    the current season/filter.
  */
-export function useSeasonLeagueSelection(allLeagues: LeagueSummary[]): SeasonLeagueSelection {
+export function useSeasonLeagueSelection(
+  allLeagues: LeagueSummary[],
+  /**
+   * The app-wide current league (leagueSelectionStore). Adopted — season
+   * flipped along, ended-filter opened if needed — when it names one of the
+   * user's leagues. Each distinct value is adopted at most ONCE, so local
+   * browsing afterwards (switching seasons snaps the selection) is never
+   * yanked back; and because every explicit local pick writes the store, the
+   * store and local selection only diverge when ANOTHER surface chose.
+   */
+  preferredLeagueId?: string | null,
+): SeasonLeagueSelection {
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   // Active-only by default to keep the league row short; the pill reveals ended.
@@ -90,6 +101,26 @@ export function useSeasonLeagueSelection(allLeagues: LeagueSummary[]): SeasonLea
       setSelectedLeagueId(seasonLeagues[0].id);
     }
   }, [selectedSeason, seasonLeagues, selectedLeagueId]);
+
+  // Adoption of the app-wide preferred league. Declared AFTER the two
+  // reconciliation effects deliberately: effects run in declaration order,
+  // and within one commit the reconcilers read pre-adoption state — declared
+  // first, the season-validity effect would overwrite the adopted season and
+  // the snap effect would then yank the adopted league. Last-writer here,
+  // validated by the reconcilers on the following pass.
+  const adoptedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!preferredLeagueId || preferredLeagueId === selectedLeagueId) return;
+    if (adoptedRef.current === preferredLeagueId) return;
+    const target = allLeagues.find((l) => l.id === preferredLeagueId);
+    if (!target) return;
+    adoptedRef.current = preferredLeagueId;
+    setSelectedSeason(target.seasonYear);
+    // A current-season ended league would be filtered out and snapped away —
+    // reveal ended leagues so the adoption sticks.
+    if (target.deactivatedUtc) setShowEnded(true);
+    setSelectedLeagueId(target.id);
+  }, [preferredLeagueId, allLeagues, selectedLeagueId]);
 
   return {
     seasons,

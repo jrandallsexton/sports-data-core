@@ -216,7 +216,8 @@ function LeaderboardPage() {
   const filterOverview = (data) => {
     if (!data || showBots) return data;
     const filteredUserPicks = data.userPicks.filter(pick => !pick.isSynthetic);
-    return { ...data, userPicks: filteredUserPicks };
+    const filteredMembers = data.members?.filter(member => !member.isSynthetic);
+    return { ...data, userPicks: filteredUserPicks, members: filteredMembers };
   };
 
   function handleSort(column) {

@@ -38,6 +38,22 @@ namespace SportsData.Provider.Infrastructure.Data
 
         Task<T?> GetFirstOrDefaultAsync<T>(string collectionName, Expression<Func<T, bool>> filter);
 
+        /// <summary>
+        /// Returns the subset of <paramref name="ids"/> whose documents are
+        /// both persisted AND have been published downstream at least once
+        /// (LastPublishedUtc set — written only after a successful
+        /// DocumentCreated publish) — one batched primary-key read. Used by
+        /// the live-index already-seen skip (L2): a document that persisted
+        /// but whose publish never landed is deliberately NOT returned, so it
+        /// re-enqueues and the cache-hit path republishes it.
+        /// <paramref name="collectionName"/> is the Mongo (per-DocumentType)
+        /// collection; the Cosmos implementation ignores it and queries the
+        /// sport-scoped container where all types are co-located, which is
+        /// exact because ids are globally unique SourceUrlHashes.
+        /// See docs/features/live-sourcing-already-seen-skip.md.
+        /// </summary>
+        Task<HashSet<string>> GetPublishedIdsAsync(string collectionName, IReadOnlyCollection<string> ids);
+
         Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl;
 
         Task ReplaceOneAsync<T>(string collectionName, string id, T document) where T : IHasSourceUrl;
@@ -150,6 +166,34 @@ namespace SportsData.Provider.Infrastructure.Data
             var collection = _database.GetCollection<T>(collectionName);
             var cursor = await collection.FindAsync(filter);
             return await cursor.FirstOrDefaultAsync();
+        }
+
+        public async Task<HashSet<string>> GetPublishedIdsAsync(string collectionName, IReadOnlyCollection<string> ids)
+        {
+            if (ids.Count == 0)
+                return new HashSet<string>();
+
+            // BsonDocument on "_id" (rather than a typed filter) so the query
+            // is a pure primary-key $in with an _id-only projection — the
+            // driver maps DocumentBase.Id to _id by convention, and Id is
+            // assigned from SourceUrlHash on insert.
+            //
+            // The LastPublishedUtc $ne null clause is the "published at least
+            // once" half of the contract: Mongo's $ne null excludes documents
+            // where the field is null OR missing, so a doc that persisted but
+            // whose publish never landed (and pre-marker legacy docs) is not
+            // returned — it re-enqueues and the cache-hit path republishes it,
+            // which then writes the marker.
+            var collection = _database.GetCollection<BsonDocument>(collectionName);
+            var filter = Builders<BsonDocument>.Filter.In("_id", ids)
+                & Builders<BsonDocument>.Filter.Ne(nameof(DocumentBase.LastPublishedUtc), BsonNull.Value);
+
+            var found = await collection
+                .Find(filter)
+                .Project(Builders<BsonDocument>.Projection.Include("_id"))
+                .ToListAsync();
+
+            return found.Select(d => d["_id"].AsString).ToHashSet();
         }
 
         public async Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl

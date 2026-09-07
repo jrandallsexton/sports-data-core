@@ -11,6 +11,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Processors;
+using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using System.Diagnostics.Metrics;
@@ -25,7 +26,10 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
     private readonly CommonConfig _commonConfig;
     private readonly IKnownBadUriCache _knownBadUris;
+    private readonly ISeenUriCache _seenUris;
+    private readonly IDocumentStore _documentStore;
     private readonly Counter<long> _documentsRequestedCounter;
+    private readonly Counter<long> _itemsSkippedSeenCounter;
 
     public DocumentRequestedHandler(
         IProvideEspnApiData espnApi,
@@ -33,6 +37,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         IProvideBackgroundJobs backgroundJobProvider,
         IOptions<CommonConfig> commonConfig,
         IKnownBadUriCache knownBadUris,
+        ISeenUriCache seenUris,
+        IDocumentStore documentStore,
         IMeterFactory meterFactory)
     {
         _espnApi = espnApi;
@@ -40,6 +46,8 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         _backgroundJobProvider = backgroundJobProvider;
         _commonConfig = commonConfig.Value;
         _knownBadUris = knownBadUris;
+        _seenUris = seenUris;
+        _documentStore = documentStore;
 
         // Counted at ARRIVAL — before dedupe/skip/cache decisions — so the
         // metric answers "what is being asked of Provider, per type", not
@@ -49,6 +57,9 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
         _documentsRequestedCounter = meter.CreateCounter<long>(
             "provider.documents.requested",
             description: "DocumentRequested events arriving at Provider, tagged by document type and sport");
+        _itemsSkippedSeenCounter = meter.CreateCounter<long>(
+            "provider.documents.skipped_seen",
+            description: "Live-index items skipped at the fan-out because an identical immutable item was already enqueued this stream");
     }
 
     public async Task Consume(ConsumeContext<DocumentRequested> context)
@@ -273,12 +284,16 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             return;
         }
 
-        var seenPages = new HashSet<string>();
+        // Pagination cycle guard, scoped to THIS invocation only: stop paging
+        // if ESPN ever hands back a page URL we already fetched in this call.
+        // Unrelated to ISeenUriCache (cross-cycle, item-level already-seen skip).
+        var visitedPageUrls = new HashSet<string>();
         var enqueuedAnyRefs = false;
         var totalItemsEnqueued = 0;
+        var totalItemsSkippedSeen = 0;
         bool? useInlineJson = null; // null = not yet probed, true = $refs are broken, false = $refs work
 
-        while (uri is not null && seenPages.Add(uri.ToString()))
+        while (uri is not null && visitedPageUrls.Add(uri.ToString()))
         {
             _logger.LogInformation(
                 "Fetching resource index page. PageUri={PageUri}",
@@ -373,6 +388,10 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 rawItemJsonList = null;
             }
 
+            // Resolve every item's URI/hash up front so the L2 existence check
+            // below can run as ONE batched primary-key read per page instead
+            // of N individual reads downstream.
+            var resolvedItems = new List<(int Index, Uri RefUri, string RefHash)>(dto.Items.Count);
             for (var i = 0; i < dto.Items.Count; i++)
             {
                 var item = dto.Items[i];
@@ -407,33 +426,118 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     refUri = item.Ref.ToCleanUri();
                 }
 
-                var refHash = HashProvider.GenerateHashFromUri(refUri);
+                resolvedItems.Add((i, refUri, HashProvider.GenerateHashFromUri(refUri)));
+            }
 
-                // Cache policy mirrors ProcessResourceIndexItem (and ResourceIndexJob).
-                // PR #282 fixed the leaf path; this fan-out path was missed and kept
-                // hardcoding BypassCache=true, forcing an ESPN call for every child of
-                // every resource index — defeating Mongo cache entirely for re-finalize
-                // and historical-sourcing runs.
-                //
-                // In-season immutable items (e.g. a completed play) are served from
-                // Mongo instead of re-fetched from ESPN every live-poll cycle — the
-                // fix for the live-slate rate-limit storm. The one exception is the
-                // "live edge": the newest item (last item on the last page — the
-                // index is ordered ascending), which may still be finalizing, so it
-                // keeps bypassing. See docs/features/in-season-cache-bypass-fix.md.
-                //
-                // Scope the immutable exception to EXACTLY the current season. When
-                // the feature is disabled (CurrentSeason == 0), the season is unknown
-                // (null), or the request is for a future season, keep the original
-                // bypass behavior for every item (no immutable-serve). Historical
-                // seasons already serve from cache via ShouldBypassCache == false.
+            // Cache policy mirrors ProcessResourceIndexItem (and ResourceIndexJob).
+            // PR #282 fixed the leaf path; this fan-out path was missed and kept
+            // hardcoding BypassCache=true, forcing an ESPN call for every child of
+            // every resource index — defeating Mongo cache entirely for re-finalize
+            // and historical-sourcing runs.
+            //
+            // In-season immutable items (e.g. a completed play) are served from
+            // Mongo instead of re-fetched from ESPN every live-poll cycle — the
+            // fix for the live-slate rate-limit storm. The one exception is the
+            // "live edge": the newest item (last item on the last page — the
+            // index is ordered ascending), which may still be finalizing, so it
+            // keeps bypassing. See docs/features/in-season-cache-bypass-fix.md.
+            //
+            // Scope the immutable exception to EXACTLY the current season. When
+            // the feature is disabled (CurrentSeason == 0), the season is unknown
+            // (null), or the request is for a future season, keep the original
+            // bypass behavior for every item (no immutable-serve). Historical
+            // seasons already serve from cache via ShouldBypassCache == false.
+            var isCurrentSeason = _commonConfig.CurrentSeason != 0
+                && evt.SeasonYear == _commonConfig.CurrentSeason;
+            var isImmutableType = InSeasonDocumentPolicy.IsImmutableInSeason(evt.DocumentType);
+
+            // L2 of the already-seen skip: the durable, cross-pod "seen"
+            // signal is "persisted AND published at least once"
+            // (LastPublishedUtc, written only after a successful
+            // DocumentCreated publish) — so it cannot drift and cannot mask a
+            // failed Hangfire job on EITHER side of the Mongo insert: a doc
+            // that never landed is not there, and a doc that landed but whose
+            // publish never went out has no marker; both re-enqueue once the
+            // L1 claim lapses and the cache-hit path republishes. One batched
+            // primary-key read per page for EVERY eligible non-edge hash —
+            // deliberately NOT pre-filtered by L1, so the durable check is
+            // re-consulted every cycle. Fails OPEN: a Mongo hiccup must never
+            // stall live sourcing, so on error the items simply enqueue
+            // (pre-skip behavior).
+            HashSet<string>? persistedIds = null;
+            if (evt.Priority && isCurrentSeason && isImmutableType)
+            {
+                var candidates = new List<string>(resolvedItems.Count);
+                foreach (var (index, _, candidateHash) in resolvedItems)
+                {
+                    var isEdge = dto.PageIndex >= dto.PageCount && index == dto.Items.Count - 1;
+                    if (!isEdge)
+                        candidates.Add(candidateHash);
+                }
+
+                if (candidates.Count > 0)
+                {
+                    try
+                    {
+                        persistedIds = await _documentStore.GetPublishedIdsAsync(
+                            evt.DocumentType.ToString(),
+                            candidates);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(
+                            ex,
+                            "L2 existence check failed; failing open (items will enqueue). Collection={Collection}, CandidateCount={CandidateCount}",
+                            evt.DocumentType,
+                            candidates.Count);
+                    }
+                }
+            }
+
+            foreach (var (i, refUri, refHash) in resolvedItems)
+            {
                 var isLiveEdge = dto.PageIndex >= dto.PageCount && i == dto.Items.Count - 1;
-                var isCurrentSeason = _commonConfig.CurrentSeason != 0
-                    && evt.SeasonYear == _commonConfig.CurrentSeason;
                 var serveImmutableFromCache = isCurrentSeason
-                    && InSeasonDocumentPolicy.IsImmutableInSeason(evt.DocumentType)
+                    && isImmutableType
                     && !isLiveEdge;
                 var bypassCache = ShouldBypassCache(evt.SeasonYear) && !serveImmutableFromCache;
+
+                // Already-seen skip (streamer live traffic ONLY — Priority):
+                // an immutable item already persisted to Mongo (L2, any pod)
+                // or claimed in-flight by this pod within the last few minutes
+                // (L1) needs no further work at all — not a job, not a Mongo
+                // read, not a re-publish to Producer. Without it, every
+                // polling cycle re-enqueues every item the game has ever
+                // produced (observed 2026-09-06: ~2,000x amplification). The
+                // live edge never qualifies (serveImmutableFromCache is false
+                // for it), so the still-finalizing item keeps flowing every
+                // cycle. Non-priority callers (reenrich, on-final refresh,
+                // historical sourcing) are untouched by construction.
+                // See docs/features/live-sourcing-already-seen-skip.md.
+                if (evt.Priority && serveImmutableFromCache)
+                {
+                    if (persistedIds?.Contains(refHash) == true)
+                    {
+                        totalItemsSkippedSeen++;
+                        continue;
+                    }
+
+                    // Not (known to be) persisted: take the atomic short-TTL
+                    // in-flight claim. Losing it means a prior cycle or a
+                    // concurrent consumer already enqueued this item and its
+                    // job is presumed pending; if that job never persists,
+                    // the claim lapses in minutes and the item re-enqueues —
+                    // an enqueue that fails after claiming self-heals the
+                    // same way. The live edge is never claimed: it must
+                    // re-fetch every cycle, and once displaced its persisted
+                    // copy is picked up by L2 (or re-enqueued if it never
+                    // landed).
+                    if (!_seenUris.TryMarkSeen(refHash))
+                    {
+                        totalItemsSkippedSeen++;
+                        continue;
+                    }
+                }
 
                 var cmd = new ProcessResourceIndexItemCommand(
                     CorrelationId: evt.CorrelationId,
@@ -480,11 +584,19 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             uri = new Uri($"{baseUri}?{newQuery}");
         }
 
-        if (enqueuedAnyRefs)
+        if (totalItemsSkippedSeen > 0)
+        {
+            _itemsSkippedSeenCounter.Add(totalItemsSkippedSeen,
+                new KeyValuePair<string, object?>("DocumentType", evt.DocumentType.ToString()),
+                new KeyValuePair<string, object?>("Sport", evt.Sport.ToString()));
+        }
+
+        if (enqueuedAnyRefs || totalItemsSkippedSeen > 0)
         {
             _logger.LogInformation(
-                "All resource index items enqueued. TotalItems={TotalItems}",
-                totalItemsEnqueued);
+                "All resource index items enqueued. TotalItems={TotalItems}, SkippedAlreadySeen={SkippedAlreadySeen}",
+                totalItemsEnqueued,
+                totalItemsSkippedSeen);
         }
         else
         {

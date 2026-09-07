@@ -45,6 +45,13 @@ namespace SportsData.Provider.DependencyInjection
             // first use, write-through) so fresh pods inherit the knowledge.
             services.AddSingleton<IKnownBadUriCache, KnownBadUriCache>();
 
+            // Singleton: short-TTL atomic in-flight claims for the live-index
+            // already-seen skip (L1) — bridges the window between an item's
+            // enqueue and its persistence, while the durable cross-pod skip
+            // comes from Mongo existence (L2) each cycle. Per-pod by design.
+            // See docs/features/live-sourcing-already-seen-skip.md.
+            services.AddSingleton<ISeenUriCache, SeenUriCache>();
+
             // Historical sourcing services
             services.AddOptions<HistoricalSourcingConfig>()
                 .Bind(configuration.GetSection($"SportsData.Provider:{HistoricalSourcingConfig.SectionName}"))

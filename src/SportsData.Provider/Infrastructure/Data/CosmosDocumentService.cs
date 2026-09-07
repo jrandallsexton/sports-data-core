@@ -154,10 +154,44 @@ namespace SportsData.Provider.Infrastructure.Data
             return default;
         }
 
+        public async Task<HashSet<string>> GetPublishedIdsAsync(string collectionName, IReadOnlyCollection<string> ids)
+        {
+            if (ids.Count == 0)
+                return new HashSet<string>();
+
+            // Deliberately NOT ValidateContainer(collectionName): callers pass
+            // the Mongo-style collection name (the DocumentType, e.g.
+            // "EventCompetitionPlay"), but Cosmos co-locates every document
+            // type in the single sport-scoped container — validating the type
+            // name against the sport container would throw on every call and
+            // silently disable the L2 already-seen skip on this backend. The
+            // ids are SourceUrlHashes, globally unique across types, so
+            // querying the sport container by id alone is exact. Cross-
+            // partition id-only read (partition key is the 3-char routing
+            // prefix); Contains translates to an IN clause. LastPublishedUtc
+            // != null is the "published at least once" half of the contract —
+            // persisted-but-never-published docs re-enqueue and get
+            // republished by the cache-hit path.
+            var iterator = _defaultContainer.GetItemLinqQueryable<DocumentBase>()
+                .Where(x => ids.Contains(x.Id) && x.LastPublishedUtc != null)
+                .Select(x => x.Id)
+                .ToFeedIterator();
+
+            var found = new HashSet<string>();
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                foreach (var id in response)
+                    found.Add(id);
+            }
+
+            return found;
+        }
+
         public async Task InsertOneAsync<T>(string collectionName, T document) where T : IHasSourceUrl
         {
             ValidateContainer(collectionName);
-            
+
             if (string.IsNullOrWhiteSpace(document.SourceUrlHash))
             {
                 if (string.IsNullOrWhiteSpace(document.Uri.AbsoluteUri))

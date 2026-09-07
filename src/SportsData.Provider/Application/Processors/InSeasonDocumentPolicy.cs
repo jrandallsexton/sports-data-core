@@ -18,17 +18,23 @@ namespace SportsData.Provider.Application.Processors
     /// current season (except the live edge — the newest, still-finalizing item,
     /// handled at the enqueue site). Mutable aggregates must NOT be listed here.
     ///
-    /// PoC allow-list = <see cref="DocumentType.EventCompetitionPlay"/> only —
-    /// that captures effectively all of the bleeding at near-zero risk. Expand
-    /// deliberately (drives, per-game roster) once proven.
+    /// Allow-list started as <see cref="DocumentType.EventCompetitionPlay"/> only
+    /// (the PoC). <see cref="DocumentType.EventCompetitionProbability"/> added
+    /// 2026-09-07: ESPN emits one probability item per play — the index is
+    /// append-only and completed entries never change, and its exclusion sent
+    /// every item to ESPN each 15s live cycle (611,931 processed in one evening
+    /// for ~500 real items). Expand further (drives, per-game roster)
+    /// deliberately, once proven.
     ///
-    /// See docs/features/in-season-cache-bypass-fix.md.
+    /// See docs/features/in-season-cache-bypass-fix.md and
+    /// docs/features/live-sourcing-already-seen-skip.md.
     /// </summary>
     public static class InSeasonDocumentPolicy
     {
         private static readonly HashSet<DocumentType> ImmutableInSeasonTypes = new()
         {
             DocumentType.EventCompetitionPlay,
+            DocumentType.EventCompetitionProbability,
         };
 
         public static bool IsImmutableInSeason(DocumentType documentType)

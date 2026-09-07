@@ -17,6 +17,7 @@ using SportsData.Core.Infrastructure.DataSources.Espn;
 using SportsData.Core.Processing;
 using SportsData.Provider.Application.Documents;
 using SportsData.Provider.Application.Processors;
+using SportsData.Provider.Infrastructure.Data;
 using SportsData.Provider.Infrastructure.Providers.Espn;
 
 using FluentValidation.Results;
@@ -903,5 +904,315 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
 
         // assert
         knownBad.Verify(x => x.MarkBadAsync(ProbabilitiesUri, KnownBadReason.NotFound), Times.Once);
+    }
+
+    // ── Already-seen skip (live streamer fan-out) ───────────────────────────
+    // See docs/features/live-sourcing-already-seen-skip.md: streamer-originated
+    // (Priority) cycles re-page the whole index and re-enqueue every item the
+    // game has ever produced. Immutable items this pod already handed to
+    // Hangfire are skipped at the enqueue site — except the live edge, which
+    // may still be finalizing and must keep flowing every cycle.
+
+    private const string SkipPlaysBaseUrl =
+        "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays";
+    private const string SkipProbabilitiesBaseUrl =
+        "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities";
+
+    private static string ThreeItemIndexJson(string baseUrl) =>
+        "{\"count\":3,\"pageIndex\":1,\"pageSize\":25,\"pageCount\":1,\"items\":[" +
+        "{\"$ref\":\"" + baseUrl + "/1?lang=en\"}," +
+        "{\"$ref\":\"" + baseUrl + "/2?lang=en\"}," +
+        "{\"$ref\":\"" + baseUrl + "/3?lang=en\"}]}";
+
+    private void UseCurrentSeason(int season)
+    {
+        var cfg = (CommonConfig)RuntimeHelpers.GetUninitializedObject(typeof(CommonConfig));
+        cfg.CurrentSeason = season;
+        Mocker.Use<IOptions<CommonConfig>>(Options.Create(cfg));
+    }
+
+    /// <summary>
+    /// Captures commands from BOTH Enqueue overloads (plain and named-queue) —
+    /// Priority traffic rides the live queue, so the skip tests must observe it.
+    /// </summary>
+    private List<ProcessResourceIndexItemCommand> CaptureAllEnqueues()
+    {
+        var captured = new List<ProcessResourceIndexItemCommand>();
+        void Capture(Expression<Func<IProcessResourceIndexItems, Task>> expr)
+        {
+            var call = (MethodCallExpression)expr.Body;
+            captured.Add((ProcessResourceIndexItemCommand)Expression
+                .Lambda(call.Arguments[0]).Compile().DynamicInvoke()!);
+        }
+
+        var background = Mocker.GetMock<IProvideBackgroundJobs>();
+        background
+            .Setup(x => x.Enqueue<IProcessResourceIndexItems>(
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
+            .Callback<Expression<Func<IProcessResourceIndexItems, Task>>>(Capture)
+            .Returns(string.Empty);
+        background
+            .Setup(x => x.Enqueue<IProcessResourceIndexItems>(
+                It.IsAny<string>(),
+                It.IsAny<Expression<Func<IProcessResourceIndexItems, Task>>>()))
+            .Callback<string, Expression<Func<IProcessResourceIndexItems, Task>>>((_, expr) => Capture(expr))
+            .Returns(string.Empty);
+        return captured;
+    }
+
+    private DocumentRequested SkipTestRequest(
+        string baseUrl, DocumentType documentType, int? seasonYear, bool priority) =>
+        Fixture.Build<DocumentRequested>()
+            .With(x => x.Uri, new Uri($"{baseUrl}?lang=en"))
+            .With(x => x.DocumentType, documentType)
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, seasonYear)
+            .With(x => x.Priority, priority)
+            .OmitAutoProperties()
+            .Create();
+
+    [Theory]
+    [InlineData(SkipPlaysBaseUrl, DocumentType.EventCompetitionPlay)]
+    [InlineData(SkipProbabilitiesBaseUrl, DocumentType.EventCompetitionProbability)]
+    public async Task PriorityClaimedImmutableItems_SkippedAtFanOut_ExceptLiveEdge(
+        string baseUrl, DocumentType documentType)
+    {
+        // arrange — every non-edge item holds a live in-flight claim (enqueued
+        // by a prior cycle, jobs presumed pending); only the live edge may flow.
+        const int season = 2026;
+        UseCurrentSeason(season);
+
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(ThreeItemIndexJson(baseUrl)));
+        Mocker.GetMock<ISeenUriCache>()
+            .Setup(x => x.TryMarkSeen(It.IsAny<string>()))
+            .Returns(false);
+
+        var captured = CaptureAllEnqueues();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = SkipTestRequest(baseUrl, documentType, season, priority: true);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert — non-edge items are claimed; only the live edge flows.
+        var edge = captured.Should().ContainSingle().Subject;
+        edge.Uri.ToString().Should().StartWith($"{baseUrl}/3");
+        edge.BypassCache.Should().BeTrue("the live edge may still be finalizing and must re-fetch");
+    }
+
+    [Fact]
+    public async Task PriorityImmutableItems_ClaimedAtEnqueue_ExceptLiveEdge()
+    {
+        // arrange — first cycle, nothing persisted, no claims held: all 3
+        // enqueue. The two non-edge items take the in-flight claim; the live
+        // edge is never claimed — it must re-fetch every cycle, and once
+        // displaced its persisted copy is picked up by L2.
+        const int season = 2026;
+        UseCurrentSeason(season);
+
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(ThreeItemIndexJson(SkipPlaysBaseUrl)));
+
+        var seen = Mocker.GetMock<ISeenUriCache>();
+        seen.Setup(x => x.TryMarkSeen(It.IsAny<string>())).Returns(true);
+
+        var captured = CaptureAllEnqueues();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = SkipTestRequest(SkipPlaysBaseUrl, DocumentType.EventCompetitionPlay, season, priority: true);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert
+        captured.Should().HaveCount(3);
+        seen.Verify(x => x.TryMarkSeen(It.IsAny<string>()), Times.Exactly(2));
+    }
+
+    [Theory]
+    // The skip gate: Priority (streamer live traffic) AND immutable type AND
+    // exactly the current season. Outside the gate, seen-ness is irrelevant —
+    // and nothing is marked, so the cache can't grow from non-streamer traffic.
+    [InlineData(false, DocumentType.EventCompetitionPlay, 2026)]   // reenrich/on-final/historical: not Priority
+    [InlineData(true, DocumentType.EventCompetitionStatus, 2026)]  // mutable type must always flow
+    [InlineData(true, DocumentType.EventCompetitionPlay, 2024)]    // not the current season
+    public async Task SeenSkip_DoesNotApply_OutsideTheGate(
+        bool priority, DocumentType documentType, int? seasonYear)
+    {
+        // arrange — the claim cache would refuse every claim; the gate must
+        // never even consult it for ineligible traffic.
+        UseCurrentSeason(2026);
+
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(ThreeItemIndexJson(SkipPlaysBaseUrl)));
+        var seen = Mocker.GetMock<ISeenUriCache>();
+        seen.Setup(x => x.TryMarkSeen(It.IsAny<string>())).Returns(false);
+
+        var captured = CaptureAllEnqueues();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = SkipTestRequest(SkipPlaysBaseUrl, documentType, seasonYear, priority);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert — every item enqueued, nothing claimed.
+        captured.Should().HaveCount(3);
+        seen.Verify(x => x.TryMarkSeen(It.IsAny<string>()), Times.Never);
+    }
+
+    // ── L2: batched Mongo existence check (cross-pod durable "seen") ────────
+    // "Seen" at L2 means "the document is already persisted" — the store
+    // itself is the signal, so another pod's work (or a pre-restart cycle)
+    // suppresses re-enqueueing with no shared cache.
+
+    [Fact]
+    public async Task L2_PersistedItems_SkippedAcrossPods_ExceptLiveEdge()
+    {
+        // arrange — L1 cold (fresh pod), but every non-edge item is already
+        // in Mongo. The batch query gets exactly the non-edge candidates and
+        // reports all of them persisted.
+        const int season = 2026;
+        UseCurrentSeason(season);
+
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(ThreeItemIndexJson(SkipPlaysBaseUrl)));
+
+        IReadOnlyCollection<string>? queriedIds = null;
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetPublishedIdsAsync(
+                nameof(DocumentType.EventCompetitionPlay), It.IsAny<IReadOnlyCollection<string>>()))
+            .Callback<string, IReadOnlyCollection<string>>((_, ids) => queriedIds = ids)
+            .ReturnsAsync((string _, IReadOnlyCollection<string> ids) => ids.ToHashSet());
+
+        var seen = Mocker.GetMock<ISeenUriCache>();
+        var captured = CaptureAllEnqueues();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = SkipTestRequest(SkipPlaysBaseUrl, DocumentType.EventCompetitionPlay, season, priority: true);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert — the live edge never enters the batch query and always flows.
+        queriedIds.Should().NotBeNull().And.HaveCount(2, "only non-edge items are L2 candidates");
+        var edge = captured.Should().ContainSingle().Subject;
+        edge.Uri.ToString().Should().StartWith($"{SkipPlaysBaseUrl}/3");
+
+        // Persisted items skip on L2 alone and the edge always flows — the
+        // in-flight claim is never taken for either.
+        seen.Verify(x => x.TryMarkSeen(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task L2_ConsultedForAllNonEdgeItems_EveryCycle()
+    {
+        // arrange — a held L1 claim must NOT shrink the L2 query: the durable
+        // persistence check is re-consulted every cycle so a claim can never
+        // mask a non-persisted item beyond its short TTL (the failed-job
+        // self-heal). Nothing persisted here, claims already held → non-edge
+        // items skip on the claim, but the batch query still saw them all.
+        const int season = 2026;
+        UseCurrentSeason(season);
+
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(ThreeItemIndexJson(SkipPlaysBaseUrl)));
+        Mocker.GetMock<ISeenUriCache>()
+            .Setup(x => x.TryMarkSeen(It.IsAny<string>()))
+            .Returns(false);
+
+        IReadOnlyCollection<string>? queriedIds = null;
+        var store = Mocker.GetMock<IDocumentStore>();
+        store
+            .Setup(x => x.GetPublishedIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()))
+            .Callback<string, IReadOnlyCollection<string>>((_, ids) => queriedIds = ids)
+            .ReturnsAsync(new HashSet<string>());
+
+        var captured = CaptureAllEnqueues();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = SkipTestRequest(SkipPlaysBaseUrl, DocumentType.EventCompetitionPlay, season, priority: true);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert
+        queriedIds.Should().NotBeNull().And.HaveCount(2, "held claims must not be pre-filtered out of the L2 query");
+        captured.Should().ContainSingle("non-edge items skip on their live claims; the edge flows");
+    }
+
+    [Fact]
+    public async Task L2_NotConsulted_ForIneligibleTraffic()
+    {
+        // arrange — non-Priority (reenrich/on-final/historical): the batch
+        // existence check must not even run.
+        const int season = 2026;
+        UseCurrentSeason(season);
+
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(ThreeItemIndexJson(SkipPlaysBaseUrl)));
+
+        var store = Mocker.GetMock<IDocumentStore>();
+        var captured = CaptureAllEnqueues();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = SkipTestRequest(SkipPlaysBaseUrl, DocumentType.EventCompetitionPlay, season, priority: false);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert
+        captured.Should().HaveCount(3);
+        store.Verify(
+            x => x.GetPublishedIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task L2_FailsOpen_WhenStoreThrows()
+    {
+        // arrange — a Mongo hiccup must never stall live sourcing: on error,
+        // every item enqueues (pre-skip behavior) instead of the consumer
+        // faulting.
+        const int season = 2026;
+        UseCurrentSeason(season);
+
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(ThreeItemIndexJson(SkipPlaysBaseUrl)));
+        Mocker.GetMock<IDocumentStore>()
+            .Setup(x => x.GetPublishedIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()))
+            .ThrowsAsync(new TimeoutException("mongo unavailable"));
+        Mocker.GetMock<ISeenUriCache>()
+            .Setup(x => x.TryMarkSeen(It.IsAny<string>()))
+            .Returns(true);
+
+        var captured = CaptureAllEnqueues();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = SkipTestRequest(SkipPlaysBaseUrl, DocumentType.EventCompetitionPlay, season, priority: true);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        var ex = await Record.ExceptionAsync(() => handler.Consume(ctx));
+
+        // assert
+        ex.Should().BeNull();
+        captured.Should().HaveCount(3);
     }
 }

@@ -100,7 +100,7 @@ downstream (no Hangfire job, no Mongo read, no publish, no Producer hop):
 flowchart TD
     ITEM["index item (per cycle)"] --> G{"Priority + immutable type<br/>+ current season + NOT live edge?"}
     G -->|"no — mutable, live edge,<br/>reenrich/on-final/historical"| ENQ["enqueue (unchanged behavior)"]
-    G -->|yes| L2{"L2: batched Mongo _id $in<br/>is the document ALREADY PERSISTED?"}
+    G -->|yes| L2{"L2: batched Mongo _id $in<br/>PERSISTED + PUBLISHED at least once?"}
     L2 -->|yes| SKIP["SKIP — nothing downstream"]
     L2 -->|no| L1{"L1: TryMarkSeen —<br/>atomic short-TTL in-flight claim<br/>already held by this pod?"}
     L1 -->|"claim held"| SKIP
@@ -109,11 +109,15 @@ flowchart TD
 
 - **L2 is the primary check** and the durable, cross-pod truth: one `$in`
   query on `_id` (primary key) per index page
-  (`IDocumentStore.GetExistingIdsAsync`) for **every** eligible non-edge hash
-  — deliberately not pre-filtered by L1, so persistence is re-verified every
-  cycle. "Seen" = "persisted" — it cannot drift and cannot mask a failed job:
-  a document that never landed is simply not there, and re-enqueues as soon as
-  its L1 claim lapses (minutes). It also *replaces* N individual per-item
+  (`IDocumentStore.GetPublishedIdsAsync`) for **every** eligible non-edge hash
+  — deliberately not pre-filtered by L1, so it is re-verified every cycle.
+  "Seen" = "persisted AND published at least once" (`LastPublishedUtc`,
+  written only after a successful `DocumentCreated` publish) — it cannot
+  drift and cannot mask a failed job on either side of the Mongo insert: a
+  document that never landed is simply not there, and one that landed but
+  whose publish never went out has no marker; both re-enqueue as soon as the
+  L1 claim lapses (minutes) and the cache-hit path republishes (which then
+  writes the marker — pre-marker legacy documents converge the same way). It also *replaces* N individual per-item
   Mongo reads with one batched read. **Fails open**: on a store error the
   items simply enqueue (pre-skip behavior) — a Mongo hiccup must never stall
   live sourcing.
@@ -188,8 +192,9 @@ In `ProcessResourceIndex`, before enqueueing an item, skip it when **all** of:
 - `isCurrentSeason` — same gate as the existing immutable-serve carve-out.
 - NOT the live edge (`dto.PageIndex >= dto.PageCount && i == last`) — the newest,
   possibly still-finalizing item keeps flowing every cycle, exactly as today.
-- The document is already persisted in Mongo (**L2**, checked first), or this
-  pod holds a live in-flight claim for it (**L1** `SeenUriCache.TryMarkSeen`) —
+- The document is persisted in Mongo AND has been published at least once
+  (**L2**, checked first), or this pod holds a live in-flight claim for it
+  (**L1** `SeenUriCache.TryMarkSeen`) —
   the cross-pod cold-L1 case is covered by L2 (see
   `L2_PersistedItems_SkippedAcrossPods_ExceptLiveEdge`).
 
@@ -219,9 +224,12 @@ Consequences accepted:
 ### Correctness analysis — what could we miss?
 
 - **A play's job never persists** (ESPN 404 → known-bad clean return with no
-  Hangfire retry, exhausted retries, enqueue failure after claiming): the item
-  is absent from Mongo, so L2 never vouches for it; its L1 claim lapses in
-  ~10 minutes and it re-enqueues — the pre-skip self-healing cadence, bounded
+  Hangfire retry, exhausted retries, enqueue failure after claiming), **or
+  persists but its publish never lands** (`InsertOneAsync` succeeded, the
+  `DocumentCreated` publish/outbox flush did not — Vortex round 2): L2 keys on
+  the `LastPublishedUtc` marker, written only after a successful publish, so
+  neither case is vouched for; the L1 claim lapses in ~10 minutes and the item
+  re-enqueues — the pre-skip self-healing cadence, bounded
   by the claim TTL instead of masked for hours. Producer's dependency-request
   **leaf path** (untouched by the skip) remains an independent recovery route.
 - **Mid-game ESPN corrections to old plays**: already not picked up today (the
@@ -260,7 +268,7 @@ Consequences accepted:
   immutable (locks tier 1).
 - Unit (seen cache): first claim wins; a second claim within the TTL is
   refused; a lapsed claim is claimable again and restarts its TTL.
-- Unit (L2): persisted non-edge items skip with a cold L1 (the cross-pod case)
+- Unit (L2): published non-edge items skip with a cold L1 (the cross-pod case)
   without taking claims; the L2 query includes ALL eligible non-edge hashes
   even when their claims are held (the failed-job re-check); the live edge
   never enters the batch query and always flows; the batch is never consulted
@@ -277,9 +285,10 @@ Consequences accepted:
     `EventCompetitionProbability` totals within ~2–3x of real event counts
     (edge re-fetch + per-pod rewarm), not 2,000x.
   - Hangfire `00-live` queue age percentiles stay flat through the late window.
-- Risk: an immutable item whose Hangfire job never persists is suppressed only
-  for the L1 claim TTL (~10 min) — L2 re-verifies persistence every cycle, so
-  the item re-enqueues on the first cycle after the claim lapses. Recovery is
+- Risk: an immutable item whose Hangfire job never persists — or never
+  publishes — is suppressed only for the L1 claim TTL (~10 min): L2 re-verifies
+  the persisted+published marker every cycle, so the item re-enqueues on the
+  first cycle after the claim lapses. Recovery is
   further backed by Producer's dependency-request leaf path and manual
   reenrich.
 

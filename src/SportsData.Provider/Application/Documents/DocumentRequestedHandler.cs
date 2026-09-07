@@ -451,17 +451,19 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 && evt.SeasonYear == _commonConfig.CurrentSeason;
             var isImmutableType = InSeasonDocumentPolicy.IsImmutableInSeason(evt.DocumentType);
 
-            // L2 of the already-seen skip: for immutable documents, existence
-            // in the Mongo store IS the durable, cross-pod "seen" signal —
-            // "seen" = "persisted", so it cannot drift and cannot mask a
-            // failed Hangfire job (a document that never landed is simply not
-            // there and re-enqueues once its L1 claim lapses). One batched
+            // L2 of the already-seen skip: the durable, cross-pod "seen"
+            // signal is "persisted AND published at least once"
+            // (LastPublishedUtc, written only after a successful
+            // DocumentCreated publish) — so it cannot drift and cannot mask a
+            // failed Hangfire job on EITHER side of the Mongo insert: a doc
+            // that never landed is not there, and a doc that landed but whose
+            // publish never went out has no marker; both re-enqueue once the
+            // L1 claim lapses and the cache-hit path republishes. One batched
             // primary-key read per page for EVERY eligible non-edge hash —
             // deliberately NOT pre-filtered by L1, so the durable check is
-            // re-consulted every cycle and an L1 claim can never mask a
-            // non-persisted item beyond its short TTL. Fails OPEN: a Mongo
-            // hiccup must never stall live sourcing, so on error the items
-            // simply enqueue (pre-skip behavior).
+            // re-consulted every cycle. Fails OPEN: a Mongo hiccup must never
+            // stall live sourcing, so on error the items simply enqueue
+            // (pre-skip behavior).
             HashSet<string>? persistedIds = null;
             if (evt.Priority && isCurrentSeason && isImmutableType)
             {
@@ -477,7 +479,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 {
                     try
                     {
-                        persistedIds = await _documentStore.GetExistingIdsAsync(
+                        persistedIds = await _documentStore.GetPublishedIdsAsync(
                             evt.DocumentType.ToString(),
                             candidates);
                     }

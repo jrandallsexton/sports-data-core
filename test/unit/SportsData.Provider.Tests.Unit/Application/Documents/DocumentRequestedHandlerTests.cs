@@ -1090,7 +1090,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
 
         IReadOnlyCollection<string>? queriedIds = null;
         Mocker.GetMock<IDocumentStore>()
-            .Setup(x => x.GetExistingIdsAsync(
+            .Setup(x => x.GetPublishedIdsAsync(
                 nameof(DocumentType.EventCompetitionPlay), It.IsAny<IReadOnlyCollection<string>>()))
             .Callback<string, IReadOnlyCollection<string>>((_, ids) => queriedIds = ids)
             .ReturnsAsync((string _, IReadOnlyCollection<string> ids) => ids.ToHashSet());
@@ -1136,7 +1136,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         IReadOnlyCollection<string>? queriedIds = null;
         var store = Mocker.GetMock<IDocumentStore>();
         store
-            .Setup(x => x.GetExistingIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()))
+            .Setup(x => x.GetPublishedIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()))
             .Callback<string, IReadOnlyCollection<string>>((_, ids) => queriedIds = ids)
             .ReturnsAsync(new HashSet<string>());
 
@@ -1179,7 +1179,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         // assert
         captured.Should().HaveCount(3);
         store.Verify(
-            x => x.GetExistingIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()),
+            x => x.GetPublishedIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()),
             Times.Never);
     }
 
@@ -1196,7 +1196,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
             .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
             .ReturnsAsync(new Success<string>(ThreeItemIndexJson(SkipPlaysBaseUrl)));
         Mocker.GetMock<IDocumentStore>()
-            .Setup(x => x.GetExistingIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()))
+            .Setup(x => x.GetPublishedIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()))
             .ThrowsAsync(new TimeoutException("mongo unavailable"));
         Mocker.GetMock<ISeenUriCache>()
             .Setup(x => x.TryMarkSeen(It.IsAny<string>()))

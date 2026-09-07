@@ -154,7 +154,7 @@ namespace SportsData.Provider.Infrastructure.Data
             return default;
         }
 
-        public async Task<HashSet<string>> GetExistingIdsAsync(string collectionName, IReadOnlyCollection<string> ids)
+        public async Task<HashSet<string>> GetPublishedIdsAsync(string collectionName, IReadOnlyCollection<string> ids)
         {
             if (ids.Count == 0)
                 return new HashSet<string>();
@@ -168,9 +168,12 @@ namespace SportsData.Provider.Infrastructure.Data
             // ids are SourceUrlHashes, globally unique across types, so
             // querying the sport container by id alone is exact. Cross-
             // partition id-only read (partition key is the 3-char routing
-            // prefix); Contains translates to an IN clause.
+            // prefix); Contains translates to an IN clause. LastPublishedUtc
+            // != null is the "published at least once" half of the contract —
+            // persisted-but-never-published docs re-enqueue and get
+            // republished by the cache-hit path.
             var iterator = _defaultContainer.GetItemLinqQueryable<DocumentBase>()
-                .Where(x => ids.Contains(x.Id))
+                .Where(x => ids.Contains(x.Id) && x.LastPublishedUtc != null)
                 .Select(x => x.Id)
                 .ToFeedIterator();
 

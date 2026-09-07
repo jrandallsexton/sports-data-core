@@ -55,19 +55,8 @@ public abstract class ProducerTestBase<T> : UnitTestBase<T>
         Fixture.Customizations.Add(new ProcessDocumentCommandFlagsOffByDefault());
 
         // Override mapper with Producer-specific mapping profile
-        Mocker.Use(typeof(IMapper), ProducerMapper.Value);
+        Mocker.Use(typeof(IMapper), ProducerTestMappers.Default.Value);
     }
-
-    // AutoMapper configuration compilation is expensive and xunit constructs
-    // the test class PER TEST — building this in the ctor cost every test a
-    // fresh two-profile compile (~658 per run). IMapper is stateless and
-    // thread-safe, so one shared instance serves the whole parallel suite.
-    private static readonly Lazy<IMapper> ProducerMapper = new(() =>
-        new MapperConfiguration(c =>
-        {
-            c.AddProfile(new DynamicMappingProfile());
-            c.AddProfile(new MappingProfile());
-        }).CreateMapper());
 
     private sealed class ProcessDocumentCommandFlagsOffByDefault : ISpecimenBuilder
     {
@@ -104,4 +93,21 @@ public abstract class ProducerTestBase<T> : UnitTestBase<T>
             .UseInMemoryDatabase(dbName)
             .Options;
     }
+}
+
+/// <summary>
+/// Non-generic holder for the Producer test mapper: a static on
+/// ProducerTestBase&lt;T&gt; would be re-created once per closed T (~one per
+/// test class). Here it compiles exactly once per run — the ctor previously
+/// cost every test a fresh two-profile compile (~658 per run). IMapper is
+/// stateless and thread-safe.
+/// </summary>
+internal static class ProducerTestMappers
+{
+    internal static readonly Lazy<IMapper> Default = new(() =>
+        new MapperConfiguration(c =>
+        {
+            c.AddProfile(new DynamicMappingProfile());
+            c.AddProfile(new MappingProfile());
+        }).CreateMapper());
 }

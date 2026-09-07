@@ -34,17 +34,8 @@ public abstract class UnitTestBase<T>
 
         Logger = CreateLogger(LoggerTypes.List) as ListLogger;
 
-        Mocker.Use(typeof(IMapper), SharedMapper.Value);
+        Mocker.Use(typeof(IMapper), SharedTestMappers.Default.Value);
     }
-
-    // AutoMapper configuration compilation is expensive and xunit constructs
-    // the test class PER TEST — building it in the ctor charged every test in
-    // every suite a fresh compile. IMapper is stateless and thread-safe, so
-    // one shared instance serves parallel test runs. Derived bases that need
-    // extra profiles (e.g. ProducerTestBase) overwrite the registration with
-    // their own cached instance.
-    private static readonly Lazy<IMapper> SharedMapper = new(() =>
-        new MapperConfiguration(c => c.AddProfile(new DynamicMappingProfile())).CreateMapper());
 
     public static ILogger CreateLogger(LoggerTypes type = LoggerTypes.Null)
     {
@@ -57,4 +48,21 @@ public abstract class UnitTestBase<T>
     {
         return await File.ReadAllTextAsync($"../../../Data/{filename}");
     }
+}
+
+/// <summary>
+/// Non-generic holder for the shared test mapper. AutoMapper configuration
+/// compilation is expensive and xunit constructs the test class PER TEST —
+/// building it in the UnitTestBase ctor charged every test in every suite a
+/// fresh compile. A static on UnitTestBase&lt;T&gt; itself (or any type
+/// nested in it) would be re-created once per closed T (~one per test
+/// class), so the cache lives here: exactly one compile per profile set.
+/// IMapper is stateless and thread-safe, so one instance serves parallel
+/// runs. Derived bases that need extra profiles (e.g. ProducerTestBase)
+/// overwrite the registration with their own non-generic-held instance.
+/// </summary>
+internal static class SharedTestMappers
+{
+    internal static readonly Lazy<IMapper> Default = new(() =>
+        new MapperConfiguration(c => c.AddProfile(new DynamicMappingProfile())).CreateMapper());
 }

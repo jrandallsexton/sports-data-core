@@ -975,10 +975,11 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
     [Theory]
     [InlineData(SkipPlaysBaseUrl, DocumentType.EventCompetitionPlay)]
     [InlineData(SkipProbabilitiesBaseUrl, DocumentType.EventCompetitionProbability)]
-    public async Task PrioritySeenImmutableItems_SkippedAtFanOut_ExceptLiveEdge(
+    public async Task PriorityClaimedImmutableItems_SkippedAtFanOut_ExceptLiveEdge(
         string baseUrl, DocumentType documentType)
     {
-        // arrange — every item already seen; only the live edge may flow.
+        // arrange — every non-edge item holds a live in-flight claim (enqueued
+        // by a prior cycle, jobs presumed pending); only the live edge may flow.
         const int season = 2026;
         UseCurrentSeason(season);
 
@@ -986,8 +987,8 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
             .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
             .ReturnsAsync(new Success<string>(ThreeItemIndexJson(baseUrl)));
         Mocker.GetMock<ISeenUriCache>()
-            .Setup(x => x.IsSeen(It.IsAny<string>()))
-            .Returns(true);
+            .Setup(x => x.TryMarkSeen(It.IsAny<string>()))
+            .Returns(false);
 
         var captured = CaptureAllEnqueues();
         var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
@@ -998,18 +999,19 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         // act
         await handler.Consume(ctx);
 
-        // assert — non-edge items were already seen; only the live edge flows.
+        // assert — non-edge items are claimed; only the live edge flows.
         var edge = captured.Should().ContainSingle().Subject;
         edge.Uri.ToString().Should().StartWith($"{baseUrl}/3");
         edge.BypassCache.Should().BeTrue("the live edge may still be finalizing and must re-fetch");
     }
 
     [Fact]
-    public async Task PriorityImmutableItems_MarkedSeenAtEnqueue_IncludingLiveEdge()
+    public async Task PriorityImmutableItems_ClaimedAtEnqueue_ExceptLiveEdge()
     {
-        // arrange — nothing seen yet (first cycle): all 3 enqueue, all 3 mark.
-        // The edge is marked too — once a newer play displaces it, it is
-        // complete and the skip applies to it.
+        // arrange — first cycle, nothing persisted, no claims held: all 3
+        // enqueue. The two non-edge items take the in-flight claim; the live
+        // edge is never claimed — it must re-fetch every cycle, and once
+        // displaced its persisted copy is picked up by L2.
         const int season = 2026;
         UseCurrentSeason(season);
 
@@ -1018,6 +1020,8 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
             .ReturnsAsync(new Success<string>(ThreeItemIndexJson(SkipPlaysBaseUrl)));
 
         var seen = Mocker.GetMock<ISeenUriCache>();
+        seen.Setup(x => x.TryMarkSeen(It.IsAny<string>())).Returns(true);
+
         var captured = CaptureAllEnqueues();
         var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
 
@@ -1029,7 +1033,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
 
         // assert
         captured.Should().HaveCount(3);
-        seen.Verify(x => x.MarkSeen(It.IsAny<string>()), Times.Exactly(3));
+        seen.Verify(x => x.TryMarkSeen(It.IsAny<string>()), Times.Exactly(2));
     }
 
     [Theory]
@@ -1042,14 +1046,15 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
     public async Task SeenSkip_DoesNotApply_OutsideTheGate(
         bool priority, DocumentType documentType, int? seasonYear)
     {
-        // arrange — cache claims everything is seen; the gate must ignore it.
+        // arrange — the claim cache would refuse every claim; the gate must
+        // never even consult it for ineligible traffic.
         UseCurrentSeason(2026);
 
         Mocker.GetMock<IProvideEspnApiData>()
             .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
             .ReturnsAsync(new Success<string>(ThreeItemIndexJson(SkipPlaysBaseUrl)));
         var seen = Mocker.GetMock<ISeenUriCache>();
-        seen.Setup(x => x.IsSeen(It.IsAny<string>())).Returns(true);
+        seen.Setup(x => x.TryMarkSeen(It.IsAny<string>())).Returns(false);
 
         var captured = CaptureAllEnqueues();
         var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
@@ -1060,9 +1065,9 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         // act
         await handler.Consume(ctx);
 
-        // assert — every item enqueued, nothing marked.
+        // assert — every item enqueued, nothing claimed.
         captured.Should().HaveCount(3);
-        seen.Verify(x => x.MarkSeen(It.IsAny<string>()), Times.Never);
+        seen.Verify(x => x.TryMarkSeen(It.IsAny<string>()), Times.Never);
     }
 
     // ── L2: batched Mongo existence check (cross-pod durable "seen") ────────
@@ -1105,8 +1110,48 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         var edge = captured.Should().ContainSingle().Subject;
         edge.Uri.ToString().Should().StartWith($"{SkipPlaysBaseUrl}/3");
 
-        // L2 hits are promoted into L1 (2), and the enqueued edge is marked (1).
-        seen.Verify(x => x.MarkSeen(It.IsAny<string>()), Times.Exactly(3));
+        // Persisted items skip on L2 alone and the edge always flows — the
+        // in-flight claim is never taken for either.
+        seen.Verify(x => x.TryMarkSeen(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task L2_ConsultedForAllNonEdgeItems_EveryCycle()
+    {
+        // arrange — a held L1 claim must NOT shrink the L2 query: the durable
+        // persistence check is re-consulted every cycle so a claim can never
+        // mask a non-persisted item beyond its short TTL (the failed-job
+        // self-heal). Nothing persisted here, claims already held → non-edge
+        // items skip on the claim, but the batch query still saw them all.
+        const int season = 2026;
+        UseCurrentSeason(season);
+
+        Mocker.GetMock<IProvideEspnApiData>()
+            .Setup(x => x.GetResource(It.IsAny<Uri>(), It.IsAny<bool>(), It.IsAny<bool>()))
+            .ReturnsAsync(new Success<string>(ThreeItemIndexJson(SkipPlaysBaseUrl)));
+        Mocker.GetMock<ISeenUriCache>()
+            .Setup(x => x.TryMarkSeen(It.IsAny<string>()))
+            .Returns(false);
+
+        IReadOnlyCollection<string>? queriedIds = null;
+        var store = Mocker.GetMock<IDocumentStore>();
+        store
+            .Setup(x => x.GetExistingIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()))
+            .Callback<string, IReadOnlyCollection<string>>((_, ids) => queriedIds = ids)
+            .ReturnsAsync(new HashSet<string>());
+
+        var captured = CaptureAllEnqueues();
+        var handler = Mocker.CreateInstance<DocumentRequestedHandler>();
+
+        var msg = SkipTestRequest(SkipPlaysBaseUrl, DocumentType.EventCompetitionPlay, season, priority: true);
+        var ctx = Mock.Of<ConsumeContext<DocumentRequested>>(x => x.Message == msg);
+
+        // act
+        await handler.Consume(ctx);
+
+        // assert
+        queriedIds.Should().NotBeNull().And.HaveCount(2, "held claims must not be pre-filtered out of the L2 query");
+        captured.Should().ContainSingle("non-edge items skip on their live claims; the edge flows");
     }
 
     [Fact]
@@ -1153,6 +1198,9 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         Mocker.GetMock<IDocumentStore>()
             .Setup(x => x.GetExistingIdsAsync(It.IsAny<string>(), It.IsAny<IReadOnlyCollection<string>>()))
             .ThrowsAsync(new TimeoutException("mongo unavailable"));
+        Mocker.GetMock<ISeenUriCache>()
+            .Setup(x => x.TryMarkSeen(It.IsAny<string>()))
+            .Returns(true);
 
         var captured = CaptureAllEnqueues();
         var handler = Mocker.CreateInstance<DocumentRequestedHandler>();

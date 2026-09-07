@@ -45,11 +45,11 @@ namespace SportsData.Provider.DependencyInjection
             // first use, write-through) so fresh pods inherit the knowledge.
             services.AddSingleton<IKnownBadUriCache, KnownBadUriCache>();
 
-            // Singleton: immutable in-season items the live-index fan-out has
-            // already handed to Hangfire, so subsequent polling cycles skip
-            // them at the enqueue site. Deliberately per-pod, no durable
-            // backing — a cold cache costs one full-index cycle, then
-            // converges. See docs/features/live-sourcing-already-seen-skip.md.
+            // Singleton: short-TTL atomic in-flight claims for the live-index
+            // already-seen skip (L1) — bridges the window between an item's
+            // enqueue and its persistence, while the durable cross-pod skip
+            // comes from Mongo existence (L2) each cycle. Per-pod by design.
+            // See docs/features/live-sourcing-already-seen-skip.md.
             services.AddSingleton<ISeenUriCache, SeenUriCache>();
 
             // Historical sourcing services

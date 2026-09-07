@@ -1,7 +1,9 @@
 # Live Sourcing O(N) Re-Emission — Index-Level Already-Seen Skip
 
-Status: **Implemented in working tree** (branch `feat/live-sourcing-seen-skip`;
-awaiting operator review — no commit/PR yet)
+Status: **In review — PR #733** (branch `feat/live-sourcing-seen-skip`).
+Review round 1 (Vortex + CodeRabbit) reshaped L1 into a short-TTL atomic
+in-flight claim and made L2 the every-cycle durable check — see "The fix —
+layered checks at the fan-out" below for the current semantics.
 Last updated: 2026-09-07
 Scope: live competition streaming (NCAAFB/NFL now; any streamed sport). Successor to
 `docs/features/in-season-cache-bypass-fix.md` — this implements that doc's deferred
@@ -98,29 +100,37 @@ downstream (no Hangfire job, no Mongo read, no publish, no Producer hop):
 flowchart TD
     ITEM["index item (per cycle)"] --> G{"Priority + immutable type<br/>+ current season + NOT live edge?"}
     G -->|"no — mutable, live edge,<br/>reenrich/on-final/historical"| ENQ["enqueue (unchanged behavior)"]
-    G -->|yes| L1{"L1: in-memory SeenUriCache<br/>did THIS POD enqueue it already?"}
-    L1 -->|yes| SKIP["SKIP — nothing downstream"]
-    L1 -->|no| L2{"L2: batched Mongo _id $in<br/>is the document ALREADY PERSISTED?"}
-    L2 -->|yes| SKIP
-    L2 -->|no| ENQ2["enqueue + mark seen"]
+    G -->|yes| L2{"L2: batched Mongo _id $in<br/>is the document ALREADY PERSISTED?"}
+    L2 -->|yes| SKIP["SKIP — nothing downstream"]
+    L2 -->|no| L1{"L1: TryMarkSeen —<br/>atomic short-TTL in-flight claim<br/>already held by this pod?"}
+    L1 -->|"claim held"| SKIP
+    L1 -->|"claim taken now"| ENQ2["enqueue"]
 ```
 
-- **L1** is per-pod and covers the in-flight window: items enqueued seconds
-  ago whose Hangfire job hasn't persisted yet. Its weakness alone: a
-  fresh/other pod hasn't marked anything (residual ≈ one full walk per pod), and
-  a mark can outlive a job that failed permanently (masked until TTL).
-- **L2** is the durable, cross-pod truth: one `$in` query on `_id` (primary
-  key) per index page (`IDocumentStore.GetExistingIdsAsync`), built only from
-  hashes L1 doesn't already know, against the collection the item processor
-  would read anyway. "Seen" = "persisted" — it cannot drift and cannot mask a
-  failed job, because a document that never landed is simply not there and
-  re-enqueues next cycle. It also *replaces* N individual per-item Mongo reads
-  with one batched read. **Fails open**: on a store error the items simply
-  enqueue (pre-skip behavior) — a Mongo hiccup must never stall live sourcing.
-  L2 hits are promoted into L1, so the next cycle's batch query shrinks to
-  genuinely new items.
-- Together: same-pod repeats die at L1 for free; everything else — restarts,
-  KEDA scale-out, cross-pod cycles — dies at L2. Effectively 100%.
+- **L2 is the primary check** and the durable, cross-pod truth: one `$in`
+  query on `_id` (primary key) per index page
+  (`IDocumentStore.GetExistingIdsAsync`) for **every** eligible non-edge hash
+  — deliberately not pre-filtered by L1, so persistence is re-verified every
+  cycle. "Seen" = "persisted" — it cannot drift and cannot mask a failed job:
+  a document that never landed is simply not there, and re-enqueues as soon as
+  its L1 claim lapses (minutes). It also *replaces* N individual per-item
+  Mongo reads with one batched read. **Fails open**: on a store error the
+  items simply enqueue (pre-skip behavior) — a Mongo hiccup must never stall
+  live sourcing.
+- **L1** (`SeenUriCache.TryMarkSeen`) is a per-pod **atomic short-TTL
+  in-flight claim** (~10 min): it only bridges the window between an item's
+  enqueue and its persistence, including under queue backlog. Taking the claim
+  is test-and-set, so concurrent `DocumentRequested` deliveries for the same
+  index cannot double-enqueue an item. A claim is never refreshed by later
+  cycles (persisted items skip on L2 before reaching it), so a job that
+  cleanly failed to persist — e.g. ESPN 404 → known-bad → return, no Hangfire
+  retry — re-enqueues within minutes, preserving the pre-skip self-healing
+  cadence. An enqueue that throws after claiming self-heals the same way. The
+  live edge is never claimed: it must re-fetch every cycle, and once displaced
+  its persisted copy is caught by L2.
+- Together: persisted items die at L2 (any pod, restarts, KEDA scale-out);
+  in-flight items die at L1 for the minutes their job needs to land.
+  Effectively 100%, with failed-job masking bounded by the claim TTL.
 
 ### Why not `ResourceIndexItem` (Postgres)?
 
@@ -178,44 +188,42 @@ In `ProcessResourceIndex`, before enqueueing an item, skip it when **all** of:
 - `isCurrentSeason` — same gate as the existing immutable-serve carve-out.
 - NOT the live edge (`dto.PageIndex >= dto.PageCount && i == last`) — the newest,
   possibly still-finalizing item keeps flowing every cycle, exactly as today.
-- The item's urlHash is in the **seen cache** (below).
+- The document is already persisted in Mongo (**L2**, checked first), or this
+  pod holds a live in-flight claim for it (**L1** `SeenUriCache.TryMarkSeen`) —
+  the cross-pod cold-L1 case is covered by L2 (see
+  `L2_PersistedItems_SkippedAcrossPods_ExceptLiveEdge`).
 
-Items are **marked seen at enqueue time**, in the same loop. Marking at enqueue
-(rather than at publish, in `ResourceIndexItemProcessor`) is deliberate:
+The in-flight claim is taken **atomically at enqueue time**, in the same loop.
+Claiming at enqueue (rather than marking at publish, in
+`ResourceIndexItemProcessor`) is deliberate: the enqueuing consumer and the
+Hangfire worker that processes the item can be different pods (Hangfire is a
+shared DB-backed queue), so a mark-at-publish in-memory signal is cross-pod
+broken in both directions. The claim only asserts "handed to Hangfire minutes
+ago, presumed in flight" — persistence itself is what L2 verifies, every cycle.
 
-- The enqueuing consumer and the Hangfire worker that processes the item can be
-  different pods (Hangfire is a shared DB-backed queue), so a mark-at-publish
-  in-memory signal is cross-pod broken in both directions. Mark-at-enqueue is
-  consistent within the pod that makes the skip decision.
-- "Seen" then means "handed to Hangfire once" — and Hangfire owns delivery with
-  its own retry semantics. A job that fails all retries is rare, and recovery
-  paths remain: TTL expiry, Producer's dependency-request leaf path (unaffected
-  by the skip), and manual reenrich.
+### Seen cache (L1 claim)
 
-### Seen cache
+Per-pod in-memory `ConcurrentDictionary<string urlHash, DateTime expiresUtc>`,
+claim TTL ~10 minutes, atomic test-and-set (`TryAdd`/`TryUpdate`), pruned
+opportunistically. No durable backing — durability lives at L2 (the document
+store itself), so the claim's only job is the enqueue-to-persistence window.
+Consequences accepted:
 
-Per-pod in-memory `ConcurrentDictionary<string urlHash, DateTime expiresUtc>` with a
-TTL comfortably beyond `MaxStreamDuration` (8h), pruned opportunistically. Shape
-mirrors `KnownBadUriCache` minus the durable table — durability is not worth a table
-here because the cost of a cold cache is exactly **one** full-index cycle (the
-pre-fix steady state), after which the pod converges. Consequences accepted:
-
-- **Pod restart / deploy mid-game**: one full walk, then flat.
-- **KEDA scale-out**: each new pod pays one full walk per active index it happens
-  to consume; worst-case amplification bounded by pod count (single digits)
-  instead of cycle count (~720/game). If pod counts grow later, the cache can be
-  moved to Redis (already in the cluster, circuit-breaker wrapped) without
-  changing the call sites.
+- **Pod restart / deploy mid-game**: nothing lost — L2 skips everything
+  persisted on the very first cycle; at most the currently in-flight handful
+  double-enqueues once (idempotent downstream).
+- **KEDA scale-out**: same — L2 is shared truth, so a new pod does not re-walk
+  persisted history; only unpersisted in-flight items can double-enqueue.
 - Memory: ~360 entries/game (plays + probs). Negligible.
 
 ### Correctness analysis — what could we miss?
 
-- **A play arrives while its earlier enqueue is still queued/failed**: it is in
-  the seen cache, so it won't re-enqueue. If the original Hangfire job ultimately
-  fails, the play is absent canonically; Producer's situation processor
-  (`lastPlay.$ref`) or any dependent processor issues a dependency request via the
-  **leaf path**, which this fix does not touch — the play is then fetched/served
-  and published. Same recovery contract as today.
+- **A play's job never persists** (ESPN 404 → known-bad clean return with no
+  Hangfire retry, exhausted retries, enqueue failure after claiming): the item
+  is absent from Mongo, so L2 never vouches for it; its L1 claim lapses in
+  ~10 minutes and it re-enqueues — the pre-skip self-healing cadence, bounded
+  by the claim TTL instead of masked for hours. Producer's dependency-request
+  **leaf path** (untouched by the skip) remains an independent recovery route.
 - **Mid-game ESPN corrections to old plays**: already not picked up today (the
   predecessor doc's "correction coverage — DEFERRED" gap; cached plays serve from
   Mongo and only the edge refetches). This fix does not widen that gap; the
@@ -250,11 +258,14 @@ pre-fix steady state), after which the pod converges. Consequences accepted:
   skipped; historical/future season never skipped; live edge never skipped.
 - Unit (`InSeasonDocumentPolicy`): `EventCompetitionProbability` classified
   immutable (locks tier 1).
-- Unit (seen cache): TTL expiry re-allows; mark is idempotent.
+- Unit (seen cache): first claim wins; a second claim within the TTL is
+  refused; a lapsed claim is claimable again and restarts its TTL.
 - Unit (L2): persisted non-edge items skip with a cold L1 (the cross-pod case)
-  and are promoted into L1; the live edge never enters the batch query and
-  always flows; the batch is never consulted for non-Priority traffic; a
-  throwing store fails open (all items enqueue, consumer does not fault).
+  without taking claims; the L2 query includes ALL eligible non-edge hashes
+  even when their claims are held (the failed-job re-check); the live edge
+  never enters the batch query and always flows; the batch is never consulted
+  for non-Priority traffic; a throwing store fails open (all items enqueue,
+  consumer does not fault).
 
 ## Rollout / verification
 
@@ -266,10 +277,11 @@ pre-fix steady state), after which the pod converges. Consequences accepted:
     `EventCompetitionProbability` totals within ~2–3x of real event counts
     (edge re-fetch + per-pod rewarm), not 2,000x.
   - Hangfire `00-live` queue age percentiles stay flat through the late window.
-- Risk: an immutable item skipped whose Hangfire job permanently failed stays
-  absent until a dependency request or reenrich touches it — same class of gap as
-  today's DLQ-mediated flow, and the reason the skip is Priority-gated and
-  TTL-bounded rather than durable.
+- Risk: an immutable item whose Hangfire job never persists is suppressed only
+  for the L1 claim TTL (~10 min) — L2 re-verifies persistence every cycle, so
+  the item re-enqueues on the first cycle after the claim lapses. Recovery is
+  further backed by Producer's dependency-request leaf path and manual
+  reenrich.
 
 ## Related
 

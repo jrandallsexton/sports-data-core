@@ -27,44 +27,45 @@ public class SeenUriCacheTests
     }
 
     [Fact]
-    public void NeverMarked_IsNotSeen()
+    public void FirstClaim_Succeeds()
     {
-        _cache.IsSeen("abc123").Should().BeFalse();
+        _cache.TryMarkSeen("abc123").Should().BeTrue();
     }
 
     [Fact]
-    public void Marked_IsSeen_WithinTtl()
+    public void SecondClaim_WithinTtl_Fails()
     {
-        _cache.MarkSeen("abc123");
+        _cache.TryMarkSeen("abc123").Should().BeTrue();
 
-        // 5h later — the longest possible stream is still inside the 8h TTL.
-        _clock.Setup(x => x.UtcNow()).Returns(T0.AddHours(5));
+        // 9 minutes later — the 10-minute claim is still live.
+        _clock.Setup(x => x.UtcNow()).Returns(T0.AddMinutes(9));
 
-        _cache.IsSeen("abc123").Should().BeTrue();
-        _cache.IsSeen("other").Should().BeFalse("marking one hash must not mark others");
+        _cache.TryMarkSeen("abc123").Should().BeFalse("an unexpired claim suppresses re-enqueue");
+        _cache.TryMarkSeen("other").Should().BeTrue("claiming one hash must not claim others");
     }
 
     [Fact]
-    public void Marked_ExpiresAfterTtl()
+    public void Claim_ReleasesAfterTtl()
     {
-        _cache.MarkSeen("abc123");
+        _cache.TryMarkSeen("abc123").Should().BeTrue();
 
-        _clock.Setup(x => x.UtcNow()).Returns(T0.AddHours(9));
+        // Past the 10-minute TTL: a job that never persisted must be allowed
+        // to re-enqueue (the self-healing path for cleanly-failed jobs).
+        _clock.Setup(x => x.UtcNow()).Returns(T0.AddMinutes(11));
 
-        _cache.IsSeen("abc123").Should().BeFalse("entries expire after the 8h TTL");
+        _cache.TryMarkSeen("abc123").Should().BeTrue("a lapsed claim is claimable again");
     }
 
     [Fact]
-    public void ReMarking_RefreshesTtl()
+    public void ReClaim_AfterExpiry_RestartsTtl()
     {
-        _cache.MarkSeen("abc123");
+        _cache.TryMarkSeen("abc123").Should().BeTrue();
 
-        // Re-marked at +6h (e.g. the item slipped through on a rewarm cycle);
-        // at +10h the original mark would be expired but the refresh is not.
-        _clock.Setup(x => x.UtcNow()).Returns(T0.AddHours(6));
-        _cache.MarkSeen("abc123");
+        _clock.Setup(x => x.UtcNow()).Returns(T0.AddMinutes(11));
+        _cache.TryMarkSeen("abc123").Should().BeTrue();
 
-        _clock.Setup(x => x.UtcNow()).Returns(T0.AddHours(10));
-        _cache.IsSeen("abc123").Should().BeTrue();
+        // 9 minutes into the SECOND claim: still held.
+        _clock.Setup(x => x.UtcNow()).Returns(T0.AddMinutes(20));
+        _cache.TryMarkSeen("abc123").Should().BeFalse();
     }
 }

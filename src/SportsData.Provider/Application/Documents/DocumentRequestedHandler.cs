@@ -455,10 +455,13 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
             // in the Mongo store IS the durable, cross-pod "seen" signal —
             // "seen" = "persisted", so it cannot drift and cannot mask a
             // failed Hangfire job (a document that never landed is simply not
-            // there and re-enqueues next cycle). One batched primary-key read
-            // per page, only for hashes L1 doesn't already know. Fails OPEN:
-            // a Mongo hiccup must never stall live sourcing, so on error the
-            // items simply enqueue (pre-skip behavior).
+            // there and re-enqueues once its L1 claim lapses). One batched
+            // primary-key read per page for EVERY eligible non-edge hash —
+            // deliberately NOT pre-filtered by L1, so the durable check is
+            // re-consulted every cycle and an L1 claim can never mask a
+            // non-persisted item beyond its short TTL. Fails OPEN: a Mongo
+            // hiccup must never stall live sourcing, so on error the items
+            // simply enqueue (pre-skip behavior).
             HashSet<string>? persistedIds = null;
             if (evt.Priority && isCurrentSeason && isImmutableType)
             {
@@ -466,7 +469,7 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 foreach (var (index, _, candidateHash) in resolvedItems)
                 {
                     var isEdge = dto.PageIndex >= dto.PageCount && index == dto.Items.Count - 1;
-                    if (!isEdge && !_seenUris.IsSeen(candidateHash))
+                    if (!isEdge)
                         candidates.Add(candidateHash);
                 }
 
@@ -498,26 +501,40 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                 var bypassCache = ShouldBypassCache(evt.SeasonYear) && !serveImmutableFromCache;
 
                 // Already-seen skip (streamer live traffic ONLY — Priority):
-                // an immutable item already handed to Hangfire (L1, this pod)
-                // or already persisted to Mongo (L2, any pod) needs no further
-                // work at all — not a job, not a Mongo read, not a re-publish
-                // to Producer. Without it, every polling cycle re-enqueues
-                // every item the game has ever produced (observed 2026-09-06:
-                // ~2,000x amplification). The live edge never qualifies
-                // (serveImmutableFromCache is false for it), so the
-                // still-finalizing item keeps flowing every cycle. Non-priority
-                // callers (reenrich, on-final refresh, historical sourcing)
-                // are untouched by construction.
+                // an immutable item already persisted to Mongo (L2, any pod)
+                // or claimed in-flight by this pod within the last few minutes
+                // (L1) needs no further work at all — not a job, not a Mongo
+                // read, not a re-publish to Producer. Without it, every
+                // polling cycle re-enqueues every item the game has ever
+                // produced (observed 2026-09-06: ~2,000x amplification). The
+                // live edge never qualifies (serveImmutableFromCache is false
+                // for it), so the still-finalizing item keeps flowing every
+                // cycle. Non-priority callers (reenrich, on-final refresh,
+                // historical sourcing) are untouched by construction.
                 // See docs/features/live-sourcing-already-seen-skip.md.
-                if (evt.Priority && serveImmutableFromCache
-                    && (_seenUris.IsSeen(refHash) || persistedIds?.Contains(refHash) == true))
+                if (evt.Priority && serveImmutableFromCache)
                 {
-                    totalItemsSkippedSeen++;
+                    if (persistedIds?.Contains(refHash) == true)
+                    {
+                        totalItemsSkippedSeen++;
+                        continue;
+                    }
 
-                    // Promote L2 knowledge into L1 so next cycle's candidate
-                    // list (and batch query) shrinks to genuinely new items.
-                    _seenUris.MarkSeen(refHash);
-                    continue;
+                    // Not (known to be) persisted: take the atomic short-TTL
+                    // in-flight claim. Losing it means a prior cycle or a
+                    // concurrent consumer already enqueued this item and its
+                    // job is presumed pending; if that job never persists,
+                    // the claim lapses in minutes and the item re-enqueues —
+                    // an enqueue that fails after claiming self-heals the
+                    // same way. The live edge is never claimed: it must
+                    // re-fetch every cycle, and once displaced its persisted
+                    // copy is picked up by L2 (or re-enqueued if it never
+                    // landed).
+                    if (!_seenUris.TryMarkSeen(refHash))
+                    {
+                        totalItemsSkippedSeen++;
+                        continue;
+                    }
                 }
 
                 var cmd = new ProcessResourceIndexItemCommand(
@@ -543,15 +560,6 @@ public class DocumentRequestedHandler : IConsumer<DocumentRequested>
                     _backgroundJobProvider.Enqueue<IProcessResourceIndexItems>(p => p.Process(cmd));
                 enqueuedAnyRefs = true;
                 totalItemsEnqueued++;
-
-                // Mark at enqueue (not at publish): the Hangfire worker that
-                // processes this item may be a different pod, so a publish-time
-                // signal can't reach this cache. "Seen" = handed to Hangfire
-                // once; Hangfire owns delivery from there. The live edge is
-                // marked too — once a newer item displaces it, it is complete
-                // and the skip above applies to it.
-                if (evt.Priority && isCurrentSeason && isImmutableType)
-                    _seenUris.MarkSeen(refHash);
             }
 
             if (dto.PageIndex >= dto.PageCount)

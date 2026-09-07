@@ -40,9 +40,13 @@ namespace SportsData.Provider.Infrastructure.Data
 
         /// <summary>
         /// Returns the subset of <paramref name="ids"/> that already exist as
-        /// document <c>_id</c>s in the collection — one batched primary-key
-        /// read. Used by the live-index already-seen skip (L2): for immutable
-        /// documents, existence in the store IS the durable "seen" signal.
+        /// document <c>_id</c>s — one batched primary-key read. Used by the
+        /// live-index already-seen skip (L2): for immutable documents,
+        /// existence in the store IS the durable "seen" signal.
+        /// <paramref name="collectionName"/> is the Mongo (per-DocumentType)
+        /// collection; the Cosmos implementation ignores it and queries the
+        /// sport-scoped container where all types are co-located, which is
+        /// exact because ids are globally unique SourceUrlHashes.
         /// See docs/features/live-sourcing-already-seen-skip.md.
         /// </summary>
         Task<HashSet<string>> GetExistingIdsAsync(string collectionName, IReadOnlyCollection<string> ids);

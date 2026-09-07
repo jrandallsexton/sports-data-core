@@ -159,13 +159,17 @@ namespace SportsData.Provider.Infrastructure.Data
             if (ids.Count == 0)
                 return new HashSet<string>();
 
-            ValidateContainer(collectionName);
-            var container = _client.GetContainer(_databaseName, collectionName);
-
-            // Cross-partition id-only read (partition key is the 3-char
-            // routing prefix, so a single-partition query is not possible);
-            // Contains translates to an IN clause.
-            var iterator = container.GetItemLinqQueryable<DocumentBase>()
+            // Deliberately NOT ValidateContainer(collectionName): callers pass
+            // the Mongo-style collection name (the DocumentType, e.g.
+            // "EventCompetitionPlay"), but Cosmos co-locates every document
+            // type in the single sport-scoped container — validating the type
+            // name against the sport container would throw on every call and
+            // silently disable the L2 already-seen skip on this backend. The
+            // ids are SourceUrlHashes, globally unique across types, so
+            // querying the sport container by id alone is exact. Cross-
+            // partition id-only read (partition key is the 3-char routing
+            // prefix); Contains translates to an IN clause.
+            var iterator = _defaultContainer.GetItemLinqQueryable<DocumentBase>()
                 .Where(x => ids.Contains(x.Id))
                 .Select(x => x.Id)
                 .ToFeedIterator();

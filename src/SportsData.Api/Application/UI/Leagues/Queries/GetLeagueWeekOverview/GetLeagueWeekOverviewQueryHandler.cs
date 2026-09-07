@@ -57,6 +57,7 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
         var league = await _dbContext.PickemGroups
             .AsNoTracking()
             .Include(x => x.Members)
+            .ThenInclude(m => m.User)
             .FirstOrDefaultAsync(g => g.Id == query.LeagueId, cancellationToken);
 
         if (league is null)
@@ -89,6 +90,7 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
 
         var now = _dateTimeProvider.UtcNow();
         var lockedContestIds = new HashSet<Guid>();
+        var canonicalContestIds = new HashSet<Guid>();
 
         foreach (var canonicalContest in canonicalContests)
         {
@@ -103,6 +105,8 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
                     ResultStatus.BadRequest,
                     [new ValidationFailure(nameof(canonicalContest.ContestId), "Matchup could not be found")]);
             }
+
+            canonicalContestIds.Add(canonicalContest.ContestId);
 
             canonicalContest.IsLocked = canonicalContest.StartDateUtc.AddMinutes(-5) <= now;
             if (canonicalContest.IsLocked)
@@ -137,14 +141,28 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
                 LeagueWinnerFranchiseSeasonId = x.SpreadWinnerFranchiseSeasonId ?? x.WinnerFranchiseSeasonId
             }).ToList();
 
+        // The member roster rides on the DTO so renderers can derive matrix
+        // columns from it — a picks-derived column set would drop members
+        // whose picks are all withheld (un-locked) mid-week.
+        result.Members = league.Members
+            .OrderBy(m => m.User.DisplayName)
+            .Select(m => new LeagueWeekMemberDto
+            {
+                UserId = m.UserId,
+                DisplayName = m.User.DisplayName,
+                IsSynthetic = m.User.IsSynthetic
+            })
+            .ToList();
+
         // REVEAL ENFORCEMENT (server-side): another member's pick is visible
         // only once its contest has locked (kickoff − 5 min — the same rule
         // that stamps IsLocked above). The caller always sees their own
         // picks. Before this filter, the endpoint returned every member's
         // picks for the whole week and relied on the web renderer to hide
         // unlocked rows — i.e. any member could read the league's un-locked
-        // picks out of the payload. Fail-closed: a pick whose contest isn't
-        // in this week's canonical contest list is treated as unlocked.
+        // picks out of the payload. Fail-closed both ways: every pick —
+        // the caller's included — must belong to this week's canonical
+        // contest list, and others' additionally to its locked subset.
         //
         // One set-based query for the whole league also replaces the
         // previous per-member handler loop (3 queries per member — the N+1
@@ -157,6 +175,7 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
                 p.PickemGroupId == query.LeagueId &&
                 p.Week == query.Week &&
                 memberIds.Contains(p.UserId) &&
+                canonicalContestIds.Contains(p.ContestId) &&
                 (p.UserId == query.UserId || lockedContestIds.Contains(p.ContestId)))
             .OrderBy(p => p.User.DisplayName)
             .Select(p => new UserPickDto

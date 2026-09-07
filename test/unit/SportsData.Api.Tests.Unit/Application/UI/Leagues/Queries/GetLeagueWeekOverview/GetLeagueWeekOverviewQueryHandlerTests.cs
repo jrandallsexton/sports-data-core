@@ -263,6 +263,12 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         result.Value.UserPicks.Should().HaveCount(2);
         result.Value.UserPicks.Should().Contain(p => p.UserId == user1.Id);
         result.Value.UserPicks.Should().Contain(p => p.UserId == user2.Id);
+
+        // The roster rides on the DTO so renderers derive columns from it —
+        // every member appears (ordered by display name), including the
+        // caller who has no picks this week.
+        result.Value.Members.Select(m => m.DisplayName).Should()
+            .ContainInOrder("Alpha User", "Beta User", "Caller User");
     }
 
     [Fact]
@@ -290,9 +296,15 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
             CreateMatchup(league.Id, lockedContestId, weekNumber: 5),
             CreateMatchup(league.Id, unlockedContestId, weekNumber: 5));
 
+        // A stale pick of the caller's own, referencing a contest that is
+        // NOT in the week's canonical contest list — must be withheld too
+        // (fail-closed applies to everyone, caller included).
+        var staleContestId = Guid.NewGuid();
+
         DataContext.UserPicks.AddRange(
             CreatePick(league.Id, caller.Id, lockedContestId, week: 5),
             CreatePick(league.Id, caller.Id, unlockedContestId, week: 5),
+            CreatePick(league.Id, caller.Id, staleContestId, week: 5),
             CreatePick(league.Id, rival.Id, lockedContestId, week: 5),
             CreatePick(league.Id, rival.Id, unlockedContestId, week: 5));
         await DataContext.SaveChangesAsync();
@@ -325,6 +337,9 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
                 "an un-locked pick belonging to another member must never leave the server");
         result.Value.UserPicks.Should().Contain(p => p.UserId == rival.Id && p.ContestId == lockedContestId);
         result.Value.UserPicks.Should().Contain(p => p.UserId == caller.Id && p.ContestId == unlockedContestId);
+        result.Value.UserPicks.Should()
+            .NotContain(p => p.ContestId == staleContestId,
+                "a pick outside the week's canonical contest list is withheld even for the caller");
     }
 
     [Fact]
@@ -429,7 +444,7 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
             PickType = PickType.StraightUp,
             TiebreakerType = TiebreakerType.TotalPoints,
             CreatedBy = userId,
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = FixedNow
         };
     }
 

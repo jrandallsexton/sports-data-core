@@ -8,10 +8,16 @@ function LeagueWeekOverviewTable({ overview }) {
   const contests = overview.contests;
   const userPicks = overview.userPicks;
 
-  // Get unique users
-  const users = Array.from(
-    new Map(userPicks.map(p => [p.userId, { userId: p.userId, user: p.user, isSynthetic: p.isSynthetic }])).values()
-  );
+  // Columns come from the member roster: since server-side reveal
+  // enforcement, userPicks omits other members' picks on un-locked
+  // contests, so deriving columns from picks would drop members mid-week
+  // until one of their games locks. Falls back to the legacy derivation
+  // for payloads without members.
+  const users = overview.members?.length
+    ? overview.members.map(m => ({ userId: m.userId, user: m.displayName, isSynthetic: m.isSynthetic }))
+    : Array.from(
+        new Map(userPicks.map(p => [p.userId, { userId: p.userId, user: p.user, isSynthetic: p.isSynthetic }])).values()
+      );
 
   // Build a lookup: { [userId]: { [contestId]: pick } }
   const pickMap = {};

@@ -8,6 +8,24 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
         public List<LeagueWeekMatchupResultDto> Contests { get; set; } = [];
 
         public List<UserPickDto> UserPicks { get; set; } = [];
+
+        /// <summary>
+        /// The league's member roster, ordered by display name. Renderers
+        /// must derive matrix columns from THIS list, not from UserPicks:
+        /// since reveal enforcement, UserPicks omits other members' picks on
+        /// un-locked contests, so a picks-derived column set would drop
+        /// members mid-week until one of their games locks.
+        /// </summary>
+        public List<LeagueWeekMemberDto> Members { get; set; } = [];
+    }
+
+    public class LeagueWeekMemberDto
+    {
+        public Guid UserId { get; set; }
+
+        public string DisplayName { get; set; } = string.Empty;
+
+        public bool IsSynthetic { get; set; }
     }
 
     public class LeagueWeekMatchupResultDto : ContestResultDto

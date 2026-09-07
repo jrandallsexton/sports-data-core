@@ -32,7 +32,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// Tests for FootballEventDocumentProcessor.
 /// Optimized to eliminate AutoFixture overhead.
 /// </summary>
-[Collection("Sequential")]
 public class FootballEventDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     // Deterministic seed timestamp for entity CreatedUtc — never asserted against,

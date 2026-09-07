@@ -18,7 +18,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions;
 /// Unit tests for FootballCompetitionStreamer focusing on isolated behavior.
 /// For integration tests using real Postman collection data, see SportsData.Producer.Tests.Integration.
 /// </summary>
-[Collection("Sequential")]
 public class FootballCompetitionStreamer_LiveGameTests : ProducerTestBase<FootballCompetitionStreamer>
 {
     /// <summary>

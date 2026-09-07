@@ -17,7 +17,6 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Contests;
 
-[Collection("Sequential")]
 public class ContestEnrichmentAuditProcessorTests
     : ProducerTestBase<ContestEnrichmentAuditProcessor<FootballDataContext>>
 {

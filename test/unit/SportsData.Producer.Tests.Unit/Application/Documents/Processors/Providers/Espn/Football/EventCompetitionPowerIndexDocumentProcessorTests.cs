@@ -24,7 +24,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
     /// Tests for EventCompetitionPowerIndexDocumentProcessor.
     /// Optimized to eliminate AutoFixture overhead.
     /// </summary>
-    [Collection("Sequential")]
     public class EventCompetitionPowerIndexDocumentProcessorTests :
         ProducerTestBase<EventCompetitionPowerIndexDocumentProcessor<FootballDataContext>>
     {

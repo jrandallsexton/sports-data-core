@@ -21,7 +21,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Franchises.Commands;
 /// <summary>
 /// Unit tests for EnrichFranchiseSeasonHandler to verify win/loss calculations and scoring margins
 /// </summary>
-[Collection("Sequential")]
 public class EnrichFranchiseSeasonHandlerTests :
     ProducerTestBase<EnrichFranchiseSeasonHandler<FootballDataContext>>
 {

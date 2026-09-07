@@ -14,7 +14,6 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Contests;
 
-[Collection("Sequential")]
 public class ContestEnrichmentAuditJobTests : ProducerTestBase<ContestEnrichmentAuditJob<FootballDataContext>>
 {
     private static readonly DateTime FixedNow =

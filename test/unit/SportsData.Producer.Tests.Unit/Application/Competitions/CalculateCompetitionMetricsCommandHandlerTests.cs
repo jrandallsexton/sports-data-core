@@ -26,7 +26,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions
     /// Tests for CalculateCompetitionMetricsCommandHandler using real game data.
     /// Optimized to reduce test setup overhead by consolidating related tests.
     /// </summary>
-    [Collection("Sequential")] // Force sequential to avoid DB contention
     public class CalculateCompetitionMetricsCommandHandlerTests : ProducerTestBase<CalculateCompetitionMetricsCommandHandler>, IAsyncLifetime
     {
         private readonly ITestOutputHelper _output;

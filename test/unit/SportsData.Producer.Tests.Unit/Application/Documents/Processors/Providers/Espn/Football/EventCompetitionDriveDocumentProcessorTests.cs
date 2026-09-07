@@ -22,7 +22,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// Tests for EventCompetitionDriveDocumentProcessor.
 /// Optimized to eliminate AutoFixture overhead for massive performance gains.
 /// </summary>
-[Collection("Sequential")]
 public class EventCompetitionDriveDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private const string DriveUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/drives/4016283341?lang=en";

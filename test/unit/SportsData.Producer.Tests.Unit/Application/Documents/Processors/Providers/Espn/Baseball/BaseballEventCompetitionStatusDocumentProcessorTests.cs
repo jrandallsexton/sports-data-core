@@ -37,7 +37,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// <c>BaseballCompetitionStatusFeaturedAthlete</c> are in the model
 /// and the persistence path under test is real, not stubbed.
 /// </summary>
-[Collection("Sequential")]
 public class BaseballEventCompetitionStatusDocumentProcessorTests
     : ProducerTestBase<BaseballEventCompetitionStatusDocumentProcessor<BaseballDataContext>>
 {

@@ -23,7 +23,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
     /// Tests for SeasonTypeWeekRankingsDocumentProcessor.
     /// Optimized to eliminate AutoFixture overhead.
     /// </summary>
-    [Collection("Sequential")]
     public class SeasonTypeWeekRankingsDocumentProcessorTests
     : ProducerTestBase<SeasonTypeWeekRankingsDocumentProcessor<FootballDataContext>>
     {

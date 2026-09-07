@@ -34,7 +34,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// processor tests follow the same pragmatic pattern until a dedicated
 /// BaseballDataContext test scaffold lands.
 /// </summary>
-[Collection("Sequential")]
 public class BaseballEventCompetitionOddsDocumentProcessorTests
     : ProducerTestBase<BaseballEventCompetitionOddsDocumentProcessor<FootballDataContext>>
 {

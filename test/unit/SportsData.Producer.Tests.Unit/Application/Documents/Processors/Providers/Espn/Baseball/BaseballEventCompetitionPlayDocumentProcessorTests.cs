@@ -40,7 +40,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 ///   • ApplyUpdateAsync: re-resolves athletes, refreshes rich fields,
 ///     and replaces the participants set wholesale.
 /// </summary>
-[Collection("Sequential")]
 public class BaseballEventCompetitionPlayDocumentProcessorTests
     : ProducerTestBase<BaseballEventCompetitionPlayDocumentProcessor<BaseballDataContext>>
 {

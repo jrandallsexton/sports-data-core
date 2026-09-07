@@ -141,6 +141,25 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
                 LeagueWinnerFranchiseSeasonId = x.SpreadWinnerFranchiseSeasonId ?? x.WinnerFranchiseSeasonId
             }).ToList();
 
+        var memberIds = league.Members.Select(m => m.UserId).ToList();
+
+        // Readiness counts: how many of the week's games each member has
+        // picked, INCLUDING picks on un-locked contests — a count is safe
+        // metadata (it says nothing about what was picked) and is the only
+        // pre-lock signal the "Who's Ready" list needs. Scoped to the
+        // canonical contest list so stale picks can't inflate an X/Y readout
+        // past Y.
+        var submittedCounts = await _dbContext.UserPicks
+            .AsNoTracking()
+            .Where(p =>
+                p.PickemGroupId == query.LeagueId &&
+                p.Week == query.Week &&
+                memberIds.Contains(p.UserId) &&
+                canonicalContestIds.Contains(p.ContestId))
+            .GroupBy(p => p.UserId)
+            .Select(g => new { UserId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.UserId, x => x.Count, cancellationToken);
+
         // The member roster rides on the DTO so renderers can derive matrix
         // columns from it — a picks-derived column set would drop members
         // whose picks are all withheld (un-locked) mid-week.
@@ -150,7 +169,8 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
             {
                 UserId = m.UserId,
                 DisplayName = m.User.DisplayName,
-                IsSynthetic = m.User.IsSynthetic
+                IsSynthetic = m.User.IsSynthetic,
+                SubmittedPickCount = submittedCounts.GetValueOrDefault(m.UserId)
             })
             .ToList();
 
@@ -167,8 +187,6 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
         // One set-based query for the whole league also replaces the
         // previous per-member handler loop (3 queries per member — the N+1
         // called out in docs/audit/launch-readiness-2026-07.md).
-        var memberIds = league.Members.Select(m => m.UserId).ToList();
-
         result.UserPicks = await _dbContext.UserPicks
             .AsNoTracking()
             .Where(p =>

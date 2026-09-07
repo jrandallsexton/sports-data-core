@@ -4,12 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.UI.Leagues.Authorization;
 using SportsData.Api.Application.UI.Leagues.Dtos;
-using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
+using SportsData.Api.Application.UI.Picks.Dtos;
 using SportsData.Api.Infrastructure.Data;
-using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Common;
-
-using SportsData.Api.Application.Common.Enums;
+using SportsData.Core.Infrastructure.Clients.Contest;
 
 namespace SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
 
@@ -25,20 +23,20 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
     private readonly ILogger<GetLeagueWeekOverviewQueryHandler> _logger;
     private readonly AppDataContext _dbContext;
     private readonly IContestClientFactory _contestClientFactory;
-    private readonly IGetUserPicksByGroupAndWeekQueryHandler _userPicksQueryHandler;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILeagueMembershipGuard _membershipGuard;
 
     public GetLeagueWeekOverviewQueryHandler(
         ILogger<GetLeagueWeekOverviewQueryHandler> logger,
         AppDataContext dbContext,
         IContestClientFactory contestClientFactory,
-        IGetUserPicksByGroupAndWeekQueryHandler userPicksQueryHandler,
+        IDateTimeProvider dateTimeProvider,
         ILeagueMembershipGuard membershipGuard)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contestClientFactory = contestClientFactory;
-        _userPicksQueryHandler = userPicksQueryHandler;
+        _dateTimeProvider = dateTimeProvider;
         _membershipGuard = membershipGuard;
     }
 
@@ -59,7 +57,6 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
         var league = await _dbContext.PickemGroups
             .AsNoTracking()
             .Include(x => x.Members)
-            .ThenInclude(m => m.User)
             .FirstOrDefaultAsync(g => g.Id == query.LeagueId, cancellationToken);
 
         if (league is null)
@@ -90,6 +87,9 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
         }
         var canonicalContests = contestResultsResponse.Value;
 
+        var now = _dateTimeProvider.UtcNow();
+        var lockedContestIds = new HashSet<Guid>();
+
         foreach (var canonicalContest in canonicalContests)
         {
             var matchup = matchups
@@ -104,7 +104,10 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
                     [new ValidationFailure(nameof(canonicalContest.ContestId), "Matchup could not be found")]);
             }
 
-            canonicalContest.IsLocked = canonicalContest.StartDateUtc.AddMinutes(-5) <= DateTime.UtcNow;
+            canonicalContest.IsLocked = canonicalContest.StartDateUtc.AddMinutes(-5) <= now;
+            if (canonicalContest.IsLocked)
+                lockedContestIds.Add(canonicalContest.ContestId);
+
             canonicalContest.WinnerFranchiseSeasonId = canonicalContest.AwayScore > canonicalContest.HomeScore
                 ? canonicalContest.AwayFranchiseSeasonId
                 : canonicalContest.HomeScore > canonicalContest.AwayScore
@@ -134,27 +137,43 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
                 LeagueWinnerFranchiseSeasonId = x.SpreadWinnerFranchiseSeasonId ?? x.WinnerFranchiseSeasonId
             }).ToList();
 
-        foreach (var member in league.Members.OrderBy(x => x.User.DisplayName))
-        {
-            var userPicksQuery = new GetUserPicksByGroupAndWeekQuery
-            {
-                UserId = member.UserId,
-                GroupId = query.LeagueId,
-                WeekNumber = query.Week
-            };
-            var userPicksResult = await _userPicksQueryHandler.ExecuteAsync(userPicksQuery, cancellationToken);
+        // REVEAL ENFORCEMENT (server-side): another member's pick is visible
+        // only once its contest has locked (kickoff − 5 min — the same rule
+        // that stamps IsLocked above). The caller always sees their own
+        // picks. Before this filter, the endpoint returned every member's
+        // picks for the whole week and relied on the web renderer to hide
+        // unlocked rows — i.e. any member could read the league's un-locked
+        // picks out of the payload. Fail-closed: a pick whose contest isn't
+        // in this week's canonical contest list is treated as unlocked.
+        //
+        // One set-based query for the whole league also replaces the
+        // previous per-member handler loop (3 queries per member — the N+1
+        // called out in docs/audit/launch-readiness-2026-07.md).
+        var memberIds = league.Members.Select(m => m.UserId).ToList();
 
-            if (userPicksResult.IsSuccess)
+        result.UserPicks = await _dbContext.UserPicks
+            .AsNoTracking()
+            .Where(p =>
+                p.PickemGroupId == query.LeagueId &&
+                p.Week == query.Week &&
+                memberIds.Contains(p.UserId) &&
+                (p.UserId == query.UserId || lockedContestIds.Contains(p.ContestId)))
+            .OrderBy(p => p.User.DisplayName)
+            .Select(p => new UserPickDto
             {
-                result.UserPicks.AddRange(userPicksResult.Value.Picks);
-            }
-            else
-            {
-                _logger.LogWarning(
-                    "Could not retrieve user picks for user {UserId} in league {LeagueId} week {Week}",
-                    member.UserId, query.LeagueId, query.Week);
-            }
-        }
+                Id = p.Id,
+                UserId = p.UserId,
+                User = p.User.DisplayName,
+                ConfidencePoints = p.ConfidencePoints,
+                ContestId = p.ContestId,
+                FranchiseSeasonId = p.FranchiseSeasonId ?? Guid.Empty,
+                IsCorrect = p.IsCorrect,
+                PickType = p.PickType,
+                TiebreakerGuessTotal = p.TiebreakerGuessTotal,
+                PointsAwarded = p.PointsAwarded,
+                IsSynthetic = p.User.IsSynthetic
+            })
+            .ToListAsync(cancellationToken);
 
         return new Success<LeagueWeekOverviewDto>(result);
     }

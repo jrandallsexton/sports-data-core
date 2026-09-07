@@ -5,8 +5,6 @@ using Moq;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Application.UI.Leagues.Dtos;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekOverview;
-using SportsData.Api.Application.UI.Picks.Dtos;
-using SportsData.Api.Application.UI.Picks.Queries.GetUserPicksByGroupAndWeek;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
@@ -20,15 +18,21 @@ namespace SportsData.Api.Tests.Unit.Application.UI.Leagues.Queries.GetLeagueWeek
 
 public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekOverviewQueryHandler>
 {
+    // The lock rule is kickoff − 5 min against the injected clock; every
+    // contest start in these tests is expressed relative to FixedNow so the
+    // reveal behavior is deterministic.
+    private static readonly DateTime FixedNow = new(2026, 9, 7, 18, 0, 0, DateTimeKind.Utc);
+
     private readonly Mock<IProvideContests> _contestClientMock = new();
-    private readonly Mock<IGetUserPicksByGroupAndWeekQueryHandler> _userPicksQueryHandlerMock;
 
     public GetLeagueWeekOverviewQueryHandlerTests()
     {
         Mocker.GetMock<IContestClientFactory>()
             .Setup(x => x.Resolve(It.IsAny<Sport>()))
             .Returns(_contestClientMock.Object);
-        _userPicksQueryHandlerMock = Mocker.GetMock<IGetUserPicksByGroupAndWeekQueryHandler>();
+        Mocker.GetMock<IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(FixedNow);
     }
 
     [Fact]
@@ -68,11 +72,6 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
             .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<ContestResultDto>>([]));
 
-
-        _userPicksQueryHandlerMock
-            .Setup(x => x.ExecuteAsync(
-                It.IsAny<GetUserPicksByGroupAndWeekQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<UserPicksResultDto>(new UserPicksResultDto()));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
         var query = new GetLeagueWeekOverviewQuery
@@ -152,11 +151,6 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
             .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<ContestResultDto>>([contestResult1, contestResult2]));
 
-        _userPicksQueryHandlerMock
-            .Setup(x => x.ExecuteAsync(
-                It.IsAny<GetUserPicksByGroupAndWeekQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<UserPicksResultDto>(new UserPicksResultDto()));
-
         var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
         var query = new GetLeagueWeekOverviewQuery
         {
@@ -207,11 +201,6 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
             .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Success<List<ContestResultDto>>([contestResult]));
 
-        _userPicksQueryHandlerMock
-            .Setup(x => x.ExecuteAsync(
-                It.IsAny<GetUserPicksByGroupAndWeekQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<UserPicksResultDto>(new UserPicksResultDto()));
-
         var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
         var query = new GetLeagueWeekOverviewQuery
         {
@@ -231,43 +220,38 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
     }
 
     [Fact]
-    public async Task ExecuteAsync_GathersUserPicksForAllMembers()
+    public async Task ExecuteAsync_GathersUserPicksForAllMembers_OnLockedContests()
     {
-        // Arrange
+        // Arrange — one locked contest (kicked off an hour ago); both
+        // members picked it; a third member (the caller) did not.
         var user1 = CreateUser("Alpha User");
         var user2 = CreateUser("Beta User");
-        DataContext.Users.AddRange(user1, user2);
+        var caller = CreateUser("Caller User");
+        DataContext.Users.AddRange(user1, user2, caller);
 
         var league = CreateLeague();
         league.Members.Add(new PickemGroupMember { UserId = user1.Id, User = user1, Role = LeagueRole.Commissioner });
         league.Members.Add(new PickemGroupMember { UserId = user2.Id, User = user2, Role = LeagueRole.Member });
+        league.Members.Add(new PickemGroupMember { UserId = caller.Id, User = caller, Role = LeagueRole.Member });
         DataContext.PickemGroups.Add(league);
+
+        var contestId = Guid.NewGuid();
+        DataContext.PickemGroupMatchups.Add(CreateMatchup(league.Id, contestId, weekNumber: 5));
+        DataContext.UserPicks.AddRange(
+            CreatePick(league.Id, user1.Id, contestId, week: 5),
+            CreatePick(league.Id, user2.Id, contestId, week: 5));
         await DataContext.SaveChangesAsync();
 
         _contestClientMock
             .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<List<ContestResultDto>>([]));
-
-
-        var user1Picks = new List<UserPickDto> { new() { UserId = user1.Id, ContestId = Guid.NewGuid() } };
-        var user2Picks = new List<UserPickDto> { new() { UserId = user2.Id, ContestId = Guid.NewGuid() } };
-
-        _userPicksQueryHandlerMock
-            .Setup(x => x.ExecuteAsync(
-                It.Is<GetUserPicksByGroupAndWeekQuery>(q => q.UserId == user1.Id && q.GroupId == league.Id && q.WeekNumber == 5),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<UserPicksResultDto>(new UserPicksResultDto { Picks = user1Picks }));
-        _userPicksQueryHandlerMock
-            .Setup(x => x.ExecuteAsync(
-                It.Is<GetUserPicksByGroupAndWeekQuery>(q => q.UserId == user2.Id && q.GroupId == league.Id && q.WeekNumber == 5),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new Success<UserPicksResultDto>(new UserPicksResultDto { Picks = user2Picks }));
+            .ReturnsAsync(new Success<List<ContestResultDto>>(
+                [CreateContestResult(contestId, startDateUtc: FixedNow.AddHours(-1))]));
 
         var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
         var query = new GetLeagueWeekOverviewQuery
         {
             LeagueId = league.Id,
-            UserId = Guid.NewGuid(),
+            UserId = caller.Id,
             Week = 5
         };
 
@@ -279,6 +263,108 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         result.Value.UserPicks.Should().HaveCount(2);
         result.Value.UserPicks.Should().Contain(p => p.UserId == user1.Id);
         result.Value.UserPicks.Should().Contain(p => p.UserId == user2.Id);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_HidesOthersPicks_ForUnlockedContests_ButAlwaysReturnsOwn()
+    {
+        // The reveal rule: another member's pick is visible ONLY once its
+        // contest has locked (kickoff − 5 min); the caller always sees their
+        // own picks. Before this was enforced server-side, the payload
+        // carried every member's un-locked picks and only the web renderer
+        // hid them.
+        var caller = CreateUser("Caller User");
+        var rival = CreateUser("Rival User");
+        DataContext.Users.AddRange(caller, rival);
+
+        var league = CreateLeague();
+        league.Members.Add(new PickemGroupMember { UserId = caller.Id, User = caller, Role = LeagueRole.Commissioner });
+        league.Members.Add(new PickemGroupMember { UserId = rival.Id, User = rival, Role = LeagueRole.Member });
+        DataContext.PickemGroups.Add(league);
+
+        // Locked: kicked off an hour ago. Unlocked: kicks off in 6 minutes
+        // (one minute outside the −5 lock window).
+        var lockedContestId = Guid.NewGuid();
+        var unlockedContestId = Guid.NewGuid();
+        DataContext.PickemGroupMatchups.AddRange(
+            CreateMatchup(league.Id, lockedContestId, weekNumber: 5),
+            CreateMatchup(league.Id, unlockedContestId, weekNumber: 5));
+
+        DataContext.UserPicks.AddRange(
+            CreatePick(league.Id, caller.Id, lockedContestId, week: 5),
+            CreatePick(league.Id, caller.Id, unlockedContestId, week: 5),
+            CreatePick(league.Id, rival.Id, lockedContestId, week: 5),
+            CreatePick(league.Id, rival.Id, unlockedContestId, week: 5));
+        await DataContext.SaveChangesAsync();
+
+        _contestClientMock
+            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<ContestResultDto>>(
+            [
+                CreateContestResult(lockedContestId, startDateUtc: FixedNow.AddHours(-1)),
+                CreateContestResult(unlockedContestId, startDateUtc: FixedNow.AddMinutes(6))
+            ]));
+
+        var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
+        var query = new GetLeagueWeekOverviewQuery
+        {
+            LeagueId = league.Id,
+            UserId = caller.Id,
+            Week = 5
+        };
+
+        // Act
+        var result = await handler.ExecuteAsync(query);
+
+        // Assert — 3 picks: both of the caller's own, but only the rival's
+        // locked one. The rival's un-locked pick must NOT be in the payload.
+        result.IsSuccess.Should().BeTrue();
+        result.Value.UserPicks.Should().HaveCount(3);
+        result.Value.UserPicks.Should()
+            .NotContain(p => p.UserId == rival.Id && p.ContestId == unlockedContestId,
+                "an un-locked pick belonging to another member must never leave the server");
+        result.Value.UserPicks.Should().Contain(p => p.UserId == rival.Id && p.ContestId == lockedContestId);
+        result.Value.UserPicks.Should().Contain(p => p.UserId == caller.Id && p.ContestId == unlockedContestId);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_LockBoundary_RevealsAtExactlyFiveMinutesBeforeKickoff()
+    {
+        // The boundary is inclusive: StartDateUtc − 5 min <= now → locked.
+        var caller = CreateUser("Caller User");
+        var rival = CreateUser("Rival User");
+        DataContext.Users.AddRange(caller, rival);
+
+        var league = CreateLeague();
+        league.Members.Add(new PickemGroupMember { UserId = caller.Id, User = caller, Role = LeagueRole.Commissioner });
+        league.Members.Add(new PickemGroupMember { UserId = rival.Id, User = rival, Role = LeagueRole.Member });
+        DataContext.PickemGroups.Add(league);
+
+        var contestId = Guid.NewGuid();
+        DataContext.PickemGroupMatchups.Add(CreateMatchup(league.Id, contestId, weekNumber: 5));
+        DataContext.UserPicks.Add(CreatePick(league.Id, rival.Id, contestId, week: 5));
+        await DataContext.SaveChangesAsync();
+
+        _contestClientMock
+            .Setup(x => x.GetContestResultsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<List<ContestResultDto>>(
+                [CreateContestResult(contestId, startDateUtc: FixedNow.AddMinutes(5))]));
+
+        var handler = Mocker.CreateInstance<GetLeagueWeekOverviewQueryHandler>();
+        var query = new GetLeagueWeekOverviewQuery
+        {
+            LeagueId = league.Id,
+            UserId = caller.Id,
+            Week = 5
+        };
+
+        // Act
+        var result = await handler.ExecuteAsync(query);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Contests.Should().ContainSingle().Which.IsLocked.Should().BeTrue();
+        result.Value.UserPicks.Should().ContainSingle(p => p.UserId == rival.Id);
     }
 
     #region Helper Methods
@@ -327,6 +413,23 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
             DisplayName = displayName,
             SignInProvider = "test",
             LastLoginUtc = DateTime.UtcNow
+        };
+    }
+
+    private static PickemGroupUserPick CreatePick(Guid groupId, Guid userId, Guid contestId, int week)
+    {
+        return new PickemGroupUserPick
+        {
+            Id = Guid.NewGuid(),
+            PickemGroupId = groupId,
+            UserId = userId,
+            ContestId = contestId,
+            Week = week,
+            FranchiseSeasonId = Guid.NewGuid(),
+            PickType = PickType.StraightUp,
+            TiebreakerType = TiebreakerType.TotalPoints,
+            CreatedBy = userId,
+            CreatedUtc = DateTime.UtcNow
         };
     }
 

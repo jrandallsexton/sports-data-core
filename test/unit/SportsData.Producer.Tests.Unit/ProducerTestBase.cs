@@ -55,14 +55,19 @@ public abstract class ProducerTestBase<T> : UnitTestBase<T>
         Fixture.Customizations.Add(new ProcessDocumentCommandFlagsOffByDefault());
 
         // Override mapper with Producer-specific mapping profile
-        var mapperConfig = new MapperConfiguration(c =>
+        Mocker.Use(typeof(IMapper), ProducerMapper.Value);
+    }
+
+    // AutoMapper configuration compilation is expensive and xunit constructs
+    // the test class PER TEST — building this in the ctor cost every test a
+    // fresh two-profile compile (~658 per run). IMapper is stateless and
+    // thread-safe, so one shared instance serves the whole parallel suite.
+    private static readonly Lazy<IMapper> ProducerMapper = new(() =>
+        new MapperConfiguration(c =>
         {
             c.AddProfile(new DynamicMappingProfile());
             c.AddProfile(new MappingProfile());
-        });
-        var mapper = mapperConfig.CreateMapper();
-        Mocker.Use(typeof(IMapper), mapper);
-    }
+        }).CreateMapper());
 
     private sealed class ProcessDocumentCommandFlagsOffByDefault : ISpecimenBuilder
     {
@@ -88,8 +93,13 @@ public abstract class ProducerTestBase<T> : UnitTestBase<T>
 
     private static DbContextOptions<FootballDataContext> GetFootballDataContextOptions()
     {
-        // https://stackoverflow.com/questions/52810039/moq-and-setting-up-db-context
-        var dbName = Guid.NewGuid().ToString()[..5];
+        // Full Guid, NOT a truncated one: InMemory databases with the same
+        // name SHARE a store, and 5 hex chars across ~650 tests gave ~20%
+        // odds per run of two tests silently sharing (and polluting) a DB —
+        // the "DB contention" the Dec-2025 sequential collection was added
+        // to paper over. Full-Guid names make every test's store truly
+        // isolated, which is what lets the suite run parallel.
+        var dbName = Guid.NewGuid().ToString();
         return new DbContextOptionsBuilder<FootballDataContext>()
             .UseInMemoryDatabase(dbName)
             .Options;

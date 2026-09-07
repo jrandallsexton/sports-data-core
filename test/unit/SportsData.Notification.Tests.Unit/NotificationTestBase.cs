@@ -18,7 +18,7 @@ namespace SportsData.Notification.Tests.Unit
 
         private static DbContextOptions<AppDataContext> GetAppDataContextOptions()
         {
-            var dbName = Guid.NewGuid().ToString()[..5];
+            var dbName = Guid.NewGuid().ToString(); // full Guid: truncated names collide and InMemory shares same-named stores
             return new DbContextOptionsBuilder<AppDataContext>()
                 .UseInMemoryDatabase(dbName)
                 .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))

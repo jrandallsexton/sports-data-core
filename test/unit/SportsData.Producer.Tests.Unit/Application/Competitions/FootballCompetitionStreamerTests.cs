@@ -30,7 +30,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Competitions;
 /// Tests for FootballCompetitionStreamer to validate live game streaming functionality.
 /// Tests cover cancellation, status tracking, worker management, and error handling.
 /// </summary>
-[Collection("Sequential")]
 public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompetitionStreamer>
 {
     #region Helper Methods

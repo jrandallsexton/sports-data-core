@@ -25,7 +25,6 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Competitions.Reconcile;
 
-[Collection("Sequential")]
 public class FinalizationReconcileJobTests : ProducerTestBase<FinalizationReconcileJob<FootballDataContext>>
 {
     private static readonly DateTime FixedNow = new(2026, 6, 14, 12, 0, 0, DateTimeKind.Utc);

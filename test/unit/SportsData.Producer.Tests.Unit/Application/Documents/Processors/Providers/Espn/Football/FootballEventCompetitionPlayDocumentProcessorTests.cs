@@ -30,7 +30,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// Tests for FootballEventCompetitionPlayDocumentProcessor.
 /// Optimized to eliminate AutoFixture overhead.
 /// </summary>
-[Collection("Sequential")]
 public class FootballEventCompetitionPlayDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private const string PlayUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/plays/401628334123";

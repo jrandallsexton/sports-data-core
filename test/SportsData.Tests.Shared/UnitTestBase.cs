@@ -34,10 +34,17 @@ public abstract class UnitTestBase<T>
 
         Logger = CreateLogger(LoggerTypes.List) as ListLogger;
 
-        var mapperConfig = new MapperConfiguration(c => c.AddProfile(new DynamicMappingProfile()));
-        var mapper = mapperConfig.CreateMapper();
-        Mocker.Use(typeof(IMapper), mapper);
+        Mocker.Use(typeof(IMapper), SharedMapper.Value);
     }
+
+    // AutoMapper configuration compilation is expensive and xunit constructs
+    // the test class PER TEST — building it in the ctor charged every test in
+    // every suite a fresh compile. IMapper is stateless and thread-safe, so
+    // one shared instance serves parallel test runs. Derived bases that need
+    // extra profiles (e.g. ProducerTestBase) overwrite the registration with
+    // their own cached instance.
+    private static readonly Lazy<IMapper> SharedMapper = new(() =>
+        new MapperConfiguration(c => c.AddProfile(new DynamicMappingProfile())).CreateMapper());
 
     public static ILogger CreateLogger(LoggerTypes type = LoggerTypes.Null)
     {

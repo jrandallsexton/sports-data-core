@@ -28,7 +28,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// Tests for AthleteSeasonDocumentProcessor covering create, update, dependency resolution, and image processing.
 /// Optimized to eliminate AutoFixture overhead.
 /// </summary>
-[Collection("Sequential")]
 public class AthleteSeasonDocumentProcessorTests :
     ProducerTestBase<AthleteSeasonDocumentProcessor<FootballDataContext>>
 {

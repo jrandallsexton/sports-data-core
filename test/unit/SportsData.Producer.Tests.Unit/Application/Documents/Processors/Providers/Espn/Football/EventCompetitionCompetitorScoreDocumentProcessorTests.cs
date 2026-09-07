@@ -21,7 +21,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// Tests for EventCompetitionCompetitorScoreDocumentProcessor.
 /// Optimized to eliminate AutoFixture overhead for massive performance gains.
 /// </summary>
-[Collection("Sequential")]
 public class EventCompetitionCompetitorScoreDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     // Fixed seed time: the repo rule bans DateTime.UtcNow, and deterministic

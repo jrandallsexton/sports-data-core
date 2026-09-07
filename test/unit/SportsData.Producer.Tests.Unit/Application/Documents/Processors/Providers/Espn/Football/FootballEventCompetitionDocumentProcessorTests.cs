@@ -23,7 +23,6 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Football
 {
-    [Collection("Sequential")]
     public class FootballEventCompetitionDocumentProcessorTests :
         ProducerTestBase<FootballEventCompetitionDocumentProcessor<FootballDataContext>>
     {

@@ -21,7 +21,6 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.TeamSports;
 
-[Collection("Sequential")]
 public class CoachSeasonDocumentProcessorTests : ProducerTestBase<CoachSeasonDocumentProcessor<FootballDataContext>>
 {
     private const string TestDataFile = "EspnFootballNcaa/EspnFootballNcaaTeamSeasonCoach.json";

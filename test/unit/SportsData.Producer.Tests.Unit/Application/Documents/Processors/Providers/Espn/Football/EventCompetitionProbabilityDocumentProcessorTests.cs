@@ -20,7 +20,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
     /// Tests for EventCompetitionProbabilityDocumentProcessor.
     /// Optimized to eliminate AutoFixture overhead.
     /// </summary>
-    [Collection("Sequential")]
     public class EventCompetitionProbabilityDocumentProcessorTests :
         ProducerTestBase<EventCompetitionProbabilityDocumentProcessor<FootballDataContext>>
     {

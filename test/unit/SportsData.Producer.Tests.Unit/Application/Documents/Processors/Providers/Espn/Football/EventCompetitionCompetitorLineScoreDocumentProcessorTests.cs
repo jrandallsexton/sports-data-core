@@ -21,7 +21,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// Tests for EventCompetitionCompetitorLineScoreDocumentProcessor.
 /// Optimized to minimize AutoFixture overhead and test execution time.
 /// </summary>
-[Collection("Sequential")]
 public class EventCompetitionCompetitorLineScoreDocumentProcessorTests : ProducerTestBase<FootballDataContext>
 {
     private const string TestUrl = "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628334/competitions/401628334/competitors/99/linescores/1/1?lang=en&region=us";

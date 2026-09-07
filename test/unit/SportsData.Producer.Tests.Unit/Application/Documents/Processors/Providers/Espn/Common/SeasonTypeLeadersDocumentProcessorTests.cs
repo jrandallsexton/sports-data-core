@@ -23,7 +23,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// leaders, season-scoped athlete/team refs intact so identity hashing
 /// resolves exactly as it does in production.
 /// </summary>
-[Collection("Sequential")]
 public class SeasonTypeLeadersDocumentProcessorTests
     : ProducerTestBase<SeasonTypeLeadersDocumentProcessor<FootballDataContext>>
 {

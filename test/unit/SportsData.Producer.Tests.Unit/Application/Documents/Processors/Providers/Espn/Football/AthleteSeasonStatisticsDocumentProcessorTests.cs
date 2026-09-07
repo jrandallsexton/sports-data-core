@@ -24,7 +24,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 /// <summary>
 /// Tests for AthleteSeasonStatisticsDocumentProcessor covering create and replace scenarios.
 /// </summary>
-[Collection("Sequential")]
 public class AthleteSeasonStatisticsDocumentProcessorTests :
     ProducerTestBase<AthleteSeasonStatisticsDocumentProcessor<FootballDataContext>>
 {

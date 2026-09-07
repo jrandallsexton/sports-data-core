@@ -24,7 +24,6 @@ using Xunit;
 
 namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Providers.Espn.Baseball;
 
-[Collection("Sequential")]
 public class BaseballEventCompetitionSituationDocumentProcessorTests
     : ProducerTestBase<BaseballEventCompetitionSituationDocumentProcessor<BaseballDataContext>>
 {

@@ -39,7 +39,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 ///
 /// See docs/competition-competitor-probables.md.
 /// </summary>
-[Collection("Sequential")]
 public class BaseballEventCompetitionCompetitorDocumentProcessorTests
     : ProducerTestBase<BaseballEventCompetitionCompetitorDocumentProcessor<BaseballDataContext>>
 {

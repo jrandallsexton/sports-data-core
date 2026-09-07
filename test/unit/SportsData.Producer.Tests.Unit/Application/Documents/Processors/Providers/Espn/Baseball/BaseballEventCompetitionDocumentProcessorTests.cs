@@ -38,7 +38,6 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 ///
 /// See docs/series-snapshot-redesign.md.
 /// </summary>
-[Collection("Sequential")]
 public class BaseballEventCompetitionDocumentProcessorTests
     : ProducerTestBase<BaseballEventCompetitionDocumentProcessor<BaseballDataContext>>
 {

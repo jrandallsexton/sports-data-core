@@ -26,6 +26,15 @@ namespace SportsData.Api.Application.UI.Leagues.Dtos
         public string DisplayName { get; set; } = string.Empty;
 
         public bool IsSynthetic { get; set; }
+
+        /// <summary>
+        /// How many of the week's games this member has submitted a pick for
+        /// — locked or not. A COUNT is deliberately the only thing revealed
+        /// about un-locked picks (reveal enforcement withholds the picks
+        /// themselves): it powers the pre-lock "Who's Ready" readiness list
+        /// without leaking what anyone picked.
+        /// </summary>
+        public int SubmittedPickCount { get; set; }
     }
 
     public class LeagueWeekMatchupResultDto : ContestResultDto

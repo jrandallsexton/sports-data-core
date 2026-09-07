@@ -269,6 +269,8 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         // caller who has no picks this week.
         result.Value.Members.Select(m => m.DisplayName).Should()
             .ContainInOrder("Alpha User", "Beta User", "Caller User");
+        result.Value.Members.Single(m => m.UserId == user1.Id).SubmittedPickCount.Should().Be(1);
+        result.Value.Members.Single(m => m.UserId == caller.Id).SubmittedPickCount.Should().Be(0);
     }
 
     [Fact]
@@ -340,6 +342,14 @@ public class GetLeagueWeekOverviewQueryHandlerTests : ApiTestBase<GetLeagueWeekO
         result.Value.UserPicks.Should()
             .NotContain(p => p.ContestId == staleContestId,
                 "a pick outside the week's canonical contest list is withheld even for the caller");
+
+        // Readiness counts are safe metadata: the rival's count includes the
+        // un-locked pick whose CONTENT is withheld above, and the caller's
+        // stale pick doesn't inflate their count past the week's slate.
+        result.Value.Members.Single(m => m.UserId == rival.Id)
+            .SubmittedPickCount.Should().Be(2, "counts include picks on un-locked contests");
+        result.Value.Members.Single(m => m.UserId == caller.Id)
+            .SubmittedPickCount.Should().Be(2, "stale picks are excluded from the count");
     }
 
     [Fact]

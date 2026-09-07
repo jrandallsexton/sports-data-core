@@ -32,6 +32,14 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
     /// </summary>
     public const string SwapParkingValue = "swap";
 
+    /// <summary>
+    /// Transient Order value parking OUR row during an order swap — the
+    /// (CompetitionId, Order) unique index needs the same choreography as
+    /// (CompetitionId, HomeAway). Real orders are non-negative (0/1 or 1/2),
+    /// so -1 can never collide.
+    /// </summary>
+    public const int OrderParkingValue = -1;
+
     protected EventCompetitionCompetitorDocumentProcessorBase(
         ILogger logger,
         TDataContext dataContext,
@@ -198,6 +206,52 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
             }
         }
 
+        // The (CompetitionId, Order) unique index needs the SAME choreography
+        // (2026-09-07 Wisconsin/Notre Dame at Lambeau): ESPN's re-designation
+        // flips Order together with HomeAway, the side dance above frees only
+        // the side slot, and the tail save then collided on Order — killing
+        // the job AFTER the HomeAway park had committed, which stranded rows
+        // at the parking value ('swap') across three competitions and
+        // deadlocked both competitors' documents against each other's stale
+        // Order. Same idempotent steps: park our own Order if it blocks the
+        // occupant's relocation, relocate the occupant, and let
+        // ProcessUpdate / ProcessNewEntity write our final Order. A row
+        // previously stranded at either parking value converges here too:
+        // ProcessUpdate syncs both designations from the document once the
+        // slots are free.
+        var orderOccupant = await _dataContext.CompetitionCompetitors
+            .FirstOrDefaultAsync(x =>
+                x.CompetitionId == competitionId
+                && x.Order == dto.Order
+                && x.FranchiseSeasonId != franchiseSeasonId.Value);
+
+        if (orderOccupant is not null)
+        {
+            // The occupant takes the order we are vacating. When we have no
+            // row yet (or ours is parked from a prior crashed swap), fall
+            // back to the 0/1 complement — the occupant's own document
+            // corrects it if the scheme differs (1/2).
+            var otherOrder = entity is not null
+                && entity.Order != dto.Order
+                && entity.Order != OrderParkingValue
+                ? entity.Order
+                : (dto.Order == 0 ? 1 : 0);
+
+            if (entity is not null && entity.Order == otherOrder)
+            {
+                entity.Order = OrderParkingValue;
+                await _dataContext.SaveChangesAsync();
+            }
+
+            _logger.LogWarning(
+                "Order re-designation: relocating stale occupant of Order {Order} to {OtherOrder}. " +
+                "CompetitionId={CompetitionId}, OccupantId={OccupantId}, OccupantFranchiseSeasonId={OccupantFranchiseSeasonId}",
+                dto.Order, otherOrder, competitionId, orderOccupant.Id, orderOccupant.FranchiseSeasonId);
+
+            orderOccupant.Order = otherOrder;
+            await _dataContext.SaveChangesAsync();
+        }
+
         if (entity is null)
         {
             _logger.LogInformation("Processing new CompetitionCompetitor entity. Ref={Ref}", dto.Ref);
@@ -209,7 +263,7 @@ public abstract class EventCompetitionCompetitorDocumentProcessorBase<TDataConte
             await ProcessUpdate(command, dto, entity);
         }
 
-        _logger.LogInformation(
+        _logger.LogDebug(
             "💾 SAVING_CHANGES: About to call SaveChangesAsync to persist CompetitionCompetitor and flush outbox. " +
             "CompetitionId={CompetitionId}, HasPendingChanges={HasChanges}",
             competitionId,

@@ -381,5 +381,266 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 .FirstAsync(x => x.Id == occupantId);
             occupant.HomeAway.Should().Be("away");
         }
+
+        [Fact]
+        public void OrderParkingValue_IsNegative()
+        {
+            // Real orders are non-negative (0/1 or 1/2 per the index comment),
+            // so the parking value must be negative to never collide under
+            // the (CompetitionId, Order) unique index — which the InMemory
+            // provider cannot enforce, hence the pin.
+            EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>
+                .OrderParkingValue.Should().BeNegative();
+        }
+
+        [Fact]
+        public async Task WhenBothCompetitorsSwapOrders_ShouldRelocateOccupantOrder()
+        {
+            // ESPN re-designation flips Order together with HomeAway, but the
+            // (CompetitionId, Order) unique index was never part of the swap
+            // choreography — 2026-09-07 Wisconsin/Notre Dame at Lambeau: the
+            // tail save collided on Order, stranding the parked row. Fixture
+            // doc: home/0. OUR row holds home/1; the occupant holds away/0.
+            // Both orders must end swapped.
+
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+            var sut = Mocker.CreateInstance<FootballEventCompetitionCompetitorDocumentProcessor<FootballDataContext>>();
+
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitor.json");
+            var dto = json.FromJson<EspnEventCompetitionCompetitorDto>();
+
+            var competitorIdentity = generator.Generate(dto!.Ref);
+            var teamIdentity = generator.Generate(dto.Team.Ref);
+
+            var competitionId = Guid.NewGuid();
+            await FootballDataContext.Competitions.AddAsync(new FootballCompetition
+            {
+                Id = competitionId,
+                ContestId = Guid.NewGuid(),
+                Date = FixedTestNow,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid()
+            });
+
+            var franchiseSeasonId = Guid.NewGuid();
+            await FootballDataContext.FranchiseSeasons.AddAsync(new FranchiseSeason
+            {
+                Id = franchiseSeasonId,
+                Abbreviation = "TST",
+                DisplayName = "Test FS",
+                DisplayNameShort = "TFS",
+                Slug = teamIdentity.CanonicalId.ToString(),
+                Location = "Test Location",
+                Name = "Test Franchise Season",
+                ColorCodeHex = "#FFFFFF",
+                ColorCodeAltHex = "#000000",
+                IsActive = true,
+                SeasonYear = 2024,
+                FranchiseId = Guid.NewGuid(),
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new FranchiseSeasonExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = teamIdentity.CleanUrl,
+                        SourceUrlHash = teamIdentity.UrlHash,
+                        Value = teamIdentity.UrlHash
+                    }
+                ]
+            });
+
+            // OUR row: correct side already, stale order (1 where doc says 0).
+            await FootballDataContext.CompetitionCompetitors.AddAsync(new FootballCompetitionCompetitor
+            {
+                Id = competitorIdentity.CanonicalId,
+                CompetitionId = competitionId,
+                FranchiseSeasonId = franchiseSeasonId,
+                HomeAway = "home",
+                Order = 1,
+                Winner = false,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new CompetitionCompetitorExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = competitorIdentity.CleanUrl,
+                        SourceUrlHash = competitorIdentity.UrlHash,
+                        Value = competitorIdentity.UrlHash
+                    }
+                ]
+            });
+
+            // The other franchise's row holds the order our document claims.
+            var occupantId = Guid.NewGuid();
+            await FootballDataContext.CompetitionCompetitors.AddAsync(new FootballCompetitionCompetitor
+            {
+                Id = occupantId,
+                CompetitionId = competitionId,
+                FranchiseSeasonId = Guid.NewGuid(),
+                HomeAway = "away",
+                Order = 0,
+                Winner = false,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid()
+            });
+            await FootballDataContext.SaveChangesAsync();
+
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.Document, json)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitor)
+                .With(x => x.SeasonYear, 2024)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.ParentId, competitionId.ToString())
+                .With(x => x.UrlHash, competitorIdentity.UrlHash)
+                .OmitAutoProperties()
+                .Create();
+
+            await sut.ProcessAsync(command);
+
+            var ours = await FootballDataContext.CompetitionCompetitors
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == competitorIdentity.CanonicalId);
+            ours.Order.Should().Be(0);
+            ours.HomeAway.Should().Be("home");
+
+            var occupant = await FootballDataContext.CompetitionCompetitors
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == occupantId);
+            occupant.Order.Should().Be(1, "the stale occupant takes the order we vacated");
+        }
+
+        [Fact]
+        public async Task WhenOccupantStrandedAtSwapParking_ShouldStillResolveOrderAndConverge()
+        {
+            // The exact 2026-09-07 WI/ND production shape, from the failing
+            // document's perspective: a prior crashed swap left the OTHER
+            // franchise's row at HomeAway='swap' still holding Order 0; OUR
+            // row is home/1; the doc says home/0. The side dance finds no
+            // occupant (nobody holds 'home'), so only the Order dance can
+            // free slot 0. End state: ours home/0; the stranded row keeps
+            // 'swap' but moves to Order 1 (its own document heals its side).
+
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+            var sut = Mocker.CreateInstance<FootballEventCompetitionCompetitorDocumentProcessor<FootballDataContext>>();
+
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaEventCompetitionCompetitor.json");
+            var dto = json.FromJson<EspnEventCompetitionCompetitorDto>();
+
+            var competitorIdentity = generator.Generate(dto!.Ref);
+            var teamIdentity = generator.Generate(dto.Team.Ref);
+
+            var competitionId = Guid.NewGuid();
+            await FootballDataContext.Competitions.AddAsync(new FootballCompetition
+            {
+                Id = competitionId,
+                ContestId = Guid.NewGuid(),
+                Date = FixedTestNow,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid()
+            });
+
+            var franchiseSeasonId = Guid.NewGuid();
+            await FootballDataContext.FranchiseSeasons.AddAsync(new FranchiseSeason
+            {
+                Id = franchiseSeasonId,
+                Abbreviation = "TST",
+                DisplayName = "Test FS",
+                DisplayNameShort = "TFS",
+                Slug = teamIdentity.CanonicalId.ToString(),
+                Location = "Test Location",
+                Name = "Test Franchise Season",
+                ColorCodeHex = "#FFFFFF",
+                ColorCodeAltHex = "#000000",
+                IsActive = true,
+                SeasonYear = 2024,
+                FranchiseId = Guid.NewGuid(),
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new FranchiseSeasonExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = teamIdentity.CleanUrl,
+                        SourceUrlHash = teamIdentity.UrlHash,
+                        Value = teamIdentity.UrlHash
+                    }
+                ]
+            });
+
+            // OUR row (Notre Dame in the incident): right side, stale order.
+            await FootballDataContext.CompetitionCompetitors.AddAsync(new FootballCompetitionCompetitor
+            {
+                Id = competitorIdentity.CanonicalId,
+                CompetitionId = competitionId,
+                FranchiseSeasonId = franchiseSeasonId,
+                HomeAway = "home",
+                Order = 1,
+                Winner = false,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds =
+                [
+                    new CompetitionCompetitorExternalId
+                    {
+                        Id = Guid.NewGuid(),
+                        Provider = SourceDataProvider.Espn,
+                        SourceUrl = competitorIdentity.CleanUrl,
+                        SourceUrlHash = competitorIdentity.UrlHash,
+                        Value = competitorIdentity.UrlHash
+                    }
+                ]
+            });
+
+            // The stranded row (Wisconsin in the incident): parked side,
+            // still holding the order our document claims.
+            var strandedId = Guid.NewGuid();
+            await FootballDataContext.CompetitionCompetitors.AddAsync(new FootballCompetitionCompetitor
+            {
+                Id = strandedId,
+                CompetitionId = competitionId,
+                FranchiseSeasonId = Guid.NewGuid(),
+                HomeAway = EventCompetitionCompetitorDocumentProcessorBase<FootballDataContext>.SwapParkingValue,
+                Order = 0,
+                Winner = false,
+                CreatedUtc = FixedTestNow,
+                CreatedBy = Guid.NewGuid()
+            });
+            await FootballDataContext.SaveChangesAsync();
+
+            var command = Fixture.Build<ProcessDocumentCommand>()
+                .With(x => x.Document, json)
+                .With(x => x.DocumentType, DocumentType.EventCompetitionCompetitor)
+                .With(x => x.SeasonYear, 2024)
+                .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+                .With(x => x.Sport, Sport.FootballNcaa)
+                .With(x => x.ParentId, competitionId.ToString())
+                .With(x => x.UrlHash, competitorIdentity.UrlHash)
+                .OmitAutoProperties()
+                .Create();
+
+            await sut.ProcessAsync(command);
+
+            var ours = await FootballDataContext.CompetitionCompetitors
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == competitorIdentity.CanonicalId);
+            ours.HomeAway.Should().Be("home");
+            ours.Order.Should().Be(0);
+
+            var stranded = await FootballDataContext.CompetitionCompetitors
+                .AsNoTracking()
+                .FirstAsync(x => x.Id == strandedId);
+            stranded.Order.Should().Be(1, "the stranded occupant vacates the order our document claims");
+        }
     }
 }

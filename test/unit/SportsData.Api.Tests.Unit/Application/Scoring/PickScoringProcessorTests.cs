@@ -1,4 +1,7 @@
 using AutoFixture;
+
+using FluentAssertions;
+
 using SportsData.Api.Application.Common.Enums;
 
 using Moq;
@@ -208,6 +211,90 @@ public class PickScoringProcessorTests : ApiTestBase<PickScoringProcessor>
                 e.AwayAbbreviation == "NYY" &&
                 e.HomeAbbreviation == "BOS"),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Process_WhenScorePickLeavesPickUnscored_DoesNotPublish()
+    {
+        // Pins the ScoredAt-is-null skip in the per-pick loop. ScorePick's
+        // PickType.OverUnder case is a documented no-op — IsCorrect AND
+        // ScoredAt both stay null — and a ScorePick exception is swallowed
+        // with the pick likewise unstamped. Either way the processor used to
+        // publish UserPickScored anyway, and consumers now read
+        // IsCorrect == null as a graded PUSH ("It's a push"), a fabricated
+        // claim for a pick that was never scored. The Moq default (no
+        // Callback stamping ScoredAt) IS the no-op contract here; if the
+        // guard is removed, the Publish below fires and this test fails.
+        var contestId = Guid.NewGuid();
+        var seasonWeekId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+
+        var result = Fixture.Build<MatchupResult>()
+            .With(x => x.ContestId, contestId)
+            .With(x => x.SeasonWeekId, seasonWeekId)
+            .With(x => x.WinnerFranchiseSeasonId, Guid.NewGuid())
+            .With(x => x.FinalizedUtc, FixedUtcNow)
+            .Create();
+
+        _contestClientMock
+            .Setup(x => x.GetMatchupResult(contestId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Success<MatchupResult>(result));
+
+        var matchup = Fixture.Build<PickemGroupMatchup>()
+            .With(x => x.ContestId, contestId)
+            .With(x => x.SeasonWeekId, seasonWeekId)
+            .With(x => x.GroupId, groupId)
+            .Create();
+
+        var group = Fixture.Build<PickemGroup>()
+            .With(x => x.Id, groupId)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.PickType, PickType.OverUnder)
+            .With(x => x.Weeks, new List<PickemGroupWeek>
+            {
+                new()
+                {
+                    SeasonWeekId = seasonWeekId,
+                    Matchups = new List<PickemGroupMatchup> { matchup },
+                    SeasonYear = 2026,
+                    SeasonWeek = 2,
+                    GroupId = groupId
+                }
+            })
+            .Create();
+
+        await DataContext.PickemGroups.AddAsync(group);
+
+        var pick = Fixture.Build<PickemGroupUserPick>()
+            .With(x => x.ContestId, contestId)
+            .With(x => x.PickemGroupId, groupId)
+            .With(x => x.Group, group)
+            .With(x => x.IsCorrect, (bool?)null)
+            .With(x => x.ScoredAt, (DateTime?)null)
+            .Create();
+
+        await DataContext.UserPicks.AddAsync(pick);
+        await DataContext.SaveChangesAsync();
+
+        var sut = Mocker.CreateInstance<PickScoringProcessor>();
+
+        await sut.Process(new ScorePicksCommand(contestId));
+
+        // ScorePick WAS invoked (the pick reached the loop) ...
+        Mocker.GetMock<IPickScoringService>()
+            .Verify(x => x.ScorePick(
+                    It.Is<PickemGroup>(g => g.Id == groupId),
+                    It.IsAny<double?>(),
+                    It.Is<PickemGroupUserPick>(p => p.Id == pick.Id),
+                    result),
+                Times.Once);
+
+        // ... but the unscored pick emitted no scored event and stays unstamped.
+        Mocker.GetMock<IEventBus>()
+            .Verify(b => b.Publish(It.IsAny<UserPickScored>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+
+        pick.ScoredAt.Should().BeNull();
     }
 
     [Fact]

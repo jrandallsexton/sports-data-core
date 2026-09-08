@@ -167,7 +167,15 @@ export default function PicksScreen() {
       // the first active league (that was the bug). NOT marked applied, so it
       // stays retryable until the fetch lands.
       if (candidatePastId === leagueIdParam && !allLeaguesFetched) return;
-      // Otherwise it's not one of the user's leagues → fall through to default.
+      // The fetch settled and the param matched nothing the user belongs to
+      // (a left/deleted league, a stale notification link). CONSUME it —
+      // an unresolvable param left unapplied would pin candidatePastId for
+      // the whole session and starve the store branch, so a newer
+      // deactivated selection from Standings could never materialize here.
+      // (If the fetch errored on a genuinely valid param, the store branch
+      // recovers it: Home/deep-link sources write the store too.)
+      setAppliedParam(leagueIdParam);
+      // Fall through to default.
     }
 
     // Initialize once: the app-wide selection when it's one of ours, else the

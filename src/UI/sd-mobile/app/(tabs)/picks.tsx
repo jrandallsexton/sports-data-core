@@ -143,11 +143,28 @@ export default function PicksScreen() {
   const [importOpen, setImportOpen] = useState(false);
 
 
+  // The param's priority is TEMPORAL, not positional: it represents intent at
+  // navigation time. Snapshot the store nonce when a param first goes pending;
+  // if the nonce advances past the snapshot (an explicit choice made anywhere
+  // while a slow includeDeactivated fetch resolves), the newer intent wins and
+  // the param is consumed unapplied — a stale deep link must never win merely
+  // because its resolution landed last.
+  const paramArrivalRef = useRef<{ param: string; nonce: number } | null>(null);
+
   // eslint-disable-next-line react-hooks/exhaustive-deps — intentionally excluding leagueId to only initialize/target, not rerun on user selection
   useEffect(() => {
     // Deep-link param wins: an active league, or the on-demand past league.
     // A deep link is explicit intent, so it writes the app-wide selection too.
     if (leagueIdParam && appliedParam !== leagueIdParam) {
+      if (paramArrivalRef.current?.param !== leagueIdParam) {
+        paramArrivalRef.current = { param: leagueIdParam, nonce: storeNonce };
+      }
+      if (storeNonce > paramArrivalRef.current.nonce) {
+        // A newer explicit choice happened while this param was pending —
+        // consume it unapplied; the store branch owns the selection now.
+        setAppliedParam(leagueIdParam);
+        return;
+      }
       const active = leagues.find((l) => l.id === leagueIdParam);
       if (active) {
         setAppliedParam(leagueIdParam);
@@ -186,7 +203,7 @@ export default function PicksScreen() {
       setLeagueId(initial.id);
       setSelectedWeek(defaultWeek(initial));
     }
-  }, [leagues, leagueIdParam, appliedParam, pastLeagueAsLeague, candidatePastId, allLeaguesFetched]);
+  }, [leagues, leagueIdParam, appliedParam, storeNonce, pastLeagueAsLeague, candidatePastId, allLeaguesFetched]);
 
   // Adopt a league chosen on ANOTHER surface while this tab stays mounted
   // (tab navigators keep screens alive). Keyed on the selection NONCE and

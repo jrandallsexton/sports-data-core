@@ -39,12 +39,14 @@ export function useSeasonLeagueSelection(
   /**
    * The app-wide current league (leagueSelectionStore). Adopted — season
    * flipped along, ended-filter opened if needed — when it names one of the
-   * user's leagues. Each distinct value is adopted at most ONCE, so local
+   * user's leagues. Each selection NONCE is consumed at most once, so local
    * browsing afterwards (switching seasons snaps the selection) is never
-   * yanked back; and because every explicit local pick writes the store, the
-   * store and local selection only diverge when ANOTHER surface chose.
+   * yanked back by the same stale choice — while a fresh explicit re-choice
+   * of the SAME league elsewhere (new nonce) still converges here.
    */
   preferredLeagueId?: string | null,
+  /** leagueSelectionStore.selectionNonce — bumps on every explicit choice. */
+  preferredNonce?: number,
 ): SeasonLeagueSelection {
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
@@ -108,19 +110,26 @@ export function useSeasonLeagueSelection(
   // first, the season-validity effect would overwrite the adopted season and
   // the snap effect would then yank the adopted league. Last-writer here,
   // validated by the reconcilers on the following pass.
-  const adoptedRef = useRef<string | null>(null);
+  //
+  // Consumption is keyed on the NONCE, not the id: each explicit choice is
+  // adopted once (recorded even when it matches the current selection, so a
+  // later reconciliation snap can't resurrect a stale preference), while a
+  // fresh re-choice of the same league elsewhere arrives as a new nonce and
+  // converges the local selection again.
+  const adoptedNonceRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!preferredLeagueId || preferredLeagueId === selectedLeagueId) return;
-    if (adoptedRef.current === preferredLeagueId) return;
+    if (!preferredLeagueId || preferredNonce == null) return;
+    if (adoptedNonceRef.current === preferredNonce) return;
     const target = allLeagues.find((l) => l.id === preferredLeagueId);
     if (!target) return;
-    adoptedRef.current = preferredLeagueId;
+    adoptedNonceRef.current = preferredNonce;
+    if (preferredLeagueId === selectedLeagueId) return; // consumed; nothing to move
     setSelectedSeason(target.seasonYear);
     // A current-season ended league would be filtered out and snapped away —
     // reveal ended leagues so the adoption sticks.
     if (target.deactivatedUtc) setShowEnded(true);
     setSelectedLeagueId(target.id);
-  }, [preferredLeagueId, allLeagues, selectedLeagueId]);
+  }, [preferredLeagueId, preferredNonce, allLeagues, selectedLeagueId]);
 
   return {
     seasons,

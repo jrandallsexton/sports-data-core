@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   FlatList,
@@ -10,6 +10,7 @@ import {
   UIManager,
   ScrollView,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
@@ -69,8 +70,11 @@ export function ByWeekPane({
   const { data: userOptions } = useUserOptions();
   const showGambling = shouldShowGambling(pickType, userOptions);
 
+  // Poll only while FOCUSED (tab screens stay mounted) — the hook stops on
+  // its own once every game is final.
+  const isFocused = useIsFocused();
   const { data: overview, isLoading, isError, refetch, isRefetching } =
-    useLeagueWeekOverview(leagueId, week);
+    useLeagueWeekOverview(leagueId, week, isFocused);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const toggleExpanded = (contestId: string) => {
@@ -83,7 +87,16 @@ export function ByWeekPane({
     });
   };
 
-  const nowMs = Date.now();
+  // 15s clock tick while focused (picks.tsx precedent): time-only derivations
+  // — the LOCKED→LIVE flip at kickoff, the pre-lock countdown — advance
+  // between refetches instead of freezing at the last render's timestamp.
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (!isFocused) return undefined;
+    setNowMs(Date.now());
+    const id = setInterval(() => setNowMs(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, [isFocused]);
 
   const derived = useMemo(() => {
     if (!overview) return null;
@@ -97,8 +110,7 @@ export function ByWeekPane({
       picksByUser: indexPicks(picks),
       summary: summarizeWeek(overview, nowMs),
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [overview, showBots]);
+  }, [overview, showBots, nowMs]);
 
   const weekChips = (
     <View style={styles.weekRow}>
@@ -128,6 +140,22 @@ export function ByWeekPane({
       </ScrollView>
     </View>
   );
+
+  // A week-less league (slate not generated yet, or a future season whose
+  // weeks aren't sourced) reaches here with week == null: the query is
+  // disabled, so isLoading never resolves and isError never fires — without
+  // this branch the pane would spin forever with no escape.
+  if (week == null) {
+    return (
+      <View style={styles.fill}>
+        <EmptyState
+          icon="📅"
+          title="No weeks yet"
+          subtitle="This league's schedule hasn't been generated yet — check back soon."
+        />
+      </View>
+    );
+  }
 
   if (isLoading || !derived) {
     return (
@@ -247,7 +275,7 @@ export function ByWeekPane({
           summary.unlockedCount > 0 ? (
             <Text style={[styles.footerNote, { color: theme.textMuted }]}>
               🔒 {summary.unlockedCount} more {summary.unlockedCount === 1 ? 'game' : 'games'} —
-              picks reveal at kickoff
+              picks reveal 5 min before kickoff
             </Text>
           ) : null
         }

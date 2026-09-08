@@ -73,17 +73,24 @@ export default function PicksScreen() {
   // /(tabs)/picks?leagueId=<id> so the screen opens on that league directly.
   const { leagueId: leagueIdParam } = useLocalSearchParams<{ leagueId?: string }>();
 
-  // Viewing a PAST (deactivated) league: /user/me is active-only, so a deep-link
-  // param that isn't in the active set is fetched on demand (getUserLeagues
-  // includes deactivated) and rendered read-only. Reuses the My Leagues query
-  // key so arriving from that screen costs no extra request.
-  const candidatePastId = useMemo(
-    () =>
-      leagueIdParam && !leagues.some((l) => l.id === leagueIdParam)
-        ? leagueIdParam
-        : null,
-    [leagueIdParam, leagues],
-  );
+  // App-wide current league (leagueSelectionStore): a deep-link or explicit
+  // tap here writes it; a choice made on another surface (Standings, Home) is
+  // adopted below. The nonce subscription matters: re-choosing the SAME
+  // league elsewhere bumps only the nonce.
+  const storeLeagueId = useLeagueSelectionStore((s) => s.selectedLeagueId);
+  const storeNonce = useLeagueSelectionStore((s) => s.selectionNonce);
+  const setStoreLeague = useLeagueSelectionStore((s) => s.setSelectedLeague);
+
+  // Viewing a PAST (deactivated) league: /user/me is active-only, so a
+  // deep-link param — or an app-wide selection made on Standings, whose list
+  // includes past seasons — that isn't in the active set is fetched on demand
+  // (getUserLeagues includes deactivated) and rendered read-only. Reuses the
+  // My Leagues query key so arriving from that screen costs no extra request.
+  const candidatePastId = useMemo(() => {
+    if (leagueIdParam && !leagues.some((l) => l.id === leagueIdParam)) return leagueIdParam;
+    if (storeLeagueId && !leagues.some((l) => l.id === storeLeagueId)) return storeLeagueId;
+    return null;
+  }, [leagueIdParam, storeLeagueId, leagues]);
   const { data: allLeagues, isFetched: allLeaguesFetched } = useQuery({
     queryKey: leaguesKeys.mine,
     queryFn: () =>
@@ -120,32 +127,34 @@ export default function PicksScreen() {
   const [importOpen, setImportOpen] = useState(false);
 
 
-  // App-wide current league (leagueSelectionStore): a deep-link or explicit
-  // tap here writes it; a choice made on another surface (Standings, Home) is
-  // adopted below.
-  const storeLeagueId = useLeagueSelectionStore((s) => s.selectedLeagueId);
-  const setStoreLeague = useLeagueSelectionStore((s) => s.setSelectedLeague);
+  // A deep-link selection is applied ONCE per param value: the param sticks
+  // in the route, and re-applying it whenever leagues refetch would overwrite
+  // a newer choice made on another surface with the stale param.
+  const appliedParamRef = useRef<string | null>(null);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps — intentionally excluding leagueId to only initialize/target, not rerun on user selection
   useEffect(() => {
     // Deep-link param wins: an active league, or the on-demand past league.
     // A deep link is explicit intent, so it writes the app-wide selection too.
-    if (leagueIdParam) {
+    if (leagueIdParam && appliedParamRef.current !== leagueIdParam) {
       const active = leagues.find((l) => l.id === leagueIdParam);
       if (active) {
+        appliedParamRef.current = leagueIdParam;
         setLeagueId(active.id);
         setSelectedWeek(defaultWeek(active));
         setStoreLeague(active.id);
         return;
       }
       if (pastLeagueAsLeague && pastLeagueAsLeague.id === leagueIdParam) {
+        appliedParamRef.current = leagueIdParam;
         setLeagueId(pastLeagueAsLeague.id);
         setSelectedWeek(defaultWeek(pastLeagueAsLeague));
         setStoreLeague(pastLeagueAsLeague.id);
         return;
       }
       // Param is a past league still being fetched → wait rather than default to
-      // the first active league (that was the bug).
+      // the first active league (that was the bug). NOT marked applied, so it
+      // stays retryable until the fetch lands.
       if (candidatePastId === leagueIdParam && !allLeaguesFetched) return;
       // Otherwise it's not one of the user's leagues → fall through to default.
     }
@@ -161,16 +170,21 @@ export default function PicksScreen() {
   }, [leagues, leagueIdParam, pastLeagueAsLeague, candidatePastId, allLeaguesFetched]);
 
   // Adopt a league chosen on ANOTHER surface while this tab stays mounted
-  // (tab navigators keep screens alive). Our own picks write the store first,
-  // so store === local means nothing to do; validation against
-  // selectableLeagues keeps a foreign id from clearing the screen.
+  // (tab navigators keep screens alive). Keyed on the selection NONCE and
+  // consumed once, so our own writes (which bump it) no-op via the same-id
+  // guard without resetting the week, and a stale store value can't re-fire;
+  // validation against selectableLeagues keeps a foreign id from clearing
+  // the screen (past leagues become selectable via candidatePastId above).
+  const adoptedNonceRef = useRef<number | null>(null);
   useEffect(() => {
-    if (!storeLeagueId || storeLeagueId === leagueId) return;
+    if (!storeLeagueId || adoptedNonceRef.current === storeNonce) return;
     const target = selectableLeagues.find((l) => l.id === storeLeagueId);
     if (!target) return;
+    adoptedNonceRef.current = storeNonce;
+    if (target.id === leagueId) return; // consumed; already here — keep the week
     setLeagueId(target.id);
     setSelectedWeek(defaultWeek(target));
-  }, [storeLeagueId, selectableLeagues, leagueId]);
+  }, [storeLeagueId, storeNonce, selectableLeagues, leagueId]);
 
   const selectedLeague = selectableLeagues.find((l) => l.id === leagueId) ?? null;
   const seasonWeeks = selectedLeague?.seasonWeeks ?? [];

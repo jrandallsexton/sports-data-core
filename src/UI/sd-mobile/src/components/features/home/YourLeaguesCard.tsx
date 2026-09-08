@@ -34,10 +34,11 @@ export function YourLeaguesCard({ leagues }: Props) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const router = useRouter();
+  // Above the early return — a conditional hook call would change the hook
+  // count when `leagues` goes empty→non-empty and crash the renderer.
+  const setStoreLeague = useLeagueSelectionStore((s) => s.setSelectedLeague);
 
   if (leagues.length === 0) return null;
-
-  const setStoreLeague = useLeagueSelectionStore((s) => s.setSelectedLeague);
 
   const openLeague = (leagueId: string) => {
     // Explicit tap → app-wide selection, so Standings (and anything else)

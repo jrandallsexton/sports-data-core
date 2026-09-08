@@ -62,22 +62,45 @@ export function StandingsControls({
   // otherwise open so the user can pick.
   const [collapsed, setCollapsed] = useState(() => selectedLeagueId != null);
 
-  // Auto-close whenever a selection is in hand:
-  //  - on tab focus (navigating Picks → Standings must land content-first,
-  //    not on an open picker shoving everything down), and
-  //  - when the selection changes while focused — the async reconciliation
-  //    landing after mount, an adoption from the app-wide league store, or
-  //    the user tapping a league in the open panel (task complete → close).
-  // Browsing with the panel open (season taps, pills) doesn't change
-  // selectedLeagueId, so it never slams shut mid-exploration.
+  // Auto-close ONLY on:
+  //  - tab focus with a selection in hand (navigating Picks → Standings must
+  //    land content-first, not on an open picker shoving everything down) —
+  //    the selection is read through a ref so the focus callback identity
+  //    never changes: keying it on selectedLeagueId made useFocusEffect
+  //    re-run mid-focus, and a season tap whose reconciliation SNAP changed
+  //    the selection slammed the panel shut mid-exploration; and
+  //  - an explicit league tap in the open panel (task complete → close),
+  //    wired at the chip press below — snap-driven selection changes don't
+  //    come through there.
+  // The mount race (selection landing async after focus) is covered by the
+  // collapse in the league-tap path plus initial `collapsed` state; a user
+  // who arrives selection-less keeps the panel open to pick.
+  const selectedLeagueIdRef = React.useRef(selectedLeagueId);
+  selectedLeagueIdRef.current = selectedLeagueId;
+  const focusArmedRef = React.useRef(false);
   useFocusEffect(
     React.useCallback(() => {
-      if (selectedLeagueId != null) {
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      if (selectedLeagueIdRef.current != null) {
         setCollapsed(true);
+      } else {
+        // Selection hasn't landed yet (async reconciliation) — collapse once
+        // it does, then disarm so later selection changes don't re-collapse.
+        focusArmedRef.current = true;
       }
-    }, [selectedLeagueId]),
+    }, []),
   );
+  React.useEffect(() => {
+    if (focusArmedRef.current && selectedLeagueId != null) {
+      focusArmedRef.current = false;
+      setCollapsed(true);
+    }
+  }, [selectedLeagueId]);
+
+  const pickLeague = (id: string) => {
+    onLeagueChange(id);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setCollapsed(true);
+  };
 
   const toggle = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -133,7 +156,7 @@ export function StandingsControls({
     leagues.length > 1 ? (
       <View style={styles.wrapRow}>
         {leagues.map((l) =>
-          chip(l.id, l.name, l.id === selectedLeagueId, () => onLeagueChange(l.id), styles.leagueChip),
+          chip(l.id, l.name, l.id === selectedLeagueId, () => pickLeague(l.id), styles.leagueChip),
         )}
       </View>
     ) : null,

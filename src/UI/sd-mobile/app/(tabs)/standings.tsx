@@ -93,8 +93,10 @@ export default function StandingsScreen() {
   const { data: allLeagues = [], isLoading: leaguesLoading } = useUserLeagues();
 
   // App-wide current league: adopt what another surface (Picks, Home) chose,
-  // and record explicit choices made here.
+  // and record explicit choices made here. The nonce subscription matters:
+  // re-choosing the SAME league elsewhere bumps only the nonce.
   const storeLeagueId = useLeagueSelectionStore((s) => s.selectedLeagueId);
+  const storeNonce = useLeagueSelectionStore((s) => s.selectionNonce);
   const setStoreLeague = useLeagueSelectionStore((s) => s.setSelectedLeague);
 
   // Season/league selection state machine (derivation + reconciliation).
@@ -108,7 +110,7 @@ export default function StandingsScreen() {
     canFilterEnded,
     showEnded,
     setShowEnded,
-  } = useSeasonLeagueSelection(allLeagues, storeLeagueId);
+  } = useSeasonLeagueSelection(allLeagues, storeLeagueId, storeNonce);
 
   // Explicit league taps write the app-wide selection; reconciliation snaps
   // and defaults never do (see leagueSelectionStore contract).

@@ -103,21 +103,21 @@ describe('useSeasonLeagueSelection', () => {
     ];
 
     it('adopts the preferred league and flips the season along', () => {
-      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'old-2025'));
+      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'old-2025', 1));
 
       expect(result.current.selectedLeagueId).toBe('old-2025');
       expect(result.current.selectedSeason).toBe(2025);
     });
 
     it('adopts an ended current-season league by revealing ended leagues', () => {
-      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'ended-2026'));
+      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'ended-2026', 1));
 
       expect(result.current.selectedLeagueId).toBe('ended-2026');
       expect(result.current.showEnded).toBe(true);
     });
 
-    it('adopts each preferred value at most once — local browsing is never yanked back', () => {
-      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'old-2025'));
+    it('consumes each nonce once — local browsing is never yanked back', () => {
+      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'old-2025', 1));
       expect(result.current.selectedLeagueId).toBe('old-2025');
 
       // The user browses back to 2026; reconciliation snaps to the first
@@ -127,8 +127,44 @@ describe('useSeasonLeagueSelection', () => {
       expect(result.current.selectedLeagueId).not.toBe('old-2025');
     });
 
+    it('a preference equal to the current selection still consumes its nonce', () => {
+      // CR-738: pref arrives naming the league we already defaulted to; if
+      // the nonce is not recorded on that path, a later season browse makes
+      // pref differ from the selection and the STALE choice re-adopts.
+      const { result, rerender } = renderHook(
+        ({ pref, nonce }: { pref: string | null; nonce: number }) =>
+          useSeasonLeagueSelection(leagues, pref, nonce),
+        { initialProps: { pref: null as string | null, nonce: 0 } },
+      );
+      expect(result.current.selectedLeagueId).toBe('a-2026'); // default
+
+      rerender({ pref: 'a-2026', nonce: 1 }); // matches current selection
+
+      act(() => result.current.setSelectedSeason(2025));
+      expect(result.current.selectedLeagueId).toBe('old-2025'); // snap
+      // The consumed nonce must not drag the selection back to a-2026.
+      expect(result.current.selectedSeason).toBe(2025);
+    });
+
+    it('re-choosing the SAME league elsewhere (new nonce) converges again', () => {
+      // Vortex-738: after local browsing diverges, a fresh explicit tap of
+      // the same league on another surface must still propagate.
+      const { result, rerender } = renderHook(
+        ({ nonce }: { nonce: number }) => useSeasonLeagueSelection(leagues, 'old-2025', nonce),
+        { initialProps: { nonce: 1 } },
+      );
+      expect(result.current.selectedLeagueId).toBe('old-2025');
+
+      act(() => result.current.setSelectedSeason(2026)); // browse away, snap
+      expect(result.current.selectedLeagueId).not.toBe('old-2025');
+
+      rerender({ nonce: 2 }); // same league, fresh explicit choice
+      expect(result.current.selectedLeagueId).toBe('old-2025');
+      expect(result.current.selectedSeason).toBe(2025);
+    });
+
     it('ignores a preferred id that is not one of the user leagues', () => {
-      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'foreign'));
+      const { result } = renderHook(() => useSeasonLeagueSelection(leagues, 'foreign', 1));
 
       expect(result.current.selectedLeagueId).toBe('a-2026');
     });

@@ -187,6 +187,18 @@ namespace SportsData.Api.Application.Scoring
                         _logger.LogError(ex, "Error scoring pick {PickId} for group {GroupId}", pick.Id, group.Id);
                     }
 
+                    // Proceed ONLY when ScorePick actually scored the pick.
+                    // PickType.OverUnder is a documented no-op (IsCorrect and
+                    // ScoredAt both stay null) yet used to publish anyway —
+                    // and since IsCorrect null now means PUSH to consumers,
+                    // an unscored O/U pick would be announced as "It's a
+                    // push", a fabricated claim. No score: no audit stamp,
+                    // no scored event.
+                    if (pick.ScoredAt is null)
+                    {
+                        continue;
+                    }
+
                     pick.ModifiedUtc = _dateTimeProvider.UtcNow();
                     pick.ModifiedBy = CausationId.Api.PickScoringProcessor;
 

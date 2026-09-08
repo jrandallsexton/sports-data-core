@@ -117,12 +117,13 @@ namespace SportsData.Producer.Application.Contests
 
                     if (primaryOddsLate != null)
                     {
+                        var lateSpreadWinner = ToContestSpreadWinner(primaryOddsLate.AtsWinnerFranchiseSeasonId);
                         var denormChanged =
                             contest.OverUnder != primaryOddsLate.OverUnderResult
-                            || contest.SpreadWinnerFranchiseSeasonId != primaryOddsLate.AtsWinnerFranchiseSeasonId;
+                            || contest.SpreadWinnerFranchiseSeasonId != lateSpreadWinner;
 
                         contest.OverUnder = primaryOddsLate.OverUnderResult;
-                        contest.SpreadWinnerFranchiseSeasonId = primaryOddsLate.AtsWinnerFranchiseSeasonId;
+                        contest.SpreadWinnerFranchiseSeasonId = lateSpreadWinner;
 
                         if (denormChanged)
                         {
@@ -268,7 +269,7 @@ namespace SportsData.Producer.Application.Contests
                     if (primaryOdds != null)
                     {
                         contest.OverUnder = primaryOdds.OverUnderResult;
-                        contest.SpreadWinnerFranchiseSeasonId = primaryOdds.AtsWinnerFranchiseSeasonId;
+                        contest.SpreadWinnerFranchiseSeasonId = ToContestSpreadWinner(primaryOdds.AtsWinnerFranchiseSeasonId);
 
                         _logger.LogInformation(
                             "Primary odds provider selected. ProviderName={ProviderName}, OverUnderResult={OverUnderResult}, AtsWinner={AtsWinnerFranchiseSeasonId}",
@@ -370,6 +371,18 @@ namespace SportsData.Producer.Application.Contests
                     odds.OverUnderResult);
             }
         }
+
+
+        /// <summary>
+        /// The odds ROW uses Guid.Empty as its push sentinel (null there means
+        /// "no spread computed"). The Contest denorm and the ContestFinalized
+        /// wire use null for push — the event contract documents "null on a
+        /// true spread push" — so the sentinel must not leak past this
+        /// boundary: it reached clients as an id matching neither team (blank
+        /// result row + every ATS pick graded a loss, 2026-09-07 SMU@FSU).
+        /// </summary>
+        private static Guid? ToContestSpreadWinner(Guid? atsWinnerFranchiseSeasonId)
+            => atsWinnerFranchiseSeasonId == Guid.Empty ? null : atsWinnerFranchiseSeasonId;
 
         internal OverUnderResult GetOverUnderResult(int awayScore, int homeScore, decimal overUnder)
         {

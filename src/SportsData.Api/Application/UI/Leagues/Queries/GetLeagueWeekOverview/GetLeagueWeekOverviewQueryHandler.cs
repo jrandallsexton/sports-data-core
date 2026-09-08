@@ -205,6 +205,7 @@ public class GetLeagueWeekOverviewQueryHandler : IGetLeagueWeekOverviewQueryHand
                 ContestId = p.ContestId,
                 FranchiseSeasonId = p.FranchiseSeasonId ?? Guid.Empty,
                 IsCorrect = p.IsCorrect,
+                ScoredAt = p.ScoredAt,
                 PickType = p.PickType,
                 TiebreakerGuessTotal = p.TiebreakerGuessTotal,
                 PointsAwarded = p.PointsAwarded,

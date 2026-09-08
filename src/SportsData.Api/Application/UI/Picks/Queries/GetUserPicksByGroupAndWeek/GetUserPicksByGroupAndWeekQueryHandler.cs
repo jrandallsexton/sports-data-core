@@ -71,6 +71,7 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
                 ContestId = p.ContestId,
                 FranchiseSeasonId = p.FranchiseSeasonId ?? Guid.Empty,
                 IsCorrect = p.IsCorrect,
+                ScoredAt = p.ScoredAt,
                 PickType = p.PickType,
                 TiebreakerGuessTotal = p.TiebreakerGuessTotal,
                 PointsAwarded = p.PointsAwarded,
@@ -111,9 +112,14 @@ public class GetUserPicksByGroupAndWeekQueryHandler : IGetUserPicksByGroupAndWee
         var now = _dateTimeProvider.UtcNow();
         var scoringHorizon = now - TimeSpan.FromHours(24);
         var picksByContest = picks.ToDictionary(p => p.ContestId);
+        // A scored PUSH (ScoredAt set, IsCorrect null) is DECIDED, not pending:
+        // it must neither linger in PendingCount for the 24h horizon nor be
+        // mistaken for an unscored pick. It lands in the derived no-result
+        // bucket (totalMatchups - correct - incorrect - pending) — "the bet
+        // never happened".
         var pendingCount = matchups.Count(m =>
             picksByContest.TryGetValue(m.ContestId, out var pick)
-                ? pick.IsCorrect is null && m.StartDateUtc > scoringHorizon
+                ? pick.IsCorrect is null && pick.ScoredAt is null && m.StartDateUtc > scoringHorizon
                 : m.StartDateUtc > now);
 
         return new Success<UserPicksResultDto>(new UserPicksResultDto

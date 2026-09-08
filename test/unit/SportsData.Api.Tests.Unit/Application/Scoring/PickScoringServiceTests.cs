@@ -281,9 +281,14 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
     }
 
     [Fact]
-    public void ScorePick_AgainstTheSpread_Push_HomeFavorite_PickIsIncorrect()
+    public void ScorePick_AgainstTheSpread_Push_HomeFavorite_GradesNobody()
     {
-        // Home favored by 7 (spread = -7), Home wins 24-17 exactly (push)
+        // Home favored by 7 (spread = -7), Home wins 24-17 exactly (push).
+        // A push means the bet never happened: IsCorrect stays NULL (with
+        // ScoredAt set so the processor never re-selects it), 0 points, and
+        // the pick is excluded from accuracy. Until 2026-09-08 this test
+        // pinned the OPPOSITE (push graded as a loss) — SMU -3 winning 27-24
+        // marked every ATS pick incorrect in prod.
         var group = Fixture.Build<PickemGroup>()
             .With(g => g.PickType, PickType.AgainstTheSpread)
             .With(g => g.UseConfidencePoints, false)
@@ -306,16 +311,17 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 
         _sut.ScorePick(group, result.Spread, pick, result);
 
-        pick.IsCorrect.Should().BeFalse("a push should result in IsCorrect = false");
+        pick.IsCorrect.Should().BeNull("a push grades nobody — the bet never happened");
         pick.PointsAwarded.Should().Be(0);
-        pick.ScoredAt.Should().NotBeNull();
+        pick.ScoredAt.Should().NotBeNull("a push IS scored — the processor must not re-select it");
         pick.WasAgainstSpread.Should().BeTrue();
     }
 
     [Fact]
-    public void ScorePick_AgainstTheSpread_Push_AwayFavorite_PickIsIncorrect()
+    public void ScorePick_AgainstTheSpread_Push_AwayFavorite_GradesNobody()
     {
-        // Away favored by 6 (spread = 6), Away wins 23-17 exactly (push)
+        // Away favored by 6 (spread = 6), Away wins 23-17 exactly (push).
+        // Same contract as the home-favorite push: graded nobody.
         var group = Fixture.Build<PickemGroup>()
             .With(g => g.PickType, PickType.AgainstTheSpread)
             .With(g => g.UseConfidencePoints, false)
@@ -338,9 +344,9 @@ public class PickScoringServiceTests : ApiTestBase<PickScoringService>
 
         _sut.ScorePick(group, result.Spread, pick, result);
 
-        pick.IsCorrect.Should().BeFalse("a push should result in IsCorrect = false");
+        pick.IsCorrect.Should().BeNull("a push grades nobody — the bet never happened");
         pick.PointsAwarded.Should().Be(0);
-        pick.ScoredAt.Should().NotBeNull();
+        pick.ScoredAt.Should().NotBeNull("a push IS scored — the processor must not re-select it");
         pick.WasAgainstSpread.Should().BeTrue();
     }
 

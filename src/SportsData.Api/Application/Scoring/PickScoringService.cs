@@ -137,7 +137,22 @@ public class PickScoringService : IPickScoringService
             // else: it's a push → leave spreadWinnerId as null
         }
 
-        pick.IsCorrect = spreadWinnerId.HasValue && pick.FranchiseSeasonId == spreadWinnerId.Value;
+        // PUSH: the game landed exactly on the line — the bet never happened.
+        // Nobody is graded: IsCorrect stays null (with ScoredAt set, so the
+        // processor's ScoredAt == null selection never re-scores it) and the
+        // centralized points block awards 0. Distinct from a loss: pushes are
+        // excluded from accuracy (leaderboard counts decided picks only) and
+        // render as "Push", not ✗. Was graded as a loss until 2026-09-08
+        // (SMU@FSU: SMU -3, 27-24 — every ATS pick marked incorrect).
+        if (!spreadWinnerId.HasValue)
+        {
+            pick.IsCorrect = null;
+            pick.ScoredAt = now;
+            pick.AuditedUtc = null;
+            return;
+        }
+
+        pick.IsCorrect = pick.FranchiseSeasonId == spreadWinnerId.Value;
         pick.ScoredAt = now;
         pick.AuditedUtc = null;
     }

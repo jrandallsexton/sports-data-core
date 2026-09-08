@@ -92,7 +92,11 @@ public class GetLeaderboardQueryHandler : IGetLeaderboardQueryHandler
                     .Where(p => p.Week == currentWeek)
                     .Sum(p => p.PointsAwarded ?? 0),
                 WeeksPlayed = g.Select(p => p.Week).Distinct().Count(),
-                TotalPicks = g.Count(),
+                // A PUSH (scored but ungraded: ScoredAt set, IsCorrect null)
+                // is excluded from the accuracy denominator — the bet never
+                // happened. Pending picks (ScoredAt null) still count, so the
+                // mid-week X/Y display keeps meaning "correct of picks made".
+                TotalPicks = g.Count(p => p.ScoredAt == null || p.IsCorrect != null),
                 TotalCorrect = g.Count(p => p.IsCorrect.HasValue && p.IsCorrect.Value == true)
             })
             .ToListAsync(cancellationToken);

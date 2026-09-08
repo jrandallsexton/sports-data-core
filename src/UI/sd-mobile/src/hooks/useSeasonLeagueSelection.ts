@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
 import type { LeagueSummary } from '@/src/services/api/leaguesApi';
 
 export interface SeasonLeagueSelection {
@@ -34,7 +34,20 @@ export interface SeasonLeagueSelection {
  *  - selectedLeagueId snaps to the first visible league whenever it drops out of
  *    the current season/filter.
  */
-export function useSeasonLeagueSelection(allLeagues: LeagueSummary[]): SeasonLeagueSelection {
+export function useSeasonLeagueSelection(
+  allLeagues: LeagueSummary[],
+  /**
+   * The app-wide current league (leagueSelectionStore). Adopted — season
+   * flipped along, ended-filter opened if needed — when it names one of the
+   * user's leagues. Each selection NONCE is consumed at most once, so local
+   * browsing afterwards (switching seasons snaps the selection) is never
+   * yanked back by the same stale choice — while a fresh explicit re-choice
+   * of the SAME league elsewhere (new nonce) still converges here.
+   */
+  preferredLeagueId?: string | null,
+  /** leagueSelectionStore.selectionNonce — bumps on every explicit choice. */
+  preferredNonce?: number,
+): SeasonLeagueSelection {
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
   const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
   // Active-only by default to keep the league row short; the pill reveals ended.
@@ -90,6 +103,33 @@ export function useSeasonLeagueSelection(allLeagues: LeagueSummary[]): SeasonLea
       setSelectedLeagueId(seasonLeagues[0].id);
     }
   }, [selectedSeason, seasonLeagues, selectedLeagueId]);
+
+  // Adoption of the app-wide preferred league. Declared AFTER the two
+  // reconciliation effects deliberately: effects run in declaration order,
+  // and within one commit the reconcilers read pre-adoption state — declared
+  // first, the season-validity effect would overwrite the adopted season and
+  // the snap effect would then yank the adopted league. Last-writer here,
+  // validated by the reconcilers on the following pass.
+  //
+  // Consumption is keyed on the NONCE, not the id: each explicit choice is
+  // adopted once (recorded even when it matches the current selection, so a
+  // later reconciliation snap can't resurrect a stale preference), while a
+  // fresh re-choice of the same league elsewhere arrives as a new nonce and
+  // converges the local selection again.
+  const adoptedNonceRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!preferredLeagueId || preferredNonce == null) return;
+    if (adoptedNonceRef.current === preferredNonce) return;
+    const target = allLeagues.find((l) => l.id === preferredLeagueId);
+    if (!target) return;
+    adoptedNonceRef.current = preferredNonce;
+    if (preferredLeagueId === selectedLeagueId) return; // consumed; nothing to move
+    setSelectedSeason(target.seasonYear);
+    // A current-season ended league would be filtered out and snapped away —
+    // reveal ended leagues so the adoption sticks.
+    if (target.deactivatedUtc) setShowEnded(true);
+    setSelectedLeagueId(target.id);
+  }, [preferredLeagueId, preferredNonce, allLeagues, selectedLeagueId]);
 
   return {
     seasons,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useLeagueSelectionStore } from '@/src/stores/leagueSelectionStore';
 import { Text } from '@/src/components/ui/AppText';
 import { useColorScheme } from '@/src/lib/theme/ThemeContext';
 import { getTheme } from '@/constants/Colors';
@@ -33,10 +34,16 @@ export function YourLeaguesCard({ leagues }: Props) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const router = useRouter();
+  // Above the early return — a conditional hook call would change the hook
+  // count when `leagues` goes empty→non-empty and crash the renderer.
+  const setStoreLeague = useLeagueSelectionStore((s) => s.setSelectedLeague);
 
   if (leagues.length === 0) return null;
 
   const openLeague = (leagueId: string) => {
+    // Explicit tap → app-wide selection, so Standings (and anything else)
+    // lands on this league too; the param keeps the Picks deep-link exact.
+    setStoreLeague(leagueId);
     router.push({
       pathname: '/(tabs)/picks',
       params: { leagueId },

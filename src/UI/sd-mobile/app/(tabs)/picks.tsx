@@ -81,16 +81,32 @@ export default function PicksScreen() {
   const storeNonce = useLeagueSelectionStore((s) => s.selectionNonce);
   const setStoreLeague = useLeagueSelectionStore((s) => s.setSelectedLeague);
 
+  // A deep-link selection is applied ONCE per param value: the param sticks
+  // in the route, and re-applying it whenever leagues refetch would overwrite
+  // a newer choice made on another surface with the stale param. State (not a
+  // ref) because candidatePastId's memo must recompute when it flips.
+  const [appliedParam, setAppliedParam] = useState<string | null>(null);
+
   // Viewing a PAST (deactivated) league: /user/me is active-only, so a
   // deep-link param — or an app-wide selection made on Standings, whose list
   // includes past seasons — that isn't in the active set is fetched on demand
   // (getUserLeagues includes deactivated) and rendered read-only. Reuses the
   // My Leagues query key so arriving from that screen costs no extra request.
+  // The route param claims the candidate slot only while UNRESOLVED: it
+  // sticks in the route after being applied, and letting it keep outranking
+  // the store would pin the on-demand fetch to the stale param — a NEWER
+  // deactivated selection from Standings could then never materialize here.
   const candidatePastId = useMemo(() => {
-    if (leagueIdParam && !leagues.some((l) => l.id === leagueIdParam)) return leagueIdParam;
+    if (
+      leagueIdParam &&
+      appliedParam !== leagueIdParam &&
+      !leagues.some((l) => l.id === leagueIdParam)
+    ) {
+      return leagueIdParam;
+    }
     if (storeLeagueId && !leagues.some((l) => l.id === storeLeagueId)) return storeLeagueId;
     return null;
-  }, [leagueIdParam, storeLeagueId, leagues]);
+  }, [leagueIdParam, appliedParam, storeLeagueId, leagues]);
   const { data: allLeagues, isFetched: allLeaguesFetched } = useQuery({
     queryKey: leaguesKeys.mine,
     queryFn: () =>
@@ -127,26 +143,21 @@ export default function PicksScreen() {
   const [importOpen, setImportOpen] = useState(false);
 
 
-  // A deep-link selection is applied ONCE per param value: the param sticks
-  // in the route, and re-applying it whenever leagues refetch would overwrite
-  // a newer choice made on another surface with the stale param.
-  const appliedParamRef = useRef<string | null>(null);
-
   // eslint-disable-next-line react-hooks/exhaustive-deps — intentionally excluding leagueId to only initialize/target, not rerun on user selection
   useEffect(() => {
     // Deep-link param wins: an active league, or the on-demand past league.
     // A deep link is explicit intent, so it writes the app-wide selection too.
-    if (leagueIdParam && appliedParamRef.current !== leagueIdParam) {
+    if (leagueIdParam && appliedParam !== leagueIdParam) {
       const active = leagues.find((l) => l.id === leagueIdParam);
       if (active) {
-        appliedParamRef.current = leagueIdParam;
+        setAppliedParam(leagueIdParam);
         setLeagueId(active.id);
         setSelectedWeek(defaultWeek(active));
         setStoreLeague(active.id);
         return;
       }
       if (pastLeagueAsLeague && pastLeagueAsLeague.id === leagueIdParam) {
-        appliedParamRef.current = leagueIdParam;
+        setAppliedParam(leagueIdParam);
         setLeagueId(pastLeagueAsLeague.id);
         setSelectedWeek(defaultWeek(pastLeagueAsLeague));
         setStoreLeague(pastLeagueAsLeague.id);
@@ -167,7 +178,7 @@ export default function PicksScreen() {
       setLeagueId(initial.id);
       setSelectedWeek(defaultWeek(initial));
     }
-  }, [leagues, leagueIdParam, pastLeagueAsLeague, candidatePastId, allLeaguesFetched]);
+  }, [leagues, leagueIdParam, appliedParam, pastLeagueAsLeague, candidatePastId, allLeaguesFetched]);
 
   // Adopt a league chosen on ANOTHER surface while this tab stays mounted
   // (tab navigators keep screens alive). Keyed on the selection NONCE and

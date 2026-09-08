@@ -53,6 +53,11 @@ interface ByWeekPaneProps {
   showBots: boolean;
   currentUserId: string | undefined;
   pickType: PickType | null;
+  /** Refetches the league summaries — the only way the "No weeks yet"
+   *  state can learn the slate now exists (nothing invalidates that cache
+   *  from inside this pane, and refetchOnWindowFocus is off app-wide). */
+  onRefreshLeagues: () => void;
+  refreshingLeagues: boolean;
 }
 
 export function ByWeekPane({
@@ -63,6 +68,8 @@ export function ByWeekPane({
   showBots,
   currentUserId,
   pickType,
+  onRefreshLeagues,
+  refreshingLeagues,
 }: ByWeekPaneProps) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -146,14 +153,28 @@ export function ByWeekPane({
   // disabled, so isLoading never resolves and isError never fires — without
   // this branch the pane would spin forever with no escape.
   if (week == null) {
+    // Refreshable, unlike a bare EmptyState: the league-summary cache is
+    // 5-min stale, stays mounted, and nothing invalidates it from here — so
+    // without pull-to-refresh/Retry this state would outlive the slate's
+    // creation for the whole session.
     return (
-      <View style={styles.fill}>
+      <ScrollView
+        contentContainerStyle={styles.emptyScroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshingLeagues}
+            onRefresh={onRefreshLeagues}
+            tintColor={theme.tint}
+          />
+        }
+      >
         <EmptyState
           icon="📅"
           title="No weeks yet"
-          subtitle="This league's schedule hasn't been generated yet — check back soon."
+          subtitle="This league's schedule hasn't been generated yet. Pull to refresh or tap retry."
         />
-      </View>
+        <Button title="Retry" variant="secondary" size="sm" onPress={onRefreshLeagues} />
+      </ScrollView>
     );
   }
 
@@ -514,6 +535,7 @@ function formatLockTime(lockMs: number): string {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  emptyScroll: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 30 },
   list: { padding: 14, paddingBottom: 24 },
   weekRow: { paddingTop: 8 },
   weekRowContent: { paddingHorizontal: 14, gap: 6 },

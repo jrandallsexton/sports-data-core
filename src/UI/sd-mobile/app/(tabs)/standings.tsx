@@ -90,7 +90,12 @@ export default function StandingsScreen() {
 
   // Source the league list from getUserLeagues (includes deactivated) so past-
   // season and recently-ended leagues are reachable — /user/me is active-only.
-  const { data: allLeagues = [], isLoading: leaguesLoading } = useUserLeagues();
+  const {
+    data: allLeagues = [],
+    isLoading: leaguesLoading,
+    refetch: refetchLeagues,
+    isRefetching: leaguesRefetching,
+  } = useUserLeagues();
 
   // App-wide current league: adopt what another surface (Picks, Home) chose,
   // and record explicit choices made here. The nonce subscription matters:
@@ -202,6 +207,8 @@ export default function StandingsScreen() {
           showBots={showBots}
           currentUserId={user?.uid}
           pickType={selectedLeague?.leagueType ?? null}
+          onRefreshLeagues={refetchLeagues}
+          refreshingLeagues={leaguesRefetching}
         />
       ) : standingsLoading ? (
         <LoadingSpinner message="Loading standings…" />

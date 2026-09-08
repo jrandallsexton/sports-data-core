@@ -917,6 +917,8 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
         "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/plays";
     private const string SkipProbabilitiesBaseUrl =
         "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/probabilities";
+    private const string SkipDrivesBaseUrl =
+        "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628420/competitions/401628420/drives";
 
     private static string ThreeItemIndexJson(string baseUrl) =>
         "{\"count\":3,\"pageIndex\":1,\"pageSize\":25,\"pageCount\":1,\"items\":[" +
@@ -975,6 +977,7 @@ public class DocumentRequestedHandlerTests : ProviderTestBase<DocumentRequestedH
     [Theory]
     [InlineData(SkipPlaysBaseUrl, DocumentType.EventCompetitionPlay)]
     [InlineData(SkipProbabilitiesBaseUrl, DocumentType.EventCompetitionProbability)]
+    [InlineData(SkipDrivesBaseUrl, DocumentType.EventCompetitionDrive)]
     public async Task PriorityClaimedImmutableItems_SkippedAtFanOut_ExceptLiveEdge(
         string baseUrl, DocumentType documentType)
     {

@@ -64,7 +64,7 @@ namespace SportsData.Provider.Application.Jobs
                     job => job.ExecuteAsync(def),
                     resource.CronExpression);
 
-                _logger.LogInformation("Registered recurring job {JobId} for {Name} with cron '{Cron}'",
+                _logger.LogDebug("Registered recurring job {JobId} for {Name} with cron '{Cron}'",
                     jobId, resource.Name, resource.CronExpression);
             }
 

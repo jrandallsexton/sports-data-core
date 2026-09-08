@@ -245,9 +245,10 @@ Consequences accepted:
 
 ## Deliberately out of scope (follow-ups)
 
-- **Drives**: 118K/evening. Completed drives are immutable but the *active* drive
-  mutates as plays append; the "all but the last drive" positional rule would work
-  but expands classification risk. Revisit after plays/probs prove out.
+- ~~**Drives**~~ DONE 2026-09-08 after plays/probs verified in prod (233x/900x
+  reductions; drives left as the #1 amplifier at 36,276/game): the active
+  drive IS the live edge (newest item), so the existing carve-out covers its
+  mutation window; completed drives share plays' accepted correction gap.
 - **Index-page paging**: the plays index is re-paged in full from ESPN every cycle
   and grows with the game (uncounted on current panels). A "last page only after
   first full walk" optimization or a larger `limit` on the streamer's index

@@ -94,9 +94,10 @@ public class GetLeaderboardQueryHandler : IGetLeaderboardQueryHandler
                 WeeksPlayed = g.Select(p => p.Week).Distinct().Count(),
                 // A PUSH (scored but ungraded: ScoredAt set, IsCorrect null)
                 // is excluded from the accuracy denominator — the bet never
-                // happened. Pending picks (ScoredAt null) still count, so the
-                // mid-week X/Y display keeps meaning "correct of picks made".
-                TotalPicks = g.Count(p => p.ScoredAt == null || p.IsCorrect != null),
+                // happened. Pending picks never reach this grouping at all:
+                // the outer Where requires ScoredAt != null, so the
+                // denominator is exactly "decided picks".
+                TotalPicks = g.Count(p => p.IsCorrect != null),
                 TotalCorrect = g.Count(p => p.IsCorrect.HasValue && p.IsCorrect.Value == true)
             })
             .ToListAsync(cancellationToken);

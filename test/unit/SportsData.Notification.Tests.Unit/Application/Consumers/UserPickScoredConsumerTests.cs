@@ -171,6 +171,21 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
     }
 
     [Fact]
+    public async Task Consume_AtsPush_GradesNobody_NoSmackNoCross()
+    {
+        // SMU -3 picked, won 27-24 exactly — a push (2026-09-07 SMU@FSU).
+        // IsCorrect arrives null: push-specific title, "— push" instead of a
+        // ✗, and the smack catalog is bypassed (its resolver maps null to
+        // GenericLoss and would taunt a result that graded nobody).
+        var body = await RunAndCaptureBodyAsync(
+            Msg(Guid.NewGuid(), "SMU", "FSU", awayScore: 27, homeScore: 24,
+                isCorrect: null, pickedIsHome: false, pickedSpread: -3));
+
+        body.Should().Be("Sluggers: SMU 27, FSU 24 — you picked SMU -3 — push");
+        _capturedTitle.Should().Be("It's a push");
+    }
+
+    [Fact]
     public async Task Consume_MissingAbbreviations_FallsBackToGenericCopy()
     {
         // Unfattened event (no abbreviations) → generic shape, no crash.

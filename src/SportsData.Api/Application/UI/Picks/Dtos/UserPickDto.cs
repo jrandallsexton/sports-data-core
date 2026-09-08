@@ -24,5 +24,12 @@ public record UserPickDto
 
     public bool? IsCorrect { get; init; }
 
+    /// <summary>
+    /// When the pick was scored. Set with IsCorrect null = a PUSH (decided,
+    /// graded nobody); null = not yet scored. Lets consumers distinguish
+    /// push from pending without a dedicated enum.
+    /// </summary>
+    public DateTime? ScoredAt { get; init; }
+
     public int? PointsAwarded { get; init; }
 }

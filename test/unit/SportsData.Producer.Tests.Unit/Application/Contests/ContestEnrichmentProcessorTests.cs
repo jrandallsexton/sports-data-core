@@ -373,6 +373,53 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
     #region Process — odds-late path
 
     [Fact]
+    public async Task Process_WhenPushAtPrimaryOddsSpread_DenormAndEventCarryNull_RowKeepsSentinel()
+    {
+        // 2026-09-07 SMU@FSU regression: the odds ROW's push sentinel
+        // (Guid.Empty) must not leak onto the Contest denorm or the
+        // ContestFinalized wire, whose documented contract is null on a true
+        // spread push. Home favored by 3, loses by exactly 3 -> push.
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        FootballDataContext.CompetitionPlays.Add(
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 27, homeScore: 24, period: 4, clock: 10));
+
+        FootballDataContext.CompetitionOdds.Add(new CompetitionOdds
+        {
+            Id = Guid.NewGuid(),
+            CompetitionId = competitionId,
+            ProviderRef = new Uri("https://example.com/odds/draftkings"),
+            ProviderId = "100",
+            ProviderName = "DraftKings",
+            Spread = 3m, // home +3: 24 + 3 == 27 -> lands exactly on the line
+            OverUnder = 52.5m
+        });
+        await FootballDataContext.SaveChangesAsync();
+
+        ContestFinalized published = null!;
+        Mock.Get(Mocker.Get<IEventBus>())
+            .Setup(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()))
+            .Callback<ContestFinalized, CancellationToken>((evt, _) => published = evt)
+            .Returns(Task.CompletedTask);
+
+        var command = new EnrichContestCommand(contestId, Guid.NewGuid());
+        await _sut.Process(command);
+
+        // The row keeps its sentinel (null there means "no spread") ...
+        var oddsAfter = await FootballDataContext.CompetitionOdds
+            .FirstAsync(o => o.CompetitionId == competitionId);
+        oddsAfter.AtsWinnerFranchiseSeasonId.Should().Be(Guid.Empty);
+
+        // ... but the denorm and the wire honor the null-means-push contract.
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.SpreadWinnerFranchiseSeasonId.Should().BeNull(
+            "the sentinel must be translated at the denorm boundary");
+        published.Should().NotBeNull();
+        published.SpreadWinnerFranchiseSeasonId.Should().BeNull(
+            "ContestFinalized documents null on a true spread push");
+    }
+
+    [Fact]
     public async Task Process_WhenContestFinalizedAndAllOddsFinalized_NoOp()
     {
         // Both Contest and every CompetitionOdds row carry FinalizedUtc.

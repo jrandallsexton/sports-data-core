@@ -352,6 +352,82 @@ public class GetUserPicksByGroupAndWeekQueryHandlerTests : ApiTestBase<GetUserPi
     }
 
     [Fact]
+    public async Task ExecuteAsync_ScoredPush_IsDecidedNotPending()
+    {
+        // A push is scored (ScoredAt set) with IsCorrect null. It must NOT
+        // count as pending inside the 24h scoring horizon, and it lands in
+        // the derived no-result bucket (TotalMatchups - Correct - Incorrect)
+        // — "the bet never happened" (2026-09-07 SMU@FSU).
+        var userId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+        const int week = 1;
+        var kickoff = new DateTime(2026, 9, 7, 23, 30, 0, DateTimeKind.Utc);
+        Mocker.GetMock<SportsData.Core.Common.IDateTimeProvider>()
+            .Setup(x => x.UtcNow())
+            .Returns(kickoff.AddHours(4)); // well inside the 24h horizon
+
+        var user = new UserEntity
+        {
+            Username = "push_user_env",
+            Id = userId,
+            FirebaseUid = Guid.NewGuid().ToString(),
+            Email = "pushenv@test.com",
+            DisplayName = "Push User",
+            SignInProvider = "test",
+            LastLoginUtc = kickoff
+        };
+        await DataContext.Users.AddAsync(user);
+
+        var pushContestId = Guid.NewGuid();
+        var wonContestId = Guid.NewGuid();
+        foreach (var contestId in new[] { pushContestId, wonContestId })
+        {
+            await DataContext.PickemGroupMatchups.AddAsync(new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                ContestId = contestId,
+                SeasonYear = 2026,
+                SeasonWeek = week,
+                SeasonWeekId = Guid.NewGuid(),
+                StartDateUtc = kickoff
+            });
+        }
+
+        await DataContext.UserPicks.AddRangeAsync(
+            new PickemGroupUserPick
+            {
+                Id = Guid.NewGuid(), UserId = userId, PickemGroupId = groupId,
+                ContestId = pushContestId, Week = week, PickType = PickType.AgainstTheSpread,
+                IsCorrect = null, PointsAwarded = 0, ScoredAt = kickoff.AddHours(3), // PUSH
+                TiebreakerType = TiebreakerType.TotalPoints
+            },
+            new PickemGroupUserPick
+            {
+                Id = Guid.NewGuid(), UserId = userId, PickemGroupId = groupId,
+                ContestId = wonContestId, Week = week, PickType = PickType.AgainstTheSpread,
+                IsCorrect = true, PointsAwarded = 1, ScoredAt = kickoff.AddHours(3),
+                TiebreakerType = TiebreakerType.TotalPoints
+            });
+        await DataContext.SaveChangesAsync();
+
+        var handler = Mocker.CreateInstance<GetUserPicksByGroupAndWeekQueryHandler>();
+        var result = await handler.ExecuteAsync(new GetUserPicksByGroupAndWeekQuery
+        {
+            UserId = userId,
+            GroupId = groupId,
+            WeekNumber = week
+        });
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.CorrectCount.Should().Be(1);
+        result.Value.IncorrectCount.Should().Be(0);
+        result.Value.PendingCount.Should().Be(0, "a scored push is decided, not pending");
+        // Derived no-result bucket: 2 - 1 - 0 = 1 (the push).
+        result.Value.Picks.Should().Contain(pick => pick.ContestId == pushContestId && pick.ScoredAt != null);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_PendingCounts_UnpickedFutureGame_AndZeroWhenResolved()
     {
         // Arrange — 2 matchups: one picked-and-scored, one unpicked. With the

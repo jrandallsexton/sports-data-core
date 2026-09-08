@@ -168,12 +168,19 @@ namespace SportsData.Notification.Application.Consumers
             // to talk about it are different things.
             var allowGamblingContent = msg.PickedSpread is not null;
 
-            var smackLine = await _smackPhraseCatalog.TryResolveAsync(
-                msg, voice, allowGamblingContent, context.CancellationToken);
+            // A PUSH (IsCorrect null) never goes through the smack catalog:
+            // PickSituationResolver maps null to GenericLoss, so SmackBot
+            // would taunt a result that graded nobody.
+            var smackLine = msg.IsCorrect is null
+                ? null
+                : await _smackPhraseCatalog.TryResolveAsync(
+                    msg, voice, allowGamblingContent, context.CancellationToken);
 
             var title = smackLine is not null
                 ? "SmackBot"
-                : msg.IsCorrect == true ? "Nice pick!" : "Tough loss";
+                : msg.IsCorrect == true ? "Nice pick!"
+                : msg.IsCorrect == false ? "Tough loss"
+                : "It's a push";
             // The smack line is the headline, but alone it loses the game —
             // "Vegas told you so" arrives with ZERO indication of which pick
             // earned it. The standard context line (league, scoreline, pick
@@ -275,7 +282,7 @@ namespace SportsData.Notification.Application.Consumers
                 var oppAbbr = pickedIsHome ? msg.AwayAbbreviation : msg.HomeAbbreviation;
                 var pickedScore = pickedIsHome ? msg.HomeScore : msg.AwayScore;
                 var oppScore = pickedIsHome ? msg.AwayScore : msg.HomeScore;
-                var mark = msg.IsCorrect == true ? "✓" : "✗";
+                var mark = msg.IsCorrect == true ? "✓" : msg.IsCorrect == false ? "✗" : "— push";
                 var pickLabel = FormatPickLabel(pickedAbbr, msg.PickedSpread);
 
                 // League always present: prefer the local projection, fall back
@@ -287,7 +294,9 @@ namespace SportsData.Notification.Application.Consumers
             // Fallback shapes by what we have. League name comes from the local
             // projection; team names are nullable on the event payload until
             // publisher-side fattening lands (FranchiseSeason joins).
-            var outcome = msg.IsCorrect == true ? "Your pick won." : "Your pick lost.";
+            var outcome = msg.IsCorrect == true ? "Your pick won."
+                : msg.IsCorrect == false ? "Your pick lost."
+                : "Push — the game landed on the line. No result.";
             var scoreLine = $"Final {msg.AwayScore}–{msg.HomeScore}.";
 
             var haveTeams = msg.AwayName is not null && msg.HomeName is not null;

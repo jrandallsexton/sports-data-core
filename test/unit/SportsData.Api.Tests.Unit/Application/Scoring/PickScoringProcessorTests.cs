@@ -184,6 +184,20 @@ public class PickScoringProcessorTests : ApiTestBase<PickScoringProcessor>
         await DataContext.UserPicks.AddAsync(pick);
         await DataContext.SaveChangesAsync();
 
+        // Mirror the real service's contract: ScorePick stamps ScoredAt on
+        // every pick it actually scores. The processor now publishes ONLY
+        // for stamped picks (an unscored pick — the O/U no-op, or a scoring
+        // exception — must not emit a "scored" event), so a mock that never
+        // stamps would read as unscored and publish nothing.
+        Mocker.GetMock<IPickScoringService>()
+            .Setup(x => x.ScorePick(
+                It.IsAny<PickemGroup>(),
+                It.IsAny<double?>(),
+                It.IsAny<PickemGroupUserPick>(),
+                It.IsAny<MatchupResult>()))
+            .Callback<PickemGroup, double?, PickemGroupUserPick, MatchupResult>(
+                (_, _, scoredPick, _) => scoredPick.ScoredAt = DateTime.UtcNow);
+
         var sut = Mocker.CreateInstance<PickScoringProcessor>();
 
         await sut.Process(new ScorePicksCommand(contestId));

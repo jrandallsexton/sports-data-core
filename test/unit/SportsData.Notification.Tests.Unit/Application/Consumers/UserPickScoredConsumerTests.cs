@@ -177,12 +177,32 @@ public class UserPickScoredConsumerTests : NotificationTestBase<UserPickScoredCo
         // IsCorrect arrives null: push-specific title, "— push" instead of a
         // ✗, and the smack catalog is bypassed (its resolver maps null to
         // GenericLoss and would taunt a result that graded nobody).
+        //
+        // The catalog is stubbed to RETURN a line: with a default (null)
+        // stub, deleting the bypass guard would change nothing observable
+        // and this test could never fail. Armed this way, a removed guard
+        // surfaces as both a smack-line body and a failed Times.Never.
+        Mocker.GetMock<ISmackPhraseCatalog>()
+            .Setup(x => x.TryResolveAsync(
+                It.IsAny<UserPickScored>(),
+                It.IsAny<NotificationVoice>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Vegas told you so");
+
         var body = await RunAndCaptureBodyAsync(
             Msg(Guid.NewGuid(), "SMU", "FSU", awayScore: 27, homeScore: 24,
                 isCorrect: null, pickedIsHome: false, pickedSpread: -3));
 
         body.Should().Be("Sluggers: SMU 27, FSU 24 — you picked SMU -3 — push");
         _capturedTitle.Should().Be("It's a push");
+        Mocker.GetMock<ISmackPhraseCatalog>().Verify(
+            x => x.TryResolveAsync(
+                It.IsAny<UserPickScored>(),
+                It.IsAny<NotificationVoice>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

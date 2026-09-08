@@ -7,7 +7,6 @@ using SportsData.Producer.Application.Documents.Processors.Providers.Espn.Common
 using SportsData.Producer.Infrastructure.Data.Entities;
 using SportsData.Producer.Infrastructure.Data.Entities.Extensions;
 using SportsData.Producer.Infrastructure.Data.Football;
-using SportsData.Producer.Infrastructure.Data.Football.Entities;
 
 namespace SportsData.Producer.Application.Documents.Processors.Providers.Espn.Football;
 

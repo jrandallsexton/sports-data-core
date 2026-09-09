@@ -499,6 +499,17 @@ namespace SportsData.Api.Application.Previews
             if (historyResult.IsSuccess && historyResult.Value is not null)
             {
                 matchup.HeadToHead = historyResult.Value.HeadToHead;
+
+                // Deliberately the PRIOR-SEASON lists, not the rolling
+                // Away/HomeRecentGames the History UI shows: the model
+                // already receives every current-season game in
+                // Away/HomeCompetitionResults (as-of trimmed below), and
+                // the stored prompt text + matchup-preview-data-inputs.md
+                // §3.5 define these lists as prior-season, disjoint from
+                // season results. Producer emits both windows independently
+                // — an API-side trim of the rolling list cannot substitute,
+                // because its per-side cap discards prior-season rows that
+                // can't be restored here (PR #743 review).
                 matchup.AwayPriorSeasonGames = historyResult.Value.AwayPriorSeasonGames;
                 matchup.HomePriorSeasonGames = historyResult.Value.HomePriorSeasonGames;
                 matchup.AwayPriorSeason = historyResult.Value.AwayPriorSeason;

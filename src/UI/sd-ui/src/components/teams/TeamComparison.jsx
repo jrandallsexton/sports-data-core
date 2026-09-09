@@ -27,8 +27,16 @@ export default function TeamComparison({
   // the franchises have played before — including week 1, when it's the only
   // populated tab.
   const headToHead = history?.headToHead ?? [];
-  const teamAPriorGames = history?.awayPriorSeasonGames ?? [];
-  const teamBPriorGames = history?.homePriorSeasonGames ?? [];
+  // Rolling "Last N Games" (current + prior season), added 2026-09-09;
+  // fall back to the prior-season lists against an older API payload.
+  const teamAPriorGames =
+    history?.awayRecentGames?.length
+      ? history.awayRecentGames
+      : history?.awayPriorSeasonGames ?? [];
+  const teamBPriorGames =
+    history?.homeRecentGames?.length
+      ? history.homeRecentGames
+      : history?.homePriorSeasonGames ?? [];
   const teamAPriorSeason = history?.awayPriorSeason ?? null;
   const teamBPriorSeason = history?.homePriorSeason ?? null;
   const hasHistoryData =
@@ -806,7 +814,7 @@ export default function TeamComparison({
             aria-expanded={!lastSeasonCollapsed}
           >
             <span>
-              Last Season — Final {Math.max(teamAPriorGames.length, teamBPriorGames.length)} Games
+              Last {Math.max(teamAPriorGames.length, teamBPriorGames.length)} Games
             </span>
             <span className="history-section-chevron" aria-hidden="true">
               {lastSeasonCollapsed ? "▾" : "▴"}

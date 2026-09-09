@@ -78,10 +78,15 @@ namespace SportsData.Api.Tests.Unit.Application.Previews
             ],
             AwayPriorSeasonGames =
             [
+                // Strictly the season BEFORE the 2025 target — the shape the
+                // Producer query emits and the prompt-side trim enforces (a
+                // same-season row here would be filtered as a duplicate of
+                // CompetitionResults). Season-year 2024's wild card is played
+                // Jan 2025.
                 new PreviewGameResultDto
                 {
-                    GameDate = new DateTime(2026, 1, 10, 21, 30, 0, DateTimeKind.Utc),
-                    SeasonYear = 2025,
+                    GameDate = new DateTime(2025, 1, 11, 21, 30, 0, DateTimeKind.Utc),
+                    SeasonYear = 2024,
                     Phase = "Postseason",
                     Note = "NFC Wild Card",
                     HomeTeam = "Carolina Panthers",

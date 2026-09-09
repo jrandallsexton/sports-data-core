@@ -153,7 +153,10 @@ public sealed class ContestPreviewHistoryCache : IContestPreviewHistoryCache
         // v2: ATS-pair distance guard (2026-09-01) changed the payload for
         // wide spreads; the version bump retires 7-day-TTL v1 entries that
         // would otherwise serve the stretched "35+ favorite" bullets.
-        return $"preview-history:v2:{query.ContestId}:{query.MeetingCount}:{query.RecentGameCount}:s{spread}";
+        // v3: PriorSeasonGames became a ROLLING current+prior-season window
+        // (2026-09-09); retires v2 entries that would keep serving the
+        // prior-season-only lists until the line happened to move.
+        return $"preview-history:v3:{query.ContestId}:{query.MeetingCount}:{query.RecentGameCount}:s{spread}";
     }
 
     /// <summary>

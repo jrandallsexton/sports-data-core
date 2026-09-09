@@ -88,11 +88,18 @@ namespace SportsData.Producer.Application.Franchises.Commands
 
         private async Task<List<ContestBase>> GetFinalizedContestsForFranchiseSeason(Guid franchiseSeasonId)
         {
+            // Preseason excluded (SeasonPhase TypeCode 1), matching the
+            // preview-history queries' convention: a NULL/unmatched phase is
+            // KEPT. Without this, NFL preseason finals counted into the W/L
+            // this enrichment writes onto FranchiseSeason — the record every
+            // league matchup card displays (prod 2026-09-09: Saints "1-2"
+            // after week 1). NCAAFB never surfaced it: no preseason games.
             return await _dataContext.Contests
                 .AsNoTracking()
                 .Where(c => c.FinalizedUtc != null &&
                             (c.AwayTeamFranchiseSeasonId == franchiseSeasonId ||
                              c.HomeTeamFranchiseSeasonId == franchiseSeasonId))
+                .Where(c => !_dataContext.SeasonPhases.Any(sp => sp.Id == c.SeasonPhaseId && sp.TypeCode == 1))
                 .ToListAsync();
         }
 

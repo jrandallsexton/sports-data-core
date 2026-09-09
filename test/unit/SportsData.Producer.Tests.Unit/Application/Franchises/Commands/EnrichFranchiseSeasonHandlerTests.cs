@@ -25,6 +25,63 @@ public class EnrichFranchiseSeasonHandlerTests :
     ProducerTestBase<EnrichFranchiseSeasonHandler<FootballDataContext>>
 {
     [Fact]
+    public async Task Process_ExcludesPreseasonContests_FromRecord()
+    {
+        // NFL preseason finals were counting into the W/L this enrichment
+        // writes onto FranchiseSeason - the record every league matchup card
+        // displays (prod 2026-09-09: Saints "1-2" after week 1). Preseason =
+        // SeasonPhase TypeCode 1; a contest with no matching phase row stays
+        // counted (NULL-phase-kept, same as the preview-history queries).
+        var sut = Mocker.CreateInstance<EnrichFranchiseSeasonHandler<FootballDataContext>>();
+
+        var seasonYear = 2026;
+        var franchise = CreateFranchise();
+        var franchiseSeason = CreateFranchiseSeason(franchise.Id, seasonYear);
+        var opponentFranchise = CreateFranchise();
+        var opponentSeason = CreateFranchiseSeason(opponentFranchise.Id, seasonYear);
+        await FootballDataContext.Franchises.AddRangeAsync(franchise, opponentFranchise);
+        await FootballDataContext.FranchiseSeasons.AddRangeAsync(franchiseSeason, opponentSeason);
+
+        var preseasonPhase = Fixture.Build<SeasonPhase>()
+            .OmitAutoProperties()
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.TypeCode, 1)
+            .With(x => x.Name, "Preseason")
+            .With(x => x.Abbreviation, "PRE")
+            .With(x => x.Slug, "preseason")
+            .With(x => x.Year, seasonYear)
+            .Create();
+        await FootballDataContext.SeasonPhases.AddAsync(preseasonPhase);
+
+        // Two preseason LOSSES that must NOT count
+        var pre1 = CreateContest(
+            franchiseSeason.Id, opponentSeason.Id, seasonYear,
+            homeScore: 10, awayScore: 24, winnerId: opponentSeason.Id);
+        pre1.SeasonPhaseId = preseasonPhase.Id;
+        var pre2 = CreateContest(
+            opponentSeason.Id, franchiseSeason.Id, seasonYear,
+            homeScore: 31, awayScore: 17, winnerId: opponentSeason.Id);
+        pre2.SeasonPhaseId = preseasonPhase.Id;
+        await FootballDataContext.Contests.AddRangeAsync(pre1, pre2);
+
+        // One regular-season win that must count
+        await FootballDataContext.Contests.AddAsync(CreateContest(
+            franchiseSeason.Id, opponentSeason.Id, seasonYear,
+            homeScore: 35, awayScore: 14, winnerId: franchiseSeason.Id));
+
+        await FootballDataContext.SaveChangesAsync();
+
+        await sut.Process(new EnrichFranchiseSeasonCommand(
+            franchiseSeason.Id, seasonYear, Guid.NewGuid()));
+
+        var enriched = await FootballDataContext.FranchiseSeasons
+            .FirstAsync(fs => fs.Id == franchiseSeason.Id);
+
+        enriched.Wins.Should().Be(1, "only the regular-season win counts");
+        enriched.Losses.Should().Be(0, "the two preseason losses are excluded");
+    }
+
+    [Fact]
     public async Task Process_CalculatesWinsAndLosses_Correctly()
     {
         // Arrange

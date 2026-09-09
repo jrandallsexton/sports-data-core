@@ -23,6 +23,7 @@ import type {
 } from '@/src/types/models';
 import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
 import { useSectionCollapse } from '@/src/hooks/useSectionCollapse';
+import { Wordmark } from '@/src/components/brand/Wordmark';
 import { Ionicons } from '@expo/vector-icons';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -444,7 +445,13 @@ export function StatsComparisonModal({
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerLeft} />
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Team Comparison</Text>
+          {/* Visual identity is the brand; SEMANTIC identity stays the
+              sheet name - without the label both modals announce an
+              identical "sportDeets" to VoiceOver/TalkBack and cannot be
+              told apart (Vortex, PR #746). */}
+          <View accessible accessibilityRole="header" accessibilityLabel="Team Comparison">
+            <Wordmark size={17} />
+          </View>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={12}>
             <Text style={[styles.closeText, { color: theme.textMuted }]}>✕</Text>
           </TouchableOpacity>
@@ -732,10 +739,6 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     width: 32,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
   },
   closeBtn: {
     width: 32,

@@ -3,6 +3,22 @@ import apiWrapper from '../../api/apiWrapper';
 import { teamLink } from '../../utils/sportLinks';
 import './FranchiseMetricsGrid.css';
 
+// House convention: a season is labeled by its starting year, and the
+// rollover happens in June (month >= 6). Kept in sync with the backend's
+// season-year resolution.
+const getCurrentSeasonYear = () => {
+  const now = new Date();
+  return now.getMonth() + 1 >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+};
+
+// Metrics exist from this season forward in meaningful shape.
+const EARLIEST_SEASON = 2025;
+
+const seasonYears = [];
+for (let y = getCurrentSeasonYear(); y >= EARLIEST_SEASON; y--) {
+  seasonYears.push(y);
+}
+
 function FranchiseMetricsGrid() {
   const [metrics, setMetrics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,12 +28,14 @@ function FranchiseMetricsGrid() {
   const [showAll, setShowAll] = useState(false);
   const [selectedConference, setSelectedConference] = useState('all');
   const [selectedRow, setSelectedRow] = useState(null);
+  const [seasonYear, setSeasonYear] = useState(seasonYears[0]);
 
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
         setLoading(true);
-        const response = await apiWrapper.Analytics.getFranchiseSeasonMetrics(2025);
+        setError(null);
+        const response = await apiWrapper.Analytics.getFranchiseSeasonMetrics(seasonYear);
         setMetrics(response.data || []);
       } catch (err) {
         setError('Failed to load franchise metrics');
@@ -28,7 +46,7 @@ function FranchiseMetricsGrid() {
     };
 
     fetchMetrics();
-  }, []);
+  }, [seasonYear]);
 
   const handleSort = (column) => {
     if (sortBy === column) {
@@ -112,31 +130,41 @@ function FranchiseMetricsGrid() {
     return sortOrder === 'asc' ? '↑' : '↓';
   };
 
-  if (loading) {
-    return (
-      <div className="franchise-metrics-grid">
-        <h2>Franchise Season Metrics (2025)</h2>
-        <div className="loading-state">Loading franchise metrics...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="franchise-metrics-grid">
-        <h2>Franchise Season Metrics (2025)</h2>
-        <div className="error-state">{error}</div>
-      </div>
-    );
-  }
+  // Loading, error, and empty states all render INLINE below the header
+  // rather than as early returns: the header owns the season selector, and
+  // every non-table state must leave the selector reachable — the default
+  // season is the CURRENT year, so an early-return error on it would brick
+  // the page (every reload re-fetches the failing default), and the
+  // same-commit loading reset on year change would hide the selector
+  // mid-switch.
+  const noMetrics = metrics.length === 0;
 
   return (
     <div className="franchise-metrics-grid">
       <div className="metrics-header">
-        <h2>Franchise Season Metrics (2025)</h2>
+        <h2>Franchise Season Metrics ({seasonYear})</h2>
         <div className="header-controls">
-          <select 
-            value={selectedConference} 
+          <select
+            value={seasonYear}
+            onChange={(e) => {
+              // Same-commit reset: without it the first painted frame after
+              // a year switch shows the PREVIOUS season's rows under the new
+              // heading (the effect's setLoading runs after paint).
+              setMetrics([]);
+              setLoading(true);
+              setSeasonYear(Number(e.target.value));
+            }}
+            className="conference-filter"
+            aria-label="Season year"
+          >
+            {seasonYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedConference}
             onChange={(e) => setSelectedConference(e.target.value)}
             className="conference-filter"
           >
@@ -160,6 +188,14 @@ function FranchiseMetricsGrid() {
           </button>
         </div>
       </div>
+      {loading && <div className="loading-state">Loading franchise metrics...</div>}
+      {!loading && error && <div className="error-state">{error}</div>}
+      {!loading && !error && noMetrics && (
+        <div className="error-state">
+          No franchise metrics exist for the {seasonYear} season yet.
+        </div>
+      )}
+      {!loading && !error && !noMetrics && (
       <div className="metrics-table-container">
         <table className="metrics-table">
           <thead>
@@ -279,7 +315,7 @@ function FranchiseMetricsGrid() {
               >
                 <td className="team-name">
                   <a
-                    href={teamLink(team.franchiseSlug, 2025)}
+                    href={teamLink(team.franchiseSlug, seasonYear)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="team-link"
@@ -326,6 +362,7 @@ function FranchiseMetricsGrid() {
           </tbody>
         </table>
       </div>
+      )}
       {metrics.length > 0 && (
         <div className="metrics-summary">
           Showing {displayedMetrics.length} of {filteredMetrics.length} teams

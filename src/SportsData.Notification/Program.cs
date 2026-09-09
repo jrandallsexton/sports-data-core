@@ -70,6 +70,8 @@ namespace SportsData.Notification
                 typeof(PickemGroupMatchupCreatedConsumer),
                 typeof(PickemGroupMatchupDataPublishedConsumer),
                 typeof(PickemGroupMemberAddedConsumer),
+                typeof(PickemGroupWeekMatchupsGeneratedConsumer),
+                typeof(SeasonPollWeekCreatedConsumer),
                 typeof(UserDataPublishedConsumer),
                 typeof(UserDeletedConsumer),
                 typeof(UserDeviceRegisteredConsumer),

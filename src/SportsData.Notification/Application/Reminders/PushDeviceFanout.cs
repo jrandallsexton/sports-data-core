@@ -24,7 +24,15 @@ public record PushFanoutOutcome(PushFanoutResult Result, string? FailureReason);
 
 public interface IPushDeviceFanout
 {
-    Task<PushFanoutOutcome> SendToUserDevicesAsync(Guid userId, string title, string body);
+    /// <param name="data">
+    /// Optional FCM data payload (deep link). Passed through to every device
+    /// send; null keeps the pre-existing plain-notification behavior.
+    /// </param>
+    Task<PushFanoutOutcome> SendToUserDevicesAsync(
+        Guid userId,
+        string title,
+        string body,
+        IReadOnlyDictionary<string, string>? data = null);
 }
 
 /// <summary>
@@ -63,7 +71,11 @@ public class PushDeviceFanout : IPushDeviceFanout
         _pushSender = pushSender;
     }
 
-    public async Task<PushFanoutOutcome> SendToUserDevicesAsync(Guid userId, string title, string body)
+    public async Task<PushFanoutOutcome> SendToUserDevicesAsync(
+        Guid userId,
+        string title,
+        string body,
+        IReadOnlyDictionary<string, string>? data = null)
     {
         var devices = await _dataContext.UserDevices
             .AsNoTracking()
@@ -82,7 +94,7 @@ public class PushDeviceFanout : IPushDeviceFanout
         {
             try
             {
-                var result = await _pushSender.SendAsync(device.FcmToken, title, body);
+                var result = await _pushSender.SendAsync(device.FcmToken, title, body, data);
                 if (result is Success<string>)
                 {
                     successCount++;

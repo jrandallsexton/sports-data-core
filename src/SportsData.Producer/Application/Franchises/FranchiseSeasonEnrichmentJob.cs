@@ -72,6 +72,20 @@ namespace SportsData.Producer.Application.Franchises
 
             _logger.LogInformation("All franchise season enrichment requests sent.");
 
+            // Metrics exist for FOOTBALL only: CalculateFranchiseSeasonMetrics
+            // is registered inside ServiceRegistration's football-only guard
+            // (it depends on FootballDataContext). On a BaseballMlb pod the
+            // enqueue itself would "succeed" and every fanned-out job would
+            // then fail at Hangfire activation, forever, weekly — so the
+            // sport gate lives here too, mirroring the registration guard.
+            if (_appMode.CurrentSport is not (Sport.FootballNcaa or Sport.FootballNfl))
+            {
+                _logger.LogInformation(
+                    "Skipping franchise season metrics generation — no metrics pipeline for {Sport}.",
+                    _appMode.CurrentSport);
+                return;
+            }
+
             // Metrics ride the same weekly cadence: the handler applies its
             // own scoping (FBS-only for NCAA) and fans out one calculation
             // job per franchise season, same as the manual endpoint. Runs

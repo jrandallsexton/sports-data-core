@@ -70,6 +70,28 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
     }
 
     [Fact]
+    public async Task Execute_NonFootballSport_SkipsMetricsGeneration()
+    {
+        // ICalculateFranchiseSeasonMetricsCommandHandler is registered only
+        // under ServiceRegistration's football guard (FootballDataContext
+        // dependency). On a BaseballMlb pod the enqueue would "succeed" and
+        // every fanned-out job would fail at Hangfire activation, weekly,
+        // forever (Vortex, PR #744). The job's sport gate mirrors the
+        // registration guard; this pins it.
+        Mocker.GetMock<IAppMode>()
+            .SetupGet(x => x.CurrentSport)
+            .Returns(Sport.BaseballMlb);
+        SetNow(new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc));
+
+        var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentJob>();
+        await sut.ExecuteAsync();
+
+        _metricsHandler.Verify(x => x.ExecuteAsync(
+            It.IsAny<EnqueueFranchiseSeasonMetricsGenerationCommand>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Execute_ExplicitSeasonYear_PassesThroughUnchanged()
     {
         SetNow(new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc));

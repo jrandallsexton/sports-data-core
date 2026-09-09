@@ -130,27 +130,13 @@ function FranchiseMetricsGrid() {
     return sortOrder === 'asc' ? '↑' : '↓';
   };
 
-  if (loading) {
-    return (
-      <div className="franchise-metrics-grid">
-        <h2>Franchise Season Metrics ({seasonYear})</h2>
-        <div className="loading-state">Loading franchise metrics...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="franchise-metrics-grid">
-        <h2>Franchise Season Metrics ({seasonYear})</h2>
-        <div className="error-state">{error}</div>
-      </div>
-    );
-  }
-
-  // Explicit empty state so a season with no generated metrics reads as
-  // exactly that (the spot-check this page exists for), not a blank table.
-  // The year selector must stay reachable to switch back.
+  // Loading, error, and empty states all render INLINE below the header
+  // rather than as early returns: the header owns the season selector, and
+  // every non-table state must leave the selector reachable — the default
+  // season is the CURRENT year, so an early-return error on it would brick
+  // the page (every reload re-fetches the failing default), and the
+  // same-commit loading reset on year change would hide the selector
+  // mid-switch.
   const noMetrics = metrics.length === 0;
 
   return (
@@ -160,7 +146,14 @@ function FranchiseMetricsGrid() {
         <div className="header-controls">
           <select
             value={seasonYear}
-            onChange={(e) => setSeasonYear(Number(e.target.value))}
+            onChange={(e) => {
+              // Same-commit reset: without it the first painted frame after
+              // a year switch shows the PREVIOUS season's rows under the new
+              // heading (the effect's setLoading runs after paint).
+              setMetrics([]);
+              setLoading(true);
+              setSeasonYear(Number(e.target.value));
+            }}
             className="conference-filter"
             aria-label="Season year"
           >
@@ -195,12 +188,14 @@ function FranchiseMetricsGrid() {
           </button>
         </div>
       </div>
-      {noMetrics && (
+      {loading && <div className="loading-state">Loading franchise metrics...</div>}
+      {!loading && error && <div className="error-state">{error}</div>}
+      {!loading && !error && noMetrics && (
         <div className="error-state">
           No franchise metrics exist for the {seasonYear} season yet.
         </div>
       )}
-      {!noMetrics && (
+      {!loading && !error && !noMetrics && (
       <div className="metrics-table-container">
         <table className="metrics-table">
           <thead>
@@ -320,7 +315,7 @@ function FranchiseMetricsGrid() {
               >
                 <td className="team-name">
                   <a
-                    href={teamLink(team.franchiseSlug, 2025)}
+                    href={teamLink(team.franchiseSlug, seasonYear)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="team-link"

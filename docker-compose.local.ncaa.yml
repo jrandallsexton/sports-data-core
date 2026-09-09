@@ -186,8 +186,11 @@ services:
   jobs-dashboard:
     build:
       # Unlike the per-service Dockerfiles, DockerfileJobsDashboard is built
-      # with src/ as the context (matching its azure-pipelines.yml) — its
-      # COPY paths have no src/ prefix.
+      # with src/ as the context (matching its azure-pipelines.yml): its
+      # COPY sources are written "../SportsData.*", which Docker normalizes
+      # against the context root — so they resolve to src/SportsData.*
+      # only when the context IS src/. (Verified: builds and runs; a
+      # repo-root context fails with "not found" on every COPY.)
       context: ./src
       dockerfile: DockerfileJobsDashboard
     container_name: jobs-dashboard

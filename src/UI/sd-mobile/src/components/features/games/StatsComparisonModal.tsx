@@ -23,6 +23,7 @@ import type {
 } from '@/src/types/models';
 import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
 import { useSectionCollapse } from '@/src/hooks/useSectionCollapse';
+import { Wordmark } from '@/src/components/brand/Wordmark';
 import { Ionicons } from '@expo/vector-icons';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -444,7 +445,7 @@ export function StatsComparisonModal({
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerLeft} />
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Team Comparison</Text>
+          <Wordmark size={17} />
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={12}>
             <Text style={[styles.closeText, { color: theme.textMuted }]}>✕</Text>
           </TouchableOpacity>
@@ -732,10 +733,6 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     width: 32,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '700',
   },
   closeBtn: {
     width: 32,

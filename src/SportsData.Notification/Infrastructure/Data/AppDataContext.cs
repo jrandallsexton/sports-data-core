@@ -52,6 +52,10 @@ namespace SportsData.Notification.Infrastructure.Data
 
         public DbSet<NotificationContestStart> NotificationContestStarts => Set<NotificationContestStart>();
 
+        public DbSet<NotificationPollRelease> NotificationPollReleases => Set<NotificationPollRelease>();
+
+        public DbSet<NotificationMatchupsReady> NotificationMatchupsReady => Set<NotificationMatchupsReady>();
+
         public DbSet<SmackPhrase> SmackPhrases => Set<SmackPhrase>();
 
         public DbSet<SmackPreviewRating> SmackPreviewRatings => Set<SmackPreviewRating>();
@@ -182,6 +186,23 @@ namespace SportsData.Notification.Infrastructure.Data
             // versioning as PickDeadline. Replaces the NotificationLog claim.
             modelBuilder.Entity<NotificationContestStart>()
                 .HasIndex(l => new { l.UserId, l.ContestId, l.FireTimeUtc })
+                .IsUnique();
+
+            // Typed poll-release idempotency key: one push per user per poll
+            // drop, ever. A SeasonPollWeek is created once; the per-user claim
+            // absorbs redelivery AND any future revision re-publish. Broadcast
+            // fan-out means many rows share a SeasonPollWeekId — the leading
+            // UserId keeps the claim insert's uniqueness probe cheap.
+            modelBuilder.Entity<NotificationPollRelease>()
+                .HasIndex(l => new { l.UserId, l.SeasonPollWeekId })
+                .IsUnique();
+
+            // Typed matchups-ready idempotency key: one "week is ready" push
+            // per user per league-week. Ranked-league refresh passes re-publish
+            // the generated event when late contests are inserted; first
+            // insert wins, later events collide here and stay silent.
+            modelBuilder.Entity<NotificationMatchupsReady>()
+                .HasIndex(l => new { l.UserId, l.LeagueId, l.SeasonYear, l.SeasonWeek })
                 .IsUnique();
 
             // League-wide fan-out is the dominant query against this join

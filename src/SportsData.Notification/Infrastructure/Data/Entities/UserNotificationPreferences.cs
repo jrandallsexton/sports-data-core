@@ -30,6 +30,12 @@ namespace SportsData.Notification.Infrastructure.Data.Entities
 
         public bool OddsChangedEnabled { get; set; } = true;
 
+        /// <summary>"AP Top 25 is out" — the weekly poll-drop broadcast.</summary>
+        public bool PollReleasedEnabled { get; set; } = true;
+
+        /// <summary>"Week N matchups are ready" — a league's week slate was generated.</summary>
+        public bool MatchupsReadyEnabled { get; set; } = true;
+
         /// <summary>
         /// Which voice pick-result notifications speak in. Defaults to
         /// Standard so SmackBot ships dark — a user opts in explicitly.

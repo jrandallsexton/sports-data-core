@@ -45,17 +45,38 @@ namespace SportsData.Producer.Application.Franchises
 
         public async Task ExecuteAsync(int? seasonYear = null)
         {
-            // Season-year convention: a season is labeled by its starting
-            // year, rolling over in June. The old default (calendar year)
-            // targeted a season that didn't exist yet every January-May run
-            // — bowls/playoffs finalized in January enrich the PRIOR label.
+            // Season-year default is SPORT-AWARE (Vortex, PR #744): football
+            // seasons are labeled by their starting year and roll over in
+            // June — the old calendar-year default meant every January-May
+            // run targeted a not-yet-existent season while bowls/playoffs
+            // still needed enriching. Baseball is the opposite: an MLB
+            // season is current from opening day and labeled by the
+            // calendar year, so the June rollover would spend April/May
+            // enriching LAST season. Football gets the rollover; everything
+            // else keeps the calendar year it always had.
             var now = _dateTimeProvider.UtcNow();
-            var effectiveSeasonYear = seasonYear ?? (now.Month >= 6 ? now.Year : now.Year - 1);
+            var isFootball = _appMode.CurrentSport is Sport.FootballNcaa or Sport.FootballNfl;
+            var effectiveSeasonYear = seasonYear
+                ?? (isFootball && now.Month < 6 ? now.Year - 1 : now.Year);
 
             var franchiseSeasons = await _dataContext.FranchiseSeasons
                 .AsNoTracking()
                 .Where(x => x.SeasonYear == effectiveSeasonYear)
                 .ToListAsync();
+
+            // Off-season safety: from season rollover until the new year's
+            // hierarchy is sourced, this year has no rows — and the NCAA
+            // metrics handler THROWS on a missing FBS root
+            // (GroupSeasonsService "FBS group root(s) not found") rather
+            // than scoping empty. Pre-PR this window was a harmless no-op;
+            // keep it that way.
+            if (franchiseSeasons.Count == 0)
+            {
+                _logger.LogInformation(
+                    "No franchise seasons exist for {SeasonYear} ({Sport}) — season not sourced yet; nothing to enrich.",
+                    effectiveSeasonYear, _appMode.CurrentSport);
+                return;
+            }
 
             _logger.LogInformation("Requesting enrichment for {count} franchise seasons for year {seasonYear}.", franchiseSeasons.Count, effectiveSeasonYear);
 

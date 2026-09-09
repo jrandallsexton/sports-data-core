@@ -5,16 +5,23 @@ namespace SportsData.Core.Dtos.Canonical
 {
     /// <summary>
     /// Historical context for a matchup preview: recent head-to-head
-    /// meetings plus each team's late-prior-season form. Assembled by
-    /// Producer with preview-safe semantics baked in: preseason games
-    /// excluded (system-testing data only), finalized/non-cancelled games
-    /// only, and as-of filtering (no meeting on/after the target contest's
+    /// meetings plus each team's recent form. Assembled by Producer with
+    /// preview-safe semantics baked in: preseason games excluded
+    /// (system-testing data only), finalized/non-cancelled games only,
+    /// and as-of filtering (no meeting on/after the target contest's
     /// start — the target can never leak into its own history).
     /// </summary>
     public class ContestPreviewHistoryDto
     {
         public List<PreviewGameResultDto> HeadToHead { get; set; } = [];
 
+        /// <summary>
+        /// Rolling recent form: the last N finalized games across the
+        /// current + prior season, newest first (2026-09-09 semantics
+        /// change; before week 1 this degrades to the prior season's
+        /// finish). Property name retained for wire compatibility — it
+        /// predates the rolling window.
+        /// </summary>
         public List<PreviewGameResultDto> AwayPriorSeasonGames { get; set; } = [];
 
         public List<PreviewGameResultDto> HomePriorSeasonGames { get; set; } = [];

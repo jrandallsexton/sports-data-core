@@ -598,7 +598,7 @@ export function StatsComparisonModal({
                 )}
 
                 <CollapsibleSectionHeader
-                  title={`Last Season — Final ${Math.max(awayPriorGames.length, homePriorGames.length)} Games`}
+                  title={`Last ${Math.max(awayPriorGames.length, homePriorGames.length)} Games`}
                   collapsed={lastSeasonCollapsed}
                   onToggle={toggleLastSeason}
                   color={theme.tint}

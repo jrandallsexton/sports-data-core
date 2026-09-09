@@ -806,7 +806,7 @@ export default function TeamComparison({
             aria-expanded={!lastSeasonCollapsed}
           >
             <span>
-              Last Season — Final {Math.max(teamAPriorGames.length, teamBPriorGames.length)} Games
+              Last {Math.max(teamAPriorGames.length, teamBPriorGames.length)} Games
             </span>
             <span className="history-section-chevron" aria-hidden="true">
               {lastSeasonCollapsed ? "▾" : "▴"}

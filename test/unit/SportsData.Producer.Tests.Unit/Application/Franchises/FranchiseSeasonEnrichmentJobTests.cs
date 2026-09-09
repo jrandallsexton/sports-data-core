@@ -182,6 +182,34 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
     }
 
     [Fact]
+    public async Task Execute_MetricsHandlerThrows_DoesNotEscapeTheJob()
+    {
+        // Partial-sourcing window (Vortex round 3, PR #744): FranchiseSeasons
+        // exist but the FBS GroupSeason root doesn't yet, so the metrics
+        // handler THROWS ("FBS group root(s) not found") after the
+        // record-enrichment fan-out already ran. An escaped exception makes
+        // Hangfire's AutomaticRetry re-run the whole job — duplicating the
+        // full enrichment fan-out up to 10 times. The job must swallow-and-
+        // log instead; the missed metrics pass self-heals next week.
+        SetNow(new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc));
+        await SeedFranchiseSeasonAsync(2026);
+        _metricsHandler
+            .Setup(x => x.ExecuteAsync(
+                It.IsAny<EnqueueFranchiseSeasonMetricsGenerationCommand>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("FBS group root(s) not found."));
+
+        var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentJob>();
+
+        var act = async () => await sut.ExecuteAsync();
+
+        await act.Should().NotThrowAsync();
+        Mocker.GetMock<IProvideBackgroundJobs>().Verify(
+            x => x.Enqueue(It.IsAny<Expression<Func<EnrichFranchiseSeasonHandler<TeamSportDataContext>, Task>>>()),
+            Times.Once); // the fan-out ran exactly once — no retry storm
+    }
+
+    [Fact]
     public async Task Execute_ExplicitSeasonYear_PassesThroughUnchanged()
     {
         SetNow(new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc));

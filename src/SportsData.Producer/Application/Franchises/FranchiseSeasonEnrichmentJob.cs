@@ -109,25 +109,42 @@ namespace SportsData.Producer.Application.Franchises
 
             // Metrics ride the same weekly cadence: the handler applies its
             // own scoping (FBS-only for NCAA) and fans out one calculation
-            // job per franchise season, same as the manual endpoint. Runs
-            // regardless of the enrichment fan-out above — the enqueued
-            // record updates and the metric calculations are independent
-            // reads of the same finalized contests.
-            var metricsResult = await _metricsGenerationHandler.ExecuteAsync(
-                new EnqueueFranchiseSeasonMetricsGenerationCommand(
-                    effectiveSeasonYear,
-                    _appMode.CurrentSport));
+            // job per franchise season, same as the manual endpoint.
+            //
+            // The metrics half must NEVER throw out of this job: an escaped
+            // exception lands after the record-enrichment fan-out above, and
+            // Hangfire's AutomaticRetry would re-run ALL of ExecuteAsync —
+            // re-enqueueing the full enrichment fan-out on every retry while
+            // metrics still never generate. Concretely reachable in any
+            // partial-sourcing window where FranchiseSeasons exist but the
+            // FBS GroupSeason root doesn't yet (GetFbsGroupSeasonIds throws;
+            // the two datasets are sourced separately, so the empty-guard
+            // above can't see this). A missed weekly metrics pass is a
+            // logged error and self-heals next run; a retry storm is not.
+            try
+            {
+                var metricsResult = await _metricsGenerationHandler.ExecuteAsync(
+                    new EnqueueFranchiseSeasonMetricsGenerationCommand(
+                        effectiveSeasonYear,
+                        _appMode.CurrentSport));
 
-            if (metricsResult.IsSuccess)
-            {
-                _logger.LogInformation(
-                    "Franchise season metrics generation enqueued for {SeasonYear} ({Sport}).",
-                    effectiveSeasonYear, _appMode.CurrentSport);
+                if (metricsResult.IsSuccess)
+                {
+                    _logger.LogInformation(
+                        "Franchise season metrics generation enqueued for {SeasonYear} ({Sport}).",
+                        effectiveSeasonYear, _appMode.CurrentSport);
+                }
+                else
+                {
+                    _logger.LogError(
+                        "Franchise season metrics generation FAILED to enqueue for {SeasonYear} ({Sport}).",
+                        effectiveSeasonYear, _appMode.CurrentSport);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                _logger.LogError(
-                    "Franchise season metrics generation FAILED to enqueue for {SeasonYear} ({Sport}).",
+                _logger.LogError(ex,
+                    "Franchise season metrics generation threw for {SeasonYear} ({Sport}); enrichment fan-out already ran and is not retried.",
                     effectiveSeasonYear, _appMode.CurrentSport);
             }
         }

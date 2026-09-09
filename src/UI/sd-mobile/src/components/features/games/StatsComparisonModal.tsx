@@ -445,7 +445,13 @@ export function StatsComparisonModal({
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerLeft} />
-          <Wordmark size={17} />
+          {/* Visual identity is the brand; SEMANTIC identity stays the
+              sheet name - without the label both modals announce an
+              identical "sportDeets" to VoiceOver/TalkBack and cannot be
+              told apart (Vortex, PR #746). */}
+          <View accessible accessibilityRole="header" accessibilityLabel="Team Comparison">
+            <Wordmark size={17} />
+          </View>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={12}>
             <Text style={[styles.closeText, { color: theme.textMuted }]}>✕</Text>
           </TouchableOpacity>

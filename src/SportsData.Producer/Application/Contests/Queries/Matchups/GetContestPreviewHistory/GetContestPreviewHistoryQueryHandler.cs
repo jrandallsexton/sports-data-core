@@ -106,6 +106,19 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 new { query.ContestId, Count = query.RecentGameCount },
                 cancellationToken: cancellationToken))).ToList();
 
+        // Two independent recency lists, same row shape, different windows:
+        // PriorSeasonGames stays strictly prior-season (the AI prompt's
+        // recency bridge, disjoint from season results by construction)
+        // while RecentGames rolls across the season boundary for the
+        // History UI. Deriving one from the other cannot work — each list
+        // caps at @Count at its own window, so a rolling list trimmed
+        // API-side starves the prior block by mid-season (PR #743 review).
+        var recentRows = (await connection.QueryAsync<PriorSeasonRow>(
+            new CommandDefinition(
+                _sqlProvider.GetContestRecentResults(),
+                new { query.ContestId, Count = query.RecentGameCount },
+                cancellationToken: cancellationToken))).ToList();
+
         // An unknown contest yields empty lists everywhere (the target CTE
         // matches nothing) — an empty history is a normal state for a
         // first-ever meeting, so no NotFound here; the caller degrades
@@ -116,6 +129,10 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
             AwayPriorSeasonGames = priorSeasonRows
                 .Where(x => x.Side == "Away").Cast<PreviewGameResultDto>().ToList(),
             HomePriorSeasonGames = priorSeasonRows
+                .Where(x => x.Side == "Home").Cast<PreviewGameResultDto>().ToList(),
+            AwayRecentGames = recentRows
+                .Where(x => x.Side == "Away").Cast<PreviewGameResultDto>().ToList(),
+            HomeRecentGames = recentRows
                 .Where(x => x.Side == "Home").Cast<PreviewGameResultDto>().ToList()
         };
 

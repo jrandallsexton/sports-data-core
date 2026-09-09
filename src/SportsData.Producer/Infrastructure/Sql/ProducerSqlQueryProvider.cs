@@ -21,6 +21,7 @@ public class ProducerSqlQueryProvider
         "GetRankingsByPollByWeek.sql",
         "GetContestHeadToHeadResults.sql",
         "GetContestPriorSeasonResults.sql",
+        "GetContestRecentResults.sql",
         "GetContestSpreadTarget.sql",
         "GetFranchiseMarginFact.sql",
         "GetFranchiseMarginInstances.sql",
@@ -111,6 +112,8 @@ public class ProducerSqlQueryProvider
     public string GetContestHeadToHeadResults() => Get("GetContestHeadToHeadResults.sql");
 
     public string GetContestPriorSeasonResults() => Get("GetContestPriorSeasonResults.sql");
+
+    public string GetContestRecentResults() => Get("GetContestRecentResults.sql");
 
     public string GetContestSpreadTarget() => Get("GetContestSpreadTarget.sql");
 

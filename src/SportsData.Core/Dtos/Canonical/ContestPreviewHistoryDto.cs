@@ -16,15 +16,26 @@ namespace SportsData.Core.Dtos.Canonical
         public List<PreviewGameResultDto> HeadToHead { get; set; } = [];
 
         /// <summary>
-        /// Rolling recent form: the last N finalized games across the
-        /// current + prior season, newest first (2026-09-09 semantics
-        /// change; before week 1 this degrades to the prior season's
-        /// finish). Property name retained for wire compatibility — it
-        /// predates the rolling window.
+        /// Strictly the PRIOR season's last N games ("how did they
+        /// finish?") — the AI prompt's recency bridge, deliberately
+        /// disjoint from current-season results so the model never sees
+        /// the same game twice. UI surfaces should prefer
+        /// <see cref="AwayRecentGames"/>.
         /// </summary>
         public List<PreviewGameResultDto> AwayPriorSeasonGames { get; set; } = [];
 
         public List<PreviewGameResultDto> HomePriorSeasonGames { get; set; } = [];
+
+        /// <summary>
+        /// Rolling recent form for the History UI: the last N finalized
+        /// games across the current + prior season, newest first. Before
+        /// week 1 this matches the prior-season lists exactly. Added
+        /// 2026-09-09; older clients that predate it keep reading the
+        /// prior-season lists and degrade gracefully.
+        /// </summary>
+        public List<PreviewGameResultDto> AwayRecentGames { get; set; } = [];
+
+        public List<PreviewGameResultDto> HomeRecentGames { get; set; } = [];
 
         /// <summary>Prior-season summary (record + metrics); null when the franchise has no prior season.</summary>
         public PreviewPriorSeasonSummaryDto? AwayPriorSeason { get; set; }

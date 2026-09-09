@@ -500,20 +500,18 @@ namespace SportsData.Api.Application.Previews
             {
                 matchup.HeadToHead = historyResult.Value.HeadToHead;
 
-                // The history payload's recent-form lists became ROLLING
-                // (current + prior season) on 2026-09-09 — right for the
-                // History UI, wrong for this prompt: the model already
-                // receives every current-season game in
-                // Away/HomeCompetitionResults (as-of trimmed below), and the
-                // stored prompt text + matchup-preview-data-inputs.md §3.5
-                // describe these lists as prior-season, deliberately disjoint
-                // from season results. Trimming to strictly-prior seasons
-                // here keeps the model contract true and the evidence
-                // deduplicated while the UI keeps the rolling view.
-                matchup.AwayPriorSeasonGames = historyResult.Value.AwayPriorSeasonGames
-                    .Where(g => g.SeasonYear < matchup.SeasonYear).ToList();
-                matchup.HomePriorSeasonGames = historyResult.Value.HomePriorSeasonGames
-                    .Where(g => g.SeasonYear < matchup.SeasonYear).ToList();
+                // Deliberately the PRIOR-SEASON lists, not the rolling
+                // Away/HomeRecentGames the History UI shows: the model
+                // already receives every current-season game in
+                // Away/HomeCompetitionResults (as-of trimmed below), and
+                // the stored prompt text + matchup-preview-data-inputs.md
+                // §3.5 define these lists as prior-season, disjoint from
+                // season results. Producer emits both windows independently
+                // — an API-side trim of the rolling list cannot substitute,
+                // because its per-side cap discards prior-season rows that
+                // can't be restored here (PR #743 review).
+                matchup.AwayPriorSeasonGames = historyResult.Value.AwayPriorSeasonGames;
+                matchup.HomePriorSeasonGames = historyResult.Value.HomePriorSeasonGames;
                 matchup.AwayPriorSeason = historyResult.Value.AwayPriorSeason;
                 matchup.HomePriorSeason = historyResult.Value.HomePriorSeason;
 

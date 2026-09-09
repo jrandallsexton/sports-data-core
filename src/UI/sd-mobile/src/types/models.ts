@@ -491,6 +491,13 @@ export interface ContestHistory {
   headToHead: ContestHistoryGame[];
   awayPriorSeasonGames: ContestHistoryGame[];
   homePriorSeasonGames: ContestHistoryGame[];
+  /**
+   * Rolling "Last N Games" (current + prior season, newest first). Added
+   * 2026-09-09 — optional so payloads from an older API deserialize; fall
+   * back to the prior-season lists when absent.
+   */
+  awayRecentGames?: ContestHistoryGame[];
+  homeRecentGames?: ContestHistoryGame[];
   awayPriorSeason?: ContestPriorSeasonSummary | null;
   homePriorSeason?: ContestPriorSeasonSummary | null;
   /** Null when the contest has no line from the preferred providers. */

@@ -318,6 +318,58 @@ beat this feature exists for — but note it takes TWO operator actions
 until the date-based handler fix ships: fire the poll sourcing, then
 trigger `MatchupScheduler` manually (the dead fast path cannot chain them).
 
+## Production runbook — poll fire + week slate (first run 2026-09-09; reusable)
+
+Preconditions: PR #741 merged, Notification image deployed. Steps 2–5 are
+the repeatable per-poll procedure; step 1 is deploy-verification only.
+
+1. **Verify the deploy** (first run, and after any Notification deploy):
+   - Notification pod healthy; Seq shows a clean startup (migration
+     applies at boot — `NotificationPollReleases` +
+     `NotificationMatchupsReady` tables, two default-true prefs columns).
+   - The two new consumer queues exist on the api broker with ≥1 consumer
+     (`SeasonPollWeekCreated` arrives via the existing
+     `shovel-season-poll-week-created-ncaa-to-api`;
+     `PickemGroupWeekMatchupsGenerated` is published on the api broker
+     directly — no shovel work needed).
+   - Do NOT fire the poll before this verifies: the event is one-shot,
+     and a publish with no queue bound is gone.
+2. **Fire the poll sourcing**: bruno `resourceIndex-process.yml` (ops
+   proxy → Provider `resourceIndex/ab980339-9958-4238-8db1-7459c556b6c7/process`,
+   empty JSON body). Re-firing is always safe: per-user claims dedupe.
+3. **Watch the chain in Seq**: Provider fetch → Producer creates the
+   `SeasonPollWeek` rows (`ap` + siblings) → Notification logs "AP poll
+   release detected; starting broadcast fan-out" then "broadcast
+   complete. Audience=N, Sent=M". Non-AP polls log "no notification in
+   v1" — expected.
+4. **Trigger `MatchupScheduler` manually**: jobs.sportdeets.com → API
+   Hangfire → Recurring Jobs → `MatchupScheduler` → Trigger now. Required
+   for the same-moment product beat until the date-based handler fix
+   ships (the poll → refresh fast path is dead in-season); skipping this
+   means ranked-league slates — and notification B — wait for the
+   06:00 UTC (02:00 ET) cron.
+5. **Verify results**:
+   - `select "Result", count(*) from "NotificationPollReleases" group by 1;`
+     — expect Sent > 0, `Suppressed_NoDevice` for web-only users, and
+     ZERO `Suppressed_UserOptedOut` (per-category opt-out ships dark).
+   - Ranked leagues gained the week's Top-25 matchups; then
+     `select "Result", count(*) from "NotificationMatchupsReady" group by 1;`
+     — rows only for leagues that gained NEW matchups (insert-gate:
+     conference leagues whose slates generated days earlier stay silent —
+     correct, not a miss).
+   - Physical device check: "AP Top 25 is out", then per-league
+     "Week N matchups are ready".
+6. **If a fire misbehaves**: nothing needs rolling back — claims make
+   re-delivery and re-fires idempotent, but a sent push cannot be
+   recalled, which is why step 1 gates step 2. A user stuck at
+   `Dispatching` (crash orphan) is repaired automatically by the next
+   redelivery's reclaim path.
+
+Weekly cadence reminder: the sourcing cron fires Sundays 22:00 UTC. An AP
+release that slides to Monday/Tuesday (holiday weeks) is missed until the
+operator fires step 2 manually — the cron-widening decision
+(`0 22 * * 0,1,2`) is still open, above.
+
 ## Out of scope (recorded, not planned here)
 
 - Cron widening for Monday/Tuesday poll releases (operator SQL or the

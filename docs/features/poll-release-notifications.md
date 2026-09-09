@@ -114,7 +114,16 @@ changes** — both trigger events already exist and already cross the broker
   `(UserId, SeasonPollWeekId)` — same pattern as `NotificationUserPick`.
   At-least-once redelivery and any future revision re-publish are absorbed.
 - **Preference**: new `UserNotificationPreferences` column (default **ON** —
-  this is the re-engagement hook; users can opt out), migration alongside.
+  this is the re-engagement hook), migration alongside. **The per-category
+  opt-out ships DARK in v1** (flagged by Vortex on PR #741): nothing writes
+  the two new flags yet — the Core `UserNotificationPreferencesUpdated`
+  event, API entity/command, and UI toggles all need extending, a
+  cross-service follow-up PR (event fields must be nullable so old
+  publishers don't stomp values). The gate + columns ship now so that
+  follow-up only touches the preference chain, not these consumers. Users
+  are not without recourse meanwhile: device-level opt-out is live —
+  `PushDeviceFanout` honors `UserDevice.NotificationsEnabled`, so turning
+  notifications off in the app/OS suppresses these like every other push.
 - **Deep link**: rankings screen (shipped in the rankings-visibility arc,
   PRs #649–651).
 - **Copy** (v1, static): title "AP Top 25 is out", body "The new college

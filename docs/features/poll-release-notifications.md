@@ -29,7 +29,7 @@ Two push notifications, in natural order:
 | AP poll sourcing | Recurring `ResourceIndex` row `ab980339-9958-4238-8db1-7459c556b6c7` (`…college-football.seasons.rankings`), cron `0 22 * * 0` (Sun 22:00 UTC), registered by `SourcingJobOrchestrator` as Hangfire job `Resource:{guid}` | LIVE |
 | Manual re-fire | `POST admin/ops/provider/football/ncaa/resourceIndex/{id}/process` via ops proxy; `bruno/api/resourceIndex-process.yml` (id corrected 2026-09-08) | LIVE |
 | Poll-detected event | `SeasonPollWeekCreated` published by `SeasonTypeWeekRankingsDocumentProcessor` (Producer), outbox-atomic with the new `SeasonPollWeek` row. Carries `SeasonPollWeekId`, `SeasonPollId`, `SeasonWeekId?` + week date bounds, `SeasonYear`, `PollSlug`, `Sport` | LIVE |
-| Poll → matchup refresh | `SeasonPollWeekCreatedHandler` (API) enqueues a refresh `ScheduleGroupWeekMatchupsCommand` for every active league with a `RankingFilter` whose window overlaps the poll's week | LIVE |
+| Poll → matchup refresh | `SeasonPollWeekCreatedHandler` (API) enqueues a refresh `ScheduleGroupWeekMatchupsCommand` for every active league with a `RankingFilter` whose window overlaps the poll's week | **DEAD in-season** — the event carries the linkage defect's off-by-one `SeasonWeekId` (Week-2 poll → ESPN week 3), so the shell join matches nothing ("affects 0 leagues"; verified in E2E). Daily 02:00 `MatchupScheduler` cron is the working backstop. Date-based fix = deferred API follow-up |
 | Matchups-ready event | `PickemGroupWeekMatchupsGenerated` published by `MatchupScheduleProcessor` **only when new matchups were inserted** and the week isn't already completed | LIVE |
 | Its only consumer | `PickemGroupWeekMatchupsGeneratedHandler` (API) — contest refresh fan-out + AI preview enqueue. Nothing user-facing | LIVE |
 | Push infrastructure | Notification service: `FirebasePushNotificationSender`, `UserDevice` registry, `PushDeviceFanout`, per-user `UserNotificationPreferences` toggles, `NotificationLog`, table-per-type dedupe entities, `MatchupDeepLink` | LIVE |
@@ -59,7 +59,7 @@ sequenceDiagram
     Prod->>Prod: SeasonTypeWeekRankingsDocumentProcessor<br/>NEW SeasonPollWeek row
     Prod-->>API: SeasonPollWeekCreated (outbox)
     Note over Prod,API: fires ONCE per poll week —<br/>revisions do not re-publish
-    API->>API: SeasonPollWeekCreatedHandler:<br/>refresh matchups for RankingFilter leagues only
+    API->>API: SeasonPollWeekCreatedHandler:<br/>refresh matchups for RankingFilter leagues only<br/>(DEAD in-season: off-by-one SeasonWeekId<br/>matches no shell — daily cron is the backstop)
     API->>API: MatchupScheduleProcessor (per league)
     API-->>API: PickemGroupWeekMatchupsGenerated<br/>(only if new matchups inserted)
     API->>API: contest refresh + AI preview enqueue
@@ -282,11 +282,18 @@ Producer takes the new-entity path and re-publishes `SeasonPollWeekCreated`.
    count must NOT change (unique `(UserId, LeagueId, SeasonYear,
    SeasonWeek)` claim absorbs it).
 
-### Ordering check (free with Test 1)
+### Ordering (corrected after E2E — the "free" check is NOT free)
 
-If a local league has a `RankingFilter`, the poll fire from Test 1 also
-triggers its matchup refresh → both tables gain rows in order:
-poll-release first, matchups-ready behind it.
+As designed, a poll fire on a `RankingFilter` league would produce both
+notifications in order. In practice the poll → refresh leg is DEAD for
+in-season polls (off-by-one `SeasonWeekId`, see the current-state table),
+so Test 1 alone yields NO `NotificationMatchupsReady` rows — that is the
+dead fast path, not a broken notification B. Matchups-ready rows come
+from running `MatchupScheduler` directly (Test 2), exactly as the
+2026-09-08 E2E did. Until the date-based handler fix ships, production
+gets the same ordering only by manually triggering `MatchupScheduler`
+(jobs.sportdeets.com) right after the poll fire; otherwise the slate — and
+notification B — waits for the daily 02:00 cron.
 
 ## Sequencing decision (operator)
 
@@ -305,9 +312,11 @@ flowchart TD
 ```
 
 Recommendation: **hold and build.** The build is small, and ranked-league
-Week 2 matchups are gated on this poll either way — landing the poll, the
-refreshed slate, and both notifications in the same moment is exactly the
-product beat this feature exists for.
+Week 2 matchups are gated on this poll either way. Landing the poll, the
+refreshed slate, and both notifications in the same moment is the product
+beat this feature exists for — but note it takes TWO operator actions
+until the date-based handler fix ships: fire the poll sourcing, then
+trigger `MatchupScheduler` manually (the dead fast path cannot chain them).
 
 ## Out of scope (recorded, not planned here)
 

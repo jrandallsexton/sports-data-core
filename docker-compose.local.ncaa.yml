@@ -21,12 +21,15 @@
 # Prerequisites: same as docker-compose.local.yml (host PostgreSQL, RabbitMQ,
 # Seq, plus the .env file with APPCONFIG_CONNSTR / PG_CONNSTR / AZURE_*).
 #
-# Ports:
+# Ports (localhost:5000 is the one to remember — its landing page links the rest):
+#   Jobs Dashboard     http://localhost:5000 (Hangfire dashboards, all services — local jobs.sportdeets.com)
 #   API                http://localhost:5262
+#   Notification       http://localhost:5068
 #   Producer NFL API   http://localhost:7040
 #   Producer MLB API   http://localhost:7041
 #   Producer NCAA      http://localhost:7042 (api + ingest + worker, football schema)
 #   Provider NCAA      http://localhost:7050 (all roles)
+#   (host-side, not this compose: web UI :3000, Seq UI :8090, Mongo :27017)
 
 x-common-env: &common-env
   APPCONFIG_CONNSTR: ${APPCONFIG_CONNSTR}
@@ -171,6 +174,31 @@ services:
     environment:
       <<: *common-env
     healthcheck: *service-healthcheck
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── Jobs Dashboard (read-only Hangfire dashboards, all services) ───────────
+  # Local twin of https://jobs.sportdeets.com — one bookmark instead of
+  # remembering per-service Hangfire paths. Mounts every service's Hangfire
+  # storage read-only against the host Postgres; its landing page links each
+  # dashboard. No Hangfire server runs here, so it processes nothing.
+  # DashboardAuthFilter is permissive (prod's basic auth lives at ingress).
+  jobs-dashboard:
+    build:
+      # Unlike the per-service Dockerfiles, DockerfileJobsDashboard is built
+      # with src/ as the context (matching its azure-pipelines.yml) — its
+      # COPY paths have no src/ prefix.
+      context: ./src
+      dockerfile: DockerfileJobsDashboard
+    container_name: jobs-dashboard
+    ports:
+      - "5000:8080"
+    environment:
+      <<: *common-env
+    # NO healthcheck: DockerfileJobsDashboard is the one chiseled image in
+    # the fleet (no bash, so the shared /dev/tcp probe can't run — see the
+    # x-service-healthcheck warning above). Nothing depends_on this service,
+    # so an unchecked container costs nothing; k8s probes it over HTTP in prod.
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

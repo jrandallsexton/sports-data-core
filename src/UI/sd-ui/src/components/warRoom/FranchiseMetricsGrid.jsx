@@ -3,6 +3,22 @@ import apiWrapper from '../../api/apiWrapper';
 import { teamLink } from '../../utils/sportLinks';
 import './FranchiseMetricsGrid.css';
 
+// House convention: a season is labeled by its starting year, and the
+// rollover happens in June (month >= 6). Kept in sync with the backend's
+// season-year resolution.
+const getCurrentSeasonYear = () => {
+  const now = new Date();
+  return now.getMonth() + 1 >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+};
+
+// Metrics exist from this season forward in meaningful shape.
+const EARLIEST_SEASON = 2025;
+
+const seasonYears = [];
+for (let y = getCurrentSeasonYear(); y >= EARLIEST_SEASON; y--) {
+  seasonYears.push(y);
+}
+
 function FranchiseMetricsGrid() {
   const [metrics, setMetrics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,12 +28,14 @@ function FranchiseMetricsGrid() {
   const [showAll, setShowAll] = useState(false);
   const [selectedConference, setSelectedConference] = useState('all');
   const [selectedRow, setSelectedRow] = useState(null);
+  const [seasonYear, setSeasonYear] = useState(seasonYears[0]);
 
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
         setLoading(true);
-        const response = await apiWrapper.Analytics.getFranchiseSeasonMetrics(2025);
+        setError(null);
+        const response = await apiWrapper.Analytics.getFranchiseSeasonMetrics(seasonYear);
         setMetrics(response.data || []);
       } catch (err) {
         setError('Failed to load franchise metrics');
@@ -28,7 +46,7 @@ function FranchiseMetricsGrid() {
     };
 
     fetchMetrics();
-  }, []);
+  }, [seasonYear]);
 
   const handleSort = (column) => {
     if (sortBy === column) {
@@ -115,7 +133,7 @@ function FranchiseMetricsGrid() {
   if (loading) {
     return (
       <div className="franchise-metrics-grid">
-        <h2>Franchise Season Metrics (2025)</h2>
+        <h2>Franchise Season Metrics ({seasonYear})</h2>
         <div className="loading-state">Loading franchise metrics...</div>
       </div>
     );
@@ -124,19 +142,36 @@ function FranchiseMetricsGrid() {
   if (error) {
     return (
       <div className="franchise-metrics-grid">
-        <h2>Franchise Season Metrics (2025)</h2>
+        <h2>Franchise Season Metrics ({seasonYear})</h2>
         <div className="error-state">{error}</div>
       </div>
     );
   }
 
+  // Explicit empty state so a season with no generated metrics reads as
+  // exactly that (the spot-check this page exists for), not a blank table.
+  // The year selector must stay reachable to switch back.
+  const noMetrics = metrics.length === 0;
+
   return (
     <div className="franchise-metrics-grid">
       <div className="metrics-header">
-        <h2>Franchise Season Metrics (2025)</h2>
+        <h2>Franchise Season Metrics ({seasonYear})</h2>
         <div className="header-controls">
-          <select 
-            value={selectedConference} 
+          <select
+            value={seasonYear}
+            onChange={(e) => setSeasonYear(Number(e.target.value))}
+            className="conference-filter"
+            aria-label="Season year"
+          >
+            {seasonYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <select
+            value={selectedConference}
             onChange={(e) => setSelectedConference(e.target.value)}
             className="conference-filter"
           >
@@ -160,6 +195,12 @@ function FranchiseMetricsGrid() {
           </button>
         </div>
       </div>
+      {noMetrics && (
+        <div className="error-state">
+          No franchise metrics exist for the {seasonYear} season yet.
+        </div>
+      )}
+      {!noMetrics && (
       <div className="metrics-table-container">
         <table className="metrics-table">
           <thead>
@@ -326,6 +367,7 @@ function FranchiseMetricsGrid() {
           </tbody>
         </table>
       </div>
+      )}
       {metrics.length > 0 && (
         <div className="metrics-summary">
           Showing {displayedMetrics.length} of {filteredMetrics.length} teams

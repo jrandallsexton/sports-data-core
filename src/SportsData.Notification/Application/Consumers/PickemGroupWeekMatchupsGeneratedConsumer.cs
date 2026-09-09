@@ -57,16 +57,31 @@ namespace SportsData.Notification.Application.Consumers
                 ["WeekNumber"] = msg.WeekNumber
             });
 
+            // The publisher (MatchupScheduleProcessor) always sets SeasonYear
+            // from its command; a null here is a malformed event, and claiming
+            // under a fabricated year-0 dedupe key would both lie in the audit
+            // table and block the real year's notification if a corrected
+            // event ever arrived.
+            if (msg.SeasonYear is null)
+            {
+                _logger.LogWarning(
+                    "PickemGroupWeekMatchupsGenerated for league {GroupId} carried no SeasonYear; skipping fan-out.",
+                    msg.GroupId);
+                return;
+            }
+
             // League name for the copy. The projection is seeded at league
             // creation and converged by backfill; a missing row means the
             // member projection is missing too, so there is nobody to notify
             // yet — log and let the projection backfill catch up. (The event
             // will not refire for this week, an accepted v1 gap.)
-            var group = await _dataContext.PickemGroups
+            var groupName = await _dataContext.PickemGroups
                 .AsNoTracking()
-                .FirstOrDefaultAsync(g => g.Id == msg.GroupId, context.CancellationToken);
+                .Where(g => g.Id == msg.GroupId)
+                .Select(g => (string?)g.Name)
+                .FirstOrDefaultAsync(context.CancellationToken);
 
-            if (group is null)
+            if (groupName is null)
             {
                 _logger.LogWarning(
                     "PickemGroupWeekMatchupsGenerated for unknown league {GroupId}; projection not seeded yet. Skipping.",
@@ -94,7 +109,7 @@ namespace SportsData.Notification.Application.Consumers
                 .ToHashSet();
 
             var title = $"Week {msg.WeekNumber} matchups are ready";
-            var body = $"Week {msg.WeekNumber} matchups are set in {group.Name} — make your picks.";
+            var body = $"Week {msg.WeekNumber} matchups are set in {groupName} — make your picks.";
 
             // FCM data payload — kind/target convention per MatchupDeepLink /
             // the invite consumer; lands on the league's picks screen.
@@ -114,7 +129,7 @@ namespace SportsData.Notification.Application.Consumers
                 {
                     UserId = userId,
                     LeagueId = msg.GroupId,
-                    SeasonYear = msg.SeasonYear ?? 0,
+                    SeasonYear = msg.SeasonYear.Value,
                     SeasonWeek = msg.WeekNumber,
                     CorrelationId = msg.CorrelationId,
                     Channel = "Fcm",
@@ -129,10 +144,33 @@ namespace SportsData.Notification.Application.Consumers
                 }
                 catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
                 {
-                    // Already notified for this league-week (redelivery, or a
-                    // ranked-league refresh re-publish). First event won.
                     _dataContext.Entry(claim).State = EntityState.Detached;
-                    continue;
+
+                    // Finalized row = already notified for this league-week
+                    // (redelivery, or a ranked-league refresh re-publish) —
+                    // first event won, skip. A row stranded at "Dispatching"
+                    // is a crash orphan: reclaim and dispatch, same broadcast
+                    // trade-off as SeasonPollWeekCreatedConsumer (a stranded
+                    // user misses the week's slate; the duplicate window is
+                    // the milliseconds between FCM send and finalize).
+                    var existing = await _dataContext.NotificationMatchupsReady
+                        .FirstOrDefaultAsync(
+                            r => r.UserId == userId
+                                 && r.LeagueId == msg.GroupId
+                                 && r.SeasonYear == msg.SeasonYear.Value
+                                 && r.SeasonWeek == msg.WeekNumber,
+                            context.CancellationToken);
+
+                    if (existing is null || existing.Result != "Dispatching")
+                    {
+                        continue;
+                    }
+
+                    existing.AttemptedUtc = _dateTimeProvider.UtcNow();
+                    existing.CorrelationId = msg.CorrelationId;
+                    existing.ModifiedUtc = _dateTimeProvider.UtcNow();
+                    await _dataContext.SaveChangesAsync(context.CancellationToken);
+                    claim = existing;
                 }
 
                 if (optedOut.Contains(userId))

@@ -1,7 +1,8 @@
 # Poll-Release & Matchups-Ready Notifications
 
-**Status: BUILT (branch `feat/poll-release-notifications`) — awaiting local
-E2E validation, then PR.** Written 2026-09-08, the morning the Week 2
+**Status: IN REVIEW (PR #741) — local E2E COMPLETE 2026-09-08: both
+notifications received on physical devices against the real Week 2 AP
+poll.** Written 2026-09-08, the morning the Week 2
 AP poll dropped on a Tuesday and competing apps pushed notifications while we
 had nothing. This doc captures the current event plumbing (verified against
 source and prod Seq logs), the plan, and the one sequencing decision the
@@ -98,10 +99,17 @@ changes** — both trigger events already exist and already cross the broker
   NULL — see reference in memory / matchup-ranks PR, where all read paths
   went date-based) must not suppress the notification. Poll release is
   newsworthy regardless of week mapping.
-- **Audience**: users with a registered device who are members of ≥1 active
-  league for the event's sport — resolvable entirely from the existing
-  `NotificationMembership` / `PickemGroup` / `UserDevice` projections. Fan
-  out via the existing `PushDeviceFanout`.
+- **Audience**: users with a notification-enabled device who are members of
+  ≥1 league for the event's sport — ANY league row, deactivated leagues
+  included. The Notification-side `PickemGroup` projection carries no
+  active/deactivated state and neither `PickemGroupCreated` nor
+  `PickemGroupDataPublished` publishes it, so an active-league filter is a
+  cross-service contract change (Core event + API publisher + projection +
+  backfill) — recorded as a follow-up, accepted for v1. Practical impact is
+  bounded: the claim dedupes per user, so anyone also in an active league
+  gets exactly one push either way; only users whose ONLY leagues are
+  deactivated are over-notified. Fan out via the existing
+  `PushDeviceFanout`.
 - **Dedupe**: new table-per-type entity `NotificationPollRelease` keyed
   `(UserId, SeasonPollWeekId)` — same pattern as `NotificationUserPick`.
   At-least-once redelivery and any future revision re-publish are absorbed.
@@ -142,7 +150,7 @@ sequenceDiagram
 
     Prod-->>API: SeasonPollWeekCreated
     Prod-->>Notif: SeasonPollWeekCreated
-    Notif->>Notif: AP slug? members of active league<br/>for sport? prefs on? not deduped?
+    Notif->>Notif: AP slug? members of any league<br/>for sport? prefs on? not deduped?
     Notif->>User: "AP Top 25 is out" (deep link: rankings)
     API->>API: refresh RankingFilter leagues
     API-->>Notif: PickemGroupWeekMatchupsGenerated<br/>(new inserts only)

@@ -145,10 +145,33 @@ namespace SportsData.Notification.Application.Consumers
                 }
                 catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
                 {
-                    // Already claimed (prior delivery or racing pod). Skip this
-                    // user, keep walking the audience.
                     _dataContext.Entry(claim).State = EntityState.Detached;
-                    continue;
+
+                    // A finalized row (Sent/Suppressed/Failed) means a prior
+                    // delivery finished this user — skip. A row still at
+                    // "Dispatching" is a crash orphan: the owning pod died
+                    // between claim and finalize, and since the poll event is
+                    // one-shot, no future delivery would ever repair it.
+                    // Reclaim and dispatch. This inverts the single-recipient
+                    // consumers' "missing beats duplicate" stance deliberately:
+                    // for a broadcast, a stranded user misses the entire weekly
+                    // moment, while the duplicate window is only the
+                    // milliseconds between the FCM send and the finalize save.
+                    var existing = await _dataContext.NotificationPollReleases
+                        .FirstOrDefaultAsync(
+                            r => r.UserId == userId && r.SeasonPollWeekId == msg.SeasonPollWeekId,
+                            context.CancellationToken);
+
+                    if (existing is null || existing.Result != "Dispatching")
+                    {
+                        continue;
+                    }
+
+                    existing.AttemptedUtc = _dateTimeProvider.UtcNow();
+                    existing.CorrelationId = msg.CorrelationId;
+                    existing.ModifiedUtc = _dateTimeProvider.UtcNow();
+                    await _dataContext.SaveChangesAsync(context.CancellationToken);
+                    claim = existing;
                 }
 
                 if (optedOut.Contains(userId))

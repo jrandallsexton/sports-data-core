@@ -197,18 +197,20 @@ public class PickemGroupWeekMatchupsGeneratedConsumerTests
     }
 
     [Fact]
-    public async Task Consume_NullSeasonYear_ClaimsWithZeroYear()
+    public async Task Consume_NullSeasonYear_RejectsWithoutClaiming()
     {
-        // MatchupScheduleProcessor always passes the command's SeasonYear, but
-        // the event contract allows null — the claim's dedupe key coalesces
-        // to 0 rather than crashing the fan-out.
+        // MatchupScheduleProcessor always passes the command's SeasonYear, so
+        // a null is a malformed event. Claiming under a fabricated year-0
+        // dedupe key would lie in the audit table AND block the real year's
+        // notification if a corrected event arrived — reject before fan-out.
         var (groupId, _) = await SeedLeagueWithMemberAsync();
 
         var sut = Mocker.CreateInstance<PickemGroupWeekMatchupsGeneratedConsumer>();
         await sut.Consume(ContextFor(Msg(groupId, seasonYear: null)));
 
-        var row = await DataContext.NotificationMatchupsReady.SingleAsync();
-        row.SeasonYear.Should().Be(0);
-        row.Result.Should().Be("Sent");
+        _fanout.Verify(x => x.SendToUserDevicesAsync(
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<IReadOnlyDictionary<string, string>>()), Times.Never);
+        (await DataContext.NotificationMatchupsReady.AnyAsync()).Should().BeFalse();
     }
 }

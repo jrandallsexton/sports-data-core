@@ -169,6 +169,89 @@ public class TeamSeasonDocumentProcessorTests :
     }
 
     [Fact]
+    public async Task WhenScopedToStatistics_ExistingSeason_SpawnsOnlyTheStatisticsChild()
+    {
+        // The contract behind the enrichment job's weekly statistics leg
+        // (Vortex, PR #749): a TeamSeason re-process with
+        // IncludeLinkedDocumentTypes = [TeamSeasonStatistics] on an EXISTING
+        // FranchiseSeason must spawn exactly the statistics child and
+        // nothing else. A regression here (dropping the scope, or routing
+        // through the isNew path where ShouldSpawn is bypassed) re-spawns
+        // the full athlete/event/record cascade for every team, weekly —
+        // the 2026-08-29 flood, automated.
+        //
+        // Ids are DETERMINISTIC, not random: the processor resolves the
+        // franchise by the canonical id generated from the doc's franchise
+        // ref and the season by the canonical id of the doc's own ref —
+        // random ids silently divert to the franchise-dependency retry
+        // path, whose asserts also "pass" (the false-positive shape of the
+        // already-exists sibling test).
+        var generator = new ExternalRefIdentityGenerator();
+        Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+        var bus = Mocker.GetMock<IEventBus>();
+        var sut = Mocker.CreateInstance<TeamSeasonDocumentProcessor<FootballDataContext>>();
+        // Dedicated fixture: the base TeamSeason json carries no statistics
+        // link, so the child under test could never spawn from it.
+        var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaTeamSeasonWithStatistics.json");
+
+        var season = 2025;
+        var franchiseIdentity = generator.Generate(SourceUrl);
+        var teamSeasonIdentity = generator.Generate(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/teams/99?lang=en");
+
+        var franchiseSeason = Fixture.Build<FranchiseSeason>()
+            .WithAutoProperties()
+            .With(x => x.Id, teamSeasonIdentity.CanonicalId)
+            .With(x => x.FranchiseId, franchiseIdentity.CanonicalId)
+            .With(x => x.SeasonYear, season)
+            .Create();
+
+        var franchise = Fixture.Build<Franchise>()
+            .WithAutoProperties()
+            .With(x => x.Id, franchiseIdentity.CanonicalId)
+            .With(x => x.Name, "Test Franchise")
+            .With(x => x.ExternalIds, new List<FranchiseExternalId>
+            {
+                Fixture.Build<FranchiseExternalId>()
+                    .With(x => x.Provider, SourceDataProvider.Espn)
+                    .With(x => x.SourceUrl, SourceUrl)
+                    .With(x => x.SourceUrlHash, _urlHash)
+                    .With(x => x.Value, _urlHash)
+                    .Create()
+            })
+            .With(x => x.Seasons, new List<FranchiseSeason> { franchiseSeason })
+            .Create();
+
+        await FootballDataContext.Franchises.AddAsync(franchise);
+        await FootballDataContext.SaveChangesAsync();
+
+        var command = Fixture.Build<ProcessDocumentCommand>()
+            .With(x => x.SourceDataProvider, SourceDataProvider.Espn)
+            .With(x => x.Sport, Sport.FootballNcaa)
+            .With(x => x.SeasonYear, season)
+            .With(x => x.DocumentType, DocumentType.TeamSeason)
+            .With(x => x.Document, json)
+            .With(x => x.UrlHash, _urlHash)
+            .With(x => x.IncludeLinkedDocumentTypes, new List<DocumentType> { DocumentType.TeamSeasonStatistics })
+            .OmitAutoProperties()
+            .Create();
+
+        // Act
+        await sut.ProcessAsync(command);
+
+        // Assert — the update path ran (no created event, no retry requeue)
+        // and exactly one child spawned: the statistics doc.
+        bus.Verify(x => x.Publish(It.IsAny<FranchiseSeasonCreated>(), It.IsAny<CancellationToken>()), Times.Never);
+        bus.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.TeamSeasonStatistics),
+            It.IsAny<CancellationToken>()), Times.Once);
+        bus.Verify(x => x.Publish(
+            It.Is<DocumentRequested>(d => d.DocumentType != DocumentType.TeamSeasonStatistics),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task WhenAthletesLinkAbsent_ShouldSynthesizeRosterIndexRequestFromDocumentRef()
     {
         // ESPN renders the athletes $ref only on the current season's

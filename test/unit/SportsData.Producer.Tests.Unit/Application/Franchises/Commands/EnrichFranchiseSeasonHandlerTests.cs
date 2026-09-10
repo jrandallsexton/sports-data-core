@@ -64,10 +64,28 @@ public class EnrichFranchiseSeasonHandlerTests :
         pre2.SeasonPhaseId = preseasonPhase.Id;
         await FootballDataContext.Contests.AddRangeAsync(pre1, pre2);
 
-        // One regular-season win that must count
-        await FootballDataContext.Contests.AddAsync(CreateContest(
+        // One regular-season win that must count — referencing a REAL
+        // TypeCode-2 phase row, the only shape prod produces (the document
+        // processor throws rather than persist a contest with an unsourced
+        // phase). Without this, the keep-side was pinned only by an orphan
+        // SeasonPhaseId and the filter could regress to "exclude anything
+        // with a real phase" undetected (Vortex, PR #747).
+        var regularPhase = Fixture.Build<SeasonPhase>()
+            .OmitAutoProperties()
+            .With(x => x.Id, Guid.NewGuid())
+            .With(x => x.TypeCode, 2)
+            .With(x => x.Name, "Regular Season")
+            .With(x => x.Abbreviation, "REG")
+            .With(x => x.Slug, "regular-season")
+            .With(x => x.Year, seasonYear)
+            .Create();
+        await FootballDataContext.SeasonPhases.AddAsync(regularPhase);
+
+        var regularWin = CreateContest(
             franchiseSeason.Id, opponentSeason.Id, seasonYear,
-            homeScore: 35, awayScore: 14, winnerId: franchiseSeason.Id));
+            homeScore: 35, awayScore: 14, winnerId: franchiseSeason.Id);
+        regularWin.SeasonPhaseId = regularPhase.Id;
+        await FootballDataContext.Contests.AddAsync(regularWin);
 
         await FootballDataContext.SaveChangesAsync();
 

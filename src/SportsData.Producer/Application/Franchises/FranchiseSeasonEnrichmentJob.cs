@@ -121,11 +121,11 @@ namespace SportsData.Producer.Application.Franchises
             // transaction to join. Never throws out of the job (same rule as
             // the metrics leg below — a missed weekly pass self-heals; a
             // Hangfire retry storm re-running the fan-outs does not).
-            try
             {
                 var statsCorrelationId = Guid.NewGuid();
                 var requested = 0;
                 var skipped = 0;
+                var failed = 0;
 
                 foreach (var franchiseSeason in franchiseSeasons)
                 {
@@ -136,31 +136,39 @@ namespace SportsData.Producer.Application.Franchises
                         continue;
                     }
 
-                    await _eventBus.Publish(new DocumentRequested(
-                        Id: franchiseSeason.EspnRef.SourceUrlHash,
-                        ParentId: null,
-                        Uri: teamSeasonUri,
-                        Ref: null,
-                        Sport: _appMode.CurrentSport,
-                        SeasonYear: effectiveSeasonYear,
-                        DocumentType: DocumentType.TeamSeason,
-                        SourceDataProvider: SourceDataProvider.Espn,
-                        CorrelationId: statsCorrelationId,
-                        CausationId: Guid.NewGuid(),
-                        IncludeLinkedDocumentTypes: [DocumentType.TeamSeasonStatistics]));
+                    // Per-team catch: one team's publish failure must not
+                    // starve every REMAINING team's weekly refresh (and, per
+                    // the never-throw rule, must not escape the job into a
+                    // Hangfire retry storm).
+                    try
+                    {
+                        await _eventBus.Publish(new DocumentRequested(
+                            Id: franchiseSeason.EspnRef.SourceUrlHash,
+                            ParentId: null,
+                            Uri: teamSeasonUri,
+                            Ref: null,
+                            Sport: _appMode.CurrentSport,
+                            SeasonYear: effectiveSeasonYear,
+                            DocumentType: DocumentType.TeamSeason,
+                            SourceDataProvider: SourceDataProvider.Espn,
+                            CorrelationId: statsCorrelationId,
+                            CausationId: Guid.NewGuid(),
+                            IncludeLinkedDocumentTypes: [DocumentType.TeamSeasonStatistics]));
 
-                    requested++;
+                        requested++;
+                    }
+                    catch (Exception ex)
+                    {
+                        failed++;
+                        _logger.LogError(ex,
+                            "Season statistics request failed for FranchiseSeason {FranchiseSeasonId}; continuing with remaining teams.",
+                            franchiseSeason.Id);
+                    }
                 }
 
                 _logger.LogInformation(
-                    "Season statistics refresh requested for {Requested} teams ({Skipped} without an ESPN ref). SeasonYear={SeasonYear}, Sport={Sport}, CorrelationId={CorrelationId}",
-                    requested, skipped, effectiveSeasonYear, _appMode.CurrentSport, statsCorrelationId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex,
-                    "Season statistics refresh threw for {SeasonYear} ({Sport}); enrichment fan-out already ran and is not retried.",
-                    effectiveSeasonYear, _appMode.CurrentSport);
+                    "Season statistics refresh requested for {Requested} teams ({Skipped} without an ESPN ref, {Failed} publish failures). SeasonYear={SeasonYear}, Sport={Sport}, CorrelationId={CorrelationId}",
+                    requested, skipped, failed, effectiveSeasonYear, _appMode.CurrentSport, statsCorrelationId);
             }
 
             // Metrics exist for FOOTBALL only: CalculateFranchiseSeasonMetrics

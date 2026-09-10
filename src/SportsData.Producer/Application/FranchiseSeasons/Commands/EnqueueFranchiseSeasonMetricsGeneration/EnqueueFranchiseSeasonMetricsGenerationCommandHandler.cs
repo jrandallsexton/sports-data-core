@@ -49,6 +49,7 @@ public class EnqueueFranchiseSeasonMetricsGenerationCommandHandler : IEnqueueFra
         // cheap no-op jobs. Dropping the FBS lookup also removes the
         // "FBS group root(s) not found" throw for unsourced years entirely.
         var franchiseSeasonIds = await _dataContext.FranchiseSeasons
+            .AsNoTracking()
             .Where(fs =>
                 fs.SeasonYear == command.SeasonYear &&
                 fs.Franchise.Sport == command.Sport)

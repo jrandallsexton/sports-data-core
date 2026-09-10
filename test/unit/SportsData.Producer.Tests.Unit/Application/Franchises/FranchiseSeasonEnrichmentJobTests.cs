@@ -10,6 +10,7 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Common.Hashing;
 using SportsData.Core.Eventing;
 using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Processing;
@@ -91,7 +92,7 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
                 Provider = SourceDataProvider.Espn,
                 Value = "50",
                 SourceUrl = espnUrl,
-                SourceUrlHash = $"hash-{franchiseSeason.Id:N}"
+                SourceUrlHash = HashProvider.GenerateHashFromUri(new Uri(espnUrl))
             });
         }
 
@@ -275,6 +276,29 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
         _metricsHandler.Verify(x => x.ExecuteAsync(
             It.IsAny<EnqueueFranchiseSeasonMetricsGenerationCommand>(),
             It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_OneStatisticsPublishFails_RemainingTeamsStillRequested()
+    {
+        // Per-team catch (CodeRabbit, PR #749): one team's publish failure
+        // must not starve every remaining team's weekly refresh.
+        SetNow(new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc));
+        await SeedFranchiseSeasonAsync(2026, espnUrl: "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/teams/50");
+        await SeedFranchiseSeasonAsync(2026, espnUrl: "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/teams/51");
+        Mocker.GetMock<IEventBus>()
+            .SetupSequence(x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("transient broker fault"))
+            .Returns(Task.CompletedTask);
+
+        var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentJob>();
+
+        var act = async () => await sut.ExecuteAsync();
+
+        await act.Should().NotThrowAsync();
+        Mocker.GetMock<IEventBus>().Verify(x => x.Publish(
+            It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()),
+            Times.Exactly(2)); // second team attempted despite the first failing
     }
 
     [Fact]

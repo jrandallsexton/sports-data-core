@@ -30,6 +30,7 @@ namespace SportsData.Producer.Application.Franchises
         private readonly IAppMode _appMode;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly IEventBus _eventBus;
+        private readonly IMessageDeliveryScope _deliveryScope;
 
         public FranchiseSeasonEnrichmentJob(
             ILogger<FranchiseSeasonEnrichmentJob> logger,
@@ -38,7 +39,8 @@ namespace SportsData.Producer.Application.Franchises
             IEnqueueFranchiseSeasonMetricsGenerationCommandHandler metricsGenerationHandler,
             IAppMode appMode,
             IDateTimeProvider dateTimeProvider,
-            IEventBus eventBus)
+            IEventBus eventBus,
+            IMessageDeliveryScope deliveryScope)
         {
             _logger = logger;
             _dataContext = dataContext;
@@ -47,6 +49,7 @@ namespace SportsData.Producer.Application.Franchises
             _appMode = appMode;
             _dateTimeProvider = dateTimeProvider;
             _eventBus = eventBus;
+            _deliveryScope = deliveryScope;
         }
 
         public async Task ExecuteAsync(int? seasonYear = null)
@@ -116,11 +119,19 @@ namespace SportsData.Producer.Application.Franchises
             // re-processes the TeamSeason doc and spawns ONLY the statistics
             // child (IncludeLinkedDocumentTypes — the athlete-cascade-scoping
             // vocabulary: list = only these), so no athlete/record/rank
-            // fan-out rides along. Direct publish is correct here: this job
-            // writes nothing through the DbContext, so there is no outbox
-            // transaction to join. Never throws out of the job (same rule as
-            // the metrics leg below — a missed weekly pass self-heals; a
-            // Hangfire retry storm re-running the fan-outs does not).
+            // fan-out rides along. Delivery is EXPLICITLY Direct: on the
+            // Producer the ambient EF outbox is always active, and captured
+            // messages only reach the broker on a SaveChangesAsync of the
+            // scoped DbContext - which this read-only job never calls, so an
+            // unscoped publish is captured and silently DISCARDED when the
+            // Hangfire scope disposes (Vortex blocker, PR #749 - the leg
+            // would have shipped as a no-op). Same pattern as
+            // RequestFranchiseSeasonSourcingCommandHandler /
+            // FinalizationReconcileJob. Never throws out of the job (same
+            // rule as the metrics leg below - a missed weekly pass
+            // self-heals; a Hangfire retry storm re-running the fan-outs
+            // does not).
+            using (_deliveryScope.Use(DeliveryMode.Direct))
             {
                 var statsCorrelationId = Guid.NewGuid();
                 var requested = 0;

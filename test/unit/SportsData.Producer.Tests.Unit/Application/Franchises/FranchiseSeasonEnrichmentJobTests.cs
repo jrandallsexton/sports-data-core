@@ -254,6 +254,15 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
                 d.IncludeLinkedDocumentTypes.Count == 1 &&
                 d.IncludeLinkedDocumentTypes[0] == DocumentType.TeamSeasonStatistics),
             It.IsAny<CancellationToken>()), Times.Once);
+
+        // The publish must run inside an explicit Direct delivery scope:
+        // the Producer's ambient EF outbox is always active, and this
+        // read-only job never saves, so an unscoped publish is captured
+        // and silently discarded at scope disposal (Vortex blocker,
+        // PR #749). The mocked bus cannot see routing; the scope call can
+        // be pinned.
+        Mocker.GetMock<IMessageDeliveryScope>()
+            .Verify(x => x.Use(DeliveryMode.Direct), Times.Once);
     }
 
     [Fact]

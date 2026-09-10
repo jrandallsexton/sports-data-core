@@ -3,9 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Core.Common;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.FranchiseSeasons.Commands.CalculateFranchiseSeasonMetrics;
-using SportsData.Producer.Application.GroupSeasons;
 using SportsData.Producer.Infrastructure.Data.Common;
-using SportsData.Producer.Infrastructure.Data.Entities;
 
 namespace SportsData.Producer.Application.FranchiseSeasons.Commands.EnqueueFranchiseSeasonMetricsGeneration;
 
@@ -21,18 +19,15 @@ public class EnqueueFranchiseSeasonMetricsGenerationCommandHandler : IEnqueueFra
     private readonly ILogger<EnqueueFranchiseSeasonMetricsGenerationCommandHandler> _logger;
     private readonly TeamSportDataContext _dataContext;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
-    private readonly IGroupSeasonsService _groupSeasonsService;
 
     public EnqueueFranchiseSeasonMetricsGenerationCommandHandler(
         ILogger<EnqueueFranchiseSeasonMetricsGenerationCommandHandler> logger,
         TeamSportDataContext dataContext,
-        IProvideBackgroundJobs backgroundJobProvider,
-        IGroupSeasonsService groupSeasonsService)
+        IProvideBackgroundJobs backgroundJobProvider)
     {
         _logger = logger;
         _dataContext = dataContext;
         _backgroundJobProvider = backgroundJobProvider;
-        _groupSeasonsService = groupSeasonsService;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -44,22 +39,19 @@ public class EnqueueFranchiseSeasonMetricsGenerationCommandHandler : IEnqueueFra
             command.SeasonYear,
             command.Sport);
 
-        // FBS scoping is an NCAA concept — the NFL hierarchy has no FBS
-        // root, so asking for one 500'd and NFL season metrics never
-        // generated at all. NFL (and any future non-NCAA football) takes
-        // every franchise season for the year.
-        HashSet<Guid>? fbsGroupIds = command.Sport == Sport.FootballNcaa
-            ? await _groupSeasonsService.GetFbsGroupSeasonIds(command.SeasonYear)
-            : null;
-
-        // Only the ids are needed; the Sport predicate translates through
-        // the Franchise navigation without an Include.
+        // EVERY franchise season for the year — no FBS scoping (dropped
+        // 2026-09-10). The old FBS filter starved every FCS team of season
+        // metrics even though their FBS matchups produce CompetitionMetric
+        // rows (370 teams had per-game metrics; only 129 got season rows),
+        // which in turn nulled BOTH sides' metrics in FBS-vs-FCS previews
+        // via the both-or-nothing rule. Calculate is a graceful no-op for
+        // teams with no per-game metrics, so the wider fan-out costs only
+        // cheap no-op jobs. Dropping the FBS lookup also removes the
+        // "FBS group root(s) not found" throw for unsourced years entirely.
         var franchiseSeasonIds = await _dataContext.FranchiseSeasons
             .Where(fs =>
                 fs.SeasonYear == command.SeasonYear &&
-                fs.Franchise.Sport == command.Sport &&
-                (fbsGroupIds == null ||
-                 (fs.GroupSeasonId != null && fbsGroupIds.Contains(fs.GroupSeasonId!.Value))))
+                fs.Franchise.Sport == command.Sport)
             .Select(fs => fs.Id)
             .ToListAsync(cancellationToken);
 

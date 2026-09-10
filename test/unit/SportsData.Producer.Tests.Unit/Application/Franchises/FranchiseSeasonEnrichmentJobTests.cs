@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Linq.Expressions;
 
 using AutoFixture;
@@ -8,6 +10,8 @@ using Moq;
 
 using SportsData.Core.Common;
 using SportsData.Core.DependencyInjection;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Processing;
 using SportsData.Producer.Application.Franchises;
 using SportsData.Producer.Application.Franchises.Commands;
@@ -47,7 +51,7 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
             .SetupGet(x => x.CurrentSport)
             .Returns(sport);
 
-    private async Task SeedFranchiseSeasonAsync(int seasonYear, Sport sport = Sport.FootballNcaa)
+    private async Task SeedFranchiseSeasonAsync(int seasonYear, Sport sport = Sport.FootballNcaa, string? espnUrl = null)
     {
         var franchise = Fixture.Build<Franchise>()
             .OmitAutoProperties()
@@ -77,6 +81,20 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
 
         await FootballDataContext.Franchises.AddAsync(franchise);
         await FootballDataContext.FranchiseSeasons.AddAsync(franchiseSeason);
+
+        if (espnUrl is not null)
+        {
+            await FootballDataContext.Set<FranchiseSeasonExternalId>().AddAsync(new FranchiseSeasonExternalId
+            {
+                Id = Guid.NewGuid(),
+                FranchiseSeasonId = franchiseSeason.Id,
+                Provider = SourceDataProvider.Espn,
+                Value = "50",
+                SourceUrl = espnUrl,
+                SourceUrlHash = $"hash-{franchiseSeason.Id:N}"
+            });
+        }
+
         await FootballDataContext.SaveChangesAsync();
     }
 
@@ -207,6 +225,78 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
         Mocker.GetMock<IProvideBackgroundJobs>().Verify(
             x => x.Enqueue(It.IsAny<Expression<Func<EnrichFranchiseSeasonHandler<TeamSportDataContext>, Task>>>()),
             Times.Once); // the fan-out ran exactly once — no retry storm
+    }
+
+    [Fact]
+    public async Task Execute_PublishesScopedStatisticsRequest_PerTeamWithEspnRef()
+    {
+        // The statistics leg (2026-09-10): one DocumentRequested per team
+        // for its TeamSeason doc, scoped to spawn ONLY the statistics child
+        // (athlete-cascade-scoping vocabulary). Before this, statistics
+        // refreshed only as a side effect of poll appearances - FAMU@Miami
+        // exposed unranked teams keeping empty initial-sourcing statistics
+        // forever.
+        SetNow(new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc));
+        await SeedFranchiseSeasonAsync(2026, espnUrl: "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/teams/50");
+        await SeedFranchiseSeasonAsync(2026); // no ESPN ref - must be skipped, not crash
+
+        var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentJob>();
+        await sut.ExecuteAsync();
+
+        Mocker.GetMock<IEventBus>().Verify(x => x.Publish(
+            It.Is<DocumentRequested>(d =>
+                d.DocumentType == DocumentType.TeamSeason &&
+                d.SourceDataProvider == SourceDataProvider.Espn &&
+                d.SeasonYear == 2026 &&
+                d.Uri.ToString().Contains("/teams/50") &&
+                d.IncludeLinkedDocumentTypes != null &&
+                d.IncludeLinkedDocumentTypes.Count == 1 &&
+                d.IncludeLinkedDocumentTypes[0] == DocumentType.TeamSeasonStatistics),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Execute_NonFootballSport_StillRefreshesStatistics()
+    {
+        // Metrics are football-gated (no Calculate registration on baseball
+        // pods) but the TeamSeasonStatistics processor is registered for
+        // every team sport - the statistics leg must NOT share the gate.
+        SetSport(Sport.BaseballMlb);
+        SetNow(new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc));
+        await SeedFranchiseSeasonAsync(2026, Sport.BaseballMlb,
+            espnUrl: "http://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/seasons/2026/teams/10");
+
+        var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentJob>();
+        await sut.ExecuteAsync();
+
+        Mocker.GetMock<IEventBus>().Verify(x => x.Publish(
+            It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.TeamSeason),
+            It.IsAny<CancellationToken>()), Times.Once);
+        _metricsHandler.Verify(x => x.ExecuteAsync(
+            It.IsAny<EnqueueFranchiseSeasonMetricsGenerationCommand>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Execute_StatisticsPublishThrows_JobStillRunsMetrics()
+    {
+        // Same never-throw rule as the metrics leg: a broker fault in the
+        // statistics fan-out must not escape (Hangfire AutomaticRetry would
+        // re-run the whole job) and must not starve the metrics leg.
+        SetNow(new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc));
+        await SeedFranchiseSeasonAsync(2026, espnUrl: "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/teams/50");
+        Mocker.GetMock<IEventBus>()
+            .Setup(x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("broker down"));
+
+        var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentJob>();
+
+        var act = async () => await sut.ExecuteAsync();
+
+        await act.Should().NotThrowAsync();
+        _metricsHandler.Verify(x => x.ExecuteAsync(
+            It.Is<EnqueueFranchiseSeasonMetricsGenerationCommand>(c => c.SeasonYear == 2026),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

@@ -131,13 +131,19 @@ namespace SportsData.Producer.Application.Franchises
             // rule as the metrics leg below - a missed weekly pass
             // self-heals; a Hangfire retry storm re-running the fan-outs
             // does not).
-            using (_deliveryScope.Use(DeliveryMode.Direct))
+            try
             {
                 var statsCorrelationId = Guid.NewGuid();
-                var requested = 0;
                 var skipped = 0;
-                var failed = 0;
 
+                // Build first, publish as a BATCH: EventBus.Publish in Direct
+                // mode pays a 1-second Task.Delay per call, so a per-team
+                // publish loop would sleep ~14 minutes for the ~827-team NCAA
+                // fan-out while holding a Hangfire worker (Vortex, PR #749).
+                // PublishBatch's direct path sends 256-message Task.WhenAll
+                // chunks and bypasses the delay — the established pattern in
+                // UsersRequestedConsumer / PickemGroupsRequestedConsumer.
+                var requests = new List<DocumentRequested>();
                 foreach (var franchiseSeason in franchiseSeasons)
                 {
                     if (franchiseSeason.EspnRef is null
@@ -147,39 +153,39 @@ namespace SportsData.Producer.Application.Franchises
                         continue;
                     }
 
-                    // Per-team catch: one team's publish failure must not
-                    // starve every REMAINING team's weekly refresh (and, per
-                    // the never-throw rule, must not escape the job into a
-                    // Hangfire retry storm).
-                    try
-                    {
-                        await _eventBus.Publish(new DocumentRequested(
-                            Id: franchiseSeason.EspnRef.SourceUrlHash,
-                            ParentId: null,
-                            Uri: teamSeasonUri,
-                            Ref: null,
-                            Sport: _appMode.CurrentSport,
-                            SeasonYear: effectiveSeasonYear,
-                            DocumentType: DocumentType.TeamSeason,
-                            SourceDataProvider: SourceDataProvider.Espn,
-                            CorrelationId: statsCorrelationId,
-                            CausationId: Guid.NewGuid(),
-                            IncludeLinkedDocumentTypes: [DocumentType.TeamSeasonStatistics]));
+                    requests.Add(new DocumentRequested(
+                        Id: franchiseSeason.EspnRef.SourceUrlHash,
+                        ParentId: null,
+                        Uri: teamSeasonUri,
+                        Ref: null,
+                        Sport: _appMode.CurrentSport,
+                        SeasonYear: effectiveSeasonYear,
+                        DocumentType: DocumentType.TeamSeason,
+                        SourceDataProvider: SourceDataProvider.Espn,
+                        CorrelationId: statsCorrelationId,
+                        CausationId: Guid.NewGuid(),
+                        IncludeLinkedDocumentTypes: [DocumentType.TeamSeasonStatistics]));
+                }
 
-                        requested++;
-                    }
-                    catch (Exception ex)
-                    {
-                        failed++;
-                        _logger.LogError(ex,
-                            "Season statistics request failed for FranchiseSeason {FranchiseSeasonId}; continuing with remaining teams.",
-                            franchiseSeason.Id);
-                    }
+                using (_deliveryScope.Use(DeliveryMode.Direct))
+                {
+                    await _eventBus.PublishBatch(requests);
                 }
 
                 _logger.LogInformation(
-                    "Season statistics refresh requested for {Requested} teams ({Skipped} without an ESPN ref, {Failed} publish failures). SeasonYear={SeasonYear}, Sport={Sport}, CorrelationId={CorrelationId}",
-                    requested, skipped, failed, effectiveSeasonYear, _appMode.CurrentSport, statsCorrelationId);
+                    "Season statistics refresh requested for {Requested} teams ({Skipped} without an ESPN ref). SeasonYear={SeasonYear}, Sport={Sport}, CorrelationId={CorrelationId}",
+                    requests.Count, skipped, effectiveSeasonYear, _appMode.CurrentSport, statsCorrelationId);
+            }
+            catch (Exception ex)
+            {
+                // Never throws out of the job (a Hangfire retry would re-run
+                // every fan-out above); a failed weekly batch is a logged
+                // error that self-heals next run. Per-team partial progress
+                // is not worth preserving at batch granularity — the request
+                // set is idempotent and cheap to re-publish whole.
+                _logger.LogError(ex,
+                    "Season statistics refresh failed for {SeasonYear} ({Sport}); enrichment fan-out already ran and is not retried.",
+                    effectiveSeasonYear, _appMode.CurrentSport);
             }
 
             // Metrics exist for FOOTBALL only: CalculateFranchiseSeasonMetrics

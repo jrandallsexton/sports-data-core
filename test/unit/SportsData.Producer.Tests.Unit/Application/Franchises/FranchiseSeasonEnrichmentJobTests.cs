@@ -244,15 +244,21 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
         var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentJob>();
         await sut.ExecuteAsync();
 
-        Mocker.GetMock<IEventBus>().Verify(x => x.Publish(
-            It.Is<DocumentRequested>(d =>
-                d.DocumentType == DocumentType.TeamSeason &&
-                d.SourceDataProvider == SourceDataProvider.Espn &&
-                d.SeasonYear == 2026 &&
-                d.Uri.ToString().Contains("/teams/50") &&
-                d.IncludeLinkedDocumentTypes != null &&
-                d.IncludeLinkedDocumentTypes.Count == 1 &&
-                d.IncludeLinkedDocumentTypes[0] == DocumentType.TeamSeasonStatistics),
+        // Batched, not per-message: Direct-mode Publish sleeps 1s per call
+        // (~14 min for the NCAA fan-out); PublishBatch bypasses the delay
+        // (Vortex, PR #749). The no-ESPN-ref team must be absent from the
+        // batch, not crash it.
+        Mocker.GetMock<IEventBus>().Verify(x => x.PublishBatch(
+            It.Is<IEnumerable<DocumentRequested>>(batch =>
+                batch.Count() == 1 &&
+                batch.All(d =>
+                    d.DocumentType == DocumentType.TeamSeason &&
+                    d.SourceDataProvider == SourceDataProvider.Espn &&
+                    d.SeasonYear == 2026 &&
+                    d.Uri.ToString().Contains("/teams/50") &&
+                    d.IncludeLinkedDocumentTypes != null &&
+                    d.IncludeLinkedDocumentTypes.Count == 1 &&
+                    d.IncludeLinkedDocumentTypes[0] == DocumentType.TeamSeasonStatistics)),
             It.IsAny<CancellationToken>()), Times.Once);
 
         // The publish must run inside an explicit Direct delivery scope:
@@ -279,35 +285,13 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
         var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentJob>();
         await sut.ExecuteAsync();
 
-        Mocker.GetMock<IEventBus>().Verify(x => x.Publish(
-            It.Is<DocumentRequested>(d => d.DocumentType == DocumentType.TeamSeason),
+        Mocker.GetMock<IEventBus>().Verify(x => x.PublishBatch(
+            It.Is<IEnumerable<DocumentRequested>>(batch =>
+                batch.Count() == 1 && batch.All(d => d.DocumentType == DocumentType.TeamSeason)),
             It.IsAny<CancellationToken>()), Times.Once);
         _metricsHandler.Verify(x => x.ExecuteAsync(
             It.IsAny<EnqueueFranchiseSeasonMetricsGenerationCommand>(),
             It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Execute_OneStatisticsPublishFails_RemainingTeamsStillRequested()
-    {
-        // Per-team catch (CodeRabbit, PR #749): one team's publish failure
-        // must not starve every remaining team's weekly refresh.
-        SetNow(new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc));
-        await SeedFranchiseSeasonAsync(2026, espnUrl: "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/teams/50");
-        await SeedFranchiseSeasonAsync(2026, espnUrl: "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/teams/51");
-        Mocker.GetMock<IEventBus>()
-            .SetupSequence(x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("transient broker fault"))
-            .Returns(Task.CompletedTask);
-
-        var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentJob>();
-
-        var act = async () => await sut.ExecuteAsync();
-
-        await act.Should().NotThrowAsync();
-        Mocker.GetMock<IEventBus>().Verify(x => x.Publish(
-            It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()),
-            Times.Exactly(2)); // second team attempted despite the first failing
     }
 
     [Fact]
@@ -319,7 +303,7 @@ public class FranchiseSeasonEnrichmentJobTests : ProducerTestBase<FranchiseSeaso
         SetNow(new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc));
         await SeedFranchiseSeasonAsync(2026, espnUrl: "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/teams/50");
         Mocker.GetMock<IEventBus>()
-            .Setup(x => x.Publish(It.IsAny<DocumentRequested>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.PublishBatch(It.IsAny<IEnumerable<DocumentRequested>>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("broker down"));
 
         var sut = Mocker.CreateInstance<FranchiseSeasonEnrichmentJob>();

@@ -195,8 +195,16 @@ LEFT JOIN LATERAL (
   -- the authoritative driver; a missing 'vsconf' correctly yields 0-0 conference.
   LEFT JOIN public."CompetitionCompetitorRecord" conf
     ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
+  LEFT JOIN public."SeasonPhase" prev_sp ON prev_sp."Id" = prev_ct."SeasonPhaseId"
   WHERE (prev_ct."AwayTeamFranchiseSeasonId" = fsAway."Id" OR prev_ct."HomeTeamFranchiseSeasonId" = fsAway."Id")
     AND prev_ct."StartDateUtc" < c."StartDateUtc"
+    -- Never anchor on a PRESEASON game (policy: preseason is system-testing,
+    -- never signal) - without this, an NFL week-1 card anchored on the
+    -- team's final preseason game and displayed preseason W/L as the
+    -- entering record (prod 2026-09-09/10). Same clause as the
+    -- GetMatchupForPreview/Batch entering-record laterals; NULL/unmatched
+    -- phase stays kept.
+    AND (prev_sp."TypeCode" IS NULL OR prev_sp."TypeCode" <> 1)
   -- prev_comp."Id" tie-break: a Contest can host multiple Competitions
   -- (stale reschedule artifacts), and date alone would let LIMIT 1 pick
   -- an arbitrary one. Deterministic, matching the probables stitch's
@@ -266,8 +274,16 @@ LEFT JOIN LATERAL (
     ON tot."CompetitionCompetitorId" = prev_cc."Id" AND tot."Type" = 'total'
   LEFT JOIN public."CompetitionCompetitorRecord" conf
     ON conf."CompetitionCompetitorId" = prev_cc."Id" AND conf."Type" = 'vsconf'
+  LEFT JOIN public."SeasonPhase" prev_sp ON prev_sp."Id" = prev_ct."SeasonPhaseId"
   WHERE (prev_ct."AwayTeamFranchiseSeasonId" = fsHome."Id" OR prev_ct."HomeTeamFranchiseSeasonId" = fsHome."Id")
     AND prev_ct."StartDateUtc" < c."StartDateUtc"
+    -- Never anchor on a PRESEASON game (policy: preseason is system-testing,
+    -- never signal) - without this, an NFL week-1 card anchored on the
+    -- team's final preseason game and displayed preseason W/L as the
+    -- entering record (prod 2026-09-09/10). Same clause as the
+    -- GetMatchupForPreview/Batch entering-record laterals; NULL/unmatched
+    -- phase stays kept.
+    AND (prev_sp."TypeCode" IS NULL OR prev_sp."TypeCode" <> 1)
   -- prev_comp."Id" tie-break: a Contest can host multiple Competitions
   -- (stale reschedule artifacts), and date alone would let LIMIT 1 pick
   -- an arbitrary one. Deterministic, matching the probables stitch's

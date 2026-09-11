@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import {
   StatsComparisonModal,
@@ -67,13 +67,15 @@ const comparisonWith = (overrides?: {
   homeEntries?: object[];
   awayMetrics?: object | null;
   homeMetrics?: object | null;
+  /** Replace the whole statistics record (e.g. {} for the stats-empty path). */
+  statistics?: Record<string, object[]>;
 }): TeamComparisonData =>
   ({
     teamA: {
       name: 'Florida A&M Rattlers',
       stats: {
         data: {
-          statistics: {
+          statistics: overrides?.statistics ?? {
             defensive: overrides?.awayEntries ?? [
               // The regression this PR is named for: statisticValue is the
               // payload's human label — no legacy label/name present.
@@ -88,7 +90,7 @@ const comparisonWith = (overrides?: {
       name: 'Miami Hurricanes',
       stats: {
         data: {
-          statistics: {
+          statistics: overrides?.statistics ?? {
             defensive: overrides?.homeEntries ?? [
               { statisticKey: 'assistTackles', statisticValue: 'Assisted Tackles', displayValue: '30' },
             ],
@@ -142,6 +144,42 @@ describe('StatsComparisonModal', () => {
     );
 
     expect(screen.queryByText(/^Metrics \(/)).toBeNull();
+  });
+
+  it('lands on the metrics rows by default when statistics are empty', () => {
+    // The stats-empty + metrics-present path the mainTab fallthrough and
+    // relaxed empty-state guard exist for (week-1 first meeting with a
+    // stats soft-failure): the body must render the metrics rows, not
+    // "Stats not available."
+    renderModal(
+      comparisonWith({
+        statistics: {},
+        awayMetrics: { gamesPlayed: 1, ypp: 6.0 },
+        homeMetrics: { gamesPlayed: 1, ypp: 5.0 },
+      })
+    );
+
+    expect(screen.getByText('Yards Per Play')).toBeTruthy();
+    expect(screen.queryByText('Stats not available.')).toBeNull();
+  });
+
+  it('pressing the Metrics tab renders formatted rows with inverted opp* highlight', () => {
+    renderModal(
+      comparisonWith({
+        awayMetrics: { gamesPlayed: 1, ypp: 6.0, oppYpp: 0.5 },
+        homeMetrics: { gamesPlayed: 2, ypp: 5.0, oppYpp: 0.35 },
+      })
+    );
+
+    fireEvent.press(screen.getByText('Metrics (1:1)'));
+
+    // Group header + dec2-formatted values from the spec.
+    expect(screen.getByText('Offensive Efficiency')).toBeTruthy();
+    expect(screen.getByText('6.00')).toBeTruthy();
+    expect(screen.getByText('5.00')).toBeTruthy();
+    // oppYpp rows render too (0.50 vs 0.35 — home leads the inverted metric).
+    expect(screen.getByText('0.35')).toBeTruthy();
+    expect(screen.getByText('0.50')).toBeTruthy();
   });
 
   it('shows the Metrics tab with favored counts when both sides have real metrics', () => {

@@ -650,7 +650,17 @@ export function StatsComparisonModal({
                 exists); Stats carries the category detail; Metrics mirrors
                 the web's Metrics tab. Counts are favored-stat tallies,
                 same as the web's "Statistics (95:60)" / "Metrics (4:6)". */}
-            <View style={[styles.mainTabsRow, { borderBottomColor: theme.border }]}>
+            {/* Horizontal ScrollView, not a plain row: with counts on
+                every label, three chips (~370dp intrinsic) overflow a
+                360dp Android viewport and the rightmost chip — Metrics —
+                is the one pushed off-screen (Vortex, PR #751). Same
+                escape hatch as the category-chip row below. */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={[styles.mainTabsScroll, { borderBottomColor: theme.border }]}
+              contentContainerStyle={styles.mainTabsRow}
+            >
               {hasHistory && (
                 <CategoryTab
                   label={`History (${h2hWinsAway}:${h2hWinsHome})`}
@@ -670,7 +680,7 @@ export function StatsComparisonModal({
                   onPress={() => setMainTabChoice('metrics')}
                 />
               )}
-            </View>
+            </ScrollView>
 
             {mainTab === 'history' && hasHistory ? (
               <ScrollView
@@ -1086,12 +1096,16 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   // Main tabs (History | Stats)
+  mainTabsScroll: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   mainTabsRow: {
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
 
   // History tab

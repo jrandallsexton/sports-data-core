@@ -95,6 +95,7 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
                      && (query.PromptId == null || x.PromptId == query.PromptId))
             .Select(x => new
             {
+                x.Id,
                 x.ContestId,
                 x.ModelId,
                 x.PredictedStraightUpWinnerId,
@@ -135,6 +136,7 @@ public class GetModelLabMatrixQueryHandler : IGetModelLabMatrixQueryHandler
                         PredictedStraightUpWinnerId = c.PredictedStraightUpWinnerId,
                         PredictedSpreadWinnerId = c.PredictedSpreadWinnerId,
                         Problems = c.ResponseValidationErrors,
+                        CaptureId = c.Id,
                         CreatedUtc = c.CreatedUtc
                     })
                     .ToList()

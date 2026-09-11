@@ -52,6 +52,11 @@ function InsightDialog({
   loading,
   onRejectPreview,
   onApprovePreview,
+  // Read-only mode: suppress the admin approve/reject section entirely.
+  // Used by the Model Lab, where the dialog shows an EXPERIMENT capture -
+  // there is no MatchupPreview to moderate, so the buttons would act on
+  // nothing.
+  readOnly = false,
 }) {
   const { userDto } = useUserDto();
   const { isAdmin } = userDto;
@@ -202,6 +207,7 @@ function InsightDialog({
               {matchup.generatedUtc && (
                 <div className="insight-prediction__generated">
                   Generated {formatToUserTime(matchup.generatedUtc, userTz)}
+                  {matchup.generatedByLabel ? ` by ${matchup.generatedByLabel}` : ""}
                 </div>
               )}
             </section>
@@ -209,7 +215,7 @@ function InsightDialog({
             {/* Approve/reject is meaningless once the game has been played —
                 isContestCompleted is server-authoritative (canonical
                 STATUS_FINAL) off the preview DTO. */}
-            {isAdmin && !matchup.isContestCompleted && (
+            {isAdmin && !matchup.isContestCompleted && !readOnly && (
               <section className="insight-admin">
                 <h3 className="insight-section__title insight-admin__title">
                   Admin Review

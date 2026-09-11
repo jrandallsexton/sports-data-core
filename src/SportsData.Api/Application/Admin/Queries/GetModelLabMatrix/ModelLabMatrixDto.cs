@@ -69,6 +69,13 @@ public class ModelLabMatrixDto
         /// <summary>Validation problems recorded on the capture; null = clean.</summary>
         public string? Problems { get; set; }
 
+        /// <summary>
+        /// The capture row (MatchupPreviewPrompt.Id) this cell renders —
+        /// the drill-down key for viewing the model's generated preview
+        /// via the existing per-contest captures endpoint.
+        /// </summary>
+        public Guid CaptureId { get; set; }
+
         public DateTime CreatedUtc { get; set; }
     }
 }

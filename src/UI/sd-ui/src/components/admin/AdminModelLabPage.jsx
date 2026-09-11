@@ -5,6 +5,7 @@ import AdminHeader from './AdminHeader';
 import apiWrapper from '../../api/apiWrapper';
 import useSignalRClient from '../../hooks/useSignalRClient';
 import { useUserDto } from '../../contexts/UserContext';
+import InsightDialog from '../insights/InsightDialog.jsx';
 
 const LEAGUE_STORAGE_KEY = 'admin.modellab.league';
 const YEAR_STORAGE_KEY = 'admin.modellab.year';
@@ -280,6 +281,92 @@ export default function AdminModelLabPage() {
     }
   };
 
+  // ── View a model's generated preview ──────────────────────────────
+  // Reuses the user-facing InsightDialog (read-only): the cell carries the
+  // capture id; the capture's rawResponse is the model's generated preview
+  // JSON (overview/analysis/prediction). Captures are fetched per contest
+  // via the existing endpoint and cached for the page's lifetime — reruns
+  // change the matrix, which reloads anyway.
+  const [previewView, setPreviewView] = useState(null); // { matchup, loading }
+  const capturesCacheRef = useRef(new Map());
+
+  const viewCellPreview = async (contest, model, cell) => {
+    const base = {
+      contestId: contest.contestId,
+      away: contest.away,
+      awayShort: contest.awayShort,
+      home: contest.home,
+      homeShort: contest.homeShort,
+      startDateUtc: contest.startDateUtc,
+      generatedByLabel: model.name,
+    };
+    setPreviewView({ matchup: base, loading: true });
+
+    try {
+      let captures = capturesCacheRef.current.get(contest.contestId);
+      if (!captures) {
+        const res = await apiWrapper.Admin.getPreviewCaptures(contest.contestId);
+        captures = res?.data ?? [];
+        capturesCacheRef.current.set(contest.contestId, captures);
+      }
+
+      const capture = captures.find(c => c.id === cell.captureId);
+      if (!capture) {
+        toast.error('Capture not found for this cell.');
+        setPreviewView(null);
+        return;
+      }
+
+      // The model's response JSON — schema-validated upstream but treat
+      // defensively (experiment failures store whatever came back). Keys
+      // may be camelCase or PascalCase depending on the model's compliance.
+      const pick = (obj, key) =>
+        obj?.[key] ?? obj?.[key.charAt(0).toUpperCase() + key.slice(1)];
+      let parsed = null;
+      try { parsed = JSON.parse(capture.rawResponse); } catch { /* raw shown below */ }
+
+      const prediction = pick(parsed, 'prediction');
+      const predictionObj = prediction && typeof prediction === 'object' ? prediction : null;
+      const teamName = (fsId) => {
+        if (!fsId) return null;
+        const id = String(fsId).toLowerCase();
+        if (id === String(contest.awayFranchiseSeasonId).toLowerCase()) return contest.awayShort || contest.away;
+        if (id === String(contest.homeFranchiseSeasonId).toLowerCase()) return contest.homeShort || contest.home;
+        return null;
+      };
+
+      let predictionText = typeof prediction === 'string' ? prediction : null;
+      if (predictionObj) {
+        const su = teamName(pick(predictionObj, 'predictedStraightUpWinner'));
+        const ats = teamName(pick(predictionObj, 'predictedSpreadWinner'));
+        const awayScore = pick(predictionObj, 'awayScore');
+        const homeScore = pick(predictionObj, 'homeScore');
+        const ou = pick(predictionObj, 'overUnderPrediction');
+        const parts = [];
+        if (su) parts.push(`${su} wins`);
+        if (ats) parts.push(`${ats} covers`);
+        if (awayScore != null && homeScore != null)
+          parts.push(`predicted score ${contest.awayShort || contest.away} ${awayScore} — ${contest.homeShort || contest.home} ${homeScore}`);
+        if (ou != null) parts.push(`total ${ou}`);
+        predictionText = parts.length ? `${parts.join('; ')}.` : null;
+      }
+
+      setPreviewView({
+        loading: false,
+        matchup: {
+          ...base,
+          insightText: parsed ? pick(parsed, 'overview') : capture.rawResponse,
+          analysis: parsed ? pick(parsed, 'analysis') : null,
+          prediction: predictionText,
+          generatedUtc: capture.createdUtc,
+        },
+      });
+    } catch (err) {
+      toast.error(err?.message ?? 'Failed to load capture');
+      setPreviewView(null);
+    }
+  };
+
   const runPanelForContest = async (contestId) => {
     const key = `${contestId}|*`;
     setQueued(q => ({ ...q, [key]: Date.now() }));
@@ -484,6 +571,7 @@ export default function AdminModelLabPage() {
                     queued={queued}
                     onGenerateCell={generateCell}
                     onRunPanel={runPanelForContest}
+                    onViewPreview={viewCellPreview}
                   />
                 ))}
               </tbody>
@@ -513,6 +601,14 @@ export default function AdminModelLabPage() {
           </div>
         )}
       </div>
+
+      <InsightDialog
+        isOpen={!!previewView}
+        onClose={() => setPreviewView(null)}
+        matchup={previewView?.matchup ?? {}}
+        loading={previewView?.loading ?? false}
+        readOnly
+      />
     </div>
   );
 }
@@ -614,7 +710,7 @@ function consensusOf(picks) {
   return ranked[0][1] * 2 > votes.length ? ranked[0][0] : null;
 }
 
-function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
+function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel, onViewPreview }) {
   const teamById = useMemo(() => ({
     [String(contest.awayFranchiseSeasonId).toLowerCase()]: contest.awayShort || contest.away,
     [String(contest.homeFranchiseSeasonId).toLowerCase()]: contest.homeShort || contest.home,
@@ -699,7 +795,26 @@ function ContestRows({ contest, models, queued, onGenerateCell, onRunPanel }) {
     }
     return (
       <td key={model.id} style={{ ...cellStyle, fontWeight: 600, ...(grade ? GRADE_STYLES[grade] : null) }}>
-        {pick}
+        {/* The pick doubles as the drill-down into what the model actually
+            wrote — the capture behind this cell, rendered in the standard
+            preview dialog (read-only). */}
+        <button
+          type="button"
+          onClick={() => onViewPreview(contest, model, cell)}
+          title={`View ${model.name}'s generated preview`}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            font: 'inherit',
+            fontWeight: 600,
+            color: 'inherit',
+            cursor: 'pointer',
+            textDecoration: 'underline dotted',
+          }}
+        >
+          {pick}
+        </button>
         {cell.problems && (
           <span
             title={cell.problems}

@@ -90,7 +90,7 @@ function TeamHeader({
 // Mirrors sd-ui TeamComparison's metricsData exactly (labels, formats,
 // higher-is-better polarity, and the category grouping). netPunt /
 // penaltyYardsPerPlay intentionally absent (metrics formula audit M4/H3).
-type MetricSpec = {
+export type MetricSpec = {
   label: string;
   key: string;
   format: (val: number | null | undefined) => string;
@@ -100,7 +100,7 @@ type MetricSpec = {
 const pct = (val: number | null | undefined) => (val ? (val * 100).toFixed(1) + '%' : '0.0%');
 const dec2 = (val: number | null | undefined) => val?.toFixed(2) ?? '0.00';
 
-const METRICS_SPEC: { category: string; metrics: MetricSpec[] }[] = [
+export const METRICS_SPEC: { category: string; metrics: MetricSpec[] }[] = [
   {
     category: 'Offensive Efficiency',
     metrics: [
@@ -157,7 +157,7 @@ const METRICS_SPEC: { category: string; metrics: MetricSpec[] }[] = [
 
 /** Which side a stat row favors — web parity: numeric compare of the
     display values, inverted for lower-is-better stats. */
-function statFavored(away?: TeamStatEntry, home?: TeamStatEntry): 'away' | 'home' | null {
+export function statFavored(away?: TeamStatEntry, home?: TeamStatEntry): 'away' | 'home' | null {
   if (!away || !home) return null;
   const a = parseFloat(away.displayValue ?? '');
   const b = parseFloat(home.displayValue ?? '');
@@ -167,7 +167,7 @@ function statFavored(away?: TeamStatEntry, home?: TeamStatEntry): 'away' | 'home
   return a > b ? 'away' : b > a ? 'home' : null;
 }
 
-function metricFavored(spec: MetricSpec, a?: number | null, b?: number | null): 'away' | 'home' | null {
+export function metricFavored(spec: MetricSpec, a?: number | null, b?: number | null): 'away' | 'home' | null {
   if (a == null || b == null) return null;
   if (spec.higherIsBetter) return a > b ? 'away' : b > a ? 'home' : null;
   return a < b ? 'away' : b < a ? 'home' : null;
@@ -505,7 +505,14 @@ export function StatsComparisonModal({
   // both-or-nothing stance the rest of the platform takes.
   const awayMetrics = (comparison?.teamA?.metrics?.data ?? null) as Record<string, number | null> | null;
   const homeMetrics = (comparison?.teamB?.metrics?.data ?? null) as Record<string, number | null> | null;
-  const hasMetrics = awayMetrics != null && homeMetrics != null;
+  // Non-null is NOT enough: the API deliberately returns HTTP 200 with an
+  // EMPTY zeroed DTO when metrics haven't been generated (or the backend
+  // call soft-failed) — gating on null alone would render "Metrics (0:0)"
+  // full of fake 0.00s. gamesPlayed is the honest emptiness signal: a
+  // metric row only exists once games have been played.
+  const hasMetrics =
+    ((awayMetrics?.gamesPlayed as number | undefined) ?? 0) > 0 &&
+    ((homeMetrics?.gamesPlayed as number | undefined) ?? 0) > 0;
 
   // Favored tallies — web parity: tab labels read "Stats (95:60)" /
   // "Metrics (4:6)", category chips carry their own counts.
@@ -574,7 +581,11 @@ export function StatsComparisonModal({
   // detail tab. Null until the user picks, so the default can settle after
   // the data arrives.
   const [mainTabChoice, setMainTabChoice] = useState<'history' | 'stats' | 'metrics' | null>(null);
-  const mainTab = mainTabChoice ?? (hasHistory ? 'history' : 'stats');
+  // Default tab: history when it exists, else stats, else metrics — the
+  // last case keeps the Metrics tab reachable when both statistics slots
+  // came back empty (a week-1 first meeting with a stats soft-failure).
+  const mainTab =
+    mainTabChoice ?? (hasHistory ? 'history' : categories.length > 0 ? 'stats' : hasMetrics ? 'metrics' : 'stats');
 
   return (
     <Modal
@@ -611,7 +622,7 @@ export function StatsComparisonModal({
               Loading stats…
             </Text>
           </View>
-        ) : comparison == null || (categories.length === 0 && !hasHistory) ? (
+        ) : comparison == null || (categories.length === 0 && !hasHistory && !hasMetrics) ? (
           <View style={styles.loadingContainer}>
             <Text style={[styles.emptyText, { color: theme.textMuted }]}>
               Stats not available.

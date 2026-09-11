@@ -394,6 +394,14 @@ export interface PreviewResponse {
 export interface TeamStatEntry {
   displayValue: string;
   label?: string | null;
+  /** Machine key for the statistic (e.g. "assistTackles"). */
+  statisticKey?: string | null;
+  /** Human display name (e.g. "Assisted Tackles") — what the web renders. */
+  statisticValue?: string | null;
+  /** National rank for this stat; only meaningful when > 1. */
+  rank?: number | null;
+  /** Lower-is-better stats (turnovers, sacks allowed, ...) invert "favored". */
+  isNegativeAttribute?: boolean | null;
   [key: string]: unknown;
 }
 

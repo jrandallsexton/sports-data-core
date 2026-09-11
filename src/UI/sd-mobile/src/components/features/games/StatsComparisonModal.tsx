@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -86,6 +86,93 @@ function TeamHeader({
 
 // ─── Category tab ─────────────────────────────────────────────────────────────
 
+// ─── Metrics comparison spec — WEB PARITY ─────────────────────────────────────
+// Mirrors sd-ui TeamComparison's metricsData exactly (labels, formats,
+// higher-is-better polarity, and the category grouping). netPunt /
+// penaltyYardsPerPlay intentionally absent (metrics formula audit M4/H3).
+type MetricSpec = {
+  label: string;
+  key: string;
+  format: (val: number | null | undefined) => string;
+  higherIsBetter: boolean;
+};
+
+const pct = (val: number | null | undefined) => (val ? (val * 100).toFixed(1) + '%' : '0.0%');
+const dec2 = (val: number | null | undefined) => val?.toFixed(2) ?? '0.00';
+
+const METRICS_SPEC: { category: string; metrics: MetricSpec[] }[] = [
+  {
+    category: 'Offensive Efficiency',
+    metrics: [
+      { label: 'Yards Per Play', key: 'ypp', format: dec2, higherIsBetter: true },
+      { label: 'Success Rate', key: 'successRate', format: pct, higherIsBetter: true },
+      { label: 'Explosive Play Rate', key: 'explosiveRate', format: pct, higherIsBetter: true },
+      { label: 'Points Per Drive', key: 'pointsPerDrive', format: dec2, higherIsBetter: true },
+      { label: '3rd/4th Down Rate', key: 'thirdFourthRate', format: pct, higherIsBetter: true },
+    ],
+  },
+  {
+    category: 'Red Zone Efficiency',
+    metrics: [
+      { label: 'Red Zone TD Rate', key: 'rzTdRate', format: pct, higherIsBetter: true },
+      { label: 'Red Zone Score Rate', key: 'rzScoreRate', format: pct, higherIsBetter: true },
+    ],
+  },
+  {
+    category: 'Defensive Metrics',
+    metrics: [
+      { label: 'Opp Yards Per Play', key: 'oppYpp', format: dec2, higherIsBetter: false },
+      { label: 'Opp Success Rate', key: 'oppSuccessRate', format: pct, higherIsBetter: false },
+      { label: 'Opp Explosive Rate', key: 'oppExplosiveRate', format: pct, higherIsBetter: false },
+      { label: 'Opp Points Per Drive', key: 'oppPointsPerDrive', format: dec2, higherIsBetter: false },
+      { label: 'Opp 3rd/4th Down Rate', key: 'oppThirdFourthRate', format: pct, higherIsBetter: false },
+      { label: 'Opp Red Zone TD Rate', key: 'oppRzTdRate', format: pct, higherIsBetter: false },
+    ],
+  },
+  {
+    category: 'Game Control',
+    metrics: [
+      { label: 'Time Possession Ratio', key: 'timePossRatio', format: pct, higherIsBetter: true },
+      { label: 'Field Position Differential', key: 'fieldPosDiff', format: dec2, higherIsBetter: true },
+      {
+        label: 'Turnover Margin Per Drive',
+        key: 'turnoverMarginPerDrive',
+        format: (val) => val?.toFixed(3) ?? '0.000',
+        higherIsBetter: true,
+      },
+    ],
+  },
+  {
+    category: 'Special Teams',
+    metrics: [
+      {
+        label: 'Field Goal %',
+        key: 'fgPctShrunk',
+        format: (val) => (val != null ? (val * 100).toFixed(1) + '%' : '-'),
+        higherIsBetter: true,
+      },
+    ],
+  },
+];
+
+/** Which side a stat row favors — web parity: numeric compare of the
+    display values, inverted for lower-is-better stats. */
+function statFavored(away?: TeamStatEntry, home?: TeamStatEntry): 'away' | 'home' | null {
+  if (!away || !home) return null;
+  const a = parseFloat(away.displayValue ?? '');
+  const b = parseFloat(home.displayValue ?? '');
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  const isNegative = away.isNegativeAttribute ?? home.isNegativeAttribute ?? false;
+  if (isNegative) return a < b ? 'away' : b < a ? 'home' : null;
+  return a > b ? 'away' : b > a ? 'home' : null;
+}
+
+function metricFavored(spec: MetricSpec, a?: number | null, b?: number | null): 'away' | 'home' | null {
+  if (a == null || b == null) return null;
+  if (spec.higherIsBetter) return a > b ? 'away' : b > a ? 'home' : null;
+  return a < b ? 'away' : b < a ? 'home' : null;
+}
+
 function CategoryTab({
   label,
   active,
@@ -120,10 +207,14 @@ function StatRow({
   label,
   awayEntry,
   homeEntry,
+  favored = null,
 }: {
   label: string;
   awayEntry: TeamStatEntry;
   homeEntry: TeamStatEntry;
+  /** Which side leads this row; null = tie/incomparable. Web parity:
+      the leading value is highlighted, and lower-is-better stats invert. */
+  favored?: 'away' | 'home' | null;
 }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
@@ -139,7 +230,14 @@ function StatRow({
     <View style={[styles.statRow, { borderBottomColor: theme.border }]}>
       {/* Away value */}
       <View style={[styles.statValue, styles.statValueLeft]}>
-        <Text style={[styles.statValueText, { color: theme.text }]}>{awayEntry.displayValue}</Text>
+        <View style={styles.statValueLine}>
+          <Text style={[styles.statValueText, { color: favored === 'away' ? theme.tint : theme.text }]}>
+            {awayEntry.displayValue}
+          </Text>
+          {awayEntry.rank != null && awayEntry.rank > 1 && (
+            <Text style={[styles.statRank, { color: theme.textMuted }]}> (#{awayEntry.rank})</Text>
+          )}
+        </View>
         {max != null && (
           <View style={styles.barTrack}>
             <View
@@ -160,9 +258,14 @@ function StatRow({
 
       {/* Home value */}
       <View style={[styles.statValue, styles.statValueRight]}>
-        <Text style={[styles.statValueText, styles.statValueTextRight, { color: theme.text }]}>
-          {homeEntry.displayValue}
-        </Text>
+        <View style={[styles.statValueLine, styles.statValueLineRight]}>
+          {homeEntry.rank != null && homeEntry.rank > 1 && (
+            <Text style={[styles.statRank, { color: theme.textMuted }]}>(#{homeEntry.rank}) </Text>
+          )}
+          <Text style={[styles.statValueText, styles.statValueTextRight, { color: favored === 'home' ? theme.tint : theme.text }]}>
+            {homeEntry.displayValue}
+          </Text>
+        </View>
         {max != null && (
           <View style={styles.barTrack}>
             <View
@@ -397,6 +500,50 @@ export function StatsComparisonModal({
   const homeRows: TeamStatEntry[] = currentCategory ? (homeStats[currentCategory] ?? []) : [];
   const rowCount = Math.max(awayRows.length, homeRows.length);
 
+  // Metrics ride the same comparison payload (fetched by MatchupCard);
+  // the tab renders only when both sides have them — the same
+  // both-or-nothing stance the rest of the platform takes.
+  const awayMetrics = (comparison?.teamA?.metrics?.data ?? null) as Record<string, number | null> | null;
+  const homeMetrics = (comparison?.teamB?.metrics?.data ?? null) as Record<string, number | null> | null;
+  const hasMetrics = awayMetrics != null && homeMetrics != null;
+
+  // Favored tallies — web parity: tab labels read "Stats (95:60)" /
+  // "Metrics (4:6)", category chips carry their own counts.
+  const favoredByCategory = useMemo(() => {
+    const perCategory: Record<string, { away: number; home: number }> = {};
+    let away = 0;
+    let home = 0;
+    for (const cat of categories) {
+      const a = awayStats[cat] ?? [];
+      const h = homeStats[cat] ?? [];
+      const tally = { away: 0, home: 0 };
+      for (let i = 0; i < Math.max(a.length, h.length); i++) {
+        const f = statFavored(a[i], h[i]);
+        if (f === 'away') tally.away++;
+        if (f === 'home') tally.home++;
+      }
+      perCategory[cat] = tally;
+      away += tally.away;
+      home += tally.home;
+    }
+    return { perCategory, away, home };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comparison]);
+
+  const metricsFavored = useMemo(() => {
+    const tally = { away: 0, home: 0 };
+    if (!hasMetrics) return tally;
+    for (const group of METRICS_SPEC) {
+      for (const m of group.metrics) {
+        const f = metricFavored(m, awayMetrics?.[m.key], homeMetrics?.[m.key]);
+        if (f === 'away') tally.away++;
+        if (f === 'home') tally.home++;
+      }
+    }
+    return tally;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comparison, hasMetrics]);
+
   // Historical blocks (head-to-head + prior-season form) — present whenever
   // the franchises have played before, including week 1 when stats are empty.
   const history = comparison?.history ?? null;
@@ -426,7 +573,7 @@ export function StatsComparisonModal({
   // History is the overview and leads (matches the web dialog); Stats is the
   // detail tab. Null until the user picks, so the default can settle after
   // the data arrives.
-  const [mainTabChoice, setMainTabChoice] = useState<'history' | 'stats' | null>(null);
+  const [mainTabChoice, setMainTabChoice] = useState<'history' | 'stats' | 'metrics' | null>(null);
   const mainTab = mainTabChoice ?? (hasHistory ? 'history' : 'stats');
 
   return (
@@ -488,22 +635,31 @@ export function StatsComparisonModal({
               />
             </View>
 
-            {/* Main tabs — History is the overview and leads; Stats carries
-                the category detail. Only shown when history exists. */}
-            {hasHistory && (
-              <View style={[styles.mainTabsRow, { borderBottomColor: theme.border }]}>
+            {/* Main tabs — History is the overview and leads (when it
+                exists); Stats carries the category detail; Metrics mirrors
+                the web's Metrics tab. Counts are favored-stat tallies,
+                same as the web's "Statistics (95:60)" / "Metrics (4:6)". */}
+            <View style={[styles.mainTabsRow, { borderBottomColor: theme.border }]}>
+              {hasHistory && (
                 <CategoryTab
                   label={`History (${h2hWinsAway}:${h2hWinsHome})`}
                   active={mainTab === 'history'}
                   onPress={() => setMainTabChoice('history')}
                 />
+              )}
+              <CategoryTab
+                label={`Stats (${favoredByCategory.away}:${favoredByCategory.home})`}
+                active={mainTab === 'stats'}
+                onPress={() => setMainTabChoice('stats')}
+              />
+              {hasMetrics && (
                 <CategoryTab
-                  label="Stats"
-                  active={mainTab === 'stats'}
-                  onPress={() => setMainTabChoice('stats')}
+                  label={`Metrics (${metricsFavored.away}:${metricsFavored.home})`}
+                  active={mainTab === 'metrics'}
+                  onPress={() => setMainTabChoice('metrics')}
                 />
-              </View>
-            )}
+              )}
+            </View>
 
             {mainTab === 'history' && hasHistory ? (
               <ScrollView
@@ -658,6 +814,29 @@ export function StatsComparisonModal({
                 </>
                 )}
               </ScrollView>
+            ) : mainTab === 'metrics' && hasMetrics ? (
+              /* Metrics tab — web parity: the same grouped metric list,
+                 formats, and polarity as sd-ui's TeamComparison. Rows reuse
+                 StatRow; favored is computed on the RAW values (formatted
+                 percents would mislead parseFloat for lower-is-better). */
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {METRICS_SPEC.map((group) => (
+                  <View key={group.category}>
+                    <Text style={[styles.metricsGroupHeader, { color: theme.textMuted, borderBottomColor: theme.border }]}>
+                      {group.category}
+                    </Text>
+                    {group.metrics.map((m) => (
+                      <StatRow
+                        key={m.key}
+                        label={m.label}
+                        awayEntry={{ displayValue: m.format(awayMetrics?.[m.key]) }}
+                        homeEntry={{ displayValue: m.format(homeMetrics?.[m.key]) }}
+                        favored={metricFavored(m, awayMetrics?.[m.key], homeMetrics?.[m.key])}
+                      />
+                    ))}
+                  </View>
+                ))}
+              </ScrollView>
             ) : categories.length === 0 ? (
               <View style={styles.loadingContainer}>
                 <Text style={[styles.emptyText, { color: theme.textMuted }]}>
@@ -673,14 +852,18 @@ export function StatsComparisonModal({
                   style={[styles.tabScroll, { borderBottomColor: theme.border }]}
                   contentContainerStyle={styles.tabScrollContent}
                 >
-                  {categories.map((cat) => (
-                    <CategoryTab
-                      key={cat}
-                      label={cat}
-                      active={currentCategory === cat}
-                      onPress={() => setActiveCategory(cat)}
-                    />
-                  ))}
+                  {categories.map((cat) => {
+                    const tally = favoredByCategory.perCategory[cat];
+                    const chipLabel = tally ? `${cat} (${tally.away}:${tally.home})` : cat;
+                    return (
+                      <CategoryTab
+                        key={cat}
+                        label={chipLabel}
+                        active={currentCategory === cat}
+                        onPress={() => setActiveCategory(cat)}
+                      />
+                    );
+                  })}
                 </ScrollView>
 
                 {/* Stat rows */}
@@ -693,8 +876,12 @@ export function StatsComparisonModal({
                     Array.from({ length: rowCount }, (_, i) => {
                       const away = awayRows[i];
                       const home = homeRows[i];
-                      // Use label from entry if available, else stat index
+                      // The payload's human name is statisticValue (what the
+                      // web renders); label/name are legacy fallbacks. The
+                      // index-based fallback is last resort only.
                       const label =
+                        away?.statisticValue ??
+                        home?.statisticValue ??
                         (away as any)?.label ??
                         (away as any)?.name ??
                         (home as any)?.label ??
@@ -705,10 +892,11 @@ export function StatsComparisonModal({
 
                       return (
                         <StatRow
-                          key={i}
+                          key={away?.statisticKey ?? home?.statisticKey ?? i}
                           label={label}
                           awayEntry={away ?? { displayValue: '—' }}
                           homeEntry={home ?? { displayValue: '—' }}
+                          favored={statFavored(away, home)}
                         />
                       );
                     })
@@ -807,6 +995,10 @@ const styles = StyleSheet.create({
   tabScroll: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     flexGrow: 0,
+    // flexShrink 0 is load-bearing: without it the stat-rows ScrollView
+    // below compresses this row and the chips render vertically clipped
+    // (visible once chip labels grew with the (a:b) counts).
+    flexShrink: 0,
   },
   tabScrollContent: {
     paddingHorizontal: 12,
@@ -851,6 +1043,26 @@ const styles = StyleSheet.create({
   },
   statValueTextRight: {
     textAlign: 'right',
+  },
+  metricsGroupHeader: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  statValueLine: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  statValueLineRight: {
+    justifyContent: 'flex-end',
+  },
+  statRank: {
+    fontSize: 10,
   },
   statLabelBox: {
     width: 90,

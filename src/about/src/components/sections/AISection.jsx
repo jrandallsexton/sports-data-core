@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import CollapsibleSection from "../common/CollapsibleSection";
+import MermaidDiagram from "../common/MermaidDiagram";
 
 const AISection = ({ id }) => {
   const [expandedSection, setExpandedSection] = useState(null);
@@ -8,171 +9,125 @@ const AISection = ({ id }) => {
     setExpandedSection(expandedSection === sectionName ? null : sectionName);
   };
 
+  const previewDiagram = `graph TD
+    A[Play-by-Play Data] --> B[Season Metrics Engine]
+    S[Team Statistics] --> P[Structured Payload]
+    B --> P
+    H[Spread-Conditioned History] --> P
+    P --> G[OpenRouter Gateway]
+    G --> M1[Model A]
+    G --> M2[Model B]
+    G --> M3[Model N]
+    M1 --> C[Capture + Grade]
+    M2 --> C
+    M3 --> C
+    C --> V[(PostgreSQL)]
+    C --> U[Preview Shown to Users]
+
+    style A fill:#059669
+    style S fill:#059669
+    style H fill:#059669
+    style B fill:#0891b2
+    style P fill:#0d9488
+    style G fill:#7c3aed
+    style M1 fill:#8b5cf6
+    style M2 fill:#8b5cf6
+    style M3 fill:#8b5cf6
+    style C fill:#1e40af
+    style V fill:#059669
+    style U fill:#6366f1`;
+
   return (
     <section id={id} className="about-section">
       <div className="section-header">
-        <h2 className="section-title">AI and Predictive Insights</h2>
+        <h2 className="section-title">AI &amp; Predictive Insights</h2>
         <p className="section-subtitle">
-          Machine Learning Models and LLM Integration
+          Grounded generation, multi-model evaluation, graded results
         </p>
       </div>
 
       <div className="section-content">
         <CollapsibleSection
-          title="LLM Integration"
-          isExpanded={expandedSection === "llm"}
-          onToggle={() => handleToggle("llm")}
+          title="Philosophy: Numbers First, Narrative Second"
+          isExpanded={expandedSection === "philosophy"}
+          onToggle={() => handleToggle("philosophy")}
         >
+          <p>
+            The models never invent facts. Every matchup preview is generated
+            from a structured payload the platform computes itself: season
+            efficiency metrics derived from play-by-play data, team
+            statistics sourced weekly, and spread-conditioned history
+            (&ldquo;how has this team actually done as a 10&ndash;14 point
+            favorite?&rdquo;). The LLM&rsquo;s job is analysis and prose -
+            the numbers arrive pre-computed, and every number shown to a user
+            traces back to a query, never to model output.
+          </p>
+          <MermaidDiagram chart={previewDiagram} />
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="The Metrics Engine"
+          isExpanded={expandedSection === "metrics"}
+          onToggle={() => handleToggle("metrics")}
+        >
+          <p>
+            A per-team, per-season metrics pipeline computes advanced
+            efficiency measures from canonical play-by-play: yards per play,
+            success rate, explosive-play rate, points per drive, third/fourth
+            down conversion, red-zone TD and score rates, time-of-possession
+            ratio, field-position differential, turnover margin per drive,
+            and defensive mirrors of each. Metrics regenerate on a weekly
+            schedule for every team in every supported sport, so the model
+            payload - and the comparison UI - always reflects the season as
+            it stands.
+          </p>
+        </CollapsibleSection>
+
+        <CollapsibleSection
+          title="Model Lab"
+          isExpanded={expandedSection === "modellab"}
+          onToggle={() => handleToggle("modellab")}
+        >
+          <p>
+            Production previews run on a hosted model behind a thin client
+            abstraction; candidate models are evaluated through a single
+            OpenRouter gateway integration, which turns &ldquo;which LLM
+            should write previews?&rdquo; into a measurable question. An
+            admin Model Lab runs the same matchup and the same prompt across
+            a matrix of candidate models, captures every raw response, and
+            records each model&rsquo;s pick. Every prediction is graded
+            against final results - straight-up and against the spread - so
+            model choice is an accuracy leaderboard, not a vibe.
+          </p>
           <ul>
             <li>
-              <strong>Ollama Local LLM:</strong> sportDeets runs large language
-              models locally via
-              <code> Ollama </code>, preserving full control over prompt
-              engineering, data privacy, and performance - while avoiding
-              third-party API costs entirely.
+              <strong>Prompt-scoped comparisons:</strong> a model swap and a
+              prompt change are never conflated
             </li>
             <li>
-              <strong>StatBot:</strong> The original LLM persona that generates
-              matchup previews based on raw team stats, historical performance,
-              and record comparisons
+              <strong>Response capture:</strong> the full generation for any
+              cell of the matrix is one click away
             </li>
             <li>
-              <strong>MetricBot:</strong> A newer persona that incorporates
-              Python-based regression outputs (e.g. win probabilities, spread
-              deltas) to generate more analytical and model-driven previews
-            </li>
-            <li>
-              <strong>Contextual Prompting:</strong> Each preview is generated
-              from a carefully constructed prompt that includes recent
-              performance, team-specific metrics, betting lines, and more
-            </li>
-            <li>
-              <strong>Scheduled Inference:</strong> Matchup previews are
-              generated weekly in batch using background jobs in the Producer
-              service and stored for UI display
-            </li>
-            <li>
-              <strong>Auditability:</strong> All generated previews are
-              versioned, tied to both the prompt structure and input data
-              snapshot used at inference time
+              <strong>Graded history:</strong> accuracy tracked over weeks,
+              with pushes handled honestly (a push grades nobody)
             </li>
           </ul>
         </CollapsibleSection>
 
         <CollapsibleSection
-          title="Prediction Models"
-          isExpanded={expandedSection === "models"}
-          onToggle={() => handleToggle("models")}
-        >
-          <ul>
-            <li>
-              <strong>Logistic Regression:</strong> Used for straight-up (SU)
-              winner predictions. Fast, interpretable, and effective when paired
-              with engineered features.
-            </li>
-            <li>
-              <strong>Random Forest:</strong> Deployed for against-the-spread
-              (ATS) predictions. Captures non-linear relationships and complex
-              feature interactions.
-            </li>
-            <li>
-              <strong>Feature Engineering:</strong> The models are trained using
-              a rich set of derived inputs, including:
-              <ul>
-                <li>Conference strength indicators</li>
-                <li>Historical head-to-head performance</li>
-                <li>Home field advantage factors</li>
-                <li>Recent trends (last 3 games)</li>
-                <li>Strength of schedule adjustments</li>
-                <li>Team offensive and defensive metrics</li>
-              </ul>
-            </li>
-          </ul>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title="Training Strategy"
-          isExpanded={expandedSection === "training"}
-          onToggle={() => handleToggle("training")}
+          title="What's Next"
+          isExpanded={expandedSection === "next"}
+          onToggle={() => handleToggle("next")}
         >
           <p>
-            <strong>Blended Data Approach:</strong> To handle the early-season
-            cold-start challenge, the models blend prior season performance with
-            current season metrics in a gradually shifting ratio.
-          </p>
-          <ul>
-            <li>
-              <strong>Early Season:</strong> 70% prior season, 30% current
-              season
-            </li>
-            <li>
-              <strong>Mid Season:</strong> 50/50 blend as data volume increases
-            </li>
-            <li>
-              <strong>Late Season:</strong> 80% current season, 20% prior season
-              for sharper real-time accuracy
-            </li>
-            <li>
-              <strong>Continuous Retraining:</strong> Models are retrained
-              weekly using the latest available game data
-            </li>
-          </ul>
-
-          <p>
-            <strong>Model Evaluation:</strong>
-          </p>
-          <ul>
-            <li>
-              <strong>A/B Testing:</strong> Compare new model versions against
-              prior baselines in controlled experiments
-            </li>
-            <li>
-              <strong>Accuracy, Precision, Recall:</strong> Tracked weekly to
-              monitor classification performance
-            </li>
-            <li>
-              <strong>Brier Score:</strong> Measures calibration of predicted
-              probabilities
-            </li>
-            <li>
-              <strong>Segmented Analysis:</strong> Model performance sliced by
-              week, conference, and game type
-            </li>
-          </ul>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          title="Prediction Output"
-          isExpanded={expandedSection === "output"}
-          onToggle={() => handleToggle("output")}
-        >
-          <p>
-            <strong>ContestPrediction DTOs:</strong> Each game receives
-            structured predictions that include:
-          </p>
-          <ul>
-            <li>
-              <strong>Straight-Up (SU):</strong> Predicted winner with
-              confidence percentage (0-100%)
-            </li>
-            <li>
-              <strong>Against-the-Spread (ATS):</strong> Predicted cover with
-              confidence percentage
-            </li>
-            <li>
-              <strong>Model Version:</strong> Tracks which model generated the
-              prediction for audit purposes
-            </li>
-            <li>
-              <strong>Prediction Timestamp:</strong> When the prediction was
-              generated
-            </li>
-          </ul>
-
-          <p>
-            Predictions are surfaced in the UI via the{" "}
-            <strong>DeetsMeter™</strong> component, which displays confidence
-            levels as horizontal gradient bars for easy interpretation.
+            The direction is <em>&ldquo;model predicts, LLM
+            explains&rdquo;</em>: a dedicated statistical service owns the
+            win-probability and spread predictions (with calibration as the
+            headline goal), and the language models explain a prediction they
+            are handed rather than making one. Week-versioned metric
+            snapshots will let any historical prediction be reproduced
+            exactly as the model saw it.
           </p>
         </CollapsibleSection>
       </div>

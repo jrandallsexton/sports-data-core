@@ -516,3 +516,21 @@
   font-weight: bold;
 }
 
+
+/* Service walkthroughs inside the Architecture section: prose + diagram
+   blocks that need more width than a tech-card. */
+.service-detail {
+  margin-bottom: 2rem;
+}
+
+.service-detail h4 {
+  color: #61dafb;
+  margin-bottom: 0.75rem;
+  font-size: 1.15rem;
+}
+
+.service-detail p,
+.service-detail li {
+  color: #d0d0d0;
+  line-height: 1.6;
+}

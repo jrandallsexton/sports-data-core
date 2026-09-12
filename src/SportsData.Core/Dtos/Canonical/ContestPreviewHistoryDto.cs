@@ -139,8 +139,19 @@ namespace SportsData.Core.Dtos.Canonical
     /// </summary>
     public class PreviewAtsBucketFactDto
     {
-        /// <summary>Key-number bucket applied (largest of 3/7/10/14/21/28/35 ≤ Magnitude).</summary>
+        /// <summary>Lower key-number rung of the bucket (largest rung ≤ Magnitude).</summary>
         public double Threshold { get; set; }
+
+        /// <summary>
+        /// Upper key-number rung (smallest rung &gt; Magnitude), EXCLUSIVE:
+        /// the cohort is the band the live line actually sits in, e.g. a
+        /// -12.5 spread buckets as [10, 14) — "as a 10–14 point favorite".
+        /// Without it a -12.5 line pulled in -49.5 FCS blowouts: technically
+        /// "10+", evidentially a different class of game (owner call,
+        /// 2026-09-12). Null when the line is above the top rung — the
+        /// bucket is open-ended and renders as "49+".
+        /// </summary>
+        public double? ThresholdUpper { get; set; }
 
         public int Games { get; set; }
 
@@ -148,6 +159,38 @@ namespace SportsData.Core.Dtos.Canonical
 
         /// <summary>Floor season of the spread-value data tier (currently 2022).</summary>
         public int DataFloorSeason { get; set; }
+
+        /// <summary>
+        /// The games behind the count, newest first, capped at 10 — who the
+        /// team actually covered (or failed to cover) against, with the
+        /// closing line and the opponent's record that season. The count
+        /// remains the authority on totals; this list is its evidence
+        /// (same contract as <see cref="PreviewMarginFactDto.WindowGames"/>).
+        /// </summary>
+        public List<PreviewAtsBucketInstanceDto> WindowGames { get; set; } = [];
+    }
+
+    /// <summary>One decided ATS game inside the bucket window.</summary>
+    public class PreviewAtsBucketInstanceDto
+    {
+        public DateTime GameDate { get; set; }
+
+        public int SeasonYear { get; set; }
+
+        public string Opponent { get; set; } = default!;
+
+        public int TeamScore { get; set; }
+
+        public int OpponentScore { get; set; }
+
+        /// <summary>Closing spread, TEAM-relative (negative = this team was favored).</summary>
+        public double TeamSpread { get; set; }
+
+        /// <summary>Whether this team covered. Pushes/unsourced never appear (decided results only).</summary>
+        public bool Covered { get; set; }
+
+        /// <summary>Opponent's overall W-L that season ("7-5"); null when unsourced.</summary>
+        public string? OpponentSeasonRecord { get; set; }
     }
 
     /// <summary>

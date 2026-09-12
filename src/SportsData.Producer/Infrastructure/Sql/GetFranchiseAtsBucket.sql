@@ -1,11 +1,15 @@
--- ATS record for one franchise conditioned on spread size: as a FAVORITE of
--- @Threshold+ (@AsFavorite = TRUE) or an UNDERDOG of @Threshold+ (FALSE).
--- Market tier: requires historical spread VALUES (preferred/fallback
--- providers, present ~2022+), so counts are honest only within that window —
--- the handler stamps the data-floor season on the DTO. Games counts DECIDED
--- ATS results only (SpreadWinner null = push or unsourced -> excluded).
--- Preview-safe: finalized/non-cancelled, strictly before @AsOf, preseason
--- excluded, NULL phase kept.
+-- ATS record for one franchise conditioned on spread size: as a FAVORITE
+-- (@AsFavorite = TRUE) or UNDERDOG (FALSE) inside the key-number BAND
+-- [@Threshold, @ThresholdUpper) — the band the live line actually sits in,
+-- never an open-ended "@Threshold+" (a -12.5 question must not be answered
+-- with -49.5 blowouts; owner call 2026-09-12). @ThresholdUpper is exclusive;
+-- the handler passes 999 when the line is above the top rung (honestly
+-- open-ended "49+"). Market tier: requires historical spread VALUES
+-- (preferred/fallback providers, present ~2022+), so counts are honest only
+-- within that window — the handler stamps the data-floor season on the DTO.
+-- Games counts DECIDED ATS results only (SpreadWinner null = push or
+-- unsourced -> excluded). Preview-safe: finalized/non-cancelled, strictly
+-- before @AsOf, preseason excluded, NULL phase kept.
 SELECT
     COUNT(*) AS "Games",
     COUNT(*) FILTER (
@@ -32,6 +36,6 @@ WHERE c."FinalizedUtc" IS NOT NULL
   AND (sp."TypeCode" IS NULL OR sp."TypeCode" <> 1)
   AND c."SpreadWinnerFranchiseSeasonId" IS NOT NULL
   AND (
-        (fsHome."FranchiseId" = @FranchiseId AND ((@AsFavorite AND co."Spread" <= -@Threshold) OR (NOT @AsFavorite AND co."Spread" >= @Threshold)))
-     OR (fsAway."FranchiseId" = @FranchiseId AND ((@AsFavorite AND co."Spread" >= @Threshold) OR (NOT @AsFavorite AND co."Spread" <= -@Threshold)))
+        (fsHome."FranchiseId" = @FranchiseId AND ((@AsFavorite AND co."Spread" <= -@Threshold AND co."Spread" > -@ThresholdUpper) OR (NOT @AsFavorite AND co."Spread" >= @Threshold AND co."Spread" < @ThresholdUpper)))
+     OR (fsAway."FranchiseId" = @FranchiseId AND ((@AsFavorite AND co."Spread" >= @Threshold AND co."Spread" < @ThresholdUpper) OR (NOT @AsFavorite AND co."Spread" <= -@Threshold AND co."Spread" > -@ThresholdUpper)))
   )

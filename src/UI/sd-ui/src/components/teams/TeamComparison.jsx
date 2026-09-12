@@ -63,6 +63,16 @@ export default function TeamComparison({
   const { collapsed: lastSeasonCollapsed, toggle: toggleLastSeason } =
     useSectionCollapse("history.lastSeason");
 
+  // The Line is the exception: collapsible, but NOT persisted — it re-expands
+  // on every dialog launch (owner call 2026-09-12, mobile twin in
+  // StatsComparisonModal). It is the headline context yet the tallest block;
+  // readers collapse it to reach the sections below, and expect it back for
+  // the next game. Reset on `open`, not mount — the dialog stays mounted.
+  const [lineCollapsed, setLineCollapsed] = useState(false);
+  useEffect(() => {
+    if (open) setLineCollapsed(false);
+  }, [open]);
+
   // Helper: choose light or dark text based on background color
   const getContrastTextColor = (bgColor) => {
     let color = bgColor;
@@ -693,16 +703,32 @@ export default function TeamComparison({
 
   const atsFactSentence = (teamName, fact, asFavorite) => {
     if (!fact) return null;
-    const role = `${fmtLine(fact.threshold)}+ ${asFavorite ? "favorite" : "underdog"}`;
+    // Band, not open-ended: a -12.5 line renders "as a 10–14 point
+    // favorite" — the cohort the line actually sits in. thresholdUpper is
+    // null only above the top rung, where "49+" is honestly unbounded.
+    const role =
+      fact.thresholdUpper != null
+        ? `${fmtLine(fact.threshold)}–${fmtLine(fact.thresholdUpper)} point ${asFavorite ? "favorite" : "underdog"}`
+        : `${fmtLine(fact.threshold)}+ ${asFavorite ? "favorite" : "underdog"}`;
     if (fact.games === 0) {
       return {
         head: `${teamName} as a ${role}:`,
-        detail: `no games with a line that large since ${fact.dataFloorSeason}.`,
+        detail: `no games with a line ${fact.thresholdUpper != null ? "in that range" : "that large"} since ${fact.dataFloorSeason}.`,
       };
     }
+    // The games behind the count, newest first — "covered 16 of 28" invites
+    // exactly one question ("against whom?") and this line answers it.
+    // Compact: 'YY opponent score (their record) · line ✓/✗. Server caps at 10.
+    const windowGames = (fact.windowGames ?? []).map((g) => {
+      const yr = `'${String(g.seasonYear).slice(-2)}`;
+      const rec = g.opponentSeasonRecord ? ` (${g.opponentSeasonRecord})` : "";
+      const line = g.teamSpread > 0 ? `+${g.teamSpread}` : String(g.teamSpread);
+      return `${yr} ${g.opponent} ${g.teamScore}-${g.opponentScore}${rec} · ${line} ${g.covered ? "✓" : "✗"}`;
+    });
     return {
       head: `${teamName} as a ${role}:`,
       detail: `covered ${fact.covers} of ${fact.games} (since ${fact.dataFloorSeason}).`,
+      windowGames,
     };
   };
 
@@ -717,10 +743,20 @@ export default function TeamComparison({
     if (facts.length === 0) return null;
     return (
       <div className="history-section">
-        <div className="history-section-title">
-          The Line{spreadContext.spreadDetails ? ` — ${spreadContext.spreadDetails}` : ""}
-        </div>
-        {facts.map((f, i) => (
+        <button
+          type="button"
+          className="history-section-title history-section-toggle"
+          onClick={() => setLineCollapsed((c) => !c)}
+          aria-expanded={!lineCollapsed}
+        >
+          <span>
+            The Line{spreadContext.spreadDetails ? `: ${spreadContext.spreadDetails}` : ""}
+          </span>
+          <span className="history-section-chevron" aria-hidden="true">
+            {lineCollapsed ? "▾" : "▴"}
+          </span>
+        </button>
+        {!lineCollapsed && facts.map((f, i) => (
           <div className="line-fact" key={i}>
             <span className="line-fact-head">{f.head}</span>{" "}
             <span className="line-fact-detail">{f.detail}</span>
@@ -760,7 +796,7 @@ export default function TeamComparison({
               aria-expanded={!h2hCollapsed}
             >
               <span>
-                Head-to-Head — Last {headToHead.length} Meeting{headToHead.length === 1 ? "" : "s"}
+                Head-to-Head: Last {headToHead.length} Meeting{headToHead.length === 1 ? "" : "s"}
               </span>
               <span className="history-section-chevron" aria-hidden="true">
                 {h2hCollapsed ? "▾" : "▴"}

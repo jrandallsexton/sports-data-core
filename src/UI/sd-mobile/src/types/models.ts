@@ -470,9 +470,27 @@ export interface ContestMarginInstance {
 /** ATS record conditioned on spread size ("as a 35+ underdog") — market tier (~2022+). */
 export interface ContestAtsBucketFact {
   threshold: number;
+  /** Upper rung of the band (exclusive); null above the top rung ("49+" stays open-ended). */
+  thresholdUpper?: number | null;
   games: number;
   covers: number;
   dataFloorSeason: number;
+  /** The games behind the count, newest first, capped at 10 — the count remains the authority. */
+  windowGames?: ContestAtsBucketInstance[];
+}
+
+/** One decided ATS game inside the bucket window. */
+export interface ContestAtsBucketInstance {
+  gameDate: string;
+  seasonYear: number;
+  opponent: string;
+  teamScore: number;
+  opponentScore: number;
+  /** Closing spread, TEAM-relative (negative = this team was favored). */
+  teamSpread: number;
+  covered: boolean;
+  /** Opponent's overall W-L that season ("7-5"); null when unsourced. */
+  opponentSeasonRecord?: string | null;
 }
 
 /**

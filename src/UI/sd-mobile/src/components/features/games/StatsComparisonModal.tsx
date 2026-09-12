@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Modal,
   View,
@@ -448,16 +448,33 @@ function atsFactSentence(
   asFavorite: boolean,
 ): LineFact | null {
   if (!fact) return null;
-  const role = `${fact.threshold}+ ${asFavorite ? 'favorite' : 'underdog'}`;
+  // Band, not open-ended: a -12.5 line renders "as a 10–14 point favorite"
+  // — the cohort the line actually sits in. thresholdUpper is null only
+  // above the top rung, where "49+" is honestly unbounded. Web twin:
+  // TeamComparison.jsx atsFactSentence.
+  const role =
+    fact.thresholdUpper != null
+      ? `${fact.threshold}–${fact.thresholdUpper} point ${asFavorite ? 'favorite' : 'underdog'}`
+      : `${fact.threshold}+ ${asFavorite ? 'favorite' : 'underdog'}`;
   if (fact.games === 0) {
     return {
       head: `${teamName} as a ${role}:`,
-      detail: `no games with a line that large since ${fact.dataFloorSeason}.`,
+      detail: `no games with a line ${fact.thresholdUpper != null ? 'in that range' : 'that large'} since ${fact.dataFloorSeason}.`,
     };
   }
+  // The games behind the count, newest first — "covered 16 of 28" invites
+  // exactly one question ("against whom?") and these lines answer it. Web
+  // twin: TeamComparison.jsx atsFactSentence. Server caps at 10.
+  const windowGames = (fact.windowGames ?? []).map((gm) => {
+    const yr = `'${String(gm.seasonYear).slice(-2)}`;
+    const rec = gm.opponentSeasonRecord ? ` (${gm.opponentSeasonRecord})` : '';
+    const line = gm.teamSpread > 0 ? `+${gm.teamSpread}` : String(gm.teamSpread);
+    return `${yr} ${gm.opponent} ${gm.teamScore}-${gm.opponentScore}${rec} · ${line} ${gm.covered ? '✓' : '✗'}`;
+  });
   return {
     head: `${teamName} as a ${role}:`,
     detail: `covered ${fact.covers} of ${fact.games} (since ${fact.dataFloorSeason}).`,
+    windowGames,
   };
 }
 
@@ -491,6 +508,15 @@ export function StatsComparisonModal({
   const { collapsed: h2hCollapsed, toggle: toggleH2h } = useSectionCollapse('history.headToHead');
   const { collapsed: lastSeasonCollapsed, toggle: toggleLastSeason } =
     useSectionCollapse('history.lastSeason');
+
+  // The Line is the exception: collapsible, but NOT persisted — it
+  // re-expands on every dialog launch (owner call 2026-09-12). It is the
+  // headline context yet the tallest block on mobile; readers collapse it
+  // to reach the sections below, and expect it back for the next game.
+  const [lineCollapsed, setLineCollapsed] = useState(false);
+  useEffect(() => {
+    if (visible) setLineCollapsed(false);
+  }, [visible]);
 
   // Collect all category names from teamA stats
   const awayStats = comparison?.teamA?.stats?.data?.statistics ?? {};
@@ -694,11 +720,14 @@ export function StatsComparisonModal({
               >
                 {showGambling && history?.spreadContext && (
                   <>
-                    <Text style={[styles.historySectionTitle, { color: theme.tint }]}>
-                      The Line
-                      {history.spreadContext.spreadDetails ? ` — ${history.spreadContext.spreadDetails}` : ''}
-                    </Text>
-                    {spreadContextFacts(history.spreadContext).map((f, i) => (
+                    <CollapsibleSectionHeader
+                      title={`The Line${history.spreadContext.spreadDetails ? `: ${history.spreadContext.spreadDetails}` : ''}`}
+                      collapsed={lineCollapsed}
+                      onToggle={() => setLineCollapsed((c) => !c)}
+                      color={theme.tint}
+                      mutedColor={theme.tint}
+                    />
+                    {!lineCollapsed && spreadContextFacts(history.spreadContext).map((f, i) => (
                       <View key={i} style={[styles.lineFact, { borderBottomColor: theme.border }]}>
                         <Text style={[styles.lineFactText, { color: theme.text }]}>
                           <Text style={styles.lineFactHead}>{f.head}</Text> {f.detail}
@@ -722,7 +751,7 @@ export function StatsComparisonModal({
                 {headToHead.length > 0 && (
                   <>
                     <CollapsibleSectionHeader
-                      title={`Head-to-Head — Last ${headToHead.length} Meeting${headToHead.length === 1 ? '' : 's'}`}
+                      title={`Head-to-Head: Last ${headToHead.length} Meeting${headToHead.length === 1 ? '' : 's'}`}
                       collapsed={h2hCollapsed}
                       onToggle={toggleH2h}
                       color={theme.tint}

@@ -156,7 +156,11 @@ public sealed class ContestPreviewHistoryCache : IContestPreviewHistoryCache
         // v3: PriorSeasonGames became a ROLLING current+prior-season window
         // (2026-09-09); retires v2 entries that would keep serving the
         // prior-season-only lists until the line happened to move.
-        return $"preview-history:v3:{query.ContestId}:{query.MeetingCount}:{query.RecentGameCount}:s{spread}";
+        // v4: ATS bucket facts gained WindowGames and BAND semantics —
+        // [rung, next rung) instead of open-ended "rung+" (2026-09-12);
+        // retires v3 entries that would serve bare, over-broad "covered
+        // 16 of 28" counts with no game list for up to 7 days.
+        return $"preview-history:v4:{query.ContestId}:{query.MeetingCount}:{query.RecentGameCount}:s{spread}";
     }
 
     /// <summary>

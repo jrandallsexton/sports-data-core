@@ -44,10 +44,12 @@ public class SpreadContextConfigTests
     }
 
     [Theory]
-    [InlineData("3,seven,10")] // unparsable entry
-    [InlineData("3,-7,10")]    // non-positive rung
-    [InlineData("0")]          // zero rung
-    [InlineData("  ")]         // whitespace only
+    [InlineData("3,seven,10")]     // unparsable entry
+    [InlineData("3,-7,10")]        // non-positive rung
+    [InlineData("0")]              // zero rung
+    [InlineData("3,Infinity,10")]  // NumberStyles.Float parses "Infinity"
+    [InlineData("NaN")]            // and "NaN"
+    [InlineData("  ")]             // whitespace only
     public void WhenLadderMalformed_RejectsWholeStringForDefaults(string ladder)
     {
         // One bad entry rejects the whole string — a spliced ladder (part
@@ -65,6 +67,8 @@ public class SpreadContextConfigTests
         SpreadContextConfig.FromConfiguration(ConfigWith(null, "not-a-number"))
             .AtsBucketMaxDistancePoints.Should().Be(SpreadContextConfig.DefaultAtsBucketMaxDistancePoints);
         SpreadContextConfig.FromConfiguration(ConfigWith(null, "-1"))
+            .AtsBucketMaxDistancePoints.Should().Be(SpreadContextConfig.DefaultAtsBucketMaxDistancePoints);
+        SpreadContextConfig.FromConfiguration(ConfigWith(null, "Infinity"))
             .AtsBucketMaxDistancePoints.Should().Be(SpreadContextConfig.DefaultAtsBucketMaxDistancePoints);
     }
 }

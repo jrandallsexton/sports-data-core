@@ -8,12 +8,14 @@
 -- WHO was covered against (docs/features: matchup-spread-context; owner
 -- ask 2026-09-12, same contract as GetFranchiseMarginInstances.sql).
 --
--- Same frame as GetFranchiseAtsBucket.sql — the count and this list MUST
--- agree row-for-row: market tier (spread VALUES, ~2022+), decided ATS
--- results only (SpreadWinner null = push or unsourced -> excluded),
--- finalized/non-cancelled, strictly before @AsOf, preseason (TypeCode 1)
--- excluded, NULL phase kept. Capped at 10 rows; the headline count remains
--- the authority on totals.
+-- Same frame as GetFranchiseAtsBucket.sql: market tier (spread VALUES,
+-- ~2022+), decided ATS results only (SpreadWinner null = push or
+-- unsourced -> excluded), finalized/non-cancelled, strictly before @AsOf,
+-- preseason (TypeCode 1) excluded, NULL phase kept. ONE extra predicate
+-- here: sourced scores (a decided ATS result with unsourced scores stays
+-- in the count — the cover is real — but cannot be listed without
+-- fabricating a 0-0; PR #752 review). The list is capped at 10 and
+-- already a subset; the headline count remains the authority on totals.
 SELECT
     c."StartDateUtc" AS "GameDate",
     c."SeasonYear",
@@ -76,6 +78,8 @@ LEFT JOIN LATERAL (
 ) rec ON TRUE
 WHERE c."FinalizedUtc" IS NOT NULL
   AND c."CancelledUtc" IS NULL
+  AND c."HomeScore" IS NOT NULL
+  AND c."AwayScore" IS NOT NULL
   AND c."StartDateUtc" < @AsOf
   AND (sp."TypeCode" IS NULL OR sp."TypeCode" <> 1)
   AND c."SpreadWinnerFranchiseSeasonId" IS NOT NULL

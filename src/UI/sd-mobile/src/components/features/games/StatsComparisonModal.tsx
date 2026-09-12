@@ -515,7 +515,9 @@ export function StatsComparisonModal({
   // to reach the sections below, and expect it back for the next game.
   const [lineCollapsed, setLineCollapsed] = useState(false);
   useEffect(() => {
-    if (visible) setLineCollapsed(false);
+    // Reset on CLOSE, not open: the effect runs post-commit, so resetting
+    // on open would paint one collapsed frame before expanding.
+    if (!visible) setLineCollapsed(false);
   }, [visible]);
 
   // Collect all category names from teamA stats

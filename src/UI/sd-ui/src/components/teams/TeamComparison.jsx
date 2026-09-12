@@ -70,7 +70,9 @@ export default function TeamComparison({
   // the next game. Reset on `open`, not mount — the dialog stays mounted.
   const [lineCollapsed, setLineCollapsed] = useState(false);
   useEffect(() => {
-    if (open) setLineCollapsed(false);
+    // Reset on CLOSE, not open: the effect runs post-commit, so resetting
+    // on open would paint one collapsed frame before expanding.
+    if (!open) setLineCollapsed(false);
   }, [open]);
 
   // Helper: choose light or dark text based on background color

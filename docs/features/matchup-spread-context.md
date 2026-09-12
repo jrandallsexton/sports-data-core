@@ -7,7 +7,7 @@ think to ask. For a USC -38.5 line over San José State:
 1. When is the last time USC beat **anyone** by 38.5+? (and who was it —
    a bowl team or a 3-9 doormat?)
 2. When is the last time anyone beat SJSU by 38.5+?
-3. How has USC done ATS as a 35+ favorite? SJSU as a 35+ underdog?
+3. How has USC done ATS as a 35–42 point favorite? SJSU as a 35–42 point underdog?
 
 Product positioning: **a dimension, not a toll booth.** The casual picks
 USC and moves on at full speed; the data geek gets the bigger picture one
@@ -63,7 +63,8 @@ Margin facts need neither — scores only.
   `[10, 14)` and renders "as a 10–14 point favorite" — never an
   open-ended "10+", which pulled -49.5 FCS blowouts into a -12.5
   question (2026-09-12). Above the top rung the bucket stays honestly
-  open-ended ("49+"). Magnitude < 3 ⇒ no ATS facts.
+  open-ended ("49+"). Magnitude below the lowest configured rung (3 on
+  the default ladder) ⇒ no ATS facts.
 - The ladder and the distance guard are **operator-tunable** via
   AppConfig (`SportsData.Producer:SpreadContext:AtsKeyNumbers`, one
   comma-separated string; `…:AtsBucketMaxDistancePoints`) — see

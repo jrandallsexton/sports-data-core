@@ -64,9 +64,11 @@ public class SpreadContextConfig
         var ladderValue = config["SportsData.Producer:SpreadContext:AtsKeyNumbers"];
         if (!string.IsNullOrWhiteSpace(ladderValue))
         {
+            // IsFinite matters: NumberStyles.Float parses "Infinity", which
+            // would sail through a bare positivity check.
             var parsed = ladderValue
                 .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(x => double.TryParse(x, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) && d > 0
+                .Select(x => double.TryParse(x, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) && double.IsFinite(d) && d > 0
                     ? d
                     : (double?)null)
                 .ToList();
@@ -76,7 +78,7 @@ public class SpreadContextConfig
         }
 
         var guardValue = config["SportsData.Producer:SpreadContext:AtsBucketMaxDistancePoints"];
-        var guard = double.TryParse(guardValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var g) && g > 0
+        var guard = double.TryParse(guardValue, NumberStyles.Float, CultureInfo.InvariantCulture, out var g) && double.IsFinite(g) && g > 0
             ? g
             : DefaultAtsBucketMaxDistancePoints;
 

@@ -5,8 +5,11 @@
 -- with -49.5 blowouts; owner call 2026-09-12). @ThresholdUpper is exclusive;
 -- the handler passes 999 when the line is above the top rung (honestly
 -- open-ended "49+"). Market tier: requires historical spread VALUES
--- (preferred/fallback providers, present ~2022+), so counts are honest only
--- within that window — the handler stamps the data-floor season on the DTO.
+-- (preferred/fallback providers, present ~2022+). @DataFloorSeason ENFORCES
+-- the tier floor the sentence advertises ("since 2022") — without it a
+-- backfilled pre-2022 odds row would silently falsify the label. The
+-- handler passes the same value it stamps on the DTO, so label, count and
+-- list agree by construction.
 -- Games counts DECIDED ATS results only (SpreadWinner null = push or
 -- unsourced -> excluded). Preview-safe: finalized/non-cancelled, strictly
 -- before @AsOf, preseason excluded, NULL phase kept.
@@ -32,6 +35,7 @@ INNER JOIN public."FranchiseSeason" fsHome ON fsHome."Id" = c."HomeTeamFranchise
 LEFT JOIN public."SeasonPhase" sp ON sp."Id" = c."SeasonPhaseId"
 WHERE c."FinalizedUtc" IS NOT NULL
   AND c."CancelledUtc" IS NULL
+  AND c."SeasonYear" >= @DataFloorSeason
   AND c."StartDateUtc" < @AsOf
   AND (sp."TypeCode" IS NULL OR sp."TypeCode" <> 1)
   AND c."SpreadWinnerFranchiseSeasonId" IS NOT NULL

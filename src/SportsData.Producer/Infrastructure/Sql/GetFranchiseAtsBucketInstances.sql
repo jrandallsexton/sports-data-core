@@ -9,9 +9,10 @@
 -- ask 2026-09-12, same contract as GetFranchiseMarginInstances.sql).
 --
 -- Same frame as GetFranchiseAtsBucket.sql: market tier (spread VALUES,
--- ~2022+), decided ATS results only (SpreadWinner null = push or
--- unsourced -> excluded), finalized/non-cancelled, strictly before @AsOf,
--- preseason (TypeCode 1) excluded, NULL phase kept. ONE extra predicate
+-- ~2022+; @DataFloorSeason enforces the advertised floor), decided ATS
+-- results only (SpreadWinner null = push or unsourced -> excluded),
+-- finalized/non-cancelled, strictly before @AsOf, preseason (TypeCode 1)
+-- excluded, NULL phase kept. ONE extra predicate
 -- here: sourced scores (a decided ATS result with unsourced scores stays
 -- in the count — the cover is real — but cannot be listed without
 -- fabricating a 0-0; PR #752 review). The list is capped at 10 and
@@ -78,6 +79,7 @@ LEFT JOIN LATERAL (
 ) rec ON TRUE
 WHERE c."FinalizedUtc" IS NOT NULL
   AND c."CancelledUtc" IS NULL
+  AND c."SeasonYear" >= @DataFloorSeason
   AND c."HomeScore" IS NOT NULL
   AND c."AwayScore" IS NOT NULL
   AND c."StartDateUtc" < @AsOf

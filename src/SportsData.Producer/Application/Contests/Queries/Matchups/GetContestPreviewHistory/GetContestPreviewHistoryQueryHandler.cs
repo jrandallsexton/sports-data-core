@@ -411,6 +411,9 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                     FranchiseId = franchiseId,
                     Threshold = threshold,
                     ThresholdUpper = thresholdUpper ?? OpenEndedThresholdUpper,
+                    // The same value stamped on the DTO as DataFloorSeason:
+                    // the "(since 2022)" label is enforced, not asserted.
+                    DataFloorSeason = MarketDataFloorSeason,
                     AsOf = asOf,
                     AsFavorite = asFavorite
                 },
@@ -441,6 +444,7 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                         FranchiseId = franchiseId,
                         Threshold = threshold,
                         ThresholdUpper = thresholdUpper ?? OpenEndedThresholdUpper,
+                        DataFloorSeason = MarketDataFloorSeason,
                         AsOf = asOf,
                         AsFavorite = asFavorite
                     },

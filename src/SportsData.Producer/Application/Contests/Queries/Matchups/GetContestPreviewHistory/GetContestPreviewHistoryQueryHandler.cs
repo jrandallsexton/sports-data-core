@@ -28,19 +28,22 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
     private readonly IGetFranchiseSeasonMetricsByIdQueryHandler _metricsHandler;
 
     private readonly IContestPreviewHistoryCache _cache;
+    private readonly SpreadContextConfig _spreadConfig;
 
     public GetContestPreviewHistoryQueryHandler(
         TeamSportDataContext dbContext,
         ProducerSqlQueryProvider sqlProvider,
         IValidator<GetContestPreviewHistoryQuery> validator,
         IGetFranchiseSeasonMetricsByIdQueryHandler metricsHandler,
-        IContestPreviewHistoryCache cache)
+        IContestPreviewHistoryCache cache,
+        SpreadContextConfig spreadConfig)
     {
         _dbContext = dbContext;
         _sqlProvider = sqlProvider;
         _validator = validator;
         _metricsHandler = metricsHandler;
         _cache = cache;
+        _spreadConfig = spreadConfig;
     }
 
     /// <summary>
@@ -168,28 +171,9 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
     /// <summary>Spread-value data exists from this season on (odds-era floor).</summary>
     private const int MarketDataFloorSeason = 2022;
 
-    /// <summary>
-    /// ATS facts bucket on football key numbers rather than the exact line:
-    /// "as a 35+ favorite" reads naturally and accrues a meaningful sample,
-    /// where "as a 38.5-point favorite" would almost always be n=0. The ladder
-    /// extends through 42/49 (touchdown multiples) so monster lines land near
-    /// a rung — a 46.5 spread renders as "42+", not a stretched "35+" (owner
-    /// call, 2026-09-02: closeness beats cohort mass; a thin cohort
-    /// self-discloses because the count is in the sentence, and n=0 renders
-    /// the informative "no games with a line that large" instead).
-    /// </summary>
-    private static readonly double[] AtsKeyNumbers = [3, 7, 10, 14, 21, 28, 35, 42, 49];
-
-    /// <summary>
-    /// Safety net, rarely reached now that the ladder tops out at 49: the ATS
-    /// pair renders only when the chosen bucket sits within one touchdown of
-    /// the line, so a stretched cohort can never masquerade as line-specific
-    /// evidence (the original Furman/Tennessee complaint: a 46.5 spread
-    /// rendering "as a 35+ favorite" — "zero bearing on a 46.5-point spread").
-    /// With rungs every 7 points from 35 up, every realistic football spread
-    /// lands within the guard; this fires only for absurd (56+) lines.
-    /// </summary>
-    private const double AtsBucketMaxDistancePoints = 7;
+    // The ATS rung ladder and distance guard live in SpreadContextConfig
+    // (operator-tunable via AppConfig) — the rationale for banding on key
+    // numbers is documented there.
 
     private class SpreadTargetRow
     {
@@ -224,6 +208,18 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
     {
         public int Games { get; set; }
         public int Covers { get; set; }
+    }
+
+    private class AtsBucketInstanceRow
+    {
+        public DateTime GameDate { get; set; }
+        public int SeasonYear { get; set; }
+        public string Opponent { get; set; } = default!;
+        public int TeamScore { get; set; }
+        public int OpponentScore { get; set; }
+        public double TeamSpread { get; set; }
+        public bool Covered { get; set; }
+        public string? OpponentSeasonRecord { get; set; }
     }
 
     /// <summary>
@@ -265,13 +261,23 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 target.SeasonYear, won: false, cancellationToken)
         };
 
-        var threshold = AtsKeyNumbers.Where(k => k <= magnitude).DefaultIfEmpty(0).Max();
-        if (threshold > 0 && magnitude - threshold <= AtsBucketMaxDistancePoints)
+        var rungs = _spreadConfig.AtsKeyNumbers;
+        var threshold = rungs.Where(k => k <= magnitude).DefaultIfEmpty(0).Max();
+        // The bucket is the BAND the live line sits in — [rung below, rung
+        // above) — not everything above the rung below. A -12.5 line asks
+        // about 10-to-14-point favorites; a -49.5 FCS blowout is technically
+        // "10+" but evidentially a different class of game (owner call,
+        // 2026-09-12: window around the current spread, not an open top).
+        // Null above the top rung: "49+" stays honestly open-ended.
+        double? thresholdUpper = rungs.Any(k => k > magnitude)
+            ? rungs.Where(k => k > magnitude).Min()
+            : null;
+        if (threshold > 0 && magnitude - threshold <= _spreadConfig.AtsBucketMaxDistancePoints)
         {
             context.FavoriteAtsAsBigFavorite = await BuildAtsBucketFactAsync(
-                connection, favoriteFranchiseId, threshold, target.StartDateUtc, asFavorite: true, cancellationToken);
+                connection, favoriteFranchiseId, threshold, thresholdUpper, target.StartDateUtc, asFavorite: true, cancellationToken);
             context.UnderdogAtsAsBigUnderdog = await BuildAtsBucketFactAsync(
-                connection, underdogFranchiseId, threshold, target.StartDateUtc, asFavorite: false, cancellationToken);
+                connection, underdogFranchiseId, threshold, thresholdUpper, target.StartDateUtc, asFavorite: false, cancellationToken);
         }
 
         return context;
@@ -381,10 +387,18 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         return fact;
     }
 
+    /// <summary>
+    /// SQL stand-in for a null upper rung: no real football spread
+    /// approaches it, so "&lt; 999" is "unbounded" without making the SQL
+    /// juggle a nullable parameter.
+    /// </summary>
+    private const double OpenEndedThresholdUpper = 999;
+
     private async Task<PreviewAtsBucketFactDto> BuildAtsBucketFactAsync(
         System.Data.Common.DbConnection connection,
         Guid franchiseId,
         double threshold,
+        double? thresholdUpper,
         DateTime asOf,
         bool asFavorite,
         CancellationToken cancellationToken)
@@ -396,18 +410,60 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 {
                     FranchiseId = franchiseId,
                     Threshold = threshold,
+                    ThresholdUpper = thresholdUpper ?? OpenEndedThresholdUpper,
+                    // The same value stamped on the DTO as DataFloorSeason:
+                    // the "(since 2022)" label is enforced, not asserted.
+                    DataFloorSeason = MarketDataFloorSeason,
                     AsOf = asOf,
                     AsFavorite = asFavorite
                 },
                 cancellationToken: cancellationToken));
 
-        return new PreviewAtsBucketFactDto
+        var fact = new PreviewAtsBucketFactDto
         {
             Threshold = threshold,
+            ThresholdUpper = thresholdUpper,
             Games = row?.Games ?? 0,
             Covers = row?.Covers ?? 0,
             DataFloorSeason = MarketDataFloorSeason
         };
+
+        // The games BEHIND the count — "covered 16 of 28" invites exactly
+        // one question ("against whom?") and this list answers it (owner
+        // ask 2026-09-12; same contract as the margin facts' WindowGames).
+        // Fetched only when the count is non-zero; the opponent record
+        // rides the same query (SQL lateral), one extra round trip on an
+        // already-cached path.
+        if (fact.Games > 0)
+        {
+            var instances = await connection.QueryAsync<AtsBucketInstanceRow>(
+                new CommandDefinition(
+                    _sqlProvider.GetFranchiseAtsBucketInstances(),
+                    new
+                    {
+                        FranchiseId = franchiseId,
+                        Threshold = threshold,
+                        ThresholdUpper = thresholdUpper ?? OpenEndedThresholdUpper,
+                        DataFloorSeason = MarketDataFloorSeason,
+                        AsOf = asOf,
+                        AsFavorite = asFavorite
+                    },
+                    cancellationToken: cancellationToken));
+
+            fact.WindowGames = instances.Select(x => new PreviewAtsBucketInstanceDto
+            {
+                GameDate = x.GameDate,
+                SeasonYear = x.SeasonYear,
+                Opponent = x.Opponent,
+                TeamScore = x.TeamScore,
+                OpponentScore = x.OpponentScore,
+                TeamSpread = x.TeamSpread,
+                Covered = x.Covered,
+                OpponentSeasonRecord = x.OpponentSeasonRecord
+            }).ToList();
+        }
+
+        return fact;
     }
 
     /// <summary>Overall W-L string ("3-9") for one FranchiseSeason; null when unsourced.</summary>

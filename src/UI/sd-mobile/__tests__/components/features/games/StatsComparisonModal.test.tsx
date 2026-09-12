@@ -204,6 +204,66 @@ describe('StatsComparisonModal', () => {
     expect(screen.queryByText('0.00')).toBeNull();
   });
 
+  it('renders The Line as a launch-expanded collapsible with band wording and ATS evidence', () => {
+    const comparison = {
+      ...comparisonWith(),
+      history: {
+        headToHead: [],
+        awayPriorSeasonGames: [],
+        homePriorSeasonGames: [],
+        spreadContext: {
+          favoriteTeam: 'Tennessee Volunteers',
+          underdogTeam: 'Georgia Tech Yellow Jackets',
+          magnitude: 12.5,
+          spreadDetails: 'TENN -12.5',
+          favoriteWonByMargin: null,
+          underdogLostByMargin: null,
+          favoriteAtsAsBigFavorite: {
+            threshold: 10,
+            thresholdUpper: 14,
+            games: 9,
+            covers: 4,
+            dataFloorSeason: 2022,
+            windowGames: [
+              {
+                gameDate: '2025-11-22T00:00:00Z',
+                seasonYear: 2025,
+                opponent: 'Syracuse Orange',
+                teamScore: 45,
+                opponentScore: 26,
+                teamSpread: -13.5,
+                covered: true,
+                opponentSeasonRecord: '3-9',
+              },
+            ],
+          },
+          underdogAtsAsBigUnderdog: null,
+        },
+      },
+    } as unknown as TeamComparisonData;
+
+    render(
+      <StatsComparisonModal
+        visible
+        onClose={() => {}}
+        matchup={matchup}
+        comparison={comparison}
+        isLoading={false}
+        showGambling
+      />
+    );
+
+    // Band wording (never an open-ended "10+") plus the evidence row with
+    // the team-relative line and cover marker.
+    expect(screen.getByText(/as a 10–14 point favorite/)).toBeTruthy();
+    expect(screen.getByText("'25 Syracuse Orange 45-26 (3-9) · -13.5 ✓")).toBeTruthy();
+
+    // Collapsible — unlike the persisted sections it starts expanded on
+    // every launch; pressing the header hides the facts.
+    fireEvent.press(screen.getByText('The Line: TENN -12.5'));
+    expect(screen.queryByText(/as a 10–14 point favorite/)).toBeNull();
+  });
+
   it('shows the Metrics tab with favored counts when both sides have real metrics', () => {
     renderModal(
       comparisonWith({

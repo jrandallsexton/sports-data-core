@@ -26,6 +26,7 @@ public class ProducerSqlQueryProvider
         "GetFranchiseMarginFact.sql",
         "GetFranchiseMarginInstances.sql",
         "GetFranchiseAtsBucket.sql",
+        "GetFranchiseAtsBucketInstances.sql",
         "GetFranchiseSeasonCompetitionResults.sql",
         "GetFranchiseSeasonPreviewStats.sql",
         "GetFranchiseSeasonStatistics.sql",
@@ -122,6 +123,8 @@ public class ProducerSqlQueryProvider
     public string GetFranchiseMarginInstances() => Get("GetFranchiseMarginInstances.sql");
 
     public string GetFranchiseAtsBucket() => Get("GetFranchiseAtsBucket.sql");
+
+    public string GetFranchiseAtsBucketInstances() => Get("GetFranchiseAtsBucketInstances.sql");
 
     public string GetFranchiseSeasonCompetitionResults() => Get("GetFranchiseSeasonCompetitionResults.sql");
 

@@ -399,6 +399,15 @@ namespace SportsData.Producer.DependencyInjection
                 Application.Contests.Queries.Matchups.GetContestPreviewHistory.GetContestPreviewHistoryQueryValidator>();
             services.AddScoped<Application.Contests.Queries.Matchups.GetContestPreviewHistory.IContestPreviewHistoryCache,
                 Application.Contests.Queries.Matchups.GetContestPreviewHistory.ContestPreviewHistoryCache>();
+            // ATS bucket-band policy (rung ladder + distance guard) —
+            // operator-tunable via AppConfig without a deploy. Singleton:
+            // read once at startup, same as DocumentProcessingConfig above.
+            services.AddSingleton(sp =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                return Application.Contests.Queries.Matchups.GetContestPreviewHistory
+                    .SpreadContextConfig.FromConfiguration(config);
+            });
             // Enqueued by interface from the odds processor, so the registration is
             // required — Hangfire resolves the job type out of the container.
             services.AddScoped<Application.Contests.Queries.Matchups.GetContestPreviewHistory.IRegenerateContestPreviewHistoryJob,

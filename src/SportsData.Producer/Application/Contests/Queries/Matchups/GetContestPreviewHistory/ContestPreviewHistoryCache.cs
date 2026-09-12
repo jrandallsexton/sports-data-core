@@ -5,6 +5,7 @@ using SportsData.Core.Extensions;
 
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace SportsData.Producer.Application.Contests.Queries.Matchups.GetContestPreviewHistory;
@@ -60,12 +61,23 @@ public sealed class ContestPreviewHistoryCache : IContestPreviewHistoryCache
     private readonly IDistributedCache _cache;
     private readonly ILogger<ContestPreviewHistoryCache> _logger;
 
+    /// <summary>
+    /// The ATS band policy folded into every key — see <see cref="BuildKey"/>.
+    /// Computed once; the config is a startup-read singleton, so it cannot
+    /// change within a process lifetime.
+    /// </summary>
+    private readonly string _policySignature;
+
     public ContestPreviewHistoryCache(
         IDistributedCache cache,
-        ILogger<ContestPreviewHistoryCache> logger)
+        ILogger<ContestPreviewHistoryCache> logger,
+        SpreadContextConfig spreadConfig)
     {
         _cache = cache;
         _logger = logger;
+        _policySignature =
+            string.Join(",", spreadConfig.AtsKeyNumbers.Select(k => k.ToString("0.##", CultureInfo.InvariantCulture)))
+            + "g" + spreadConfig.AtsBucketMaxDistancePoints.ToString("0.##", CultureInfo.InvariantCulture);
     }
 
     /// <summary>
@@ -146,7 +158,7 @@ public sealed class ContestPreviewHistoryCache : IContestPreviewHistoryCache
     /// by bumping it, rather than feeding old shapes to new deserializers.
     /// </para>
     /// </remarks>
-    private static string BuildKey(GetContestPreviewHistoryQuery query, double? homeSpread)
+    private string BuildKey(GetContestPreviewHistoryQuery query, double? homeSpread)
     {
         var spread = homeSpread?.ToString("0.##", CultureInfo.InvariantCulture) ?? "none";
 
@@ -156,7 +168,19 @@ public sealed class ContestPreviewHistoryCache : IContestPreviewHistoryCache
         // v3: PriorSeasonGames became a ROLLING current+prior-season window
         // (2026-09-09); retires v2 entries that would keep serving the
         // prior-season-only lists until the line happened to move.
-        return $"preview-history:v3:{query.ContestId}:{query.MeetingCount}:{query.RecentGameCount}:s{spread}";
+        // v4: ATS bucket facts gained WindowGames and BAND semantics —
+        // [rung, next rung) instead of open-ended "rung+" (2026-09-12);
+        // retires v3 entries that would serve bare, over-broad "covered
+        // 16 of 28" counts with no game list for up to 7 days.
+        //
+        // The policy signature (rung ladder + distance guard) is in the key
+        // for the same reason the spread is: the band label, cohort and
+        // window list are all derived from it, and the ladder is
+        // operator-tunable at runtime (AppConfig + restart, no deploy). A
+        // retune produces different keys and recomputes, instead of serving
+        // the previous ladder's answers for up to 7 days — the exact stale
+        // window the v2/v3 bumps existed to close (PR #752 review).
+        return $"preview-history:v4:{query.ContestId}:{query.MeetingCount}:{query.RecentGameCount}:s{spread}:p{_policySignature}";
     }
 
     /// <summary>

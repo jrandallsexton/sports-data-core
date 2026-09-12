@@ -7,7 +7,7 @@ think to ask. For a USC -38.5 line over San José State:
 1. When is the last time USC beat **anyone** by 38.5+? (and who was it —
    a bowl team or a 3-9 doormat?)
 2. When is the last time anyone beat SJSU by 38.5+?
-3. How has USC done ATS as a 35+ favorite? SJSU as a 35+ underdog?
+3. How has USC done ATS as a 35–42 point favorite? SJSU as a 35–42 point underdog?
 
 Product positioning: **a dimension, not a toll booth.** The casual picks
 USC and moves on at full speed; the data geek gets the bigger picture one
@@ -57,13 +57,26 @@ Margin facts need neither — scores only.
 
 ### ATS bucket facts (`PreviewAtsBucketFactDto`)
 
-- Bucketed on football **key numbers** `[3, 7, 10, 14, 21, 28, 35]`:
-  largest key ≤ magnitude. "As a 35+ favorite" reads naturally and
-  accrues a sample where "as a 38.5-point favorite" would be n=0.
-  Magnitude < 3 ⇒ no ATS facts.
+- Bucketed on the football **key-number band** the live line sits in:
+  `[largest rung ≤ magnitude, next rung up)` over the ladder
+  `[3, 7, 10, 14, 21, 28, 35, 42, 49]`. A -12.5 spread buckets as
+  `[10, 14)` and renders "as a 10–14 point favorite" — never an
+  open-ended "10+", which pulled -49.5 FCS blowouts into a -12.5
+  question (2026-09-12). Above the top rung the bucket stays honestly
+  open-ended ("49+"). Magnitude below the lowest configured rung (3 on
+  the default ladder) ⇒ no ATS facts.
+- The ladder and the distance guard are **operator-tunable** via
+  AppConfig (`SportsData.Producer:SpreadContext:AtsKeyNumbers`, one
+  comma-separated string; `…:AtsBucketMaxDistancePoints`) — see
+  `SpreadContextConfig`. Missing/malformed values fall back to the code
+  defaults.
 - `Games` counts **decided** ATS results only (`SpreadWinner` null =
   push or unsourced ⇒ excluded).
-- Zero games is presented honestly: "no games with a line that large
+- `WindowGames` lists the games behind the count (newest first, capped
+  at 10): opponent, score, team-relative closing line, covered ✓/✗, and
+  the opponent's record that season. The count remains the authority on
+  totals — same contract as the margin facts' window list.
+- Zero games is presented honestly: "no games with a line in that range
   since 2022" — never implied as 0-for-0.
 
 ### Preview-safe predicates (all queries)
@@ -81,7 +94,7 @@ sentences composed client-side from the structured facts:
 > **Last time USC Trojans won by 38.5+:** Sep 6, 2025 — beat Georgia
 > Southern Eagles 59-20 (they went 3-9; 2-10 the season before). 6 such
 > wins in the last 5 seasons.
-> **San José State Spartans as a 35+ underdog:** covered 1 of 1 (since 2022).
+> **San José State Spartans as a 35–42 point underdog:** covered 1 of 1 (since 2022).
 
 The entire section is **gated by `shouldShowGambling`** on both platforms
 — the framing is spread-derived.

@@ -182,6 +182,28 @@ describe('StatsComparisonModal', () => {
     expect(screen.getByText('0.50')).toBeTruthy();
   });
 
+  it('renders "-" for null metric values but a real percent for genuine zero', () => {
+    // RzTdRate & co. are decimal? through the whole chain (a team with no
+    // red-zone possessions arrives as null). A fabricated '0.0%' is
+    // indistinguishable from a genuine 0% — null must render '-' (which
+    // parseNumeric maps to null: no bar, no favored tint), while a real
+    // 0 must still render '0.0%'.
+    renderModal(
+      comparisonWith({
+        awayMetrics: { gamesPlayed: 1, ypp: 6.0, rzTdRate: null },
+        homeMetrics: { gamesPlayed: 1, ypp: 5.0, rzTdRate: 0 },
+      })
+    );
+
+    fireEvent.press(screen.getByText('Metrics (1:0)'));
+
+    // Home's genuine 0% renders as a value; away's null (and every other
+    // absent pct/dec2 metric) renders '-', never a plausible zero.
+    expect(screen.getAllByText('0.0%')).toHaveLength(1);
+    expect(screen.getAllByText('-').length).toBeGreaterThan(0);
+    expect(screen.queryByText('0.00')).toBeNull();
+  });
+
   it('shows the Metrics tab with favored counts when both sides have real metrics', () => {
     renderModal(
       comparisonWith({

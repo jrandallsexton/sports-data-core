@@ -97,8 +97,13 @@ export type MetricSpec = {
   higherIsBetter: boolean;
 };
 
-const pct = (val: number | null | undefined) => (val ? (val * 100).toFixed(1) + '%' : '0.0%');
-const dec2 = (val: number | null | undefined) => val?.toFixed(2) ?? '0.00';
+// Null/absent metric values render '-' (parseNumeric maps it to null:
+// no bar, no favored tint) — a fabricated '0.0%' is indistinguishable
+// from a real 0%. RzTdRate/RzScoreRate/OppRzTdRate/FgPctShrunk are
+// nullable through the whole chain (no red-zone possessions, no
+// qualifying FG attempts).
+const pct = (val: number | null | undefined) => (val != null ? (val * 100).toFixed(1) + '%' : '-');
+const dec2 = (val: number | null | undefined) => (val != null ? val.toFixed(2) : '-');
 
 export const METRICS_SPEC: { category: string; metrics: MetricSpec[] }[] = [
   {
@@ -137,7 +142,7 @@ export const METRICS_SPEC: { category: string; metrics: MetricSpec[] }[] = [
       {
         label: 'Turnover Margin Per Drive',
         key: 'turnoverMarginPerDrive',
-        format: (val) => val?.toFixed(3) ?? '0.000',
+        format: (val) => (val != null ? val.toFixed(3) : '-'),
         higherIsBetter: true,
       },
     ],

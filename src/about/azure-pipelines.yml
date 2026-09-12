@@ -1,0 +1,95 @@
+# Build number doubles as the version shown in the site footer (injected as
+# the VITE_VERSION build-arg below). $(Rev:.r) is the per-day build counter.
+name: $(Date:yyyy.MM.dd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/about/**'
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - 'src/about/**'
+
+pool:
+  name: Default
+  demands:
+    - Agent.Name -equals Bender
+
+resources:
+  repositories:
+  - repository: self
+    type: git
+
+variables:
+- name: dockerRegistryServiceConnection
+  value: '805d6790-3b89-43f4-8551-f1a6b1c8f2f0'
+- name: imageRepository
+  value: 'sportsdataabout'
+- name: containerRegistry
+  value: 'sportdeets.azurecr.io'
+- name: dockerfilePath
+  value: '$(Build.SourcesDirectory)/src/about/Dockerfile'
+- name: tag
+  value: '$(Build.BuildId)'
+
+stages:
+  - stage: BuildAndTest
+    displayName: 'Build: About'
+    jobs:
+      - job: BuildAndTest
+        displayName: 'Build: About'
+        steps:
+          - task: NodeTool@0
+            displayName: 'Use Node.js 22'
+            inputs:
+              versionSpec: '22.x'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/about
+              npm ci
+            displayName: 'Install dependencies'
+
+          - script: |
+              cd $(Build.SourcesDirectory)/src/about
+              npm run build
+            displayName: 'Build (vite)'
+
+  - stage: BuildImagePushACR
+    displayName: 'Build About Image & Push to ACR'
+    dependsOn:
+      - BuildAndTest
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - job: BuildImage
+        displayName: 'Build and Push About Image'
+        steps:
+          - task: Docker@2
+            displayName: 'Build Image'
+            inputs:
+              command: build
+              repository: $(imageRepository)
+              dockerfile: $(dockerfilePath)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              buildContext: '$(Build.SourcesDirectory)/src/about'
+              arguments: '--build-arg VITE_VERSION=$(Build.BuildNumber)'
+              tags: |
+                $(tag)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push Image'
+            inputs:
+              command: push
+              repository: $(imageRepository)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+                latest

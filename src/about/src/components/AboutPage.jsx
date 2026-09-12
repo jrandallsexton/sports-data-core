@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import './AboutPage.css';
 import OverviewSection from './sections/OverviewSection';
+import MobileSection from './sections/MobileSection';
 import ArchitectureSection from './sections/ArchitectureSection';
 import AISection from './sections/AISection';
 import ObservabilitySection from './sections/ObservabilitySection';
@@ -16,11 +17,12 @@ const AboutPage = () => {
     { id: 'overview', label: 'Overview' },
     { id: 'gallery', label: 'Gallery' },
     { id: 'architecture', label: 'Architecture' },
+    { id: 'mobile', label: 'Mobile' },
     { id: 'ai', label: 'AI & Predictive Insights' },
     { id: 'observability', label: 'Observability' },
     { id: 'data-quality', label: 'Data Quality' },
     { id: 'devops', label: 'DevOps & GitOps' },
-    { id: 'future', label: 'Future Enhancements' }
+    { id: 'future', label: 'Roadmap' }
   ], []);
 
   const scrollToSection = (sectionId) => {
@@ -89,6 +91,7 @@ const AboutPage = () => {
         <OverviewSection id="overview" />
         <GallerySection id="gallery" />
         <ArchitectureSection id="architecture" />
+        <MobileSection id="mobile" />
         <AISection id="ai" />
         <ObservabilitySection id="observability" />
         <DataQualitySection id="data-quality" />
@@ -99,7 +102,7 @@ const AboutPage = () => {
       {/* Footer */}
       <footer className="about-footer">
         <p>
-          &copy; 2025 <a href="https://www.sportdeets.com" target="_blank" rel="noopener noreferrer">sportDeets<span className="tm-symbol">™</span></a>. Built with React, .NET, and Azure. {process.env.REACT_APP_VERSION || 'v0.0.0'}
+          &copy; 2026 <a href="https://www.sportdeets.com" target="_blank" rel="noopener noreferrer">sportDeets<span className="tm-symbol">™</span></a>. Built with React, .NET, and Kubernetes. {import.meta.env.VITE_VERSION || 'v0.0.0'}
         </p>
         <p className="footer-note">
           This portfolio showcases the technical architecture and capabilities of the <a href="https://www.sportdeets.com" target="_blank" rel="noopener noreferrer">sportDeets<span className="tm-symbol">™</span></a> platform.

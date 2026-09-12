@@ -205,8 +205,9 @@ const OverviewSection = ({ id }) => {
             <div className="tech-card">
               <h4>AI &amp; ML</h4>
               <p>
-                <strong>OpenRouter gateway</strong> - one integration, many
-                hosted models; per-model auditioning in a Model Lab
+                <strong>Hosted LLMs</strong> - production previews behind a
+                thin client abstraction; candidates auditioned through one
+                OpenRouter gateway in a Model Lab
               </p>
               <p>
                 <strong>Computed metrics engine</strong> - season-level

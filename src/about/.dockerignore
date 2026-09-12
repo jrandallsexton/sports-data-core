@@ -1,0 +1,32 @@
+# Dependencies — the builder stage runs its own npm ci; host/agent
+# node_modules must never merge over it (native packages differ per OS).
+node_modules
+npm-debug.log*
+
+# Build output — produced inside the builder stage
+build
+dist
+
+# Environment files
+.env
+.env.local
+
+# Version control
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+.DS_Store
+
+# Docker
+Dockerfile
+.dockerignore
+
+# CI/CD
+azure-pipelines.yml
+
+# Documentation
+README.md
+*.md

@@ -89,14 +89,15 @@ const AISection = ({ id }) => {
           onToggle={() => handleToggle("modellab")}
         >
           <p>
-            All model access goes through a single OpenRouter gateway
-            integration, which turns &ldquo;which LLM should write
-            previews?&rdquo; into a measurable question. An admin Model Lab
-            runs the same matchup and the same prompt across a matrix of
-            candidate models, captures every raw response, and records each
-            model&rsquo;s pick. Every prediction is graded against final
-            results - straight-up and against the spread - so model choice is
-            an accuracy leaderboard, not a vibe.
+            Production previews run on a hosted model behind a thin client
+            abstraction; candidate models are evaluated through a single
+            OpenRouter gateway integration, which turns &ldquo;which LLM
+            should write previews?&rdquo; into a measurable question. An
+            admin Model Lab runs the same matchup and the same prompt across
+            a matrix of candidate models, captures every raw response, and
+            records each model&rsquo;s pick. Every prediction is graded
+            against final results - straight-up and against the spread - so
+            model choice is an accuracy leaderboard, not a vibe.
           </p>
           <ul>
             <li>

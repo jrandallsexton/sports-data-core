@@ -149,16 +149,45 @@ public class LeagueWeekMatchupsCacheTests
     }
 
     [Fact]
-    public async Task SetAsync_Caches_WhenWeekMixesScheduledAndFinal()
+    public async Task SetAsync_Caches_WhenWeekMixesPlayedAndUpcoming()
     {
         var (cache, store) = BuildSut();
 
-        // Mid-week: some games played, none in progress. Safe to serve again.
-        var dto = DtoWithStatuses("STATUS_FINAL", "STATUS_SCHEDULED");
+        // The ordinary mid-week slate, modelled honestly: a game that has been
+        // PLAYED (final, kickoff in the past) alongside one still to come. This is
+        // the case the cache exists for — the long tail of pre- and post-game
+        // browsing — and it is what the `!IsFinal` guard inside KickoffHasPassed
+        // protects: without it a played game's past kickoff would read as "the
+        // scoreboard is moving" and the whole week would go uncacheable.
+        var dto = DtoWith(
+            ("STATUS_FINAL", Now.AddHours(-4)),
+            ("STATUS_SCHEDULED", Now.AddHours(2)));
 
         await cache.SetAsync(LeagueId, Week, dto);
 
         VerifyWritten(store, Times.Once());
+    }
+
+    [Fact]
+    public async Task GetAsync_ReturnsAnEntry_ForAWeekMixingPlayedAndUpcoming()
+    {
+        var (cache, store) = BuildSut();
+
+        // Read side of the same rule: a played game must not make the entry look
+        // stale on every subsequent read (and get evicted for its trouble).
+        var mixed = DtoWith(
+            ("STATUS_FINAL", Now.AddHours(-4)),
+            ("STATUS_SCHEDULED", Now.AddHours(2)));
+
+        store.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Encoding.UTF8.GetBytes(mixed.ToJson()));
+
+        var result = await cache.GetAsync(LeagueId, Week);
+
+        result.Should().NotBeNull("a finished game's past kickoff is settled, not moving");
+        store.Verify(
+            x => x.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never());
     }
 
     // ─── Kickoff is part of the policy, not just status ──────────────────────────

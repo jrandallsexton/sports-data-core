@@ -80,10 +80,19 @@ public class FinalizationReconcileJob<TDataContext> : IFinalizationReconcileJob
             .AsNoTracking()
             .Include(s => s.Competition).ThenInclude(c => c.Contest)
             .Include(s => s.Competition).ThenInclude(c => c.ExternalIds)
-            .Where(s => s.StreamStartedUtc != null &&
-                        s.StreamStartedUtc > lowerBound &&
-                        (s.Status == CompetitionStreamStatus.Active ||
-                         s.Status == CompetitionStreamStatus.Failed))
+            // StreamStartedUtc is set only AFTER the startup fetches succeed, so
+            // filtering on it non-null blinded this backstop to exactly the
+            // failures it most needed to catch: a stream that died before it ever
+            // attached. On 2026-09-13 four NFL streams failed their startup fetch
+            // during a home-internet outage, and this job reported "0 stranded"
+            // all afternoon while their cards sat on the first quarter.
+            //
+            // Streams that never started are bounded by ScheduledTimeUtc instead,
+            // keeping the same 48h cap on ESPN polling cost per pass.
+            .Where(s => (s.Status == CompetitionStreamStatus.Active ||
+                         s.Status == CompetitionStreamStatus.Failed) &&
+                        ((s.StreamStartedUtc != null && s.StreamStartedUtc > lowerBound) ||
+                         (s.StreamStartedUtc == null && s.ScheduledTimeUtc > lowerBound)))
             .ToListAsync(cancellationToken);
 
         // IsFinal is a computed property on ContestBase (FinalizedUtc.HasValue),

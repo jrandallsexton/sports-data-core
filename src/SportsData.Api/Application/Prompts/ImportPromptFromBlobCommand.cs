@@ -1,7 +1,7 @@
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Blobs;
 
-namespace SportsData.Api.Application.Admin.Prompts;
+namespace SportsData.Api.Application.Prompts;
 
 /// <summary>
 /// One-time seeding path: pull a legacy prompt blob out of the "prompts"

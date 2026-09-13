@@ -27,8 +27,6 @@ GET    /admin/model-providers                                          [AdminApi
 GET    /admin/models                                                   [AdminApiToken]
 GET    /admin/models/{modelId}                                         [AdminApiToken]
 GET    /admin/ops/{service}/{sport}/{league}/{**opPath}                [AdminApiToken]
-GET    /admin/prompts                                                  [AdminApiToken]
-GET    /admin/prompts/{promptId}                                       [AdminApiToken]
 GET    /admin/smack-lab/leagues                                        [AdminApiToken]
 GET    /admin/smack-lab/leagues/{leagueId:guid}/picks                  [AdminApiToken]
 GET    /admin/smack-lab/leagues/{leagueId:guid}/ratings                [AdminApiToken]
@@ -36,6 +34,8 @@ GET    /admin/smack-lab/phrases                                        [AdminApi
 GET    /api/messageboard/groups/{groupId:guid}/threads                 [Authorize]
 GET    /api/messageboard/my/threads-by-group                           [Authorize]
 GET    /api/messageboard/threads/{threadId:guid}/posts                 [Authorize]
+GET    /api/prompts                                                    [AdminApiToken]
+GET    /api/prompts/{promptId}                                         [AdminApiToken]
 GET    /api/{sport}/{league}/athletes/pickem                           (none)
 GET    /api/{sport}/{league}/athletes/{athleteId:guid}                 (none)
 GET    /api/{sport}/{league}/contests/{contestId:guid}                 (none)
@@ -126,9 +126,6 @@ POST   /admin/models/{modelId}/set-default                             [AdminApi
 POST   /admin/notifications/matchups/backfill                          [AdminApiToken]
 POST   /admin/notifications/test-push                                  [AdminApiToken]
 POST   /admin/ops/{service}/{sport}/{league}/{**opPath}                [AdminApiToken]
-POST   /admin/prompts                                                  [AdminApiToken]
-POST   /admin/prompts/import-blob                                      [AdminApiToken]
-POST   /admin/prompts/{promptId}/set-default                           [AdminApiToken]
 POST   /admin/signalr-debug/baseball-play                              [AdminApiToken]
 POST   /admin/signalr-debug/contest-status                             [AdminApiToken]
 POST   /admin/signalr-debug/football-play                              [AdminApiToken]
@@ -138,6 +135,9 @@ POST   /admin/smack-lab/ratings                                        [AdminApi
 POST   /admin/sourcing/franchise-seasons/{sport}/{seasonYear:int}      [AdminApiToken]
 POST   /api/messageboard/groups/{groupId:guid}/threads                 [Authorize]
 POST   /api/messageboard/threads/{threadId:guid}/posts                 [Authorize]
+POST   /api/prompts                                                    [AdminApiToken]
+POST   /api/prompts/import-blob                                        [AdminApiToken]
+POST   /api/prompts/{promptId}/set-default                             [AdminApiToken]
 POST   /preview/{previewId}/approve                                    [Authorize]
 POST   /preview/{previewId}/reject                                     [Authorize]
 POST   /system/league-contests/in-use                                  (none)
@@ -162,7 +162,7 @@ POST   /ui/leagues/{targetId:guid}/picks/import                        [Authoriz
 POST   /ui/leagues/{targetId:guid}/picks/import/preview                [Authorize]
 POST   /ui/picks                                                       [Authorize]
 PUT    /admin/models/{modelId}                                         [AdminApiToken]
-PUT    /admin/prompts/{promptId}                                       [AdminApiToken]
 PUT    /admin/smack-lab/phrases/{phraseId:guid}                        [AdminApiToken]
 PUT    /api/messageboard/posts/{postId:guid}/reaction                  [Authorize]
+PUT    /api/prompts/{promptId}                                         [AdminApiToken]
 PUT    /ui/leagues/{leagueId:guid}/player-lineups/{seasonYear:int}/{seasonWeek:int}/mine/slots/{slotId} [Authorize]

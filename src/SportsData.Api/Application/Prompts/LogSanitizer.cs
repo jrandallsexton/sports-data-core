@@ -1,4 +1,4 @@
-namespace SportsData.Api.Application.Admin.Prompts;
+namespace SportsData.Api.Application.Prompts;
 
 /// <summary>
 /// Strips control characters (CR/LF included) from operator-supplied

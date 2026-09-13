@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Common;
 
-namespace SportsData.Api.Application.Admin.Prompts;
+namespace SportsData.Api.Application.Prompts;
 
 public interface ISetDefaultPromptCommandHandler
 {

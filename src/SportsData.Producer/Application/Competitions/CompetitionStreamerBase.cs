@@ -333,7 +333,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
         _workerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        StartPollingWorkers(competitionDto, stream.Id, command, _workerCts.Token);
+        StartPollingWorkers(competitionDto, statusUri, competition, stream.Id, command, _workerCts.Token);
 
         var pollOutcome = await PollWhileInProgressAsync(statusUri, _workerCts.Token);
 
@@ -474,15 +474,89 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
     private void StartPollingWorkers(
         TCompetitionDto competitionDto,
+        Uri statusUri,
+        CompetitionBase competition,
         Guid correlationId,
         StreamCompetitionCommand command,
         CancellationToken cancellationToken)
     {
-        var refs = GetPollingTargets(competitionDto).ToList();
+        // Sport targets carry a bool; the scoreboard targets below need an explicit
+        // parent, because a score document's parent is its COMPETITOR, not the
+        // competition. Normalise to the parent id itself up front.
+        var targets = GetPollingTargets(competitionDto)
+            .Select(t => (
+                t.RefUri,
+                t.DocumentType,
+                t.IntervalSeconds,
+                ParentId: t.RequiresParentId ? command.CompetitionId.ToString() : null))
+            .ToList();
 
-        _logger.LogInformation("Spawning {Count} polling workers", refs.Count);
+        // Status is polled for EVERY sport, so it is spawned here rather than left
+        // to each sport's GetPollingTargets.
+        //
+        // It was missing entirely until 2026-09-12, and the consequence was severe:
+        // PollWhileInProgressAsync fetches this exact document every 30 seconds and
+        // reads Type.Name off it, but only to decide when to stop — the status was
+        // never handed to the pipeline, so CompetitionStatus in Postgres kept its
+        // pre-kickoff value for the whole game. Every surface reading canonical
+        // status (the league matchups endpoint, and so the web and mobile cards)
+        // showed a game in the fourth quarter as "scheduled" with no score, and only
+        // SignalR play events painted live state over it — which is why a cold load
+        // at halftime or between quarters stayed wrong for a long time.
+        //
+        // The URI is the one the state machine already trusts, and the downstream
+        // processor is transition-gated (ContestStatusChanged and the defensive
+        // ContestCompleted both fire only on a change), so re-requesting on a
+        // cadence is idempotent.
+        targets.Add((statusUri, DocumentType.EventCompetitionStatus, ScoreboardPollIntervalSeconds,
+            ParentId: command.CompetitionId.ToString()));
 
-        foreach (var (refUri, docType, intervalSeconds, requiresParentId) in refs)
+        // The other half of the same 2026-09-12 bug. Contest.AwayScore/HomeScore are
+        // written only by CompetitorScoreUpdatedConsumerHandler, which reacts to the
+        // competitor-score processor, which only ever ran when something requested a
+        // score document — and during a live game nothing did. So the canonical score
+        // sat at its pre-kickoff value alongside the frozen status.
+        //
+        // ParentId is the CANONICAL COMPETITOR id, not the competition: the score
+        // processor resolves its parent as a CompetitionCompetitor. Mirrors
+        // EventCompetitionStatusProcessorBase.RequestCompetitorScoreResourceAsync,
+        // including its per-competitor fault isolation — one unusable ref must not
+        // cost the other side its score.
+        foreach (var competitor in competition.Competitors)
+        {
+            var espnRef = competitor.ExternalIds
+                .FirstOrDefault(x => x.Provider == SourceDataProvider.Espn)?.SourceUrl;
+
+            if (string.IsNullOrWhiteSpace(espnRef) ||
+                !Uri.TryCreate(espnRef, UriKind.Absolute, out var competitorRef))
+            {
+                _logger.LogWarning(
+                    "Live score polling skipped - competitor has no usable Espn ref. CompetitorId={CompetitorId}",
+                    competitor.Id);
+                continue;
+            }
+
+            try
+            {
+                targets.Add((
+                    EspnUriMapper.CompetitionCompetitorRefToCompetitionCompetitorScoreRef(competitorRef),
+                    DocumentType.EventCompetitionCompetitorScore,
+                    ScoreboardPollIntervalSeconds,
+                    ParentId: competitor.Id.ToString()));
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Live score polling skipped - competitor ref is not a competition-competitor URI. CompetitorId={CompetitorId}, EspnRef={EspnRef}",
+                    competitor.Id,
+                    espnRef);
+            }
+        }
+
+        _logger.LogInformation("Spawning {Count} polling workers", targets.Count);
+
+        foreach (var (refUri, docType, intervalSeconds, parentId) in targets)
         {
             if (refUri == null)
             {
@@ -491,7 +565,7 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
             }
 
             SpawnPollingWorker(
-                () => PublishDocumentRequestAsync(correlationId, refUri, docType, requiresParentId, command, cancellationToken),
+                () => PublishDocumentRequestAsync(correlationId, refUri, docType, parentId, command, cancellationToken),
                 intervalSeconds,
                 docType,
                 cancellationToken);
@@ -499,6 +573,23 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
 
         _logger.LogInformation("All workers spawned successfully. Active workers: {Count}", _activeWorkers.Count);
     }
+
+    /// <summary>
+    /// How often the documents behind the scoreboard — competition status and each
+    /// competitor's score — are re-requested while the game is live. This is what
+    /// keeps status type, period, clock, and score current on every canonical read;
+    /// sports with slower-moving games override it upward.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately matched to the 30s cadence <see cref="PollWhileInProgressAsync"/>
+    /// already fetches status at, rather than something faster. ESPN rate-limits by
+    /// IP (403, not 429), so added request volume is the real cost here: three extra
+    /// documents per competition per interval, across every live game at once. A
+    /// cold load that is up to 30s behind is a different universe from one that is
+    /// three hours behind, and connected clients still get sub-second updates from
+    /// the SignalR play stream — canonical freshness only has to carry the cold read.
+    /// </remarks>
+    protected virtual int ScoreboardPollIntervalSeconds => 30;
 
     private async Task<PollOutcome> PollWhileInProgressAsync(Uri statusUri, CancellationToken cancellationToken)
     {
@@ -764,15 +855,13 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
         Guid correlationId,
         Uri refUri,
         DocumentType type,
-        bool requiresParentId,
+        string? parentId,
         StreamCompetitionCommand command,
         CancellationToken cancellationToken)
     {
-        var parentId = requiresParentId ? command.CompetitionId.ToString() : null;
-
         // Promoted from Debug to Info so steady-state worker activity is visible
-        // at default filtering. ~3-6 publishes/min total across all polling
-        // workers — not noisy. Closes the "healthy stream and hung stream look
+        // at default filtering. A few dozen publishes/min per competition across
+        // all polling workers — not noisy. Closes the "healthy stream and hung stream look
         // identical in Seq" observability gap that masked the silent-publish
         // failure mode prior to PR #362.
         _logger.LogInformation("Publishing {Type} document request for {Uri}", type, refUri);

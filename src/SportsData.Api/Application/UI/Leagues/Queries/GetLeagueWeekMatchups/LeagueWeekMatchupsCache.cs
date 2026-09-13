@@ -2,6 +2,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 
 using SportsData.Api.Application.UI.Leagues.Dtos;
+using SportsData.Core.Common;
 using SportsData.Core.Extensions;
 
 using System;
@@ -43,13 +44,16 @@ public sealed class LeagueWeekMatchupsCache : ILeagueWeekMatchupsCache
 
     private readonly IDistributedCache _cache;
     private readonly ILogger<LeagueWeekMatchupsCache> _logger;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public LeagueWeekMatchupsCache(
         IDistributedCache cache,
-        ILogger<LeagueWeekMatchupsCache> logger)
+        ILogger<LeagueWeekMatchupsCache> logger,
+        IDateTimeProvider dateTimeProvider)
     {
         _cache = cache;
         _logger = logger;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     /// <summary>
@@ -65,7 +69,31 @@ public sealed class LeagueWeekMatchupsCache : ILeagueWeekMatchupsCache
     {
         try
         {
-            return await _cache.GetRecordAsync<LeagueWeekMatchupsDto>(BuildKey(leagueId, week));
+            var cached = await _cache.GetRecordAsync<LeagueWeekMatchupsDto>(BuildKey(leagueId, week));
+
+            // A payload that was safe to write can stop being safe purely by the
+            // passage of time: it was cached while everything was scheduled, and
+            // then a game kicked off. The write side caps the TTL at the next
+            // kickoff so this should not happen, but expiry is not instant and an
+            // entry can outlive the pod version that wrote it. Re-checking on read
+            // makes the invariant hold at the moment it actually matters.
+            if (cached is not null && KickoffHasPassed(cached))
+            {
+                // Evict rather than just ignore. Without this every request for the
+                // rest of the entry's natural lifetime re-reads and re-deserializes
+                // a payload we have already judged unusable, and logs a line doing
+                // it — a burst per member per request across a kickoff wave.
+                await _cache.RemoveAsync(BuildKey(leagueId, week));
+
+                _logger.LogInformation(
+                    "League week matchups cache entry discarded: a contest has kicked off since it was written. leagueId={LeagueId}, week={Week}",
+                    leagueId,
+                    week);
+
+                return null;
+            }
+
+            return cached;
         }
         catch (Exception ex)
         {
@@ -136,8 +164,18 @@ public sealed class LeagueWeekMatchupsCache : ILeagueWeekMatchupsCache
     /// or unexpected ESPN status degrades to today's behaviour rather than silently
     /// pinning a stale scoreboard.
     /// </para>
+    /// <para>
+    /// Status alone is not enough, because status describes the payload at the moment it
+    /// was written and the TTL then outlives that moment. A slate cached at 3:29 with
+    /// every game STATUS_SCHEDULED stayed servable until 3:34 even though kickoff was
+    /// 3:30 — so a cold load in that window rendered an in-progress game as scheduled,
+    /// with no score, and nothing corrected it until the next SignalR push (which at
+    /// halftime or between quarters can be a long wait). Every kickoff wave re-armed the
+    /// window. The lifetime is therefore also capped at the next kickoff, and a
+    /// not-yet-final contest whose kickoff has already passed is not cached at all.
+    /// </para>
     /// </remarks>
-    private static TimeSpan? ResolveTtl(LeagueWeekMatchupsDto dto)
+    private TimeSpan? ResolveTtl(LeagueWeekMatchupsDto dto)
     {
         if (dto.Matchups.Count == 0)
             return PregameTtl;
@@ -147,9 +185,35 @@ public sealed class LeagueWeekMatchupsCache : ILeagueWeekMatchupsCache
         if (statuses.Any(s => !IsScheduled(s) && !IsFinal(s)))
             return null;
 
-        return statuses.All(IsFinal)
-            ? SettledTtl
+        if (statuses.All(IsFinal))
+            return SettledTtl;
+
+        // Something is still to come. A contest reading SCHEDULED past its own kickoff
+        // is the stale-scoreboard case itself: either it has started and the status row
+        // has not caught up, or it is postponed and its start time is meaningless. Both
+        // are payloads we must not serve twice. Refusing to cache is cheap here — the
+        // uncached path is the documented fallback, not a cliff.
+        if (KickoffHasPassed(dto))
+            return null;
+
+        var untilNextKickoff = dto.Matchups
+            .Where(m => !IsFinal(m.Status))
+            .Min(m => m.StartDateUtc) - _dateTimeProvider.UtcNow();
+
+        return untilNextKickoff < PregameTtl
+            ? untilNextKickoff
             : PregameTtl;
+    }
+
+    /// <summary>
+    /// True when some contest that has not finished is already past its kickoff, so the
+    /// payload's scoreboard is either moving now or about to.
+    /// </summary>
+    private bool KickoffHasPassed(LeagueWeekMatchupsDto dto)
+    {
+        var now = _dateTimeProvider.UtcNow();
+
+        return dto.Matchups.Any(m => !IsFinal(m.Status) && m.StartDateUtc <= now);
     }
 
     private static bool IsScheduled(string? status) =>

@@ -1,13 +1,13 @@
 using Moq;
 
-using SportsData.Api.Application.Admin.Prompts;
+using SportsData.Api.Application.Prompts;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Blobs;
 
 using Xunit;
 
-namespace SportsData.Api.Tests.Unit.Application.Admin.Prompts
+namespace SportsData.Api.Tests.Unit.Application.Prompts
 {
     public class CreatePromptCommandHandlerTests : ApiTestBase<CreatePromptCommandHandler>
     {

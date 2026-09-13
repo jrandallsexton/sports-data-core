@@ -166,6 +166,16 @@ public class LeagueWeekMatchupsCacheTests
         await cache.SetAsync(LeagueId, Week, dto);
 
         VerifyWritten(store, Times.Once());
+
+        // The lifetime matters as much as the write. The kickoff cap must consider
+        // only the UPCOMING kickoff — 2h out, so the 5-minute pregame TTL wins. Let
+        // the played game's kickoff into that Min and the span becomes -4h, which
+        // ResolveTtl passes straight through (it rejects null, not negatives) and
+        // Redis is handed a negative expiry: an entry born expired, or a throw the
+        // write path swallows. Either way the mid-week slate silently stops caching
+        // while a write-happened assertion still goes green.
+        CapturedFrom(store)!.AbsoluteExpirationRelativeToNow
+            .Should().Be(TimeSpan.FromMinutes(5));
     }
 
     [Fact]

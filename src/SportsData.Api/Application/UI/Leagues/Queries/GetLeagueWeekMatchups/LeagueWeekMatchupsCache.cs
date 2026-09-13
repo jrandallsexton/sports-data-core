@@ -79,6 +79,12 @@ public sealed class LeagueWeekMatchupsCache : ILeagueWeekMatchupsCache
             // makes the invariant hold at the moment it actually matters.
             if (cached is not null && KickoffHasPassed(cached))
             {
+                // Evict rather than just ignore. Without this every request for the
+                // rest of the entry's natural lifetime re-reads and re-deserializes
+                // a payload we have already judged unusable, and logs a line doing
+                // it — a burst per member per request across a kickoff wave.
+                await _cache.RemoveAsync(BuildKey(leagueId, week));
+
                 _logger.LogInformation(
                     "League week matchups cache entry discarded: a contest has kicked off since it was written. leagueId={LeagueId}, week={Week}",
                     leagueId,

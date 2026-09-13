@@ -38,7 +38,9 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
     private async Task<(ContestBase contest, CompetitionBase competition, CompetitionStream stream)> CreateTestGameAsync(
         Guid? competitionId = null,
         Guid? contestId = null,
-        bool isFinal = false)
+        bool isFinal = false,
+        string? badCompetitorRef = null,
+        bool useBadCompetitorRef = false)
     {
         var compId = competitionId ?? Guid.NewGuid();
         var contId = contestId ?? Guid.NewGuid();
@@ -89,7 +91,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
             // score URI per competitor from these.
             Competitors = new List<CompetitionCompetitorBase>
             {
-                BuildCompetitor(compId, "home", "333"),
+                BuildCompetitor(compId, "home", "333", badCompetitorRef, useBadCompetitorRef),
                 BuildCompetitor(compId, "away", "444")
             }
         };
@@ -118,9 +120,31 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         return (contest, competition, stream);
     }
 
-    private static FootballCompetitionCompetitor BuildCompetitor(Guid competitionId, string homeAway, string espnId)
+    /// <param name="overrideRef">Replaces the derived ESPN ref; null with
+    /// <paramref name="useOverrideRef"/> true means "no Espn external id at all".</param>
+    private static FootballCompetitionCompetitor BuildCompetitor(
+        Guid competitionId,
+        string homeAway,
+        string espnId,
+        string? overrideRef = null,
+        bool useOverrideRef = false)
     {
         var id = Guid.NewGuid();
+
+        if (useOverrideRef && overrideRef is null)
+        {
+            // No ESPN external id at all - the first fault-isolation branch.
+            return new FootballCompetitionCompetitor
+            {
+                Id = id,
+                CompetitionId = competitionId,
+                FranchiseSeasonId = Guid.NewGuid(),
+                HomeAway = homeAway,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid(),
+                ExternalIds = new List<CompetitionCompetitorExternalId>()
+            };
+        }
 
         return new FootballCompetitionCompetitor
         {
@@ -137,7 +161,7 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
                     Id = Guid.NewGuid(),
                     CompetitionCompetitorId = id,
                     Provider = SourceDataProvider.Espn,
-                    SourceUrl = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628380/competitions/401628380/competitors/{espnId}",
+                    SourceUrl = overrideRef ?? $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628380/competitions/401628380/competitors/{espnId}",
                     SourceUrlHash = $"competitor-hash-{espnId}",
                     Value = espnId,
                     CreatedUtc = DateTime.UtcNow,
@@ -663,17 +687,132 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         // CANONICAL COMPETITOR id — the score processor resolves its parent as a
         // CompetitionCompetitor, not a Competition.
         var competitorIds = competition.Competitors.Select(c => c.Id.ToString()).ToList();
-        competitorIds.Should().NotBeEmpty("the fixture must have competitors for this assertion to mean anything");
+        competitorIds.Should().HaveCount(2, "the fixture must have both sides for this assertion to mean anything");
+
+        // Asserted PER COMPETITOR, not as an OR over the set: a regression that
+        // polled only one side would leave the other team's score frozen — the
+        // exact symptom this PR exists to fix — and an any-of matcher would pass.
+        foreach (var competitorId in competitorIds)
+        {
+            eventBus.Verify(
+                x => x.Publish(
+                    It.Is<DocumentRequested>(d =>
+                        d.DocumentType == DocumentType.EventCompetitionCompetitorScore &&
+                        d.ParentId == competitorId),
+                    It.IsAny<CancellationToken>()),
+                Times.AtLeastOnce(),
+                $"competitor {competitorId} must be polled for its score, or that side's score stays frozen");
+        }
+    }
+
+    /// <summary>
+    /// One competitor with an unusable ESPN ref must not cost the other side its
+    /// score polling.
+    /// </summary>
+    /// <remarks>
+    /// Pins the per-competitor fault isolation the score fan-out claims: the
+    /// missing/unparsable-ref branch and the EspnUriMapper ArgumentException branch
+    /// both have to skip just their own competitor.
+    /// </remarks>
+    [Theory]
+    [InlineData(null)]                                  // no Espn external id at all
+    [InlineData("not-an-absolute-uri")]                 // unparsable
+    [InlineData("http://sports.core.api.espn.com/v2/")] // parses, but not a competitor ref
+    public async Task ExecuteAsync_StillPollsTheGoodCompetitorsScore_WhenTheOtherRefIsUnusable(string? badRef)
+    {
+        var (contest, competition, _) = await CreateTestGameAsync(
+            badCompetitorRef: badRef,
+            useBadCompetitorRef: true);
+
+        var competitionJson = """
+        {
+            "$ref": "http://test.com/competition",
+            "probabilities": { "$ref": "http://test.com/probabilities" },
+            "drives": { "$ref": "http://test.com/drives" },
+            "details": { "$ref": "http://test.com/plays" },
+            "situation": { "$ref": "http://test.com/situation" },
+            "leaders": { "$ref": "http://test.com/leaders" }
+        }
+        """;
+
+        var statusJson = """
+        {
+            "type": { "name": "STATUS_IN_PROGRESS" },
+            "period": 3,
+            "displayClock": "7:21"
+        }
+        """;
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("401628380/competitions/401628380")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() => new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(competitionJson)
+            });
+
+        // Registered after the competition matcher on purpose: the status URI
+        // contains the competition path too, and Moq resolves to the LAST match.
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("status")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() => new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(statusJson)
+            });
+
+        var httpClient = new HttpClient(handlerMock.Object);
+        var factory = new Mock<IHttpClientFactory>();
+        factory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
+        Mocker.Use(factory.Object);
+
+        var eventBus = Mocker.GetMock<IEventBus>();
+
+        var command = new StreamCompetitionCommand
+        {
+            CompetitionId = competition.Id,
+            ContestId = contest.Id,
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2025,
+            DataProvider = SourceDataProvider.Espn,
+            CorrelationId = Guid.NewGuid()
+        };
+
+        var sut = Mocker.CreateInstance<FootballCompetitionStreamer>();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+
+        try
+        {
+            await sut.ExecuteAsync(command, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected: the live poll loop runs until cancelled.
+        }
+
+        // The healthy competitor is the one whose ref was left intact.
+        var goodCompetitorId = competition.Competitors
+            .Single(c => c.ExternalIds.Any(x => x.SourceUrl != null && x.SourceUrl.Contains("/competitors/444")))
+            .Id.ToString();
 
         eventBus.Verify(
             x => x.Publish(
                 It.Is<DocumentRequested>(d =>
                     d.DocumentType == DocumentType.EventCompetitionCompetitorScore &&
-                    d.ParentId != null &&
-                    competitorIds.Contains(d.ParentId)),
+                    d.ParentId == goodCompetitorId),
                 It.IsAny<CancellationToken>()),
             Times.AtLeastOnce(),
-            "a live game must keep asking for competitor scores, or the canonical score stays frozen at 0");
+            "one unusable competitor ref must not cost the other side its score polling");
     }
 
     #endregion

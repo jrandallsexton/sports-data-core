@@ -242,6 +242,12 @@ public class LeagueWeekMatchupsCacheTests
         var result = await cache.GetAsync(LeagueId, Week);
 
         result.Should().BeNull("a kicked-off contest must fall through to the live read");
+
+        // Evicted, not merely ignored: otherwise every request until natural
+        // expiry re-reads and re-deserializes a payload already judged unusable.
+        store.Verify(
+            x => x.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Once());
     }
 
     [Fact]

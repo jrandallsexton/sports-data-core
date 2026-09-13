@@ -621,6 +621,13 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         await act.Should().NotThrowAsync(
             "one transient failure must not cost a stream its whole game");
 
+        // Pins that the STATUS retry is what saved it. Without this the test
+        // could pass on some other path and still go green if the status retry
+        // were removed. (The competition matcher cannot absorb these: the
+        // competition URL does not contain "status" — verified — so only the
+        // status URI matches both setups, and Moq takes the last.)
+        statusCalls.Should().Be(2, "the first status call failed and the retry succeeded");
+
         var updated = await FootballDataContext.CompetitionStreams
             .FirstAsync(x => x.CompetitionId == competition.Id);
         updated.Status.Should().Be(CompetitionStreamStatus.Completed,

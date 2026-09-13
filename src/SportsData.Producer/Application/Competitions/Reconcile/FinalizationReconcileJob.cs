@@ -87,12 +87,29 @@ public class FinalizationReconcileJob<TDataContext> : IFinalizationReconcileJob
             // during a home-internet outage, and this job reported "0 stranded"
             // all afternoon while their cards sat on the first quarter.
             //
-            // Streams that never started are bounded by ScheduledTimeUtc instead,
-            // keeping the same 48h cap on ESPN polling cost per pass.
+            // AwaitingStart belongs here alongside Active and Failed. It is the
+            // status a stream holds for the WHOLE startup window, and the retry
+            // added in this PR widened that window from one request to as much as
+            // ten minutes. A pod OOM-killed inside it — the case this job's own
+            // docs name — runs neither catch block, so the row is stranded at
+            // AwaitingStart with StreamStartedUtc null. The scheduler will not
+            // touch it either: TryRescheduleAsync only reconsiders Scheduled rows.
+            //
+            // Scheduled is deliberately NOT included: those belong to the
+            // scheduler, and because the bound below is a LOWER bound, admitting
+            // them would drag every not-yet-played game of the next 48h into an
+            // ESPN-polling pass.
+            //
+            // Never-started rows are bounded by ScheduledTimeUtc instead, on both
+            // ends — same 48h cap on polling cost, and never a game whose kickoff
+            // has not arrived.
             .Where(s => (s.Status == CompetitionStreamStatus.Active ||
-                         s.Status == CompetitionStreamStatus.Failed) &&
+                         s.Status == CompetitionStreamStatus.Failed ||
+                         s.Status == CompetitionStreamStatus.AwaitingStart) &&
                         ((s.StreamStartedUtc != null && s.StreamStartedUtc > lowerBound) ||
-                         (s.StreamStartedUtc == null && s.ScheduledTimeUtc > lowerBound)))
+                         (s.StreamStartedUtc == null &&
+                          s.ScheduledTimeUtc > lowerBound &&
+                          s.ScheduledTimeUtc <= now)))
             .ToListAsync(cancellationToken);
 
         // IsFinal is a computed property on ContestBase (FinalizedUtc.HasValue),

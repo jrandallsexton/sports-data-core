@@ -82,7 +82,9 @@ public class FinalizationReconcileJobTests : ProducerTestBase<FinalizationReconc
         SeedStrandedAsync(
             DateTime streamStartedUtc,
             CompetitionStreamStatus status = CompetitionStreamStatus.Failed,
-            bool contestFinalized = false)
+            bool contestFinalized = false,
+        bool neverStarted = false,
+        DateTime? scheduledTimeUtc = null)
     {
         var contestId = Guid.NewGuid();
         var competitionId = Guid.NewGuid();
@@ -132,10 +134,10 @@ public class FinalizationReconcileJobTests : ProducerTestBase<FinalizationReconc
             CompetitionId = competitionId,
             Competition = competition,
             SeasonWeekId = Guid.NewGuid(),
-            ScheduledTimeUtc = streamStartedUtc,
+            ScheduledTimeUtc = scheduledTimeUtc ?? streamStartedUtc,
             BackgroundJobId = "test-job",
             Status = status,
-            StreamStartedUtc = streamStartedUtc,
+            StreamStartedUtc = neverStarted ? null : streamStartedUtc,
             FailureReason = status == CompetitionStreamStatus.Failed ? "Cancelled by external request" : null,
             RetryCount = 0,
             CreatedUtc = FixedNow,
@@ -264,5 +266,124 @@ public class FinalizationReconcileJobTests : ProducerTestBase<FinalizationReconc
         Mocker.GetMock<IEventBus>().Verify(
             b => b.Publish(It.IsAny<ContestCompleted>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    /// <summary>
+    /// The never-started arm: a stream that died during startup, so
+    /// StreamStartedUtc was never set. This is the exact shape of the
+    /// 2026-09-13 outage, and before the fix this job could not see it.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_NeverStartedStreamFinalPerEspn_PublishesEventsAndMarksCompleted()
+    {
+        SetFixedTime();
+        SetSport(Sport.FootballNcaa);
+        SetupDeliveryScopeNoop();
+        SetupEspnHttp(HttpStatusCode.OK, FinalStatusJson);
+
+        var (contest, _, stream) = await SeedStrandedAsync(
+            streamStartedUtc: FixedNow.AddHours(-4),
+            status: CompetitionStreamStatus.Failed,
+            neverStarted: true,
+            scheduledTimeUtc: FixedNow.AddHours(-4));
+
+        var sut = Mocker.CreateInstance<FinalizationReconcileJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync(CancellationToken.None);
+
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(It.IsAny<ContestCompleted>(), It.IsAny<CancellationToken>()),
+            Times.Once(),
+            "a stream that never attached is exactly what this backstop exists to rescue");
+
+        var refreshed = await FootballDataContext.CompetitionStreams
+            .FirstAsync(x => x.Id == stream.Id);
+        refreshed.Status.Should().Be(CompetitionStreamStatus.Completed);
+    }
+
+    /// <summary>
+    /// A stream stranded at AwaitingStart — the status held for the whole
+    /// startup window, which the retry in this PR widened to as much as ten
+    /// minutes. A pod killed inside it writes no status at all.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_NeverStartedStreamStuckAwaitingStart_IsReconciled()
+    {
+        SetFixedTime();
+        SetSport(Sport.FootballNcaa);
+        SetupDeliveryScopeNoop();
+        SetupEspnHttp(HttpStatusCode.OK, FinalStatusJson);
+
+        var (_, _, stream) = await SeedStrandedAsync(
+            streamStartedUtc: FixedNow.AddHours(-4),
+            status: CompetitionStreamStatus.AwaitingStart,
+            neverStarted: true,
+            scheduledTimeUtc: FixedNow.AddHours(-4));
+
+        var sut = Mocker.CreateInstance<FinalizationReconcileJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync(CancellationToken.None);
+
+        var refreshed = await FootballDataContext.CompetitionStreams
+            .FirstAsync(x => x.Id == stream.Id);
+        refreshed.Status.Should().Be(CompetitionStreamStatus.Completed);
+    }
+
+    /// <summary>
+    /// The 48h cap applies to the never-started arm too, or a backfill of old
+    /// rows would turn every pass into a large ESPN polling bill.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_NeverStartedStreamOlderThan48h_IsOutsideWindowAndSkipped()
+    {
+        SetFixedTime();
+        SetSport(Sport.FootballNcaa);
+        SetupDeliveryScopeNoop();
+        SetupEspnHttp(HttpStatusCode.OK, FinalStatusJson);
+
+        var (_, _, stream) = await SeedStrandedAsync(
+            streamStartedUtc: FixedNow.AddHours(-72),
+            status: CompetitionStreamStatus.Failed,
+            neverStarted: true,
+            scheduledTimeUtc: FixedNow.AddHours(-72));
+
+        var sut = Mocker.CreateInstance<FinalizationReconcileJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync(CancellationToken.None);
+
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(It.IsAny<ContestCompleted>(), It.IsAny<CancellationToken>()),
+            Times.Never());
+
+        var refreshed = await FootballDataContext.CompetitionStreams
+            .FirstAsync(x => x.Id == stream.Id);
+        refreshed.Status.Should().Be(CompetitionStreamStatus.Failed);
+    }
+
+    /// <summary>
+    /// A game whose kickoff has not arrived must never be polled, or the lower
+    /// bound alone would drag every scheduled game of the next 48h into a pass.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_NeverStartedStreamNotYetKickedOff_IsSkipped()
+    {
+        SetFixedTime();
+        SetSport(Sport.FootballNcaa);
+        SetupDeliveryScopeNoop();
+        SetupEspnHttp(HttpStatusCode.OK, FinalStatusJson);
+
+        var (_, _, stream) = await SeedStrandedAsync(
+            streamStartedUtc: FixedNow.AddHours(-4),
+            status: CompetitionStreamStatus.AwaitingStart,
+            neverStarted: true,
+            scheduledTimeUtc: FixedNow.AddHours(3));
+
+        var sut = Mocker.CreateInstance<FinalizationReconcileJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync(CancellationToken.None);
+
+        Mocker.GetMock<IEventBus>().Verify(
+            x => x.Publish(It.IsAny<ContestCompleted>(), It.IsAny<CancellationToken>()),
+            Times.Never());
     }
 }

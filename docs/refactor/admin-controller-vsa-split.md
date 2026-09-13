@@ -413,6 +413,25 @@ controller (~50 lines each, hand-built payloads). They already have a
 
 ## Rules for every move PR
 
+0. **Decide keep / delete / merge before deciding where it goes.** This is an
+   inventory exercise, not a filing exercise. Every endpoint migrated is one
+   maintained forever, in a nicer folder. A refactor that ends at 38 endpoints
+   is a better outcome than one that faithfully relocates all 50, and
+   "it moved" is not the success condition.
+
+   Ask in order: *Is anything calling this?* — checked across the web app,
+   Bruno, smoke tests, other services, and scripts, not just one of them.
+   *Is it duplicated?* *Does the feature behind it still exist?* Deleting is
+   cheap and reversible: git keeps it, and re-adding it later in the new
+   location is minutes. Carrying it is what costs.
+
+   Already found by asking: `admin/contests/refresh` is a hand-written proxy
+   to a Producer endpoint that `AdminOpsProxyController`'s allowlist **also**
+   exposes (`producer` → `contests/refresh`). Two doors, one room. The
+   hand-written one does add per-sport pod routing via `ModeMapper`, so it may
+   still earn its place — but that is a decision to make, not a move to
+   perform.
+
 1. **No behavior change.** Move code; do not improve it. Renames, signature
    changes, collapsing near-duplicates, and `Result<T>` clean-up are all
    follow-ups with their own PRs. This is the rule that keeps each PR

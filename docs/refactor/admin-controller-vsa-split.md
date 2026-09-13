@@ -108,8 +108,38 @@ no admin route whatsoever.
 
 ### Who actually uses the shared key
 
-Only **Bruno collections** — ~20 `.yml` files of operator tooling — plus one
-stray reference in a debug SQL comment. Nothing in any shipped client.
+Two consumers, and the second one matters more than the first:
+
+- **Bruno collections** — **48** `.yml` files of hand-driven operator tooling.
+- **The post-deploy smoke tests.** `SmokeTestFixture` sets `X-Admin-Token` on
+  every request from `SMOKE_TEST_API_KEY`, and the smoke job runs
+  automatically after **every production deploy**
+  (`deploy-services-prod-auto.yml`).
+
+Nothing in any shipped client: zero occurrences in `src/UI`, and mobile calls
+no admin route at all.
+
+> **Correction, 2026-09-13:** an earlier pass of this document said the key was
+> used "only by Bruno, ~20 files, nothing else." Both halves were wrong — the
+> Bruno count is 48, and the smoke suite was missed entirely. The distinction
+> matters: Bruno is hand-driven and can absorb a token-capture step, whereas
+> the smoke tests are unattended CI that runs on every deploy.
+
+### The dependency that follows
+
+Retiring `X-Admin-Token` **breaks production deploy verification** until
+`SmokeTestFixture` is migrated. That is not a blocker, but it is a required
+line item and it has to land first or in the same change:
+
+- Give the smoke suite a service account with the Admin role and have the
+  fixture exchange credentials for a token at start-up, or
+- Keep a break-glass key scoped to exactly the endpoints the smoke tests
+  touch, or
+- Accept the key surviving for CI only, with Bruno moved to claims.
+
+The middle option is probably the sweet spot: the smoke tests exercise a small,
+known, read-mostly set, which is a far smaller blast radius than "every admin
+endpoint".
 
 ### Why the key is the defect, concretely
 
@@ -404,6 +434,7 @@ Ordered by isolation, so the riskiest work happens after the pattern is proven:
 
 0. **Settle the auth model** — retire or demote `X-Admin-Token`, move to
    `[Authorize(Roles = "Admin")]` / named policies, decide the Bruno story
+   **and migrate `SmokeTestFixture`, which gates every production deploy**
 1. **Settle the namespace question** (root / `api/` / neutral prefix)
 2. Route-table snapshot test (asserting the *new* auth policy per endpoint)
 3. Full old→new route table, reviewed in one sitting

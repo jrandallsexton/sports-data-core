@@ -39,6 +39,14 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
     private const int MaxConsecutiveFailures = 10;
 
     /// <summary>
+    /// Gap between attempts at the startup fetches. Matches
+    /// <see cref="WaitForLiveStartAsync"/>'s cadence: long enough to ride out a
+    /// brief network blip, short enough that a stream attaches promptly once
+    /// the network returns.
+    /// </summary>
+    protected virtual TimeSpan StartupFetchRetryDelay => TimeSpan.FromSeconds(20);
+
+    /// <summary>
     /// Why WaitForLiveStartAsync stopped. Drives whether ExecuteAsync proceeds
     /// to spawn polling workers (StartDetected) or short-circuits to a
     /// terminal state (AlreadyFinal, Timeout).
@@ -226,23 +234,17 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
         CompetitionStream stream,
         CancellationToken cancellationToken)
     {
-        var competitionDto = await GetCompetitionAsync(new Uri(externalId.SourceUrl), cancellationToken);
-        if (competitionDto == null)
-        {
-            _logger.LogError("Competition fetch failed from ESPN");
-            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition fetch failed");
-            return;
-        }
+        var competitionDto = await FetchOrThrowAsync(
+            ct => GetCompetitionAsync(new Uri(externalId.SourceUrl), ct),
+            "Competition fetch",
+            cancellationToken);
 
         var statusUri = EspnUriMapper.CompetitionRefToCompetitionStatusRef(new Uri(externalId.SourceUrl));
 
-        var status = await GetStatusAsync(statusUri, cancellationToken);
-        if (status == null)
-        {
-            _logger.LogError("Initial status fetch failed");
-            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Initial status fetch failed");
-            return;
-        }
+        var status = await FetchOrThrowAsync(
+            ct => GetStatusAsync(statusUri, ct),
+            "Initial status fetch",
+            cancellationToken);
 
         switch (status.Type.Name)
         {
@@ -277,13 +279,10 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                         // Without this refresh, every poller logs "URI is null",
                         // StartPollingWorkers spawns Active workers: 0, and the
                         // monitoring loop runs silently for the full game.
-                        competitionDto = await GetCompetitionAsync(new Uri(externalId.SourceUrl), cancellationToken);
-                        if (competitionDto == null)
-                        {
-                            _logger.LogError("Competition re-fetch after live start failed");
-                            await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Competition re-fetch after live start failed");
-                            return;
-                        }
+                        competitionDto = await FetchOrThrowAsync(
+                            ct => GetCompetitionAsync(new Uri(externalId.SourceUrl), ct),
+                            "Competition re-fetch after live start",
+                            cancellationToken);
                         break;
 
                     case LiveStartOutcome.AlreadyFinal:
@@ -356,6 +355,69 @@ public abstract class CompetitionStreamerBase<TCompetitionDto> : ICompetitionBro
                 await UpdateStreamStatusAsync(stream, CompetitionStreamStatus.Failed, cancellationToken, "Stream exceeded max duration without STATUS_FINAL");
                 break;
         }
+    }
+
+    /// <summary>
+    /// Retry a startup fetch up to <see cref="MaxConsecutiveFailures"/> times and
+    /// then THROW rather than returning null.
+    /// </summary>
+    /// <remarks>
+    /// Both halves matter, and a storm on 2026-09-13 proved it.
+    /// <para>
+    /// The live loops already tolerate ten consecutive failures and throw when
+    /// they give up, so the outer catch marks the stream Failed and rethrows and
+    /// Hangfire re-queues the job. The two startup fetches did neither: a single
+    /// socket error marked the stream Failed and <c>return</c>ed, which Hangfire
+    /// reads as a successful job.
+    /// </para>
+    /// <para>
+    /// A 15-minute home-internet outage therefore killed a healthy stream's
+    /// RETRY rather than the stream itself. Run 1 exhausted its ten status
+    /// polls, threw, and was correctly re-queued. Run 2 landed inside the same
+    /// outage, failed on its very first call, and was politely filed as done —
+    /// so the stream stayed dead for the rest of the game, long after the
+    /// network came back, and the scoreboard sat on the first quarter.
+    /// </para>
+    /// <para>
+    /// Throwing is the load-bearing part. Ten attempts buys roughly three
+    /// minutes, which does not by itself survive a long outage; what survives it
+    /// is Hangfire retrying the whole job afterwards, which only happens if this
+    /// fails loudly.
+    /// </para>
+    /// </remarks>
+    private async Task<T> FetchOrThrowAsync<T>(
+        Func<CancellationToken, Task<T?>> fetch,
+        string what,
+        CancellationToken cancellationToken)
+        where T : class
+    {
+        for (var attempt = 1; attempt <= MaxConsecutiveFailures; attempt++)
+        {
+            var result = await fetch(cancellationToken);
+
+            if (result is not null)
+            {
+                if (attempt > 1)
+                    _logger.LogInformation("{What} succeeded on attempt {Attempt}", what, attempt);
+
+                return result;
+            }
+
+            if (attempt == MaxConsecutiveFailures)
+                break;
+
+            _logger.LogWarning(
+                "{What} failed ({Attempt}/{Max}); retrying in {DelaySeconds}s",
+                what, attempt, MaxConsecutiveFailures, StartupFetchRetryDelay.TotalSeconds);
+
+            await Task.Delay(StartupFetchRetryDelay, cancellationToken);
+        }
+
+        // Thrown, not returned: the outer catch in ExecuteAsync marks the stream
+        // Failed and rethrows so Hangfire re-queues onto a healthy window. The
+        // Failed write is diagnostic-only — the next run overwrites it.
+        throw new InvalidOperationException(
+            $"{what} failed {MaxConsecutiveFailures} times; giving up so the job can be retried.");
     }
 
     private async Task<TCompetitionDto?> GetCompetitionAsync(Uri uri, CancellationToken cancellationToken)

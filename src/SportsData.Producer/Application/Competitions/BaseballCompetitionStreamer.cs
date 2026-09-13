@@ -25,6 +25,11 @@ public class BaseballCompetitionStreamer : CompetitionStreamerBase<EspnBaseballE
     {
     }
 
+    /// Baseball has no game clock, so the scoreboard moves only on runs and
+    /// half-innings — a slower cadence than football's, in line with this
+    /// streamer's other intervals.
+    protected override int ScoreboardPollIntervalSeconds => 60;
+
     protected override IEnumerable<(Uri? RefUri, DocumentType DocumentType, int IntervalSeconds, bool RequiresParentId)>
         GetPollingTargets(EspnBaseballEventCompetitionDto competitionDto)
     {

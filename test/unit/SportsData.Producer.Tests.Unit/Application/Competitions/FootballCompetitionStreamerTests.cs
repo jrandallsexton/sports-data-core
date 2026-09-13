@@ -11,6 +11,7 @@ using Moq.Protected;
 
 using SportsData.Core.Common;
 using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Documents;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Common;
 using SportsData.Core.Infrastructure.DataSources.Espn.Dtos.Football;
 using SportsData.Producer.Application.Competitions;
@@ -83,6 +84,13 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
                     CreatedUtc = DateTime.UtcNow,
                     CreatedBy = Guid.NewGuid()
                 }
+            },
+            // Both sides, each with an ESPN ref — live score polling derives one
+            // score URI per competitor from these.
+            Competitors = new List<CompetitionCompetitorBase>
+            {
+                BuildCompetitor(compId, "home", "333"),
+                BuildCompetitor(compId, "away", "444")
             }
         };
 
@@ -108,6 +116,35 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         FootballDataContext.ChangeTracker.Clear();
 
         return (contest, competition, stream);
+    }
+
+    private static FootballCompetitionCompetitor BuildCompetitor(Guid competitionId, string homeAway, string espnId)
+    {
+        var id = Guid.NewGuid();
+
+        return new FootballCompetitionCompetitor
+        {
+            Id = id,
+            CompetitionId = competitionId,
+            FranchiseSeasonId = Guid.NewGuid(),
+            HomeAway = homeAway,
+            CreatedUtc = DateTime.UtcNow,
+            CreatedBy = Guid.NewGuid(),
+            ExternalIds = new List<CompetitionCompetitorExternalId>
+            {
+                new()
+                {
+                    Id = Guid.NewGuid(),
+                    CompetitionCompetitorId = id,
+                    Provider = SourceDataProvider.Espn,
+                    SourceUrl = $"http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401628380/competitions/401628380/competitors/{espnId}",
+                    SourceUrlHash = $"competitor-hash-{espnId}",
+                    Value = espnId,
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid()
+                }
+            }
+        };
     }
 
     private Mock<IHttpClientFactory> CreateMockHttpClientFactory(params (string url, HttpStatusCode status, string? content)[] responses)
@@ -510,6 +547,133 @@ public class FootballCompetitionStreamerTests : ProducerTestBase<FootballCompeti
         // Act & Assert - should not throw
         var act = async () => await sut.ExecuteAsync(command, cts.Token);
         await act.Should().NotThrowAsync();
+    }
+
+    #endregion
+
+    #region Live Status Sourcing
+
+    /// <summary>
+    /// The streamer must ASK the pipeline for the competition status document while
+    /// the game is live, not merely read it for its own stop condition.
+    /// </summary>
+    /// <remarks>
+    /// Regression test for the 2026-09-12 live-integrity bug: status was polled every
+    /// 30s by PollWhileInProgressAsync and thrown away, so CompetitionStatus in
+    /// Postgres kept its pre-kickoff value for the entire game. Canonical reads —
+    /// and therefore the league matchup cards on web and mobile — showed a game in
+    /// the fourth quarter as "scheduled" with no score, corrected only when a SignalR
+    /// play event happened to arrive.
+    /// </remarks>
+    [Fact]
+    public async Task ExecuteAsync_RequestsTheStatusDocument_WhileTheGameIsLive()
+    {
+        var (contest, competition, _) = await CreateTestGameAsync();
+
+        var competitionJson = """
+        {
+            "$ref": "http://test.com/competition",
+            "probabilities": { "$ref": "http://test.com/probabilities" },
+            "drives": { "$ref": "http://test.com/drives" },
+            "details": { "$ref": "http://test.com/plays" },
+            "situation": { "$ref": "http://test.com/situation" },
+            "leaders": { "$ref": "http://test.com/leaders" }
+        }
+        """;
+
+        // In progress, so the streamer goes straight to its live polling phase.
+        var statusJson = """
+        {
+            "type": { "name": "STATUS_IN_PROGRESS" },
+            "period": 3,
+            "displayClock": "7:21"
+        }
+        """;
+
+        var handlerMock = new Mock<HttpMessageHandler>();
+
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("401628380/competitions/401628380")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() => new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(competitionJson)
+            });
+
+        // Registered after the competition matcher on purpose: the status URI
+        // contains the competition path too, and Moq resolves to the LAST match.
+        handlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.RequestUri!.ToString().Contains("status")),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() => new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(statusJson)
+            });
+
+        var httpClient = new HttpClient(handlerMock.Object);
+        var factory = new Mock<IHttpClientFactory>();
+        factory.Setup(f => f.CreateClient(It.IsAny<string>())).Returns(httpClient);
+        Mocker.Use(factory.Object);
+
+        var eventBus = Mocker.GetMock<IEventBus>();
+
+        var command = new StreamCompetitionCommand
+        {
+            CompetitionId = competition.Id,
+            ContestId = contest.Id,
+            Sport = Sport.FootballNcaa,
+            SeasonYear = 2025,
+            DataProvider = SourceDataProvider.Espn,
+            CorrelationId = Guid.NewGuid()
+        };
+
+        var sut = Mocker.CreateInstance<FootballCompetitionStreamer>();
+
+        // Long enough for the spawned workers to fire their first tick.
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+
+        try
+        {
+            await sut.ExecuteAsync(command, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected: the live poll loop runs until cancelled.
+        }
+
+        eventBus.Verify(
+            x => x.Publish(
+                It.Is<DocumentRequested>(d =>
+                    d.DocumentType == DocumentType.EventCompetitionStatus &&
+                    d.ParentId == competition.Id.ToString()),
+                It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce(),
+            "a live game must keep asking for its status document, or canonical status stays frozen at its pre-kickoff value");
+
+        // Same bug, other half: Contest.AwayScore/HomeScore only move when a
+        // competitor score document is processed, and ParentId must be the
+        // CANONICAL COMPETITOR id — the score processor resolves its parent as a
+        // CompetitionCompetitor, not a Competition.
+        var competitorIds = competition.Competitors.Select(c => c.Id.ToString()).ToList();
+        competitorIds.Should().NotBeEmpty("the fixture must have competitors for this assertion to mean anything");
+
+        eventBus.Verify(
+            x => x.Publish(
+                It.Is<DocumentRequested>(d =>
+                    d.DocumentType == DocumentType.EventCompetitionCompetitorScore &&
+                    d.ParentId != null &&
+                    competitorIds.Contains(d.ParentId)),
+                It.IsAny<CancellationToken>()),
+            Times.AtLeastOnce(),
+            "a live game must keep asking for competitor scores, or the canonical score stays frozen at 0");
     }
 
     #endregion

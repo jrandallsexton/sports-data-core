@@ -9,6 +9,14 @@ namespace SportsData.Notification.Config
     public class NotificationConfig
     {
         /// <summary>
+        /// Master switch for outbound FCM/APNs sends. False by default so a
+        /// local stack carrying real Firebase credentials and a prod-restored
+        /// UserDevice table cannot push to real phones; only the Prod label
+        /// sets it true. When false the no-op sender is registered even if
+        /// <c>CommonConfig:Firebase</c> is fully configured.
+        /// </summary>
+        public bool PushEnabled { get; set; } = false;
+        /// <summary>
         /// Minutes before a kickoff wave's anchor that the pick-deadline
         /// reminder fires. Operator decision 2026-09-05: 60, configurable.
         /// </summary>

@@ -82,16 +82,27 @@ namespace SportsData.Notification
                 typeof(UserPickScoredConsumer)
             ]);
 
-            // Initialize FirebaseApp.DefaultInstance from CommonConfig:Firebase
-            // and register the real sender. When ProjectId is empty (local
-            // dev / tests without Firebase credentials) we register a no-op
-            // sender instead so consumers don't crash on resolution. The
-            // no-op returns Failure with an explicit "not configured" reason,
-            // which lands in NotificationLog as Failed_FcmError — easy to
-            // grep, makes the misconfiguration obvious without flooding
-            // dead-letter.
+            // Outbound push is OFF unless the label says otherwise. The Local
+            // label carries real Firebase credentials and a prod-restored
+            // UserDevice table, so credentials alone must never be the switch:
+            // on 2026-09-14 a local replay of a poll release pushed to a real
+            // phone. Only Prod sets PushEnabled=true.
+            //
+            // When push is off, or ProjectId is empty (tests without Firebase
+            // credentials), we register a no-op sender so consumers don't crash
+            // on resolution. The no-op returns Failure with the reason, which
+            // lands in NotificationLog as Failed_FcmError — easy to grep, makes
+            // the state obvious without flooding dead-letter.
+            var pushEnabled = config.GetValue<bool>("SportsData.Notification:NotificationConfig:PushEnabled");
             var firebaseSection = config.GetSection("CommonConfig:Firebase");
-            if (!string.IsNullOrWhiteSpace(firebaseSection["ProjectId"]))
+            if (!pushEnabled)
+            {
+                const string reason = "push disabled by config (SportsData.Notification:NotificationConfig:PushEnabled is false)";
+                Console.WriteLine($"WARN: {reason}; registering NoOpPushNotificationSender. FCM dispatches will no-op.");
+                services.AddScoped<IPushNotificationSender>(sp => new NoOpPushNotificationSender(
+                    sp.GetRequiredService<ILogger<NoOpPushNotificationSender>>(), reason));
+            }
+            else if (!string.IsNullOrWhiteSpace(firebaseSection["ProjectId"]))
             {
                 var firebaseJson = System.Text.Json.JsonSerializer.Serialize(new
                 {
@@ -117,8 +128,10 @@ namespace SportsData.Notification
             }
             else
             {
-                Console.WriteLine("WARN: CommonConfig:Firebase:ProjectId is not set; registering NoOpPushNotificationSender. FCM dispatches will no-op.");
-                services.AddScoped<IPushNotificationSender, NoOpPushNotificationSender>();
+                const string reason = "Firebase not configured (CommonConfig:Firebase:ProjectId is not set)";
+                Console.WriteLine($"WARN: {reason}; registering NoOpPushNotificationSender. FCM dispatches will no-op.");
+                services.AddScoped<IPushNotificationSender>(sp => new NoOpPushNotificationSender(
+                    sp.GetRequiredService<ILogger<NoOpPushNotificationSender>>(), reason));
             }
 
             // Hangfire — Notification hosts BOTH client (consumers schedule

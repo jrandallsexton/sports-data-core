@@ -213,6 +213,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 Name = "2025 Regular Season",
                 Slug = "Regular Season",
                 Abbreviation = "REG",
+                TypeCode = 1,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = Guid.NewGuid()
             };
@@ -226,7 +227,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var seasonWeek = new SeasonWeek
             {
                 Id = seasonWeekIdentity.CanonicalId,
-                Number = 2,
+                Number = 1,
                 SeasonId = seasonId,
                 SeasonPhaseId = seasonPhaseId,
                 CreatedUtc = DateTime.UtcNow,
@@ -331,6 +332,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 Name = "2025 Regular Season",
                 Slug = "Regular Season",
                 Abbreviation = "REG",
+                TypeCode = 1,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = Guid.NewGuid()
             };
@@ -342,7 +344,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var seasonWeek = new SeasonWeek
             {
                 Id = seasonWeekIdentity.CanonicalId,
-                Number = 2,
+                Number = 1,
                 SeasonId = seasonId,
                 SeasonPhaseId = seasonPhaseId,
                 CreatedUtc = DateTime.UtcNow,
@@ -430,6 +432,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 Name = "2025 Regular Season",
                 Slug = "Regular Season",
                 Abbreviation = "REG",
+                TypeCode = 1,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = Guid.NewGuid()
             };
@@ -441,7 +444,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var seasonWeek = new SeasonWeek
             {
                 Id = seasonWeekIdentity.CanonicalId,
-                Number = 2,
+                Number = 1,
                 SeasonId = seasonId,
                 SeasonPhaseId = seasonPhaseId,
                 CreatedUtc = DateTime.UtcNow,
@@ -513,6 +516,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 Name = "2025 Regular Season",
                 Slug = "Regular Season",
                 Abbreviation = "REG",
+                TypeCode = 1,
                 CreatedUtc = DateTime.UtcNow,
                 CreatedBy = Guid.NewGuid()
             };
@@ -524,7 +528,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             var seasonWeek = new SeasonWeek
             {
                 Id = seasonWeekIdentity.CanonicalId,
-                Number = 2,
+                Number = 1,
                 SeasonId = seasonId,
                 SeasonPhaseId = seasonPhaseId,
                 CreatedUtc = DateTime.UtcNow,
@@ -559,6 +563,142 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
             // Assert — no entity should be created (specifically because SeasonPoll is missing)
             var ranking = await FootballDataContext.SeasonPollWeeks.FirstOrDefaultAsync();
             ranking.Should().BeNull("processor should return early when SeasonPoll cannot be derived");
+        }
+
+        /// <summary>
+        /// The 2026 Week 3 AP poll as ESPN served it on 2026-09-13: $ref .../weeks/3,
+        /// occurrence 3, FOR week 3. Its season.type.week.number is 2 because ESPN's
+        /// current-week pointer had not rolled yet (Monday 07:00Z); that field is
+        /// fetch-time state and must not influence where the poll is filed. The row
+        /// must land on regular-season week 3 - not week 4 (any +1), and not a
+        /// week 3 from another phase.
+        /// </summary>
+        [Fact]
+        public async Task ProcessNewSeasonTypeWeekRankings_FilesPollOnItsOwnWeekWithinPhase()
+        {
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonPollWeek.2026.Wk3.json");
+            var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
+
+            // Fixture sanity: the poll's own week and the season's pointer disagree.
+            dto!.Occurrence.Number.Should().Be(3);
+            dto.Season.Type.Type.Should().Be(2);
+            dto.Season.Type.Week.Number.Should().Be(2);
+
+            var correlationId = Guid.NewGuid();
+            var seasonId = Guid.NewGuid();
+            var seasonPhaseId = Guid.NewGuid();
+
+            var generator = new ExternalRefIdentityGenerator();
+            Mocker.Use<IGenerateExternalRefIdentities>(generator);
+
+            var seasonPollRef = EspnUriMapper.SeasonPollWeekRefToSeasonPollRef(dto.Ref);
+            var seasonPollIdentity = generator.Generate(seasonPollRef);
+
+            await FootballDataContext.SeasonPolls.AddAsync(new SeasonPoll
+            {
+                Id = seasonPollIdentity.CanonicalId,
+                Name = "AP Top 25",
+                ShortName = "AP Poll",
+                Slug = "ap",
+                SeasonYear = 2026,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            });
+
+            await FootballDataContext.Seasons.AddAsync(new Season
+            {
+                Id = seasonId,
+                Name = "2026 NCAA Football Season",
+                Year = 2026,
+                CreatedUtc = DateTime.UtcNow,
+                CreatedBy = Guid.NewGuid()
+            });
+
+            var preseasonPhaseId = Guid.NewGuid();
+            await FootballDataContext.SeasonPhases.AddRangeAsync(
+                new SeasonPhase
+                {
+                    Id = preseasonPhaseId,
+                    SeasonId = seasonId,
+                    Name = "2026 Preseason",
+                    Slug = "Preseason",
+                    Abbreviation = "PRE",
+                    TypeCode = 1,
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid()
+                },
+                new SeasonPhase
+                {
+                    Id = seasonPhaseId,
+                    SeasonId = seasonId,
+                    Name = "2026 Regular Season",
+                    Slug = "Regular Season",
+                    Abbreviation = "REG",
+                    TypeCode = 2,
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid()
+                });
+
+            // Three candidate rows: the right one, the same number in another phase
+            // (numbers repeat across phases), and week 4 (what any +1 would select).
+            var regularSeasonWeek3Id = Guid.NewGuid();
+            var preseasonWeek3Id = Guid.NewGuid();
+            var regularSeasonWeek4Id = Guid.NewGuid();
+            await FootballDataContext.SeasonWeeks.AddRangeAsync(
+                new SeasonWeek
+                {
+                    Id = preseasonWeek3Id,
+                    Number = 3,
+                    SeasonId = seasonId,
+                    SeasonPhaseId = preseasonPhaseId,
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid()
+                },
+                new SeasonWeek
+                {
+                    Id = regularSeasonWeek3Id,
+                    Number = 3,
+                    SeasonId = seasonId,
+                    SeasonPhaseId = seasonPhaseId,
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid()
+                },
+                new SeasonWeek
+                {
+                    Id = regularSeasonWeek4Id,
+                    Number = 4,
+                    SeasonId = seasonId,
+                    SeasonPhaseId = seasonPhaseId,
+                    CreatedUtc = DateTime.UtcNow,
+                    CreatedBy = Guid.NewGuid()
+                });
+            await FootballDataContext.SaveChangesAsync();
+
+            await SeedFranchisesAndSeasonsFromDto(dto, generator);
+
+            var docIdentity = generator.Generate(dto.Ref);
+            var command = new ProcessDocumentCommand(
+                SourceDataProvider.Espn,
+                Sport.FootballNcaa,
+                2026,
+                DocumentType.SeasonTypeWeekRankings,
+                json,
+                messageId: Guid.NewGuid(),
+                correlationId: correlationId,
+                parentId: seasonPollIdentity.CanonicalId.ToString(),
+                sourceUri: dto.Ref,
+                urlHash: docIdentity.UrlHash
+            );
+
+            var sut = Mocker.CreateInstance<SeasonTypeWeekRankingsDocumentProcessor<FootballDataContext>>();
+
+            await sut.ProcessAsync(command);
+
+            var ranking = await FootballDataContext.SeasonPollWeeks.SingleOrDefaultAsync();
+            ranking.Should().NotBeNull();
+            ranking!.OccurrenceNumber.Should().Be(3);
+            ranking.SeasonWeekId.Should().Be(regularSeasonWeek3Id,
+                "the poll is FOR the week its occurrence names, within the phase its season type names");
         }
 
         private async Task SeedFranchisesAndSeasonsFromDto(

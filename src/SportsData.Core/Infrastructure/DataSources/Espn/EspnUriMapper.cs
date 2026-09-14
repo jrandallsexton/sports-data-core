@@ -370,6 +370,29 @@ public static class EspnUriMapper
         return new Uri(finalPath, UriKind.Absolute); // do NOT append query string
     }
 
+    /// <summary>
+    /// .../seasons/{year}/types/{t}/weeks/{n}/rankings/{p} → .../seasons/{year}/types/{t}/weeks/{n}
+    /// The week a poll-week document is FOR, as named by its own ref. This is the
+    /// week its processor must resolve; the document body's season.type.week is the
+    /// season's current-week pointer at fetch time and can name a different week.
+    /// </summary>
+    public static Uri SeasonPollWeekRefToSeasonTypeWeekRef(Uri seasonPollWeekRef)
+    {
+        if (seasonPollWeekRef is null)
+            throw new ArgumentNullException(nameof(seasonPollWeekRef));
+
+        var s = seasonPollWeekRef.GetLeftPart(UriPartial.Path);
+        var parts = s.Split('/');
+
+        var weeksIndex = Array.IndexOf(parts, "weeks");
+        var rankingsIndex = Array.IndexOf(parts, "rankings");
+
+        if (weeksIndex < 0 || rankingsIndex != weeksIndex + 2 || !parts[weeksIndex + 1].All(char.IsDigit))
+            throw new InvalidOperationException($"Unexpected ESPN SeasonPollWeek ref format: {seasonPollWeekRef}");
+
+        return new Uri(string.Join('/', parts.Take(rankingsIndex)), UriKind.Absolute);
+    }
+
     public static Uri SeasonTypeToSeason(Uri seasonTypeRef)
     {
         if (seasonTypeRef == null)

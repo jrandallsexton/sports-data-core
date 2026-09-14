@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.PickemGroups;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Core.Dtos.Canonical;
@@ -24,6 +25,7 @@ namespace SportsData.Api.Application.Processors
         private readonly IEventBus _eventBus;
         private readonly IDateTimeProvider _dateTimeProvider;
         private readonly ILeagueJoinExpiryCalculator _joinExpiryCalculator;
+        private readonly ILeagueWeekMatchupsCache _matchupsCache;
 
         public MatchupScheduleProcessor(
             AppDataContext dataContext,
@@ -31,7 +33,8 @@ namespace SportsData.Api.Application.Processors
             IContestClientFactory contestClientFactory,
             IEventBus eventBus,
             IDateTimeProvider dateTimeProvider,
-            ILeagueJoinExpiryCalculator joinExpiryCalculator)
+            ILeagueJoinExpiryCalculator joinExpiryCalculator,
+            ILeagueWeekMatchupsCache matchupsCache)
         {
             _dataContext = dataContext;
             _logger = logger;
@@ -39,6 +42,7 @@ namespace SportsData.Api.Application.Processors
             _eventBus = eventBus;
             _dateTimeProvider = dateTimeProvider;
             _joinExpiryCalculator = joinExpiryCalculator;
+            _matchupsCache = matchupsCache;
         }
 
         public async Task Process(ScheduleGroupWeekMatchupsCommand command)
@@ -408,6 +412,13 @@ namespace SportsData.Api.Application.Processors
             }
 
             await _dataContext.SaveChangesAsync();
+
+            // The slate just changed (inserts on a first pass, rank/spread updates on
+            // a refresh). Members must not keep reading the pre-change payload for
+            // the rest of its cache lifetime - on a refresh that is the poll-driven
+            // rank update they are waiting for, and after a wipe-and-regenerate it
+            // was an empty week.
+            await _matchupsCache.RemoveAsync(group.Id, command.SeasonWeek);
 
             // Slates build progressively (full-season leagues advance weekly),
             // so each landed week may sharpen the league's join expiry --

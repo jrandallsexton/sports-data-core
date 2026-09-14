@@ -7,6 +7,7 @@ using Moq;
 
 using SportsData.Api.Application;
 using SportsData.Api.Application.Processors;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Core.Common;
 using SportsData.Core.Dtos.Canonical;
 using SportsData.Api.Infrastructure.Data.Entities;
@@ -611,6 +612,10 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
                         e.CorrelationId == correlationId),
                     It.IsAny<CancellationToken>()),
                 Times.Once);
+
+            // The slate changed; the cached league-week payload must not outlive it.
+            Mocker.GetMock<ILeagueWeekMatchupsCache>()
+                .Verify(x => x.RemoveAsync(groupId, command.SeasonWeek), Times.Once);
         }
 
         /// <summary>
@@ -1345,6 +1350,50 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
             eventBus.Verify(
                 x => x.Publish(It.IsAny<PickemGroupWeekMatchupsGenerated>(), It.IsAny<CancellationToken>()),
                 Times.Never);
+
+            // No new rows, so no event - but the refresh still rewrote rank/spread on
+            // the existing matchups (the poll-driven case), so the cache must go.
+            Mocker.GetMock<ILeagueWeekMatchupsCache>()
+                .Verify(x => x.RemoveAsync(groupId, 1), Times.Once);
+        }
+
+        [Fact]
+        public async Task Process_WhenMatchupsAlreadyGenerated_DoesNotEvictTheCache()
+        {
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+
+            await DataContext.PickemGroups.AddAsync(new PickemGroup
+            {
+                Id = groupId,
+                Name = "Test Group",
+                Sport = Core.Common.Sport.FootballNcaa,
+                League = League.NCAAF,
+                CommissionerUserId = Guid.NewGuid(),
+                CreatedUtc = FixedUtcNow,
+                CreatedBy = Guid.Empty
+            });
+            await DataContext.PickemGroupWeeks.AddAsync(new PickemGroupWeek
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                SeasonWeekId = seasonWeekId,
+                SeasonYear = 2024,
+                SeasonWeek = 1,
+                AreMatchupsGenerated = true,
+                CreatedUtc = FixedUtcNow,
+                CreatedBy = Guid.Empty
+            });
+            await DataContext.SaveChangesAsync();
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+
+            await sut.Process(new ScheduleGroupWeekMatchupsCommand(
+                groupId, seasonWeekId, 2024, 1, false, Guid.NewGuid()));
+
+            // Nothing was written, so a valid cached payload stays valid.
+            Mocker.GetMock<ILeagueWeekMatchupsCache>()
+                .Verify(x => x.RemoveAsync(It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
         }
     }
 }

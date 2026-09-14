@@ -320,14 +320,43 @@ public class LeagueWeekMatchupsCacheTests
     }
 
     [Fact]
-    public async Task SetAsync_Caches_WhenTheWeekHasNoMatchups()
+    public async Task SetAsync_DoesNotCache_WhenTheWeekHasNoMatchups()
     {
         var (cache, store) = BuildSut();
 
-        // An empty week has no live state to go stale.
+        // An empty week is the payload most likely to change next: it was just
+        // created, or wiped for regeneration. Caching it pinned "no matchups" for
+        // five minutes after a regeneration on 2026-09-14.
         await cache.SetAsync(LeagueId, Week, new LeagueWeekMatchupsDto());
 
-        VerifyWritten(store, Times.Once());
+        VerifyWritten(store, Times.Never());
+    }
+
+    [Fact]
+    public async Task RemoveAsync_DropsTheLeagueWeekEntry()
+    {
+        var (cache, store) = BuildSut();
+
+        await cache.RemoveAsync(LeagueId, Week);
+
+        store.Verify(
+            x => x.RemoveAsync($"league-week-matchups:v1:{LeagueId}:{Week}", It.IsAny<CancellationToken>()),
+            Times.Once());
+    }
+
+    [Fact]
+    public async Task RemoveAsync_SwallowsStoreFailures()
+    {
+        var (cache, store) = BuildSut();
+
+        store.Setup(x => x.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("redis down"));
+
+        // The slate change that triggered the eviction is already committed; a
+        // cache hiccup must not fault it.
+        var act = async () => await cache.RemoveAsync(LeagueId, Week);
+
+        await act.Should().NotThrowAsync();
     }
 
     [Fact]

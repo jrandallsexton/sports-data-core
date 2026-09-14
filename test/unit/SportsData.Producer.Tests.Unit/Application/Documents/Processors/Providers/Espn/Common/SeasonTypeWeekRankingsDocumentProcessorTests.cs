@@ -660,6 +660,40 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 "the dependency request must name the week the lookup needs");
         }
 
+        /// <summary>
+        /// A ranking document with a season week but no occurrence cannot be
+        /// filed. The guard returns without writing a row and without a
+        /// dependency request (there is nothing to source that would help), and
+        /// without throwing - a null dereference here would land the job in
+        /// retry forever for a document that will never change.
+        /// </summary>
+        [Fact]
+        public async Task ProcessNewSeasonTypeWeekRankings_NoOccurrence_ReturnsWithoutRowOrDependencyRequest()
+        {
+            var json = await LoadJsonTestData("EspnFootballNcaa/EspnFootballNcaaSeasonPollWeek.2026.Wk3.json");
+            var node = System.Text.Json.Nodes.JsonNode.Parse(json)!;
+            node.AsObject().Remove("occurrence");
+            json = node.ToJsonString();
+
+            var dto = json.FromJson<EspnFootballSeasonTypeWeekRankingsDto>();
+            dto!.Occurrence.Should().BeNull();
+            dto.Season.Type.Week.Should().NotBeNull();
+
+            var ids = await SeedWeek3ScenarioAsync(dto, seedRegularSeasonWeek3: true);
+            var bus = Mocker.GetMock<IEventBus>();
+            var sut = Mocker.CreateInstance<SeasonTypeWeekRankingsDocumentProcessor<FootballDataContext>>();
+
+            var act = async () => await sut.ProcessAsync(BuildCommand(json, dto, ids.SeasonPollId));
+
+            await act.Should().NotThrowAsync();
+            (await FootballDataContext.SeasonPollWeeks.AnyAsync()).Should().BeFalse();
+            bus.Verify(
+                x => x.Publish(
+                    It.Is<DocumentRequested>(e => e.DocumentType == DocumentType.SeasonTypeWeek),
+                    It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
+
         private sealed record Week3ScenarioIds(
             Guid SeasonPollId,
             Guid RegularSeasonWeek3Id,
@@ -748,7 +782,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                 await FootballDataContext.SeasonWeeks.AddAsync(Week(ids.RegularSeasonWeek3Id, 3, regularSeasonPhaseId));
             await FootballDataContext.SaveChangesAsync();
 
-            await SeedFranchisesAndSeasonsFromDto(dto, generator);
+            await SeedFranchisesAndSeasonsFromDto(dto, generator, seasonYear: 2026);
 
             return ids;
         }
@@ -774,7 +808,8 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
 
         private async Task SeedFranchisesAndSeasonsFromDto(
             EspnFootballSeasonTypeWeekRankingsDto dto,
-            ExternalRefIdentityGenerator generator)
+            ExternalRefIdentityGenerator generator,
+            int seasonYear = 2025)
         {
             var allTeams = dto.Ranks.Concat<dynamic>(dto.Others).ToList();
 
@@ -818,7 +853,7 @@ namespace SportsData.Producer.Tests.Unit.Application.Documents.Processors.Provid
                     Name = "Team",
                     Slug = "team",
                     FranchiseId = franchise.Id,
-                    SeasonYear = 2025,
+                    SeasonYear = seasonYear,
                     Abbreviation = "TM",
                     CreatedUtc = DateTime.UtcNow,
                     CreatedBy = Guid.NewGuid(),

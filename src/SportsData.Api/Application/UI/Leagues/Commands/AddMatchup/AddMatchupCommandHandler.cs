@@ -2,6 +2,7 @@ using FluentValidation.Results;
 
 using Microsoft.EntityFrameworkCore;
 
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Core.Infrastructure.Clients.Contest;
 using SportsData.Api.Infrastructure.Data.Entities;
@@ -24,17 +25,20 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
     private readonly AppDataContext _dbContext;
     private readonly IContestClientFactory _contestClientFactory;
     private readonly IEventBus _eventBus;
+    private readonly ILeagueWeekMatchupsCache _matchupsCache;
 
     public AddMatchupCommandHandler(
         ILogger<AddMatchupCommandHandler> logger,
         AppDataContext dbContext,
         IContestClientFactory contestClientFactory,
-        IEventBus eventBus)
+        IEventBus eventBus,
+        ILeagueWeekMatchupsCache matchupsCache)
     {
         _logger = logger;
         _dbContext = dbContext;
         _contestClientFactory = contestClientFactory;
         _eventBus = eventBus;
+        _matchupsCache = matchupsCache;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(
@@ -158,6 +162,9 @@ public class AddMatchupCommandHandler : IAddMatchupCommandHandler
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        // The commissioner is about to look for the matchup they just added.
+        await _matchupsCache.RemoveAsync(command.LeagueId, newMatchup.SeasonWeek);
 
         _logger.LogInformation(
             "Matchup added successfully. LeagueId={LeagueId}, ContestId={ContestId}, MatchupId={MatchupId}",

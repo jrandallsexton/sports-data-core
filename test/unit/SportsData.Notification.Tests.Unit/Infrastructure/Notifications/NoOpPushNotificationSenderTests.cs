@@ -19,8 +19,8 @@ namespace SportsData.Notification.Tests.Unit.Infrastructure.Notifications;
 public class NoOpPushNotificationSenderTests
 {
     [Theory]
-    [InlineData("push disabled by config (SportsData.Notification:NotificationConfig:PushEnabled is false)")]
-    [InlineData("Firebase not configured (CommonConfig:Firebase:ProjectId is not set)")]
+    [InlineData(PushSenderSelection.DisabledByConfigReason)]
+    [InlineData(PushSenderSelection.FirebaseNotConfiguredReason)]
     public async Task SendAsync_ReturnsErrorFailure_CarryingTheRegisteredReason(string reason)
     {
         var sut = new NoOpPushNotificationSender(

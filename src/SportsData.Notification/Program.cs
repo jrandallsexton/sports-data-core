@@ -93,16 +93,12 @@ namespace SportsData.Notification
             // on resolution. The no-op returns Failure with the reason, which
             // lands in NotificationLog as Failed_FcmError — easy to grep, makes
             // the state obvious without flooding dead-letter.
-            var pushEnabled = config.GetValue<bool>("SportsData.Notification:NotificationConfig:PushEnabled");
             var firebaseSection = config.GetSection("CommonConfig:Firebase");
-            if (!pushEnabled)
-            {
-                const string reason = "push disabled by config (SportsData.Notification:NotificationConfig:PushEnabled is false)";
-                Console.WriteLine($"WARN: {reason}; registering NoOpPushNotificationSender. FCM dispatches will no-op.");
-                services.AddScoped<IPushNotificationSender>(sp => new NoOpPushNotificationSender(
-                    sp.GetRequiredService<ILogger<NoOpPushNotificationSender>>(), reason));
-            }
-            else if (!string.IsNullOrWhiteSpace(firebaseSection["ProjectId"]))
+            var pushDecision = PushSenderSelection.Decide(
+                pushEnabled: config.GetValue<bool>("SportsData.Notification:NotificationConfig:PushEnabled"),
+                firebaseProjectId: firebaseSection["ProjectId"]);
+
+            if (pushDecision.UseFirebase)
             {
                 var firebaseJson = System.Text.Json.JsonSerializer.Serialize(new
                 {
@@ -128,7 +124,7 @@ namespace SportsData.Notification
             }
             else
             {
-                const string reason = "Firebase not configured (CommonConfig:Firebase:ProjectId is not set)";
+                var reason = pushDecision.NoOpReason!;
                 Console.WriteLine($"WARN: {reason}; registering NoOpPushNotificationSender. FCM dispatches will no-op.");
                 services.AddScoped<IPushNotificationSender>(sp => new NoOpPushNotificationSender(
                     sp.GetRequiredService<ILogger<NoOpPushNotificationSender>>(), reason));

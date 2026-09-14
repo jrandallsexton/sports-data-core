@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Previews.Commands;
+using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data;
 
 namespace SportsData.Api.Application.Previews
@@ -15,13 +16,16 @@ namespace SportsData.Api.Application.Previews
     {
         private readonly ILogger<PreviewService> _logger;
         private readonly AppDataContext _dataContext;
+        private readonly ILeagueWeekMatchupsCacheInvalidator _cacheInvalidator;
 
         public PreviewService(
             ILogger<PreviewService> logger,
-            AppDataContext dataContext)
+            AppDataContext dataContext,
+            ILeagueWeekMatchupsCacheInvalidator cacheInvalidator)
         {
             _logger = logger;
             _dataContext = dataContext;
+            _cacheInvalidator = cacheInvalidator;
         }
 
         public async Task<Guid> ApproveMatchupPreview(ApproveMatchupPreviewCommand command)
@@ -49,6 +53,9 @@ namespace SportsData.Api.Application.Previews
             preview.ModifiedBy = command.ApprovedByUserId;
 
             await _dataContext.SaveChangesAsync();
+
+            // IsPreviewReviewed lives in the cached league-week payload.
+            await _cacheInvalidator.EvictForContestAsync(preview.ContestId);
 
             return preview.Id;
         }
@@ -81,6 +88,10 @@ namespace SportsData.Api.Application.Previews
             preview.ModifiedBy = command.RejectedByUserId;
 
             await _dataContext.SaveChangesAsync();
+
+            // A rejected preview is no longer "available" in the cached league-week
+            // payload either - both flags there derive from RejectedUtc.
+            await _cacheInvalidator.EvictForContestAsync(preview.ContestId);
 
             return preview.Id;
         }

@@ -15,9 +15,10 @@ public static class PushSenderSelection
     public const string FirebaseNotConfiguredReason =
         "Firebase not configured (CommonConfig:Firebase:ProjectId is not set)";
 
-    public sealed record Decision(bool UseFirebase, string? NoOpReason);
+    /// <summary>NoOpReason is null exactly when UseFirebase is true.</summary>
+    public sealed record Decision(bool UseFirebase, string NoOpReason);
 
-    public static Decision Decide(bool pushEnabled, string? firebaseProjectId)
+    public static Decision Decide(bool pushEnabled, string firebaseProjectId)
     {
         if (!pushEnabled)
             return new Decision(UseFirebase: false, NoOpReason: DisabledByConfigReason);

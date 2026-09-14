@@ -170,6 +170,29 @@ namespace SportsData.Core.Tests.Unit.Infrastructure.DataSources.Espn
 
         [Theory]
         [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/types/2/weeks/3/rankings/1?lang=en&region=us",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/types/2/weeks/3")]
+        [InlineData(
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1/rankings/2",
+            "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2025/types/1/weeks/1")]
+        public void SeasonPollWeekRefToSeasonTypeWeekRef_Should_Trim_To_The_Polls_Own_Week(
+            string seasonPollWeekRef,
+            string expectedWeekRef)
+        {
+            var result = EspnUriMapper.SeasonPollWeekRefToSeasonTypeWeekRef(new Uri(seasonPollWeekRef));
+            result.Should().Be(new Uri(expectedWeekRef));
+        }
+
+        [Fact]
+        public void SeasonPollWeekRefToSeasonTypeWeekRef_Should_Reject_A_Ref_Without_Week_And_Rankings_Segments()
+        {
+            var act = () => EspnUriMapper.SeasonPollWeekRefToSeasonTypeWeekRef(
+                new Uri("http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/rankings/1"));
+            act.Should().Throw<InvalidOperationException>();
+        }
+
+        [Theory]
+        [InlineData(
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752699/competitions/401752699/leaders?lang=en&region=us",
             "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401752699/competitions/401752699")]
         [InlineData(

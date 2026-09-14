@@ -112,11 +112,15 @@ public class SeasonTypeWeekRankingsDocumentProcessor<TDataContext> : DocumentPro
 
             if (seasonWeek == null)
             {
+                // Request the week the lookup above actually needs - the poll's own
+                // week from its ref - not dto.Season.Type.Week, which is the pointer
+                // and would source a different week's document forever.
                 var seasonPhaseIdentity = _externalRefIdentityGenerator.Generate(dto.Season.Type.Ref);
+                var weekLinkDto = new EspnLinkDto { Ref = EspnUriMapper.SeasonPollWeekRefToSeasonTypeWeekRef(dto.Ref) };
 
                 await PublishDependencyRequest(
                     command,
-                    dto.Season.Type.Week,
+                    weekLinkDto,
                     seasonPhaseIdentity.CanonicalId,
                     DocumentType.SeasonTypeWeek);
 

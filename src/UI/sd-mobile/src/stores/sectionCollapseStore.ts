@@ -10,8 +10,9 @@ interface SectionCollapseState {
   /** Collapsed flags by section key. Absent = expanded (the default). */
   collapsed: Record<string, boolean>;
   hydrated: boolean;
-  hydrate: (sectionKey: string) => void;
-  toggle: (sectionKey: string) => void;
+  /** defaultCollapsed applies only when nothing is stored for the key. */
+  hydrate: (sectionKey: string, defaultCollapsed?: boolean) => void;
+  toggle: (sectionKey: string, defaultCollapsed?: boolean) => void;
 }
 
 /**
@@ -25,15 +26,17 @@ interface SectionCollapseState {
  * section on one game then opening another showed it expanded again. A single
  * store means every mounted modal reflects the change immediately.
  *
- * Sections start EXPANDED: the card surfaces context without being asked, so
- * collapsing is an escape valve, never the starting state. Reads and writes
- * both degrade toward showing content.
+ * Sections start EXPANDED by default: the card surfaces context without being
+ * asked, so collapsing is an escape valve, never the starting state. Reads and
+ * writes both degrade toward showing content. A section may opt into starting
+ * COLLAPSED (defaultCollapsed) when it is a long index the reader drills into -
+ * the stacked stats categories - and that default holds until the first toggle.
  */
 export const useSectionCollapseStore = create<SectionCollapseState>((set, get) => ({
   collapsed: {},
   hydrated: false,
 
-  hydrate: (sectionKey: string) => {
+  hydrate: (sectionKey: string, defaultCollapsed = false) => {
     // Only the first mount of a given key touches storage; after that the
     // store IS the source of truth for this session. The in-flight guard
     // matters as much as the resolved one: a slate mounts dozens of cards in
@@ -51,19 +54,19 @@ export const useSectionCollapseStore = create<SectionCollapseState>((set, get) =
           // clobber a value the user just chose.
           Object.prototype.hasOwnProperty.call(state.collapsed, sectionKey)
             ? state
-            : { collapsed: { ...state.collapsed, [sectionKey]: v === 'true' }, hydrated: true });
+            : { collapsed: { ...state.collapsed, [sectionKey]: v == null ? defaultCollapsed : v === 'true' }, hydrated: true });
       })
       .catch(() => {
         hydrating.delete(sectionKey);
         set((state) =>
           Object.prototype.hasOwnProperty.call(state.collapsed, sectionKey)
             ? state
-            : { collapsed: { ...state.collapsed, [sectionKey]: false }, hydrated: true });
+            : { collapsed: { ...state.collapsed, [sectionKey]: defaultCollapsed }, hydrated: true });
       });
   },
 
-  toggle: (sectionKey: string) => {
-    const next = !(get().collapsed[sectionKey] ?? false);
+  toggle: (sectionKey: string, defaultCollapsed = false) => {
+    const next = !(get().collapsed[sectionKey] ?? defaultCollapsed);
     set((state) => ({ collapsed: { ...state.collapsed, [sectionKey]: next } }));
 
     // Fire-and-forget: a failed write only means the section returns expanded

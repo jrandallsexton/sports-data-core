@@ -8,8 +8,15 @@ import {
   METRICS_SPEC,
 } from '@/src/components/features/games/StatsComparisonModal';
 import type { Matchup, TeamComparisonData } from '@/src/types/models';
+import { useSectionCollapseStore } from '@/src/stores/sectionCollapseStore';
 
 // ─── Favored helpers — the math behind every tab/chip count and highlight ─────
+
+// The collapse store is a module singleton; stats categories now start
+// collapsed and a press persists, so each test starts cold.
+beforeEach(() => {
+  useSectionCollapseStore.setState({ collapsed: {}, hydrated: false });
+});
 
 describe('statFavored', () => {
   it('favors the higher value by default', () => {
@@ -118,6 +125,8 @@ describe('StatsComparisonModal', () => {
   it('renders the payload statisticValue as the row label, never "Stat 1"', () => {
     renderModal(comparisonWith());
 
+    // Categories start collapsed; open the one category the fixture has.
+    fireEvent.press(screen.getByText('defensive (1:0)'));
     expect(screen.getByText('Assisted Tackles')).toBeTruthy();
     expect(screen.queryByText('Stat 1')).toBeNull();
   });
@@ -132,6 +141,7 @@ describe('StatsComparisonModal', () => {
       })
     );
 
+    fireEvent.press(screen.getByText('defensive (1:0)'));
     expect(screen.getByText('Legacy Label Stat')).toBeTruthy();
   });
 
@@ -425,5 +435,23 @@ describe('StatsComparisonModal short names in The Line and Last 5 Games', () => 
     // the W/L badge still resolved from the full-name identity fields.
     expect(screen.getByText('@ Miami')).toBeTruthy();
     expect(screen.getByText('L')).toBeTruthy();
+  });
+});
+
+describe('StatsComparisonModal stacked stat categories', () => {
+  it('stacks every category with its tally as a collapsible header', () => {
+    renderModal(comparisonWith());
+
+    // The category is a section header carrying its favored tally (away
+    // 45 assisted tackles beats home 30), not a chip to swipe to.
+    // ...and it starts COLLAPSED, so the tab opens as an index of headers.
+    const header = screen.getByText('defensive (1:0)');
+    expect(screen.queryByText('Assisted Tackles')).toBeNull();
+
+    fireEvent.press(header);
+    expect(screen.getByText('Assisted Tackles')).toBeTruthy();
+
+    fireEvent.press(header);
+    expect(screen.queryByText('Assisted Tackles')).toBeNull();
   });
 });

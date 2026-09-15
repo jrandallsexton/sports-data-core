@@ -301,12 +301,15 @@ function CollapsibleSectionHeader({
   onToggle,
   color,
   mutedColor,
+  titleIndent = 0,
 }: {
   title: string;
   collapsed: boolean;
   onToggle: () => void;
   color: string;
   mutedColor: string;
+  /** Left padding on the title, for headers nested under a tab rather than flush with it. */
+  titleIndent?: number;
 }) {
   return (
     <TouchableOpacity
@@ -317,7 +320,7 @@ function CollapsibleSectionHeader({
       accessibilityState={{ expanded: !collapsed }}
       accessibilityLabel={`${title}, ${collapsed ? 'collapsed' : 'expanded'}`}
     >
-      <Text style={[styles.historySectionTitle, { color }]}>{title}</Text>
+      <Text style={[styles.historySectionTitle, { color, paddingLeft: titleIndent }]}>{title}</Text>
       <Ionicons
         name={collapsed ? 'chevron-down' : 'chevron-up'}
         size={18}
@@ -506,6 +509,98 @@ function spreadContextFacts(ctx: ContestSpreadContext, shortFor: (fullName: stri
   ].filter((f): f is LineFact => f != null);
 }
 
+/**
+ * One category's stat rows, away vs home, aligned by index (the payload lists
+ * both sides in the same order). The payload's human name is statisticValue;
+ * label/name are legacy fallbacks and the index-based one is last resort.
+ */
+function StatCategoryRows({
+  category,
+  awayRows,
+  homeRows,
+  mutedColor,
+}: {
+  category: string;
+  awayRows: TeamStatEntry[];
+  homeRows: TeamStatEntry[];
+  mutedColor: string;
+}) {
+  const rowCount = Math.max(awayRows.length, homeRows.length);
+  if (rowCount === 0) {
+    return (
+      <Text style={[styles.emptyText, { color: mutedColor, padding: 24 }]}>
+        No {category} stats available.
+      </Text>
+    );
+  }
+  return (
+    <>
+      {Array.from({ length: rowCount }, (_, i) => {
+        const away = awayRows[i];
+        const home = homeRows[i];
+        if (!away && !home) return null;
+        const label =
+          away?.statisticValue ??
+          home?.statisticValue ??
+          (away as any)?.label ??
+          (away as any)?.name ??
+          (home as any)?.label ??
+          (home as any)?.name ??
+          `Stat ${i + 1}`;
+        return (
+          <StatRow
+            key={away?.statisticKey ?? home?.statisticKey ?? i}
+            label={label}
+            awayEntry={away ?? { displayValue: '—' }}
+            homeEntry={home ?? { displayValue: '—' }}
+            favored={statFavored(away, home)}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+/**
+ * A stats category as a collapsible section. Its own component so the
+ * per-category collapse hook has a stable key ("stats.<category>") - the
+ * same persisted, per-device collapse the History sections use.
+ */
+function StatCategorySection({
+  category,
+  title,
+  awayRows,
+  homeRows,
+  accentColor,
+  mutedColor,
+}: {
+  category: string;
+  title: string;
+  awayRows: TeamStatEntry[];
+  homeRows: TeamStatEntry[];
+  accentColor: string;
+  mutedColor: string;
+}) {
+  // Collapsed by default: with every category stacked, the tab opens as an
+  // index of headers with tallies and the reader expands what they want.
+  const { collapsed, toggle } = useSectionCollapse(`stats.${category}`, true);
+  return (
+    <View>
+      <CollapsibleSectionHeader
+        title={title}
+        collapsed={collapsed}
+        onToggle={toggle}
+        color={accentColor}
+        mutedColor={accentColor}
+        titleIndent={12}
+      />
+      {!collapsed && (
+        <StatCategoryRows category={category} awayRows={awayRows} homeRows={homeRows} mutedColor={mutedColor} />
+      )}
+    </View>
+  );
+}
+
 // ─── StatsComparisonModal ─────────────────────────────────────────────────────
 
 export function StatsComparisonModal({
@@ -519,8 +614,6 @@ export function StatsComparisonModal({
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
   const topInset = usePageSheetTopInset();
-
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   // Collapse state is per device and survives reopening the card — a toggle
   // that reset every time would have to be redone on every matchup.
@@ -545,12 +638,6 @@ export function StatsComparisonModal({
   const categories = Object.keys(awayStats).length > 0
     ? Object.keys(awayStats)
     : Object.keys(homeStats);
-
-  const currentCategory = activeCategory ?? categories[0] ?? null;
-
-  const awayRows: TeamStatEntry[] = currentCategory ? (awayStats[currentCategory] ?? []) : [];
-  const homeRows: TeamStatEntry[] = currentCategory ? (homeStats[currentCategory] ?? []) : [];
-  const rowCount = Math.max(awayRows.length, homeRows.length);
 
   // Metrics ride the same comparison payload (fetched by MatchupCard);
   // the tab renders only when both sides have them — the same
@@ -925,65 +1012,26 @@ export function StatsComparisonModal({
                 </Text>
               </View>
             ) : (
-              <>
-                {/* Category tabs */}
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={[styles.tabScroll, { borderBottomColor: theme.border }]}
-                  contentContainerStyle={styles.tabScrollContent}
-                >
-                  {categories.map((cat) => {
-                    const tally = favoredByCategory.perCategory[cat];
-                    const chipLabel = tally ? `${cat} (${tally.away}:${tally.home})` : cat;
-                    return (
-                      <CategoryTab
-                        key={cat}
-                        label={chipLabel}
-                        active={currentCategory === cat}
-                        onPress={() => setActiveCategory(cat)}
-                      />
-                    );
-                  })}
-                </ScrollView>
-
-                {/* Stat rows */}
-                <ScrollView showsVerticalScrollIndicator={false}>
-                  {rowCount === 0 ? (
-                    <Text style={[styles.emptyText, { color: theme.textMuted, padding: 24 }]}>
-                      No {currentCategory} stats available.
-                    </Text>
-                  ) : (
-                    Array.from({ length: rowCount }, (_, i) => {
-                      const away = awayRows[i];
-                      const home = homeRows[i];
-                      // The payload's human name is statisticValue (what the
-                      // web renders); label/name are legacy fallbacks. The
-                      // index-based fallback is last resort only.
-                      const label =
-                        away?.statisticValue ??
-                        home?.statisticValue ??
-                        (away as any)?.label ??
-                        (away as any)?.name ??
-                        (home as any)?.label ??
-                        (home as any)?.name ??
-                        `Stat ${i + 1}`;
-
-                      if (!away && !home) return null;
-
-                      return (
-                        <StatRow
-                          key={away?.statisticKey ?? home?.statisticKey ?? i}
-                          label={label}
-                          awayEntry={away ?? { displayValue: '—' }}
-                          homeEntry={home ?? { displayValue: '—' }}
-                          favored={statFavored(away, home)}
-                        />
-                      );
-                    })
-                  )}
-                </ScrollView>
-              </>
+              /* Every category stacked in one vertical scroll - no swiping
+                 between categories. Each is a collapsible section like the
+                 History ones (persisted per device), because the full list
+                 is far too many rows to read top to bottom. */
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {categories.map((cat) => {
+                  const tally = favoredByCategory.perCategory[cat];
+                  return (
+                    <StatCategorySection
+                      key={cat}
+                      category={cat}
+                      title={tally ? `${cat} (${tally.away}:${tally.home})` : cat}
+                      awayRows={awayStats[cat] ?? []}
+                      homeRows={homeStats[cat] ?? []}
+                      accentColor={theme.tint}
+                      mutedColor={theme.textMuted}
+                    />
+                  );
+                })}
+              </ScrollView>
             )}
           </View>
         )}

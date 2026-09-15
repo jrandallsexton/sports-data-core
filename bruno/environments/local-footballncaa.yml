@@ -11,6 +11,6 @@ variables:
   - name: sportName
     value: FootballNcaa
   - name: adminToken
-    value: ""
+    value: "{{process.env.SD_ADMIN_TOKEN}}"
   - name: googleApiKey
-    value: ""
+    value: "{{process.env.SD_GOOGLE_API_KEY}}"

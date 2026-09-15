@@ -64,6 +64,8 @@ SELECT
     q."Note",
     q."HomeTeam",
     q."AwayTeam",
+    q."HomeTeamShort",
+    q."AwayTeamShort",
     q."HomeScore",
     q."AwayScore",
     q."Winner",

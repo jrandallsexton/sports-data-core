@@ -466,3 +466,81 @@ describe('StatsComparisonModal stacked stat categories', () => {
     expect(screen.queryByText('Assisted Tackles')).toBeNull();
   });
 });
+
+describe('StatsComparisonModal short-name fallbacks', () => {
+  it('uses short names on the in-season Last N Games rows (recent games, not prior-season)', () => {
+    // awayRecentGames wins over awayPriorSeasonGames whenever it is non-empty -
+    // the in-season path - and is fed by a different query (GetContestRecentResults).
+    const comparison = {
+      ...comparisonWith(),
+      history: {
+        headToHead: [],
+        awayPriorSeasonGames: [],
+        homePriorSeasonGames: [],
+        awayRecentGames: [
+          {
+            gameDate: '2026-09-06T00:00:00Z',
+            seasonYear: 2026,
+            phase: 'Regular Season',
+            homeTeam: 'Miami Hurricanes',
+            awayTeam: 'Florida A&M Rattlers',
+            homeTeamShort: 'Miami',
+            awayTeamShort: 'Florida A&M',
+            homeScore: 31,
+            awayScore: 3,
+            winner: 'Miami Hurricanes',
+          },
+        ],
+        homeRecentGames: [],
+        spreadContext: null,
+      },
+    } as unknown as TeamComparisonData;
+
+    renderModal(comparison);
+
+    expect(screen.getByText('@ Miami')).toBeTruthy();
+    expect(screen.queryByText('@ Miami Hurricanes')).toBeNull();
+  });
+
+  it('treats an empty short name as absent and shows the full name', () => {
+    const comparison = {
+      ...comparisonWith(),
+      history: {
+        headToHead: [
+          {
+            gameDate: '2024-11-23T20:30:00Z',
+            seasonYear: 2024,
+            phase: 'Regular Season',
+            homeTeam: 'Miami Hurricanes',
+            awayTeam: 'Florida A&M Rattlers',
+            homeTeamShort: '',
+            awayTeamShort: '   ',
+            homeScore: 56,
+            awayScore: 9,
+            winner: 'Miami Hurricanes',
+            spreadWinner: 'Miami Hurricanes',
+            spread: 'MIA -23.5',
+          },
+        ],
+        awayPriorSeasonGames: [],
+        homePriorSeasonGames: [],
+        spreadContext: null,
+      },
+    } as unknown as TeamComparisonData;
+
+    render(
+      <StatsComparisonModal
+        visible
+        onClose={() => {}}
+        matchup={matchup}
+        comparison={comparison}
+        isLoading={false}
+        showGambling
+      />
+    );
+
+    expect(screen.getByText('Florida A&M Rattlers 9')).toBeTruthy();
+    expect(screen.getByText('Miami Hurricanes 56')).toBeTruthy();
+    expect(screen.getByText('ATS: Miami Hurricanes')).toBeTruthy();
+  });
+});

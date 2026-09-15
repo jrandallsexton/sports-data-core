@@ -64,6 +64,7 @@ public static class MatchupForPickDtoMapper
         // Away team
         matchup.Away = canonical.Away ?? matchup.Away;
         matchup.AwayShort = canonical.AwayShort ?? matchup.AwayShort;
+        matchup.AwayShortName = canonical.AwayShortName ?? matchup.AwayShortName;
         matchup.AwayFranchiseSeasonId = canonical.AwayFranchiseSeasonId;
         matchup.AwayLogoUri = canonical.AwayLogoUri ?? matchup.AwayLogoUri;
         matchup.AwayLogoUriDark = canonical.AwayLogoUriDark;
@@ -78,6 +79,7 @@ public static class MatchupForPickDtoMapper
         // Home team
         matchup.Home = canonical.Home ?? matchup.Home;
         matchup.HomeShort = canonical.HomeShort ?? matchup.HomeShort;
+        matchup.HomeShortName = canonical.HomeShortName ?? matchup.HomeShortName;
         matchup.HomeFranchiseSeasonId = canonical.HomeFranchiseSeasonId;
         matchup.HomeLogoUri = canonical.HomeLogoUri ?? matchup.HomeLogoUri;
         matchup.HomeLogoUriDark = canonical.HomeLogoUriDark;

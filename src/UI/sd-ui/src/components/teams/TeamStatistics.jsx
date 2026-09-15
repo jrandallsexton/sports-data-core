@@ -20,7 +20,7 @@ function TeamStatistics({ team, seasonYear, stats }) {
             className={cat === selectedCategory ? "active" : ""}
             onClick={() => setSelectedCategory(cat)}
           >
-            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+            {statistics[cat]?.[0]?.categoryDisplayName ?? cat.charAt(0).toUpperCase() + cat.slice(1)}
           </button>
         ))}
       </div>

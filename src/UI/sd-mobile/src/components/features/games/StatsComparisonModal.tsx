@@ -25,6 +25,7 @@ import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
 import { useSectionCollapse } from '@/src/hooks/useSectionCollapse';
 import { Wordmark } from '@/src/components/brand/Wordmark';
 import { Ionicons } from '@expo/vector-icons';
+import { contrastTextOn, normalizeTeamColor } from '@/src/utils/teamColor';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -178,14 +179,47 @@ export function metricFavored(spec: MetricSpec, a?: number | null, b?: number | 
   return a < b ? 'away' : b < a ? 'home' : null;
 }
 
+type FavoredTally = { away: number; home: number };
+
+/**
+ * The web's "gradient bar": one thin track split in proportion to how many
+ * rows each side leads, painted in the teams' colors. Reads as "who owns
+ * this category" before the numbers do - the whole point of the team-color
+ * scheme. Hidden when neither side leads anything.
+ */
+function FavoredSplitBar({
+  tally,
+  awayColor,
+  homeColor,
+}: {
+  tally: FavoredTally;
+  awayColor: string;
+  homeColor: string;
+}) {
+  const total = tally.away + tally.home;
+  if (total === 0) return null;
+  return (
+    <View style={styles.splitBarTrack}>
+      <View style={{ flex: tally.away, backgroundColor: awayColor }} />
+      <View style={{ flex: tally.home, backgroundColor: homeColor }} />
+    </View>
+  );
+}
+
 function CategoryTab({
   label,
   active,
   onPress,
+  tally,
+  awayColor,
+  homeColor,
 }: {
   label: string;
   active: boolean;
   onPress: () => void;
+  tally?: FavoredTally;
+  awayColor?: string;
+  homeColor?: string;
 }) {
   return (
     <TouchableOpacity
@@ -193,6 +227,9 @@ function CategoryTab({
       style={[styles.tab, active && { backgroundColor: Colors.brand.navy, borderColor: Colors.brand.navy }]}
     >
       <Text style={[styles.tabText, active && { color: '#fff' }]}>{label}</Text>
+      {tally && awayColor && homeColor && (
+        <FavoredSplitBar tally={tally} awayColor={awayColor} homeColor={homeColor} />
+      )}
     </TouchableOpacity>
   );
 }
@@ -213,10 +250,15 @@ function StatRow({
   awayEntry,
   homeEntry,
   favored = null,
+  awayColor = Colors.brand.navy,
+  homeColor = Colors.brand.navy,
 }: {
   label: string;
   awayEntry: TeamStatEntry;
   homeEntry: TeamStatEntry;
+  /** Normalized "#rrggbb" team colors; the favored value is painted on its team's color. */
+  awayColor?: string;
+  homeColor?: string;
   /** Which side leads this row; null = tie/incomparable. Web parity:
       the leading value is highlighted, and lower-is-better stats invert. */
   favored?: 'away' | 'home' | null;
@@ -236,7 +278,13 @@ function StatRow({
       {/* Away value */}
       <View style={[styles.statValue, styles.statValueLeft]}>
         <View style={styles.statValueLine}>
-          <Text style={[styles.statValueText, { color: favored === 'away' ? theme.tint : theme.text }]}>
+          <Text
+            style={[
+              styles.statValueText,
+              { color: theme.text },
+              favored === 'away' && [styles.favoredChip, { backgroundColor: awayColor, color: contrastTextOn(awayColor) }],
+            ]}
+          >
             {awayEntry.displayValue}
           </Text>
           {awayEntry.rank != null && awayEntry.rank > 1 && (
@@ -249,7 +297,7 @@ function StatRow({
               style={[
                 styles.bar,
                 styles.barRight,
-                { width: `${awayPct * 100}%`, backgroundColor: Colors.brand.navy },
+                { width: `${awayPct * 100}%`, backgroundColor: awayColor },
               ]}
             />
           </View>
@@ -267,7 +315,14 @@ function StatRow({
           {homeEntry.rank != null && homeEntry.rank > 1 && (
             <Text style={[styles.statRank, { color: theme.textMuted }]}>(#{homeEntry.rank}) </Text>
           )}
-          <Text style={[styles.statValueText, styles.statValueTextRight, { color: favored === 'home' ? theme.tint : theme.text }]}>
+          <Text
+            style={[
+              styles.statValueText,
+              styles.statValueTextRight,
+              { color: theme.text },
+              favored === 'home' && [styles.favoredChip, { backgroundColor: homeColor, color: contrastTextOn(homeColor) }],
+            ]}
+          >
             {homeEntry.displayValue}
           </Text>
         </View>
@@ -277,7 +332,7 @@ function StatRow({
               style={[
                 styles.bar,
                 styles.barLeft,
-                { width: `${homePct * 100}%`, backgroundColor: Colors.brand.navy },
+                { width: `${homePct * 100}%`, backgroundColor: homeColor },
               ]}
             />
           </View>
@@ -302,6 +357,9 @@ function CollapsibleSectionHeader({
   color,
   mutedColor,
   titleIndent = 0,
+  tally,
+  awayColor,
+  homeColor,
 }: {
   title: string;
   collapsed: boolean;
@@ -310,6 +368,10 @@ function CollapsibleSectionHeader({
   mutedColor: string;
   /** Left padding on the title, for headers nested under a tab rather than flush with it. */
   titleIndent?: number;
+  /** When given with both colors, a team-colored split bar renders under the title. */
+  tally?: FavoredTally;
+  awayColor?: string;
+  homeColor?: string;
 }) {
   return (
     <TouchableOpacity
@@ -320,7 +382,12 @@ function CollapsibleSectionHeader({
       accessibilityState={{ expanded: !collapsed }}
       accessibilityLabel={`${title}, ${collapsed ? 'collapsed' : 'expanded'}`}
     >
-      <Text style={[styles.historySectionTitle, { color, paddingLeft: titleIndent }]}>{title}</Text>
+      <View style={[styles.collapsibleTitleBox, { paddingLeft: titleIndent }]}>
+        <Text style={[styles.historySectionTitle, { color }]}>{title}</Text>
+        {tally && awayColor && homeColor && (
+          <FavoredSplitBar tally={tally} awayColor={awayColor} homeColor={homeColor} />
+        )}
+      </View>
       <Ionicons
         name={collapsed ? 'chevron-down' : 'chevron-up'}
         size={18}
@@ -519,11 +586,15 @@ function StatCategoryRows({
   awayRows,
   homeRows,
   mutedColor,
+  awayColor,
+  homeColor,
 }: {
   category: string;
   awayRows: TeamStatEntry[];
   homeRows: TeamStatEntry[];
   mutedColor: string;
+  awayColor: string;
+  homeColor: string;
 }) {
   const rowCount = Math.max(awayRows.length, homeRows.length);
   if (rowCount === 0) {
@@ -554,6 +625,8 @@ function StatCategoryRows({
             awayEntry={away ?? { displayValue: '—' }}
             homeEntry={home ?? { displayValue: '—' }}
             favored={statFavored(away, home)}
+            awayColor={awayColor}
+            homeColor={homeColor}
           />
         );
       })}
@@ -569,34 +642,84 @@ function StatCategoryRows({
 function StatCategorySection({
   category,
   title,
+  tally,
   awayRows,
   homeRows,
-  accentColor,
+  headerColor,
   mutedColor,
+  awayColor,
+  homeColor,
 }: {
   category: string;
   title: string;
+  tally?: FavoredTally;
   awayRows: TeamStatEntry[];
   homeRows: TeamStatEntry[];
-  accentColor: string;
+  /** Title + chevron color. Muted, like the Metrics group headers - the team-colored split bar carries the emphasis. */
+  headerColor: string;
   mutedColor: string;
+  awayColor: string;
+  homeColor: string;
 }) {
-  // Collapsed by default: with every category stacked, the tab opens as an
-  // index of headers with tallies and the reader expands what they want.
-  const { collapsed, toggle } = useSectionCollapse(`stats.${category}`, true);
+  return (
+    <CollapsibleGroup
+      storageKey={`stats.${category}`}
+      title={title}
+      tally={tally}
+      headerColor={headerColor}
+      awayColor={awayColor}
+      homeColor={homeColor}
+    >
+      <StatCategoryRows
+        category={category}
+        awayRows={awayRows}
+        homeRows={homeRows}
+        mutedColor={mutedColor}
+        awayColor={awayColor}
+        homeColor={homeColor}
+      />
+    </CollapsibleGroup>
+  );
+}
+
+/**
+ * A group of rows behind a collapsible header, COLLAPSED by default and
+ * persisted per device under storageKey. Stats categories and Metrics groups
+ * share this so the two tabs read the same way: muted title, team-colored
+ * split bar, chevron.
+ */
+function CollapsibleGroup({
+  storageKey,
+  title,
+  tally,
+  headerColor,
+  awayColor,
+  homeColor,
+  children,
+}: {
+  storageKey: string;
+  title: string;
+  tally?: FavoredTally;
+  headerColor: string;
+  awayColor: string;
+  homeColor: string;
+  children: React.ReactNode;
+}) {
+  const { collapsed, toggle } = useSectionCollapse(storageKey, true);
   return (
     <View>
       <CollapsibleSectionHeader
         title={title}
         collapsed={collapsed}
         onToggle={toggle}
-        color={accentColor}
-        mutedColor={accentColor}
+        color={headerColor}
+        mutedColor={headerColor}
         titleIndent={12}
+        tally={tally}
+        awayColor={awayColor}
+        homeColor={homeColor}
       />
-      {!collapsed && (
-        <StatCategoryRows category={category} awayRows={awayRows} homeRows={homeRows} mutedColor={mutedColor} />
-      )}
+      {!collapsed && children}
     </View>
   );
 }
@@ -693,11 +816,16 @@ export function StatsComparisonModal({
   // Historical blocks (head-to-head + prior-season form) — present whenever
   // the franchises have played before, including week 1 when stats are empty.
   const history = comparison?.history ?? null;
-  // Full name -> the matchup's short name, for narrow-surface display only.
+  // Full name -> the matchup's short name ("Miami", not the "MIA" abbreviation),
+  // for narrow-surface display only.
   const shortNameFor = (fullName: string): string =>
-    fullName === matchup.away ? matchup.awayShort || fullName
-    : fullName === matchup.home ? matchup.homeShort || fullName
+    fullName === matchup.away ? matchup.awayShortName || fullName
+    : fullName === matchup.home ? matchup.homeShortName || fullName
     : fullName;
+  // Team colors drive the favored chips and split bars (web parity). A team
+  // without a color falls back to brand navy so nothing renders unpainted.
+  const awayColor = normalizeTeamColor(matchup.awayColor) ?? Colors.brand.navy;
+  const homeColor = normalizeTeamColor(matchup.homeColor) ?? Colors.brand.navy;
   const headToHead = history?.headToHead ?? [];
   // Rolling "Last N Games" (current + prior season), added 2026-09-09;
   // fall back to the prior-season lists against an older API payload.
@@ -776,14 +904,15 @@ export function StatsComparisonModal({
           <View style={styles.body}>
             {/* Team headers */}
             <View style={[styles.teamsRow, { borderBottomColor: theme.border }]}>
+              {/* Short names ("Miami", not "MIA"): two full names do not fit a phone header. */}
               <TeamHeader
-                name={comparison.teamA.name}
+                name={matchup.awayShortName || comparison.teamA.name}
                 logoUri={comparison.teamA.logoUri}
                 color={matchup.awayColor}
                 align="left"
               />
               <TeamHeader
-                name={comparison.teamB.name}
+                name={matchup.homeShortName || comparison.teamB.name}
                 logoUri={comparison.teamB.logoUri}
                 color={matchup.homeColor}
                 align="right"
@@ -810,18 +939,27 @@ export function StatsComparisonModal({
                   label={`History (${h2hWinsAway}:${h2hWinsHome})`}
                   active={mainTab === 'history'}
                   onPress={() => setMainTabChoice('history')}
+                  tally={{ away: h2hWinsAway, home: h2hWinsHome }}
+                  awayColor={awayColor}
+                  homeColor={homeColor}
                 />
               )}
               <CategoryTab
                 label={`Stats (${favoredByCategory.away}:${favoredByCategory.home})`}
                 active={mainTab === 'stats'}
                 onPress={() => setMainTabChoice('stats')}
+                tally={favoredByCategory}
+                awayColor={awayColor}
+                homeColor={homeColor}
               />
               {hasMetrics && (
                 <CategoryTab
                   label={`Metrics (${metricsFavored.away}:${metricsFavored.home})`}
                   active={mainTab === 'metrics'}
                   onPress={() => setMainTabChoice('metrics')}
+                  tally={metricsFavored}
+                  awayColor={awayColor}
+                  homeColor={homeColor}
                 />
               )}
             </ScrollView>
@@ -837,8 +975,8 @@ export function StatsComparisonModal({
                       title={`The Line${history.spreadContext.spreadDetails ? `: ${history.spreadContext.spreadDetails}` : ''}`}
                       collapsed={lineCollapsed}
                       onToggle={() => setLineCollapsed((c) => !c)}
-                      color={theme.tint}
-                      mutedColor={theme.tint}
+                      color={theme.textMuted}
+                      mutedColor={theme.textMuted}
                     />
                     {!lineCollapsed && spreadContextFacts(history.spreadContext, shortNameFor).map((f, i) => (
                       <View key={i} style={[styles.lineFact, { borderBottomColor: theme.border }]}>
@@ -867,8 +1005,8 @@ export function StatsComparisonModal({
                       title={`Head-to-Head: Last ${headToHead.length} Meeting${headToHead.length === 1 ? '' : 's'}`}
                       collapsed={h2hCollapsed}
                       onToggle={toggleH2h}
-                      color={theme.tint}
-                      mutedColor={theme.tint}
+                      color={theme.textMuted}
+                      mutedColor={theme.textMuted}
                     />
                     {!h2hCollapsed && headToHead.map((g, i) => (
                       <View key={i} style={[styles.h2hRow, { borderBottomColor: theme.border }]}>
@@ -938,8 +1076,8 @@ export function StatsComparisonModal({
                   title={`Last ${Math.max(awayPriorGames.length, homePriorGames.length)} Games`}
                   collapsed={lastSeasonCollapsed}
                   onToggle={toggleLastSeason}
-                  color={theme.tint}
-                  mutedColor={theme.tint}
+                  color={theme.textMuted}
+                  mutedColor={theme.textMuted}
                 />
 
                 {!lastSeasonCollapsed && (
@@ -988,22 +1126,37 @@ export function StatsComparisonModal({
                  StatRow; favored is computed on the RAW values (formatted
                  percents would mislead parseFloat for lower-is-better). */
               <ScrollView showsVerticalScrollIndicator={false}>
-                {METRICS_SPEC.map((group) => (
-                  <View key={group.category}>
-                    <Text style={[styles.metricsGroupHeader, { color: theme.textMuted, borderBottomColor: theme.border }]}>
-                      {group.category}
-                    </Text>
-                    {group.metrics.map((m) => (
-                      <StatRow
-                        key={m.key}
-                        label={m.label}
-                        awayEntry={{ displayValue: m.format(awayMetrics?.[m.key]) }}
-                        homeEntry={{ displayValue: m.format(homeMetrics?.[m.key]) }}
-                        favored={metricFavored(m, awayMetrics?.[m.key], homeMetrics?.[m.key])}
-                      />
-                    ))}
-                  </View>
-                ))}
+                {METRICS_SPEC.map((group) => {
+                  const groupTally: FavoredTally = { away: 0, home: 0 };
+                  for (const m of group.metrics) {
+                    const f = metricFavored(m, awayMetrics?.[m.key], homeMetrics?.[m.key]);
+                    if (f === 'away') groupTally.away++;
+                    if (f === 'home') groupTally.home++;
+                  }
+                  return (
+                    <CollapsibleGroup
+                      key={group.category}
+                      storageKey={`metrics.${group.category}`}
+                      title={`${group.category} (${groupTally.away}:${groupTally.home})`}
+                      tally={groupTally}
+                      headerColor={theme.textMuted}
+                      awayColor={awayColor}
+                      homeColor={homeColor}
+                    >
+                      {group.metrics.map((m) => (
+                        <StatRow
+                          key={m.key}
+                          label={m.label}
+                          awayEntry={{ displayValue: m.format(awayMetrics?.[m.key]) }}
+                          homeEntry={{ displayValue: m.format(homeMetrics?.[m.key]) }}
+                          favored={metricFavored(m, awayMetrics?.[m.key], homeMetrics?.[m.key])}
+                          awayColor={awayColor}
+                          homeColor={homeColor}
+                        />
+                      ))}
+                    </CollapsibleGroup>
+                  );
+                })}
               </ScrollView>
             ) : categories.length === 0 ? (
               <View style={styles.loadingContainer}>
@@ -1019,15 +1172,24 @@ export function StatsComparisonModal({
               <ScrollView showsVerticalScrollIndicator={false}>
                 {categories.map((cat) => {
                   const tally = favoredByCategory.perCategory[cat];
+                  // The slug is the key (and the collapse key); the label is the
+                  // category's ShortDisplayName, carried on every entry.
+                  const catLabel =
+                    awayStats[cat]?.[0]?.categoryDisplayName ??
+                    homeStats[cat]?.[0]?.categoryDisplayName ??
+                    cat;
                   return (
                     <StatCategorySection
                       key={cat}
                       category={cat}
-                      title={tally ? `${cat} (${tally.away}:${tally.home})` : cat}
+                      title={tally ? `${catLabel} (${tally.away}:${tally.home})` : catLabel}
+                      tally={tally}
                       awayRows={awayStats[cat] ?? []}
                       homeRows={homeStats[cat] ?? []}
-                      accentColor={theme.tint}
+                      headerColor={theme.textMuted}
                       mutedColor={theme.textMuted}
+                      awayColor={awayColor}
+                      homeColor={homeColor}
                     />
                   );
                 })}
@@ -1146,6 +1308,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#64748B',
   },
+  // Team-colored split bar (web's "category-gradient-bar"): thin, full
+  // width of whatever it sits under, segments in proportion to the tally.
+  splitBarTrack: {
+    flexDirection: 'row',
+    height: 3,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginTop: 4,
+    alignSelf: 'stretch',
+  },
+  // A favored value painted on its team's color; text flips to whichever
+  // of light/dark reads against it (contrastTextOn).
+  favoredChip: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  collapsibleTitleBox: {
+    flex: 1,
+  },
 
   // Stat rows
   statRow: {
@@ -1172,16 +1355,6 @@ const styles = StyleSheet.create({
   },
   statValueTextRight: {
     textAlign: 'right',
-  },
-  metricsGroupHeader: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 6,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   statValueLine: {
     flexDirection: 'row',

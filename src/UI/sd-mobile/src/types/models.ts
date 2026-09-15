@@ -51,7 +51,8 @@ export interface Matchup {
 
   // Away team
   away: string;                 // full name
-  awayShort: string;            // abbreviation
+  awayShort: string;            // abbreviation ("MIA")
+  awayShortName?: string | null; // Franchise.DisplayNameShort ("Miami")
   awaySlug: string;
   awayFranchiseSeasonId: string;
   awayLogoUri?: string | null;
@@ -66,7 +67,8 @@ export interface Matchup {
 
   // Home team
   home: string;                 // full name
-  homeShort: string;            // abbreviation
+  homeShort: string;            // abbreviation ("WAKE")
+  homeShortName?: string | null; // Franchise.DisplayNameShort ("Wake Forest")
   homeSlug: string;
   homeFranchiseSeasonId: string;
   homeLogoUri?: string | null;
@@ -398,6 +400,8 @@ export interface TeamStatEntry {
   statisticKey?: string | null;
   /** Human display name (e.g. "Assisted Tackles") — what the web renders. */
   statisticValue?: string | null;
+  /** Human label for the entry's category ("Defensive"); the dictionary key stays the slug. */
+  categoryDisplayName?: string | null;
   /** National rank for this stat; only meaningful when > 1. */
   rank?: number | null;
   /** Lower-is-better stats (turnovers, sacks allowed, ...) invert "favored". */

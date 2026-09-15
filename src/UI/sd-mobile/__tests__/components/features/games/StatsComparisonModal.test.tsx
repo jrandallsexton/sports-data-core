@@ -86,7 +86,7 @@ const comparisonWith = (overrides?: {
             defensive: overrides?.awayEntries ?? [
               // The regression this PR is named for: statisticValue is the
               // payload's human label — no legacy label/name present.
-              { statisticKey: 'assistTackles', statisticValue: 'Assisted Tackles', displayValue: '45' },
+              { statisticKey: 'assistTackles', statisticValue: 'Assisted Tackles', displayValue: '45', categoryDisplayName: 'Defensive' },
             ],
           },
         },
@@ -99,7 +99,7 @@ const comparisonWith = (overrides?: {
         data: {
           statistics: overrides?.statistics ?? {
             defensive: overrides?.homeEntries ?? [
-              { statisticKey: 'assistTackles', statisticValue: 'Assisted Tackles', displayValue: '30' },
+              { statisticKey: 'assistTackles', statisticValue: 'Assisted Tackles', displayValue: '30', categoryDisplayName: 'Defensive' },
             ],
           },
         },
@@ -125,8 +125,9 @@ describe('StatsComparisonModal', () => {
   it('renders the payload statisticValue as the row label, never "Stat 1"', () => {
     renderModal(comparisonWith());
 
-    // Categories start collapsed; open the one category the fixture has.
-    fireEvent.press(screen.getByText('defensive (1:0)'));
+    // Categories start collapsed; open the one category the fixture has -
+    // titled by its ShortDisplayName, not the slug key.
+    fireEvent.press(screen.getByText('Defensive (1:0)'));
     expect(screen.getByText('Assisted Tackles')).toBeTruthy();
     expect(screen.queryByText('Stat 1')).toBeNull();
   });
@@ -141,6 +142,7 @@ describe('StatsComparisonModal', () => {
       })
     );
 
+    // No categoryDisplayName on these legacy entries: the header falls back to the slug.
     fireEvent.press(screen.getByText('defensive (1:0)'));
     expect(screen.getByText('Legacy Label Stat')).toBeTruthy();
   });
@@ -169,6 +171,9 @@ describe('StatsComparisonModal', () => {
       })
     );
 
+    // The body landed on Metrics: its group headers are present (collapsed),
+    // and opening one shows the rows rather than "Stats not available."
+    fireEvent.press(screen.getByText('Offensive Efficiency (1:0)'));
     expect(screen.getByText('Yards Per Play')).toBeTruthy();
     expect(screen.queryByText('Stats not available.')).toBeNull();
   });
@@ -183,8 +188,11 @@ describe('StatsComparisonModal', () => {
 
     fireEvent.press(screen.getByText('Metrics (1:1)'));
 
-    // Group header + dec2-formatted values from the spec.
-    expect(screen.getByText('Offensive Efficiency')).toBeTruthy();
+    // Group headers carry their favored tally (ypp 6.00 beats 5.00 -> away 1;
+    // oppYpp 0.35 beats 0.50 on the inverted metric -> home 1) and start
+    // collapsed, like the stats categories; open the two groups under test.
+    fireEvent.press(screen.getByText('Offensive Efficiency (1:0)'));
+    fireEvent.press(screen.getByText('Defensive Metrics (0:1)'));
     expect(screen.getByText('6.00')).toBeTruthy();
     expect(screen.getByText('5.00')).toBeTruthy();
     // oppYpp rows render too (0.50 vs 0.35 — home leads the inverted metric).
@@ -206,6 +214,9 @@ describe('StatsComparisonModal', () => {
     );
 
     fireEvent.press(screen.getByText('Metrics (1:0)'));
+    // rzTdRate lives under Red Zone Efficiency; null vs 0 is incomparable,
+    // so that group's tally is (0:0).
+    fireEvent.press(screen.getByText('Red Zone Efficiency (0:0)'));
 
     // Home's genuine 0% renders as a value; away's null (and every other
     // absent pct/dec2 metric) renders '-', never a plausible zero.
@@ -366,7 +377,7 @@ describe('StatsComparisonModal head-to-head', () => {
 
 describe('StatsComparisonModal short names in The Line and Last 5 Games', () => {
   it('uses short names for the sentence head, the evidence rows and the prior-season opponent', () => {
-    const shortMatchup = { ...matchup, awayShort: 'Florida A&M', homeShort: 'Miami' } as unknown as Matchup;
+    const shortMatchup = { ...matchup, awayShortName: 'Florida A&M', homeShortName: 'Miami' } as unknown as Matchup;
     const comparison = {
       ...comparisonWith(),
       history: {
@@ -445,7 +456,7 @@ describe('StatsComparisonModal stacked stat categories', () => {
     // The category is a section header carrying its favored tally (away
     // 45 assisted tackles beats home 30), not a chip to swipe to.
     // ...and it starts COLLAPSED, so the tab opens as an index of headers.
-    const header = screen.getByText('defensive (1:0)');
+    const header = screen.getByText('Defensive (1:0)');
     expect(screen.queryByText('Assisted Tackles')).toBeNull();
 
     fireEvent.press(header);

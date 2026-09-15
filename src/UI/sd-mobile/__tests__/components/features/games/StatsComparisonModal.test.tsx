@@ -276,3 +276,154 @@ describe('StatsComparisonModal', () => {
     expect(screen.getByText('Metrics (1:1)')).toBeTruthy();
   });
 });
+
+describe('StatsComparisonModal head-to-head', () => {
+  const h2hHistory = (games: object[]) =>
+    ({
+      ...comparisonWith(),
+      history: {
+        headToHead: games,
+        awayPriorSeasonGames: [],
+        homePriorSeasonGames: [],
+        spreadContext: null,
+      },
+    }) as unknown as TeamComparisonData;
+
+  it('renders short team names in the meeting rows and the ATS line, keeping the tally on full names', () => {
+    const comparison = h2hHistory([
+      {
+        gameDate: '2024-11-23T20:30:00Z',
+        seasonYear: 2024,
+        phase: 'Regular Season',
+        homeTeam: 'Miami Hurricanes',
+        awayTeam: 'Florida A&M Rattlers',
+        homeTeamShort: 'Miami',
+        awayTeamShort: 'Florida A&M',
+        homeScore: 56,
+        awayScore: 9,
+        // Identity fields stay on the full DisplayName - this is what the
+        // History tab tally compares against matchup.home/away.
+        winner: 'Miami Hurricanes',
+        spreadWinner: 'Miami Hurricanes',
+        spread: 'MIA -23.5',
+        overUnder: 65.5,
+        overUnderResult: 'Under',
+      },
+    ]);
+
+    render(
+      <StatsComparisonModal
+        visible
+        onClose={() => {}}
+        matchup={matchup}
+        comparison={comparison}
+        isLoading={false}
+        showGambling
+      />
+    );
+
+    expect(screen.getByText('Florida A&M 9')).toBeTruthy();
+    expect(screen.getByText('Miami 56')).toBeTruthy();
+    expect(screen.getByText('ATS: Miami')).toBeTruthy();
+    expect(screen.queryByText('Miami Hurricanes 56')).toBeNull();
+    expect(screen.getByText('History (0:1)')).toBeTruthy();
+  });
+
+  it('falls back to the full names when the payload carries no short names', () => {
+    const comparison = h2hHistory([
+      {
+        gameDate: '2013-10-26T19:30:00Z',
+        seasonYear: 2013,
+        phase: 'Regular Season',
+        homeTeam: 'Miami Hurricanes',
+        awayTeam: 'Florida A&M Rattlers',
+        homeScore: 41,
+        awayScore: 7,
+        winner: 'Miami Hurricanes',
+        spreadWinner: null,
+        spread: null,
+        overUnder: null,
+        overUnderResult: null,
+      },
+    ]);
+
+    renderModal(comparison);
+
+    expect(screen.getByText('Florida A&M Rattlers 7')).toBeTruthy();
+    expect(screen.getByText('Miami Hurricanes 41')).toBeTruthy();
+  });
+});
+
+describe('StatsComparisonModal short names in The Line and Last 5 Games', () => {
+  it('uses short names for the sentence head, the evidence rows and the prior-season opponent', () => {
+    const shortMatchup = { ...matchup, awayShort: 'Florida A&M', homeShort: 'Miami' } as unknown as Matchup;
+    const comparison = {
+      ...comparisonWith(),
+      history: {
+        headToHead: [],
+        awayPriorSeasonGames: [
+          {
+            gameDate: '2025-11-22T00:00:00Z',
+            seasonYear: 2025,
+            phase: 'Regular Season',
+            homeTeam: 'Miami Hurricanes',
+            awayTeam: 'Florida A&M Rattlers',
+            homeTeamShort: 'Miami',
+            awayTeamShort: 'Florida A&M',
+            homeScore: 38,
+            awayScore: 6,
+            winner: 'Miami Hurricanes',
+          },
+        ],
+        homePriorSeasonGames: [],
+        spreadContext: {
+          favoriteTeam: 'Miami Hurricanes',
+          underdogTeam: 'Florida A&M Rattlers',
+          magnitude: 12.5,
+          spreadDetails: 'MIA -12.5',
+          favoriteWonByMargin: null,
+          underdogLostByMargin: null,
+          favoriteAtsAsBigFavorite: {
+            threshold: 10,
+            thresholdUpper: 14,
+            games: 9,
+            covers: 4,
+            dataFloorSeason: 2022,
+            windowGames: [
+              {
+                gameDate: '2025-11-22T00:00:00Z',
+                seasonYear: 2025,
+                opponent: 'Syracuse Orange',
+                opponentShort: 'Syracuse',
+                teamScore: 45,
+                opponentScore: 26,
+                teamSpread: -13.5,
+                covered: true,
+                opponentSeasonRecord: '3-9',
+              },
+            ],
+          },
+          underdogAtsAsBigUnderdog: null,
+        },
+      },
+    } as unknown as TeamComparisonData;
+
+    render(
+      <StatsComparisonModal
+        visible
+        onClose={() => {}}
+        matchup={shortMatchup}
+        comparison={comparison}
+        isLoading={false}
+        showGambling
+      />
+    );
+
+    expect(screen.getByText('Miami as a 10–14 point favorite:')).toBeTruthy();
+    expect(screen.getByText("'25 Syracuse 45-26 (3-9) · -13.5 ✓")).toBeTruthy();
+    // Last 5 Games: Florida A&M's row reads "@ Miami", not the full name, while
+    // the W/L badge still resolved from the full-name identity fields.
+    expect(screen.getByText('@ Miami')).toBeTruthy();
+    expect(screen.getByText('L')).toBeTruthy();
+  });
+});

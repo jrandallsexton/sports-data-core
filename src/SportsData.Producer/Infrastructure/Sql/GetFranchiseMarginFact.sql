@@ -13,6 +13,8 @@ WITH franchise_games AS (
         c."EventNote" AS "Note",
         fHome."DisplayName" AS "HomeTeam",
         fAway."DisplayName" AS "AwayTeam",
+        fHome."DisplayNameShort" AS "HomeTeamShort",
+        fAway."DisplayNameShort" AS "AwayTeamShort",
         c."HomeScore",
         c."AwayScore",
         CASE

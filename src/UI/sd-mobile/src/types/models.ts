@@ -423,6 +423,9 @@ export interface ContestHistoryGame {
   note?: string | null;
   homeTeam: string;
   awayTeam: string;
+  /** Display-only short names; identity checks stay on homeTeam/awayTeam. */
+  homeTeamShort?: string | null;
+  awayTeamShort?: string | null;
   homeScore?: number | null;
   awayScore?: number | null;
   winner?: string | null;
@@ -461,6 +464,8 @@ export interface ContestMarginInstance {
   gameDate: string;
   seasonYear: number;
   opponent: string;
+  /** Display-only short name for the opponent; null when unsourced. */
+  opponentShort?: string | null;
   teamScore: number;
   opponentScore: number;
   /** Opponent's overall W-L that season ("7-5"); null when unsourced. */
@@ -484,6 +489,8 @@ export interface ContestAtsBucketInstance {
   gameDate: string;
   seasonYear: number;
   opponent: string;
+  /** Display-only short name for the opponent; null when unsourced. */
+  opponentShort?: string | null;
   teamScore: number;
   opponentScore: number;
   /** Closing spread, TEAM-relative (negative = this team was favored). */

@@ -195,6 +195,8 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         public string? Note { get; set; }
         public string? HomeTeam { get; set; }
         public string? AwayTeam { get; set; }
+        public string? HomeTeamShort { get; set; }
+        public string? AwayTeamShort { get; set; }
         public int? HomeScore { get; set; }
         public int? AwayScore { get; set; }
         public string? Winner { get; set; }
@@ -215,6 +217,7 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         public DateTime GameDate { get; set; }
         public int SeasonYear { get; set; }
         public string Opponent { get; set; } = default!;
+        public string? OpponentShort { get; set; }
         public int TeamScore { get; set; }
         public int OpponentScore { get; set; }
         public double TeamSpread { get; set; }
@@ -288,6 +291,7 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
         public DateTime GameDate { get; set; }
         public int SeasonYear { get; set; }
         public string Opponent { get; set; } = default!;
+        public string? OpponentShort { get; set; }
         public int TeamScore { get; set; }
         public int OpponentScore { get; set; }
         public string? OpponentSeasonRecord { get; set; }
@@ -335,6 +339,8 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
             Note = row.Note,
             HomeTeam = row.HomeTeam!,
             AwayTeam = row.AwayTeam!,
+            HomeTeamShort = row.HomeTeamShort,
+            AwayTeamShort = row.AwayTeamShort,
             HomeScore = row.HomeScore,
             AwayScore = row.AwayScore,
             Winner = row.Winner,
@@ -378,6 +384,7 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 GameDate = x.GameDate,
                 SeasonYear = x.SeasonYear,
                 Opponent = x.Opponent,
+                OpponentShort = x.OpponentShort,
                 TeamScore = x.TeamScore,
                 OpponentScore = x.OpponentScore,
                 OpponentSeasonRecord = x.OpponentSeasonRecord
@@ -455,6 +462,7 @@ public class GetContestPreviewHistoryQueryHandler : IGetContestPreviewHistoryQue
                 GameDate = x.GameDate,
                 SeasonYear = x.SeasonYear,
                 Opponent = x.Opponent,
+                OpponentShort = x.OpponentShort,
                 TeamScore = x.TeamScore,
                 OpponentScore = x.OpponentScore,
                 TeamSpread = x.TeamSpread,

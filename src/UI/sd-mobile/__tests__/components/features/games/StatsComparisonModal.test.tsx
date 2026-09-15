@@ -356,7 +356,6 @@ describe('StatsComparisonModal head-to-head', () => {
 
 describe('StatsComparisonModal short names in The Line and Last 5 Games', () => {
   it('uses short names for the sentence head, the evidence rows and the prior-season opponent', () => {
-    const shortMatchup = { ...matchup, awayShort: 'Florida A&M', homeShort: 'Miami' } as unknown as Matchup;
     const comparison = {
       ...comparisonWith(),
       history: {
@@ -412,14 +411,15 @@ describe('StatsComparisonModal short names in The Line and Last 5 Games', () => 
       <StatsComparisonModal
         visible
         onClose={() => {}}
-        matchup={shortMatchup}
+        matchup={matchup}
         comparison={comparison}
         isLoading={false}
         showGambling
       />
     );
 
-    expect(screen.getByText('Miami as a 10–14 point favorite:')).toBeTruthy();
+    // The head keeps the full name: the matchup payload has only the abbreviation.
+    expect(screen.getByText('Miami Hurricanes as a 10–14 point favorite:')).toBeTruthy();
     expect(screen.getByText("'25 Syracuse 45-26 (3-9) · -13.5 ✓")).toBeTruthy();
     // Last 5 Games: Florida A&M's row reads "@ Miami", not the full name, while
     // the W/L badge still resolved from the full-name identity fields.

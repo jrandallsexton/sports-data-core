@@ -615,11 +615,10 @@ export function StatsComparisonModal({
   // Historical blocks (head-to-head + prior-season form) — present whenever
   // the franchises have played before, including week 1 when stats are empty.
   const history = comparison?.history ?? null;
-  // Full name -> the matchup's short name, for narrow-surface display only.
-  const shortNameFor = (fullName: string): string =>
-    fullName === matchup.away ? matchup.awayShort || fullName
-    : fullName === matchup.home ? matchup.homeShort || fullName
-    : fullName;
+  // The Line sentence heads. The matchup payload carries the abbreviation
+  // (awayShort = "MIA"), not Franchise.DisplayNameShort, so the heads keep the
+  // full name here rather than mix "MIA" with the "Miami" the rows show.
+  const shortNameFor = (fullName: string): string => fullName;
   const headToHead = history?.headToHead ?? [];
   // Rolling "Last N Games" (current + prior season), added 2026-09-09;
   // fall back to the prior-season lists against an older API payload.

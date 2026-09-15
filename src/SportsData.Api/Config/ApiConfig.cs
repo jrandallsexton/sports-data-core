@@ -36,6 +36,6 @@
         /// PickemGroupWeekMatchupsGeneratedHandler — contest refreshes still
         /// fan out, so matchup metadata stays fresh locally.
         /// </summary>
-        public bool MatchupPreviewGenerationEnabled { get; set; } = true;
+        public bool MatchupPreviewGenerationEnabled { get; set; } = false;
     }
 }

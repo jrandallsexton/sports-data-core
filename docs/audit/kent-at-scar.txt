@@ -1,0 +1,552 @@
+Kent State @ South Carolina.
+Final Score: 0-57.
+
+Debug SQL:
+
+select * from public."Contest" where "Id" = '9662df4b-15d0-4c1e-5df5-c9460fbdae0a';
+
+select * from public."ContestExternalId" where "ContestId" = '9662df4b-15d0-4c1e-5df5-c9460fbdae0a'
+-- Id	ContestId	CreatedUtc	ModifiedUtc	CreatedBy	ModifiedBy	Value	Provider	SourceUrl	SourceUrlHash
+-- ebe3fafc-175a-4fdc-be46-dc8d93917b14	9662df4b-15d0-4c1e-5df5-c9460fbdae0a	2026-04-14 09:51:01.75749+00	NULL	00000000-0000-0000-0000-000000000000	NULL	d54cf37d9a9be81bdff9d93033205f826d63ff456e1ac7559399405b0c5864c7	0	http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401856665	d54cf37d9a9be81bdff9d93033205f826d63ff456e1ac7559399405b0c5864c7
+
+select * from public."Competition" where "ContestId" = '9662df4b-15d0-4c1e-5df5-c9460fbdae0a';
+
+select * from public."CompetitionOdds" where "CompetitionId" = '0594210f-b83c-ba8b-ac63-c3c8508aae6c';
+-- Id	CompetitionId	ProviderRef	ProviderId	ProviderName	ProviderPriority	Details	OverUnder	Spread	OverOdds	UnderOdds	MoneylineWinner	SpreadWinner	ContentHash	CreatedUtc	ModifiedUtc	CreatedBy	ModifiedBy	PropBetsRef	ClosedUtc	CorrectedUtc	OverPriceClose	OverPriceCurrent	OverPriceOpen	TotalPointsClose	TotalPointsCurrent	TotalPointsOpen	UnderPriceClose	UnderPriceCurrent	UnderPriceOpen	AtsWinnerFranchiseSeasonId	FinalizedUtc	OverUnderResult	WinnerFranchiseSeasonId
+-- 7fe57727-9851-e6a2-e932-3b5e92297865	0594210f-b83c-ba8b-ac63-c3c8508aae6c	http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/providers/100?lang=en&region=us	100	DraftKings	1	SC -35.5	52.500000	-35.500000	-112.000000	-108.000000	False	False	7D32ACF5721668C618BB03B51DECE48D5ABE1821D90A0AA99FC5F0E6D00E16A1	2026-09-05 20:27:04.593804+00	NULL	40d3be9f-cde6-4fad-8626-5afd0b47b2c6	NULL	NULL	NULL	NULL	-112.000000	-112.000000	-105.000000	52.500000	52.500000	52.500000	-108.000000	-108.000000	-115.000000	2c3eecbf-f3e9-680d-6753-bea381d9850d	2026-09-05 20:31:51.667552+00	1	2c3eecbf-f3e9-680d-6753-bea381d9850d
+-- 0ff5a8f9-215f-039e-3fe7-762e6c2687fd	0594210f-b83c-ba8b-ac63-c3c8508aae6c	http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/providers/200?lang=en&region=us	200	DraftKings - Live Odds	0	NULL	57.500000	NULL	1500.000000	-4000.000000	False	False	CC68D22B5EEC99F5FB55B3D1737330529123DE78A0FDA33EEB7635D54E39F63F	2026-09-05 20:27:07.643886+00	NULL	40d3be9f-cde6-4fad-8626-5afd0b47b2c6	NULL	NULL	NULL	NULL	1500.000000	1500.000000	-115.000000	57.500000	57.500000	52.500000	-4000.000000	-4000.000000	-115.000000	NULL	2026-09-05 20:31:51.667389+00	2	2c3eecbf-f3e9-680d-6753-bea381d9850d
+
+Game shows a "Push" on the MatchupCard - but that is not true because the spread was -35.5.
+
+The issue is that FootballContestEnrichmentProcessor is trying to use SportsBook.EspnBet as the odds provider, but this season, ESPN has been using DraftKings.
+
+We have two records for DraftKings, but one is the "Live Odds" which did not contain a spread.  The code defaulted through and picked the odds with no spread - and therefore generated a "Push".
+
+"Live odds" apparently get removed after the game completes (rightfully so) and can be verified by an API GET to: http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401856665/competitions/401856665/odds?lang=en&region=us
+
+{
+  "count": 1,
+  "pageIndex": 1,
+  "pageSize": 25,
+  "pageCount": 1,
+  "items": [
+    {
+      "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/events/401856665/competitions/401856665/odds/100?lang=en&region=us",
+      "provider": {
+        "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/providers/100?lang=en&region=us",
+        "id": "100",
+        "name": "DraftKings",
+        "priority": 1
+      },
+      "details": "SC -35.5",
+      "overUnder": 52.5,
+      "spread": -35.5,
+      "overOdds": -112.0,
+      "underOdds": -108.0,
+      "awayTeamOdds": {
+        "favorite": false,
+        "underdog": true,
+        "moneyLine": 4000,
+        "spreadOdds": -118.0,
+        "open": {
+          "favorite": false,
+          "pointSpread": {
+            "alternateDisplayValue": "+33.5",
+            "american": "+33.5"
+          },
+          "spread": {
+            "value": 1.9,
+            "displayValue": "10/11",
+            "alternateDisplayValue": "-110",
+            "decimal": 1.9,
+            "fraction": "10/11",
+            "american": "-110"
+          },
+          "moneyLine": {
+            "value": 36.0,
+            "displayValue": "35/1",
+            "alternateDisplayValue": "+3500",
+            "decimal": 36.0,
+            "fraction": "35/1",
+            "american": "+3500"
+          }
+        },
+        "close": {
+          "pointSpread": {
+            "alternateDisplayValue": "+35.5",
+            "american": "+35.5"
+          },
+          "spread": {
+            "value": 1.84,
+            "displayValue": "50/59",
+            "alternateDisplayValue": "-118",
+            "decimal": 1.84,
+            "fraction": "50/59",
+            "american": "-118"
+          },
+          "moneyLine": {
+            "value": 41.0,
+            "displayValue": "40/1",
+            "alternateDisplayValue": "+4000",
+            "decimal": 41.0,
+            "fraction": "40/1",
+            "american": "+4000"
+          }
+        },
+        "current": {
+          "pointSpread": {
+            "alternateDisplayValue": "+35.5",
+            "american": "+35.5"
+          },
+          "spread": {
+            "value": 1.84,
+            "displayValue": "50/59",
+            "alternateDisplayValue": "-118",
+            "decimal": 1.84,
+            "fraction": "50/59",
+            "american": "-118"
+          },
+          "moneyLine": {
+            "value": 41.0,
+            "displayValue": "40/1",
+            "alternateDisplayValue": "+4000",
+            "decimal": 41.0,
+            "fraction": "40/1",
+            "american": "+4000"
+          }
+        },
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/teams/2309?lang=en&region=us"
+        }
+      },
+      "homeTeamOdds": {
+        "favorite": true,
+        "underdog": false,
+        "moneyLine": -50000,
+        "spreadOdds": -102.0,
+        "open": {
+          "favorite": true,
+          "pointSpread": {
+            "alternateDisplayValue": "-33.5",
+            "american": "-33.5"
+          },
+          "spread": {
+            "value": 1.9,
+            "displayValue": "10/11",
+            "alternateDisplayValue": "-110",
+            "decimal": 1.9,
+            "fraction": "10/11",
+            "american": "-110"
+          },
+          "moneyLine": {
+            "value": 1.005,
+            "displayValue": "1/200",
+            "alternateDisplayValue": "-20000",
+            "decimal": 1.005,
+            "fraction": "1/200",
+            "american": "-20000"
+          }
+        },
+        "close": {
+          "pointSpread": {
+            "alternateDisplayValue": "-35.5",
+            "american": "-35.5"
+          },
+          "spread": {
+            "value": 1.98,
+            "displayValue": "50/51",
+            "alternateDisplayValue": "-102",
+            "decimal": 1.98,
+            "fraction": "50/51",
+            "american": "-102"
+          },
+          "moneyLine": {
+            "value": 1.002,
+            "displayValue": "1/500",
+            "alternateDisplayValue": "-50000",
+            "decimal": 1.002,
+            "fraction": "1/500",
+            "american": "-50000"
+          }
+        },
+        "current": {
+          "pointSpread": {
+            "alternateDisplayValue": "-35.5",
+            "american": "-35.5"
+          },
+          "spread": {
+            "value": 1.98,
+            "displayValue": "50/51",
+            "alternateDisplayValue": "-102",
+            "decimal": 1.98,
+            "fraction": "50/51",
+            "american": "-102"
+          },
+          "moneyLine": {
+            "value": 1.002,
+            "displayValue": "1/500",
+            "alternateDisplayValue": "-50000",
+            "decimal": 1.002,
+            "fraction": "1/500",
+            "american": "-50000"
+          }
+        },
+        "team": {
+          "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/seasons/2026/teams/2579?lang=en&region=us"
+        }
+      },
+      "links": [
+        {
+          "language": "en-US",
+          "rel": [
+            "home",
+            "desktop",
+            "bets",
+            "draftkings"
+          ],
+          "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34180769%3Foutcomes%3D0ML84871079_1",
+          "text": "Home Bet",
+          "shortText": "Home Bet",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "away",
+            "desktop",
+            "bets",
+            "draftkings"
+          ],
+          "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34180769%3Foutcomes%3D0ML84871079_3",
+          "text": "Away Bet",
+          "shortText": "Away Bet",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "homeSpread",
+            "desktop",
+            "bets"
+          ],
+          "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34180769%3Foutcomes%3D0HC84871079N3550_1",
+          "text": "Home Point Spread",
+          "shortText": "Home Point Spread",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "awaySpread",
+            "desktop",
+            "bets"
+          ],
+          "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34180769%3Foutcomes%3D0HC84871079P3550_3",
+          "text": "Away Point Spread",
+          "shortText": "Away Point Spread",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "over",
+            "desktop",
+            "bets"
+          ],
+          "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34180769%3Foutcomes%3D0OU84871079O5250_1",
+          "text": "Over Odds",
+          "shortText": "Over Odds",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "under",
+            "desktop",
+            "bets"
+          ],
+          "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34180769%3Foutcomes%3D0OU84871079U5250_3",
+          "text": "Under Odds",
+          "shortText": "Under Odds",
+          "isExternal": true,
+          "isPremium": false
+        },
+        {
+          "language": "en-US",
+          "rel": [
+            "game",
+            "desktop",
+            "bets"
+          ],
+          "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34180769",
+          "text": "Game",
+          "shortText": "Game",
+          "isExternal": true,
+          "isPremium": false
+        }
+      ],
+      "moneylineWinner": false,
+      "spreadWinner": false,
+      "open": {
+        "over": {
+          "value": 1.95,
+          "displayValue": "20/21",
+          "alternateDisplayValue": "-105",
+          "decimal": 1.95,
+          "fraction": "20/21",
+          "american": "-105"
+        },
+        "under": {
+          "value": 1.86,
+          "displayValue": "20/23",
+          "alternateDisplayValue": "-115",
+          "decimal": 1.86,
+          "fraction": "20/23",
+          "american": "-115"
+        },
+        "total": {
+          "alternateDisplayValue": "52.5",
+          "american": "52.5"
+        }
+      },
+      "close": {
+        "over": {
+          "value": 1.89,
+          "displayValue": "25/28",
+          "alternateDisplayValue": "-112",
+          "decimal": 1.89,
+          "fraction": "25/28",
+          "american": "-112"
+        },
+        "under": {
+          "value": 1.92,
+          "displayValue": "25/27",
+          "alternateDisplayValue": "-108",
+          "decimal": 1.92,
+          "fraction": "25/27",
+          "american": "-108"
+        },
+        "total": {
+          "alternateDisplayValue": "52.5",
+          "american": "52.5"
+        }
+      },
+      "current": {
+        "over": {
+          "value": 1.89,
+          "displayValue": "25/28",
+          "alternateDisplayValue": "-112",
+          "decimal": 1.89,
+          "fraction": "25/28",
+          "american": "-112"
+        },
+        "under": {
+          "value": 1.92,
+          "displayValue": "25/27",
+          "alternateDisplayValue": "-108",
+          "decimal": 1.92,
+          "fraction": "25/27",
+          "american": "-108"
+        },
+        "total": {
+          "alternateDisplayValue": "52.5",
+          "american": "52.5"
+        }
+      }
+    }
+  ]
+}
+
+The only odds remaining are the ones provided by SportsBook.DraftKings100 (OddsProviderId 100).
+
+Few issues with this:
+1. We should _never_ perform finalization/enrichment based on a "live odds"
+2. We should likely have a list of "preferreds odds providers".  Even though this game does not show EspnBet, perhaps in the future a game would have both SportsBook.EspnBet and SportsBook.DraftKings100. Which one do we use for matchups and odds reconciliation?
+3. For the CompetitionOdds row with Id of 0ff5a8f9-215f-039e-3fe7-762e6c2687fd, you will notice that "SpreadWinner" is false, even though "Spread" is null. IMO, "SpreadWinner" should also be null.
+=====================================================================
+ANALYSIS + REMEDIATION PLAN (Claude, 2026-09-06 morning)
+=====================================================================
+
+ROOT CAUSE (confirmed in code)
+------------------------------
+FootballContestEnrichmentProcessor picks the "primary" CompetitionOdds row
+for the Contest-level denorm (SpreadWinnerFranchiseSeasonId / OverUnder) as:
+
+    prefer ProviderId == SportsBook.EspnBet (58)
+    else FirstOrDefault(FinalizedUtc.HasValue)   <-- arbitrary EF load order
+
+ESPN's featured book switched to DraftKings for 2026, so EspnBet is absent
+and the fallback grabs whatever loaded first. For Kent-SC that was
+"DraftKings - Live Odds" (ProviderId 200, Spread NULL) -> null ATS winner
+-> rendered as "Push" despite SC covering -35.5 by three touchdowns.
+BaseballContestEnrichmentProcessor has the identical defect (both the
+fresh-finalization and odds-late paths; four call sites total).
+MatchupSqlBuilder already had the correct policy (EspnBet preferred,
+DraftKings100 fallback) - which is why DISPLAYS were right all season
+while FINALIZATION was a coin flip.
+
+THE WORSE FAILURE MODE (operator's catch)
+-----------------------------------------
+The initial audit query only found contests where the denorm was NULL but a
+provider row carried an ATS winner - i.e., visible wrong-pushes (exactly 1:
+Kent-SC). That measurement was FALSE COMFORT: a live-odds row that happens
+to carry a spread produces a plausible-looking, silently WRONG ATS winner
+(an in-game -2.5 grades nothing like a close of -35.5). Those contests look
+healthy in every null-based query. Assume any game finalized under this
+code may be silently wrong, not just the null ones.
+
+THE FIX (branch fix/odds-provider-preference, PR pending)
+---------------------------------------------------------
+New Application/Contests/OddsProviderPreference.SelectPrimary, used by all
+four selection sites:
+ 1. LIVE odds rows are NEVER primary (DraftKingsLiveOdds=200,
+    EspnBetLiveOdds=59). If ONLY live rows exist, SelectPrimary returns
+    null and the contest-level ATS/O-U denorm is left alone - reads as
+    "no line", never "push". (Deliberate: nobody should be graded against
+    a line that did not exist pregame.)
+ 2. Ordered preference list, not single-id + arbitrary fallback:
+    EspnBet(58) -> DraftKings100(100) -> DraftKings(40); unknown books fall
+    back to spread-carrying-beats-spreadless.
+Tests include the Kent-SC regression (order-independent), live-only ->
+null, preference ordering, unfinalized exclusion.
+
+DEFERRED (item 3 of the original report): CompetitionOdds.SpreadWinner /
+MoneylineWinner are non-nullable bools mapped straight from the ESPN
+payload; false-with-null-Spread is misleading. Right fix is bool -> bool?
+plus migration + document processor mapping. Enrichment never reads these
+columns, so deferred to its own PR rather than bundled with a grading
+hotfix.
+
+REMEDIATION PLAN (operator-directed: re-finalize the catalog)
+-------------------------------------------------------------
+Order of operations:
+ 1. Merge + deploy the fix (MUST land before tonight's NCAAFB finals -
+    3 games tonight plus the Labor Day game Monday roll the same dice
+    otherwise (NFL week 1 does not start until 2026-09-13)).
+ 2. BEFORE-SNAPSHOT: capture current denorms for the target window
+    (ContestId, Name, WinnerFSId, SpreadWinnerFSId, OverUnder) so the
+    post-sweep diff shows exactly which games flipped and which picks
+    changed grades.
+ 3. SQL-clear on target contests: FinalizedUtc, AuditedUtc,
+    SpreadWinnerFranchiseSeasonId, WinnerFranchiseSeasonId, OverUnder.
+    SCORES STAY - they are sourced facts; this is re-DERIVATION, not the
+    Idaho-style re-sourcing reenrich. EnrichOddsResults already resets
+    per-row results on rerun, so reruns are safe by design.
+ 4. The finalization sweep re-finalizes each contest under the new policy,
+    republishes ContestFinalized, and pick re-scoring cascades normally.
+    Nulled AuditedUtc means the 6-hourly audit independently re-verifies
+    everything afterward.
+ 5. SCOPE: at least FinalizedUtc >= 2026-09-04 (Thu/Fri carried week-2
+    games under the same code). MLB is the open product decision: the
+    baseball processor has the identical bug, and if the DraftKings switch
+    applies there, months of denorms may be silently wrong - re-finalizing
+    rewrites league standings retroactively. Run the detection diff
+    (SelectPrimary-on-current-rows vs stored denorm) against MLB FIRST and
+    decide with the count in hand.
+
+SIDE EFFECTS TO WATCH
+---------------------
+- Re-scoring fires pick-result notifications again. Flipped grades: that is
+  arguably a feature ("your push is now a win"). Unchanged grades: the
+  typed-table dedupe (NotificationUserPick) should suppress; watch for
+  duplicate-push spam during the sweep.
+- Model matrix self-corrects on read (client grades against
+  ActualSpreadWinnerId at render); no action needed.
+- Live-odds rows persist in OUR CompetitionOdds even though ESPN deletes
+  them from their API post-game - so re-derivation has everything it needs
+  locally, and the detection diff is possible at any time.
+
+ADDENDUM (2026-09-06): ESPN NEVER SETTLES ODDS RESULTS
+------------------------------------------------------
+Live fetch of the line-25 URI ~18h post-final: the surviving DraftKings
+(100) item still reports moneylineWinner=false, spreadWinner=false, lines
+frozen at close; the live-odds item is deleted. ESPN does not update odds
+documents with results - those flags are permanently false, not pending.
+
+Codebase audit: NOTHING reads ESPN's spreadWinner/moneylineWinner for
+decisions. Preview-history / H2H / prior-season "SpreadWinner" strings are
+computed in SQL from OUR derived Contest.SpreadWinnerFranchiseSeasonId.
+Only touches: document processor persists the raw flags; one DTO mapping
+(CompetitionOddsExtensions) passes them through.
+
+Conclusion: "clean-up behind ESPN" is already the architecture -
+EnrichOddsResults derives all results from final scores because ESPN will
+not. Revised follow-up for original item 3: rather than bool -> bool?
+migration, doc-comment CompetitionOdds.SpreadWinner/MoneylineWinner as
+never-settled-by-ESPN / never-read-for-results and REMOVE them from the
+DTO passthrough so they cannot leak into a UI as if they were results.
+
+=====================================================================
+POST-MERGE STATE + DETECTION RESULTS (2026-09-06, PR #732 merged)
+=====================================================================
+
+FINAL POLICY (after 3 Vortex rounds + 2 CodeRabbit rounds)
+----------------------------------------------------------
+OddsProviderPreference.SelectPrimary converged to:
+ 1. Live rows (59, 200) excluded - the ONLY pre-resolution filter.
+ 2. Displayed set = 58/100, compile-time DERIVED from MatchupSqlBuilder's
+    constants. When any displayed row exists, resolution MIRRORS the SQL
+    laterals exactly: provider order (58 first), first-existing wins,
+    spread NOT considered - the denorm row is the literal row the matchup
+    cards and the API pick-scoring snapshot read. If that row is
+    unfinalized, ABSTAIN (null) - never substitute a row the product
+    doesn't read.
+ 3. Historical era (no 58/100 rows at all - 10,588 contests carry spreads
+    only from era books like Westgate/SugarHouse/consensus/DK40):
+    fall back to any finalized non-live book, spread-carrying first, so
+    historical re-finalization preserves the corpus ATS record.
+ 4. Null -> callers leave Contest-level fields alone ("no line", never
+    "push").
+Follow-up documented in both files: preferring spread WITHIN the displayed
+set is a real product improvement, but it starts with the SQL laterals on
+BOTH services (Producer GetMatchup*.sql + API GetMatchupResultByContestId)
+and flips the policy in the SAME change. A CodeRabbit suggestion to add
+provider 40 to the displayed set alone was skipped for exactly this reason
+(documented on the PR).
+
+Review-round arc, for the record: round 1 established spread-over-book;
+round 2 revealed that only holds within the DISPLAYED set (10,588-contest
+measurement forced the historical fallback); round 3 revealed the display
+stack is provider-first, so "spread-first within displayed" contradicted
+it in reverse - terminal fix mirrors the SQL literally. CodeRabbit's
+finalized-gate round made the mirror pure (resolve first, gate after,
+abstain on unfinalized). Invariant: GRADE AGAINST WHAT USERS SAW,
+PRESERVE WHAT HISTORY RECORDED.
+
+DETECTION RESULTS (SQL emulation of merged policy vs stored denorms)
+--------------------------------------------------------------------
+NCAA, remediation window (FinalizedUtc >= 2026-09-04): of 130 finalized
+contests with displayed-set rows, EXACTLY 1 ATS + 1 O/U disagreement -
+Kent-SC on both counts (its O/U denorm also came from the live row's 57.5
+total instead of the pregame 52.5).
+
+MLB, whole season: of 3,098 finalized contests with displayed-set rows,
+24 ATS + 27 O/U disagreements (~0.8%).
+
+The detection query lives in sql/pgsql/_remediation_odds_provider_2026_09.sql
+(section 0, updated to the merged policy; contests with no displayed-set
+row are excluded - the historical fallback is order-nondeterministic in
+C# and those are outside the remediation window anyway).
+
+REVISED REMEDIATION RECOMMENDATION
+----------------------------------
+- NCAA: SURGICAL, not the full sweep. The full clear-and-sweep was right
+  when the silently-wrong set was unmeasurable; the detection query (exact
+  policy emulation) shows blast radius = ONE game. After deploy:
+      POST /admin/contest/9662df4b-15d0-4c1e-5df5-c9460fbdae0a/reenrich?sport=FootballNcaa
+  fixes both fields and re-scores its picks. Verify by re-running the
+  detection query: expect 0/0. (Full sweep remains staged in the SQL file
+  if belt-and-braces is preferred; it buys verification detection already
+  provides, at the cost of a 130-game ContestFinalized republish storm.)
+- MLB: product decision, pending. 24 games' grades would change
+  retroactively across the season's leagues. Option: list the 24 with
+  dates to see whether any touched league-relevant weeks before deciding.
+- Tonight's 3 NCAAFB games + Monday's Labor Day game finalize under the
+  new policy natively once deployed - no remediation needed for them.
+
+STATUS: #732 merged 2026-09-06; deploy pending images (operator).

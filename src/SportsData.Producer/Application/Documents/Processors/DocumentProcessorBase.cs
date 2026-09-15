@@ -481,7 +481,7 @@ public abstract class DocumentProcessorBase<TDataContext> : IProcessDocuments
             Priority: command.Priority
         ));
 
-        _logger.LogInformation(
+        _logger.LogDebug(
             "✅ {RequestType}_REQUEST_PUBLISHED: DocumentRequested published. UrlHash={UrlHash}",
             requestType,
             identity.UrlHash);

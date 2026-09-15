@@ -31,7 +31,7 @@ describe('resolveTeamColors', () => {
 
   it('sends the home side to the neutral when both teams lack a color', () => {
     // Otherwise the split bar and per-row bars are one indistinguishable navy.
-    expect(resolveTeamColors(null, null, '#1B3A6B', '#888')).toEqual({ away: '#1B3A6B', home: '#888888' });
+    expect(resolveTeamColors(null, null, '#1B3A6B', '#888')).toEqual({ away: '#1b3a6b', home: '#888888' });
   });
 
   it('sends the home side to the neutral when both teams share a color', () => {
@@ -39,6 +39,20 @@ describe('resolveTeamColors', () => {
   });
 
   it('only the missing side falls back', () => {
-    expect(resolveTeamColors('#005030', 'not-a-color', '#1B3A6B', '#888')).toEqual({ away: '#005030', home: '#1B3A6B' });
+    expect(resolveTeamColors('#005030', 'not-a-color', '#1B3A6B', '#888')).toEqual({ away: '#005030', home: '#1b3a6b' });
+  });
+
+  it('detects a collision between a team color and the fallback written in a different case', () => {
+    // "#1b3a6b" vs "#1B3A6B" paint the same navy; the guard compares normalized forms.
+    expect(resolveTeamColors('#1B3A6B', null, '#1B3A6B', '#888')).toEqual({ away: '#1b3a6b', home: '#888888' });
+    expect(resolveTeamColors(null, '1b3a6b', '#1B3A6B', '#888')).toEqual({ away: '#1b3a6b', home: '#888888' });
+  });
+
+  it('keeps substituting when the neutral itself collides', () => {
+    // Two gray teams on the dark theme, whose neutral is that same gray.
+    const r = resolveTeamColors('#6c757d', '#6c757d', '#1B3A6B', '#6c757d');
+    expect(r.away).toBe('#6c757d');
+    expect(r.home).not.toBe(r.away);
+    expect(r.home).toBe('#1b3a6b');
   });
 });

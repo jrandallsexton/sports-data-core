@@ -39,8 +39,19 @@ export function resolveTeamColors(
   primaryFallback: string,
   neutralFallback: string,
 ): { away: string; home: string } {
-  const away = normalizeTeamColor(awayRaw) ?? primaryFallback;
-  let home = normalizeTeamColor(homeRaw) ?? primaryFallback;
-  if (home === away) home = normalizeTeamColor(neutralFallback) ?? neutralFallback;
+  // Everything is compared in normalized form: a raw fallback like "#1B3A6B"
+  // must collide with a team color of "1b3a6b", not slip past as a different
+  // string that paints the same pixel.
+  const primary = normalizeTeamColor(primaryFallback) ?? LAST_RESORT_PRIMARY;
+  const neutral = normalizeTeamColor(neutralFallback) ?? LAST_RESORT_NEUTRAL;
+  const away = normalizeTeamColor(awayRaw) ?? primary;
+  const homeOwn = normalizeTeamColor(homeRaw) ?? primary;
+  // First candidate that differs from away wins; the neutral itself can
+  // collide (a gray team on a gray theme), so keep going down the list.
+  const home =
+    [homeOwn, neutral, primary, LAST_RESORT_NEUTRAL, LAST_RESORT_PRIMARY].find((c) => c !== away) ?? homeOwn;
   return { away, home };
 }
+
+const LAST_RESORT_PRIMARY = '#1b3a6b';
+const LAST_RESORT_NEUTRAL = '#9ca3af';

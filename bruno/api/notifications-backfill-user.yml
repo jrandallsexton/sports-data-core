@@ -1,20 +1,26 @@
 info:
-  name: resourceIndex-process
+  name: notifications-backfill-user
   type: http
-  seq: 42
+  seq: 39
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/ops/provider/football/ncaa/resourceIndex/ab980339-9958-4238-8db1-7459c556b6c7/process"
+  url: "{{baseUrlApi}}/admin/notifications/matchups/backfill?sport=FootballNcaa"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"
     - name: Content-Type
       value: application/json
+  params:
+    - name: sport
+      value: FootballNcaa
+      type: query
   body:
     type: json
     data: |
-      {}
+      {
+        "seasonType": 3
+      }
   auth: inherit
 
 settings:

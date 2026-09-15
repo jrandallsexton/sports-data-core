@@ -1,0 +1,27 @@
+SMU @ FL St on September 7th, 2026.
+
+ContestId: 69e60763-d3e2-ad99-1655-ea38cf3ef2d9
+CompetitionId: 76f59df8-337d-6c4d-2b64-f8dd586de36b
+
+SMU was a 3 point favorite. Final score was 27-24 so it should have been a push.
+
+The MatchupCard is not showing anything in the div with class "final-score-result".
+
+The following query also shows incorrect data:
+select * from public."CompetitionOdds" where "CompetitionId" = '76f59df8-337d-6c4d-2b64-f8dd586de36b';
+Id	CompetitionId	ProviderRef	ProviderId	ProviderName	ProviderPriority	Details	OverUnder	Spread	OverOdds	UnderOdds	MoneylineWinner	SpreadWinner	ContentHash	CreatedUtc	ModifiedUtc	CreatedBy	ModifiedBy	PropBetsRef	ClosedUtc	CorrectedUtc	OverPriceClose	OverPriceCurrent	OverPriceOpen	TotalPointsClose	TotalPointsCurrent	TotalPointsOpen	UnderPriceClose	UnderPriceCurrent	UnderPriceOpen	AtsWinnerFranchiseSeasonId	FinalizedUtc	OverUnderResult	WinnerFranchiseSeasonId
+e9055fcc-fb93-4458-93d9-4f704071f2e2	76f59df8-337d-6c4d-2b64-f8dd586de36b	http://sports.core.api.espn.com/v2/sports/football/leagues/college-football/providers/100?lang=en&region=us	100	DraftKings	1	SMU -3	52.500000	3.000000	-112.000000	-108.000000	False	False	E064D1A7D66D3E0A615B479BDF40360B7C51C256C65E25AC9101DB2DEF77EBCE	2026-09-08 00:40:03.596016-04	NULL	aa670c09-8984-488a-a927-57c996ecd7a1	NULL	NULL	NULL	NULL	-112.000000	-112.000000	-113.000000	52.500000	52.500000	52.500000	-108.000000	-108.000000	-110.000000	00000000-0000-0000-0000-000000000000	2026-09-08 00:40:11.061861-04	2	952379ae-80ad-d1e0-d8a6-958b82d7f67f
+
+AtsWinnerFranchiseSeasonId has an empty guid - it likely should just be null ... or perhaps null is for games with no spread and an empty represents a push?
+
+regardless, looking in API's database:
+
+select * from public."UserPick" where "ContestId" = '69e60763-d3e2-ad99-1655-ea38cf3ef2d9';
+
+We get:
+Id	PickemGroupId	UserId	ContestId	Week	FranchiseSeasonId	OverUnder	ConfidencePoints	PickType	IsCorrect	PointsAwarded	WasAgainstSpread	ScoredAt	TiebreakerType	TiebreakerGuessTotal	TiebreakerGuessHome	TiebreakerGuessAway	TiebreakerActualTotal	TiebreakerActualHome	TiebreakerActualAway	ImportedFromPickId	CreatedUtc	ModifiedUtc	CreatedBy	ModifiedBy	SyntheticPickStyle	AuditedUtc
+2555ec34-946a-40d7-9538-8e6e739e95e3	b3d8288d-a345-4ce1-9b0c-9268fb5f2bb8	6b4d61b8-7abc-43fb-82cc-27753373cf48	69e60763-d3e2-ad99-1655-ea38cf3ef2d9	1	952379ae-80ad-d1e0-d8a6-958b82d7f67f	NULL	28	2	False	0	True	2026-09-08 00:40:11.306124-04	1	NULL	NULL	NULL	NULL	NULL	NULL	NULL	2026-09-02 16:55:04.843477-04	2026-09-08 00:40:11.306126-04	00000000-0000-0000-0000-000000000000	10000000-2000-0000-0000-000000000001	NULL	2026-09-08 04:00:10.195785-04
+87fafec7-9bb1-4030-a551-00f4c879606c	b3d8288d-a345-4ce1-9b0c-9268fb5f2bb8	e7a81c71-4b0e-4c80-982c-c454add8081c	69e60763-d3e2-ad99-1655-ea38cf3ef2d9	1	952379ae-80ad-d1e0-d8a6-958b82d7f67f	NULL	7	2	False	0	True	2026-09-08 00:40:11.300864-04	1	NULL	NULL	NULL	NULL	NULL	NULL	NULL	2026-09-05 08:59:42.43615-04	2026-09-08 00:40:11.300867-04	00000000-0000-0000-0000-000000000000	10000000-2000-0000-0000-000000000001	NULL	2026-09-08 04:00:10.195785-04
+f1379781-3812-40b8-a8c4-9a55d13d4759	5ab3e9dc-b8e2-45b8-b217-d09bdacdf30f	49e3ef51-ed54-4fcc-893d-5b0df3f0f720	69e60763-d3e2-ad99-1655-ea38cf3ef2d9	1	952379ae-80ad-d1e0-d8a6-958b82d7f67f	NULL	NULL	1	True	1	False	2026-09-08 00:40:11.317262-04	1	NULL	NULL	NULL	NULL	NULL	NULL	NULL	2026-09-05 11:51:58.106165-04	2026-09-08 00:40:11.317407-04	00000000-0000-0000-0000-000000000000	10000000-2000-0000-0000-000000000001	NULL	2026-09-08 04:00:10.195785-04
+5986386a-3491-492b-8065-de263bf20f5d	b3d8288d-a345-4ce1-9b0c-9268fb5f2bb8	49e3ef51-ed54-4fcc-893d-5b0df3f0f720	69e60763-d3e2-ad99-1655-ea38cf3ef2d9	1	952379ae-80ad-d1e0-d8a6-958b82d7f67f	NULL	31	2	False	0	True	2026-09-08 00:40:11.196512-04	1	NULL	NULL	NULL	NULL	NULL	NULL	NULL	2026-09-05 17:08:31.078589-04	2026-09-08 00:40:11.196746-04	00000000-0000-0000-0000-000000000000	10000000-2000-0000-0000-000000000001	NULL	2026-09-08 04:00:10.195785-04
+be19fc08-c0d7-4c00-9969-75ccef0cf398	b3d8288d-a345-4ce1-9b0c-9268fb5f2bb8	1cdb3109-cac2-474f-a8ec-dfbe49a9b1b4	69e60763-d3e2-ad99-1655-ea38cf3ef2d9	1	952379ae-80ad-d1e0-d8a6-958b82d7f67f	NULL	1	2	False	0	True	2026-09-08 00:40:11.309108-04	1	NULL	NULL	NULL	NULL	NULL	NULL	NULL	2026-08-27 21:02:24.85952-04	2026-09-08 00:40:11.309109-04	00000000-0000-0000-0000-000000000000	10000000-2000-0000-0000-000000000001	NULL	2026-09-08 04:00:10.195785-04

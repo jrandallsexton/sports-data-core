@@ -1,11 +1,11 @@
 info:
-  name: resourceIndex-process
+  name: notifications-backfill-matchups
   type: http
-  seq: 42
+  seq: 38
 
 http:
   method: POST
-  url: "{{baseUrlApi}}/admin/ops/provider/football/ncaa/resourceIndex/ab980339-9958-4238-8db1-7459c556b6c7/process"
+  url: "{{baseUrlApi}}/admin/ops/producer/football/ncaa/athletes/seasonYear/2025/statistics/source"
   headers:
     - name: X-Admin-Token
       value: "{{X-Admin-Token}}"
@@ -14,7 +14,9 @@ http:
   body:
     type: json
     data: |
-      {}
+      {
+        "seasonType": 3
+      }
   auth: inherit
 
 settings:

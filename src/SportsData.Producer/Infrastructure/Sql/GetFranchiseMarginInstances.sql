@@ -50,6 +50,7 @@ SELECT
     fg."StartDateUtc" AS "GameDate",
     fg."SeasonYear",
     fg."Opponent",
+    fg."OpponentShort",
     fg."TeamScore",
     fg."OpponentScore",
     rec."OpponentSeasonRecord"

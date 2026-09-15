@@ -336,14 +336,23 @@ function formatGameDate(iso: string): string {
 }
 
 /**
+ * The short name when the payload carries a usable one, else the full name.
+ * Empty counts as absent: the column is required but not non-empty, and a
+ * blank team name next to a score is worse than a long one.
+ */
+function shortOr(short: string | null | undefined, full: string): string {
+  return short && short.trim().length > 0 ? short : full;
+}
+
+/**
  * Display name for a head-to-head participant. Identity fields (winner,
  * spreadWinner) carry the full Franchise.DisplayName; render the short name
  * for that side when the payload has it, else fall back to the full name.
  */
 function h2hShortName(g: ContestHistoryGame, fullName: string | null | undefined): string | null | undefined {
   if (fullName == null) return fullName;
-  if (fullName === g.homeTeam) return g.homeTeamShort ?? fullName;
-  if (fullName === g.awayTeam) return g.awayTeamShort ?? fullName;
+  if (fullName === g.homeTeam) return shortOr(g.homeTeamShort, fullName);
+  if (fullName === g.awayTeam) return shortOr(g.awayTeamShort, fullName);
   return fullName;
 }
 
@@ -389,7 +398,7 @@ function PriorSeasonGameRow({ game, teamName }: { game: ContestHistoryGame; team
         {ourScore ?? '—'}-{theirScore ?? '—'}
       </Text>
       <Text style={[styles.historyGameDetail, { color: theme.text }]} numberOfLines={1}>
-        {isHome ? 'vs' : '@'} {isHome ? (game.awayTeamShort ?? game.awayTeam) : (game.homeTeamShort ?? game.homeTeam)}
+        {isHome ? 'vs' : '@'} {isHome ? shortOr(game.awayTeamShort, game.awayTeam) : shortOr(game.homeTeamShort, game.homeTeam)}
       </Text>
       <Text style={[styles.historyGameDate, { color: theme.textMuted }]}>
         {formatGameDate(game.gameDate)}
@@ -431,7 +440,7 @@ function marginFactSentence(
   const isHome = g.homeTeam === teamName;
   const ourScore = isHome ? g.homeScore : g.awayScore;
   const theirScore = isHome ? g.awayScore : g.homeScore;
-  const opponent = isHome ? (g.awayTeamShort ?? g.awayTeam) : (g.homeTeamShort ?? g.homeTeam);
+  const opponent = isHome ? shortOr(g.awayTeamShort, g.awayTeam) : shortOr(g.homeTeamShort, g.homeTeam);
   const when = formatGameDate(g.gameDate);
   const quality =
     fact.opponentSeasonRecord || fact.opponentPriorSeasonRecord
@@ -446,7 +455,7 @@ function marginFactSentence(
   const windowGames = (fact.windowGames ?? []).map((gm) => {
     const yr = `'${String(gm.seasonYear).slice(-2)}`;
     const rec = gm.opponentSeasonRecord ? ` (${gm.opponentSeasonRecord})` : '';
-    return `${yr} ${gm.opponentShort ?? gm.opponent} ${gm.teamScore}-${gm.opponentScore}${rec}`;
+    return `${yr} ${shortOr(gm.opponentShort, gm.opponent)} ${gm.teamScore}-${gm.opponentScore}${rec}`;
   });
   return {
     head: `Last time ${displayName} ${won ? 'won' : 'lost'} by ${magnitude}+:`,
@@ -482,7 +491,7 @@ function atsFactSentence(
     const yr = `'${String(gm.seasonYear).slice(-2)}`;
     const rec = gm.opponentSeasonRecord ? ` (${gm.opponentSeasonRecord})` : '';
     const line = gm.teamSpread > 0 ? `+${gm.teamSpread}` : String(gm.teamSpread);
-    return `${yr} ${gm.opponentShort ?? gm.opponent} ${gm.teamScore}-${gm.opponentScore}${rec} · ${line} ${gm.covered ? '✓' : '✗'}`;
+    return `${yr} ${shortOr(gm.opponentShort, gm.opponent)} ${gm.teamScore}-${gm.opponentScore}${rec} · ${line} ${gm.covered ? '✓' : '✗'}`;
   });
   return {
     head: `${displayName} as a ${role}:`,
@@ -810,7 +819,7 @@ export function StatsComparisonModal({
                             ]}
                             numberOfLines={1}
                           >
-                            {g.awayTeamShort ?? g.awayTeam} {g.awayScore ?? '—'}
+                            {shortOr(g.awayTeamShort, g.awayTeam)} {g.awayScore ?? '—'}
                           </Text>
                           <Text style={[styles.h2hAt, { color: theme.textMuted }]}>@</Text>
                           <Text
@@ -821,7 +830,7 @@ export function StatsComparisonModal({
                             ]}
                             numberOfLines={1}
                           >
-                            {g.homeTeamShort ?? g.homeTeam} {g.homeScore ?? '—'}
+                            {shortOr(g.homeTeamShort, g.homeTeam)} {g.homeScore ?? '—'}
                           </Text>
                         </View>
                         {showGambling && (g.spread || g.spreadWinner || g.overUnderResult) && (

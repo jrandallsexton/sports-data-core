@@ -336,6 +336,27 @@ function formatGameDate(iso: string): string {
 }
 
 /**
+ * The short name when the payload carries a usable one, else the full name.
+ * Empty counts as absent: the column is required but not non-empty, and a
+ * blank team name next to a score is worse than a long one.
+ */
+function shortOr(short: string | null | undefined, full: string): string {
+  return short && short.trim().length > 0 ? short : full;
+}
+
+/**
+ * Display name for a head-to-head participant. Identity fields (winner,
+ * spreadWinner) carry the full Franchise.DisplayName; render the short name
+ * for that side when the payload has it, else fall back to the full name.
+ */
+function h2hShortName(g: ContestHistoryGame, fullName: string | null | undefined): string | null | undefined {
+  if (fullName == null) return fullName;
+  if (fullName === g.homeTeam) return shortOr(g.homeTeamShort, fullName);
+  if (fullName === g.awayTeam) return shortOr(g.awayTeamShort, fullName);
+  return fullName;
+}
+
+/**
  * One game of a team's prior-season tail, from that team's perspective.
  * Historical team names come from Franchise.DisplayName — the same source as
  * Matchup.away/home — so exact string matching identifies "our" side.
@@ -377,7 +398,7 @@ function PriorSeasonGameRow({ game, teamName }: { game: ContestHistoryGame; team
         {ourScore ?? '—'}-{theirScore ?? '—'}
       </Text>
       <Text style={[styles.historyGameDetail, { color: theme.text }]} numberOfLines={1}>
-        {isHome ? 'vs' : '@'} {isHome ? game.awayTeam : game.homeTeam}
+        {isHome ? 'vs' : '@'} {isHome ? shortOr(game.awayTeamShort, game.awayTeam) : shortOr(game.homeTeamShort, game.homeTeam)}
       </Text>
       <Text style={[styles.historyGameDate, { color: theme.textMuted }]}>
         {formatGameDate(game.gameDate)}
@@ -403,6 +424,7 @@ type LineFact = { head: string; detail: string; windowGames?: string[] };
 
 function marginFactSentence(
   teamName: string,
+  displayName: string,
   fact: ContestMarginFact | null | undefined,
   magnitude: number,
   won: boolean,
@@ -410,7 +432,7 @@ function marginFactSentence(
   if (!fact) return null;
   if (!fact.lastGame) {
     return {
-      head: `${teamName} ${won ? 'has never won' : 'has never lost'} a game by ${magnitude}+`,
+      head: `${displayName} ${won ? 'has never won' : 'has never lost'} a game by ${magnitude}+`,
       detail: `in our records (back to ${fact.searchFloorSeason}).`,
     };
   }
@@ -418,7 +440,7 @@ function marginFactSentence(
   const isHome = g.homeTeam === teamName;
   const ourScore = isHome ? g.homeScore : g.awayScore;
   const theirScore = isHome ? g.awayScore : g.homeScore;
-  const opponent = isHome ? g.awayTeam : g.homeTeam;
+  const opponent = isHome ? shortOr(g.awayTeamShort, g.awayTeam) : shortOr(g.homeTeamShort, g.homeTeam);
   const when = formatGameDate(g.gameDate);
   const quality =
     fact.opponentSeasonRecord || fact.opponentPriorSeasonRecord
@@ -433,17 +455,17 @@ function marginFactSentence(
   const windowGames = (fact.windowGames ?? []).map((gm) => {
     const yr = `'${String(gm.seasonYear).slice(-2)}`;
     const rec = gm.opponentSeasonRecord ? ` (${gm.opponentSeasonRecord})` : '';
-    return `${yr} ${gm.opponent} ${gm.teamScore}-${gm.opponentScore}${rec}`;
+    return `${yr} ${shortOr(gm.opponentShort, gm.opponent)} ${gm.teamScore}-${gm.opponentScore}${rec}`;
   });
   return {
-    head: `Last time ${teamName} ${won ? 'won' : 'lost'} by ${magnitude}+:`,
+    head: `Last time ${displayName} ${won ? 'won' : 'lost'} by ${magnitude}+:`,
     detail: `${when} — ${won ? 'beat' : 'lost to'} ${opponent} ${ourScore ?? '—'}-${theirScore ?? '—'}${quality}. ${times} such ${won ? 'win' : 'loss'}${times === 1 ? '' : won ? 's' : 'es'} in the last 5 seasons.`,
     windowGames,
   };
 }
 
 function atsFactSentence(
-  teamName: string,
+  displayName: string,
   fact: ContestAtsBucketFact | null | undefined,
   asFavorite: boolean,
 ): LineFact | null {
@@ -458,7 +480,7 @@ function atsFactSentence(
       : `${fact.threshold}+ ${asFavorite ? 'favorite' : 'underdog'}`;
   if (fact.games === 0) {
     return {
-      head: `${teamName} as a ${role}:`,
+      head: `${displayName} as a ${role}:`,
       detail: `no games with a line ${fact.thresholdUpper != null ? 'in that range' : 'that large'} since ${fact.dataFloorSeason}.`,
     };
   }
@@ -469,21 +491,27 @@ function atsFactSentence(
     const yr = `'${String(gm.seasonYear).slice(-2)}`;
     const rec = gm.opponentSeasonRecord ? ` (${gm.opponentSeasonRecord})` : '';
     const line = gm.teamSpread > 0 ? `+${gm.teamSpread}` : String(gm.teamSpread);
-    return `${yr} ${gm.opponent} ${gm.teamScore}-${gm.opponentScore}${rec} · ${line} ${gm.covered ? '✓' : '✗'}`;
+    return `${yr} ${shortOr(gm.opponentShort, gm.opponent)} ${gm.teamScore}-${gm.opponentScore}${rec} · ${line} ${gm.covered ? '✓' : '✗'}`;
   });
   return {
-    head: `${teamName} as a ${role}:`,
+    head: `${displayName} as a ${role}:`,
     detail: `covered ${fact.covers} of ${fact.games} (since ${fact.dataFloorSeason}).`,
     windowGames,
   };
 }
 
-function spreadContextFacts(ctx: ContestSpreadContext): LineFact[] {
+/**
+ * Sentence team names are display-only; identity inside the facts still
+ * matches on the full name (favoriteTeam/underdogTeam are Franchise.DisplayName,
+ * the same source as Matchup.home/away). shortFor maps a full name to the
+ * matchup's short name for the sentence heads.
+ */
+function spreadContextFacts(ctx: ContestSpreadContext, shortFor: (fullName: string) => string): LineFact[] {
   return [
-    marginFactSentence(ctx.favoriteTeam, ctx.favoriteWonByMargin, ctx.magnitude, true),
-    marginFactSentence(ctx.underdogTeam, ctx.underdogLostByMargin, ctx.magnitude, false),
-    atsFactSentence(ctx.favoriteTeam, ctx.favoriteAtsAsBigFavorite, true),
-    atsFactSentence(ctx.underdogTeam, ctx.underdogAtsAsBigUnderdog, false),
+    marginFactSentence(ctx.favoriteTeam, shortFor(ctx.favoriteTeam), ctx.favoriteWonByMargin, ctx.magnitude, true),
+    marginFactSentence(ctx.underdogTeam, shortFor(ctx.underdogTeam), ctx.underdogLostByMargin, ctx.magnitude, false),
+    atsFactSentence(shortFor(ctx.favoriteTeam), ctx.favoriteAtsAsBigFavorite, true),
+    atsFactSentence(shortFor(ctx.underdogTeam), ctx.underdogAtsAsBigUnderdog, false),
   ].filter((f): f is LineFact => f != null);
 }
 
@@ -587,6 +615,10 @@ export function StatsComparisonModal({
   // Historical blocks (head-to-head + prior-season form) — present whenever
   // the franchises have played before, including week 1 when stats are empty.
   const history = comparison?.history ?? null;
+  // The Line sentence heads. The matchup payload carries the abbreviation
+  // (awayShort = "MIA"), not Franchise.DisplayNameShort, so the heads keep the
+  // full name here rather than mix "MIA" with the "Miami" the rows show.
+  const shortNameFor = (fullName: string): string => fullName;
   const headToHead = history?.headToHead ?? [];
   // Rolling "Last N Games" (current + prior season), added 2026-09-09;
   // fall back to the prior-season lists against an older API payload.
@@ -729,7 +761,7 @@ export function StatsComparisonModal({
                       color={theme.tint}
                       mutedColor={theme.tint}
                     />
-                    {!lineCollapsed && spreadContextFacts(history.spreadContext).map((f, i) => (
+                    {!lineCollapsed && spreadContextFacts(history.spreadContext, shortNameFor).map((f, i) => (
                       <View key={i} style={[styles.lineFact, { borderBottomColor: theme.border }]}>
                         <Text style={[styles.lineFactText, { color: theme.text }]}>
                           <Text style={styles.lineFactHead}>{f.head}</Text> {f.detail}
@@ -786,7 +818,7 @@ export function StatsComparisonModal({
                             ]}
                             numberOfLines={1}
                           >
-                            {g.awayTeam} {g.awayScore ?? '—'}
+                            {shortOr(g.awayTeamShort, g.awayTeam)} {g.awayScore ?? '—'}
                           </Text>
                           <Text style={[styles.h2hAt, { color: theme.textMuted }]}>@</Text>
                           <Text
@@ -797,7 +829,7 @@ export function StatsComparisonModal({
                             ]}
                             numberOfLines={1}
                           >
-                            {g.homeTeam} {g.homeScore ?? '—'}
+                            {shortOr(g.homeTeamShort, g.homeTeam)} {g.homeScore ?? '—'}
                           </Text>
                         </View>
                         {showGambling && (g.spread || g.spreadWinner || g.overUnderResult) && (
@@ -807,7 +839,7 @@ export function StatsComparisonModal({
                             )}
                             {!!g.spreadWinner && (
                               <Text style={[styles.h2hMarket, { color: theme.textMuted }]}>
-                                ATS: {g.spreadWinner}
+                                ATS: {h2hShortName(g, g.spreadWinner)}
                               </Text>
                             )}
                             {!!g.overUnderResult && (

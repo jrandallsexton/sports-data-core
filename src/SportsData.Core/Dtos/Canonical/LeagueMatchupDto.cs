@@ -90,6 +90,9 @@ public class LeagueMatchupDto
 
     public string Away { get; set; } = default!;
     public string AwayShort { get; set; } = default!;
+
+    /// <summary>Franchise.DisplayNameShort ("Miami") - between the abbreviation and the full name; for narrow headers.</summary>
+    public string? AwayShortName { get; set; }
     public Guid AwayFranchiseSeasonId { get; set; }
     public string? AwayLogoUri { get; set; }
     public string? AwayLogoUriDark { get; set; }
@@ -104,6 +107,9 @@ public class LeagueMatchupDto
 
     public string Home { get; set; } = default!;
     public string HomeShort { get; set; } = default!;
+
+    /// <inheritdoc cref="AwayShortName"/>
+    public string? HomeShortName { get; set; }
     public Guid HomeFranchiseSeasonId { get; set; }
     public string? HomeLogoUri { get; set; }
     public string? HomeLogoUriDark { get; set; }

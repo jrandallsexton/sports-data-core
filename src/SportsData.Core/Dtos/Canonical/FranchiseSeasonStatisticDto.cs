@@ -11,6 +11,12 @@ using System.Collections.Generic;
         public class FranchiseSeasonStatisticEntry
         {
             public string Category { get; set; } = default!;
+
+            /// <summary>
+            /// FranchiseSeasonStatisticCategory.ShortDisplayName ("Defensive"). Display-only;
+            /// <see cref="Category"/> remains the slug used as the dictionary key.
+            /// </summary>
+            public string? CategoryDisplayName { get; set; }
             public string StatisticKey { get; set; } = default!;
             public string StatisticValue { get; set; } = default!;
             public string? DisplayValue { get; set; }

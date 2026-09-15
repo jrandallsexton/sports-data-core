@@ -44,7 +44,7 @@ namespace SportsData.Api.Application.Contests
         public async Task ProcessAsync(Guid contestId)
         {
             // TODO: Gate this against local generation
-            return;
+            await Task.CompletedTask;
 
             //// TODO: Support multiple sports - pass Sport as parameter
             //var contestClient = _contestClientFactory.Resolve(Sport.FootballNcaa);

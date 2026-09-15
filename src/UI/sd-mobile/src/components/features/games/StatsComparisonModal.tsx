@@ -25,7 +25,7 @@ import { usePageSheetTopInset } from '@/src/hooks/usePageSheetTopInset';
 import { useSectionCollapse } from '@/src/hooks/useSectionCollapse';
 import { Wordmark } from '@/src/components/brand/Wordmark';
 import { Ionicons } from '@expo/vector-icons';
-import { contrastTextOn, normalizeTeamColor } from '@/src/utils/teamColor';
+import { contrastTextOn, resolveTeamColors } from '@/src/utils/teamColor';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -832,9 +832,14 @@ export function StatsComparisonModal({
     : fullName === matchup.home ? matchup.homeShortName || fullName
     : fullName;
   // Team colors drive the favored chips and split bars (web parity). A team
-  // without a color falls back to brand navy so nothing renders unpainted.
-  const awayColor = normalizeTeamColor(matchup.awayColor) ?? Colors.brand.navy;
-  const homeColor = normalizeTeamColor(matchup.homeColor) ?? Colors.brand.navy;
+  // without a color falls back to brand navy; if that leaves both sides the
+  // same color, home takes the theme's neutral so the bars still split.
+  const { away: awayColor, home: homeColor } = resolveTeamColors(
+    matchup.awayColor,
+    matchup.homeColor,
+    Colors.brand.navy,
+    theme.textMuted,
+  );
   const headToHead = history?.headToHead ?? [];
   // Rolling "Last N Games" (current + prior season), added 2026-09-09;
   // fall back to the prior-season lists against an older API payload.

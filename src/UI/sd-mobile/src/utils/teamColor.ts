@@ -25,3 +25,22 @@ export function contrastTextOn(hexBackground: string): string {
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
   return luminance < 128 ? '#ffffff' : '#23272f';
 }
+
+/**
+ * Both teams' colors for a comparison surface. A missing or non-hex color
+ * falls back to primaryFallback; when the two sides resolve to the SAME
+ * color (both missing, or two teams that share one), the home side takes
+ * the neutral instead - otherwise a split bar paints one unbroken color and
+ * silently reads as "one side owns everything".
+ */
+export function resolveTeamColors(
+  awayRaw: string | null | undefined,
+  homeRaw: string | null | undefined,
+  primaryFallback: string,
+  neutralFallback: string,
+): { away: string; home: string } {
+  const away = normalizeTeamColor(awayRaw) ?? primaryFallback;
+  let home = normalizeTeamColor(homeRaw) ?? primaryFallback;
+  if (home === away) home = normalizeTeamColor(neutralFallback) ?? neutralFallback;
+  return { away, home };
+}

@@ -143,6 +143,7 @@ export default function AdminPage() {
         <Link to="/app/admin/models">Model Manager</Link>
         <Link to="/app/admin/model-lab">Model Lab</Link>
         <Link to="/app/admin/smack-lab">SmackBot Lab</Link>
+        <Link to="/app/admin/widgets">Widget Gallery</Link>
       </nav>
 
       <div className="admin-grid">

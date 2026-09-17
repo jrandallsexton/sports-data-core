@@ -205,7 +205,7 @@ public sealed class StatFormattingService : IStatFormattingService
         LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
         {
             // Team-level negatives that ESPN files under miscellaneous
-            "totalGiveaways","totalPenalties","totalPenaltyYards"
+            "totalGiveaways","totalPenalties","totalPenaltyYards","fumblesLost"
         }
     );
 

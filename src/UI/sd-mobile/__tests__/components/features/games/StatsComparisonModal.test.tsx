@@ -7,6 +7,7 @@ import {
   statShare,
   statFavored,
   metricFavored,
+  metricShare,
   METRICS_SPEC,
 } from '@/src/components/features/games/StatsComparisonModal';
 import type { Matchup, TeamComparisonData } from '@/src/types/models';
@@ -197,6 +198,13 @@ describe('StatsComparisonModal', () => {
     fireEvent.press(screen.getByText('Defensive Metrics (0:1)'));
     expect(screen.getByText('6.00')).toBeTruthy();
     expect(screen.getByText('5.00')).toBeTruthy();
+
+    // Metric rows carry the share bar too: ypp 6 vs 5 -> 6/11 to away; the
+    // inverted oppYpp 0.5 vs 0.35 -> 0.35/0.85 to away (home is better).
+    const bars = screen.getAllByTestId('stat-share-bar');
+    expect(bars.length).toBeGreaterThanOrEqual(2);
+    const awaySegments = screen.getAllByTestId('stat-share-away').map(flatFlex);
+    expect(awaySegments).toEqual(expect.arrayContaining([expect.closeTo(6 / 11, 3), expect.closeTo(0.35 / 0.85, 3)]));
     // oppYpp rows render too (0.50 vs 0.35 — home leads the inverted metric).
     expect(screen.getByText('0.35')).toBeTruthy();
     expect(screen.getByText('0.50')).toBeTruthy();
@@ -657,5 +665,21 @@ describe('Stats tally', () => {
 
     // Away leads kickoff touchbacks (4 > 1); away also leads punt touchbacks (2 < 5): two edges.
     expect(screen.getByText('Stats (2:0)')).toBeTruthy();
+  });
+});
+
+describe('metricShare', () => {
+  const spec = (higherIsBetter: boolean) => ({ key: 'k', label: 'k', format: String, higherIsBetter });
+
+  it('splits by the raw values, inverting for lower-is-better metrics', () => {
+    expect(metricShare(spec(true), 6, 5)!.away).toBeCloseTo(6 / 11);
+    expect(metricShare(spec(false), 0.5, 0.35)!.away).toBeCloseTo(0.35 / 0.85);
+  });
+
+  it('is null on a tie, a missing side, both zero, or a signed value', () => {
+    expect(metricShare(spec(true), 5, 5)).toBeNull();
+    expect(metricShare(spec(true), null, 5)).toBeNull();
+    expect(metricShare(spec(true), 0, 0)).toBeNull();
+    expect(metricShare(spec(true), -1, 5)).toBeNull();
   });
 });

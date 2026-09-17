@@ -57,6 +57,7 @@ public class StatFormattingServiceTests
     [InlineData("kicking", "fieldGoalsBlocked", true)]
     [InlineData("miscellaneous", "totalPenaltyYards", true)]
     [InlineData("miscellaneous", "totalTakeaways", false)]
+    [InlineData("miscellaneous", "fumblesLost", true)]
     [InlineData("punting", "puntsBlockedPct", true)]
     [InlineData("punting", "punts", true)]              // fewer punts = fewer failed drives
     [InlineData("punting", "avgPuntReturnYards", true)] // what opponents did with them

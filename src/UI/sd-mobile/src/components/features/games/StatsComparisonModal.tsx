@@ -215,6 +215,19 @@ export function metricFavored(spec: MetricSpec, a?: number | null, b?: number | 
   return a < b ? 'away' : b < a ? 'home' : null;
 }
 
+/**
+ * statShare for a Metrics row: same rules, but from the raw values and the
+ * spec's own polarity (metric rows carry no isNegativeAttribute). Null on a
+ * tie, a missing side, both zero, or a signed value.
+ */
+export function metricShare(spec: MetricSpec, a?: number | null, b?: number | null): { away: number; home: number } | null {
+  if (a == null || b == null || a < 0 || b < 0 || a === b) return null;
+  const total = a + b;
+  if (total <= 0) return null;
+  const awayShare = (spec.higherIsBetter ? a : b) / total;
+  return { away: awayShare, home: 1 - awayShare };
+}
+
 type FavoredTally = { away: number; home: number };
 
 /**
@@ -1214,6 +1227,7 @@ export function StatsComparisonModal({
                           awayEntry={{ displayValue: m.format(awayMetrics?.[m.key]) }}
                           homeEntry={{ displayValue: m.format(homeMetrics?.[m.key]) }}
                           favored={metricFavored(m, awayMetrics?.[m.key], homeMetrics?.[m.key])}
+                          share={metricShare(m, awayMetrics?.[m.key], homeMetrics?.[m.key])}
                           awayColor={awayColor}
                           homeColor={homeColor}
                         />

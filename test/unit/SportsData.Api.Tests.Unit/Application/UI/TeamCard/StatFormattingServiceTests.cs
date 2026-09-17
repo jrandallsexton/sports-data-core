@@ -52,7 +52,8 @@ public class StatFormattingServiceTests
     [InlineData("defensive", "pointsAllowed", true)]
     [InlineData("defensive", "yardsAllowed", true)]
     [InlineData("defensive", "sacks", false)]            // a defense's sacks are good
-    [InlineData("defensiveInterceptions", "interceptions", false)] // takeaways are good
+    [InlineData("defensive", "interceptions", false)]             // a defense's picks are takeaways
+    [InlineData("defensiveInterceptions", "interceptions", false)] // ESPN's own category for them
     [InlineData("kicking", "fieldGoalsBlocked", true)]
     [InlineData("miscellaneous", "totalPenaltyYards", true)]
     [InlineData("miscellaneous", "totalTakeaways", false)]
@@ -71,5 +72,17 @@ public class StatFormattingServiceTests
         new StatFormattingService().ApplyFriendlyLabelsAndFormatting(dto);
 
         dto.Statistics[category].Single().IsNegativeAttribute.Should().Be(lowerIsBetter);
+    }
+
+    [Fact]
+    public void DefensiveInterceptions_IsARegisteredCategory_SoItsRowsGetLabels()
+    {
+        var dto = Dto("defensiveInterceptions", "interceptionTouchdowns");
+
+        new StatFormattingService().ApplyFriendlyLabelsAndFormatting(dto);
+
+        // An unregistered category is skipped entirely and reaches clients with the
+        // raw key as its label; this one must not.
+        dto.Statistics["defensiveInterceptions"].Single().StatisticValue.Should().Be("Pick 6");
     }
 }

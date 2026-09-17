@@ -610,12 +610,16 @@ function flatFlex(el: { props: { style: unknown } }): number | undefined {
 describe('isEmptyStatRow', () => {
   const e = (displayValue: string) => ({ displayValue }) as unknown as import('@/src/types/models').TeamStatEntry;
 
-  it('hides a row only when BOTH sides read zero', () => {
+  it('hides a row when neither side has a real non-zero number', () => {
     expect(isEmptyStatRow(e('0'), e('0'))).toBe(true);
     expect(isEmptyStatRow(e('0.0%'), e('0'))).toBe(true);
+    // The API's placeholder for a blank value, on both sides or with a zero.
+    expect(isEmptyStatRow(e('—'), e('—'))).toBe(true);
+    expect(isEmptyStatRow(e('—'), e('0'))).toBe(true);
+    expect(isEmptyStatRow(undefined, e('0'))).toBe(true);
+    // Any real number on either side keeps the row.
     expect(isEmptyStatRow(e('0'), e('3'))).toBe(false);
-    expect(isEmptyStatRow(e('—'), e('0'))).toBe(false);
-    expect(isEmptyStatRow(undefined, e('0'))).toBe(false);
+    expect(isEmptyStatRow(e('—'), e('3'))).toBe(false);
   });
 });
 
@@ -636,5 +640,22 @@ describe('Stats tally', () => {
     // ...but each category still shows its own row as a win.
     expect(screen.getByText('passing (1:0)')).toBeTruthy();
     expect(screen.getByText('rushing (1:0)')).toBeTruthy();
+  });
+
+  it('still counts a reused key as two facts when the numbers or polarity differ', () => {
+    // ESPN's "touchbacks": kickoffs in kicking (higher fine), punts in punting (lower is better).
+    const tb = (v: string, neg: boolean) => ({ statisticKey: 'touchbacks', statisticValue: 'Touchbacks', displayValue: v, isNegativeAttribute: neg });
+    const away = { kicking: [tb('4', false)], punting: [tb('2', true)] };
+    const home = { kicking: [tb('1', false)], punting: [tb('5', true)] };
+    const comparison = {
+      ...comparisonWith(),
+      teamA: { ...comparisonWith().teamA, stats: { data: { statistics: away } } },
+      teamB: { ...comparisonWith().teamB, stats: { data: { statistics: home } } },
+    } as unknown as TeamComparisonData;
+
+    renderModal(comparison);
+
+    // Away leads kickoff touchbacks (4 > 1); away also leads punt touchbacks (2 < 5): two edges.
+    expect(screen.getByText('Stats (2:0)')).toBeTruthy();
   });
 });

@@ -18,6 +18,20 @@ public sealed class StatFormattingService : IStatFormattingService
         HashSet<string> PreferPerGameForCounts,
         HashSet<string> LowerIsBetterKeys);
 
+    // ===== Defensive Interceptions ==============================================
+    // ESPN's own category: a defense's picks. Takeaways - higher is better.
+    private static readonly CategoryConfig DefensiveInterceptions = new(
+        FriendlyMap: new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["interceptions"] = "INT",
+            ["interceptionYards"] = "INT Yds",
+            ["interceptionTouchdowns"] = "Pick 6"
+        },
+        PercentKeys: new(StringComparer.OrdinalIgnoreCase) { },
+        PreferPerGameForCounts: new(StringComparer.OrdinalIgnoreCase) { },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase) { }
+    );
+
     // ===== Defensive ============================================================
     private static readonly CategoryConfig Defensive = new(
         FriendlyMap: new(StringComparer.OrdinalIgnoreCase)
@@ -481,6 +495,7 @@ public sealed class StatFormattingService : IStatFormattingService
         ["punting"] = Punting,
         ["kicking"] = Kicking,
         ["defensive"] = Defensive,
+        ["defensiveInterceptions"] = DefensiveInterceptions,
         ["returning"] = Returning,
         ["general"] = General,
         ["miscellaneous"] = Miscellaneous,

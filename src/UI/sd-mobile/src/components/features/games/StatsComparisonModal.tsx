@@ -196,14 +196,17 @@ export function statShare(away?: TeamStatEntry, home?: TeamStatEntry): { away: n
 }
 
 /**
- * A row where both sides read zero says nothing about either team (2-Pt
- * Pass Att 0 vs 0) and only pads the category. Rows are kept when either
- * side is non-zero or non-numeric.
+ * A row that says nothing about either team only pads the category: both
+ * sides zero (2-Pt Pass Att 0 vs 0), both the API's "—" placeholder, or
+ * one of each. A row is kept as soon as either side has a real non-zero
+ * number.
  */
 export function isEmptyStatRow(away?: TeamStatEntry, home?: TeamStatEntry): boolean {
-  const a = parseFloat(away?.displayValue ?? '');
-  const b = parseFloat(home?.displayValue ?? '');
-  return a === 0 && b === 0;
+  const blank = (e?: TeamStatEntry) => {
+    const n = parseFloat(e?.displayValue ?? '');
+    return Number.isNaN(n) || n === 0;
+  };
+  return blank(away) && blank(home);
 }
 
 export function metricFavored(spec: MetricSpec, a?: number | null, b?: number | null): 'away' | 'home' | null {
@@ -823,8 +826,11 @@ export function StatsComparisonModal({
     let home = 0;
     // ESPN files the same stat under several categories (Net Total Yds,
     // Points, Offensive Plays sit in passing, rushing AND receiving). Each
-    // category counts its own rows, but the tab-level total counts a key
-    // once - otherwise one edge is worth three.
+    // category counts its own rows, but the tab-level total counts a FACT
+    // once - otherwise one edge is worth three. A fact is the key plus both
+    // values plus polarity: ESPN also reuses a key for different stats
+    // ("touchbacks" is kickoffs in kicking and punts in punting, with
+    // different numbers and opposite polarity), and those must each count.
     const counted = new Set<string>();
     for (const cat of categories) {
       const a = awayStats[cat] ?? [];
@@ -835,7 +841,12 @@ export function StatsComparisonModal({
         if (f === null) continue;
         if (f === 'away') tally.away++;
         if (f === 'home') tally.home++;
-        const key = a[i]?.statisticKey ?? h[i]?.statisticKey ?? `${cat}:${i}`;
+        const key = [
+          a[i]?.statisticKey ?? h[i]?.statisticKey ?? `${cat}:${i}`,
+          a[i]?.displayValue ?? '',
+          h[i]?.displayValue ?? '',
+          a[i]?.isNegativeAttribute ?? h[i]?.isNegativeAttribute ?? false,
+        ].join('|');
         if (counted.has(key)) continue;
         counted.add(key);
         if (f === 'away') away++;

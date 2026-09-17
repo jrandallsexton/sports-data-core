@@ -18,6 +18,20 @@ public sealed class StatFormattingService : IStatFormattingService
         HashSet<string> PreferPerGameForCounts,
         HashSet<string> LowerIsBetterKeys);
 
+    // ===== Defensive Interceptions ==============================================
+    // ESPN's own category: a defense's picks. Takeaways - higher is better.
+    private static readonly CategoryConfig DefensiveInterceptions = new(
+        FriendlyMap: new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["interceptions"] = "INT",
+            ["interceptionYards"] = "INT Yds",
+            ["interceptionTouchdowns"] = "Pick 6"
+        },
+        PercentKeys: new(StringComparer.OrdinalIgnoreCase) { },
+        PreferPerGameForCounts: new(StringComparer.OrdinalIgnoreCase) { },
+        LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase) { }
+    );
+
     // ===== Defensive ============================================================
     private static readonly CategoryConfig Defensive = new(
         FriendlyMap: new(StringComparer.OrdinalIgnoreCase)
@@ -69,7 +83,8 @@ public sealed class StatFormattingService : IStatFormattingService
         LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
         {
             // Allowed/first downs: lower is better for defense
-            "thirdDownConvAllowedPct","redZoneAllowedPct","defensiveFirstDowns"
+            "thirdDownConvAllowedPct","redZoneAllowedPct","defensiveFirstDowns",
+            "pointsAllowed","yardsAllowed"
             // Note: defensive interceptions are takeaways → higher is better, so omitted.
         }
     );
@@ -160,7 +175,8 @@ public sealed class StatFormattingService : IStatFormattingService
         LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
         {
             // Negative outcomes for kickers/kickoffs
-            "extraPointsBlocked","kickoffOutOfBounds"
+            "extraPointsBlocked","extraPointsBlockedPct","kickoffOutOfBounds",
+            "fieldGoalsBlocked","fieldGoalsBlockedPct","fieldGoalsMissedYards"
             // (Kickoff touchbacks are generally good → not included.)
         }
     );
@@ -188,7 +204,8 @@ public sealed class StatFormattingService : IStatFormattingService
         },
         LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
         {
-            // None by default; these are generally positive when higher.
+            // Team-level negatives that ESPN files under miscellaneous
+            "totalGiveaways","totalPenalties","totalPenaltyYards","fumblesLost"
         }
     );
 
@@ -242,7 +259,8 @@ public sealed class StatFormattingService : IStatFormattingService
         LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
         {
             // Offensive negatives
-            "interceptions","interceptionPct","sacks","sackYardsLost","drops","dropPct"
+            "interceptions","interceptionPct","sacks","sackYardsLost","drops","dropPct",
+            "passingFumbles","passingFumblesLost"
         }
     );
 
@@ -293,8 +311,13 @@ public sealed class StatFormattingService : IStatFormattingService
         },
         LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
         {
-            // Negative punting outcomes
-            "touchbacks","puntTouchbacks","blockedPunts"
+            // Negative punting outcomes. Punts themselves are a count of
+            // failed drives, and the return trio is what OPPONENTS did with
+            // them - lower is better on all of it. Gross/net average, long
+            // punt and inside-the-20 stay higher-is-better.
+            "punts","puntYards",
+            "puntReturns","puntReturnYards","avgPuntReturnYards",
+            "touchbacks","puntTouchbacks","touchbackPct","blockedPunts","puntsBlocked","puntsBlockedPct"
         }
     );
 
@@ -346,7 +369,7 @@ public sealed class StatFormattingService : IStatFormattingService
         },
         LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
         {
-            "drops","dropPct"
+            "drops","dropPct","receivingFumbles","receivingFumblesLost"
         }
     );
 
@@ -385,7 +408,8 @@ public sealed class StatFormattingService : IStatFormattingService
         },
         LowerIsBetterKeys: new(StringComparer.OrdinalIgnoreCase)
         {
-            "returnFumbles","returnFumblesLost"
+            "returnFumbles","returnFumblesLost",
+            "kickReturnFumbles","kickReturnFumblesLost","puntReturnFumbles","puntReturnFumblesLost"
         }
     );
 
@@ -471,10 +495,22 @@ public sealed class StatFormattingService : IStatFormattingService
         ["punting"] = Punting,
         ["kicking"] = Kicking,
         ["defensive"] = Defensive,
+        ["defensiveInterceptions"] = DefensiveInterceptions,
         ["returning"] = Returning,
         ["general"] = General,
         ["miscellaneous"] = Miscellaneous,
         ["scoring"] = Scoring
+    };
+
+    // Housekeeping values ESPN ships inside every category. They are not
+    // comparisons - "Games" is the same number on both sides of every row
+    // and read as if we did not know what a stat is (operator, 2026-09-17) -
+    // so they never reach a client.
+    private static readonly HashSet<string> HiddenKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "teamGamesPlayed", "gamesPlayed",
+        "miscYards",
+        "offensiveSnapPct", "defensiveSnapPct", "specialTeamsSnapPct"
     };
 
     // ---- public API ---------------------------------------------------------
@@ -483,6 +519,8 @@ public sealed class StatFormattingService : IStatFormattingService
         foreach (var (category, list) in dto.Statistics.ToArray())
         {
             if (!Categories.TryGetValue(category, out var cfg)) continue;
+
+            list.RemoveAll(e => HiddenKeys.Contains(e.StatisticKey ?? string.Empty));
 
             foreach (var e in list)
             {

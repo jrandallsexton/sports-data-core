@@ -3,8 +3,11 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import {
   StatsComparisonModal,
+  isEmptyStatRow,
+  statShare,
   statFavored,
   metricFavored,
+  metricShare,
   METRICS_SPEC,
 } from '@/src/components/features/games/StatsComparisonModal';
 import type { Matchup, TeamComparisonData } from '@/src/types/models';
@@ -195,6 +198,13 @@ describe('StatsComparisonModal', () => {
     fireEvent.press(screen.getByText('Defensive Metrics (0:1)'));
     expect(screen.getByText('6.00')).toBeTruthy();
     expect(screen.getByText('5.00')).toBeTruthy();
+
+    // Metric rows carry the share bar too: ypp 6 vs 5 -> 6/11 to away; the
+    // inverted oppYpp 0.5 vs 0.35 -> 0.35/0.85 to away (home is better).
+    const bars = screen.getAllByTestId('stat-share-bar');
+    expect(bars.length).toBeGreaterThanOrEqual(2);
+    const awaySegments = screen.getAllByTestId('stat-share-away').map(flatFlex);
+    expect(awaySegments).toEqual(expect.arrayContaining([expect.closeTo(6 / 11, 3), expect.closeTo(0.35 / 0.85, 3)]));
     // oppYpp rows render too (0.50 vs 0.35 — home leads the inverted metric).
     expect(screen.getByText('0.35')).toBeTruthy();
     expect(screen.getByText('0.50')).toBeTruthy();
@@ -542,5 +552,134 @@ describe('StatsComparisonModal short-name fallbacks', () => {
     expect(screen.getByText('Florida A&M Rattlers 9')).toBeTruthy();
     expect(screen.getByText('Miami Hurricanes 56')).toBeTruthy();
     expect(screen.getByText('ATS: Miami Hurricanes')).toBeTruthy();
+  });
+});
+
+describe('statShare', () => {
+  const e = (displayValue: string, isNegativeAttribute?: boolean) =>
+    ({ displayValue, isNegativeAttribute }) as unknown as import('@/src/types/models').TeamStatEntry;
+
+  it('splits the bar by each side\'s share of the two values', () => {
+    // 89.1% vs 61.3% completion -> 59/41.
+    const s = statShare(e('89.1%'), e('61.3%'))!;
+    expect(s.away).toBeCloseTo(0.592, 3);
+    expect(s.home).toBeCloseTo(0.408, 3);
+  });
+
+  it('gives the opponent\'s share on a lower-is-better stat, so INT 1 vs 0 is 0/100 to the team with 0', () => {
+    expect(statShare(e('1', true), e('0', true))).toEqual({ away: 0, home: 1 });
+    // 1 vs 3 -> the team with 1 gets 75.
+    const s = statShare(e('1', true), e('3', true))!;
+    expect(s.away).toBeCloseTo(0.75);
+  });
+
+  it('is null - no bar - on a tie, both zero, a non-number, or a signed value', () => {
+    expect(statShare(e('7'), e('7'))).toBeNull();
+    expect(statShare(e('0'), e('0'))).toBeNull();
+    expect(statShare(e('—'), e('7'))).toBeNull();
+    expect(statShare(e('-3'), e('2'))).toBeNull(); // turnover differential
+    expect(statShare(undefined, e('7'))).toBeNull();
+  });
+});
+
+describe('StatRow share bar', () => {
+  it('renders one bar per comparable row, split by share, and none on a tie', () => {
+    renderModal(
+      comparisonWith({
+        awayEntries: [
+          { statisticKey: 'interceptions', statisticValue: 'INT', displayValue: '1', isNegativeAttribute: true, categoryDisplayName: 'Passing' },
+          { statisticKey: 'miscYards', statisticValue: 'Misc Yds', displayValue: '0', categoryDisplayName: 'Passing' },
+        ],
+        homeEntries: [
+          { statisticKey: 'interceptions', statisticValue: 'INT', displayValue: '0', isNegativeAttribute: true, categoryDisplayName: 'Passing' },
+          { statisticKey: 'miscYards', statisticValue: 'Misc Yds', displayValue: '0', categoryDisplayName: 'Passing' },
+        ],
+      })
+    );
+    fireEvent.press(screen.getByText('Passing (0:1)'));
+
+    // The 0-vs-0 row is not rendered at all; the INT row's bar is all Wake Forest (home).
+    expect(screen.queryByText('Misc Yds')).toBeNull();
+    expect(screen.getAllByTestId('stat-share-bar')).toHaveLength(1);
+    expect(flatFlex(screen.getByTestId('stat-share-away'))).toBe(0);
+    expect(flatFlex(screen.getByTestId('stat-share-home'))).toBe(1);
+  });
+});
+
+function flatFlex(el: { props: { style: unknown } }): number | undefined {
+  const styles = ([] as unknown[]).concat(el.props.style as unknown[]).flat(Infinity) as Array<Record<string, unknown> | null | false>;
+  for (let i = styles.length - 1; i >= 0; i--) {
+    const st = styles[i];
+    if (st && typeof st === 'object' && 'flex' in st) return st.flex as number;
+  }
+  return undefined;
+}
+
+describe('isEmptyStatRow', () => {
+  const e = (displayValue: string) => ({ displayValue }) as unknown as import('@/src/types/models').TeamStatEntry;
+
+  it('hides a row when neither side has a real non-zero number', () => {
+    expect(isEmptyStatRow(e('0'), e('0'))).toBe(true);
+    expect(isEmptyStatRow(e('0.0%'), e('0'))).toBe(true);
+    // The API's placeholder for a blank value, on both sides or with a zero.
+    expect(isEmptyStatRow(e('—'), e('—'))).toBe(true);
+    expect(isEmptyStatRow(e('—'), e('0'))).toBe(true);
+    expect(isEmptyStatRow(undefined, e('0'))).toBe(true);
+    // Any real number on either side keeps the row.
+    expect(isEmptyStatRow(e('0'), e('3'))).toBe(false);
+    expect(isEmptyStatRow(e('—'), e('3'))).toBe(false);
+  });
+});
+
+describe('Stats tally', () => {
+  it('counts a shared key once in the tab total, while each category keeps its own count', () => {
+    const away = { passing: [{ statisticKey: 'netTotalYards', statisticValue: 'Net Total Yds', displayValue: '1405' }], rushing: [{ statisticKey: 'netTotalYards', statisticValue: 'Net Total Yds', displayValue: '1405' }] };
+    const home = { passing: [{ statisticKey: 'netTotalYards', statisticValue: 'Net Total Yds', displayValue: '970' }], rushing: [{ statisticKey: 'netTotalYards', statisticValue: 'Net Total Yds', displayValue: '970' }] };
+    const comparison = {
+      ...comparisonWith(),
+      teamA: { ...comparisonWith().teamA, stats: { data: { statistics: away } } },
+      teamB: { ...comparisonWith().teamB, stats: { data: { statistics: home } } },
+    } as unknown as TeamComparisonData;
+
+    renderModal(comparison);
+
+    // One edge, not two.
+    expect(screen.getByText('Stats (1:0)')).toBeTruthy();
+    // ...but each category still shows its own row as a win.
+    expect(screen.getByText('passing (1:0)')).toBeTruthy();
+    expect(screen.getByText('rushing (1:0)')).toBeTruthy();
+  });
+
+  it('still counts a reused key as two facts when the numbers or polarity differ', () => {
+    // ESPN's "touchbacks": kickoffs in kicking (higher fine), punts in punting (lower is better).
+    const tb = (v: string, neg: boolean) => ({ statisticKey: 'touchbacks', statisticValue: 'Touchbacks', displayValue: v, isNegativeAttribute: neg });
+    const away = { kicking: [tb('4', false)], punting: [tb('2', true)] };
+    const home = { kicking: [tb('1', false)], punting: [tb('5', true)] };
+    const comparison = {
+      ...comparisonWith(),
+      teamA: { ...comparisonWith().teamA, stats: { data: { statistics: away } } },
+      teamB: { ...comparisonWith().teamB, stats: { data: { statistics: home } } },
+    } as unknown as TeamComparisonData;
+
+    renderModal(comparison);
+
+    // Away leads kickoff touchbacks (4 > 1); away also leads punt touchbacks (2 < 5): two edges.
+    expect(screen.getByText('Stats (2:0)')).toBeTruthy();
+  });
+});
+
+describe('metricShare', () => {
+  const spec = (higherIsBetter: boolean) => ({ key: 'k', label: 'k', format: String, higherIsBetter });
+
+  it('splits by the raw values, inverting for lower-is-better metrics', () => {
+    expect(metricShare(spec(true), 6, 5)!.away).toBeCloseTo(6 / 11);
+    expect(metricShare(spec(false), 0.5, 0.35)!.away).toBeCloseTo(0.35 / 0.85);
+  });
+
+  it('is null on a tie, a missing side, both zero, or a signed value', () => {
+    expect(metricShare(spec(true), 5, 5)).toBeNull();
+    expect(metricShare(spec(true), null, 5)).toBeNull();
+    expect(metricShare(spec(true), 0, 0)).toBeNull();
+    expect(metricShare(spec(true), -1, 5)).toBeNull();
   });
 });

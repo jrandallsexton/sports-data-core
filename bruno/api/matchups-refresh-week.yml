@@ -1,0 +1,40 @@
+info:
+  name: matchups-refresh-week
+  type: http
+  seq: 48
+
+# Re-runs the matchup scheduler over an already-generated week so the record
+# snapshots on PickemGroupMatchup (wins/losses/conference records, ranks,
+# spreads, over-under, start time) are rewritten from canonical data.
+#
+# Those records are a COPY taken when the week was generated, not a live read.
+# A late FranchiseSeason enrichment pass therefore leaves the cards frozen at
+# whatever was true at generation time, and evicting the Redis league-week
+# cache does nothing because the stale numbers are committed rows.
+#
+# Safe to re-run: the processor upserts by ContestId, so existing matchups take
+# attribute updates, newly-eligible contests are inserted, and contests that
+# fell out of the filter are left in place so picks against them survive. Each
+# enqueued job evicts its own league-week cache on completion.
+#
+# Prefer seasonWeekId. Week NUMBERS are phase-ambiguous (NFL 2026 has a week 4
+# in preseason, regular season and postseason); the seasonYear+seasonWeek form
+# below returns 400 with the candidate ids rather than guessing a phase.
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/matchups/refresh?seasonYear=2026&seasonWeek=2"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  auth: inherit
+
+# Precise form, once the id is known:
+# url: "{{baseUrlApi}}/admin/matchups/refresh?seasonWeekId=00000000-0000-0000-0000-000000000000"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

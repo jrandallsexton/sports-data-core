@@ -234,15 +234,6 @@ function CategoryTab({
   );
 }
 
-// ─── Parse a displayValue string into a number for bar sizing ─────────────────
-
-function parseNumeric(displayValue: string): number | null {
-  const match = displayValue.match(/[-\d.]+/);
-  if (!match) return null;
-  const n = parseFloat(match[0]);
-  return isNaN(n) ? null : n;
-}
-
 // ─── One stat comparison row ──────────────────────────────────────────────────
 
 function StatRow({
@@ -266,12 +257,12 @@ function StatRow({
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
-  const awayNum = parseNumeric(awayEntry.displayValue ?? '');
-  const homeNum = parseNumeric(homeEntry.displayValue ?? '');
-  const max = awayNum != null && homeNum != null ? Math.max(Math.abs(awayNum), Math.abs(homeNum)) : null;
-
-  const awayPct = max && max > 0 ? Math.abs(awayNum!) / max : 0;
-  const homePct = max && max > 0 ? Math.abs(homeNum!) / max : 0;
+  // The bar says one thing: "this team is better here". It is painted in
+  // full under the favored side and left empty under the other, and neither
+  // side on a tie. It used to scale with the value, which on a lower-is-
+  // better stat (INT) painted a full bar under the team with MORE
+  // interceptions - the exact opposite of the chip beside it.
+  const comparable = favored !== null;
 
   return (
     <View style={[styles.statRow, { borderBottomColor: theme.border }]}>
@@ -291,13 +282,14 @@ function StatRow({
             <Text style={[styles.statRank, { color: theme.textMuted }]}> (#{awayEntry.rank})</Text>
           )}
         </View>
-        {max != null && (
+        {comparable && (
           <View style={styles.barTrack}>
             <View
+              testID="stat-bar-away"
               style={[
                 styles.bar,
                 styles.barRight,
-                { width: `${awayPct * 100}%`, backgroundColor: awayColor },
+                { width: favored === 'away' ? '100%' : '0%', backgroundColor: awayColor },
               ]}
             />
           </View>
@@ -326,13 +318,14 @@ function StatRow({
             {homeEntry.displayValue}
           </Text>
         </View>
-        {max != null && (
+        {comparable && (
           <View style={styles.barTrack}>
             <View
+              testID="stat-bar-home"
               style={[
                 styles.bar,
                 styles.barLeft,
-                { width: `${homePct * 100}%`, backgroundColor: homeColor },
+                { width: favored === 'home' ? '100%' : '0%', backgroundColor: homeColor },
               ]}
             />
           </View>

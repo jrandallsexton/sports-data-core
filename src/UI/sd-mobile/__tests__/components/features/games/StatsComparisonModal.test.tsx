@@ -544,3 +544,54 @@ describe('StatsComparisonModal short-name fallbacks', () => {
     expect(screen.getByText('ATS: Miami Hurricanes')).toBeTruthy();
   });
 });
+
+describe('StatRow bar is a favored indicator, not a value gauge', () => {
+  it('paints the full bar under the side with the BETTER number on a lower-is-better stat', () => {
+    // INT: Miami 1, Wake Forest 0. Wake Forest is better; its bar is full, Miami's empty.
+    renderModal(
+      comparisonWith({
+        awayEntries: [{ statisticKey: 'interceptions', statisticValue: 'INT', displayValue: '1', isNegativeAttribute: true, categoryDisplayName: 'Passing' }],
+        homeEntries: [{ statisticKey: 'interceptions', statisticValue: 'INT', displayValue: '0', isNegativeAttribute: true, categoryDisplayName: 'Passing' }],
+      })
+    );
+    fireEvent.press(screen.getByText('Passing (0:1)'));
+
+    const away = screen.getByTestId('stat-bar-away');
+    const home = screen.getByTestId('stat-bar-home');
+    expect(flatWidth(away)).toBe('0%');
+    expect(flatWidth(home)).toBe('100%');
+  });
+
+  it('paints the full bar under the higher number on an ordinary stat, and no bar on a tie', () => {
+    renderModal(
+      comparisonWith({
+        awayEntries: [
+          { statisticKey: 'netPassingYards', statisticValue: 'Net Pass Yards', displayValue: '854', categoryDisplayName: 'Passing' },
+          { statisticKey: 'miscYards', statisticValue: 'Misc Yds', displayValue: '0', categoryDisplayName: 'Passing' },
+        ],
+        homeEntries: [
+          { statisticKey: 'netPassingYards', statisticValue: 'Net Pass Yards', displayValue: '581', categoryDisplayName: 'Passing' },
+          { statisticKey: 'miscYards', statisticValue: 'Misc Yds', displayValue: '0', categoryDisplayName: 'Passing' },
+        ],
+      })
+    );
+    fireEvent.press(screen.getByText('Passing (1:0)'));
+
+    // One comparable row -> exactly one pair of bars; the tie row renders none.
+    const aways = screen.getAllByTestId('stat-bar-away');
+    const homes = screen.getAllByTestId('stat-bar-home');
+    expect(aways).toHaveLength(1);
+    expect(homes).toHaveLength(1);
+    expect(flatWidth(aways[0])).toBe('100%');
+    expect(flatWidth(homes[0])).toBe('0%');
+  });
+});
+
+function flatWidth(el: { props: { style: unknown } }): string | undefined {
+  const styles = ([] as unknown[]).concat(el.props.style as unknown[]).flat(Infinity) as Array<Record<string, unknown> | null | false>;
+  for (let i = styles.length - 1; i >= 0; i--) {
+    const st = styles[i];
+    if (st && typeof st === 'object' && 'width' in st) return st.width as string;
+  }
+  return undefined;
+}

@@ -173,6 +173,39 @@ export function statFavored(away?: TeamStatEntry, home?: TeamStatEntry): 'away' 
   return a > b ? 'away' : b > a ? 'home' : null;
 }
 
+/**
+ * Each side's share of one full-width bar: away/(away+home) of the row's
+ * two values, so 89.1% vs 61.3% completion reads 59/41 and 10 vs 7 avg
+ * gain reads 59/41 - the SIZE of the edge, which the favored chip cannot
+ * show. Lower-is-better stats take the opponent's value instead (INT 1 vs
+ * 0 -> 0/100 to the team with 0), so the bar never contradicts the chip.
+ * Null - no bar - on a tie, a non-number, both zero, or a negative value
+ * (a share of a signed quantity like turnover differential means nothing;
+ * the chip still marks the better side).
+ */
+export function statShare(away?: TeamStatEntry, home?: TeamStatEntry): { away: number; home: number } | null {
+  if (!away || !home) return null;
+  const a = parseFloat(away.displayValue ?? '');
+  const b = parseFloat(home.displayValue ?? '');
+  if (Number.isNaN(a) || Number.isNaN(b) || a < 0 || b < 0 || a === b) return null;
+  const total = a + b;
+  if (total <= 0) return null;
+  const isNegative = away.isNegativeAttribute ?? home.isNegativeAttribute ?? false;
+  const awayShare = (isNegative ? b : a) / total;
+  return { away: awayShare, home: 1 - awayShare };
+}
+
+/**
+ * A row where both sides read zero says nothing about either team (2-Pt
+ * Pass Att 0 vs 0) and only pads the category. Rows are kept when either
+ * side is non-zero or non-numeric.
+ */
+export function isEmptyStatRow(away?: TeamStatEntry, home?: TeamStatEntry): boolean {
+  const a = parseFloat(away?.displayValue ?? '');
+  const b = parseFloat(home?.displayValue ?? '');
+  return a === 0 && b === 0;
+}
+
 export function metricFavored(spec: MetricSpec, a?: number | null, b?: number | null): 'away' | 'home' | null {
   if (a == null || b == null) return null;
   if (spec.higherIsBetter) return a > b ? 'away' : b > a ? 'home' : null;
@@ -197,13 +230,25 @@ function FavoredSplitBar({
   homeColor: string;
 }) {
   const total = tally.away + tally.home;
+  const scheme = useColorScheme();
+  const theme = getTheme(scheme);
   if (total === 0) return null;
   return (
-    <View style={styles.splitBarTrack}>
+    <View style={[styles.splitBarTrack, splitBarTrackTheme(theme)]}>
       <View style={{ flex: tally.away, backgroundColor: awayColor }} />
       <View style={{ flex: tally.home, backgroundColor: homeColor }} />
     </View>
   );
+}
+
+/**
+ * A faint fill and a hairline outline under every split bar. Without them
+ * a team whose color sits near the page background (Wake Forest black on
+ * the dark theme) has an invisible segment and every bar reads as "the
+ * other team, then nothing".
+ */
+function splitBarTrackTheme(theme: { border: string; textMuted: string }) {
+  return { backgroundColor: theme.border, borderColor: theme.textMuted, borderWidth: StyleSheet.hairlineWidth };
 }
 
 function CategoryTab({
@@ -241,6 +286,7 @@ function StatRow({
   awayEntry,
   homeEntry,
   favored = null,
+  share = null,
   awayColor = Colors.brand.navy,
   homeColor = Colors.brand.navy,
 }: {
@@ -253,19 +299,15 @@ function StatRow({
   /** Which side leads this row; null = tie/incomparable. Web parity:
       the leading value is highlighted, and lower-is-better stats invert. */
   favored?: 'away' | 'home' | null;
+  /** Each side's share of the row's single bar (statShare); null = no bar. */
+  share?: { away: number; home: number } | null;
 }) {
   const scheme = useColorScheme();
   const theme = getTheme(scheme);
 
-  // The bar says one thing: "this team is better here". It is painted in
-  // full under the favored side and left empty under the other, and neither
-  // side on a tie. It used to scale with the value, which on a lower-is-
-  // better stat (INT) painted a full bar under the team with MORE
-  // interceptions - the exact opposite of the chip beside it.
-  const comparable = favored !== null;
-
   return (
-    <View style={[styles.statRow, { borderBottomColor: theme.border }]}>
+    <View style={[styles.statRowBlock, { borderBottomColor: theme.border }]}>
+    <View style={styles.statRow}>
       {/* Away value */}
       <View style={[styles.statValue, styles.statValueLeft]}>
         <View style={styles.statValueLine}>
@@ -282,18 +324,6 @@ function StatRow({
             <Text style={[styles.statRank, { color: theme.textMuted }]}> (#{awayEntry.rank})</Text>
           )}
         </View>
-        {comparable && (
-          <View style={styles.barTrack}>
-            <View
-              testID="stat-bar-away"
-              style={[
-                styles.bar,
-                styles.barRight,
-                { width: favored === 'away' ? '100%' : '0%', backgroundColor: awayColor },
-              ]}
-            />
-          </View>
-        )}
       </View>
 
       {/* Label */}
@@ -318,19 +348,22 @@ function StatRow({
             {homeEntry.displayValue}
           </Text>
         </View>
-        {comparable && (
-          <View style={styles.barTrack}>
-            <View
-              testID="stat-bar-home"
-              style={[
-                styles.bar,
-                styles.barLeft,
-                { width: favored === 'home' ? '100%' : '0%', backgroundColor: homeColor },
-              ]}
-            />
-          </View>
-        )}
       </View>
+    </View>
+
+    {/* One bar for the row, split at each side's share (statShare): the
+        size of the edge, in team colors, the same way the tab and category
+        headers show the tally. The chip marks who is better; this shows
+        by how much. */}
+    {share && (
+      <View style={[styles.splitBarTrack, splitBarTrackTheme(theme)]} testID="stat-share-bar">
+        <View testID="stat-share-away" style={{ flex: share.away, backgroundColor: awayColor }} />
+        <View testID="stat-share-home" style={{ flex: share.home, backgroundColor: homeColor }} />
+        {/* 50% mark, as on the DeetsMeter: without it a 55/45 split and a
+            70/30 split read the same at a glance. */}
+        <View style={styles.shareMidline} pointerEvents="none" />
+      </View>
+    )}
     </View>
   );
 }
@@ -599,7 +632,9 @@ function StatCategoryRows({
   homeColor: string;
 }) {
   const rowCount = Math.max(awayRows.length, homeRows.length);
-  if (rowCount === 0) {
+  const visibleCount = Array.from({ length: rowCount }, (_, i) => i)
+    .filter((i) => (awayRows[i] || homeRows[i]) && !isEmptyStatRow(awayRows[i], homeRows[i])).length;
+  if (rowCount === 0 || visibleCount === 0) {
     return (
       <Text style={[styles.emptyText, { color: mutedColor, padding: 24 }]}>
         No {category} stats available.
@@ -612,6 +647,7 @@ function StatCategoryRows({
         const away = awayRows[i];
         const home = homeRows[i];
         if (!away && !home) return null;
+        if (isEmptyStatRow(away, home)) return null;
         const label =
           away?.statisticValue ??
           home?.statisticValue ??
@@ -627,6 +663,7 @@ function StatCategoryRows({
             awayEntry={away ?? { displayValue: '—' }}
             homeEntry={home ?? { displayValue: '—' }}
             favored={statFavored(away, home)}
+            share={statShare(away, home)}
             awayColor={awayColor}
             homeColor={homeColor}
           />
@@ -784,18 +821,27 @@ export function StatsComparisonModal({
     const perCategory: Record<string, { away: number; home: number }> = {};
     let away = 0;
     let home = 0;
+    // ESPN files the same stat under several categories (Net Total Yds,
+    // Points, Offensive Plays sit in passing, rushing AND receiving). Each
+    // category counts its own rows, but the tab-level total counts a key
+    // once - otherwise one edge is worth three.
+    const counted = new Set<string>();
     for (const cat of categories) {
       const a = awayStats[cat] ?? [];
       const h = homeStats[cat] ?? [];
       const tally = { away: 0, home: 0 };
       for (let i = 0; i < Math.max(a.length, h.length); i++) {
         const f = statFavored(a[i], h[i]);
+        if (f === null) continue;
         if (f === 'away') tally.away++;
         if (f === 'home') tally.home++;
+        const key = a[i]?.statisticKey ?? h[i]?.statisticKey ?? `${cat}:${i}`;
+        if (counted.has(key)) continue;
+        counted.add(key);
+        if (f === 'away') away++;
+        else home++;
       }
       perCategory[cat] = tally;
-      away += tally.away;
-      home += tally.home;
     }
     return { perCategory, away, home };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1319,11 +1365,20 @@ const styles = StyleSheet.create({
   // width of whatever it sits under, segments in proportion to the tally.
   splitBarTrack: {
     flexDirection: 'row',
-    height: 3,
-    borderRadius: 2,
+    height: 5,
+    borderRadius: 3,
     overflow: 'hidden',
     marginTop: 4,
     alignSelf: 'stretch',
+  },
+  shareMidline: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '50%',
+    width: 2,
+    marginLeft: -1,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   // A favored value painted on its team's color; text flips to whichever
   // of light/dark reads against it (contrastTextOn).
@@ -1338,12 +1393,15 @@ const styles = StyleSheet.create({
   },
 
   // Stat rows
-  statRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+  statRowBlock: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 6,
+  },
+  statRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: 8,
   },
   statValue: {
@@ -1512,22 +1570,4 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
 
-  barTrack: {
-    width: '100%',
-    height: 4,
-    backgroundColor: '#E2E8F0',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  bar: {
-    height: 4,
-    borderRadius: 2,
-    maxWidth: '100%',
-  },
-  barRight: {
-    alignSelf: 'flex-start',
-  },
-  barLeft: {
-    alignSelf: 'flex-end',
-  },
 });

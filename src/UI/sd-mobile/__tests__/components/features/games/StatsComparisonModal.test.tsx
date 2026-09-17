@@ -3,6 +3,8 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import {
   StatsComparisonModal,
+  isEmptyStatRow,
+  statShare,
   statFavored,
   metricFavored,
   METRICS_SPEC,
@@ -545,53 +547,94 @@ describe('StatsComparisonModal short-name fallbacks', () => {
   });
 });
 
-describe('StatRow bar is a favored indicator, not a value gauge', () => {
-  it('paints the full bar under the side with the BETTER number on a lower-is-better stat', () => {
-    // INT: Miami 1, Wake Forest 0. Wake Forest is better; its bar is full, Miami's empty.
+describe('statShare', () => {
+  const e = (displayValue: string, isNegativeAttribute?: boolean) =>
+    ({ displayValue, isNegativeAttribute }) as unknown as import('@/src/types/models').TeamStatEntry;
+
+  it('splits the bar by each side\'s share of the two values', () => {
+    // 89.1% vs 61.3% completion -> 59/41.
+    const s = statShare(e('89.1%'), e('61.3%'))!;
+    expect(s.away).toBeCloseTo(0.592, 3);
+    expect(s.home).toBeCloseTo(0.408, 3);
+  });
+
+  it('gives the opponent\'s share on a lower-is-better stat, so INT 1 vs 0 is 0/100 to the team with 0', () => {
+    expect(statShare(e('1', true), e('0', true))).toEqual({ away: 0, home: 1 });
+    // 1 vs 3 -> the team with 1 gets 75.
+    const s = statShare(e('1', true), e('3', true))!;
+    expect(s.away).toBeCloseTo(0.75);
+  });
+
+  it('is null - no bar - on a tie, both zero, a non-number, or a signed value', () => {
+    expect(statShare(e('7'), e('7'))).toBeNull();
+    expect(statShare(e('0'), e('0'))).toBeNull();
+    expect(statShare(e('—'), e('7'))).toBeNull();
+    expect(statShare(e('-3'), e('2'))).toBeNull(); // turnover differential
+    expect(statShare(undefined, e('7'))).toBeNull();
+  });
+});
+
+describe('StatRow share bar', () => {
+  it('renders one bar per comparable row, split by share, and none on a tie', () => {
     renderModal(
       comparisonWith({
-        awayEntries: [{ statisticKey: 'interceptions', statisticValue: 'INT', displayValue: '1', isNegativeAttribute: true, categoryDisplayName: 'Passing' }],
-        homeEntries: [{ statisticKey: 'interceptions', statisticValue: 'INT', displayValue: '0', isNegativeAttribute: true, categoryDisplayName: 'Passing' }],
+        awayEntries: [
+          { statisticKey: 'interceptions', statisticValue: 'INT', displayValue: '1', isNegativeAttribute: true, categoryDisplayName: 'Passing' },
+          { statisticKey: 'miscYards', statisticValue: 'Misc Yds', displayValue: '0', categoryDisplayName: 'Passing' },
+        ],
+        homeEntries: [
+          { statisticKey: 'interceptions', statisticValue: 'INT', displayValue: '0', isNegativeAttribute: true, categoryDisplayName: 'Passing' },
+          { statisticKey: 'miscYards', statisticValue: 'Misc Yds', displayValue: '0', categoryDisplayName: 'Passing' },
+        ],
       })
     );
     fireEvent.press(screen.getByText('Passing (0:1)'));
 
-    const away = screen.getByTestId('stat-bar-away');
-    const home = screen.getByTestId('stat-bar-home');
-    expect(flatWidth(away)).toBe('0%');
-    expect(flatWidth(home)).toBe('100%');
-  });
-
-  it('paints the full bar under the higher number on an ordinary stat, and no bar on a tie', () => {
-    renderModal(
-      comparisonWith({
-        awayEntries: [
-          { statisticKey: 'netPassingYards', statisticValue: 'Net Pass Yards', displayValue: '854', categoryDisplayName: 'Passing' },
-          { statisticKey: 'miscYards', statisticValue: 'Misc Yds', displayValue: '0', categoryDisplayName: 'Passing' },
-        ],
-        homeEntries: [
-          { statisticKey: 'netPassingYards', statisticValue: 'Net Pass Yards', displayValue: '581', categoryDisplayName: 'Passing' },
-          { statisticKey: 'miscYards', statisticValue: 'Misc Yds', displayValue: '0', categoryDisplayName: 'Passing' },
-        ],
-      })
-    );
-    fireEvent.press(screen.getByText('Passing (1:0)'));
-
-    // One comparable row -> exactly one pair of bars; the tie row renders none.
-    const aways = screen.getAllByTestId('stat-bar-away');
-    const homes = screen.getAllByTestId('stat-bar-home');
-    expect(aways).toHaveLength(1);
-    expect(homes).toHaveLength(1);
-    expect(flatWidth(aways[0])).toBe('100%');
-    expect(flatWidth(homes[0])).toBe('0%');
+    // The 0-vs-0 row is not rendered at all; the INT row's bar is all Wake Forest (home).
+    expect(screen.queryByText('Misc Yds')).toBeNull();
+    expect(screen.getAllByTestId('stat-share-bar')).toHaveLength(1);
+    expect(flatFlex(screen.getByTestId('stat-share-away'))).toBe(0);
+    expect(flatFlex(screen.getByTestId('stat-share-home'))).toBe(1);
   });
 });
 
-function flatWidth(el: { props: { style: unknown } }): string | undefined {
+function flatFlex(el: { props: { style: unknown } }): number | undefined {
   const styles = ([] as unknown[]).concat(el.props.style as unknown[]).flat(Infinity) as Array<Record<string, unknown> | null | false>;
   for (let i = styles.length - 1; i >= 0; i--) {
     const st = styles[i];
-    if (st && typeof st === 'object' && 'width' in st) return st.width as string;
+    if (st && typeof st === 'object' && 'flex' in st) return st.flex as number;
   }
   return undefined;
 }
+
+describe('isEmptyStatRow', () => {
+  const e = (displayValue: string) => ({ displayValue }) as unknown as import('@/src/types/models').TeamStatEntry;
+
+  it('hides a row only when BOTH sides read zero', () => {
+    expect(isEmptyStatRow(e('0'), e('0'))).toBe(true);
+    expect(isEmptyStatRow(e('0.0%'), e('0'))).toBe(true);
+    expect(isEmptyStatRow(e('0'), e('3'))).toBe(false);
+    expect(isEmptyStatRow(e('—'), e('0'))).toBe(false);
+    expect(isEmptyStatRow(undefined, e('0'))).toBe(false);
+  });
+});
+
+describe('Stats tally', () => {
+  it('counts a shared key once in the tab total, while each category keeps its own count', () => {
+    const away = { passing: [{ statisticKey: 'netTotalYards', statisticValue: 'Net Total Yds', displayValue: '1405' }], rushing: [{ statisticKey: 'netTotalYards', statisticValue: 'Net Total Yds', displayValue: '1405' }] };
+    const home = { passing: [{ statisticKey: 'netTotalYards', statisticValue: 'Net Total Yds', displayValue: '970' }], rushing: [{ statisticKey: 'netTotalYards', statisticValue: 'Net Total Yds', displayValue: '970' }] };
+    const comparison = {
+      ...comparisonWith(),
+      teamA: { ...comparisonWith().teamA, stats: { data: { statistics: away } } },
+      teamB: { ...comparisonWith().teamB, stats: { data: { statistics: home } } },
+    } as unknown as TeamComparisonData;
+
+    renderModal(comparison);
+
+    // One edge, not two.
+    expect(screen.getByText('Stats (1:0)')).toBeTruthy();
+    // ...but each category still shows its own row as a win.
+    expect(screen.getByText('passing (1:0)')).toBeTruthy();
+    expect(screen.getByText('rushing (1:0)')).toBeTruthy();
+  });
+});

@@ -26,14 +26,6 @@ public static class MatchupForPickDtoMapper
     /// (football gets "Q3", baseball an inning number), so a defaulted
     /// sport would silently give an MLB caller football-shaped periods.
     /// </param>
-    /// <summary>
-    /// A side whose whole record is zero carries no information: either the
-    /// snapshot predates <c>MatchupRecordSnapshots</c> and was never written,
-    /// or the team genuinely has not played. Both want the canonical value.
-    /// </summary>
-    private static bool IsEmptyRecord(int wins, int losses, int conferenceWins, int conferenceLosses) =>
-        wins == 0 && losses == 0 && conferenceWins == 0 && conferenceLosses == 0;
-
     public static void ApplyCanonical(
         LeagueWeekMatchupsDto.MatchupForPickDto matchup,
         LeagueMatchupDto canonical,
@@ -78,22 +70,7 @@ public static class MatchupForPickDtoMapper
         matchup.AwayLogoUriDark = canonical.AwayLogoUriDark;
         matchup.AwaySlug = canonical.AwaySlug ?? matchup.AwaySlug;
         matchup.AwayColor = canonical.AwayColor ?? matchup.AwayColor;
-        // Records: the league's own PickemGroupMatchup snapshot wins, and the
-        // caller has already put it on the DTO. Canonical is the fallback for
-        // rows the snapshot never covered — MatchupRecordSnapshots added the
-        // eight columns with defaultValue 0 and no backfill, and an
-        // already-generated week is not re-entered by MatchupScheduleProcessor
-        // unless it is refreshed, so pre-migration rows keep that 0 forever
-        // (111 of them in prod, all 2025). Falling back only when the whole
-        // side is zero costs nothing at a genuine 0-0 season opener, where
-        // both sources agree anyway.
-        if (IsEmptyRecord(matchup.AwayWins, matchup.AwayLosses, matchup.AwayConferenceWins, matchup.AwayConferenceLosses))
-        {
-            matchup.AwayWins = canonical.AwayWins;
-            matchup.AwayLosses = canonical.AwayLosses;
-            matchup.AwayConferenceWins = canonical.AwayConferenceWins;
-            matchup.AwayConferenceLosses = canonical.AwayConferenceLosses;
-        }
+        // Records are NOT taken from canonical. See the note above FromCanonical.
         matchup.AwayRank = canonical.AwayRank;
 
         // Home team
@@ -105,14 +82,7 @@ public static class MatchupForPickDtoMapper
         matchup.HomeLogoUriDark = canonical.HomeLogoUriDark;
         matchup.HomeSlug = canonical.HomeSlug ?? matchup.HomeSlug;
         matchup.HomeColor = canonical.HomeColor ?? matchup.HomeColor;
-        // Same snapshot-first rule as the away side above.
-        if (IsEmptyRecord(matchup.HomeWins, matchup.HomeLosses, matchup.HomeConferenceWins, matchup.HomeConferenceLosses))
-        {
-            matchup.HomeWins = canonical.HomeWins;
-            matchup.HomeLosses = canonical.HomeLosses;
-            matchup.HomeConferenceWins = canonical.HomeConferenceWins;
-            matchup.HomeConferenceLosses = canonical.HomeConferenceLosses;
-        }
+        // Records are NOT taken from canonical. See the note above FromCanonical.
         matchup.HomeRank = canonical.HomeRank;
 
         // Odds — round to one decimal for display.

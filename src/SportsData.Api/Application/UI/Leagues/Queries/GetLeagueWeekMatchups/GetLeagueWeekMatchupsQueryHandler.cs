@@ -136,7 +136,15 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     x.AwayRank,
                     x.HomeRank,
                     x.Headline,
-                    x.SeasonYear
+                    x.SeasonYear,
+                    x.AwayWins,
+                    x.AwayLosses,
+                    x.AwayConferenceWins,
+                    x.AwayConferenceLosses,
+                    x.HomeWins,
+                    x.HomeLosses,
+                    x.HomeConferenceWins,
+                    x.HomeConferenceLosses
                 })
                 .ToListAsync(cancellationToken);
 
@@ -147,7 +155,17 @@ public class GetLeagueWeekMatchupsQueryHandler : IGetLeagueWeekMatchupsQueryHand
                     ContestId = x.ContestId,
                     AwayRank = x.AwayRank,
                     HomeRank = x.HomeRank,
-                    HeadLine = x.Headline
+                    HeadLine = x.Headline,
+                    // The league's own snapshot is authoritative for records.
+                    // ApplyCanonical deliberately does not touch these.
+                    AwayWins = x.AwayWins,
+                    AwayLosses = x.AwayLosses,
+                    AwayConferenceWins = x.AwayConferenceWins,
+                    AwayConferenceLosses = x.AwayConferenceLosses,
+                    HomeWins = x.HomeWins,
+                    HomeLosses = x.HomeLosses,
+                    HomeConferenceWins = x.HomeConferenceWins,
+                    HomeConferenceLosses = x.HomeConferenceLosses
                 })
                 .ToList();
 

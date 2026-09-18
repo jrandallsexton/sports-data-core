@@ -11,6 +11,7 @@ using SportsData.Core.Middleware.Health;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -105,6 +106,12 @@ public interface IProvideContests : IProvideHealthChecks
     Task<Result<List<DateOnly>>> GetGameDates(DateTime? from, DateTime? to, CancellationToken ct = default);
     Task<Result<Matchup>> GetMatchupByContestId(Guid contestId, CancellationToken ct = default);
     Task<Result<List<LeagueMatchupDto>>> GetMatchupsByContestIds(List<Guid> contestIds, MarkDirection direction, CancellationToken ct = default);
+
+    /// <summary>
+    /// Entering records for a batch of contests — the record each team carried
+    /// INTO the game, derived from prior finalized outcomes.
+    /// </summary>
+    Task<Result<List<EnteringRecordDto>>> GetEnteringRecordsByContestIds(List<Guid> contestIds, CancellationToken ct = default);
     Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default);
     Task<Result<ContestPreviewHistoryDto>> GetContestPreviewHistory(Guid contestId, CancellationToken ct = default);
     Task<Result<Dictionary<Guid, MatchupForPreviewDto>>> GetMatchupsForPreviewBatch(List<Guid> contestIds, CancellationToken ct = default);
@@ -420,6 +427,33 @@ public class ContestClient : ClientBase, IProvideContests
         var result = await PostOrDefaultAsync<List<LeagueMatchupDto>, GetMatchupsByContestIdsRequest>(
             "contests/matchups/by-ids", request, new List<LeagueMatchupDto>(), ct);
         return new Success<List<LeagueMatchupDto>>(result);
+    }
+
+    public async Task<Result<List<EnteringRecordDto>>> GetEnteringRecordsByContestIds(List<Guid> contestIds, CancellationToken ct = default)
+    {
+        if (contestIds is null || contestIds.Count == 0)
+            return new Success<List<EnteringRecordDto>>(new List<EnteringRecordDto>());
+
+        var request = new GetEnteringRecordsByContestIdsRequest(contestIds.ToArray());
+
+        // Caught rather than allowed to propagate so the caller gets a Result it
+        // can branch on. PostOrDefaultAsync calls EnsureSuccessStatusCode, so a
+        // non-2xx throws here; without this the IsSuccess check at the call site
+        // would be unreachable and a transport failure would surface as an
+        // unhandled 500 instead of a decision the audit can make.
+        try
+        {
+            var result = await PostOrDefaultAsync<List<EnteringRecordDto>, GetEnteringRecordsByContestIdsRequest>(
+                "contests/entering-records/by-ids", request, new List<EnteringRecordDto>(), ct);
+            return new Success<List<EnteringRecordDto>>(result);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return new Failure<List<EnteringRecordDto>>(
+                default!,
+                ResultStatus.Error,
+                [new ValidationFailure("contestIds", $"Producer call failed: {ex.Message}")]);
+        }
     }
 
     public async Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default)

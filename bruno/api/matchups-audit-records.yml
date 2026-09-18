@@ -1,0 +1,33 @@
+info:
+  name: matchups-audit-records
+  type: http
+  seq: 49
+
+# Recomputes PickemGroupMatchup record snapshots from prior finalized outcomes,
+# correcting only rows that differ.
+#
+# The league card reads the snapshot and never derives (#769), so a wrong
+# snapshot stays wrong until something rewrites it. #771 stopped new damage but
+# repaired none, and rows predating the MatchupRecordSnapshots migration were
+# never backfilled (111 in prod, all 2025).
+#
+# Safe to re-run, and worth re-running: the derivation counts only FINALIZED
+# contests, so anything still cycling through the enrichment audit leaves its
+# teams a game light until that settles.
+#
+# Omit seasonWeek to audit every week of the season year. Start narrow.
+
+http:
+  method: POST
+  url: "{{baseUrlApi}}/admin/matchups/audit-records?seasonYear=2026&seasonWeek=1&sport=FootballNcaa"
+  headers:
+    - name: X-Admin-Token
+      value: "{{X-Admin-Token}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: true

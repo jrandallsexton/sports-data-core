@@ -507,6 +507,25 @@ namespace SportsData.Producer.Application.Contests
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Entering records for a batch of contests: the record each team
+        /// carried INTO the game, derived from prior finalized outcomes.
+        /// Serves the API's matchup-record audit, which cannot read this
+        /// database directly.
+        /// </summary>
+        [HttpPost("entering-records/by-ids")]
+        public async Task<ActionResult<List<EnteringRecordDto>>> GetEnteringRecordsByContestIds(
+            [FromBody] GetEnteringRecordsByContestIdsRequest request,
+            [FromServices] Queries.GetEnteringRecordsByContestIds.IGetEnteringRecordsByContestIdsQueryHandler handler,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await handler.ExecuteAsync(
+                new Queries.GetEnteringRecordsByContestIds.GetEnteringRecordsByContestIdsQuery(
+                    request.ContestIds),
+                cancellationToken);
+            return result.ToActionResult();
+        }
+
         [HttpGet("{contestId}/matchup-preview")]
         public async Task<ActionResult<MatchupForPreviewDto>> GetMatchupForPreview(
             [FromRoute] Guid contestId,

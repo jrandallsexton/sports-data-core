@@ -248,6 +248,56 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
             .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// The touchdown and its extra point share a period AND a clock — the game
+    /// clock does not run between them. Ordering by period DESC, clock ASC
+    /// therefore ties, and whichever row the provider returns first wins; when
+    /// that was the touchdown, the PAT was dropped and the score landed a point
+    /// low. The audit processor derives its expected score from MAX competitor
+    /// scores, saw the higher value, cleared FinalizedUtc and re-queued
+    /// enrichment, which re-derived the same low score — an unbounded loop
+    /// (prod 2026-09-18, 200+ contests/day; Jaguars at Colts cycled 4 times in
+    /// 18 hours). Cumulative scores never decrease, so MAX is the final score.
+    ///
+    /// Run BOTH seed orders. Whatever rule the provider uses to break a tie on
+    /// (PeriodNumber, ClockValue) — insertion order, key order, anything — one
+    /// of the two cases necessarily puts the touchdown in the winning position,
+    /// so an ordering-based read returns 12 and fails. That makes the test pin
+    /// the fix without depending on tie behaviour nobody specifies. MAX has no
+    /// tie to break and passes both.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]   // extra point seeded first
+    [InlineData(false)]  // touchdown seeded first
+    public async Task Process_WhenTouchdownAndExtraPointShareClock_TakesTheHigherCumulativeScore(
+        bool seedExtraPointFirst)
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        // Same period AND same clock: the game clock does not run between a
+        // touchdown and its extra point.
+        var touchdown = CreatePlay(competitionId, scoringPlay: true, awayScore: 12, homeScore: 23, period: 4, clock: 70);
+        var extraPoint = CreatePlay(competitionId, scoringPlay: true, awayScore: 13, homeScore: 23, period: 4, clock: 70);
+
+        FootballDataContext.CompetitionPlays.Add(
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 6, homeScore: 23, period: 4, clock: 153));
+        FootballDataContext.CompetitionPlays.AddRange(
+            seedExtraPointFirst
+                ? new[] { extraPoint, touchdown }
+                : new[] { touchdown, extraPoint });
+        await FootballDataContext.SaveChangesAsync();
+
+        await _sut.Process(new EnrichContestCommand(contestId, Guid.NewGuid()));
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.AwayScore.Should().Be(13);
+        contest.HomeScore.Should().Be(23);
+        // Pins the ScoringPlay branch specifically: without this, a run that
+        // bailed to the D2 competitor-score fallback (or returned early) could
+        // leave the right-looking scores from some other path.
+        contest.FinalizedUtc.Should().NotBeNull();
+    }
+
     [Fact]
     public async Task Process_WhenFinalWithScoringPlays_SetsWinner()
     {

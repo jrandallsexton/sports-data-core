@@ -167,19 +167,52 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                // Query canonical plays to determine final score (project to DTO)
-                var lastScoringPlay = await _dataContext.CompetitionPlays
+                // Final score from the scoring plays, taken as MAX per side
+                // rather than "the last one".
+                //
+                // A play's Away/HomeScore is cumulative and never decreases,
+                // so the maximum IS the final score, with no ordering needed.
+                // Ordering was the bug: period DESC then clock ASC has no
+                // tie-break, and the clock does not run between a touchdown
+                // and its extra point, so those two rows tie and the database
+                // returns either. Picking the touchdown loses the PAT.
+                //
+                // That cost more than one point. The audit processor derives
+                // its expected score from MAX competitor score rows, so it saw
+                // 13 where this wrote 12, cleared FinalizedUtc, and re-queued
+                // enrichment, which re-derived 12 — an unbounded loop. Prod
+                // 2026-09-18: 200+ contests a day sat in it, and an
+                // un-finalized contest is excluded from team W/L entirely.
+                // Jaguars at Colts cycled 4 times in 18 hours.
+                //
+                // Using MAX here makes both sides agree by construction.
+                // Two nullable MaxAsync reads rather than a GroupBy projection:
+                // "no scoring plays" has to be distinguishable from a real
+                // result, because it is what selects the D2 fallback below.
+                // (int?)…MaxAsync() returns null on an empty set on every
+                // provider, while a constant-key GroupBy can be flattened to a
+                // bare SELECT MAX(...) that yields one row of NULLs — which
+                // would make the fallback unreachable exactly for the
+                // competitions it exists to serve. Same idiom the fallback and
+                // ContestEnrichmentAuditProcessor already use.
+                var awayScoringPlayMax = await _dataContext.CompetitionPlays
                     .AsNoTracking()
                     .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
-                    .OrderByDescending(p => p.PeriodNumber)
-                    .ThenBy(p => p.ClockValue)
-                    .Select(p => new { p.AwayScore, p.HomeScore })
-                    .FirstOrDefaultAsync();
+                    .Select(p => (int?)p.AwayScore)
+                    .MaxAsync();
 
-                if (lastScoringPlay != null)
+                var homeScoringPlayMax = await _dataContext.CompetitionPlays
+                    .AsNoTracking()
+                    .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
+                    .Select(p => (int?)p.HomeScore)
+                    .MaxAsync();
+
+                var hasScoringPlays = awayScoringPlayMax is not null && homeScoringPlayMax is not null;
+
+                if (hasScoringPlays)
                 {
-                    contest.AwayScore = lastScoringPlay.AwayScore;
-                    contest.HomeScore = lastScoringPlay.HomeScore;
+                    contest.AwayScore = awayScoringPlayMax!.Value;
+                    contest.HomeScore = homeScoringPlayMax!.Value;
                 }
                 else
                 {
@@ -227,7 +260,7 @@ namespace SportsData.Producer.Application.Contests
 
                 _logger.LogInformation(
                     "Final score derived. Source={Source}, Away={AwayScore}, Home={HomeScore}",
-                    lastScoringPlay != null ? "ScoringPlay" : "CompetitorMaxScore",
+                    hasScoringPlays ? "ScoringPlay" : "CompetitorMaxScore",
                     contest.AwayScore,
                     contest.HomeScore);
 

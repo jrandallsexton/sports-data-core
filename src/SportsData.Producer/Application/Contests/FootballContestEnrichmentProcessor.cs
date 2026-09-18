@@ -186,21 +186,33 @@ namespace SportsData.Producer.Application.Contests
                 // Jaguars at Colts cycled 4 times in 18 hours.
                 //
                 // Using MAX here makes both sides agree by construction.
-                var scoringPlayScore = await _dataContext.CompetitionPlays
+                // Two nullable MaxAsync reads rather than a GroupBy projection:
+                // "no scoring plays" has to be distinguishable from a real
+                // result, because it is what selects the D2 fallback below.
+                // (int?)…MaxAsync() returns null on an empty set on every
+                // provider, while a constant-key GroupBy can be flattened to a
+                // bare SELECT MAX(...) that yields one row of NULLs — which
+                // would make the fallback unreachable exactly for the
+                // competitions it exists to serve. Same idiom the fallback and
+                // ContestEnrichmentAuditProcessor already use.
+                var awayScoringPlayMax = await _dataContext.CompetitionPlays
                     .AsNoTracking()
                     .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
-                    .GroupBy(p => 1)
-                    .Select(g => new
-                    {
-                        AwayScore = g.Max(p => p.AwayScore),
-                        HomeScore = g.Max(p => p.HomeScore)
-                    })
-                    .FirstOrDefaultAsync();
+                    .Select(p => (int?)p.AwayScore)
+                    .MaxAsync();
 
-                if (scoringPlayScore != null)
+                var homeScoringPlayMax = await _dataContext.CompetitionPlays
+                    .AsNoTracking()
+                    .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
+                    .Select(p => (int?)p.HomeScore)
+                    .MaxAsync();
+
+                var hasScoringPlays = awayScoringPlayMax is not null && homeScoringPlayMax is not null;
+
+                if (hasScoringPlays)
                 {
-                    contest.AwayScore = scoringPlayScore.AwayScore;
-                    contest.HomeScore = scoringPlayScore.HomeScore;
+                    contest.AwayScore = awayScoringPlayMax!.Value;
+                    contest.HomeScore = homeScoringPlayMax!.Value;
                 }
                 else
                 {
@@ -248,7 +260,7 @@ namespace SportsData.Producer.Application.Contests
 
                 _logger.LogInformation(
                     "Final score derived. Source={Source}, Away={AwayScore}, Home={HomeScore}",
-                    scoringPlayScore != null ? "ScoringPlay" : "CompetitorMaxScore",
+                    hasScoringPlays ? "ScoringPlay" : "CompetitorMaxScore",
                     contest.AwayScore,
                     contest.HomeScore);
 

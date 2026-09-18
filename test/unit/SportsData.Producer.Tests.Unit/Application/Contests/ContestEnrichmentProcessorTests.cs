@@ -248,6 +248,38 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
             .Verify(x => x.Publish(It.IsAny<ContestFinalized>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// The touchdown and its extra point share a period AND a clock — the game
+    /// clock does not run between them. Ordering by period DESC, clock ASC
+    /// therefore ties, and whichever row the provider returns first wins; when
+    /// that was the touchdown, the PAT was dropped and the score landed a point
+    /// low. The audit processor derives its expected score from MAX competitor
+    /// scores, saw the higher value, cleared FinalizedUtc and re-queued
+    /// enrichment, which re-derived the same low score — an unbounded loop
+    /// (prod 2026-09-18, 200+ contests/day; Jaguars at Colts cycled 4 times in
+    /// 18 hours). Cumulative scores never decrease, so MAX is the final score.
+    /// The PAT is seeded FIRST so insertion order cannot mask a regression.
+    /// </summary>
+    [Fact]
+    public async Task Process_WhenTouchdownAndExtraPointShareClock_TakesTheHigherCumulativeScore()
+    {
+        var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
+
+        FootballDataContext.CompetitionPlays.AddRange(
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 6, homeScore: 23, period: 4, clock: 153),
+            // Extra point — the true final — inserted BEFORE the touchdown.
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 13, homeScore: 23, period: 4, clock: 70),
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 12, homeScore: 23, period: 4, clock: 70)
+        );
+        await FootballDataContext.SaveChangesAsync();
+
+        await _sut.Process(new EnrichContestCommand(contestId, Guid.NewGuid()));
+
+        var contest = await FootballDataContext.Contests.FindAsync(contestId);
+        contest!.AwayScore.Should().Be(13);
+        contest.HomeScore.Should().Be(23);
+    }
+
     [Fact]
     public async Task Process_WhenFinalWithScoringPlays_SetsWinner()
     {

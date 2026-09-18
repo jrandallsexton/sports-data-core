@@ -322,6 +322,7 @@ namespace SportsData.Api.DependencyInjection
             services.AddScoped<IProvideCanonicalAdminData, CanonicalAdminDataProvider>();
             services.AddSingleton<CanonicalAdminDataQueryProvider>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
+            services.AddScoped<IAuditMatchupRecords, MatchupRecordAuditProcessor>();
             services.AddScoped<IBootstrapLeagueMatchups, BootstrapLeagueMatchupsProcessor>();
             services.AddScoped<IScorePicks, PickScoringProcessor>();
             services.AddScoped<IInvalidatePickAudits, PickAuditInvalidator>();

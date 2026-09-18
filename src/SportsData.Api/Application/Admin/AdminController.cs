@@ -1219,6 +1219,44 @@ namespace SportsData.Api.Application.Admin
         /// records, ranks, spreads, over/under, start time) are rewritten from
         /// canonical data.
         /// </summary>
+        /// <summary>
+        /// Recomputes the record snapshots on PickemGroupMatchup from prior
+        /// finalized outcomes, correcting only rows that differ.
+        /// </summary>
+        /// <remarks>
+        /// The league card reads the snapshot and never derives (#769), so a
+        /// wrong snapshot stays wrong until something rewrites it. #771 stopped
+        /// new damage but repaired none, and rows predating the
+        /// MatchupRecordSnapshots migration were never backfilled at all.
+        /// <para>
+        /// Safe and worth re-running: the derivation counts only finalized
+        /// contests, so anything still cycling through the enrichment audit
+        /// leaves its teams a game light until that settles.
+        /// </para>
+        /// </remarks>
+        [HttpPost]
+        [Route("matchups/audit-records")]
+        public async Task<IActionResult> AuditMatchupRecords(
+            [FromServices] IAuditMatchupRecords processor,
+            [FromQuery] int seasonYear,
+            // Omit to audit every week of the season year.
+            [FromQuery] int? seasonWeek = null,
+            [FromQuery] Sport sport = Sport.FootballNcaa)
+        {
+            var result = await processor.Process(
+                new MatchupRecordAuditCommand(sport, seasonYear, seasonWeek));
+
+            return Ok(new
+            {
+                sport = sport.ToString(),
+                seasonYear,
+                seasonWeek,
+                examined = result.Examined,
+                corrected = result.Corrected,
+                unresolved = result.Unresolved
+            });
+        }
+
         /// <remarks>
         /// Those records are a COPY taken when the week was generated, not a
         /// live read — the league-week query never asks Producer for them. So

@@ -167,19 +167,40 @@ namespace SportsData.Producer.Application.Contests
                     return;
                 }
 
-                // Query canonical plays to determine final score (project to DTO)
-                var lastScoringPlay = await _dataContext.CompetitionPlays
+                // Final score from the scoring plays, taken as MAX per side
+                // rather than "the last one".
+                //
+                // A play's Away/HomeScore is cumulative and never decreases,
+                // so the maximum IS the final score, with no ordering needed.
+                // Ordering was the bug: period DESC then clock ASC has no
+                // tie-break, and the clock does not run between a touchdown
+                // and its extra point, so those two rows tie and the database
+                // returns either. Picking the touchdown loses the PAT.
+                //
+                // That cost more than one point. The audit processor derives
+                // its expected score from MAX competitor score rows, so it saw
+                // 13 where this wrote 12, cleared FinalizedUtc, and re-queued
+                // enrichment, which re-derived 12 — an unbounded loop. Prod
+                // 2026-09-18: 200+ contests a day sat in it, and an
+                // un-finalized contest is excluded from team W/L entirely.
+                // Jaguars at Colts cycled 4 times in 18 hours.
+                //
+                // Using MAX here makes both sides agree by construction.
+                var scoringPlayScore = await _dataContext.CompetitionPlays
                     .AsNoTracking()
                     .Where(p => p.CompetitionId == competition.Id && p.ScoringPlay)
-                    .OrderByDescending(p => p.PeriodNumber)
-                    .ThenBy(p => p.ClockValue)
-                    .Select(p => new { p.AwayScore, p.HomeScore })
+                    .GroupBy(p => 1)
+                    .Select(g => new
+                    {
+                        AwayScore = g.Max(p => p.AwayScore),
+                        HomeScore = g.Max(p => p.HomeScore)
+                    })
                     .FirstOrDefaultAsync();
 
-                if (lastScoringPlay != null)
+                if (scoringPlayScore != null)
                 {
-                    contest.AwayScore = lastScoringPlay.AwayScore;
-                    contest.HomeScore = lastScoringPlay.HomeScore;
+                    contest.AwayScore = scoringPlayScore.AwayScore;
+                    contest.HomeScore = scoringPlayScore.HomeScore;
                 }
                 else
                 {
@@ -227,7 +248,7 @@ namespace SportsData.Producer.Application.Contests
 
                 _logger.LogInformation(
                     "Final score derived. Source={Source}, Away={AwayScore}, Home={HomeScore}",
-                    lastScoringPlay != null ? "ScoringPlay" : "CompetitorMaxScore",
+                    scoringPlayScore != null ? "ScoringPlay" : "CompetitorMaxScore",
                     contest.AwayScore,
                     contest.HomeScore);
 

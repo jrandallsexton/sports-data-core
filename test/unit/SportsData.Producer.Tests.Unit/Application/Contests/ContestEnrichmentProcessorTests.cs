@@ -258,7 +258,14 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
     /// enrichment, which re-derived the same low score — an unbounded loop
     /// (prod 2026-09-18, 200+ contests/day; Jaguars at Colts cycled 4 times in
     /// 18 hours). Cumulative scores never decrease, so MAX is the final score.
-    /// The PAT is seeded FIRST so insertion order cannot mask a regression.
+    ///
+    /// This test discriminates: restoring
+    /// OrderByDescending(PeriodNumber).ThenBy(ClockValue).FirstOrDefaultAsync()
+    /// fails it with "Expected AwayScore to be 13, but found 12" — verified on
+    /// 5 consecutive runs, so the tie does NOT resolve to insertion order here
+    /// (the PAT is seeded first and is still not the row that ordering picks).
+    /// That tie order is arbitrary by definition, which is the whole point: the
+    /// assertion below holds only because MAX does not depend on it.
     /// </summary>
     [Fact]
     public async Task Process_WhenTouchdownAndExtraPointShareClock_TakesTheHigherCumulativeScore()
@@ -278,6 +285,10 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
         var contest = await FootballDataContext.Contests.FindAsync(contestId);
         contest!.AwayScore.Should().Be(13);
         contest.HomeScore.Should().Be(23);
+        // Pins the ScoringPlay branch specifically: without this, a run that
+        // bailed to the D2 competitor-score fallback (or returned early) could
+        // leave the right-looking scores from some other path.
+        contest.FinalizedUtc.Should().NotBeNull();
     }
 
     [Fact]

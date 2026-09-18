@@ -70,10 +70,7 @@ public static class MatchupForPickDtoMapper
         matchup.AwayLogoUriDark = canonical.AwayLogoUriDark;
         matchup.AwaySlug = canonical.AwaySlug ?? matchup.AwaySlug;
         matchup.AwayColor = canonical.AwayColor ?? matchup.AwayColor;
-        matchup.AwayWins = canonical.AwayWins;
-        matchup.AwayLosses = canonical.AwayLosses;
-        matchup.AwayConferenceWins = canonical.AwayConferenceWins;
-        matchup.AwayConferenceLosses = canonical.AwayConferenceLosses;
+        // Records are NOT taken from canonical. See the note above FromCanonical.
         matchup.AwayRank = canonical.AwayRank;
 
         // Home team
@@ -85,10 +82,7 @@ public static class MatchupForPickDtoMapper
         matchup.HomeLogoUriDark = canonical.HomeLogoUriDark;
         matchup.HomeSlug = canonical.HomeSlug ?? matchup.HomeSlug;
         matchup.HomeColor = canonical.HomeColor ?? matchup.HomeColor;
-        matchup.HomeWins = canonical.HomeWins;
-        matchup.HomeLosses = canonical.HomeLosses;
-        matchup.HomeConferenceWins = canonical.HomeConferenceWins;
-        matchup.HomeConferenceLosses = canonical.HomeConferenceLosses;
+        // Records are NOT taken from canonical. See the note above FromCanonical.
         matchup.HomeRank = canonical.HomeRank;
 
         // Odds — round to one decimal for display.
@@ -149,6 +143,22 @@ public static class MatchupForPickDtoMapper
         {
             ContestId = canonical.ContestId,
             StartDateUtc = canonical.StartDateUtc,
+            // Records are assigned HERE rather than in ApplyCanonical, which
+            // deliberately leaves them alone. A league card's record comes
+            // from the league's own PickemGroupMatchup snapshot, written when
+            // the week is generated or refreshed; letting the canonical value
+            // overwrite it meant the snapshot was never displayed (prod
+            // 2026-09-18: Detroit at Buffalo rendered 0-0 while the row held
+            // 1-0). This debug endpoint has no league context, so canonical
+            // is the only source available to it.
+            AwayWins = canonical.AwayWins,
+            AwayLosses = canonical.AwayLosses,
+            AwayConferenceWins = canonical.AwayConferenceWins,
+            AwayConferenceLosses = canonical.AwayConferenceLosses,
+            HomeWins = canonical.HomeWins,
+            HomeLosses = canonical.HomeLosses,
+            HomeConferenceWins = canonical.HomeConferenceWins,
+            HomeConferenceLosses = canonical.HomeConferenceLosses,
         };
         ApplyCanonical(matchup, canonical, sport);
         return matchup;

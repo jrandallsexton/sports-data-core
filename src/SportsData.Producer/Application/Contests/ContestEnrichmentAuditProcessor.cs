@@ -37,6 +37,15 @@ public record AuditContestEnrichmentCommand(Guid ContestId, Guid CorrelationId);
 public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrichment
     where TDataContext : TeamSportDataContext
 {
+    /// <summary>
+    /// How many times a mismatch may re-queue enrichment before the audit
+    /// gives up and flags the contest. Re-enrichment is deterministic, so if
+    /// the same derivation has already run twice without satisfying the
+    /// audit, the two sources contradict each other and a third round cannot
+    /// change that.
+    /// </summary>
+    private const int MaxAuditAttempts = 3;
+
     private readonly ILogger<ContestEnrichmentAuditProcessor<TDataContext>> _logger;
     private readonly TDataContext _dataContext;
     private readonly IProvideBackgroundJobs _backgroundJobProvider;
@@ -157,11 +166,42 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
         if (scoresMatch && winnerMatches)
         {
             contest.AuditedUtc = _dateTimeProvider.UtcNow();
+            // Clear the counter: a contest can be re-finalized later (the
+            // odds-late path re-stamps FinalizedUtc), and a future mismatch
+            // deserves its own full allowance rather than inheriting strikes
+            // from a problem that has since been fixed.
+            contest.AuditAttemptCount = 0;
             await _dataContext.SaveChangesAsync();
 
             _logger.LogInformation(
                 "Audit passed — stamped AuditedUtc. ContestName={ContestName}, AwayScore={Away}, HomeScore={Home}",
                 contest.Name, expectedAway, expectedHome);
+            return;
+        }
+
+        contest.AuditAttemptCount++;
+
+        // Allowance spent: re-enrichment is deterministic, so the same
+        // derivation has now failed to satisfy the audit MaxAuditAttempts
+        // times and the two sources genuinely contradict each other. Flag for
+        // review and, crucially, LEAVE FinalizedUtc ALONE — clearing it again
+        // would drop the contest out of team W/L indefinitely for a data
+        // problem no retry can fix.
+        if (contest.AuditAttemptCount >= MaxAuditAttempts)
+        {
+            contest.AuditFlaggedUtc = _dateTimeProvider.UtcNow();
+
+            _logger.LogError(
+                "Audit FLAGGED after {Attempts} attempts — scoring plays and competitor scores disagree and re-enrichment cannot reconcile them. " +
+                "FinalizedUtc left intact. ContestId={ContestId}, ContestName={ContestName}, " +
+                "Stored: Away={CurrentAway}, Home={CurrentHome}; Competitors: Away={ExpectedAway}, Home={ExpectedHome}",
+                contest.AuditAttemptCount,
+                contest.Id,
+                contest.Name,
+                contest.AwayScore, contest.HomeScore,
+                expectedAway, expectedHome);
+
+            await _dataContext.SaveChangesAsync();
             return;
         }
 

@@ -81,6 +81,76 @@ public class ContestEnrichmentAuditProcessorTests
         contest.AuditedUtc.Should().BeNull();
 
         enqueuedContestIds.Should().ContainSingle().Which.Should().Be(contestId);
+        contest.AuditAttemptCount.Should().Be(1);
+        contest.AuditFlaggedUtc.Should().BeNull();
+    }
+
+    /// <summary>
+    /// Re-enrichment is deterministic, so a mismatch that survives it is two
+    /// sources contradicting each other, not a transient fault. Prod
+    /// 2026-09-18: 37 contests mismatched in consecutive sweeps after being
+    /// re-enriched in between — scoring plays vs competitor scores disagreeing
+    /// on magnitude (Nevada at UNLV: 37-3 vs 31-3) or transposed outright
+    /// (Army at Texas A&amp;M: 28-24 vs 24-28). Before the allowance those
+    /// cleared FinalizedUtc forever, which also kept dropping them out of team
+    /// W/L, since only finalized contests count toward a record.
+    /// </summary>
+    [Fact]
+    public async Task Process_WhenMismatchPersistsPastTheAllowance_FlagsForReviewAndKeepsFinalizedUtc()
+    {
+        var (contestId, _, away, home) = await SeedFinalizedContestAsync(
+            currentAway: 37, currentHome: 3,
+            currentWinner: null);
+        await SeedScoreAsync(away.Id, value: 31);
+        await SeedScoreAsync(home.Id, value: 3);
+
+        // Two strikes already spent; this call is the third.
+        var seeded = await FootballDataContext.Contests.FirstAsync(c => c.Id == contestId);
+        seeded.AuditAttemptCount = 2;
+        var finalizedBefore = seeded.FinalizedUtc;
+        await FootballDataContext.SaveChangesAsync();
+
+        var enqueued = 0;
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()))
+            .Callback(() => enqueued++);
+
+        await _sut.Process(new AuditContestEnrichmentCommand(contestId, Guid.NewGuid()));
+
+        var contest = await FootballDataContext.Contests.AsNoTracking().FirstAsync(c => c.Id == contestId);
+        contest.AuditAttemptCount.Should().Be(3);
+        contest.AuditFlaggedUtc.Should().NotBeNull();
+        // The point of flagging: stop dropping it out of team W/L.
+        contest.FinalizedUtc.Should().Be(finalizedBefore);
+        contest.AuditedUtc.Should().BeNull("flagged is not validated");
+        enqueued.Should().Be(0, "re-enrichment cannot reconcile contradictory sources");
+    }
+
+    /// <summary>
+    /// A contest can be re-finalized later (the odds-late path re-stamps
+    /// FinalizedUtc). A future mismatch deserves its own full allowance rather
+    /// than inheriting strikes from a problem that has since been fixed.
+    /// </summary>
+    [Fact]
+    public async Task Process_WhenAuditPasses_ResetsTheAttemptCount()
+    {
+        var (contestId, _, away, home) = await SeedFinalizedContestAsync(
+            currentAway: 21, currentHome: 14,
+            currentWinner: null);
+        await SeedScoreAsync(away.Id, value: 21);
+        await SeedScoreAsync(home.Id, value: 14);
+
+        var seeded = await FootballDataContext.Contests.FirstAsync(c => c.Id == contestId);
+        seeded.AuditAttemptCount = 2;
+        seeded.WinnerFranchiseSeasonId = away.FranchiseSeasonId;
+        await FootballDataContext.SaveChangesAsync();
+
+        await _sut.Process(new AuditContestEnrichmentCommand(contestId, Guid.NewGuid()));
+
+        var contest = await FootballDataContext.Contests.AsNoTracking().FirstAsync(c => c.Id == contestId);
+        contest.AuditedUtc.Should().NotBeNull();
+        contest.AuditAttemptCount.Should().Be(0);
+        contest.AuditFlaggedUtc.Should().BeNull();
     }
 
     [Fact]

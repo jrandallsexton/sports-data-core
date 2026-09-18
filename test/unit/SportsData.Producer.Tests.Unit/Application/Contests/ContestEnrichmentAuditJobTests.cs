@@ -66,6 +66,33 @@ public class ContestEnrichmentAuditJobTests : ProducerTestBase<ContestEnrichment
         enqueued.Should().NotContain(alreadyAuditedId);
     }
 
+    /// <summary>
+    /// A flagged contest has already failed the audit MaxAuditAttempts times.
+    /// Re-scanning it every sweep can only reproduce the same mismatch, and it
+    /// crowds out repairable work in a batch capped at 500.
+    /// </summary>
+    [Fact]
+    public async Task Execute_SkipsContestsFlaggedForReview()
+    {
+        var flaggedId = await SeedContestAsync(
+            finalizedUtc: FixedNow.AddDays(-10),
+            auditFlaggedUtc: FixedNow.AddDays(-1));
+        var pendingId = await SeedContestAsync(finalizedUtc: FixedNow.AddDays(-5));
+
+        var enqueued = new List<Guid>();
+        Mocker.GetMock<IProvideBackgroundJobs>()
+            .Setup(x => x.Enqueue<IAuditContestEnrichment>(It.IsAny<Expression<Func<IAuditContestEnrichment, Task>>>()))
+            .Callback<Expression<Func<IAuditContestEnrichment, Task>>>(expr =>
+                enqueued.Add(AuditContestIdFromExpression(expr) ?? Guid.Empty));
+
+        var sut = Mocker.CreateInstance<ContestEnrichmentAuditJob<FootballDataContext>>();
+
+        await sut.ExecuteAsync();
+
+        enqueued.Should().ContainSingle().Which.Should().Be(pendingId);
+        enqueued.Should().NotContain(flaggedId);
+    }
+
     [Fact]
     public async Task Execute_SkipsContestsNotYetFinalized()
     {
@@ -136,7 +163,8 @@ public class ContestEnrichmentAuditJobTests : ProducerTestBase<ContestEnrichment
 
     private async Task<Guid> SeedContestAsync(
         DateTime? finalizedUtc = null,
-        DateTime? auditedUtc = null)
+        DateTime? auditedUtc = null,
+        DateTime? auditFlaggedUtc = null)
     {
         var contest = new FootballContest
         {
@@ -150,6 +178,7 @@ public class ContestEnrichmentAuditJobTests : ProducerTestBase<ContestEnrichment
             AwayTeamFranchiseSeasonId = Guid.NewGuid(),
             FinalizedUtc = finalizedUtc,
             AuditedUtc = auditedUtc,
+            AuditFlaggedUtc = auditFlaggedUtc,
             CreatedUtc = FixedNow,
             CreatedBy = Guid.NewGuid()
         };

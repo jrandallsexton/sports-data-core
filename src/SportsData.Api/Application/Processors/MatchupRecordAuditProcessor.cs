@@ -97,7 +97,18 @@ namespace SportsData.Api.Application.Processors
 
             var corrected = 0;
             var unresolved = 0;
-            var touchedLeagueWeeks = new HashSet<(Guid GroupId, int SeasonWeek)>();
+
+            // Every league-week in scope, not just the ones corrected. The cache
+            // swallows eviction failures by design (it must never fault the
+            // write that triggered it), so evicting only what changed made a
+            // dropped eviction unrecoverable: the rerun finds the rows already
+            // correct, evicts nothing, and the stale payload serves out its TTL.
+            // This audit is manual and narrow, so re-evicting a clean week costs
+            // one rebuild and removes that failure mode entirely.
+            var leagueWeeksInScope = rows
+                .Select(m => (m.GroupId, m.SeasonWeek))
+                .Distinct()
+                .ToList();
 
             foreach (var page in contestIds.Chunk(BatchSize))
             {
@@ -105,12 +116,22 @@ namespace SportsData.Api.Application.Processors
 
                 if (!result.IsSuccess)
                 {
-                    // Abort rather than continue: a failed page would otherwise
-                    // read as "these contests have no corrections".
+                    // Throw rather than return. Continuing would let a failed
+                    // page read as "these contests have no corrections", and
+                    // returning a normal result would report the corrections
+                    // applied from EARLIER pages — which are still only in the
+                    // change tracker, since SaveChangesAsync has not run. The
+                    // throw discards them with the scope and surfaces as a
+                    // non-success response instead of a 200 claiming work that
+                    // was never persisted.
                     _logger.LogError(
-                        "Matchup record audit aborted — Producer call failed for a page of {Count} contest(s). Sport={Sport}, SeasonYear={SeasonYear}",
-                        page.Length, command.Sport, command.SeasonYear);
-                    return new MatchupRecordAuditResult(rows.Count, corrected, unresolved);
+                        "Matchup record audit aborted — Producer call failed for a page of {Count} contest(s). " +
+                        "Sport={Sport}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}, PendingUnsaved={Pending}",
+                        page.Length, command.Sport, command.SeasonYear, command.SeasonWeek, corrected);
+
+                    throw new InvalidOperationException(
+                        $"Matchup record audit aborted: Producer failed for a page of {page.Length} contest(s). " +
+                        $"No corrections were saved.");
                 }
 
                 var byContestId = result.Value.ToDictionary(r => r.ContestId);
@@ -152,7 +173,6 @@ namespace SportsData.Api.Application.Processors
                     matchup.ModifiedBy = Guid.Empty;
 
                     corrected++;
-                    touchedLeagueWeeks.Add((matchup.GroupId, matchup.SeasonWeek));
                 }
 
                 unresolved += page.Length - byContestId.Count;
@@ -160,16 +180,14 @@ namespace SportsData.Api.Application.Processors
 
             await _dataContext.SaveChangesAsync();
 
-            // Only evict what changed. The cached payload is built from these
-            // columns, so an untouched league-week would serve the same bytes.
-            foreach (var (groupId, seasonWeek) in touchedLeagueWeeks)
+            foreach (var (groupId, seasonWeek) in leagueWeeksInScope)
                 await _matchupsCache.RemoveAsync(groupId, seasonWeek);
 
             _logger.LogInformation(
                 "Matchup record audit complete. Sport={Sport}, SeasonYear={SeasonYear}, SeasonWeek={SeasonWeek}, " +
                 "Examined={Examined}, Corrected={Corrected}, Unresolved={Unresolved}, LeagueWeeksEvicted={Evicted}",
                 command.Sport, command.SeasonYear, command.SeasonWeek,
-                rows.Count, corrected, unresolved, touchedLeagueWeeks.Count);
+                rows.Count, corrected, unresolved, leagueWeeksInScope.Count);
 
             return new MatchupRecordAuditResult(rows.Count, corrected, unresolved);
         }

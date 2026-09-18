@@ -1,5 +1,7 @@
 using Dapper;
 
+using FluentValidation;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Core.Common;
@@ -7,7 +9,7 @@ using SportsData.Core.Dtos.Canonical;
 using SportsData.Producer.Infrastructure.Data.Common;
 using SportsData.Producer.Infrastructure.Sql;
 
-namespace SportsData.Producer.Application.Contests.Queries.Matchups.GetEnteringRecordsByContestIds;
+namespace SportsData.Producer.Application.Contests.Queries.GetEnteringRecordsByContestIds;
 
 public interface IGetEnteringRecordsByContestIdsQueryHandler
 {
@@ -22,45 +24,40 @@ public interface IGetEnteringRecordsByContestIdsQueryHandler
 /// </summary>
 public class GetEnteringRecordsByContestIdsQueryHandler : IGetEnteringRecordsByContestIdsQueryHandler
 {
-    /// <summary>
-    /// Caps a single request. The SQL runs two correlated laterals per
-    /// contest, so cost is linear in the batch; 500 measured at well under a
-    /// second against production-sized data and matches the audit job's page
-    /// size on the calling side.
-    /// </summary>
-    public const int MaxContestIds = 500;
-
     private readonly ILogger<GetEnteringRecordsByContestIdsQueryHandler> _logger;
     private readonly TeamSportDataContext _dbContext;
     private readonly ProducerSqlQueryProvider _sqlProvider;
+    private readonly IValidator<GetEnteringRecordsByContestIdsQuery> _validator;
 
     public GetEnteringRecordsByContestIdsQueryHandler(
         ILogger<GetEnteringRecordsByContestIdsQueryHandler> logger,
         TeamSportDataContext dbContext,
-        ProducerSqlQueryProvider sqlProvider)
+        ProducerSqlQueryProvider sqlProvider,
+        IValidator<GetEnteringRecordsByContestIdsQuery> validator)
     {
         _logger = logger;
         _dbContext = dbContext;
         _sqlProvider = sqlProvider;
+        _validator = validator;
     }
 
     public async Task<Result<List<EnteringRecordDto>>> ExecuteAsync(
         GetEnteringRecordsByContestIdsQuery query,
         CancellationToken cancellationToken = default)
     {
-        if (query.ContestIds.Length == 0)
-        {
-            return new Success<List<EnteringRecordDto>>([]);
-        }
-
-        if (query.ContestIds.Length > MaxContestIds)
+        var validation = await _validator.ValidateAsync(query, cancellationToken);
+        if (!validation.IsValid)
         {
             return new Failure<List<EnteringRecordDto>>(
                 default!,
                 ResultStatus.Validation,
-                [new FluentValidation.Results.ValidationFailure(
-                    nameof(query.ContestIds),
-                    $"At most {MaxContestIds} contest ids per request; received {query.ContestIds.Length}.")]);
+                validation.Errors);
+        }
+
+        // Empty is a legitimate no-op, not a validation failure.
+        if (query.ContestIds.Length == 0)
+        {
+            return new Success<List<EnteringRecordDto>>([]);
         }
 
         var sql = _sqlProvider.GetEnteringRecordsByContestIds();

@@ -20,8 +20,9 @@ namespace SportsData.Api.Tests.Unit.Application.Processors;
 /// The league card reads the PickemGroupMatchup snapshot and never derives
 /// (#769), so a wrong snapshot stays wrong until something rewrites it. These
 /// pin the rules that make this audit safe to point at production: it corrects
-/// only rows that actually differ, it evicts only the league-weeks it touched,
-/// and a failed Producer call stops rather than reading as "nothing to fix".
+/// only rows that actually differ, it evicts every league-week it examined so a
+/// dropped eviction is recoverable by re-running, and a failed Producer call
+/// stops loudly rather than reading as "nothing to fix".
 /// </summary>
 public class MatchupRecordAuditProcessorTests : ApiTestBase<MatchupRecordAuditProcessor>
 {
@@ -68,7 +69,7 @@ public class MatchupRecordAuditProcessorTests : ApiTestBase<MatchupRecordAuditPr
     }
 
     [Fact]
-    public async Task Process_WhenSnapshotAlreadyMatches_WritesNothingAndEvictsNothing()
+    public async Task Process_WhenSnapshotAlreadyMatches_WritesNothingButStillEvicts()
     {
         var groupId = await SeedGroupAsync();
         var contestId = Guid.NewGuid();
@@ -91,8 +92,12 @@ public class MatchupRecordAuditProcessorTests : ApiTestBase<MatchupRecordAuditPr
         var saved = await DataContext.PickemGroupMatchups.FirstAsync(m => m.ContestId == contestId);
         saved.ModifiedUtc.Should().BeNull();
 
+        // Evicted anyway. RemoveAsync swallows store failures, so evicting only
+        // corrected weeks would make a dropped eviction unrecoverable: the
+        // rerun sees clean rows and would skip the week that still has a stale
+        // payload cached.
         Mocker.GetMock<ILeagueWeekMatchupsCache>()
-            .Verify(c => c.RemoveAsync(It.IsAny<Guid>(), It.IsAny<int>()), Times.Never);
+            .Verify(c => c.RemoveAsync(groupId, 3), Times.Once);
     }
 
     [Fact]
@@ -106,10 +111,12 @@ public class MatchupRecordAuditProcessorTests : ApiTestBase<MatchupRecordAuditPr
             .Setup(x => x.GetEnteringRecordsByContestIds(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Failure<List<EnteringRecordDto>>(default!, ResultStatus.Error, []));
 
-        var result = await Mocker.CreateInstance<MatchupRecordAuditProcessor>()
+        var act = async () => await Mocker.CreateInstance<MatchupRecordAuditProcessor>()
             .Process(new MatchupRecordAuditCommand(Sport.FootballNcaa, 2026));
 
-        result.Corrected.Should().Be(0);
+        // Throws rather than returning a normal result: a 200 carrying a
+        // correction count would claim work that SaveChangesAsync never ran on.
+        await act.Should().ThrowAsync<InvalidOperationException>();
 
         var saved = await DataContext.PickemGroupMatchups.FirstAsync(m => m.ContestId == contestId);
         saved.AwayWins.Should().Be(9, "a failed page must not read as 'no corrections needed'");

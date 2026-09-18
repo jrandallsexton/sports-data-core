@@ -11,6 +11,7 @@ using SportsData.Core.Middleware.Health;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -434,9 +435,25 @@ public class ContestClient : ClientBase, IProvideContests
             return new Success<List<EnteringRecordDto>>(new List<EnteringRecordDto>());
 
         var request = new GetEnteringRecordsByContestIdsRequest(contestIds.ToArray());
-        var result = await PostOrDefaultAsync<List<EnteringRecordDto>, GetEnteringRecordsByContestIdsRequest>(
-            "contests/entering-records/by-ids", request, new List<EnteringRecordDto>(), ct);
-        return new Success<List<EnteringRecordDto>>(result);
+
+        // Caught rather than allowed to propagate so the caller gets a Result it
+        // can branch on. PostOrDefaultAsync calls EnsureSuccessStatusCode, so a
+        // non-2xx throws here; without this the IsSuccess check at the call site
+        // would be unreachable and a transport failure would surface as an
+        // unhandled 500 instead of a decision the audit can make.
+        try
+        {
+            var result = await PostOrDefaultAsync<List<EnteringRecordDto>, GetEnteringRecordsByContestIdsRequest>(
+                "contests/entering-records/by-ids", request, new List<EnteringRecordDto>(), ct);
+            return new Success<List<EnteringRecordDto>>(result);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException)
+        {
+            return new Failure<List<EnteringRecordDto>>(
+                default!,
+                ResultStatus.Error,
+                [new ValidationFailure("contestIds", $"Producer call failed: {ex.Message}")]);
+        }
     }
 
     public async Task<Result<MatchupForPreviewDto>> GetMatchupForPreview(Guid contestId, CancellationToken ct = default)

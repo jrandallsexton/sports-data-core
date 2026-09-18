@@ -24,7 +24,7 @@ using SportsData.Producer.Application.Contests.Queries.GetContestById;
 using SportsData.Producer.Application.Contests.Queries.GetContestOverview;
 using SportsData.Producer.Application.Contests.Queries.GetContestPlayLog;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetCompletedFbsContestIds;
-using SportsData.Producer.Application.Contests.Queries.Matchups.GetEnteringRecordsByContestIds;
+using SportsData.Producer.Application.Contests.Queries.GetEnteringRecordsByContestIds;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetContestResults;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetFinalizedContestIds;
 using SportsData.Producer.Application.Contests.Queries.Matchups.GetMatchupByContestId;
@@ -394,6 +394,7 @@ namespace SportsData.Producer.DependencyInjection
                 Application.Contests.Queries.GetGameDates.GetGameDatesQueryHandler>();
             services.AddScoped<IGetMatchupsByContestIdsQueryHandler, GetMatchupsByContestIdsQueryHandler>();
             services.AddScoped<IGetEnteringRecordsByContestIdsQueryHandler, GetEnteringRecordsByContestIdsQueryHandler>();
+            services.AddScoped<IValidator<GetEnteringRecordsByContestIdsQuery>, GetEnteringRecordsByContestIdsQueryValidator>();
             services.AddScoped<IGetMatchupForPreviewQueryHandler, GetMatchupForPreviewQueryHandler>();
             services.AddScoped<Application.Contests.Queries.Matchups.GetContestPreviewHistory.IGetContestPreviewHistoryQueryHandler,
                 Application.Contests.Queries.Matchups.GetContestPreviewHistory.GetContestPreviewHistoryQueryHandler>();

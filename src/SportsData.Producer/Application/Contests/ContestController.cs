@@ -516,11 +516,11 @@ namespace SportsData.Producer.Application.Contests
         [HttpPost("entering-records/by-ids")]
         public async Task<ActionResult<List<EnteringRecordDto>>> GetEnteringRecordsByContestIds(
             [FromBody] GetEnteringRecordsByContestIdsRequest request,
-            [FromServices] Queries.Matchups.GetEnteringRecordsByContestIds.IGetEnteringRecordsByContestIdsQueryHandler handler,
+            [FromServices] Queries.GetEnteringRecordsByContestIds.IGetEnteringRecordsByContestIdsQueryHandler handler,
             CancellationToken cancellationToken = default)
         {
             var result = await handler.ExecuteAsync(
-                new Queries.Matchups.GetEnteringRecordsByContestIds.GetEnteringRecordsByContestIdsQuery(
+                new Queries.GetEnteringRecordsByContestIds.GetEnteringRecordsByContestIdsQuery(
                     request.ContestIds),
                 cancellationToken);
             return result.ToActionResult();

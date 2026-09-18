@@ -259,25 +259,32 @@ public class ContestEnrichmentProcessorTests : ProducerTestBase<FootballContestE
     /// (prod 2026-09-18, 200+ contests/day; Jaguars at Colts cycled 4 times in
     /// 18 hours). Cumulative scores never decrease, so MAX is the final score.
     ///
-    /// This test discriminates: restoring
-    /// OrderByDescending(PeriodNumber).ThenBy(ClockValue).FirstOrDefaultAsync()
-    /// fails it with "Expected AwayScore to be 13, but found 12" — verified on
-    /// 5 consecutive runs, so the tie does NOT resolve to insertion order here
-    /// (the PAT is seeded first and is still not the row that ordering picks).
-    /// That tie order is arbitrary by definition, which is the whole point: the
-    /// assertion below holds only because MAX does not depend on it.
+    /// Run BOTH seed orders. Whatever rule the provider uses to break a tie on
+    /// (PeriodNumber, ClockValue) — insertion order, key order, anything — one
+    /// of the two cases necessarily puts the touchdown in the winning position,
+    /// so an ordering-based read returns 12 and fails. That makes the test pin
+    /// the fix without depending on tie behaviour nobody specifies. MAX has no
+    /// tie to break and passes both.
     /// </summary>
-    [Fact]
-    public async Task Process_WhenTouchdownAndExtraPointShareClock_TakesTheHigherCumulativeScore()
+    [Theory]
+    [InlineData(true)]   // extra point seeded first
+    [InlineData(false)]  // touchdown seeded first
+    public async Task Process_WhenTouchdownAndExtraPointShareClock_TakesTheHigherCumulativeScore(
+        bool seedExtraPointFirst)
     {
         var (contestId, competitionId) = await SeedCompetitionWithStatus("STATUS_FINAL");
 
+        // Same period AND same clock: the game clock does not run between a
+        // touchdown and its extra point.
+        var touchdown = CreatePlay(competitionId, scoringPlay: true, awayScore: 12, homeScore: 23, period: 4, clock: 70);
+        var extraPoint = CreatePlay(competitionId, scoringPlay: true, awayScore: 13, homeScore: 23, period: 4, clock: 70);
+
+        FootballDataContext.CompetitionPlays.Add(
+            CreatePlay(competitionId, scoringPlay: true, awayScore: 6, homeScore: 23, period: 4, clock: 153));
         FootballDataContext.CompetitionPlays.AddRange(
-            CreatePlay(competitionId, scoringPlay: true, awayScore: 6, homeScore: 23, period: 4, clock: 153),
-            // Extra point — the true final — inserted BEFORE the touchdown.
-            CreatePlay(competitionId, scoringPlay: true, awayScore: 13, homeScore: 23, period: 4, clock: 70),
-            CreatePlay(competitionId, scoringPlay: true, awayScore: 12, homeScore: 23, period: 4, clock: 70)
-        );
+            seedExtraPointFirst
+                ? new[] { extraPoint, touchdown }
+                : new[] { touchdown, extraPoint });
         await FootballDataContext.SaveChangesAsync();
 
         await _sut.Process(new EnrichContestCommand(contestId, Guid.NewGuid()));

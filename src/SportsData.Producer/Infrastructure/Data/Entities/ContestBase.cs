@@ -81,6 +81,27 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
         // a prior audit found a mismatch that triggered re-enrichment.
         public DateTime? AuditedUtc { get; set; }
 
+        // How many times the audit has found a mismatch and re-queued
+        // enrichment for this contest. Reset to 0 whenever an audit passes.
+        public int AuditAttemptCount { get; set; }
+
+        // Stamped when the audit gives up: the mismatch survived
+        // MaxAuditAttempts rounds of re-enrichment, so re-running it again
+        // cannot help. Set means "a human needs to look at this" and removes
+        // the contest from the audit candidate set, WITHOUT claiming it was
+        // validated the way AuditedUtc would.
+        //
+        // The class this exists for (found 2026-09-18): the scoring plays and
+        // the competitor score rows genuinely contradict each other, so no
+        // derivation reconciles them. Two shapes seen, both in backfilled
+        // 2006 data — magnitude (Nevada at UNLV: plays 37-3, competitors
+        // 31-3) and transposition (Army at Texas A&M: plays 28-24,
+        // competitors 24-28, i.e. the home/away re-designation problem).
+        // Before this, such a contest cleared FinalizedUtc and re-queued
+        // forever, which also excluded it from team W/L for as long as it
+        // spent unfinalized.
+        public DateTime? AuditFlaggedUtc { get; set; }
+
         // === Helpers (not mapped to DB) ===
         [NotMapped]
         public bool IsFinal => FinalizedUtc.HasValue;
@@ -135,8 +156,11 @@ namespace SportsData.Producer.Infrastructure.Data.Entities
                 // Steady-state, the audit candidate set is tiny (yesterday's
                 // newly-finalized contests); the index keeps the nightly scan
                 // O(candidates) instead of scanning the whole Contest table.
+                // Flagged contests are excluded too: once the audit has given
+                // up on one, re-scanning it every sweep is pure cost — it can
+                // only produce the same mismatch again.
                 builder.HasIndex(x => x.FinalizedUtc)
-                    .HasFilter("\"FinalizedUtc\" IS NOT NULL AND \"AuditedUtc\" IS NULL")
+                    .HasFilter("\"FinalizedUtc\" IS NOT NULL AND \"AuditedUtc\" IS NULL AND \"AuditFlaggedUtc\" IS NULL")
                     .HasDatabaseName("IX_Contest_AuditedUtc_Pending");
 
                 builder.Property(x => x.SeasonPhaseId);

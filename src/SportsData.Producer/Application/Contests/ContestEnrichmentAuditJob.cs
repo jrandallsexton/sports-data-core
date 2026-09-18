@@ -83,7 +83,10 @@ public class ContestEnrichmentAuditJob<TDataContext> : IContestEnrichmentAuditJo
         // fresh candidates than the batch cap.
         var contestIds = await _dataContext.Contests
             .AsNoTracking()
-            .Where(c => c.FinalizedUtc != null && c.AuditedUtc == null)
+            // AuditFlaggedUtc: the audit already gave up on this one after
+            // MaxAuditAttempts. Re-scanning it can only reproduce the same
+            // mismatch, so it stays out until a human resolves it.
+            .Where(c => c.FinalizedUtc != null && c.AuditedUtc == null && c.AuditFlaggedUtc == null)
             .OrderByDescending(c => c.FinalizedUtc)
             .Take(BatchSize)
             .Select(c => c.Id)

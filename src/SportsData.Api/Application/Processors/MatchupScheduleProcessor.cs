@@ -268,12 +268,25 @@ namespace SportsData.Api.Application.Processors
                             (groupMatchup.ContestId, groupMatchup.StartDateUtc, groupMatchup.Headline!));
                     }
 
-                    existing.AwayConferenceLosses = groupMatchup.AwayConferenceLosses;
-                    existing.AwayConferenceWins = groupMatchup.AwayConferenceWins;
-                    existing.AwayLosses = groupMatchup.AwayLosses;
+                    // Records are the record each team carried INTO this game,
+                    // so they stop being refreshable the moment it kicks off.
+                    // Refreshing them regardless is what put week-1 NCAA cards
+                    // at 3-0 and 0-3: rows created 2026-08-19 for games played
+                    // 08-29..09-05 kept absorbing later passes, and because
+                    // nothing stamps ModifiedUtc on this path the churn was
+                    // invisible. Ranks, lines and start time stay refreshable —
+                    // only the record is point-in-time.
+                    var isRefreshableRecord = groupMatchup.StartDateUtc > _dateTimeProvider.UtcNow();
+
                     existing.AwayRank = groupMatchup.AwayRank;
                     existing.AwaySpread = groupMatchup.AwaySpread;
-                    existing.AwayWins = groupMatchup.AwayWins;
+                    if (isRefreshableRecord)
+                    {
+                        existing.AwayConferenceLosses = groupMatchup.AwayConferenceLosses;
+                        existing.AwayConferenceWins = groupMatchup.AwayConferenceWins;
+                        existing.AwayLosses = groupMatchup.AwayLosses;
+                        existing.AwayWins = groupMatchup.AwayWins;
+                    }
                     if (headlineChanged)
                     {
                         // Same null-never-clobbers contract as Notification's
@@ -285,17 +298,35 @@ namespace SportsData.Api.Application.Processors
                         // holding the last real value.
                         existing.Headline = groupMatchup.Headline;
                     }
-                    existing.HomeConferenceLosses = groupMatchup.HomeConferenceLosses;
-                    existing.HomeConferenceWins = groupMatchup.HomeConferenceWins;
-                    existing.HomeLosses = groupMatchup.HomeLosses;
                     existing.HomeRank = groupMatchup.HomeRank;
                     existing.HomeSpread = groupMatchup.HomeSpread;
-                    existing.HomeWins = groupMatchup.HomeWins;
+                    if (isRefreshableRecord)
+                    {
+                        existing.HomeConferenceLosses = groupMatchup.HomeConferenceLosses;
+                        existing.HomeConferenceWins = groupMatchup.HomeConferenceWins;
+                        existing.HomeLosses = groupMatchup.HomeLosses;
+                        existing.HomeWins = groupMatchup.HomeWins;
+                    }
                     existing.OverOdds = groupMatchup.OverOdds;
                     existing.OverUnder = groupMatchup.OverUnder;
                     existing.Spread = groupMatchup.Spread;
                     existing.StartDateUtc = groupMatchup.StartDateUtc;
                     existing.UnderOdds = groupMatchup.UnderOdds;
+
+                    // Stamp the audit fields when EF actually detected a change.
+                    // Nothing on this path did, so a row could be rewritten by
+                    // every refresh pass and still read CreatedUtc-only — which
+                    // is how week-1 NCAA records were silently overwritten with
+                    // later values and left no trace to find it by. There is no
+                    // SaveChanges interceptor in this solution; the ~54 other
+                    // API write sites stamp by hand, and this one did not.
+                    // Asking the change tracker keeps it honest: a no-op
+                    // refresh stays unstamped.
+                    if (_dataContext.Entry(existing).State == EntityState.Modified)
+                    {
+                        existing.ModifiedUtc = _dateTimeProvider.UtcNow();
+                        existing.ModifiedBy = Guid.Empty;
+                    }
                     // Immutable on update: Id, ContestId, GroupId, SeasonWeekId,
                     // SeasonWeek, SeasonYear, CreatedBy, CreatedUtc.
                 }

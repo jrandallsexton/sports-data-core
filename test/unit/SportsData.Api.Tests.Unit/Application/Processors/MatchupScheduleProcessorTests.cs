@@ -1159,6 +1159,110 @@ namespace SportsData.Api.Tests.Unit.Application.Processors
         }
 
         /// <summary>
+        /// A refresh that actually changes a row stamps ModifiedUtc; one that
+        /// changes nothing leaves it null. This path stamped neither before,
+        /// so rows were rewritten pass after pass while still reading as
+        /// never-modified — which is how week-1 NCAA records got overwritten
+        /// with later values (prod 2026-09-18, group b3d8288d week 1 holding
+        /// 3-0 and 0-3 for games played weeks earlier) with nothing in the row
+        /// to show it had happened. There is no SaveChanges interceptor here,
+        /// so every write site stamps by hand and this one was missed.
+        /// </summary>
+        [Theory]
+        [InlineData(-3.5, true)]   // spread moved -> stamped
+        [InlineData(-7.0, false)]  // identical payload -> untouched
+        public async Task Process_Refresh_StampsModifiedUtcOnlyWhenSomethingChanged(
+            double incomingSpread,
+            bool expectStamped)
+        {
+            var groupId = Guid.NewGuid();
+            var seasonWeekId = Guid.NewGuid();
+            var contestId = Guid.NewGuid();
+            var kickoff = new DateTime(2024, 9, 7, 19, 0, 0, DateTimeKind.Utc);
+
+            await DataContext.PickemGroups.AddAsync(new PickemGroup
+            {
+                Id = groupId,
+                Name = "Test",
+                Sport = Core.Common.Sport.FootballNcaa,
+                League = League.NCAAF,
+                CommissionerUserId = Guid.NewGuid(),
+                CreatedUtc = FixedUtcNow,
+                CreatedBy = Guid.Empty,
+                Conferences = new List<PickemGroupConference>
+                {
+                    new() { Id = Guid.NewGuid(), ConferenceSlug = "sec", PickemGroupId = groupId, ConferenceId = Guid.NewGuid(), CreatedUtc = FixedUtcNow, CreatedBy = Guid.Empty }
+                }
+            });
+
+            var groupWeek = new PickemGroupWeek
+            {
+                Id = Guid.NewGuid(),
+                GroupId = groupId,
+                SeasonWeekId = seasonWeekId,
+                SeasonYear = 2024,
+                SeasonWeek = 1,
+                AreMatchupsGenerated = true,
+                IsNonStandardWeek = false,
+            };
+            groupWeek.Matchups.Add(new PickemGroupMatchup
+            {
+                Id = Guid.NewGuid(),
+                ContestId = contestId,
+                GroupId = groupId,
+                SeasonWeekId = seasonWeekId,
+                SeasonYear = 2024,
+                SeasonWeek = 1,
+                HomeSpread = -7.0,
+                StartDateUtc = kickoff,
+                CreatedUtc = FixedUtcNow,
+                CreatedBy = Guid.Empty,
+                ModifiedUtc = null,
+            });
+            await DataContext.PickemGroupWeeks.AddAsync(groupWeek);
+            await DataContext.SaveChangesAsync();
+
+            _contestClientMock
+                .Setup(x => x.GetMatchupsBySeasonWeekId(seasonWeekId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Success<List<Matchup>>(new List<Matchup>
+                {
+                    new()
+                    {
+                        SeasonWeekId = seasonWeekId,
+                        SeasonYear = 2024,
+                        SeasonWeek = 1,
+                        ContestId = contestId,
+                        AwaySlug = "ole-miss",
+                        HomeSlug = "lsu",
+                        AwayConferenceSlug = "sec",
+                        HomeConferenceSlug = "sec",
+                        HomeSpread = incomingSpread,
+                        Status = "STATUS_SCHEDULED",
+                        StatusDescription = "Scheduled",
+                        StartDateUtc = kickoff,
+                    },
+                }));
+
+            var sut = Mocker.CreateInstance<MatchupScheduleProcessor>();
+
+            await sut.Process(new ScheduleGroupWeekMatchupsCommand(
+                groupId, seasonWeekId, 2024, 1, false, Guid.NewGuid(), IsRefresh: true));
+
+            var saved = await DataContext.PickemGroupMatchups
+                .FirstAsync(m => m.GroupId == groupId && m.ContestId == contestId);
+
+            if (expectStamped)
+            {
+                saved.HomeSpread.Should().Be(incomingSpread);
+                saved.ModifiedUtc.Should().Be(FixedUtcNow);
+            }
+            else
+            {
+                saved.ModifiedUtc.Should().BeNull();
+            }
+        }
+
+        /// <summary>
         /// Picks-sacred contract: a refresh call must NOT delete a matchup
         /// whose contest fell out of the filter (e.g. team dropped out of
         /// Top 25). User picks against it would be silently invalidated.

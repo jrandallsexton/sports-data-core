@@ -4,6 +4,7 @@ using SportsData.Api.Application.Admin.Commands.BackfillLeagueScores;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.ReenrichContest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
+using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
@@ -1214,12 +1215,6 @@ namespace SportsData.Api.Application.Admin
         }
 
         /// <summary>
-        /// Re-runs the matchup scheduler over an already-generated week so the
-        /// snapshot columns on PickemGroupMatchup (wins, losses, conference
-        /// records, ranks, spreads, over/under, start time) are rewritten from
-        /// canonical data.
-        /// </summary>
-        /// <summary>
         /// Recomputes the record snapshots on PickemGroupMatchup from prior
         /// finalized outcomes, correcting only rows that differ.
         /// </summary>
@@ -1263,128 +1258,36 @@ namespace SportsData.Api.Application.Admin
         /// anything that corrects a FranchiseSeason after generation (a late
         /// enrichment pass, a re-finalized contest) leaves the cards showing
         /// the values frozen at generation time, and no amount of cache
-        /// eviction helps because the stale numbers are committed rows.
-        /// <para>
-        /// Until now the only caller that passed IsRefresh was the poll-release
-        /// handler, which fires before the week's games. That left no way to
-        /// re-sync a week after results settled. Hence this endpoint.
-        /// </para>
-        /// <para>
-        /// Safe to re-run: the processor upserts by ContestId, so existing
-        /// matchups take attribute updates, newly-eligible contests are
-        /// inserted, and contests that fell out of the filter are left alone
-        /// so picks against them survive. Each enqueued job evicts the
-        /// league-week cache itself when it completes.
-        /// </para>
-        /// </remarks>
+        /// <summary>
+        /// Re-runs the matchup scheduler over an already-generated week so the
+        /// record snapshots on PickemGroupMatchup are rewritten from canonical
+        /// data. See RefreshWeekMatchupsCommandHandler for why that is needed
+        /// and why it is safe to re-run.
+        /// </summary>
         [HttpPost]
         [Route("matchups/refresh")]
-        public async Task<IActionResult> RefreshWeekMatchups(
-            [FromServices] AppDataContext dataContext,
-            // Precise week identity. Preferred, because week NUMBERS are
-            // phase-ambiguous (NFL 2026 has a week 4 in preseason, regular
-            // season and postseason).
+        public async Task<ActionResult<RefreshWeekMatchupsResponse>> RefreshWeekMatchups(
+            [FromServices] IRefreshWeekMatchupsCommandHandler handler,
+            // Precise week identity, and preferred: week NUMBERS are ambiguous
+            // across phase AND sport.
             [FromQuery] Guid? seasonWeekId = null,
-            // Convenience form when the id isn't to hand. Resolved against the
-            // league weeks that actually exist; an ambiguous match is reported
-            // rather than guessed.
             [FromQuery] int? seasonYear = null,
             [FromQuery] int? seasonWeek = null,
+            // Narrows the year/week form; ignored when seasonWeekId is given.
+            [FromQuery] Sport? sport = null,
             CancellationToken cancellationToken = default)
         {
-            if (seasonWeekId is null && (seasonYear is null || seasonWeek is null))
-            {
-                return BadRequest(new
+            var result = await handler.ExecuteAsync(
+                new RefreshWeekMatchupsCommand
                 {
-                    error = "Supply either seasonWeekId, or both seasonYear and seasonWeek."
-                });
-            }
+                    SeasonWeekId = seasonWeekId,
+                    SeasonYear = seasonYear,
+                    SeasonWeek = seasonWeek,
+                    Sport = sport
+                },
+                cancellationToken);
 
-            if (seasonWeekId is null)
-            {
-                var candidates = await dataContext.PickemGroupWeeks
-                    .AsNoTracking()
-                    .Where(w => w.SeasonYear == seasonYear!.Value && w.SeasonWeek == seasonWeek!.Value)
-                    .Select(w => w.SeasonWeekId)
-                    .Distinct()
-                    .ToListAsync(cancellationToken);
-
-                if (candidates.Count == 0)
-                {
-                    return NotFound(new
-                    {
-                        error = $"No league weeks found for {seasonYear} week {seasonWeek}.",
-                        seasonYear,
-                        seasonWeek
-                    });
-                }
-
-                // More than one phase carries this number. Refusing beats
-                // picking one and silently refreshing the wrong slate.
-                if (candidates.Count > 1)
-                {
-                    return BadRequest(new
-                    {
-                        error = $"{seasonYear} week {seasonWeek} is ambiguous across phases; re-call with an explicit seasonWeekId.",
-                        seasonWeekIds = candidates
-                    });
-                }
-
-                seasonWeekId = candidates[0];
-            }
-
-            // Every active league holding a week shell for this SeasonWeekId.
-            // Deliberately NOT filtered to ranked leagues the way the
-            // poll-release path is: conference-only leagues carry the same
-            // record snapshots and go just as stale.
-            var affected = await dataContext.PickemGroupWeeks
-                .AsNoTracking()
-                .Where(w => w.SeasonWeekId == seasonWeekId!.Value
-                            && w.Group.DeactivatedUtc == null)
-                .Select(w => new
-                {
-                    w.GroupId,
-                    w.SeasonYear,
-                    w.SeasonWeek,
-                    w.IsNonStandardWeek
-                })
-                .ToListAsync(cancellationToken);
-
-            if (affected.Count == 0)
-            {
-                return NotFound(new
-                {
-                    error = "No active leagues have a week for that SeasonWeekId.",
-                    seasonWeekId
-                });
-            }
-
-            var correlationId = Guid.NewGuid();
-
-            foreach (var league in affected)
-            {
-                var cmd = new ScheduleGroupWeekMatchupsCommand(
-                    league.GroupId,
-                    seasonWeekId!.Value,
-                    league.SeasonYear,
-                    league.SeasonWeek,
-                    league.IsNonStandardWeek,
-                    correlationId,
-                    IsRefresh: true);
-
-                _backgroundJobProvider.Enqueue<IScheduleGroupWeekMatchups>(p => p.Process(cmd));
-            }
-
-            _logger.LogInformation(
-                "Admin matchup refresh enqueued for {Count} league(s). SeasonWeekId={SeasonWeekId}, CorrelationId={CorrelationId}",
-                affected.Count, seasonWeekId, correlationId);
-
-            return Accepted(new
-            {
-                seasonWeekId,
-                leaguesQueued = affected.Count,
-                correlationId
-            });
+            return result.ToActionResult();
         }
     }
 }

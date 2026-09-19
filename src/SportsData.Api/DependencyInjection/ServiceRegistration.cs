@@ -10,6 +10,7 @@ using SportsData.Api.Application.UI.PlayerLineups.Commands.UpsertLineupSlot;
 using SportsData.Api.Application.UI.PlayerLineups.Queries.GetMyPlayerLineup;
 using SportsData.Api.Application.Admin.Commands.GenerateLoadTest;
 using SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
+using SportsData.Api.Application.Admin.Commands.RefreshWeekMatchups;
 using SportsData.Api.Application.Admin.Commands.SendTestPushNotification;
 using SportsData.Api.Application.Admin.Commands.UpsertMatchupPreview;
 using SportsData.Api.Application.Admin.Queries.AuditAi;
@@ -323,6 +324,8 @@ namespace SportsData.Api.DependencyInjection
             services.AddSingleton<CanonicalAdminDataQueryProvider>();
             services.AddScoped<IScheduleGroupWeekMatchups, MatchupScheduleProcessor>();
             services.AddScoped<IAuditMatchupRecords, MatchupRecordAuditProcessor>();
+            services.AddScoped<IRefreshWeekMatchupsCommandHandler, RefreshWeekMatchupsCommandHandler>();
+            services.AddScoped<IValidator<RefreshWeekMatchupsCommand>, RefreshWeekMatchupsCommandValidator>();
             services.AddScoped<IBootstrapLeagueMatchups, BootstrapLeagueMatchupsProcessor>();
             services.AddScoped<IScorePicks, PickScoringProcessor>();
             services.AddScoped<IInvalidatePickAudits, PickAuditInvalidator>();

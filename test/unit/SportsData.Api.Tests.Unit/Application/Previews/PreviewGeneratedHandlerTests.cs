@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 
 using Moq;
 
+using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Notifications;
@@ -23,10 +24,15 @@ namespace SportsData.Api.Tests.Unit.Application.Previews;
 public class PreviewGeneratedHandlerTests : ApiTestBase<PreviewGeneratedHandler>
 {
     [Fact]
-    public async Task Consume_EvictsForTheContest_ThenBroadcasts()
+    public async Task Consume_WritesStatBotsPick_ThenEvicts_ThenBroadcasts()
     {
         var contestId = Guid.NewGuid();
         var calls = new List<string>();
+
+        Mocker.GetMock<IStatBotPickWriter>()
+            .Setup(w => w.UpsertForContestAsync(contestId, It.IsAny<CancellationToken>()))
+            .Callback(() => calls.Add("pick"))
+            .ReturnsAsync(1);
 
         Mocker.GetMock<ILeagueWeekMatchupsCacheInvalidator>()
             .Setup(i => i.EvictForContestAsync(contestId, It.IsAny<CancellationToken>()))
@@ -42,7 +48,8 @@ public class PreviewGeneratedHandlerTests : ApiTestBase<PreviewGeneratedHandler>
 
         await sut.Consume(ContextFor(Message(contestId)));
 
-        Assert.Equal(new[] { "evict", "broadcast" }, calls);
+        // The refetch the broadcast triggers must see the pick AND the preview.
+        Assert.Equal(new[] { "pick", "evict", "broadcast" }, calls);
         clients.Verify(c => c.SendCoreAsync(
                 nameof(PreviewGenerated),
                 It.IsAny<object?[]>(),

@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Admin.SyntheticPicks;
 using SportsData.Api.Application.Common.Enums;
-using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
@@ -21,30 +20,30 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
 {
     private readonly ISeasonClientFactory _seasonClientFactory;
     private readonly AppDataContext _dataContext;
-    private readonly IGetLeagueWeekMatchupsQueryHandler _getLeagueWeekMatchupsHandler;
     private readonly ILogger<RefreshAiExistenceCommandHandler> _logger;
     private readonly ISyntheticPickService _syntheticPickService;
+    private readonly IStatBotPickWriter _statBotPickWriter;
+
     public RefreshAiExistenceCommandHandler(
         ILogger<RefreshAiExistenceCommandHandler> logger,
         AppDataContext dataContext,
         ISeasonClientFactory seasonClientFactory,
         ISyntheticPickService syntheticPickService,
-        IGetLeagueWeekMatchupsQueryHandler getLeagueWeekMatchupsHandler)
+        IStatBotPickWriter statBotPickWriter)
     {
         _logger = logger;
         _dataContext = dataContext;
         _seasonClientFactory = seasonClientFactory;
         _syntheticPickService = syntheticPickService;
-        _getLeagueWeekMatchupsHandler = getLeagueWeekMatchupsHandler;
+        _statBotPickWriter = statBotPickWriter;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(RefreshAiExistenceCommand command, CancellationToken cancellationToken = default)
     {
         try
         {
-            // TODO: Accept the seasonWeek as a parameter
-
-            // get the current week
+            // The current week anchors the season; command.Week can name any
+            // week of that season so a missed week is backfillable.
             // TODO: multi-sport — resolve sport from context instead of defaulting
             var weekResult = await _seasonClientFactory.Resolve(Sport.FootballNcaa).GetCurrentSeasonWeek(cancellationToken);
             var currentWeek = weekResult.IsSuccess ? weekResult.Value : null;
@@ -60,6 +59,9 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
                         new ValidationFailure("CurrentWeek", "Current week could not be found")
                     });
             }
+
+            var seasonYear = currentWeek.SeasonYear;
+            var week = command.Week ?? currentWeek.WeekNumber;
 
             // get the synthetics
             var synthetics = await _dataContext.Users
@@ -107,103 +109,18 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
                 _logger.LogWarning("Added synthetics to {count} total group memberships.", totalAddedToGroupCount);
             }
 
-            // now, for each league, we need to ensure the synthetic has submitted picks
-            // those picks will be submitted based on previously-generated MatchupPreview records
+            // StatBot's picks follow the matchup previews. The event handlers
+            // write them as previews are generated/approved; this sweep is the
+            // catch-all for a week that was missed (previews generated while the
+            // handlers were down, or before this existed).
+            var statbotPicksAdded = await _statBotPickWriter.BackfillWeekAsync(seasonYear, week, cancellationToken);
+            _logger.LogInformation("StatBot backfill for {SeasonYear} week {Week}: {Count} pick(s) inserted.", seasonYear, week, statbotPicksAdded);
 
             // 1. reload all groups
             allGroups = await _dataContext.PickemGroups
                 .AsNoTracking()
                 .Include(g => g.Members)
                 .ToListAsync(cancellationToken);
-
-            var statbotId = Guid.Parse("5fa4c116-1993-4f2b-9729-c50c62150813");
-
-            var statbotPicksAdded = 0;
-
-            // Create picks for StatBot
-            foreach (var group in allGroups)
-            {
-                // get the matchups for the group
-                var query = new GetLeagueWeekMatchupsQuery
-                {
-                    UserId = statbotId,
-                    LeagueId = group.Id,
-                    Week = currentWeek.WeekNumber
-                };
-                var groupMatchupsResult = await _getLeagueWeekMatchupsHandler.ExecuteAsync(query, cancellationToken);
-
-                if (!groupMatchupsResult.IsSuccess)
-                {
-                    _logger.LogWarning("Could not get matchups for group {GroupId}", group.Id);
-                    continue;
-                }
-
-                var groupMatchups = groupMatchupsResult.Value;
-
-                // iterate each group matchup
-                foreach (var matchup in groupMatchups.Matchups)
-                {
-                    // get the synthetic's pick
-                    var synPick = await _dataContext.UserPicks
-                        .Where(x => x.ContestId == matchup.ContestId &&
-                                    x.PickemGroupId == group.Id &&
-                                    x.UserId == statbotId)
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    // do we already have one?
-                    if (synPick is not null)
-                        continue;
-
-                    // get the previously-generated preview
-                    var preview = await _dataContext.MatchupPreviews
-                        .AsNoTracking()
-                        .Where(x => x.ContestId == matchup.ContestId &&
-                                    x.RejectedUtc == null)
-                        .OrderByDescending(x => x.CreatedUtc)
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    // no preview? skip it
-                    if (preview is null)
-                        continue;
-
-                    // generate the synthetic's pick from the preview
-                    synPick = new PickemGroupUserPick()
-                    {
-                        UserId = statbotId,
-                        ContestId = matchup.ContestId,
-                        CreatedUtc = preview.CreatedUtc,
-                        CreatedBy = statbotId,
-                        FranchiseSeasonId = group.PickType == PickType.AgainstTheSpread
-                            ? preview.PredictedSpreadWinner
-                            : preview.PredictedStraightUpWinner,
-                        PickemGroupId = group.Id,
-                        PickType = group.PickType == PickType.StraightUp ? PickType.StraightUp : PickType.AgainstTheSpread,
-                        Week = currentWeek.WeekNumber,
-                        TiebreakerType = TiebreakerType.TotalPoints
-                    };
-
-                    if (group.PickType == PickType.AgainstTheSpread && matchup.SpreadCurrent.HasValue)
-                    {
-                        synPick.FranchiseSeasonId = preview.PredictedSpreadWinner;
-                        if (synPick.FranchiseSeasonId == Guid.Empty)
-                            synPick.FranchiseSeasonId = preview.PredictedStraightUpWinner;
-                    }
-                    else
-                    {
-                        synPick.FranchiseSeasonId = preview.PredictedStraightUpWinner;
-                    }
-
-                    await _dataContext.UserPicks.AddAsync(synPick, cancellationToken);
-                    statbotPicksAdded++;
-                }
-            }
-
-            // Batch save all StatBot picks
-            if (statbotPicksAdded > 0)
-            {
-                await _dataContext.SaveChangesAsync(cancellationToken);
-                _logger.LogInformation("Created {count} StatBot picks", statbotPicksAdded);
-            }
 
             var metricBots = await _dataContext.Users
                 .AsNoTracking()
@@ -220,7 +137,7 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
                         group.PickType,
                         metricBot.Id,
                         metricBot.SyntheticPickStyle!,
-                        currentWeek.WeekNumber,
+                        week,
                         cancellationToken);
                 }
             }

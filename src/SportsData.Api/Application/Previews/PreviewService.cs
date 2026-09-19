@@ -3,6 +3,9 @@
 using SportsData.Api.Application.Previews.Commands;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data;
+using SportsData.Core.Common;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Previews;
 
 namespace SportsData.Api.Application.Previews
 {
@@ -17,15 +20,18 @@ namespace SportsData.Api.Application.Previews
         private readonly ILogger<PreviewService> _logger;
         private readonly AppDataContext _dataContext;
         private readonly ILeagueWeekMatchupsCacheInvalidator _cacheInvalidator;
+        private readonly IEventBus _eventBus;
 
         public PreviewService(
             ILogger<PreviewService> logger,
             AppDataContext dataContext,
-            ILeagueWeekMatchupsCacheInvalidator cacheInvalidator)
+            ILeagueWeekMatchupsCacheInvalidator cacheInvalidator,
+            IEventBus eventBus)
         {
             _logger = logger;
             _dataContext = dataContext;
             _cacheInvalidator = cacheInvalidator;
+            _eventBus = eventBus;
         }
 
         public async Task<Guid> ApproveMatchupPreview(ApproveMatchupPreviewCommand command)
@@ -51,6 +57,26 @@ namespace SportsData.Api.Application.Previews
 
             preview.ApprovedUtc = DateTime.UtcNow;
             preview.ModifiedBy = command.ApprovedByUserId;
+
+            // StatBot's pick follows the approved preview (MatchupPreviewApprovedHandler).
+            // Published BEFORE SaveChanges so the outbox captures it in the same
+            // transaction as the approval. Sport comes from a league carrying the
+            // contest; previews exist only for football today, so NCAA is the
+            // fallback when no league has it yet.
+            var sport = await _dataContext.PickemGroupMatchups
+                .AsNoTracking()
+                .Where(m => m.ContestId == preview.ContestId)
+                .Join(_dataContext.PickemGroups.AsNoTracking(), m => m.GroupId, g => g.Id, (m, g) => (Sport?)g.Sport)
+                .FirstOrDefaultAsync() ?? Sport.FootballNcaa;
+
+            await _eventBus.Publish(new MatchupPreviewApproved(
+                MatchupPreviewId: preview.Id,
+                ContestId: preview.ContestId,
+                Ref: null,
+                Sport: sport,
+                SeasonYear: null,
+                CorrelationId: Guid.NewGuid(),
+                CausationId: CausationId.Api.PreviewApproval));
 
             await _dataContext.SaveChangesAsync();
 

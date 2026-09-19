@@ -423,6 +423,7 @@ namespace SportsData.Api.DependencyInjection
             // Synthetic pick services (required by other services)
             services.AddSingleton<ISyntheticPickStyleProvider, SyntheticPickStyleProvider>();
             services.AddScoped<ISyntheticPickService, SyntheticPickService>();
+            services.AddScoped<IStatBotPickWriter, StatBotPickWriter>();
 
             // Rankings Queries
             services.AddScoped<IGetRankingsBySeasonYearQueryHandler, GetRankingsBySeasonYearQueryHandler>();

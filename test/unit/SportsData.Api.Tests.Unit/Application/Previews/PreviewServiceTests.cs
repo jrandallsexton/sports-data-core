@@ -6,6 +6,8 @@ using SportsData.Api.Application.Previews;
 using SportsData.Api.Application.Previews.Commands;
 using SportsData.Api.Application.UI.Leagues.Queries.GetLeagueWeekMatchups;
 using SportsData.Api.Infrastructure.Data.Entities;
+using SportsData.Core.Eventing;
+using SportsData.Core.Eventing.Events.Previews;
 
 using Xunit;
 
@@ -38,6 +40,11 @@ public class PreviewServiceTests : ApiTestBase<PreviewService>
         (await DataContext.MatchupPreviews.FindAsync(preview.Id))!.ApprovedUtc.Should().NotBeNull();
         Mocker.GetMock<ILeagueWeekMatchupsCacheInvalidator>()
             .Verify(i => i.EvictForContestAsync(preview.ContestId, It.IsAny<CancellationToken>()), Times.Once);
+        // StatBot's pick follows the approved preview via this event.
+        Mocker.GetMock<IEventBus>()
+            .Verify(b => b.Publish(
+                It.Is<MatchupPreviewApproved>(e => e.ContestId == preview.ContestId && e.MatchupPreviewId == preview.Id),
+                It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

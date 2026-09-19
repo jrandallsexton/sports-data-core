@@ -304,6 +304,114 @@ public class StatBotPickWriterTests : ApiTestBase<StatBotPickWriter>
         scored.Should().BeEquivalentTo([a, b]);
     }
 
+    /// <summary>
+    /// PickScoringService has already turned ConfidencePoints into
+    /// PointsAwarded for a scored pick, and PickScoringProcessor only ever
+    /// re-scores the contest it is handed. Renumbering a scored pick would
+    /// silently desync the points shown from the points awarded.
+    /// </summary>
+    [Fact]
+    public async Task UpsertForContest_ConfidenceLeague_DoesNotRenumberScoredPicks()
+    {
+        var league = await SeedLeagueAsync(PickType.StraightUp, useConfidencePoints: true);
+        var played = Guid.NewGuid();
+        var upcoming = Guid.NewGuid();
+        await SeedMatchupAsync(league.Id, played, kickoff: Now.AddDays(-2), homeSpread: null);
+        await SeedMatchupAsync(league.Id, upcoming, kickoff: Now.AddDays(2), homeSpread: null);
+
+        // Already scored, holding 2 of 2.
+        DataContext.UserPicks.Add(new PickemGroupUserPick
+        {
+            Id = Guid.NewGuid(), UserId = StatBot, PickemGroupId = league.Id, ContestId = played, Week = 3,
+            FranchiseSeasonId = Home, PickType = PickType.StraightUp, ConfidencePoints = 2,
+            ScoredAt = Now.AddDays(-1), PointsAwarded = 2, IsCorrect = true,
+            CreatedUtc = Now.AddDays(-5), CreatedBy = StatBot
+        });
+        await DataContext.SaveChangesAsync();
+
+        // The upcoming game has the bigger predicted margin, so an unguarded
+        // ranking would hand it the 2 and demote the scored pick to 1.
+        await SeedPreviewAsync(upcoming, straightUp: Home, spread: null, createdUtc: Now.AddHours(-1), awayScore: 3, homeScore: 45);
+
+        await Mocker.CreateInstance<StatBotPickWriter>().UpsertForContestAsync(upcoming);
+
+        var picks = await DataContext.UserPicks.Where(p => p.UserId == StatBot)
+            .ToDictionaryAsync(p => p.ContestId, p => p);
+
+        picks[played].ConfidencePoints.Should().Be(2, "a scored pick keeps the value it was scored on");
+        picks[played].PointsAwarded.Should().Be(2);
+        picks[upcoming].ConfidencePoints.Should().Be(1, "the only value left once 2 is reserved");
+    }
+
+    /// <summary>
+    /// A backfill fills a week whose games have all kicked off, so the
+    /// locked-pick rule must not swallow the rows it just inserted — they
+    /// still need a confidence value.
+    /// </summary>
+    [Fact]
+    public async Task BackfillWeek_ConfidenceLeague_AssignsPointsToItsOwnNewPicks()
+    {
+        var league = await SeedLeagueAsync(PickType.StraightUp, useConfidencePoints: true);
+        var close = Guid.NewGuid();
+        var blowout = Guid.NewGuid();
+        await SeedMatchupAsync(league.Id, close, kickoff: Now.AddDays(-7), homeSpread: null, week: 2);
+        await SeedMatchupAsync(league.Id, blowout, kickoff: Now.AddDays(-7), homeSpread: null, week: 2);
+        await SeedPreviewAsync(close, straightUp: Home, spread: null, createdUtc: Now.AddDays(-9), awayScore: 20, homeScore: 21);
+        await SeedPreviewAsync(blowout, straightUp: Home, spread: null, createdUtc: Now.AddDays(-9), awayScore: 3, homeScore: 45);
+
+        await Mocker.CreateInstance<StatBotPickWriter>().BackfillWeekAsync(2026, 2);
+
+        var picks = await DataContext.UserPicks.Where(p => p.UserId == StatBot)
+            .ToDictionaryAsync(p => p.ContestId, p => p.ConfidencePoints);
+
+        picks[blowout].Should().Be(2);
+        picks[close].Should().Be(1);
+        picks.Values.Should().OnlyContain(v => v != null);
+    }
+
+    /// <summary>
+    /// Preview generation can run AFTER kickoff but before the contest is
+    /// marked complete. Taking the newest preview and then rejecting it as late
+    /// would skip a contest that did have an eligible earlier preview.
+    /// </summary>
+    [Fact]
+    public async Task BackfillWeek_UsesTheNewestPreviewThatPredatesKickoff()
+    {
+        var league = await SeedLeagueAsync(PickType.StraightUp);
+        var contestId = Guid.NewGuid();
+        await SeedMatchupAsync(league.Id, contestId, kickoff: Now.AddDays(-7), homeSpread: null, week: 2);
+
+        // Eligible: written two days before kickoff, picked Home.
+        await SeedPreviewAsync(contestId, straightUp: Home, spread: null, createdUtc: Now.AddDays(-9));
+        // Newer but INELIGIBLE: written after kickoff, picks the other side.
+        await SeedPreviewAsync(contestId, straightUp: Away, spread: null, createdUtc: Now.AddDays(-6));
+
+        var inserted = await Mocker.CreateInstance<StatBotPickWriter>().BackfillWeekAsync(2026, 2);
+
+        inserted.Should().Be(1, "the pre-kickoff preview is eligible even though a newer one exists");
+        (await DataContext.UserPicks.SingleAsync()).FranchiseSeasonId.Should().Be(Home);
+    }
+
+    /// <summary>
+    /// Approval names the preview that was approved. Re-deriving from "the
+    /// newest non-rejected" would persist a prediction nobody approved.
+    /// </summary>
+    [Fact]
+    public async Task UpsertForContest_ByPreviewId_UsesThatPreviewNotTheNewest()
+    {
+        var league = await SeedLeagueAsync(PickType.StraightUp);
+        var contestId = Guid.NewGuid();
+        await SeedMatchupAsync(league.Id, contestId, kickoff: Now.AddDays(3), homeSpread: null);
+
+        var approved = await SeedPreviewAsync(contestId, straightUp: Home, spread: null, createdUtc: Now.AddHours(-3));
+        await SeedPreviewAsync(contestId, straightUp: Away, spread: null, createdUtc: Now.AddHours(-1));
+
+        await Mocker.CreateInstance<StatBotPickWriter>().UpsertForContestAsync(contestId, approved);
+
+        (await DataContext.UserPicks.SingleAsync()).FranchiseSeasonId
+            .Should().Be(Home, "the approved preview named Home; the newer one named Away");
+    }
+
     private async Task<PickemGroup> SeedLeagueAsync(PickType pickType, bool useConfidencePoints = false)
     {
         var commissioner = Guid.NewGuid();
@@ -343,11 +451,12 @@ public class StatBotPickWriterTests : ApiTestBase<StatBotPickWriter>
         await DataContext.SaveChangesAsync();
     }
 
-    private async Task SeedPreviewAsync(Guid contestId, Guid? straightUp, Guid? spread, DateTime createdUtc, int? awayScore = null, int? homeScore = null)
+    private async Task<Guid> SeedPreviewAsync(Guid contestId, Guid? straightUp, Guid? spread, DateTime createdUtc, int? awayScore = null, int? homeScore = null)
     {
+        var previewId = Guid.NewGuid();
         DataContext.MatchupPreviews.Add(new MatchupPreview
         {
-            Id = Guid.NewGuid(),
+            Id = previewId,
             ContestId = contestId,
             PromptId = Guid.NewGuid(),
             PredictedStraightUpWinner = straightUp,
@@ -358,5 +467,6 @@ public class StatBotPickWriterTests : ApiTestBase<StatBotPickWriter>
             CreatedBy = Guid.Empty
         });
         await DataContext.SaveChangesAsync();
+        return previewId;
     }
 }

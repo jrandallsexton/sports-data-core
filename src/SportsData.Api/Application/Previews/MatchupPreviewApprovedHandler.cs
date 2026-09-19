@@ -7,8 +7,9 @@ using SportsData.Core.Eventing.Events.Previews;
 namespace SportsData.Api.Application.Previews;
 
 /// <summary>
-/// An approved preview is the latest non-rejected preview, so StatBot's pick
-/// is re-derived from it in every league carrying the contest - it changes
+/// StatBot's pick is re-derived from the preview that was APPROVED — by id,
+/// not "the latest non-rejected one", because approving an older preview while
+/// a newer one exists must not persist the newer prediction. It changes
 /// only when the approved preview names a different winner than the one
 /// already picked, and never after kickoff. Approval also flips
 /// IsPreviewReviewed in the cached league-week payload, which PreviewService
@@ -29,7 +30,10 @@ public class MatchupPreviewApprovedHandler : IConsumer<MatchupPreviewApproved>
 
     public async Task Consume(ConsumeContext<MatchupPreviewApproved> context)
     {
-        var written = await _statBotPickWriter.UpsertForContestAsync(context.Message.ContestId, context.CancellationToken);
+        var written = await _statBotPickWriter.UpsertForContestAsync(
+            context.Message.ContestId,
+            context.Message.MatchupPreviewId,
+            context.CancellationToken);
         if (written > 0)
             await _cacheInvalidator.EvictForContestAsync(context.Message.ContestId, context.CancellationToken);
     }

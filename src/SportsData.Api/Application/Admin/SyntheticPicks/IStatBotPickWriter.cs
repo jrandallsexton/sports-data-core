@@ -25,6 +25,15 @@ public interface IStatBotPickWriter
     Task<int> UpsertForContestAsync(Guid contestId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Same, but from a NAMED preview rather than the latest non-rejected one.
+    /// Approval carries the id of the preview that was approved, and that is
+    /// not necessarily the newest: approving an older preview while a newer
+    /// one exists would otherwise persist the newer prediction, which is not
+    /// what the operator approved.
+    /// </summary>
+    Task<int> UpsertForContestAsync(Guid contestId, Guid previewId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Backfill: insert StatBot's missing picks for every matchup of a
     /// season-week across all leagues. Never updates an existing pick. A
     /// contest that has kicked off is filled only when its preview predates

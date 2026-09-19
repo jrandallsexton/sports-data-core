@@ -35,9 +35,17 @@ public class StatBotPickWriter : IStatBotPickWriter
         _logger = logger;
     }
 
-    public async Task<int> UpsertForContestAsync(Guid contestId, CancellationToken cancellationToken = default)
+    public Task<int> UpsertForContestAsync(Guid contestId, CancellationToken cancellationToken = default) =>
+        UpsertFromPreviewAsync(contestId, previewId: null, cancellationToken);
+
+    public Task<int> UpsertForContestAsync(Guid contestId, Guid previewId, CancellationToken cancellationToken = default) =>
+        UpsertFromPreviewAsync(contestId, previewId, cancellationToken);
+
+    private async Task<int> UpsertFromPreviewAsync(Guid contestId, Guid? previewId, CancellationToken cancellationToken)
     {
-        var preview = await LatestPreviewAsync(contestId, cancellationToken);
+        var preview = previewId is Guid id
+            ? await NamedPreviewAsync(contestId, id, cancellationToken)
+            : await LatestPreviewAsync(contestId, cancellationToken);
         if (preview is null) return 0;
 
         var slots = await _dataContext.PickemGroupMatchups
@@ -55,6 +63,7 @@ public class StatBotPickWriter : IStatBotPickWriter
             .ToDictionaryAsync(p => p.PickemGroupId, cancellationToken);
 
         var written = 0;
+        var insertedPickIds = new HashSet<Guid>();
         foreach (var slot in slots)
         {
             // A pick after kickoff is not a pick. Neither inserted nor changed.
@@ -72,7 +81,9 @@ public class StatBotPickWriter : IStatBotPickWriter
             }
             else
             {
-                await _dataContext.UserPicks.AddAsync(NewPick(slot, contestId, w, preview.CreatedUtc), cancellationToken);
+                var inserted = NewPick(slot, contestId, w, preview.CreatedUtc);
+                await _dataContext.UserPicks.AddAsync(inserted, cancellationToken);
+                insertedPickIds.Add(inserted.Id);
             }
             written++;
         }
@@ -88,7 +99,7 @@ public class StatBotPickWriter : IStatBotPickWriter
             // a single new pick renumbers the rest. Cheap here: one league-week
             // at a time, and only leagues that use it.
             foreach (var slot in slots.Where(x => x.UseConfidencePoints).DistinctBy(x => x.GroupId))
-                await ReconcileConfidenceAsync(slot.GroupId, slot.SeasonYear, slot.Week, cancellationToken);
+                await ReconcileConfidenceAsync(slot.GroupId, slot.SeasonYear, slot.Week, insertedPickIds, cancellationToken);
         }
         return written;
     }
@@ -113,27 +124,31 @@ public class StatBotPickWriter : IStatBotPickWriter
             .ToListAsync(cancellationToken);
         var have = existing.Select(e => (e.PickemGroupId, e.ContestId)).ToHashSet();
 
-        var previews = new Dictionary<Guid, MatchupPreview?>();
+        var previews = new Dictionary<(Guid ContestId, DateTime Kickoff), MatchupPreview?>();
         var touchedContestIds = new HashSet<Guid>();
+        var insertedPickIds = new HashSet<Guid>();
         var inserted = 0;
         foreach (var s in slots)
         {
             if (have.Contains((s.Slot.GroupId, s.ContestId))) continue;
 
-            if (!previews.TryGetValue(s.ContestId, out var preview))
+            // Newest preview that PREDATES kickoff, not "newest, then reject if
+            // late". Preview generation can run after kickoff but before the
+            // contest is marked complete, and taking the newest would then skip
+            // a contest that DID have an eligible earlier preview.
+            var key = (s.ContestId, s.Slot.StartDateUtc);
+            if (!previews.TryGetValue(key, out var preview))
             {
-                preview = await LatestPreviewAsync(s.ContestId, cancellationToken);
-                previews[s.ContestId] = preview;
+                preview = await LatestPreviewBeforeAsync(s.ContestId, s.Slot.StartDateUtc, cancellationToken);
+                previews[key] = preview;
             }
             if (preview is null) continue;
 
-            // Backfill may fill a finished game, but only with a preview that
-            // existed before kickoff; otherwise the "pick" was never makeable.
-            if (preview.CreatedUtc >= s.Slot.StartDateUtc) continue;
-
             if (WinnerFor(s.Slot, preview) is not Guid w) continue;
 
-            await _dataContext.UserPicks.AddAsync(NewPick(s.Slot, s.ContestId, w, preview.CreatedUtc), cancellationToken);
+            var newPick = NewPick(s.Slot, s.ContestId, w, preview.CreatedUtc);
+            await _dataContext.UserPicks.AddAsync(newPick, cancellationToken);
+            insertedPickIds.Add(newPick.Id);
             touchedContestIds.Add(s.ContestId);
             inserted++;
         }
@@ -144,7 +159,7 @@ public class StatBotPickWriter : IStatBotPickWriter
             _logger.LogInformation("StatBot backfill: inserted {Count} pick(s) for {SeasonYear} week {Week}.", inserted, seasonYear, week);
 
             foreach (var g in slots.Where(x => x.Slot.UseConfidencePoints).Select(x => x.Slot).DistinctBy(x => x.GroupId))
-                await ReconcileConfidenceAsync(g.GroupId, seasonYear, week, cancellationToken);
+                await ReconcileConfidenceAsync(g.GroupId, seasonYear, week, insertedPickIds, cancellationToken);
 
             // Picks are scored by ContestFinalized, which already fired for a
             // week being backfilled — so these rows would sit unscored forever.
@@ -183,7 +198,12 @@ public class StatBotPickWriter : IStatBotPickWriter
     /// writes nothing.
     /// </para>
     /// </remarks>
-    private async Task ReconcileConfidenceAsync(Guid groupId, int seasonYear, int week, CancellationToken ct)
+    private async Task ReconcileConfidenceAsync(
+        Guid groupId,
+        int seasonYear,
+        int week,
+        IReadOnlySet<Guid> newlyInsertedPickIds,
+        CancellationToken ct)
     {
         // Two reads rather than a join: the picks must come back TRACKED so the
         // assignment below persists, and mixing a tracked set with an untracked
@@ -227,36 +247,83 @@ public class StatBotPickWriter : IStatBotPickWriter
                       .Select(x => Math.Abs(x.AwayScore!.Value - x.HomeScore!.Value))
                       .First());
 
+        // Locked: already scored, or its kickoff has passed. PickScoringService
+        // has already turned ConfidencePoints into PointsAwarded for those, and
+        // PickScoringProcessor only ever re-scores the contest it is handed —
+        // so renumbering a scored pick silently desyncs the points a member can
+        // see from the points StatBot was actually awarded.
+        //
+        // Newly inserted picks are exempt: a backfill fills a week whose games
+        // have all kicked off, and those rows still need a value.
+        var now = _clock.UtcNow();
+        var locked = picks
+            .Where(p => !newlyInsertedPickIds.Contains(p.Id)
+                        && (p.ScoredAt != null
+                            || (kickoffByContest.TryGetValue(p.ContestId, out var k) && k <= now)))
+            .ToList();
+
+        var reserved = locked
+            .Where(p => p.ConfidencePoints.HasValue)
+            .Select(p => p.ConfidencePoints!.Value)
+            .ToHashSet();
+
+        var mutable = picks.Except(locked).ToList();
+        if (mutable.Count == 0) return;
+
+        // Points still run 1..N across the whole week, with the locked ones
+        // holding their existing values — so the set stays distinct and the
+        // pick sheet contract survives a partial renumber.
+        var available = Enumerable.Range(1, picks.Count)
+            .Where(v => !reserved.Contains(v))
+            .OrderByDescending(v => v)
+            .ToList();
+
         // A preview with no predicted score sorts last rather than dropping the
         // pick: every pick in a confidence league must carry a value.
-        var ranked = picks
+        var ranked = mutable
             .OrderByDescending(p => marginByContest.TryGetValue(p.ContestId, out var m) ? m : -1)
             .ThenBy(p => kickoffByContest.TryGetValue(p.ContestId, out var k) ? k : DateTime.MaxValue)
             .ThenBy(p => p.ContestId)
             .ToList();
 
-        var points = ranked.Count;
         var changed = 0;
-        foreach (var pick in ranked)
+        for (var i = 0; i < ranked.Count && i < available.Count; i++)
         {
-            if (pick.ConfidencePoints != points)
-            {
-                pick.ConfidencePoints = points;
-                pick.ModifiedUtc = _clock.UtcNow();
-                pick.ModifiedBy = IStatBotPickWriter.StatBotUserId;
-                changed++;
-            }
-            points--;
+            var pick = ranked[i];
+            if (pick.ConfidencePoints == available[i]) continue;
+
+            pick.ConfidencePoints = available[i];
+            pick.ModifiedUtc = now;
+            pick.ModifiedBy = IStatBotPickWriter.StatBotUserId;
+            changed++;
         }
 
         if (changed > 0)
         {
             await _dataContext.SaveChangesAsync(ct);
             _logger.LogInformation(
-                "StatBot confidence reconciled. GroupId={GroupId}, Week={Week}, Picks={Picks}, Changed={Changed}",
-                groupId, week, ranked.Count, changed);
+                "StatBot confidence reconciled. GroupId={GroupId}, Week={Week}, Picks={Picks}, Locked={Locked}, Changed={Changed}",
+                groupId, week, picks.Count, locked.Count, changed);
         }
     }
+
+    private Task<MatchupPreview?> NamedPreviewAsync(Guid contestId, Guid previewId, CancellationToken ct) =>
+        _dataContext.MatchupPreviews
+            .AsNoTracking()
+            .Where(p => p.Id == previewId && p.ContestId == contestId && p.RejectedUtc == null)
+            .FirstOrDefaultAsync(ct);
+
+    /// <summary>
+    /// Newest non-rejected preview created strictly BEFORE a kickoff. The
+    /// backfill contract is that StatBot's record is made of picks that were
+    /// makeable at the time.
+    /// </summary>
+    private Task<MatchupPreview?> LatestPreviewBeforeAsync(Guid contestId, DateTime kickoffUtc, CancellationToken ct) =>
+        _dataContext.MatchupPreviews
+            .AsNoTracking()
+            .Where(p => p.ContestId == contestId && p.RejectedUtc == null && p.CreatedUtc < kickoffUtc)
+            .OrderByDescending(p => p.CreatedUtc)
+            .FirstOrDefaultAsync(ct);
 
     private Task<MatchupPreview?> LatestPreviewAsync(Guid contestId, CancellationToken ct) =>
         _dataContext.MatchupPreviews

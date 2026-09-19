@@ -1,5 +1,7 @@
 using FluentValidation.Results;
 
+using FluentValidation;
+
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Admin.SyntheticPicks;
@@ -24,22 +26,32 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
     private readonly ISyntheticPickService _syntheticPickService;
     private readonly IStatBotPickWriter _statBotPickWriter;
 
+    private readonly IValidator<RefreshAiExistenceCommand> _validator;
+
     public RefreshAiExistenceCommandHandler(
         ILogger<RefreshAiExistenceCommandHandler> logger,
         AppDataContext dataContext,
         ISeasonClientFactory seasonClientFactory,
         ISyntheticPickService syntheticPickService,
-        IStatBotPickWriter statBotPickWriter)
+        IStatBotPickWriter statBotPickWriter,
+        IValidator<RefreshAiExistenceCommand> validator)
     {
         _logger = logger;
         _dataContext = dataContext;
         _seasonClientFactory = seasonClientFactory;
         _syntheticPickService = syntheticPickService;
         _statBotPickWriter = statBotPickWriter;
+        _validator = validator;
     }
 
     public async Task<Result<Guid>> ExecuteAsync(RefreshAiExistenceCommand command, CancellationToken cancellationToken = default)
     {
+        var validation = await _validator.ValidateAsync(command, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return new Failure<Guid>(Guid.Empty, ResultStatus.Validation, validation.Errors);
+        }
+
         try
         {
             // The current week anchors the season; command.Week can name any

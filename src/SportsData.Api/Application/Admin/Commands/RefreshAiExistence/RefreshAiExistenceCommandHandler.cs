@@ -181,6 +181,13 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
                         foreach (var contestId in written)
                             metricContestsWritten.Add(contestId);
                     }
+                    // Cancellation is not a per-league failure — continuing
+                    // would grind through every remaining (bot x league) after
+                    // the caller has already given up.
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex,

@@ -59,7 +59,22 @@ public class SyntheticUserPickStylesConfig : Dictionary<string, SyntheticUserPic
             if (string.IsNullOrWhiteSpace(raw))
                 return;
 
-            var parsed = JsonSerializer.Deserialize<Dictionary<string, SyntheticUserPickStyle>>(raw, JsonOptions);
+            Dictionary<string, SyntheticUserPickStyle>? parsed;
+            try
+            {
+                parsed = JsonSerializer.Deserialize<Dictionary<string, SyntheticUserPickStyle>>(raw, JsonOptions);
+            }
+            catch (JsonException)
+            {
+                // Swallowed deliberately, and the XML docs above promise it.
+                // This runs when IOptions<>.Value is first resolved, so
+                // throwing would take down the singleton provider — and with
+                // it the service — over one malformed config value. An empty
+                // config is the same state a missing value produces, and
+                // SyntheticPickStyleProvider logs the count so it is visible.
+                return;
+            }
+
             if (parsed is null)
                 return;
 

@@ -146,7 +146,21 @@ public class SyntheticPickService : ISyntheticPickService
         if (picksAdded > 0)
         {
             await _dataContext.SaveChangesAsync(cancellationToken);
-            await ReconcileConfidenceAsync(pickemGroupId, syntheticId, seasonWeekNumber, insertedPickIds, cancellationToken);
+            // Reconciliation failing must not cost the caller the contest ids:
+            // the picks are already committed, and losing `written` means
+            // scoring is never enqueued for them — and a retry skips the
+            // existing picks, returns nothing, and never scores them either.
+            try
+            {
+                await ReconcileConfidenceAsync(
+                    pickemGroupId, pickemGroupPickType, syntheticId, seasonWeekNumber, insertedPickIds, cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex,
+                    "Confidence reconciliation failed for {SyntheticId} in group {GroupId} week {Week}; picks are saved and will still be scored.",
+                    syntheticId, pickemGroupId, seasonWeekNumber);
+            }
         }
 
         // Always reported, including the zero case. Every branch above is a
@@ -189,6 +203,7 @@ public class SyntheticPickService : ISyntheticPickService
     /// </remarks>
     private async Task ReconcileConfidenceAsync(
         Guid pickemGroupId,
+        PickType pickemGroupPickType,
         Guid syntheticId,
         int seasonWeekNumber,
         IReadOnlySet<Guid> newlyInsertedPickIds,
@@ -218,9 +233,13 @@ public class SyntheticPickService : ISyntheticPickService
             .Select(m => new { m.ContestId, m.StartDateUtc })
             .ToDictionaryAsync(x => x.ContestId, x => x.StartDateUtc, ct);
 
+        // Filtered by the LEAGUE's pick type. A contest carries a prediction
+        // per type, so ordering by CreatedUtc alone can hand back the other
+        // type's WinProbability and rank the week by a number that was never
+        // about this league's picks.
         var predictions = await _dataContext.ContestPredictions
             .AsNoTracking()
-            .Where(x => contestIds.Contains(x.ContestId))
+            .Where(x => contestIds.Contains(x.ContestId) && x.PredictionType == pickemGroupPickType)
             .Select(x => new { x.ContestId, x.WinProbability, x.CreatedUtc })
             .ToListAsync(ct);
 

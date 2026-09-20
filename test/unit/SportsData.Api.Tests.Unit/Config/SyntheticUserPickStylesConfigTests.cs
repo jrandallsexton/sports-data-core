@@ -83,6 +83,20 @@ public class SyntheticUserPickStylesConfigTests
         config.Should().ContainKey("aggressive");
     }
 
+    /// <summary>
+    /// BindFrom runs when IOptions&lt;&gt;.Value is first resolved, so throwing
+    /// would take down the singleton provider — and the service with it — over
+    /// one malformed config value.
+    /// </summary>
+    [Theory]
+    [InlineData("{ not json")]
+    [InlineData("[]")]
+    [InlineData("\"a string, not an object\"")]
+    public void BindFrom_MalformedValue_YieldsEmptyRatherThanThrowing(string value)
+    {
+        Bind(value).Should().BeEmpty();
+    }
+
     [Theory]
     [InlineData(null)]
     [InlineData("")]

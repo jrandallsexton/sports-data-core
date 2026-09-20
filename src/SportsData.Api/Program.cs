@@ -149,7 +149,20 @@ namespace SportsData.Api
             services.Configure<CommonConfig>(config.GetSection("CommonConfig"));
             services.Configure<ApiConfig>(config.GetSection("SportsData.Api:ApiConfig"));
             services.Configure<NotificationConfig>(config.GetSection("CommonConfig:NotificationConfig"));
-            services.Configure<SyntheticUserPickStylesConfig>(config.GetSection("SportsData.Api:SyntheticUserPickStyles"));
+            // Bound from the RAW JSON string, not by the section binder. The
+            // AppConfig value is a single key holding a nested document, and
+            // Azure only expands that into hierarchical keys when the setting
+            // carries content-type application/json — which Apply-AppConfig.ps1
+            // preserves for Key Vault references only, then drops on its
+            // `az appconfig kv import` path. So the section has a value but no
+            // children, and Configure<> bound an EMPTY dictionary: the provider
+            // logged "0 pick styles" at every startup and every styled bot threw
+            // ArgumentException the first time it met an ATS matchup with a
+            // spread (prod + local, 2026-09-20). Flattening the value into ~33
+            // keys per label was the alternative and is a lot of noise in
+            // AppConfig for one setting.
+            services.Configure<SyntheticUserPickStylesConfig>(
+                SyntheticUserPickStylesConfig.BindFrom(config, "SportsData.Api:SyntheticUserPickStyles"));
             services.Configure<SyntheticUsersConfig>(config.GetSection("CommonConfig:SyntheticUsers"));
 
             if (!isTestingEnv)

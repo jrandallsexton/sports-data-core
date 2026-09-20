@@ -5,11 +5,13 @@ using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 using SportsData.Api.Application.Admin.SyntheticPicks;
+using SportsData.Api.Application.Scoring;
 using SportsData.Api.Application.Common.Enums;
 using SportsData.Api.Infrastructure.Data;
 using SportsData.Api.Infrastructure.Data.Entities;
 using SportsData.Core.Common;
 using SportsData.Core.Infrastructure.Clients.Season;
+using SportsData.Core.Processing;
 
 namespace SportsData.Api.Application.Admin.Commands.RefreshAiExistence;
 
@@ -26,6 +28,7 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
     private readonly ISyntheticPickService _syntheticPickService;
     private readonly IStatBotPickWriter _statBotPickWriter;
 
+    private readonly IProvideBackgroundJobs _backgroundJobProvider;
     private readonly IValidator<RefreshAiExistenceCommand> _validator;
 
     public RefreshAiExistenceCommandHandler(
@@ -34,6 +37,7 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
         ISeasonClientFactory seasonClientFactory,
         ISyntheticPickService syntheticPickService,
         IStatBotPickWriter statBotPickWriter,
+        IProvideBackgroundJobs backgroundJobProvider,
         IValidator<RefreshAiExistenceCommand> validator)
     {
         _logger = logger;
@@ -41,6 +45,7 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
         _seasonClientFactory = seasonClientFactory;
         _syntheticPickService = syntheticPickService;
         _statBotPickWriter = statBotPickWriter;
+        _backgroundJobProvider = backgroundJobProvider;
         _validator = validator;
     }
 
@@ -134,24 +139,77 @@ public class RefreshAiExistenceCommandHandler : IRefreshAiExistenceCommandHandle
                 .Include(g => g.Members)
                 .ToListAsync(cancellationToken);
 
+            // Every synthetic EXCEPT StatBot, whose picks come from the matchup
+            // previews above and must not be overwritten by the metric path.
+            //
+            // Previously filtered on SyntheticPickStyle != null, which silently
+            // excluded MetricBot: it is IsSynthetic with a NULL style, so it was
+            // added to every league by the loop above and then never given a
+            // pick. A null style is not "not a metric bot" — it means "no
+            // threshold", i.e. take the model's prediction unmodified.
             var metricBots = await _dataContext.Users
                 .AsNoTracking()
-                .Where(u => u.IsSynthetic == true && u.SyntheticPickStyle != null)
+                .Where(u => u.IsSynthetic == true && u.Id != IStatBotPickWriter.StatBotUserId)
                 .ToListAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Metric pick sweep: {BotCount} synthetic(s) x {GroupCount} league(s) for {SeasonYear} week {Week}.",
+                metricBots.Count, allGroups.Count, seasonYear, week);
+
+            var metricContestsWritten = new HashSet<Guid>();
 
             foreach (var metricBot in metricBots)
             {
-                // Create picks for MetricBot
                 foreach (var group in allGroups)
                 {
-                    await _syntheticPickService.GenerateMetricBasedPicksForSynthetic(
-                        group.Id,
-                        group.PickType,
-                        metricBot.Id,
-                        metricBot.SyntheticPickStyle!,
-                        week,
-                        cancellationToken);
+                    // Per (bot, league) so one bot's bad config cannot cost the
+                    // rest their run. An empty style dictionary used to throw
+                    // here and the outer catch swallowed it into a SUCCESS
+                    // response, so bots later in the loop silently never ran
+                    // (prod + local 2026-09-20: MetricBot and NervousBot had
+                    // picks, GambleBot and MehBot had none, endpoint said OK).
+                    try
+                    {
+                        var written = await _syntheticPickService.GenerateMetricBasedPicksForSynthetic(
+                            group.Id,
+                            group.PickType,
+                            metricBot.Id,
+                            metricBot.SyntheticPickStyle,
+                            week,
+                            cancellationToken);
+
+                        foreach (var contestId in written)
+                            metricContestsWritten.Add(contestId);
+                    }
+                    // Cancellation is not a per-league failure — continuing
+                    // would grind through every remaining (bot x league) after
+                    // the caller has already given up.
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex,
+                            "Metric picks failed for synthetic {SyntheticId} in group {GroupId} week {Week}; continuing with the rest.",
+                            metricBot.Id, group.Id, week);
+                    }
                 }
+            }
+
+            // Picks are scored by ContestFinalized, which has already fired for
+            // any week being backfilled and will not fire again — so without
+            // this the rows sit unscored forever. PickScoringProcessor
+            // short-circuits on "no unscored picks", and these ARE unscored, so
+            // it proceeds. Enqueued once per contest rather than once per
+            // (bot x league), since scoring handles every pick on the contest.
+            foreach (var contestId in metricContestsWritten)
+                _backgroundJobProvider.Enqueue<IScorePicks>(p => p.Process(new ScorePicksCommand(contestId)));
+
+            if (metricContestsWritten.Count > 0)
+            {
+                _logger.LogInformation(
+                    "Metric picks: enqueued scoring for {Count} contest(s).", metricContestsWritten.Count);
             }
 
             _logger.LogInformation("{method} completed", nameof(RefreshAiExistenceCommandHandler));

@@ -510,13 +510,43 @@ namespace SportsData.Api.DependencyInjection
                 job => job.ExecuteAsync(Sport.FootballNfl),
                 "0 3 * * 3");
 
-            // Daily primary trigger. Can't be event-driven — matchups must
-            // be generated BEFORE games happen. Daily is sufficient since
-            // week boundaries move at most once per week per sport.
+            // Per-sport, and TIME ZONE AWARE — the rest of this file is bare
+            // UTC by convention, but both of these are anchored to a US
+            // broadcast clock and the NCAA season crosses the November DST
+            // boundary. A fixed UTC cron would land an hour off exactly when
+            // the season is still running.
+            //
+            // NCAA: Sunday 14:30 Eastern, just after the AP poll is released at
+            // 14:00. Running before the poll builds the slate from LAST week's
+            // rankings, and that is sticky: the refresh path adds newly-eligible
+            // matchups but never removes ones that fell out, because picks
+            // against them must survive. Week 3 of 2026 was generated that way
+            // and had to be deleted by hand (matchups, picks and previews).
+            //
+            // NFL: Tuesday 06:00 Eastern, which gives Monday Night Football
+            // time to finish, finalize and enrich before the next slate is cut.
+            //
+            // Neither is the only path to a slate. Mid-week league creation
+            // goes through PickemGroupCreated -> BootstrapLeagueMatchups, and a
+            // late poll re-triggers via SeasonPollWeekCreated.
+            var easternTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+
             recurringJobManager.AddOrUpdate<MatchupScheduler>(
-                nameof(MatchupScheduler),
-                job => job.ExecuteAsync(),
-                Cron.Daily(6));
+                $"{nameof(MatchupScheduler)}-{Sport.FootballNcaa}",
+                job => job.ExecuteAsync(Sport.FootballNcaa),
+                "30 14 * * 0",
+                new RecurringJobOptions { TimeZone = easternTimeZone });
+
+            recurringJobManager.AddOrUpdate<MatchupScheduler>(
+                $"{nameof(MatchupScheduler)}-{Sport.FootballNfl}",
+                job => job.ExecuteAsync(Sport.FootballNfl),
+                "0 6 * * 2",
+                new RecurringJobOptions { TimeZone = easternTimeZone });
+
+            // The old sport-agnostic daily registration is gone. Hangfire keeps
+            // recurring jobs until they are explicitly removed, so the previous
+            // id would otherwise keep firing daily alongside the two above.
+            recurringJobManager.RemoveIfExists(nameof(MatchupScheduler));
 
             // Per-sport historical audit of previously-scored picks. Catches
             // (a) picks scored against a contest that later finalized to a

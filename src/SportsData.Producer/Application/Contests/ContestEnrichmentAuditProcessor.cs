@@ -147,6 +147,44 @@ public class ContestEnrichmentAuditProcessor<TDataContext> : IAuditContestEnrich
             return;
         }
 
+        // Football 0-0 guard, scoped to the DISAGREEMENT case.
+        //
+        // The MLB branch above catches every tie for baseball. Football ties
+        // are legitimate and must stay auditable, and a football contest whose
+        // stored score is ALSO 0-0 keeps its existing behaviour (it matches, so
+        // it audits normally — see
+        // Process_WhenNonMlbMaxScoresAreZeroZero_StampsAuditedUtc).
+        //
+        // What is never meaningful is 0-0 competitor rows contradicting a real
+        // stored score. That is not a tie, it is bootstrap-only score rows that
+        // were never refreshed; the enrichment processor already refuses to
+        // WRITE a 0-0 football final on the same reasoning (no NFL 0-0 since
+        // 1943, NCAA overtime guarantees a non-tie).
+        //
+        // Left unguarded the audit calls it a mismatch and clears FinalizedUtc,
+        // which drops the contest out of team W/L for as long as it stays
+        // unfinalized. Prod 2026-09-19: 14 of the 108 contests flagged after
+        // three failed attempts were this case — Baltimore at Tennessee stored
+        // 16-10 against an expected 0-0 — each burning its whole allowance on a
+        // comparison that could never succeed.
+        //
+        // Deferring leaves AuditedUtc null, so a later sweep re-checks once the
+        // score rows arrive.
+        var storedIsNonZero = (contest.AwayScore ?? 0) != 0 || (contest.HomeScore ?? 0) != 0;
+
+        if (contest.Sport != Sport.BaseballMlb
+            && awayMaxScore.Value == 0
+            && homeMaxScore.Value == 0
+            && storedIsNonZero)
+        {
+            _logger.LogWarning(
+                "Audit deferred — MAX competitor scores read 0-0 against a non-zero stored score " +
+                "(canonical source still stale). ContestId={ContestId}, ContestName={ContestName}, " +
+                "Stored: Away={StoredAway}, Home={StoredHome}",
+                contest.Id, contest.Name, contest.AwayScore, contest.HomeScore);
+            return;
+        }
+
         var expectedAway = (int)awayMaxScore.Value;
         var expectedHome = (int)homeMaxScore.Value;
 

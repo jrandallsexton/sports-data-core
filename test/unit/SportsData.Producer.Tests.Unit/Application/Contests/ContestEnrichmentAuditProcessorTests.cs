@@ -274,6 +274,44 @@ public class ContestEnrichmentAuditProcessorTests
             Times.Never);
     }
 
+    /// <summary>
+    /// 0-0 competitor rows contradicting a REAL stored score are not a tie —
+    /// they are bootstrap-only rows that were never refreshed. Treating that as
+    /// a mismatch clears FinalizedUtc, which drops the contest out of team W/L
+    /// for as long as it stays unfinalized, and no amount of re-enrichment can
+    /// reconcile it. Prod 2026-09-19: 14 of the 108 flagged contests were this
+    /// case (Baltimore at Tennessee, stored 16-10, expected 0-0), each burning
+    /// its whole three-attempt allowance on a comparison that could not succeed.
+    /// </summary>
+    [Fact]
+    public async Task Process_WhenFootballScoresAreZeroZeroAgainstANonZeroStoredScore_DefersWithoutUnfinalizing()
+    {
+        var (contestId, _, away, home) = await SeedFinalizedContestAsync(
+            currentAway: 16, currentHome: 10,
+            currentWinner: AwayFranchiseSeasonId,
+            sport: Sport.FootballNfl);
+        await SeedScoreAsync(away.Id, value: 0);
+        await SeedScoreAsync(home.Id, value: 0);
+
+        await _sut.Process(new AuditContestEnrichmentCommand(contestId, Guid.NewGuid()));
+
+        var contest = await FootballDataContext.Contests.AsNoTracking().FirstAsync(c => c.Id == contestId);
+
+        // The whole point: the contest keeps counting toward team records.
+        contest.FinalizedUtc.Should().NotBeNull();
+        contest.AwayScore.Should().Be(16);
+        // Not validated either — a later sweep re-checks once the rows arrive.
+        contest.AuditedUtc.Should().BeNull();
+        // And no strike against the allowance, so it never reaches the flag.
+        contest.AuditAttemptCount.Should().Be(0);
+        contest.AuditFlaggedUtc.Should().BeNull();
+
+        Mocker.GetMock<IProvideBackgroundJobs>().Verify(
+            x => x.Enqueue<IEnrichContests>(It.IsAny<Expression<Func<IEnrichContests, Task>>>()),
+            Times.Never,
+            "re-enrichment cannot conjure score rows that were never sourced");
+    }
+
     [Fact]
     public async Task Process_WhenContestNoLongerFinalized_SkipsCleanly()
     {

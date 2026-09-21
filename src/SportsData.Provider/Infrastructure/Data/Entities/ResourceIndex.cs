@@ -27,6 +27,28 @@ namespace SportsData.Provider.Infrastructure.Data.Entities
 
         public string? CronExpression { get; set; }
 
+        /// <summary>
+        /// IANA time zone the <see cref="CronExpression"/> is expressed in.
+        /// Null means UTC, which is the convention for everything here and
+        /// stays the default.
+        /// </summary>
+        /// <remarks>
+        /// Exists for sourcing that is anchored to a BROADCAST clock rather
+        /// than to wall-clock-agnostic infrastructure. The AP poll is released
+        /// at 14:00 Eastern on Sunday, and the football season crosses the
+        /// November DST boundary — a fixed UTC cron would drift an hour exactly
+        /// when the season is still running, and the API's matchup scheduler
+        /// runs half an hour after the release expecting the poll to be there.
+        /// <para>
+        /// Use IANA ids ("America/New_York"), which resolve on Linux natively
+        /// and on Windows via ICU from .NET 6. The runtime image must carry
+        /// tzdata: the chiseled base images only do in their "-extra" variant.
+        /// An id that cannot be resolved falls back to UTC with an error rather
+        /// than taking the whole sourcing registration down.
+        /// </para>
+        /// </remarks>
+        public string? CronTimeZoneId { get; set; }
+
         public bool IsEnabled { get; set; }
 
         public SourceDataProvider Provider { get; set; }

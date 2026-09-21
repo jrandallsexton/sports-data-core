@@ -38,6 +38,32 @@ namespace SportsData.Provider.Application.Jobs
             await RefreshOneTimeResourceIndexJobs();
         }
 
+        /// <summary>
+        /// UTC unless the resource names a zone. A bad id degrades to UTC with
+        /// an error rather than throwing: this runs inside a loop registering
+        /// EVERY resource index, so one malformed value must not cost the rest
+        /// of the sport its sourcing.
+        /// </summary>
+        private TimeZoneInfo ResolveTimeZone(Infrastructure.Data.Entities.ResourceIndex resource)
+        {
+            if (string.IsNullOrWhiteSpace(resource.CronTimeZoneId))
+                return TimeZoneInfo.Utc;
+
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(resource.CronTimeZoneId);
+            }
+            catch (Exception ex) when (ex is TimeZoneNotFoundException or InvalidTimeZoneException)
+            {
+                _logger.LogError(ex,
+                    "Unresolvable CronTimeZoneId '{TimeZoneId}' on ResourceIndex {Id} ({Name}); falling back to UTC. " +
+                    "On a chiseled base image this usually means tzdata is absent — the '-extra' variant carries it.",
+                    resource.CronTimeZoneId, resource.Id, resource.Name);
+
+                return TimeZoneInfo.Utc;
+            }
+        }
+
         private async Task RefreshRecurringSourcingJobs()
         {
             var allResources = await _dbContext.ResourceIndexJobs
@@ -59,13 +85,16 @@ namespace SportsData.Provider.Application.Jobs
                 var jobId = $"Resource:{resource.Id}";
                 var def = new DocumentJobDefinition(resource);
 
+                var timeZone = ResolveTimeZone(resource);
+
                 _recurringJobManager.AddOrUpdate<IProcessResourceIndexes>(
                     jobId,
                     job => job.ExecuteAsync(def),
-                    resource.CronExpression);
+                    resource.CronExpression,
+                    new RecurringJobOptions { TimeZone = timeZone });
 
-                _logger.LogDebug("Registered recurring job {JobId} for {Name} with cron '{Cron}'",
-                    jobId, resource.Name, resource.CronExpression);
+                _logger.LogDebug("Registered recurring job {JobId} for {Name} with cron '{Cron}' ({TimeZone})",
+                    jobId, resource.Name, resource.CronExpression, timeZone.Id);
             }
 
             // Remove disabled

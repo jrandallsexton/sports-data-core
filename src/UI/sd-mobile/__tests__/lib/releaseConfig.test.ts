@@ -22,6 +22,14 @@ describe('isNonPublicHost', () => {
     'http://172.31.255.255',
     'http://169.254.10.10',
     'http://bender.local:5262',
+    'http://[fe80::1]:5262', // IPv6 link-local
+    'http://[febf::1]', // top of fe80::/10
+    'http://[fc00::1]', // unique local, fc00::/7
+    'http://[fd12:3456::1]:5262',
+    'http://[::ffff:192.168.1.20]:5262', // IPv4-mapped private, dotted input
+    'http://[::ffff:c0a8:114]', // the same address as the parser normalises it
+    'http://[::ffff:127.0.0.1]',
+    'http://[::ffff:7f00:1]',
   ])('flags %s', (url) => {
     expect(isNonPublicHost(url)).toBe(true);
   });
@@ -35,6 +43,10 @@ describe('isNonPublicHost', () => {
     'https://192.169.0.1',
     'https://11.0.0.1',
     'https://8.8.8.8',
+    'https://[2606:4700::1111]', // public IPv6
+    'https://[fec0::1]', // just past fe80::/10
+    'https://[fe00::1]', // just below fe80::/10
+    'https://[::ffff:8.8.8.8]', // IPv4-mapped public
   ])('allows %s', (url) => {
     expect(isNonPublicHost(url)).toBe(false);
   });
@@ -42,6 +54,9 @@ describe('isNonPublicHost', () => {
   it('does not flag an unparseable value', () => {
     expect(isNonPublicHost('not a url')).toBe(false);
     expect(isNonPublicHost('')).toBe(false);
+    // A zone id is not valid in a URL host per WHATWG; the parser rejects it
+    // outright, on device as in Node, so the request layer fails on it.
+    expect(isNonPublicHost('http://[fe80::1%25en0]')).toBe(false);
   });
 });
 

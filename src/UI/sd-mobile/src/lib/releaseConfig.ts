@@ -51,6 +51,24 @@ export function isNonPublicHost(url: string): boolean {
   if (host === '::1' || host === '0.0.0.0' || host === '::') return true;
   if (host.endsWith('.local')) return true;
 
+  if (host.includes(':')) {
+    // IPv6, already normalised by the WHATWG parser (Expo installs the same
+    // implementation on device that Node uses, so a zone id such as
+    // fe80::1%en0 never reaches here: it is an invalid URL and parses to
+    // nothing). IPv4-mapped addresses arrive in hex form, ::ffff:c0a8:114.
+    const mapped = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(host);
+    if (mapped) {
+      const hi = parseInt(mapped[1], 16);
+      const lo = parseInt(mapped[2], 16);
+      const v4 = `${hi >> 8}.${hi & 0xff}.${lo >> 8}.${lo & 0xff}`;
+      return isNonPublicHost(`http://${v4}`);
+    }
+    const firstHextet = parseInt(host.split(':')[0] || '0', 16);
+    if ((firstHextet & 0xffc0) === 0xfe80) return true; // fe80::/10 link-local
+    if ((firstHextet & 0xfe00) === 0xfc00) return true; // fc00::/7 unique local
+    return false;
+  }
+
   const octets = host.split('.');
   if (octets.length === 4 && octets.every((o) => /^\d{1,3}$/.test(o))) {
     const [a, b] = octets.map(Number);

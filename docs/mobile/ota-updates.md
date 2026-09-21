@@ -88,16 +88,21 @@ rebuild.
    eas build:list --platform ios --limit 1   # compare Runtime Version
    ```
 
-4. **Bundle gate.** Export exactly what would be published and inspect it:
+4. **Bundle gate.** Export exactly what would be published and inspect it.
+   The export must run under the target EAS environment with dotenv disabled,
+   which is what `eas update --environment` does; a bare `npx expo export`
+   reads `.env.local` and always fails the gate on Bender:
 
    ```powershell
-   npx expo export --clear --platform ios --output-dir dist-verify
+   $env:EXPO_NO_DOTENV = '1'
+   eas env:exec preview "npx expo export --clear --platform ios --output-dir dist-verify"
    Select-String -Path dist-verify\_expo\static\js\ios\* -Pattern 'localhost:5262' -List   # MUST be empty
    Select-String -Path dist-verify\_expo\static\js\ios\* -Pattern 'api.sportdeets.com' -List  # MUST hit
    Remove-Item -Recurse -Force dist-verify
    ```
 
-   If `localhost:5262` appears, **stop**. Do not publish.
+   Use `production` in place of `preview` before the production publish. If
+   `localhost:5262` appears, **stop**. Do not publish.
 
 5. **Publish to `preview` first**, verify on a preview (TestFlight) build, then
    promote to `production`:

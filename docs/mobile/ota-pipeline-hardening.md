@@ -1,7 +1,13 @@
 # OTA updates: why every one has failed, and the Monday fix
 
-**Status:** plan, written 2026-09-17 after the production OTA outage. Nothing
-here is implemented yet.
+**Status:** written 2026-09-17 after the production OTA outage; safeguards
+implemented 2026-09-21 in PR #780 (release guard `src/lib/releaseConfig.ts`
+and its tests, `write-eas-env-files.ps1`, rewritten `ota-updates.md`).
+Server-side env pushed for `production` and `preview` the same day.
+**Remaining, manual, in order:** production-shaped smoke of `main` on Bender
+(section 4 step 4), fingerprint gate (step 5), bundle gate (3.2), publish to
+`preview` and verify on a preview build (step 6), promote to `production`
+(step 7), then move publishing off Bender entirely (section 2, step 8).
 
 **Supersedes the publish steps in [`ota-updates.md`](./ota-updates.md)**, which
 are stale and are what produced the outage. See [Docs to correct](#6-docs-to-correct).
@@ -144,20 +150,29 @@ project is on `expo ~55.0.24`. Its absence is why nothing resolved.
 Whatever the precedence rules turn out to be, this observes the artifact
 directly instead of trusting the tooling:
 
-```sh
+The export must run under the **same conditions `eas update` will use**:
+the target EAS environment's variables, and dotenv loading disabled. A bare
+`npx expo export` reads `.env.local` and always fails the gate on Bender,
+which tells you nothing about the publish. `eas env:exec` injects the
+server-side values and inherits the session env, so set `EXPO_NO_DOTENV`
+first (verified 2026-09-21).
+
+```powershell
 cd src/UI/sd-mobile
-npx expo export --clear --platform ios --output-dir dist-verify
+$env:EXPO_NO_DOTENV = '1'
+eas env:exec production "npx expo export --clear --platform ios --output-dir dist-verify"
 
-# MUST return nothing:
-grep -r "localhost:5262" dist-verify/ && echo "STOP - dev config in bundle"
+# MUST be empty:
+Select-String -Path dist-verify\_expo\static\js\ios\* -Pattern 'localhost:5262' -List
 
-# MUST return a hit:
-grep -rl "api.sportdeets.com" dist-verify/ >/dev/null && echo "prod API present"
+# MUST hit:
+Select-String -Path dist-verify\_expo\static\js\ios\* -Pattern 'api.sportdeets.com' -List
 
-rm -rf dist-verify
+Remove-Item -Recurse -Force dist-verify
 ```
 
-If the first grep hits, **do not publish**. Cheap, decisive, and it would have
+Use `preview` in place of `production` when gating a preview publish. If the
+first search hits, **do not publish**. Cheap, decisive, and it would have
 caught every failed update to date.
 
 **`--clear` is not optional, and neither is `--clear-cache` on `eas update`.**
@@ -287,11 +302,12 @@ never publish anything the grep gate has not just passed.
 
 6. **Publish to preview.** Gate, then publish, then verify on a preview build.
 
-   ```sh
-   npx expo export --clear --platform ios --output-dir dist-verify
-   grep -r "localhost:5262" dist-verify/ && echo "STOP - dev config in bundle"
-   grep -rl "api.sportdeets.com" dist-verify/ >/dev/null && echo "prod API present"
-   rm -rf dist-verify
+   ```powershell
+   $env:EXPO_NO_DOTENV = '1'
+   eas env:exec preview "npx expo export --clear --platform ios --output-dir dist-verify"
+   Select-String -Path dist-verify\_expo\static\js\ios\* -Pattern 'localhost:5262' -List     # MUST be empty
+   Select-String -Path dist-verify\_expo\static\js\ios\* -Pattern 'api.sportdeets.com' -List  # MUST hit
+   Remove-Item -Recurse -Force dist-verify
 
    eas update --branch preview --environment preview --clear-cache -m "<what changed>"
    ```
@@ -301,7 +317,9 @@ never publish anything the grep gate has not just passed.
 
 7. **Promote to production.** Same gate, same flags, production names.
 
-   ```sh
+   ```powershell
+   eas env:exec production "npx expo export --clear --platform ios --output-dir dist-verify"
+   # same two searches as step 6, then:
    eas update --branch production --environment production --clear-cache -m "<what changed>"
    ```
 

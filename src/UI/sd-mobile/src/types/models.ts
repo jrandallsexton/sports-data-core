@@ -374,6 +374,32 @@ export interface PickWidgetResponse {
   items: PickWidgetItem[];
 }
 
+// ─── Pick accuracy chart ────────────────────────────────────────────────────
+
+/** One graded week for one league (API: PickAccuracyByWeekDto.WeeklyAccuracyDto). */
+export interface WeeklyAccuracy {
+  week: number;
+  correctPicks: number;
+  totalPicks: number;
+  /** Percent, 0-100, already rounded to one decimal by the API. */
+  accuracyPercent: number;
+}
+
+/**
+ * One league's accuracy-by-week for the current user. Response element of
+ * GET /ui/picks/chart. The endpoint has NO season filter: it returns every
+ * league the user has ever belonged to, and `week` is ambiguous across
+ * seasons, so callers intersect with the active leagues from /user/me.
+ */
+export interface PickAccuracyByWeek {
+  userId: string;
+  userName: string;
+  leagueId: string;
+  leagueName: string;
+  weeklyAccuracy: WeeklyAccuracy[];
+  overallAccuracyPercent: number;
+}
+
 // ─── AI Preview ─────────────────────────────────────────────────────────────
 
 /** Response from GET /ui/matchup/{contestId}/preview */

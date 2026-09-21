@@ -136,6 +136,38 @@ rebuild.
    change does **not** mean OTA failed. (Real users don't have to do this — see
    below.)
 
+8. **Verify adoption a day or two later.** Relaunching twice proves the
+   publish reached *your* phone. It says nothing about users who never
+   force-close. The `useOtaUpdates` hook (next section) is supposed to carry
+   the update to warm apps, but its behaviour in production had never been
+   observed before 2026-09-21, so check the numbers rather than assume.
+
+   This app publishes **one update group per platform**, because the iOS and
+   Android runtimes differ. Get both group IDs, then ask EAS for insights:
+
+   ```powershell
+   eas update:list --branch production --limit 2       # two groups, same message
+   eas update:view <groupId> --insights --days 3       # once per group
+   ```
+
+   Per platform you get `Launches`, `Unique users`, `Failed launches`, and
+   `Crash rate` for the update ID. What to look for:
+
+   - `Unique users` climbing past 1 (you) over the first day or two means
+     warm-app users are picking it up without a cold start. Flat at 1 means
+     the hook is not doing its job, or nobody has opened the app.
+   - `Failed launches` above 0 or a non-zero `Crash rate` means the bundle
+     breaks at boot for someone. Roll back (see Cautions) before chasing it.
+
+   Sentry gives the same signal per event: every event carries an
+   `ota_updates` context with `update_id` and `runtime_version`, set by the
+   Sentry Expo integration. Filter on `ota_updates.update_id` for the new ID
+   and confirm events arrive from users other than you.
+
+   If adoption is slow, the lever is `APPLY_AFTER_BACKGROUND_MS` in
+   `src/hooks/useOtaUpdates.ts`, currently three minutes. Shorter propagates
+   faster but reloads users who only glanced away. Change it on evidence.
+
 ## Automatic runtime updates (what real users get)
 
 Most users never force-quit the app, so relying on the cold-start check alone

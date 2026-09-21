@@ -1,16 +1,18 @@
-# OTA updates: why every one has failed, and the Monday fix
+# OTA updates: why every one has failed, and the fix
 
 **Status:** written 2026-09-17 after the production OTA outage; safeguards
 implemented 2026-09-21 in PR #780 (release guard `src/lib/releaseConfig.ts`
 and its tests, `write-eas-env-files.ps1`, rewritten `ota-updates.md`).
 Server-side env pushed for `production` and `preview` the same day.
-**Remaining, manual, in order:** production-shaped smoke of `main` on Bender
-(section 4 step 4), fingerprint gate (step 5), bundle gate (3.2), publish to
-`preview` and verify on a preview build (step 6), promote to `production`
-(step 7), then move publishing off Bender entirely (section 2, step 8).
+**Rollout completed 2026-09-21: the first OTA update ever to land in
+production, both platforms.** Only step 11 (move publishing off Bender)
+remains. **What to do next is section 4, and only section 4.** Sections 1 through 3
+explain the outage and the fixes; they are reference, not steps. Section 4 is
+the ordered checklist with done markers, and it is kept current.
 
-**Supersedes the publish steps in [`ota-updates.md`](./ota-updates.md)**, which
-are stale and are what produced the outage. See [Docs to correct](#6-docs-to-correct).
+[`ota-updates.md`](./ota-updates.md) is the day-to-day publish runbook and
+was rewritten in #780 to match this document. Before that it was the runbook
+followed on 2026-09-17; see [section 6](#6-docs-to-correct) for what was wrong.
 
 ---
 
@@ -109,6 +111,11 @@ Either takes Bender out of the publish path permanently. Sections 3.1 through
 
 ## 3. The fix, in priority order
 
+> **Reference, not a runbook.** These subsections explain each fix and carry
+> the evidence. The commands to actually run, in order, with what is already
+> done, are in [section 4](#4-rollout-checklist). If you are here to publish,
+> go there.
+
 ### 3.1 Resolve production config server-side
 
 Production values live only in `eas.json`, which `eas update` ignores. Push them
@@ -163,10 +170,10 @@ $env:EXPO_NO_DOTENV = '1'
 eas env:exec production "npx expo export --clear --platform ios --output-dir dist-verify"
 
 # MUST be empty:
-Select-String -Path dist-verify\_expo\static\js\ios\* -Pattern 'localhost:5262' -List
+Get-ChildItem dist-verify\_expo\static\js\ios | Select-String -Pattern 'localhost:5262' -List
 
 # MUST hit:
-Select-String -Path dist-verify\_expo\static\js\ios\* -Pattern 'api.sportdeets.com' -List
+Get-ChildItem dist-verify\_expo\static\js\ios | Select-String -Pattern 'api.sportdeets.com' -List
 
 Remove-Item -Recurse -Force dist-verify
 ```
@@ -229,111 +236,60 @@ Order: publish to `preview`, verify on a preview build, then promote to
 
 ---
 
-## 4. Monday checklist
+## 4. Rollout checklist
 
-**Status 2026-09-21 morning.** Preconditions checked: local `main` matches
-`origin/main`, `git status -- src/UI/sd-mobile` is clean, PR #767 merged 09-17.
-EAS server-side env for `production` and `preview` still holds only
-`SENTRY_AUTH_TOKEN`. No `.eas/workflows` exist. The bundle grep gate (3.2) has
-been exercised locally and behaves as designed; see the table there.
+**This is the runbook. Read top to bottom; do the first step not marked
+done.** Last updated 2026-09-21 after the production publish landed.
 
-Two things changed since this was written on 09-17, and the order below
-reflects both:
+Hard rules for every command here: PowerShell, from `src/UI/sd-mobile`, on
+`main` with `git status -- src/UI/sd-mobile` clean. Never publish anything
+the bundle gate (step 6) has not just passed on the exact tree you are on.
 
-- The `.env.local` precedence question is **closed**: `--environment` disables
-  dotenv loading outright (3.1). Pushing env server-side is a real fix.
-- The Metro transform cache is a **second trap** (3.2). Every publish must clear
-  it. Without this, step 1 alone would have re-shipped the bad bundle.
+Facts the order depends on, both verified 2026-09-21:
 
-Hard rule for every command in this list: run from `src/UI/sd-mobile`, and
-never publish anything the grep gate has not just passed.
+- `--environment` makes `eas update` set `EXPO_NO_DOTENV=1`, so `.env.local`
+  is never read on that path (3.1). Pushing env server-side is a real fix.
+- Metro's transform cache replays previously inlined `EXPO_PUBLIC_*` literals
+  (3.2). Every export and publish must clear it.
 
-1. **Push production and preview env to EAS.** Nine `EXPO_PUBLIC_*` keys each,
-   taken from the matching `eas.json` env block. They differ only in
-   `EXPO_PUBLIC_SENTRY_ENV`. Do not push `.env.local`.
+### Done
 
-   ```sh
-   # Generate the temp files from the eas.json env blocks (9 keys each; *.tmp is
-   # gitignored). Do not hand-write them. PowerShell, from src/UI/sd-mobile:
-   .\write-eas-env-files.ps1
+- [x] **1. Server-side env pushed** for `production` and `preview`, nine
+  `EXPO_PUBLIC_*` keys each, via `write-eas-env-files.ps1` and
+  `eas env:push`. Re-run only after adding a new `EXPO_PUBLIC_*` variable.
+  Confirm any time with `eas env:list --environment production`.
+- [x] **2. Config guard** merged in #780 (`src/lib/releaseConfig.ts`, tests in
+  `__tests__/lib/`). Dev client boots normally with it in place.
+- [x] **3. Docs corrected** in #780: `ota-updates.md` publish section,
+  `firebase-config-in-eas-builds.md` closing rule.
+- [x] **4. Fingerprint gate passed on merged `main`** (commit `a899cbfb`):
+  iOS `96e0abcb...`, Android `174107aa...`, both equal to the store builds'
+  Runtime Version. Repeat only if the mobile tree changes before publishing.
+- [x] **5. Preview bundle gate passed on merged `main`**: export via
+  `eas env:exec preview`, no `localhost:5262`, `api.sportdeets.com` present.
+  Repeat if the mobile tree changes before publishing (command in step 6).
 
-   eas env:push --environment production --path ./.env.production.tmp
-   eas env:push --environment preview    --path ./.env.preview.tmp
-   Remove-Item .env.production.tmp, .env.preview.tmp
-   eas env:list --environment production   # 9 EXPO_PUBLIC_* + SENTRY_AUTH_TOKEN
-   eas env:list --environment preview      # same
-   ```
+### Done, continued (rollout 2026-09-21)
 
-   Pushing preview too is what makes step 6 meaningful: a preview publish
-   without server-side env would bundle `undefined` for Firebase and crash at
-   boot, which is the May failure, not this one.
+- [x] **6. Production-shaped smoke on device.** Run a: the guard fired at
+  boot on the `.env.local` value. Run b: the app worked against production
+  values under Hermes plus minify.
+- [x] **7 and 8. Preview: skipped by decision.** No preview build is
+  installed, so there was nothing to verify a preview publish on. Shipped
+  straight to production instead. If a preview build is ever installed,
+  route through it; until then, step 9 is the first real verification.
+- [x] **9. Published to production**, both platforms, under
+  `--environment production --clear-cache`. **The first OTA update to land
+  in this app's history.** Every prior attempt shipped `localhost:5262`.
+- [x] **10. Verified on production installs**, both platforms: app leaves
+  loading and runs the new bundle.
 
-2. **Config guard PR (3.3).** One module under `src/lib/`, imported in
-   `app/_layout.tsx` directly after `src/lib/sentry.ts`. Throws in `!__DEV__`
-   when `EXPO_PUBLIC_API_BASE_URL` is `localhost`, `127.0.0.1`, or a private
-   LAN address. Warns when `EXPO_PUBLIC_SENTRY_ENV` is unset. Test lives in
-   `__tests__/lib/`, matching the existing layout. Ordinary PR; branch off
-   `origin/main`.
+### Next
 
-3. **Correct the two docs (section 6)** in the same PR as step 2, so the
-   runbook that caused the outage cannot be followed again once this merges.
-
-4. **Production-shaped smoke of `main` on Bender.** `npx expo start --no-dev
-   --minify`. TypeScript and Jest never exercise Hermes plus minification. #767
-   has not been run this way yet.
-
-5. **Fingerprint gate.** An update only reaches builds whose runtime matches
-   the fingerprint of the tree being published. Confirm the match before
-   every publish, from **PowerShell**. On this machine the fingerprint's
-   config-loader spawn fails under Git Bash and silently yields a garbage
-   hash (`1588df86...` on 2026-09-21); PowerShell gave the correct
-   `96e0abcb...`. A publish made under a wrong hash reaches nobody and
-   reports success.
-
-   ```powershell
-   eas fingerprint:generate --platform ios       # must equal the iOS build's Runtime Version
-   eas fingerprint:generate --platform android   # must equal the Android build's Runtime Version
-   eas build:list --platform ios --limit 1       # Runtime Version to compare against
-   ```
-
-   Checked 2026-09-21: iOS `96e0abcb...` and Android `174107aa...`, both
-   matching the store builds. If either drifts, the change was native and
-   needs `eas build`, not an update.
-
-6. **Publish to preview.** Gate, then publish, then verify on a preview build.
-
-   ```powershell
-   $env:EXPO_NO_DOTENV = '1'
-   eas env:exec preview "npx expo export --clear --platform ios --output-dir dist-verify"
-   Select-String -Path dist-verify\_expo\static\js\ios\* -Pattern 'localhost:5262' -List     # MUST be empty
-   Select-String -Path dist-verify\_expo\static\js\ios\* -Pattern 'api.sportdeets.com' -List  # MUST hit
-   Remove-Item -Recurse -Force dist-verify
-
-   eas update --branch preview --environment preview --clear-cache -m "<what changed>"
-   ```
-
-   On the preview device: relaunch twice, confirm the app leaves loading and
-   the Sentry environment tag reads `preview`.
-
-7. **Promote to production.** Same gate, same flags, production names.
-
-   ```powershell
-   eas env:exec production "npx expo export --clear --platform ios --output-dir dist-verify"
-   # same two searches as step 6, then:
-   eas update --branch production --environment production --clear-cache -m "<what changed>"
-   ```
-
-   Keep the rollback cheat sheet (section 5) open. Verify on a production
-   install before walking away.
-
-8. **Then** EAS Workflows or a GitHub Actions job (section 2), so Bender leaves
-   the publish path. Both run on infrastructure with no `.env.local` and no
-   warm Metro cache, which retires both traps structurally rather than by
-   discipline.
-
-Step 1 is the only step that changes anything outside this machine before a
-publish. Steps 2 through 5 are local and can proceed in any order relative to
-it.
+- [ ] **11. Take Bender out of the publish path.** EAS Workflows or a GitHub
+  Actions job (section 2). Both run where there is no `.env.local` and no
+  warm Metro cache, retiring both traps structurally. Separate PR, after
+  the rollout above has been exercised once by hand.
 
 ---
 
@@ -364,6 +320,8 @@ eas update:rollback <groupId>          # once per platform
 ---
 
 ## 6. Docs to correct
+
+**Both corrected in #780.** Kept for the record of what was wrong.
 
 - **[`ota-updates.md`](./ota-updates.md)**, actively dangerous. Fix or delete
   the publish section:
